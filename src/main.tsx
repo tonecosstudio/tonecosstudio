@@ -5,7 +5,7 @@ import "./index.css";
 import { initSentry } from "./lib/sentry";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
-// Inicializa Sentry para error tracking
+// Initialize Sentry for error tracking
 initSentry();
 
 createRoot(document.getElementById("root")!).render(
