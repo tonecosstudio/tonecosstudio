@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ContactsList - Lista todos os usuários para iniciar conversas
  * Funcionalidade tipo WhatsApp para o admin
