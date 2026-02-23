@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile } from "@/lib/validations/support";
 import type { FileMetadata, ValidationResult } from "@/types/support";

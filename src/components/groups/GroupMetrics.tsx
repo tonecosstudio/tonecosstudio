@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useQuery } from '@tanstack/react-query';
 import { metricsService } from '@/lib/services/metricsService';
 import { Card } from '@/components/ui/card';

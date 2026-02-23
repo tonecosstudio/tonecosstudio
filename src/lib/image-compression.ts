@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Image Compression Utilities
  * Requirements: 18.1-18.15

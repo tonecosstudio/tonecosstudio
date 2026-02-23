@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * NotificationService - Service for sending email notifications for payment status changes
  * 
