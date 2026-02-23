@@ -1,14 +1,9 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# Robots.txt para Ordax Collectibles
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /perfil
+Disallow: /login
+
+# Sitemap
+Sitemap: https://pabxpvqwtvbjaunjejud.supabase.co/sitemap.xml

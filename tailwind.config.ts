@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
+        serif: ["Playfair Display", "Georgia", "serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -57,6 +61,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
+        },
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          foreground: "hsl(var(--surface-foreground))",
+        },
+        glow: "hsl(var(--glow))",
+        "gold-accent": "hsl(var(--gold-accent))",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -1,0 +1,4 @@
+[function]
+# Permitir invocações sem autenticação
+# A função usa service_role_key internamente para acessar o banco
+verify_jwt = false

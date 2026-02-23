@@ -1,20 +1,24 @@
-# Welcome to your Lovable project
+# Ordax - Plataforma de Colecionáveis Premium
 
-## Project info
+## Sobre o Projeto
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Ordax** é a plataforma de catálogo e gestão de pedidos da **Tonecos Studios**, estúdio brasileiro especializado em colecionáveis artesanais premium.
 
-## How can I edit this code?
+**URL de Produção**: https://pabxpvqwtvbjaunjejud.supabase.co  
+**Supabase Project**: pabxpvqwtvbjaunjejud
 
-There are several ways of editing your application.
+## Tecnologias
 
-**Use Lovable**
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI**: shadcn/ui + Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **Auth**: Supabase Auth (Email + Google OAuth)
+- **Storage**: Supabase Storage
+- **AI**: OpenAI GPT-4o-mini (classificação e análise)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Como Desenvolver
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
+**Use seu IDE preferido**
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
@@ -22,52 +26,76 @@ The only requirement is having Node.js & npm installed - [install with nvm](http
 
 Follow these steps:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```bash
+# 1. Clone o repositório
 git clone <YOUR_GIT_URL>
+cd ordax
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Instale as dependências
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Configure as variáveis de ambiente
+# O arquivo .env já está configurado com o projeto Supabase
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Inicie o servidor de desenvolvimento
 npm run dev
+
+# 5. Acesse http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+## Estrutura do Projeto
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+ordax/
+├── src/
+│   ├── components/       # Componentes React reutilizáveis
+│   ├── pages/           # Páginas da aplicação
+│   │   ├── admin/       # Área administrativa
+│   │   └── catalog/     # Catálogo de produtos
+│   ├── lib/             # Utilitários e helpers
+│   └── integrations/    # Integrações (Supabase)
+├── supabase/
+│   ├── functions/       # Edge Functions
+│   └── migrations/      # Migrations do banco de dados
+└── public/              # Assets estáticos
+```
 
-**Use GitHub Codespaces**
+## Funcionalidades Principais
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Para Usuários
+- 🔍 Catálogo de colecionáveis com busca e filtros
+- ❤️ Sistema de likes e favoritos
+- 💬 Solicitação de orçamentos personalizados
+- 👤 Perfil de colecionador público
+- 🏆 Sistema de badges e níveis
+- 📦 Acompanhamento de pedidos
 
-## What technologies are used for this project?
+### Para Administradores
+- 📤 Upload massivo de imagens (até 2000 por vez)
+- 🤖 Classificação automática por IA
+- 🎨 Modo esteira para aprovação rápida
+- 👥 Gestão de usuários e permissões
+- 📊 Gestão de orçamentos
+- 🎯 Gestão de modelos e franquias
 
-This project is built with:
+## Deploy
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+O projeto está configurado para deploy no Supabase:
 
-## How can I deploy this project?
+```bash
+# Deploy das Edge Functions
+supabase functions deploy
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+# Aplicar migrations
+supabase db push
+```
 
-## Can I connect a custom domain to my Lovable project?
+Para configurar um domínio customizado, acesse:
+https://supabase.com/dashboard/project/pabxpvqwtvbjaunjejud/settings/general
 
-Yes, you can!
+## Documentação Adicional
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- `SETUP_COMPLETO.md` - Guia completo de configuração
+- `GOOGLE_OAUTH_SETUP.md` - Configuração do Google OAuth
+- `OPENAI_SETUP.md` - Configuração da OpenAI API
+- `ANALISE_PRE_LANCAMENTO.md` - Checklist de lançamento

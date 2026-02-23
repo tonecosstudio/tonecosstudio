@@ -1,0 +1,136 @@
+-- Migration: Setup email batch cron job
+-- Feature: chat-groups-system
+-- Task: 10.2 Configure pg_cron for email batch
+-- Requirements: 11.1
+
+-- =====================================================
+-- CHAT GROUPS SYSTEM - Email Batch Cron Job
+-- =====================================================
+-- This migration sets up a pg_cron job to automatically
+-- send email notifications for group messages every 2 minutes.
+--
+-- The job calls the send-group-emails-batch Edge Function which:
+-- - Sends emails to all group members (respecting notification preferences)
+-- - Includes group name, sender name, message preview, and link
+-- - Implements retry logic (up to 3 attempts with exponential backoff)
+-- - Handles errors gracefully with logging
+--
+-- V1 Simple Approach: Always send email to all members
+-- (respecting notification preferences)
+-- =====================================================
+
+-- Verify pg_cron extension is enabled (should be enabled by previous migration)
+-- If not, enable it
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Add comment for documentation
+COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler for PostgreSQL - used for auto-sync-groups and send-group-emails-batch jobs';
+
+-- =====================================================
+-- MANUAL SETUP REQUIRED
+-- =====================================================
+-- 
+-- This migration enables pg_cron but does NOT automatically
+-- schedule the job because it requires your specific:
+-- - Supabase project URL
+-- - Service role key (secret)
+--
+-- After running this migration, manually schedule the job
+-- using the SQL command below (replace placeholders):
+--
+-- SELECT cron.schedule(
+--   'send-group-emails-batch',
+--   '*/2 * * * *',
+--   $ 
+--   SELECT net.http_post(
+--     url := 'https://[YOUR-PROJECT-REF].supabase.co/functions/v1/send-group-emails-batch',
+--     headers := '{"Authorization": "Bearer [YOUR-SERVICE-ROLE-KEY]", "Content-Type": "application/json"}'::jsonb,
+--     body := '{}'::jsonb
+--   ) AS request_id;
+--   $
+-- );
+--
+-- =====================================================
+
+-- =====================================================
+-- CONFIGURATION INSTRUCTIONS
+-- =====================================================
+-- 
+-- Step 1: Verify pg_cron is enabled
+-- SELECT * FROM pg_extension WHERE extname = 'pg_cron';
+--
+-- Step 2: Schedule the email batch job (replace placeholders with your values)
+-- SELECT cron.schedule(
+--   'send-group-emails-batch',
+--   '*/2 * * * *',
+--   $ 
+--   SELECT net.http_post(
+--     url := 'https://[YOUR-PROJECT-REF].supabase.co/functions/v1/send-group-emails-batch',
+--     headers := '{"Authorization": "Bearer [YOUR-SERVICE-ROLE-KEY]", "Content-Type": "application/json"}'::jsonb,
+--     body := '{}'::jsonb
+--   ) AS request_id;
+--   $
+-- );
+--
+-- Step 3: Verify cron job is scheduled
+-- SELECT * FROM cron.job WHERE jobname = 'send-group-emails-batch';
+--
+-- Step 4: Check cron job execution history
+-- SELECT * FROM cron.job_run_details 
+-- WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'send-group-emails-batch')
+-- ORDER BY start_time DESC LIMIT 10;
+--
+-- =====================================================
+-- MONITORING
+-- =====================================================
+--
+-- Monitor job execution:
+-- SELECT 
+--   jobid,
+--   runid,
+--   job_pid,
+--   database,
+--   username,
+--   command,
+--   status,
+--   return_message,
+--   start_time,
+--   end_time
+-- FROM cron.job_run_details 
+-- WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'send-group-emails-batch')
+-- ORDER BY start_time DESC 
+-- LIMIT 20;
+--
+-- =====================================================
+-- TROUBLESHOOTING
+-- =====================================================
+--
+-- If the job is not running:
+-- 1. Check if pg_cron extension is enabled: \dx
+-- 2. Verify job is scheduled: SELECT * FROM cron.job;
+-- 3. Check job execution logs: SELECT * FROM cron.job_run_details;
+-- 4. Verify Edge Function is deployed and accessible
+-- 5. Check service role key is correct
+-- 6. Verify EMAIL_API_KEY is configured in Edge Function secrets
+-- 7. Check email provider (Resend/SendGrid) is configured correctly
+--
+-- To unschedule the job (if needed):
+-- SELECT cron.unschedule('send-group-emails-batch');
+--
+-- To reschedule with different interval:
+-- SELECT cron.unschedule('send-group-emails-batch');
+-- SELECT cron.schedule('send-group-emails-batch', '*/5 * * * *', $...$ );
+--
+-- =====================================================
+-- IMPORTANT NOTES
+-- =====================================================
+--
+-- 1. Email Batch Job runs every 2 minutes (configurable)
+-- 2. V1 Simple Approach: Sends email to ALL members (respecting preferences)
+-- 3. Future V2: Could implement "offline" detection (hasn't opened group in 24h)
+-- 4. Retry logic: Up to 3 attempts with exponential backoff (1s, 2s, 4s)
+-- 5. Email notifications respect user preferences (email_notifications_enabled)
+-- 6. Edge Function requires EMAIL_API_KEY secret to be configured
+-- 7. Supports Resend and SendGrid email providers
+--
+-- =====================================================
