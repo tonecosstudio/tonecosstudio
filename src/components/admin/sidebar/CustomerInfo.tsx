@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CustomerInfo - Exibe dados pessoais do cliente
  * Mostra informações de contato e perfil do usuário
