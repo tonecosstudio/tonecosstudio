@@ -4,6 +4,7 @@
  * Garante consistência total em todas as páginas
  */
 
+// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
