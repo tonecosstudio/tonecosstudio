@@ -8,8 +8,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit2, Trash2, Package, Image as ImageIcon, List } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
@@ -145,20 +158,14 @@ export default function AdminCollections() {
           <Card>
             <CardHeader>
               <CardTitle>Coleções Disponíveis</CardTitle>
-              <CardDescription>
-                Clique em uma coleção para ver seus personagens
-              </CardDescription>
+              <CardDescription>Clique em uma coleção para ver seus personagens</CardDescription>
             </CardHeader>
             <CardContent>
               {collections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhuma coleção cadastrada</p>
-                  <Button
-                    variant="link"
-                    onClick={() => setIsCreateOpen(true)}
-                    className="mt-2"
-                  >
+                  <Button variant="link" onClick={() => setIsCreateOpen(true)} className="mt-2">
                     Criar primeira coleção
                   </Button>
                 </div>
@@ -272,10 +279,7 @@ function CollectionCard({ collection, isSelected, onSelect, onEdit, onSuccess }:
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("collections")
-        .delete()
-        .eq("id", collection.id);
+      const { error } = await supabase.from("collections").delete().eq("id", collection.id);
 
       if (error) throw error;
     },
@@ -306,9 +310,13 @@ function CollectionCard({ collection, isSelected, onSelect, onEdit, onSuccess }:
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold">{collection.name}</h3>
             {collection.is_active ? (
-              <Badge variant="default" className="text-xs">Ativa</Badge>
+              <Badge variant="default" className="text-xs">
+                Ativa
+              </Badge>
             ) : (
-              <Badge variant="secondary" className="text-xs">Inativa</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Inativa
+              </Badge>
             )}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
@@ -321,11 +329,7 @@ function CollectionCard({ collection, isSelected, onSelect, onEdit, onSuccess }:
           </div>
         </div>
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onEdit}
-          >
+          <Button size="sm" variant="ghost" onClick={onEdit}>
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
@@ -399,22 +403,18 @@ function CharacterCard({ character, onSuccess }: any) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-sm text-muted-foreground">#{character.release_order}</span>
+            <span className="font-mono text-sm text-muted-foreground">
+              #{character.release_order}
+            </span>
             <h4 className="font-medium">{character.name}</h4>
             {getStatusBadge(character.status)}
           </div>
           {character.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {character.description}
-            </p>
+            <p className="text-sm text-muted-foreground line-clamp-2">{character.description}</p>
           )}
         </div>
         <div className="flex gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsEditing(true)}
-          >
+          <Button size="sm" variant="ghost" onClick={() => setIsEditing(true)}>
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
@@ -458,14 +458,12 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("collections")
-        .insert({
-          name,
-          slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
-          description,
-          is_active: isActive,
-        });
+      const { error } = await supabase.from("collections").insert({
+        name,
+        slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
+        description,
+        is_active: isActive,
+      });
 
       if (error) throw error;
     },
@@ -497,9 +495,7 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Criar Nova Coleção</DialogTitle>
-          <DialogDescription>
-            Crie uma coleção temática com 6 ou 12 personagens
-          </DialogDescription>
+          <DialogDescription>Crie uma coleção temática com 6 ou 12 personagens</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
@@ -541,9 +537,7 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
           <div className="flex items-center justify-between p-4 rounded-lg border">
             <div>
               <Label>Coleção Ativa</Label>
-              <p className="text-sm text-muted-foreground">
-                Disponível para assinatura
-              </p>
+              <p className="text-sm text-muted-foreground">Disponível para assinatura</p>
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
@@ -659,15 +653,13 @@ function CreateCharacterDialog({ collectionId, onSuccess }: any) {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("collection_characters")
-        .insert({
-          collection_id: collectionId,
-          name,
-          description,
-          release_order: parseInt(releaseOrder),
-          status,
-        });
+      const { error } = await supabase.from("collection_characters").insert({
+        collection_id: collectionId,
+        name,
+        description,
+        release_order: parseInt(releaseOrder),
+        status,
+      });
 
       if (error) throw error;
     },
@@ -811,11 +803,7 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
         <div className="space-y-4 py-4">
           <div>
             <Label>Nome</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-2"
-            />
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-2" />
           </div>
 
           <div>

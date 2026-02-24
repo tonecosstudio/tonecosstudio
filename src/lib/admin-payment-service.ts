@@ -1,26 +1,26 @@
 /**
  * AdminPaymentService - Service for admin payment operations
- * 
+ *
  * Requirements: 5.1-5.10, 12.1-12.15
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * This service handles admin-specific payment operations including
  * listing pending payments, bulk operations, and statistics.
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import type { 
-  PaymentListItem, 
-  PaymentFilters, 
+import type {
+  PaymentListItem,
+  PaymentFilters,
   PaymentStats,
   BulkOperationResult,
-  PaymentStatus
+  PaymentStatus,
 } from "@/types/manual-payment";
 
 /**
  * List payments for admin dashboard with filters
  * Only returns payments with status in ('pending', 'under_review', 'requires_info')
- * 
+ *
  * @param filters - Optional filters for status, payment method, date range, search
  * @returns Array of payment list items for admin dashboard
  * @throws Error if database query fails
@@ -28,36 +28,38 @@ import type {
 export async function listPendingPayments(filters?: PaymentFilters): Promise<PaymentListItem[]> {
   let query = supabase
     .from("manual_payments")
-    .select(`
+    .select(
+      `
       *,
       payment_method:admin_payment_methods(name),
       profiles!manual_payments_user_id_fkey(full_name, email)
-    `)
-    .in("status", ['pending', 'under_review', 'requires_info']);
+    `
+    )
+    .in("status", ["pending", "under_review", "requires_info"]);
 
   // Apply filters
   if (filters?.status && filters.status.length > 0) {
     query = query.in("status", filters.status);
   }
-  
+
   if (filters?.payment_method_id) {
     query = query.eq("payment_method_id", filters.payment_method_id);
   }
-  
+
   if (filters?.date_from) {
     query = query.gte("created_at", filters.date_from);
   }
-  
+
   if (filters?.date_to) {
     query = query.lte("created_at", filters.date_to);
   }
-  
+
   if (filters?.search) {
     query = query.or(
       `reference_number.ilike.%${filters.search}%,profiles.full_name.ilike.%${filters.search}%`
     );
   }
-  
+
   // Order by creation date (newest first) by default
   query = query.order("created_at", { ascending: false });
 
@@ -73,7 +75,7 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
       // Get file count
       const { count: fileCount } = await supabase
         .from("payment_files")
-        .select("*", { count: 'exact', head: true })
+        .select("*", { count: "exact", head: true })
         .eq("payment_id", payment.id);
 
       // Get unread message count (simplified - would need conversation integration)
@@ -82,11 +84,11 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
       return {
         id: payment.id,
         reference_number: payment.reference_number,
-        customer_name: payment.profiles?.full_name || 'Cliente',
-        customer_email: payment.profiles?.email || '',
+        customer_name: payment.profiles?.full_name || "Cliente",
+        customer_email: payment.profiles?.email || "",
         amount: payment.amount,
         currency: payment.currency,
-        payment_method_name: payment.payment_method?.name || 'Método desconhecido',
+        payment_method_name: payment.payment_method?.name || "Método desconhecido",
         status: payment.status as PaymentStatus,
         created_at: payment.created_at,
         file_count: fileCount || 0,
@@ -100,7 +102,7 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
 
 /**
  * Get payment statistics for admin dashboard
- * 
+ *
  * @returns Payment statistics including counts and totals
  * @throws Error if database query fails
  */
@@ -109,17 +111,17 @@ export async function getPaymentStats(): Promise<PaymentStats> {
   const { data: statusCounts, error: statusError } = await supabase
     .from("manual_payments")
     .select("status, amount")
-    .in("status", ['pending', 'under_review', 'requires_info']);
+    .in("status", ["pending", "under_review", "requires_info"]);
 
   if (statusError) {
     throw new Error(`Failed to get payment stats: ${statusError.message}`);
   }
 
   // Calculate counts and totals
-  const pendingCount = statusCounts?.filter(p => p.status === 'pending').length || 0;
-  const underReviewCount = statusCounts?.filter(p => p.status === 'under_review').length || 0;
-  const requiresInfoCount = statusCounts?.filter(p => p.status === 'requires_info').length || 0;
-  
+  const pendingCount = statusCounts?.filter((p) => p.status === "pending").length || 0;
+  const underReviewCount = statusCounts?.filter((p) => p.status === "under_review").length || 0;
+  const requiresInfoCount = statusCounts?.filter((p) => p.status === "requires_info").length || 0;
+
   const totalPendingAmount = statusCounts?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
 
   // Calculate average processing time (simplified - would need more complex query)
@@ -138,7 +140,7 @@ export async function getPaymentStats(): Promise<PaymentStats> {
  * Bulk approve payments
  * Only approves payments with status 'under_review'
  * Implements async processing for large selections (>10 items)
- * 
+ *
  * @param paymentIds - Array of payment UUIDs to approve
  * @param adminId - Admin user ID
  * @param onProgress - Optional callback for progress updates
@@ -157,21 +159,21 @@ export async function bulkApprovePayments(
   };
 
   // Import payment service for approval
-  const { approvePayment } = await import('./payment-service');
+  const { approvePayment } = await import("./payment-service");
 
   // For large selections (>10 items), process in batches
   const BATCH_SIZE = 5;
   const isLargeSelection = paymentIds.length > 10;
-  
+
   if (isLargeSelection) {
     // Process in batches for better performance and user feedback
     const totalBatches = Math.ceil(paymentIds.length / BATCH_SIZE);
-    
+
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
       const startIdx = batchIndex * BATCH_SIZE;
       const endIdx = Math.min(startIdx + BATCH_SIZE, paymentIds.length);
       const batch = paymentIds.slice(startIdx, endIdx);
-      
+
       // Process current batch
       for (const paymentId of batch) {
         try {
@@ -186,12 +188,12 @@ export async function bulkApprovePayments(
             result.failure_count++;
             result.errors.push({
               payment_id: paymentId,
-              error: 'Payment not found',
+              error: "Payment not found",
             });
             continue;
           }
 
-          if (payment.status !== 'under_review') {
+          if (payment.status !== "under_review") {
             result.failure_count++;
             result.errors.push({
               payment_id: paymentId,
@@ -207,20 +209,20 @@ export async function bulkApprovePayments(
           result.failure_count++;
           result.errors.push({
             payment_id: paymentId,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error.message : "Unknown error",
           });
         }
       }
-      
+
       // Report progress
       const processed = Math.min(endIdx, paymentIds.length);
       if (onProgress) {
         onProgress(processed, paymentIds.length);
       }
-      
+
       // Small delay between batches for large operations
       if (isLargeSelection && batchIndex < totalBatches - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
   } else {
@@ -238,12 +240,12 @@ export async function bulkApprovePayments(
           result.failure_count++;
           result.errors.push({
             payment_id: paymentId,
-            error: 'Payment not found',
+            error: "Payment not found",
           });
           continue;
         }
 
-        if (payment.status !== 'under_review') {
+        if (payment.status !== "under_review") {
           result.failure_count++;
           result.errors.push({
             payment_id: paymentId,
@@ -259,10 +261,10 @@ export async function bulkApprovePayments(
         result.failure_count++;
         result.errors.push({
           payment_id: paymentId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
-      
+
       // Report progress for small selections too
       if (onProgress) {
         const processed = result.success_count + result.failure_count;
@@ -276,7 +278,7 @@ export async function bulkApprovePayments(
 
 /**
  * Export selected payments to CSV
- * 
+ *
  * @param paymentIds - Array of payment UUIDs to export
  * @returns CSV content as Blob
  * @throws Error if database query fails
@@ -284,11 +286,13 @@ export async function bulkApprovePayments(
 export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
   const { data: payments, error } = await supabase
     .from("manual_payments")
-    .select(`
+    .select(
+      `
       *,
       payment_method:admin_payment_methods(name),
       profiles!manual_payments_user_id_fkey(full_name, email)
-    `)
+    `
+    )
     .in("id", paymentIds);
 
   if (error) {
@@ -297,45 +301,45 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
 
   // Create CSV header
   const headers = [
-    'Número de Referência',
-    'Cliente',
-    'Email',
-    'Valor',
-    'Moeda',
-    'Método de Pagamento',
-    'Status',
-    'Data de Criação',
-    'Tipo de Pagamento',
+    "Número de Referência",
+    "Cliente",
+    "Email",
+    "Valor",
+    "Moeda",
+    "Método de Pagamento",
+    "Status",
+    "Data de Criação",
+    "Tipo de Pagamento",
   ];
 
   // Create CSV rows
-  const rows = (payments || []).map(payment => [
+  const rows = (payments || []).map((payment) => [
     payment.reference_number,
-    payment.profiles?.full_name || '',
-    payment.profiles?.email || '',
+    payment.profiles?.full_name || "",
+    payment.profiles?.email || "",
     payment.amount.toString(),
     payment.currency,
-    payment.payment_method?.name || '',
+    payment.payment_method?.name || "",
     payment.status,
-    new Date(payment.created_at).toLocaleDateString('pt-BR'),
-    payment.payment_type === 'one_time' ? 'Única' : 'Recorrente',
+    new Date(payment.created_at).toLocaleDateString("pt-BR"),
+    payment.payment_type === "one_time" ? "Única" : "Recorrente",
   ]);
 
   // Combine header and rows
   const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-  ].join('\n');
+    headers.join(","),
+    ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+  ].join("\n");
 
   // Create Blob
-  return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  return new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 }
 
 /**
  * Send bulk message to selected payments
  * Posts message to each payment's support conversation
  * Implements async processing for large selections (>10 items)
- * 
+ *
  * @param paymentIds - Array of payment UUIDs
  * @param message - Message to send
  * @param adminId - Admin user ID
@@ -356,21 +360,21 @@ export async function bulkSendMessage(
   };
 
   // Import conversation service
-  const { sendMessage } = await import('./conversation-service');
+  const { sendMessage } = await import("./conversation-service");
 
   // For large selections (>10 items), process in batches
   const BATCH_SIZE = 5;
   const isLargeSelection = paymentIds.length > 10;
-  
+
   if (isLargeSelection) {
     // Process in batches for better performance and user feedback
     const totalBatches = Math.ceil(paymentIds.length / BATCH_SIZE);
-    
+
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
       const startIdx = batchIndex * BATCH_SIZE;
       const endIdx = Math.min(startIdx + BATCH_SIZE, paymentIds.length);
       const batch = paymentIds.slice(startIdx, endIdx);
-      
+
       // Process current batch
       for (const paymentId of batch) {
         try {
@@ -385,7 +389,7 @@ export async function bulkSendMessage(
             result.failure_count++;
             result.errors.push({
               payment_id: paymentId,
-              error: 'No conversation found for this payment',
+              error: "No conversation found for this payment",
             });
             continue;
           }
@@ -397,20 +401,20 @@ export async function bulkSendMessage(
           result.failure_count++;
           result.errors.push({
             payment_id: paymentId,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error.message : "Unknown error",
           });
         }
       }
-      
+
       // Report progress
       const processed = Math.min(endIdx, paymentIds.length);
       if (onProgress) {
         onProgress(processed, paymentIds.length);
       }
-      
+
       // Small delay between batches for large operations
       if (isLargeSelection && batchIndex < totalBatches - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
   } else {
@@ -428,7 +432,7 @@ export async function bulkSendMessage(
           result.failure_count++;
           result.errors.push({
             payment_id: paymentId,
-            error: 'No conversation found for this payment',
+            error: "No conversation found for this payment",
           });
           continue;
         }
@@ -440,10 +444,10 @@ export async function bulkSendMessage(
         result.failure_count++;
         result.errors.push({
           payment_id: paymentId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
-      
+
       // Report progress for small selections too
       if (onProgress) {
         const processed = result.success_count + result.failure_count;
@@ -459,7 +463,7 @@ export async function bulkSendMessage(
  * Start async bulk approve operation
  * Creates a bulk operation record and returns immediately
  * The operation will be processed asynchronously
- * 
+ *
  * @param paymentIds - Array of payment UUIDs to approve
  * @param adminId - Admin user ID
  * @returns Bulk operation ID for tracking
@@ -473,12 +477,12 @@ export async function startAsyncBulkApprove(
   const { data, error } = await supabase
     .from("bulk_operations")
     .insert({
-      operation_type: 'approve',
+      operation_type: "approve",
       payment_ids: paymentIds,
       admin_id: adminId,
-      status: 'pending'
+      status: "pending",
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
@@ -486,7 +490,7 @@ export async function startAsyncBulkApprove(
   }
 
   // Start processing in background (non-blocking)
-  processBulkApproveAsync(data.id).catch(error => {
+  processBulkApproveAsync(data.id).catch((error) => {
     console.error(`Async bulk approve failed for operation ${data.id}:`, error);
   });
 
@@ -497,7 +501,7 @@ export async function startAsyncBulkApprove(
  * Start async bulk message operation
  * Creates a bulk operation record and returns immediately
  * The operation will be processed asynchronously
- * 
+ *
  * @param paymentIds - Array of payment UUIDs
  * @param message - Message to send
  * @param adminId - Admin user ID
@@ -513,13 +517,13 @@ export async function startAsyncBulkMessage(
   const { data, error } = await supabase
     .from("bulk_operations")
     .insert({
-      operation_type: 'message',
+      operation_type: "message",
       payment_ids: paymentIds,
       admin_id: adminId,
       message: message,
-      status: 'pending'
+      status: "pending",
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
@@ -527,7 +531,7 @@ export async function startAsyncBulkMessage(
   }
 
   // Start processing in background (non-blocking)
-  processBulkMessageAsync(data.id).catch(error => {
+  processBulkMessageAsync(data.id).catch((error) => {
     console.error(`Async bulk message failed for operation ${data.id}:`, error);
   });
 
@@ -538,26 +542,23 @@ export async function startAsyncBulkMessage(
  * Start async bulk export operation
  * Creates a bulk operation record and returns immediately
  * The operation will be processed asynchronously
- * 
+ *
  * @param paymentIds - Array of payment UUIDs to export
  * @param adminId - Admin user ID
  * @returns Bulk operation ID for tracking
  * @throws Error if database operation fails
  */
-export async function startAsyncBulkExport(
-  paymentIds: string[],
-  adminId: string
-): Promise<string> {
+export async function startAsyncBulkExport(paymentIds: string[], adminId: string): Promise<string> {
   // Create bulk operation record
   const { data, error } = await supabase
     .from("bulk_operations")
     .insert({
-      operation_type: 'export',
+      operation_type: "export",
       payment_ids: paymentIds,
       admin_id: adminId,
-      status: 'pending'
+      status: "pending",
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
@@ -565,7 +566,7 @@ export async function startAsyncBulkExport(
   }
 
   // Start processing in background (non-blocking)
-  processBulkExportAsync(data.id).catch(error => {
+  processBulkExportAsync(data.id).catch((error) => {
     console.error(`Async bulk export failed for operation ${data.id}:`, error);
   });
 
@@ -574,7 +575,7 @@ export async function startAsyncBulkExport(
 
 /**
  * Get bulk operation status
- * 
+ *
  * @param operationId - Bulk operation ID
  * @returns Bulk operation status and results
  * @throws Error if database query fails
@@ -582,8 +583,8 @@ export async function startAsyncBulkExport(
 export async function getBulkOperationStatus(operationId: string): Promise<any> {
   const { data, error } = await supabase
     .from("bulk_operations")
-    .select('*')
-    .eq('id', operationId)
+    .select("*")
+    .eq("id", operationId)
     .single();
 
   if (error) {
@@ -596,7 +597,7 @@ export async function getBulkOperationStatus(operationId: string): Promise<any> 
 /**
  * Process bulk approve operation asynchronously
  * Internal function - called by startAsyncBulkApprove
- * 
+ *
  * @param operationId - Bulk operation ID
  */
 async function processBulkApproveAsync(operationId: string): Promise<void> {
@@ -604,8 +605,8 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
     // Get operation details
     const { data: operation } = await supabase
       .from("bulk_operations")
-      .select('*')
-      .eq('id', operationId)
+      .select("*")
+      .eq("id", operationId)
       .single();
 
     if (!operation) {
@@ -616,10 +617,10 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'processing',
-        started_at: new Date().toISOString()
+        status: "processing",
+        started_at: new Date().toISOString(),
       })
-      .eq('id', operationId);
+      .eq("id", operationId);
 
     const paymentIds = operation.payment_ids as string[];
     const adminId = operation.admin_id;
@@ -630,7 +631,7 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
     };
 
     // Import payment service for approval
-    const { approvePayment } = await import('./payment-service');
+    const { approvePayment } = await import("./payment-service");
 
     // Process in batches
     const BATCH_SIZE = 10;
@@ -655,12 +656,12 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
             result.failure_count++;
             result.errors.push({
               payment_id: paymentId,
-              error: 'Payment not found',
+              error: "Payment not found",
             });
             continue;
           }
 
-          if (payment.status !== 'under_review') {
+          if (payment.status !== "under_review") {
             result.failure_count++;
             result.errors.push({
               payment_id: paymentId,
@@ -676,7 +677,7 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
           result.failure_count++;
           result.errors.push({
             payment_id: paymentId,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error.message : "Unknown error",
           });
         }
       }
@@ -688,14 +689,14 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
           .update({
             success_count: result.success_count,
             failure_count: result.failure_count,
-            errors: result.errors
+            errors: result.errors,
           })
-          .eq('id', operationId);
+          .eq("id", operationId);
       }
 
       // Small delay between batches
       if (batchIndex < totalBatches - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
@@ -703,31 +704,30 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'completed',
+        status: "completed",
         completed_at: new Date().toISOString(),
         success_count: result.success_count,
         failure_count: result.failure_count,
-        errors: result.errors
+        errors: result.errors,
       })
-      .eq('id', operationId);
-
+      .eq("id", operationId);
   } catch (error) {
     // Mark as failed
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'failed',
+        status: "failed",
         completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : 'Unknown error' }]
+        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
-      .eq('id', operationId);
+      .eq("id", operationId);
   }
 }
 
 /**
  * Process bulk message operation asynchronously
  * Internal function - called by startAsyncBulkMessage
- * 
+ *
  * @param operationId - Bulk operation ID
  */
 async function processBulkMessageAsync(operationId: string): Promise<void> {
@@ -735,8 +735,8 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
     // Get operation details
     const { data: operation } = await supabase
       .from("bulk_operations")
-      .select('*')
-      .eq('id', operationId)
+      .select("*")
+      .eq("id", operationId)
       .single();
 
     if (!operation) {
@@ -747,10 +747,10 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'processing',
-        started_at: new Date().toISOString()
+        status: "processing",
+        started_at: new Date().toISOString(),
       })
-      .eq('id', operationId);
+      .eq("id", operationId);
 
     const paymentIds = operation.payment_ids as string[];
     const adminId = operation.admin_id;
@@ -762,7 +762,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
     };
 
     // Import conversation service
-    const { sendMessage } = await import('./conversation-service');
+    const { sendMessage } = await import("./conversation-service");
 
     // Process in batches
     const BATCH_SIZE = 10;
@@ -787,7 +787,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
             result.failure_count++;
             result.errors.push({
               payment_id: paymentId,
-              error: 'No conversation found for this payment',
+              error: "No conversation found for this payment",
             });
             continue;
           }
@@ -799,7 +799,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
           result.failure_count++;
           result.errors.push({
             payment_id: paymentId,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error.message : "Unknown error",
           });
         }
       }
@@ -811,14 +811,14 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
           .update({
             success_count: result.success_count,
             failure_count: result.failure_count,
-            errors: result.errors
+            errors: result.errors,
           })
-          .eq('id', operationId);
+          .eq("id", operationId);
       }
 
       // Small delay between batches
       if (batchIndex < totalBatches - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
@@ -826,31 +826,30 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'completed',
+        status: "completed",
         completed_at: new Date().toISOString(),
         success_count: result.success_count,
         failure_count: result.failure_count,
-        errors: result.errors
+        errors: result.errors,
       })
-      .eq('id', operationId);
-
+      .eq("id", operationId);
   } catch (error) {
     // Mark as failed
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'failed',
+        status: "failed",
         completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : 'Unknown error' }]
+        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
-      .eq('id', operationId);
+      .eq("id", operationId);
   }
 }
 
 /**
  * Process bulk export operation asynchronously
  * Internal function - called by startAsyncBulkExport
- * 
+ *
  * @param operationId - Bulk operation ID
  */
 async function processBulkExportAsync(operationId: string): Promise<void> {
@@ -858,8 +857,8 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
     // Get operation details
     const { data: operation } = await supabase
       .from("bulk_operations")
-      .select('*')
-      .eq('id', operationId)
+      .select("*")
+      .eq("id", operationId)
       .single();
 
     if (!operation) {
@@ -870,25 +869,25 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'processing',
-        started_at: new Date().toISOString()
+        status: "processing",
+        started_at: new Date().toISOString(),
       })
-      .eq('id', operationId);
+      .eq("id", operationId);
 
     const paymentIds = operation.payment_ids as string[];
 
     // Generate CSV
     const csvBlob = await exportPaymentsToCSV(paymentIds);
-    
+
     // Upload to Supabase Storage
     const fileName = `export-${operationId}-${Date.now()}.csv`;
     const filePath = `bulk-exports/${fileName}`;
-    
+
     const { error: uploadError } = await supabase.storage
-      .from('payment-proofs')
+      .from("payment-proofs")
       .upload(filePath, csvBlob, {
-        contentType: 'text/csv',
-        upsert: true
+        contentType: "text/csv",
+        upsert: true,
       });
 
     if (uploadError) {
@@ -897,31 +896,30 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
 
     // Get signed URL
     const { data: urlData } = await supabase.storage
-      .from('payment-proofs')
+      .from("payment-proofs")
       .createSignedUrl(filePath, 3600); // 1 hour expiration
 
     // Mark as completed
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'completed',
+        status: "completed",
         completed_at: new Date().toISOString(),
         success_count: paymentIds.length,
         failure_count: 0,
         export_file_path: filePath,
-        export_file_url: urlData?.signedUrl
+        export_file_url: urlData?.signedUrl,
       })
-      .eq('id', operationId);
-
+      .eq("id", operationId);
   } catch (error) {
     // Mark as failed
     await supabase
       .from("bulk_operations")
       .update({
-        status: 'failed',
+        status: "failed",
         completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : 'Unknown error' }]
+        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
-      .eq('id', operationId);
+      .eq("id", operationId);
   }
 }

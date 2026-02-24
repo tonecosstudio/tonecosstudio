@@ -14,14 +14,13 @@ export function useForYouModels(params: {
 
   const preferenceTags = useMemo(() => {
     const tags = (Array.isArray(profilePreferenceTags) ? profilePreferenceTags : []) as unknown[];
-    return new Set(
-      (tags ?? [])
-        .map((t) => String(t).trim().toLocaleLowerCase())
-        .filter(Boolean),
-    );
+    return new Set((tags ?? []).map((t) => String(t).trim().toLocaleLowerCase()).filter(Boolean));
   }, [profilePreferenceTags]);
 
-  const preferenceTagKey = useMemo(() => Array.from(preferenceTags).sort().join("|"), [preferenceTags]);
+  const preferenceTagKey = useMemo(
+    () => Array.from(preferenceTags).sort().join("|"),
+    [preferenceTags]
+  );
 
   const query = useQuery({
     queryKey: ["models_for_you", { userId: userId ?? null, preferenceTagKey }],

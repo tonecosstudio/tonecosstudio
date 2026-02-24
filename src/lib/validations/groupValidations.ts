@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { GroupType, MembershipCriteria } from '@/types/groups';
+import { supabase } from "@/integrations/supabase/client";
+import type { GroupType, MembershipCriteria } from "@/types/groups";
 
 /**
  * Additional validation utilities for chat groups system
@@ -15,24 +15,24 @@ export async function validateCollectionExists(
 ): Promise<{ valid: boolean; error?: string }> {
   try {
     const { data, error } = await supabase
-      .from('collections')
-      .select('id')
-      .eq('id', collectionId)
+      .from("collections")
+      .select("id")
+      .eq("id", collectionId)
       .single();
 
     if (error || !data) {
       return {
         valid: false,
-        error: 'Coleção não encontrada',
+        error: "Coleção não encontrada",
       };
     }
 
     return { valid: true };
   } catch (error) {
-    console.error('Error validating collection:', error);
+    console.error("Error validating collection:", error);
     return {
       valid: false,
-      error: 'Erro ao validar coleção',
+      error: "Erro ao validar coleção",
     };
   }
 }
@@ -45,25 +45,21 @@ export async function validateUserExists(
   userId: string
 ): Promise<{ valid: boolean; error?: string }> {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single();
+    const { data, error } = await supabase.from("profiles").select("id").eq("id", userId).single();
 
     if (error || !data) {
       return {
         valid: false,
-        error: 'Usuário não encontrado',
+        error: "Usuário não encontrado",
       };
     }
 
     return { valid: true };
   } catch (error) {
-    console.error('Error validating user:', error);
+    console.error("Error validating user:", error);
     return {
       valid: false,
-      error: 'Erro ao validar usuário',
+      error: "Erro ao validar usuário",
     };
   }
 }
@@ -76,14 +72,14 @@ export function validateGroupName(name: string): { valid: boolean; error?: strin
   if (!name || name.trim().length < 3) {
     return {
       valid: false,
-      error: 'Nome do grupo deve ter pelo menos 3 caracteres',
+      error: "Nome do grupo deve ter pelo menos 3 caracteres",
     };
   }
 
   if (name.length > 100) {
     return {
       valid: false,
-      error: 'Nome do grupo deve ter no máximo 100 caracteres',
+      error: "Nome do grupo deve ter no máximo 100 caracteres",
     };
   }
 
@@ -98,14 +94,14 @@ export function validateMessage(message: string): { valid: boolean; error?: stri
   if (!message || message.trim().length < 1) {
     return {
       valid: false,
-      error: 'Mensagem não pode estar vazia',
+      error: "Mensagem não pode estar vazia",
     };
   }
 
   if (message.length > 5000) {
     return {
       valid: false,
-      error: 'Mensagem não pode ter mais de 5000 caracteres',
+      error: "Mensagem não pode ter mais de 5000 caracteres",
     };
   }
 
@@ -117,12 +113,12 @@ export function validateMessage(message: string): { valid: boolean; error?: stri
  * Requirements: 1.4
  */
 export function validateGroupType(type: string): { valid: boolean; error?: string } {
-  const validTypes: GroupType[] = ['manual', 'assinantes', 'colecao', 'lancamentos', 'pedidos'];
+  const validTypes: GroupType[] = ["manual", "assinantes", "colecao", "lancamentos", "pedidos"];
 
   if (!validTypes.includes(type as GroupType)) {
     return {
       valid: false,
-      error: 'Tipo de grupo inválido',
+      error: "Tipo de grupo inválido",
     };
   }
 
@@ -138,26 +134,26 @@ export function validateMembershipCriteria(
   criteria: MembershipCriteria
 ): { valid: boolean; error?: string } {
   // Manual groups should not have criteria
-  if (type === 'manual' && criteria !== null) {
+  if (type === "manual" && criteria !== null) {
     return {
       valid: false,
-      error: 'Grupos manuais não devem ter critérios de associação',
+      error: "Grupos manuais não devem ter critérios de associação",
     };
   }
 
   // Non-manual groups should have criteria
-  if (type !== 'manual' && !criteria) {
+  if (type !== "manual" && !criteria) {
     return {
       valid: false,
-      error: 'Grupos automáticos devem ter critérios de associação',
+      error: "Grupos automáticos devem ter critérios de associação",
     };
   }
 
   // Validate collection groups have collectionId
-  if (type === 'colecao' && criteria?.type === 'colecao' && !criteria.collectionId) {
+  if (type === "colecao" && criteria?.type === "colecao" && !criteria.collectionId) {
     return {
       valid: false,
-      error: 'Grupos de coleção devem especificar um ID de coleção',
+      error: "Grupos de coleção devem especificar um ID de coleção",
     };
   }
 
@@ -173,40 +169,36 @@ export async function validateGroupNameUnique(
   excludeGroupId?: string
 ): Promise<{ valid: boolean; error?: string }> {
   try {
-    let query = supabase
-      .from('chat_groups')
-      .select('id')
-      .eq('name', name)
-      .is('deleted_at', null);
+    let query = supabase.from("chat_groups").select("id").eq("name", name).is("deleted_at", null);
 
     if (excludeGroupId) {
-      query = query.neq('id', excludeGroupId);
+      query = query.neq("id", excludeGroupId);
     }
 
     const { data, error } = await query.single();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error && error.code !== "PGRST116") {
       // PGRST116 = no rows returned (which is what we want)
-      console.error('Error checking group name uniqueness:', error);
+      console.error("Error checking group name uniqueness:", error);
       return {
         valid: false,
-        error: 'Erro ao validar nome do grupo',
+        error: "Erro ao validar nome do grupo",
       };
     }
 
     if (data) {
       return {
         valid: false,
-        error: 'Já existe um grupo com este nome',
+        error: "Já existe um grupo com este nome",
       };
     }
 
     return { valid: true };
   } catch (error) {
-    console.error('Error validating group name uniqueness:', error);
+    console.error("Error validating group name uniqueness:", error);
     return {
       valid: false,
-      error: 'Erro ao validar nome do grupo',
+      error: "Erro ao validar nome do grupo",
     };
   }
 }
@@ -218,28 +210,28 @@ export async function validateGroupNameUnique(
 export function validateAttachment(file: File): { valid: boolean; error?: string } {
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const ALLOWED_TYPES = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ];
 
   if (file.size > MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: 'Arquivo muito grande. Tamanho máximo: 10MB',
+      error: "Arquivo muito grande. Tamanho máximo: 10MB",
     };
   }
 
   if (!ALLOWED_TYPES.includes(file.type)) {
     return {
       valid: false,
-      error: 'Tipo de arquivo não permitido',
+      error: "Tipo de arquivo não permitido",
     };
   }
 

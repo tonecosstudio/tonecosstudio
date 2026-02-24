@@ -1,6 +1,6 @@
 /**
  * Testes simplificados para o hook usePaymentRealtime
- * 
+ *
  * Requirements: 16.1-16.15
  */
 
@@ -50,10 +50,10 @@ describe("usePaymentRealtime", () => {
   it("deve criar um canal de realtime com configurações corretas", () => {
     // Este é um teste de unidade simples que verifica a lógica do hook
     // sem renderizar o componente React
-    
+
     // Verificar se o Supabase.channel é chamado com o nome correto
     expect(supabase.channel).toHaveBeenCalled();
-    
+
     // O hook deve configurar o canal com postgres_changes
     expect(mockChannel.on).toHaveBeenCalledWith(
       "postgres_changes",
@@ -67,11 +67,11 @@ describe("usePaymentRealtime", () => {
 
   it("deve aplicar filtros quando fornecidos", () => {
     const paymentId = "test-payment-id";
-    
+
     // O hook deve ser capaz de criar um canal com filtro
     // Esta é uma verificação da lógica de construção do filtro
     const expectedFilter = `id=eq.${paymentId}`;
-    
+
     // Verificar se o hook configuraria o filtro corretamente
     // (esta é uma verificação conceitual, não execução real)
     expect(true).toBe(true); // Placeholder para lógica real
@@ -80,30 +80,30 @@ describe("usePaymentRealtime", () => {
   it("deve implementar backoff exponencial para reconexão", () => {
     // Verificar se a lógica de backoff está implementada
     // O hook deve calcular delays crescentes para reconexão
-    
+
     const baseDelay = 1000;
     const backoffFactor = 2;
     const maxDelay = 30000;
-    
+
     // Testar cálculo de delay
     const calculateDelay = (attempt: number): number => {
       const delay = baseDelay * Math.pow(backoffFactor, attempt);
       return Math.min(delay, maxDelay);
     };
-    
-    expect(calculateDelay(0)).toBe(1000);    // Primeira tentativa: 1s
-    expect(calculateDelay(1)).toBe(2000);    // Segunda tentativa: 2s  
-    expect(calculateDelay(2)).toBe(4000);    // Terceira tentativa: 4s
-    expect(calculateDelay(10)).toBe(30000);  // Máximo: 30s
+
+    expect(calculateDelay(0)).toBe(1000); // Primeira tentativa: 1s
+    expect(calculateDelay(1)).toBe(2000); // Segunda tentativa: 2s
+    expect(calculateDelay(2)).toBe(4000); // Terceira tentativa: 4s
+    expect(calculateDelay(10)).toBe(30000); // Máximo: 30s
   });
 
   it("deve lidar com múltiplos eventos", () => {
     // O hook deve suportar assinatura de múltiplos eventos
     const events = ["INSERT", "UPDATE", "DELETE"];
-    
+
     // Verificar se a lógica de construção de eventos está correta
     const eventsString = events.join(",");
-    
+
     expect(eventsString).toBe("INSERT,UPDATE,DELETE");
     expect(events.includes("*")).toBe(false);
   });
@@ -114,27 +114,27 @@ describe("usePaymentRealtime", () => {
     const paymentId = "test-payment-id";
     const userId = "test-user-id";
     const status = ["pending", "under_review"];
-    
+
     if (paymentId) {
       filters.push(`id=eq.${paymentId}`);
     }
-    
+
     if (userId) {
       filters.push(`user_id=eq.${userId}`);
     }
-    
+
     if (status) {
       const statusArray = Array.isArray(status) ? status : [status];
       if (statusArray.length === 1) {
         filters.push(`status=eq.${statusArray[0]}`);
       } else {
-        const statusConditions = statusArray.map(s => `status=eq.${s}`).join(",");
+        const statusConditions = statusArray.map((s) => `status=eq.${s}`).join(",");
         filters.push(`or(${statusConditions})`);
       }
     }
-    
+
     const filter = filters.join(",");
-    
+
     // Verificar construção do filtro
     if (paymentId && userId && status) {
       expect(filter).toContain(`id=eq.${paymentId}`);
@@ -147,7 +147,7 @@ describe("usePaymentRealtime", () => {
 describe("Realtime Hooks Implementation", () => {
   it("deve atender aos requisitos 16.1-16.15", () => {
     // Verificar se todos os requisitos são atendidos
-    
+
     const requirements = {
       "16.1": "Usar Supabase Realtime subscriptions",
       "16.2": "Broadcast de mudanças de status",
@@ -165,7 +165,7 @@ describe("Realtime Hooks Implementation", () => {
       "16.14": "Backoff exponencial para reconexão",
       "16.15": "Debounce para evitar UI thrashing",
     };
-    
+
     // Verificar implementação dos recursos
     const implementedFeatures = {
       "16.1": true, // usePaymentRealtime e useConversationRealtime
@@ -184,9 +184,9 @@ describe("Realtime Hooks Implementation", () => {
       "16.14": true, // Backoff exponencial implementado
       "16.15": true, // Debounce pode ser implementado no callback
     };
-    
+
     // Verificar se todos os requisitos estão implementados
-    const allImplemented = Object.values(implementedFeatures).every(v => v === true);
+    const allImplemented = Object.values(implementedFeatures).every((v) => v === true);
     expect(allImplemented).toBe(true);
   });
 });

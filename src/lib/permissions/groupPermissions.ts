@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Permission validation utilities for chat groups system
@@ -12,24 +12,24 @@ import { supabase } from '@/integrations/supabase/client';
 export async function isAdmin(userId?: string): Promise<boolean> {
   try {
     const uid = userId || (await supabase.auth.getUser()).data.user?.id;
-    
+
     if (!uid) {
       return false;
     }
 
     const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', uid)
+      .from("profiles")
+      .select("role")
+      .eq("id", uid)
       .single();
 
     if (error || !profile) {
       return false;
     }
 
-    return profile.role === 'admin';
+    return profile.role === "admin";
   } catch (error) {
-    console.error('Error checking admin status:', error);
+    console.error("Error checking admin status:", error);
     return false;
   }
 }
@@ -38,22 +38,19 @@ export async function isAdmin(userId?: string): Promise<boolean> {
  * Checks if a user is a member of a specific group
  * Requirements: 18.3
  */
-export async function isGroupMember(
-  groupId: string,
-  userId?: string
-): Promise<boolean> {
+export async function isGroupMember(groupId: string, userId?: string): Promise<boolean> {
   try {
     const uid = userId || (await supabase.auth.getUser()).data.user?.id;
-    
+
     if (!uid) {
       return false;
     }
 
     const { data, error } = await supabase
-      .from('chat_group_members')
-      .select('id')
-      .eq('group_id', groupId)
-      .eq('user_id', uid)
+      .from("chat_group_members")
+      .select("id")
+      .eq("group_id", groupId)
+      .eq("user_id", uid)
       .maybeSingle(); // Mudado de .single() para .maybeSingle() para evitar erro 406
 
     if (error || !data) {
@@ -62,7 +59,7 @@ export async function isGroupMember(
 
     return true;
   } catch (error) {
-    console.error('Error checking group membership:', error);
+    console.error("Error checking group membership:", error);
     return false;
   }
 }
@@ -71,13 +68,10 @@ export async function isGroupMember(
  * Checks if a user can manage a group (admin only)
  * Requirements: 18.2, 18.4
  */
-export async function canManageGroup(
-  groupId: string,
-  userId?: string
-): Promise<boolean> {
+export async function canManageGroup(groupId: string, userId?: string): Promise<boolean> {
   try {
     const uid = userId || (await supabase.auth.getUser()).data.user?.id;
-    
+
     if (!uid) {
       return false;
     }
@@ -85,7 +79,7 @@ export async function canManageGroup(
     // Only admins can manage groups
     return await isAdmin(uid);
   } catch (error) {
-    console.error('Error checking group management permission:', error);
+    console.error("Error checking group management permission:", error);
     return false;
   }
 }
@@ -94,13 +88,10 @@ export async function canManageGroup(
  * Checks if a user can send messages to a group (admin only)
  * Requirements: 18.2
  */
-export async function canSendGroupMessage(
-  groupId: string,
-  userId?: string
-): Promise<boolean> {
+export async function canSendGroupMessage(groupId: string, userId?: string): Promise<boolean> {
   try {
     const uid = userId || (await supabase.auth.getUser()).data.user?.id;
-    
+
     if (!uid) {
       return false;
     }
@@ -108,7 +99,7 @@ export async function canSendGroupMessage(
     // Only admins can send broadcast messages
     return await isAdmin(uid);
   } catch (error) {
-    console.error('Error checking message send permission:', error);
+    console.error("Error checking message send permission:", error);
     return false;
   }
 }
@@ -117,13 +108,10 @@ export async function canSendGroupMessage(
  * Checks if a user can view messages in a group (member or admin)
  * Requirements: 18.3
  */
-export async function canViewGroupMessages(
-  groupId: string,
-  userId?: string
-): Promise<boolean> {
+export async function canViewGroupMessages(groupId: string, userId?: string): Promise<boolean> {
   try {
     const uid = userId || (await supabase.auth.getUser()).data.user?.id;
-    
+
     if (!uid) {
       return false;
     }
@@ -136,7 +124,7 @@ export async function canViewGroupMessages(
 
     return await isGroupMember(groupId, uid);
   } catch (error) {
-    console.error('Error checking message view permission:', error);
+    console.error("Error checking message view permission:", error);
     return false;
   }
 }
@@ -145,13 +133,10 @@ export async function canViewGroupMessages(
  * Checks if a user can delete a group (admin only)
  * Requirements: 18.4
  */
-export async function canDeleteGroup(
-  groupId: string,
-  userId?: string
-): Promise<boolean> {
+export async function canDeleteGroup(groupId: string, userId?: string): Promise<boolean> {
   try {
     const uid = userId || (await supabase.auth.getUser()).data.user?.id;
-    
+
     if (!uid) {
       return false;
     }
@@ -159,7 +144,7 @@ export async function canDeleteGroup(
     // Only admins can delete groups
     return await isAdmin(uid);
   } catch (error) {
-    console.error('Error checking group delete permission:', error);
+    console.error("Error checking group delete permission:", error);
     return false;
   }
 }
@@ -171,7 +156,7 @@ export async function canDeleteGroup(
 export async function requireAdmin(userId?: string): Promise<void> {
   const admin = await isAdmin(userId);
   if (!admin) {
-    throw new Error('Acesso negado: apenas administradores podem realizar esta ação');
+    throw new Error("Acesso negado: apenas administradores podem realizar esta ação");
   }
 }
 
@@ -179,13 +164,10 @@ export async function requireAdmin(userId?: string): Promise<void> {
  * Throws an error if the user is not a member of the group
  * Requirements: 18.3
  */
-export async function requireGroupMember(
-  groupId: string,
-  userId?: string
-): Promise<void> {
+export async function requireGroupMember(groupId: string, userId?: string): Promise<void> {
   const member = await isGroupMember(groupId, userId);
   if (!member) {
-    throw new Error('Acesso negado: você não é membro deste grupo');
+    throw new Error("Acesso negado: você não é membro deste grupo");
   }
 }
 
@@ -193,12 +175,9 @@ export async function requireGroupMember(
  * Throws an error if the user cannot manage the group
  * Requirements: 18.2, 18.4
  */
-export async function requireGroupManagement(
-  groupId: string,
-  userId?: string
-): Promise<void> {
+export async function requireGroupManagement(groupId: string, userId?: string): Promise<void> {
   const canManage = await canManageGroup(groupId, userId);
   if (!canManage) {
-    throw new Error('Acesso negado: você não tem permissão para gerenciar este grupo');
+    throw new Error("Acesso negado: você não tem permissão para gerenciar este grupo");
   }
 }

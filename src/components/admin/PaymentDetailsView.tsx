@@ -1,6 +1,6 @@
 /**
  * PaymentDetailsView Component
- * 
+ *
  * Admin view for displaying detailed payment information including:
  * - Payment information (reference, customer, amount, method, status)
  * - Payment history timeline with status changes
@@ -9,28 +9,22 @@
  * - Image gallery for proof images with thumbnails
  * - PDF viewer/download for PDF proofs
  * - Audit log with admin actions
- * 
+ *
  * Requirements: 6.1-6.10
  * Task: 13.1 Criar componente PaymentDetailsView
  */
 
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/hooks/use-toast';
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 import {
   Eye,
   Download,
@@ -54,11 +48,11 @@ import {
   Shield,
   Package,
   Receipt,
-} from 'lucide-react';
-import type { PaymentDetails, PaymentFile, PaymentAuditLog } from '@/types/manual-payment';
-import { getPaymentById } from '@/lib/payment-service';
-import { fileUploadService } from '@/lib/file-upload-service';
-import { PaymentActionButtons } from './PaymentActionButtons';
+} from "lucide-react";
+import type { PaymentDetails, PaymentFile, PaymentAuditLog } from "@/types/manual-payment";
+import { getPaymentById } from "@/lib/payment-service";
+import { fileUploadService } from "@/lib/file-upload-service";
+import { PaymentActionButtons } from "./PaymentActionButtons";
 
 interface PaymentDetailsViewProps {
   paymentId: string;
@@ -67,7 +61,7 @@ interface PaymentDetailsViewProps {
 }
 
 export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: PaymentDetailsViewProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [pdfUrls, setPdfUrls] = useState<Record<string, string>>({});
@@ -79,7 +73,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
     error,
     refetch,
   } = useQuery({
-    queryKey: ['payment-details', paymentId],
+    queryKey: ["payment-details", paymentId],
     queryFn: () => getPaymentById(paymentId),
     enabled: !!paymentId,
   });
@@ -94,9 +88,9 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
         for (const file of payment.files) {
           try {
             const url = await fileUploadService.getSignedUrl(file.file_path, 3600); // 1 hour expiration
-            if (file.file_type.startsWith('image/')) {
+            if (file.file_type.startsWith("image/")) {
               newImageUrls[file.id] = url;
-            } else if (file.file_type === 'application/pdf') {
+            } else if (file.file_type === "application/pdf") {
               newPdfUrls[file.id] = url;
             }
           } catch (error) {
@@ -115,68 +109,68 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
   // Get status badge configuration
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return {
-          variant: 'outline' as const,
+          variant: "outline" as const,
           icon: <Clock className="h-4 w-4" />,
-          label: 'Pendente',
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-50',
+          label: "Pendente",
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-50",
         };
-      case 'under_review':
+      case "under_review":
         return {
-          variant: 'secondary' as const,
+          variant: "secondary" as const,
           icon: <Eye className="h-4 w-4" />,
-          label: 'Em Revisão',
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-50',
+          label: "Em Revisão",
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
         };
-      case 'requires_info':
+      case "requires_info":
         return {
-          variant: 'destructive' as const,
+          variant: "destructive" as const,
           icon: <AlertCircle className="h-4 w-4" />,
-          label: 'Precisa de Informações',
-          color: 'text-orange-600',
-          bgColor: 'bg-orange-50',
+          label: "Precisa de Informações",
+          color: "text-orange-600",
+          bgColor: "bg-orange-50",
         };
-      case 'approved':
+      case "approved":
         return {
-          variant: 'default' as const,
+          variant: "default" as const,
           icon: <CheckCircle className="h-4 w-4" />,
-          label: 'Aprovado',
-          color: 'text-green-600',
-          bgColor: 'bg-green-50',
+          label: "Aprovado",
+          color: "text-green-600",
+          bgColor: "bg-green-50",
         };
-      case 'rejected':
+      case "rejected":
         return {
-          variant: 'destructive' as const,
+          variant: "destructive" as const,
           icon: <XCircle className="h-4 w-4" />,
-          label: 'Rejeitado',
-          color: 'text-red-600',
-          bgColor: 'bg-red-50',
+          label: "Rejeitado",
+          color: "text-red-600",
+          bgColor: "bg-red-50",
         };
       default:
         return {
-          variant: 'outline' as const,
+          variant: "outline" as const,
           icon: null,
           label: status,
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-50',
+          color: "text-gray-600",
+          bgColor: "bg-gray-50",
         };
     }
   };
 
   // Format currency
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency || 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: currency || "BRL",
     }).format(amount);
   };
 
   // Format date
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
   };
 
   // Format date for timeline
@@ -187,18 +181,18 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
   // Get action label for audit log
   const getActionLabel = (action: string) => {
     switch (action) {
-      case 'created':
-        return 'Pagamento criado';
-      case 'status_changed':
-        return 'Status alterado';
-      case 'file_uploaded':
-        return 'Comprovante enviado';
-      case 'approved':
-        return 'Pagamento aprovado';
-      case 'rejected':
-        return 'Pagamento rejeitado';
-      case 'info_requested':
-        return 'Informações solicitadas';
+      case "created":
+        return "Pagamento criado";
+      case "status_changed":
+        return "Status alterado";
+      case "file_uploaded":
+        return "Comprovante enviado";
+      case "approved":
+        return "Pagamento aprovado";
+      case "rejected":
+        return "Pagamento rejeitado";
+      case "info_requested":
+        return "Informações solicitadas";
       default:
         return action;
     }
@@ -208,15 +202,15 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
   const handleDownloadFile = async (file: PaymentFile) => {
     try {
       let url: string;
-      if (file.file_type.startsWith('image/') && imageUrls[file.id]) {
+      if (file.file_type.startsWith("image/") && imageUrls[file.id]) {
         url = imageUrls[file.id];
-      } else if (file.file_type === 'application/pdf' && pdfUrls[file.id]) {
+      } else if (file.file_type === "application/pdf" && pdfUrls[file.id]) {
         url = pdfUrls[file.id];
       } else {
         url = await fileUploadService.getSignedUrl(file.file_path, 3600);
       }
 
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = file.file_name;
       document.body.appendChild(a);
@@ -224,15 +218,15 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
       document.body.removeChild(a);
 
       toast({
-        title: 'Download iniciado',
+        title: "Download iniciado",
         description: `Arquivo "${file.file_name}" está sendo baixado.`,
       });
     } catch (error) {
-      console.error('Failed to download file:', error);
+      console.error("Failed to download file:", error);
       toast({
-        title: 'Erro no download',
-        description: 'Não foi possível baixar o arquivo. Tente novamente.',
-        variant: 'destructive',
+        title: "Erro no download",
+        description: "Não foi possível baixar o arquivo. Tente novamente.",
+        variant: "destructive",
       });
     }
   };
@@ -258,27 +252,15 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
           <div className="rounded-md bg-red-50 p-4">
             <div className="flex">
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Erro ao carregar pagamento
-                </h3>
+                <h3 className="text-sm font-medium text-red-800">Erro ao carregar pagamento</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>{error.message}</p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => refetch()}
-                >
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
                   Tentar novamente
                 </Button>
                 {onBack && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-2 ml-2"
-                    onClick={onBack}
-                  >
+                  <Button variant="ghost" size="sm" className="mt-2 ml-2" onClick={onBack}>
                     Voltar
                   </Button>
                 )}
@@ -316,10 +298,10 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
   }
 
   const statusConfig = getStatusConfig(payment.status);
-  const imageFiles = payment.files.filter(file => file.file_type.startsWith('image/'));
-  const pdfFiles = payment.files.filter(file => file.file_type === 'application/pdf');
-  const sortedAuditLogs = [...payment.audit_logs].sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  const imageFiles = payment.files.filter((file) => file.file_type.startsWith("image/"));
+  const pdfFiles = payment.files.filter((file) => file.file_type === "application/pdf");
+  const sortedAuditLogs = [...payment.audit_logs].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
   return (
@@ -342,13 +324,11 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                 {statusConfig.icon}
                 {statusConfig.label}
               </Badge>
-              <span className="text-sm text-muted-foreground">
-                {payment.reference_number}
-              </span>
+              <span className="text-sm text-muted-foreground">{payment.reference_number}</span>
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <PaymentActionButtons
             paymentId={paymentId}
@@ -386,7 +366,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                   </div>
                   <div className="font-medium">{payment.reference_number}</div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
@@ -394,37 +374,35 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                   </div>
                   <div className="font-medium">{formatDate(payment.created_at)}</div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <User className="h-4 w-4" />
                     <span>Cliente</span>
                   </div>
                   <div className="font-medium">
-                    {payment.customer_name || 'Não disponível'}
+                    {payment.customer_name || "Não disponível"}
                     {payment.customer_email && (
-                      <div className="text-sm text-muted-foreground">
-                        {payment.customer_email}
-                      </div>
+                      <div className="text-sm text-muted-foreground">{payment.customer_email}</div>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CreditCard className="h-4 w-4" />
                     <span>Método de Pagamento</span>
                   </div>
                   <div className="font-medium">
-                    {payment.payment_method?.name || 'Não disponível'}
+                    {payment.payment_method?.name || "Não disponível"}
                     {payment.payment_method?.type && (
                       <div className="text-sm text-muted-foreground capitalize">
-                        {payment.payment_method.type.replace('_', ' ')}
+                        {payment.payment_method.type.replace("_", " ")}
                       </div>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <DollarSign className="h-4 w-4" />
@@ -434,14 +412,14 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                     {formatCurrency(payment.amount, payment.currency)}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Receipt className="h-4 w-4" />
                     <span>Tipo de Pagamento</span>
                   </div>
                   <div className="font-medium capitalize">
-                    {payment.payment_type === 'one_time' ? 'Pagamento Único' : 'Recorrente'}
+                    {payment.payment_type === "one_time" ? "Pagamento Único" : "Recorrente"}
                   </div>
                 </div>
               </div>
@@ -455,7 +433,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <Package className="h-4 w-4" />
                       <span>
-                        {payment.quote_id ? 'Orçamento Vinculado' : 'Assinatura Vinculada'}
+                        {payment.quote_id ? "Orçamento Vinculado" : "Assinatura Vinculada"}
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
@@ -463,7 +441,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                     </div>
                     <Button variant="outline" size="sm">
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Ver {payment.quote_id ? 'Orçamento' : 'Assinatura'}
+                      Ver {payment.quote_id ? "Orçamento" : "Assinatura"}
                     </Button>
                   </div>
                   <Separator />
@@ -604,7 +582,8 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                             <div>
                               <div className="font-medium">{file.file_name}</div>
                               <div className="text-sm text-muted-foreground">
-                                {(file.file_size / 1024 / 1024).toFixed(2)} MB • Enviado em {formatDate(file.created_at)}
+                                {(file.file_size / 1024 / 1024).toFixed(2)} MB • Enviado em{" "}
+                                {formatDate(file.created_at)}
                               </div>
                             </div>
                           </div>
@@ -618,11 +597,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                               Baixar
                             </Button>
                             {pdfUrls[file.id] && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                              >
+                              <Button variant="outline" size="sm" asChild>
                                 <a
                                   href={pdfUrls[file.id]}
                                   target="_blank"
@@ -671,55 +646,55 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                   <div className="relative">
                     {/* Timeline line */}
                     <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-muted" />
-                    
+
                     {/* Timeline items */}
                     <div className="space-y-8">
                       {sortedAuditLogs.map((log, index) => {
-                        const isStatusChange = log.action_type === 'status_changed';
-                        const isFileUpload = log.action_type === 'file_uploaded';
-                        const isApproval = log.action_type === 'approved';
-                        const isRejection = log.action_type === 'rejected';
-                        
+                        const isStatusChange = log.action_type === "status_changed";
+                        const isFileUpload = log.action_type === "file_uploaded";
+                        const isApproval = log.action_type === "approved";
+                        const isRejection = log.action_type === "rejected";
+
                         let icon = <Clock className="h-4 w-4" />;
-                        let bgColor = 'bg-gray-100';
-                        let textColor = 'text-gray-600';
-                        
+                        let bgColor = "bg-gray-100";
+                        let textColor = "text-gray-600";
+
                         if (isStatusChange) {
                           icon = <History className="h-4 w-4" />;
-                          bgColor = 'bg-blue-100';
-                          textColor = 'text-blue-600';
+                          bgColor = "bg-blue-100";
+                          textColor = "text-blue-600";
                         } else if (isFileUpload) {
                           icon = <File className="h-4 w-4" />;
-                          bgColor = 'bg-green-100';
-                          textColor = 'text-green-600';
+                          bgColor = "bg-green-100";
+                          textColor = "text-green-600";
                         } else if (isApproval) {
                           icon = <CheckCircle className="h-4 w-4" />;
-                          bgColor = 'bg-green-100';
-                          textColor = 'text-green-600';
+                          bgColor = "bg-green-100";
+                          textColor = "text-green-600";
                         } else if (isRejection) {
                           icon = <XCircle className="h-4 w-4" />;
-                          bgColor = 'bg-red-100';
-                          textColor = 'text-red-600';
+                          bgColor = "bg-red-100";
+                          textColor = "text-red-600";
                         }
-                        
+
                         return (
                           <div key={log.id} className="relative flex items-start">
                             {/* Timeline dot */}
-                            <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full ${bgColor} ${textColor}`}>
+                            <div
+                              className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full ${bgColor} ${textColor}`}
+                            >
                               {icon}
                             </div>
-                            
+
                             {/* Content */}
                             <div className="ml-6 flex-1">
                               <div className="flex items-center justify-between">
-                                <h4 className="font-medium">
-                                  {getActionLabel(log.action_type)}
-                                </h4>
+                                <h4 className="font-medium">{getActionLabel(log.action_type)}</h4>
                                 <span className="text-sm text-muted-foreground">
                                   {formatTimelineDate(log.created_at)}
                                 </span>
                               </div>
-                              
+
                               {isStatusChange && log.old_status && log.new_status && (
                                 <div className="mt-2 flex items-center gap-2">
                                   <Badge variant="outline" className="text-xs">
@@ -731,7 +706,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                                   </Badge>
                                 </div>
                               )}
-                              
+
                               {log.notes && (
                                 <div className="mt-2 text-sm text-muted-foreground bg-muted p-3 rounded-md">
                                   {log.notes}
@@ -765,9 +740,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                       <div key={log.id} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {getActionLabel(log.action_type)}
-                            </Badge>
+                            <Badge variant="outline">{getActionLabel(log.action_type)}</Badge>
                             {log.admin_id && (
                               <span className="text-sm text-muted-foreground">
                                 por Admin ID: {log.admin_id}
@@ -778,7 +751,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                             {formatDate(log.created_at)}
                           </span>
                         </div>
-                        
+
                         {(log.old_status || log.new_status) && (
                           <div className="mt-2 flex items-center gap-2">
                             {log.old_status && (
@@ -799,18 +772,16 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                             )}
                           </div>
                         )}
-                        
+
                         {log.notes && (
                           <div className="mt-2">
                             <div className="text-sm font-medium">Notas:</div>
-                            <div className="text-sm text-muted-foreground mt-1">
-                              {log.notes}
-                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">{log.notes}</div>
                           </div>
                         )}
                       </div>
                     ))}
-                    
+
                     {sortedAuditLogs.length === 0 && (
                       <div className="text-center py-8">
                         <Shield className="h-12 w-12 mx-auto text-muted-foreground" />
@@ -837,9 +808,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                   <MessageSquare className="h-5 w-5" />
                   Conversa de Suporte
                 </CardTitle>
-                <CardDescription>
-                  Comunicação relacionada a este pagamento
-                </CardDescription>
+                <CardDescription>Comunicação relacionada a este pagamento</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -869,7 +838,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
           )}
 
           {/* Rejection Reason */}
-          {payment.status === 'rejected' && payment.rejection_reason && (
+          {payment.status === "rejected" && payment.rejection_reason && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-600">
@@ -886,7 +855,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
           )}
 
           {/* Approval Info */}
-          {payment.status === 'approved' && payment.approved_at && (
+          {payment.status === "approved" && payment.approved_at && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-600">

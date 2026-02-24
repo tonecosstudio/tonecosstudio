@@ -3,7 +3,7 @@ import { useEffect, useCallback } from "react";
 /**
  * Hook para navegação por teclado
  * Facilita a implementação de atalhos de teclado
- * 
+ *
  * @example
  * useKeyboardNavigation({
  *   "Escape": () => closeModal(),
@@ -39,7 +39,7 @@ export function useKeyboardNavigation(
 
 /**
  * Hook para atalhos com modificadores (Ctrl, Shift, Alt)
- * 
+ *
  * @example
  * useKeyboardShortcut("s", () => save(), { ctrl: true });
  * useKeyboardShortcut("k", () => openSearch(), { ctrl: true, shift: true });
@@ -81,10 +81,10 @@ export function useKeyboardShortcut(
 /**
  * Hook para trap de foco (útil em modals)
  * Mantém o foco dentro de um elemento
- * 
+ *
  * @example
  * const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
- * 
+ *
  * return (
  *   <div ref={modalRef}>
  *     <input />
@@ -139,15 +139,15 @@ export function useFocusTrap<T extends HTMLElement>(enabled: boolean = true) {
 
 /**
  * Hook para restaurar foco ao fechar modal
- * 
+ *
  * @example
  * const restoreFocus = useRestoreFocus();
- * 
+ *
  * function openModal() {
  *   restoreFocus.save();
  *   setIsOpen(true);
  * }
- * 
+ *
  * function closeModal() {
  *   setIsOpen(false);
  *   restoreFocus.restore();

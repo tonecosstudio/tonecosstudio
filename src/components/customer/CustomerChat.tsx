@@ -12,14 +12,14 @@ import { toast } from "sonner";
 
 /**
  * CustomerChat Component
- * 
+ *
  * Provides a chat interface for customers to communicate with support.
  * Features:
  * - Floating button with unread count badge
  * - Side panel chat interface
  * - Load user's conversations
  * - Send messages and attachments
- * 
+ *
  * Requirements: 14.1, 14.3, 14.6
  */
 export function CustomerChat() {
@@ -33,7 +33,9 @@ export function CustomerChat() {
   // Get current user
   useEffect(() => {
     const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
       }
@@ -49,9 +51,9 @@ export function CustomerChat() {
       try {
         setLoading(true);
         const data = await conversationService.listConversations({});
-        
+
         // Filter to only show user's conversations
-        const userConversations = data.filter(conv => conv.user_id === userId);
+        const userConversations = data.filter((conv) => conv.user_id === userId);
         setConversations(userConversations);
 
         // Select first conversation if available
@@ -106,9 +108,7 @@ export function CustomerChat() {
           } else if (payload.eventType === "UPDATE") {
             const updatedConv = payload.new as Conversation;
             setConversations((prev) =>
-              prev.map((conv) =>
-                conv.id === updatedConv.id ? updatedConv : conv
-              )
+              prev.map((conv) => (conv.id === updatedConv.id ? updatedConv : conv))
             );
           }
         }
@@ -124,8 +124,8 @@ export function CustomerChat() {
   useEffect(() => {
     if (!userId || conversations.length === 0) return;
 
-    const conversationIds = conversations.map(c => c.id);
-    
+    const conversationIds = conversations.map((c) => c.id);
+
     const channel = supabase
       .channel("customer_messages")
       .on(
@@ -137,7 +137,7 @@ export function CustomerChat() {
         },
         async (payload) => {
           const message = payload.new as any;
-          
+
           // Only count if message is in user's conversations and from admin/system
           if (
             conversationIds.includes(message.conversation_id) &&
@@ -162,18 +162,18 @@ export function CustomerChat() {
     const handleNewConversation = (event: CustomEvent) => {
       const { conversation } = event.detail;
       console.log("Nova conversa criada:", conversation);
-      
+
       // Adicionar nova conversa à lista
-      setConversations(prev => [conversation, ...prev]);
-      
+      setConversations((prev) => [conversation, ...prev]);
+
       // Selecionar a nova conversa
       setSelectedConversationId(conversation.id);
     };
 
-    window.addEventListener('newConversationCreated', handleNewConversation as EventListener);
+    window.addEventListener("newConversationCreated", handleNewConversation as EventListener);
 
     return () => {
-      window.removeEventListener('newConversationCreated', handleNewConversation as EventListener);
+      window.removeEventListener("newConversationCreated", handleNewConversation as EventListener);
     };
   }, []);
 
@@ -220,11 +220,13 @@ export function CustomerChat() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SheetTitle>Suporte</SheetTitle>
-                {selectedConversationId && conversations.find(c => c.id === selectedConversationId)?.status === 'closed' && (
-                  <Badge variant="secondary" className="text-xs">
-                    Encerrado
-                  </Badge>
-                )}
+                {selectedConversationId &&
+                  conversations.find((c) => c.id === selectedConversationId)?.status ===
+                    "closed" && (
+                    <Badge variant="secondary" className="text-xs">
+                      Encerrado
+                    </Badge>
+                  )}
               </div>
               <div className="flex items-center gap-2">
                 {/* Botão Nova Conversa sempre visível */}
@@ -235,14 +237,14 @@ export function CustomerChat() {
                     onClick={async () => {
                       try {
                         if (!userId) return;
-                        
+
                         const newConversation = await conversationService.createConversation({
                           user_id: userId,
                           subject: "Nova Solicitação",
                           status: "new",
                         });
 
-                        setConversations(prev => [newConversation, ...prev]);
+                        setConversations((prev) => [newConversation, ...prev]);
                         setSelectedConversationId(newConversation.id);
                         toast.success("Nova conversa iniciada!");
                       } catch (error) {
@@ -254,11 +256,7 @@ export function CustomerChat() {
                     + Nova
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleClose}
-                >
+                <Button variant="ghost" size="icon" onClick={handleClose}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -273,9 +271,7 @@ export function CustomerChat() {
             <div className="flex-1 flex items-center justify-center p-4">
               <div className="text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground mb-2">
-                  Você ainda não tem conversas.
-                </p>
+                <p className="text-muted-foreground mb-2">Você ainda não tem conversas.</p>
                 <p className="text-sm text-muted-foreground mb-4">
                   Precisa de ajuda? Inicie uma conversa com nosso suporte.
                 </p>
@@ -283,7 +279,7 @@ export function CustomerChat() {
                   onClick={async () => {
                     try {
                       if (!userId) return;
-                      
+
                       const newConversation = await conversationService.createConversation({
                         user_id: userId,
                         subject: "Nova Solicitação",
@@ -306,7 +302,7 @@ export function CustomerChat() {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Single conversation header with new conversation button */}
-              {conversations.length === 1 && conversations[0].status === 'closed' && (
+              {conversations.length === 1 && conversations[0].status === "closed" && (
                 <div className="border-b p-2">
                   <Button
                     variant="outline"
@@ -315,14 +311,14 @@ export function CustomerChat() {
                     onClick={async () => {
                       try {
                         if (!userId) return;
-                        
+
                         const newConversation = await conversationService.createConversation({
                           user_id: userId,
                           subject: "Nova Solicitação",
                           status: "new",
                         });
 
-                        setConversations(prev => [newConversation, ...prev]);
+                        setConversations((prev) => [newConversation, ...prev]);
                         setSelectedConversationId(newConversation.id);
                         toast.success("Nova conversa iniciada!");
                       } catch (error) {
@@ -347,7 +343,7 @@ export function CustomerChat() {
                     {conversations.map((conv) => (
                       <option key={conv.id} value={conv.id}>
                         {conv.subject}
-                        {conv.status === 'closed' ? ' (Encerrado)' : ''}
+                        {conv.status === "closed" ? " (Encerrado)" : ""}
                       </option>
                     ))}
                   </select>
@@ -358,14 +354,14 @@ export function CustomerChat() {
                     onClick={async () => {
                       try {
                         if (!userId) return;
-                        
+
                         const newConversation = await conversationService.createConversation({
                           user_id: userId,
                           subject: "Nova Solicitação",
                           status: "new",
                         });
 
-                        setConversations(prev => [newConversation, ...prev]);
+                        setConversations((prev) => [newConversation, ...prev]);
                         setSelectedConversationId(newConversation.id);
                         toast.success("Nova conversa iniciada!");
                       } catch (error) {
@@ -382,17 +378,23 @@ export function CustomerChat() {
               {/* Messages and Input */}
               {selectedConversationId && (
                 <>
-                  <CustomerMessageList 
+                  <CustomerMessageList
                     conversationId={selectedConversationId}
                     currentUserId={userId}
                     currentUserName="Cliente"
-                    isClosed={conversations.find(c => c.id === selectedConversationId)?.status === 'closed'}
+                    isClosed={
+                      conversations.find((c) => c.id === selectedConversationId)?.status ===
+                      "closed"
+                    }
                   />
-                  <CustomerMessageInput 
+                  <CustomerMessageInput
                     conversationId={selectedConversationId}
                     currentUserId={userId}
                     currentUserName="Cliente"
-                    isClosed={conversations.find(c => c.id === selectedConversationId)?.status === 'closed'}
+                    isClosed={
+                      conversations.find((c) => c.id === selectedConversationId)?.status ===
+                      "closed"
+                    }
                   />
                 </>
               )}

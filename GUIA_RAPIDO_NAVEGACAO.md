@@ -5,11 +5,13 @@
 ## 📍 Começando
 
 ### Primeiro Acesso
+
 1. 📖 Leia [`README.md`](README.md) - Visão geral do projeto
 2. 🚀 Siga [`docs/getting-started.md`](docs/getting-started.md) - Setup inicial
 3. 🗺️ Explore [`docs/README.md`](docs/README.md) - Índice completo
 
 ### Setup Rápido
+
 ```bash
 # 1. Instalar dependências
 npm install
@@ -25,6 +27,7 @@ npm run dev
 ## 📚 Documentação por Necessidade
 
 ### "Preciso entender o sistema"
+
 - 🏗️ **Arquitetura**: [`docs/architecture.md`](docs/architecture.md)
 - 💬 **Chat**: [`docs/features/chat-system.md`](docs/features/chat-system.md)
 - 💰 **Pagamentos**: [`docs/features/payment-system.md`](docs/features/payment-system.md)
@@ -33,23 +36,27 @@ npm run dev
 - 👨‍💼 **Admin**: [`docs/features/admin-panel.md`](docs/features/admin-panel.md)
 
 ### "Preciso desenvolver"
+
 - ⚙️ **Setup**: [`docs/development/setup.md`](docs/development/setup.md)
 - 🎨 **Code Style**: [`docs/development/code-style.md`](docs/development/code-style.md)
 - 🧪 **Testes**: [`docs/development/testing.md`](docs/development/testing.md)
 - 🔧 **Troubleshooting**: [`docs/development/troubleshooting.md`](docs/development/troubleshooting.md)
 
 ### "Preciso usar a API"
+
 - ⚡ **Edge Functions**: [`docs/api/edge-functions.md`](docs/api/edge-functions.md)
 - 🗄️ **Database**: [`docs/api/database-schema.md`](docs/api/database-schema.md)
 - 🔄 **Realtime**: [`docs/api/realtime.md`](docs/api/realtime.md)
 
 ### "Preciso fazer deploy"
+
 - 🚀 **Deploy**: [`docs/deployment.md`](docs/deployment.md)
 - 📜 **Scripts**: [`scripts/deployment/`](scripts/deployment/)
 
 ## 🛠️ Scripts por Tarefa
 
 ### Deploy
+
 ```bash
 # Ver scripts disponíveis
 ls scripts/deployment/
@@ -65,6 +72,7 @@ scripts/deployment/aplicar-migrations.bat
 ```
 
 ### Testes
+
 ```bash
 # Ver scripts disponíveis
 ls scripts/testing/
@@ -77,6 +85,7 @@ scripts/testing/testar-sistema-chat.bat
 ```
 
 ### Development
+
 ```bash
 # Ver scripts disponíveis
 ls scripts/development/
@@ -89,6 +98,7 @@ scripts/development/reiniciar-dev.bat
 ```
 
 ### Database
+
 ```bash
 # Ver scripts disponíveis
 ls scripts/database/
@@ -106,49 +116,58 @@ ls scripts/database/utilities/
 ## 🔍 Encontrando Informações
 
 ### Por Funcionalidade
-| Funcionalidade | Documento |
-|----------------|-----------|
-| Chat e Suporte | [`docs/features/chat-system.md`](docs/features/chat-system.md) |
-| Pagamentos | [`docs/features/payment-system.md`](docs/features/payment-system.md) |
-| Assinaturas | [`docs/features/subscription-system.md`](docs/features/subscription-system.md) |
-| Coleções | [`docs/features/collections-system.md`](docs/features/collections-system.md) |
-| Painel Admin | [`docs/features/admin-panel.md`](docs/features/admin-panel.md) |
+
+| Funcionalidade | Documento                                                                      |
+| -------------- | ------------------------------------------------------------------------------ |
+| Chat e Suporte | [`docs/features/chat-system.md`](docs/features/chat-system.md)                 |
+| Pagamentos     | [`docs/features/payment-system.md`](docs/features/payment-system.md)           |
+| Assinaturas    | [`docs/features/subscription-system.md`](docs/features/subscription-system.md) |
+| Coleções       | [`docs/features/collections-system.md`](docs/features/collections-system.md)   |
+| Painel Admin   | [`docs/features/admin-panel.md`](docs/features/admin-panel.md)                 |
 
 ### Por Tipo de Trabalho
-| Tarefa | Documento |
-|--------|-----------|
-| Configurar ambiente | [`docs/development/setup.md`](docs/development/setup.md) |
-| Escrever código | [`docs/development/code-style.md`](docs/development/code-style.md) |
-| Criar testes | [`docs/development/testing.md`](docs/development/testing.md) |
-| Resolver problemas | [`docs/development/troubleshooting.md`](docs/development/troubleshooting.md) |
-| Fazer deploy | [`docs/deployment.md`](docs/deployment.md) |
+
+| Tarefa              | Documento                                                                    |
+| ------------------- | ---------------------------------------------------------------------------- |
+| Configurar ambiente | [`docs/development/setup.md`](docs/development/setup.md)                     |
+| Escrever código     | [`docs/development/code-style.md`](docs/development/code-style.md)           |
+| Criar testes        | [`docs/development/testing.md`](docs/development/testing.md)                 |
+| Resolver problemas  | [`docs/development/troubleshooting.md`](docs/development/troubleshooting.md) |
+| Fazer deploy        | [`docs/deployment.md`](docs/deployment.md)                                   |
 
 ### Por Tecnologia
-| Tecnologia | Documento |
-|------------|-----------|
-| Edge Functions | [`docs/api/edge-functions.md`](docs/api/edge-functions.md) |
-| Supabase Database | [`docs/api/database-schema.md`](docs/api/database-schema.md) |
-| Realtime | [`docs/api/realtime.md`](docs/api/realtime.md) |
+
+| Tecnologia         | Documento                                                          |
+| ------------------ | ------------------------------------------------------------------ |
+| Edge Functions     | [`docs/api/edge-functions.md`](docs/api/edge-functions.md)         |
+| Supabase Database  | [`docs/api/database-schema.md`](docs/api/database-schema.md)       |
+| Realtime           | [`docs/api/realtime.md`](docs/api/realtime.md)                     |
 | React + TypeScript | [`docs/development/code-style.md`](docs/development/code-style.md) |
 
 ## 🆘 Problemas Comuns
 
 ### Erro de Build
+
 👉 [`docs/development/troubleshooting.md#build`](docs/development/troubleshooting.md)
 
 ### Erro 406 (Database)
+
 👉 [`docs/development/troubleshooting.md#erro-406`](docs/development/troubleshooting.md)
 
 ### Erro 500 (Edge Functions)
+
 👉 [`docs/development/troubleshooting.md#erro-500`](docs/development/troubleshooting.md)
 
 ### Modal Vazio
+
 👉 [`docs/development/troubleshooting.md#modal-vazio`](docs/development/troubleshooting.md)
 
 ### Scroll Não Funciona
+
 👉 [`docs/development/troubleshooting.md#scroll`](docs/development/troubleshooting.md)
 
 ### Email Não Envia
+
 👉 [`docs/development/troubleshooting.md#email`](docs/development/troubleshooting.md)
 
 ## 📋 Comandos Mais Usados
@@ -205,6 +224,7 @@ ordax/
 ## 🎯 Fluxos de Trabalho
 
 ### Nova Feature
+
 1. Ler documentação da feature relacionada
 2. Seguir code style guide
 3. Escrever testes
@@ -213,6 +233,7 @@ ordax/
 6. Fazer PR
 
 ### Bug Fix
+
 1. Consultar troubleshooting
 2. Reproduzir o bug
 3. Escrever teste que falha
@@ -221,6 +242,7 @@ ordax/
 6. Fazer PR
 
 ### Deploy
+
 1. Seguir checklist de deploy
 2. Rodar testes
 3. Build de produção

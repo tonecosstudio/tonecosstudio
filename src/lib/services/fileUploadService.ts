@@ -99,10 +99,7 @@ export class FileUploadService {
   /**
    * Gera thumbnail para imagens (200x200px)
    */
-  async generateThumbnail(
-    file: File,
-    conversationId: string
-  ): Promise<string> {
+  async generateThumbnail(file: File, conversationId: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -228,9 +225,7 @@ export class FileUploadService {
       filesToDelete.push(attachment.thumbnail_path);
     }
 
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove(filesToDelete);
+    const { error: storageError } = await supabase.storage.from(BUCKET_NAME).remove(filesToDelete);
 
     if (storageError) {
       console.error("Erro ao deletar arquivos do storage:", storageError);

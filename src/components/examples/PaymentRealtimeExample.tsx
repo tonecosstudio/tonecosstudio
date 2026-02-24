@@ -1,28 +1,28 @@
 /**
  * PaymentRealtimeExample - Componente de exemplo para demonstrar o uso dos hooks de realtime
- * 
+ *
  * Este componente demonstra como usar os hooks usePaymentRealtime, useConversationRealtime
  * e usePaymentSystemRealtime em um cenário real.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Wifi, 
-  WifiOff, 
-  RefreshCw, 
-  Bell, 
-  MessageSquare, 
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  Bell,
+  MessageSquare,
   CreditCard,
   AlertCircle,
   CheckCircle,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 
 // Importar hooks de realtime
 import {
@@ -36,7 +36,7 @@ import {
   type ManualPayment,
   type PaymentStatus,
   type SupportMessage,
-} from '@/hooks/use-realtime';
+} from "@/hooks/use-realtime";
 
 interface PaymentRealtimeExampleProps {
   /** ID do pagamento para demonstrar assinatura específica */
@@ -44,31 +44,35 @@ interface PaymentRealtimeExampleProps {
   /** ID do usuário para demonstrar assinatura por usuário */
   userId?: string;
   /** Modo de demonstração: 'customer' ou 'admin' */
-  mode?: 'customer' | 'admin';
+  mode?: "customer" | "admin";
 }
 
 /**
  * Componente de exemplo para demonstrar hooks de realtime
  */
-export function PaymentRealtimeExample({ 
-  paymentId = 'demo-payment-id',
-  userId = 'demo-user-id',
-  mode = 'customer'
+export function PaymentRealtimeExample({
+  paymentId = "demo-payment-id",
+  userId = "demo-user-id",
+  mode = "customer",
 }: PaymentRealtimeExampleProps) {
-  const [paymentUpdates, setPaymentUpdates] = useState<Array<{
-    timestamp: Date;
-    event: string;
-    paymentId: string;
-    oldStatus?: PaymentStatus;
-    newStatus?: PaymentStatus;
-  }>>([]);
+  const [paymentUpdates, setPaymentUpdates] = useState<
+    Array<{
+      timestamp: Date;
+      event: string;
+      paymentId: string;
+      oldStatus?: PaymentStatus;
+      newStatus?: PaymentStatus;
+    }>
+  >([]);
 
-  const [messageUpdates, setMessageUpdates] = useState<Array<{
-    timestamp: Date;
-    conversationId: string;
-    message: string;
-    senderId: string;
-  }>>([]);
+  const [messageUpdates, setMessageUpdates] = useState<
+    Array<{
+      timestamp: Date;
+      conversationId: string;
+      message: string;
+      senderId: string;
+    }>
+  >([]);
 
   const [showConnectionDetails, setShowConnectionDetails] = useState(false);
 
@@ -76,16 +80,21 @@ export function PaymentRealtimeExample({
   const paymentStatusRealtime = usePaymentStatusRealtime(
     paymentId,
     (newStatus, oldStatus, payment) => {
-      setPaymentUpdates(prev => [{
-        timestamp: new Date(),
-        event: 'STATUS_CHANGE',
-        paymentId: payment.id,
-        oldStatus,
-        newStatus,
-      }, ...prev.slice(0, 9)]); // Manter apenas os últimos 10 updates
-      
+      setPaymentUpdates((prev) => [
+        {
+          timestamp: new Date(),
+          event: "STATUS_CHANGE",
+          paymentId: payment.id,
+          oldStatus,
+          newStatus,
+        },
+        ...prev.slice(0, 9),
+      ]); // Manter apenas os últimos 10 updates
+
       // Mostrar notificação (em um app real, isso seria um toast)
-      console.log(`Status do pagamento ${payment.reference_number} mudou: ${oldStatus} → ${newStatus}`);
+      console.log(
+        `Status do pagamento ${payment.reference_number} mudou: ${oldStatus} → ${newStatus}`
+      );
     }
   );
 
@@ -93,42 +102,48 @@ export function PaymentRealtimeExample({
   const conversationRealtime = useConversationMessagesRealtime(
     `conversation-for-${paymentId}`,
     (message) => {
-      setMessageUpdates(prev => [{
-        timestamp: new Date(),
-        conversationId: message.conversation_id,
-        message: message.message,
-        senderId: message.sender_id,
-      }, ...prev.slice(0, 9)]); // Manter apenas os últimos 10 updates
-      
-      console.log(`Nova mensagem na conversa ${message.conversation_id}: ${message.message.substring(0, 50)}...`);
+      setMessageUpdates((prev) => [
+        {
+          timestamp: new Date(),
+          conversationId: message.conversation_id,
+          message: message.message,
+          senderId: message.sender_id,
+        },
+        ...prev.slice(0, 9),
+      ]); // Manter apenas os últimos 10 updates
+
+      console.log(
+        `Nova mensagem na conversa ${message.conversation_id}: ${message.message.substring(0, 50)}...`
+      );
     }
   );
 
   // Hook 3: Hook combinado para dashboard admin ou visão do cliente
-  const dashboardRealtime = mode === 'admin' 
-    ? useAdminDashboardRealtime(
-        (payment) => {
-          console.log(`Novo pagamento criado: ${payment.reference_number}`);
-        },
-        (paymentId, newStatus, oldStatus) => {
-          console.log(`Pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
-        },
-        (message) => {
-          console.log(`Nova mensagem: ${message.message.substring(0, 50)}...`);
-        }
-      )
-    : useUserPaymentsRealtime(
-        userId,
-        (payment) => {
-          console.log(`Novo pagamento criado para você: ${payment.reference_number}`);
-        },
-        (paymentId, newStatus, oldStatus) => {
-          console.log(`Seu pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
-        },
-        (message) => {
-          console.log(`Nova mensagem na sua conversa: ${message.message.substring(0, 50)}...`);
-        }
-      );
+  const dashboardRealtime =
+    mode === "admin"
+      ? useAdminDashboardRealtime(
+          (payment) => {
+            console.log(`Novo pagamento criado: ${payment.reference_number}`);
+          },
+          (paymentId, newStatus, oldStatus) => {
+            console.log(`Pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
+          },
+          (message) => {
+            console.log(`Nova mensagem: ${message.message.substring(0, 50)}...`);
+          }
+        )
+      : useUserPaymentsRealtime(
+          userId,
+          (payment) => {
+            console.log(`Novo pagamento criado para você: ${payment.reference_number}`);
+          },
+          (paymentId, newStatus, oldStatus) => {
+            console.log(`Seu pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
+          },
+          (message) => {
+            console.log(`Nova mensagem na sua conversa: ${message.message.substring(0, 50)}...`);
+          }
+        );
 
   // Função para simular reconexão manual
   const handleManualReconnect = () => {
@@ -144,7 +159,8 @@ export function PaymentRealtimeExample({
 
   // Status da conexão
   const allConnected = paymentStatusRealtime.isConnected && conversationRealtime.isConnected;
-  const anyReconnecting = paymentStatusRealtime.isReconnecting || conversationRealtime.isReconnecting;
+  const anyReconnecting =
+    paymentStatusRealtime.isReconnecting || conversationRealtime.isReconnecting;
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -159,9 +175,9 @@ export function PaymentRealtimeExample({
               Demonstração dos hooks usePaymentRealtime e useConversationRealtime
             </CardDescription>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <Badge 
+            <Badge
               variant={allConnected ? "default" : "destructive"}
               className="flex items-center gap-1"
             >
@@ -177,7 +193,7 @@ export function PaymentRealtimeExample({
                 </>
               )}
             </Badge>
-            
+
             {anyReconnecting && (
               <Badge variant="outline" className="flex items-center gap-1">
                 <RefreshCw className="h-3 w-3 animate-spin" />
@@ -202,15 +218,19 @@ export function PaymentRealtimeExample({
                   {paymentStatusRealtime.isConnected ? "Ativo" : "Inativo"}
                 </Badge>
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
-                  <span className={paymentStatusRealtime.isConnected ? "text-green-600" : "text-red-600"}>
+                  <span
+                    className={
+                      paymentStatusRealtime.isConnected ? "text-green-600" : "text-red-600"
+                    }
+                  >
                     {paymentStatusRealtime.isConnected ? "Conectado" : "Desconectado"}
                   </span>
                 </div>
-                
+
                 {paymentStatusRealtime.error && (
                   <Alert variant="destructive" className="py-2">
                     <AlertCircle className="h-4 w-4" />
@@ -219,7 +239,7 @@ export function PaymentRealtimeExample({
                     </AlertDescription>
                   </Alert>
                 )}
-                
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tentativas:</span>
                   <span>{paymentStatusRealtime.retryCount}</span>
@@ -239,15 +259,17 @@ export function PaymentRealtimeExample({
                   {conversationRealtime.isConnected ? "Ativo" : "Inativo"}
                 </Badge>
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
-                  <span className={conversationRealtime.isConnected ? "text-green-600" : "text-red-600"}>
+                  <span
+                    className={conversationRealtime.isConnected ? "text-green-600" : "text-red-600"}
+                  >
                     {conversationRealtime.isConnected ? "Conectado" : "Desconectado"}
                   </span>
                 </div>
-                
+
                 {conversationRealtime.error && (
                   <Alert variant="destructive" className="py-2">
                     <AlertCircle className="h-4 w-4" />
@@ -256,7 +278,7 @@ export function PaymentRealtimeExample({
                     </AlertDescription>
                   </Alert>
                 )}
-                
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tentativas:</span>
                   <span>{conversationRealtime.retryCount}</span>
@@ -273,10 +295,10 @@ export function PaymentRealtimeExample({
               <Bell className="h-4 w-4" />
               Atualizações em Tempo Real
             </h3>
-            
+
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={handleManualReconnect}
                 disabled={anyReconnecting}
@@ -284,17 +306,13 @@ export function PaymentRealtimeExample({
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Reconectar
               </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleClearUpdates}
-              >
+
+              <Button variant="outline" size="sm" onClick={handleClearUpdates}>
                 Limpar
               </Button>
-              
-              <Button 
-                variant="ghost" 
+
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowConnectionDetails(!showConnectionDetails)}
               >
@@ -336,7 +354,7 @@ export function PaymentRealtimeExample({
               <CreditCard className="h-3 w-3" />
               Mudanças de Status de Pagamento ({paymentUpdates.length})
             </h4>
-            
+
             {paymentUpdates.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Nenhuma mudança de status recebida ainda.</p>
@@ -345,22 +363,24 @@ export function PaymentRealtimeExample({
             ) : (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {paymentUpdates.map((update, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="flex items-center justify-between p-3 bg-background border rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`
+                      <div
+                        className={`
                         p-2 rounded-full
-                        ${update.event === 'STATUS_CHANGE' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}
-                      `}>
-                        {update.event === 'STATUS_CHANGE' ? (
+                        ${update.event === "STATUS_CHANGE" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"}
+                      `}
+                      >
+                        {update.event === "STATUS_CHANGE" ? (
                           <RefreshCw className="h-4 w-4" />
                         ) : (
                           <Bell className="h-4 w-4" />
                         )}
                       </div>
-                      
+
                       <div>
                         <p className="font-medium text-sm">
                           Pagamento {update.paymentId.substring(0, 8)}...
@@ -370,7 +390,7 @@ export function PaymentRealtimeExample({
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {update.oldStatus && (
                         <Badge variant="outline" className="text-xs">
@@ -381,11 +401,16 @@ export function PaymentRealtimeExample({
                         <span className="text-muted-foreground">→</span>
                       )}
                       {update.newStatus && (
-                        <Badge variant={
-                          update.newStatus === 'approved' ? 'default' :
-                          update.newStatus === 'rejected' ? 'destructive' :
-                          'secondary'
-                        } className="text-xs">
+                        <Badge
+                          variant={
+                            update.newStatus === "approved"
+                              ? "default"
+                              : update.newStatus === "rejected"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                          className="text-xs"
+                        >
                           {update.newStatus}
                         </Badge>
                       )}
@@ -404,7 +429,7 @@ export function PaymentRealtimeExample({
               <MessageSquare className="h-3 w-3" />
               Novas Mensagens ({messageUpdates.length})
             </h4>
-            
+
             {messageUpdates.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Nenhuma nova mensagem recebida ainda.</p>
@@ -413,24 +438,20 @@ export function PaymentRealtimeExample({
             ) : (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {messageUpdates.map((update, index) => (
-                  <div 
-                    key={index}
-                    className="p-3 bg-background border rounded-lg"
-                  >
+                  <div key={index} className="p-3 bg-background border rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="font-medium text-sm">
                           Conversa {update.conversationId.substring(0, 8)}...
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {update.timestamp.toLocaleTimeString()} • Remetente: {update.senderId.substring(0, 8)}...
+                          {update.timestamp.toLocaleTimeString()} • Remetente:{" "}
+                          {update.senderId.substring(0, 8)}...
                         </p>
                       </div>
                     </div>
-                    
-                    <p className="text-sm line-clamp-2">
-                      {update.message}
-                    </p>
+
+                    <p className="text-sm line-clamp-2">{update.message}</p>
                   </div>
                 ))}
               </div>
@@ -446,16 +467,16 @@ export function PaymentRealtimeExample({
           </AlertTitle>
           <AlertDescription className="text-sm space-y-2">
             <p>
-              <strong>usePaymentRealtime:</strong> Assina mudanças na tabela manual_payments.
-              Use para atualizar dashboards em tempo real.
+              <strong>usePaymentRealtime:</strong> Assina mudanças na tabela manual_payments. Use
+              para atualizar dashboards em tempo real.
             </p>
             <p>
-              <strong>useConversationRealtime:</strong> Assina novas mensagens e atualizações.
-              Use para chats em tempo real.
+              <strong>useConversationRealtime:</strong> Assina novas mensagens e atualizações. Use
+              para chats em tempo real.
             </p>
             <p>
-              <strong>usePaymentSystemRealtime:</strong> Combina ambos os hooks para uma
-              experiência completa do sistema de pagamento.
+              <strong>usePaymentSystemRealtime:</strong> Combina ambos os hooks para uma experiência
+              completa do sistema de pagamento.
             </p>
           </AlertDescription>
         </Alert>

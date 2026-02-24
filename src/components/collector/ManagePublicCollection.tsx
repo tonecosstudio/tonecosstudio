@@ -5,9 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getPublicCollection, addToPublicCollection, removeFromPublicCollection, updateCollectionNotes } from "@/lib/collector";
+import {
+  getPublicCollection,
+  addToPublicCollection,
+  removeFromPublicCollection,
+  updateCollectionNotes,
+} from "@/lib/collector";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Edit2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +49,7 @@ export function ManagePublicCollection({ userId }: Props) {
         .select("id, name, image_path, image_bucket, franchise")
         .ilike("name", `%${searchQuery}%`)
         .limit(10);
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -103,9 +115,7 @@ export function ManagePublicCollection({ userId }: Props) {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Adicionar à Coleção Pública</DialogTitle>
-                <DialogDescription>
-                  Busque e adicione modelos que você possui
-                </DialogDescription>
+                <DialogDescription>Busque e adicione modelos que você possui</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -124,7 +134,9 @@ export function ManagePublicCollection({ userId }: Props) {
                 {availableModels.length > 0 && (
                   <div className="grid gap-3 max-h-96 overflow-y-auto">
                     {availableModels.map((model: any) => {
-                      const isInCollection = collection.some((item: any) => item.model_id === model.id);
+                      const isInCollection = collection.some(
+                        (item: any) => item.model_id === model.id
+                      );
                       const imageUrl = `${(supabase as any).supabaseUrl}/storage/v1/object/public/${model.image_bucket}/${model.image_path}`;
                       return (
                         <div
@@ -170,89 +182,89 @@ export function ManagePublicCollection({ userId }: Props) {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {collection.map((item: any) => {
-              const imageUrl = item.models ? `${(supabase as any).supabaseUrl}/storage/v1/object/public/${item.models.image_bucket}/${item.models.image_path}` : null;
+              const imageUrl = item.models
+                ? `${(supabase as any).supabaseUrl}/storage/v1/object/public/${item.models.image_bucket}/${item.models.image_path}`
+                : null;
               return (
-              <div key={item.id} className="border rounded-lg overflow-hidden">
-                <div className="aspect-square bg-muted relative">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={item.models?.name || 'Modelo'}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                      Sem imagem
-                    </div>
-                  )}
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => removeMutation.mutate(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="p-3 space-y-2">
-                  <div>
-                    <p className="font-medium text-sm line-clamp-2">
-                      {item.models?.name || "Sem nome"}
-                    </p>
-                    {item.models?.franchise && (
-                      <p className="text-xs text-muted-foreground">
-                        {item.models.franchise}
-                      </p>
-                    )}
-                  </div>
-                  {editingItem?.id === item.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={editingItem.notes}
-                        onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
-                        placeholder="Adicione uma nota..."
-                        className="text-xs min-h-[60px]"
-                        maxLength={200}
+                <div key={item.id} className="border rounded-lg overflow-hidden">
+                  <div className="aspect-square bg-muted relative">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={item.models?.name || "Modelo"}
+                        className="w-full h-full object-cover"
                       />
-                      <div className="flex gap-2">
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                        Sem imagem
+                      </div>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="absolute top-2 right-2 h-8 w-8"
+                      onClick={() => removeMutation.mutate(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <div>
+                      <p className="font-medium text-sm line-clamp-2">
+                        {item.models?.name || "Sem nome"}
+                      </p>
+                      {item.models?.franchise && (
+                        <p className="text-xs text-muted-foreground">{item.models.franchise}</p>
+                      )}
+                    </div>
+                    {editingItem?.id === item.id ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editingItem.notes}
+                          onChange={(e) =>
+                            setEditingItem({ ...editingItem, notes: e.target.value })
+                          }
+                          placeholder="Adicione uma nota..."
+                          className="text-xs min-h-[60px]"
+                          maxLength={200}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() =>
+                              updateNotesMutation.mutate({ id: item.id, notes: editingItem.notes })
+                            }
+                          >
+                            Salvar
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        {item.notes ? (
+                          <p className="text-xs text-muted-foreground italic flex-1 line-clamp-2">
+                            {item.notes}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground flex-1">Sem notas</p>
+                        )}
                         <Button
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => updateNotesMutation.mutate({ id: item.id, notes: editingItem.notes })}
-                        >
-                          Salvar
-                        </Button>
-                        <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
-                          onClick={() => setEditingItem(null)}
+                          className="h-6 w-6 flex-shrink-0"
+                          onClick={() => setEditingItem({ id: item.id, notes: item.notes || "" })}
                         >
-                          <X className="h-4 w-4" />
+                          <Edit2 className="h-3 w-3" />
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      {item.notes ? (
-                        <p className="text-xs text-muted-foreground italic flex-1 line-clamp-2">
-                          {item.notes}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground flex-1">Sem notas</p>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 flex-shrink-0"
-                        onClick={() => setEditingItem({ id: item.id, notes: item.notes || "" })}
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
+              );
             })}
           </div>
         )}

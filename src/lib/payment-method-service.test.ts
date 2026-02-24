@@ -1,6 +1,6 @@
 /**
  * Unit tests for PaymentMethodService
- * 
+ *
  * Tests cover:
  * - CRUD operations
  * - Validation logic
@@ -234,9 +234,7 @@ describe("PaymentMethodService", () => {
         is_active: true,
       };
 
-      await expect(createPaymentMethod(input)).rejects.toThrow(
-        "Payment method name is required"
-      );
+      await expect(createPaymentMethod(input)).rejects.toThrow("Payment method name is required");
     });
 
     it("should throw error if type is missing", async () => {
@@ -246,9 +244,7 @@ describe("PaymentMethodService", () => {
         is_active: true,
       };
 
-      await expect(createPaymentMethod(input)).rejects.toThrow(
-        "Payment method type is required"
-      );
+      await expect(createPaymentMethod(input)).rejects.toThrow("Payment method type is required");
     });
 
     it("should throw error if instructions are missing", async () => {
@@ -259,9 +255,7 @@ describe("PaymentMethodService", () => {
         is_active: true,
       };
 
-      await expect(createPaymentMethod(input)).rejects.toThrow(
-        "Payment instructions are required"
-      );
+      await expect(createPaymentMethod(input)).rejects.toThrow("Payment instructions are required");
     });
 
     it("should accept optional fields", async () => {
@@ -339,15 +333,15 @@ describe("PaymentMethodService", () => {
     });
 
     it("should throw error if name is empty", async () => {
-      await expect(
-        updatePaymentMethod("1", { name: "" })
-      ).rejects.toThrow("Payment method name cannot be empty");
+      await expect(updatePaymentMethod("1", { name: "" })).rejects.toThrow(
+        "Payment method name cannot be empty"
+      );
     });
 
     it("should throw error if instructions are empty", async () => {
-      await expect(
-        updatePaymentMethod("1", { instructions: "" })
-      ).rejects.toThrow("Payment instructions cannot be empty");
+      await expect(updatePaymentMethod("1", { instructions: "" })).rejects.toThrow(
+        "Payment instructions cannot be empty"
+      );
     });
   });
 

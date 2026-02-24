@@ -20,35 +20,39 @@ export function useAuth() {
     let initialLoadDone = false;
 
     // First, get the current session
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted && !initialLoadDone) {
-        initialLoadDone = true;
-        setState({ 
-          session: data.session ?? null, 
-          user: data.session?.user ?? null, 
-          isLoading: false 
-        });
-      }
-    }).catch(() => {
-      if (mounted && !initialLoadDone) {
-        initialLoadDone = true;
-        setState((s) => ({ ...s, isLoading: false }));
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (mounted && !initialLoadDone) {
+          initialLoadDone = true;
+          setState({
+            session: data.session ?? null,
+            user: data.session?.user ?? null,
+            isLoading: false,
+          });
+        }
+      })
+      .catch(() => {
+        if (mounted && !initialLoadDone) {
+          initialLoadDone = true;
+          setState((s) => ({ ...s, isLoading: false }));
+        }
+      });
 
     // Then, listen for auth changes
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted && initialLoadDone) {
         // Only update if values actually changed
-        setState(prev => {
+        setState((prev) => {
           const newUser = session?.user ?? null;
           const prevUser = prev.user;
-          
+
           // Check if user actually changed
-          const userChanged = newUser?.id !== prevUser?.id || 
-                             newUser?.email !== prevUser?.email ||
-                             newUser?.user_metadata !== prevUser?.user_metadata;
-          
+          const userChanged =
+            newUser?.id !== prevUser?.id ||
+            newUser?.email !== prevUser?.email ||
+            newUser?.user_metadata !== prevUser?.user_metadata;
+
           if (userChanged || session !== prev.session) {
             return { session, user: newUser, isLoading: false };
           }

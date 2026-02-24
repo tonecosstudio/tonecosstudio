@@ -1,82 +1,82 @@
 /**
  * PaymentListItem Example Component
- * 
+ *
  * Exemplo de uso do componente PaymentListItem em diferentes layouts.
- * 
+ *
  * Requirements: 5.1-5.10
  * Task: 12.2 Criar componente PaymentListItem
  */
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PaymentListItem, PaymentListItemCard } from './PaymentListItem';
-import type { PaymentListItem as PaymentListItemType } from '@/types/manual-payment';
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PaymentListItem, PaymentListItemCard } from "./PaymentListItem";
+import type { PaymentListItem as PaymentListItemType } from "@/types/manual-payment";
 
 // Mock data for examples
 const examplePayments: PaymentListItemType[] = [
   {
-    id: 'payment-001',
-    reference_number: 'PAY-20240215-0001',
-    customer_name: 'João Silva',
-    customer_email: 'joao.silva@example.com',
+    id: "payment-001",
+    reference_number: "PAY-20240215-0001",
+    customer_name: "João Silva",
+    customer_email: "joao.silva@example.com",
     amount: 150.75,
-    currency: 'BRL',
-    payment_method_name: 'PIX',
-    status: 'pending',
-    created_at: '2024-02-15T10:30:00Z',
+    currency: "BRL",
+    payment_method_name: "PIX",
+    status: "pending",
+    created_at: "2024-02-15T10:30:00Z",
     file_count: 0,
     unread_messages: 0,
   },
   {
-    id: 'payment-002',
-    reference_number: 'PAY-20240215-0002',
-    customer_name: 'Maria Santos',
-    customer_email: 'maria.santos@example.com',
-    amount: 299.90,
-    currency: 'BRL',
-    payment_method_name: 'PagSeguro',
-    status: 'under_review',
-    created_at: '2024-02-15T11:15:00Z',
+    id: "payment-002",
+    reference_number: "PAY-20240215-0002",
+    customer_name: "Maria Santos",
+    customer_email: "maria.santos@example.com",
+    amount: 299.9,
+    currency: "BRL",
+    payment_method_name: "PagSeguro",
+    status: "under_review",
+    created_at: "2024-02-15T11:15:00Z",
     file_count: 2,
     unread_messages: 1,
   },
   {
-    id: 'payment-003',
-    reference_number: 'PAY-20240215-0003',
-    customer_name: 'Carlos Oliveira',
-    customer_email: 'carlos.oliveira@example.com',
-    amount: 450.00,
-    currency: 'BRL',
-    payment_method_name: 'Bank Transfer',
-    status: 'requires_info',
-    created_at: '2024-02-15T12:45:00Z',
+    id: "payment-003",
+    reference_number: "PAY-20240215-0003",
+    customer_name: "Carlos Oliveira",
+    customer_email: "carlos.oliveira@example.com",
+    amount: 450.0,
+    currency: "BRL",
+    payment_method_name: "Bank Transfer",
+    status: "requires_info",
+    created_at: "2024-02-15T12:45:00Z",
     file_count: 1,
     unread_messages: 3,
   },
   {
-    id: 'payment-004',
-    reference_number: 'PAY-20240214-0004',
-    customer_name: 'Ana Costa',
-    customer_email: 'ana.costa@example.com',
-    amount: 125.50,
-    currency: 'BRL',
-    payment_method_name: 'PIX',
-    status: 'approved',
-    created_at: '2024-02-14T09:20:00Z',
+    id: "payment-004",
+    reference_number: "PAY-20240214-0004",
+    customer_name: "Ana Costa",
+    customer_email: "ana.costa@example.com",
+    amount: 125.5,
+    currency: "BRL",
+    payment_method_name: "PIX",
+    status: "approved",
+    created_at: "2024-02-14T09:20:00Z",
     file_count: 1,
     unread_messages: 0,
   },
   {
-    id: 'payment-005',
-    reference_number: 'PAY-20240214-0005',
-    customer_name: 'Pedro Almeida',
-    customer_email: 'pedro.almeida@example.com',
+    id: "payment-005",
+    reference_number: "PAY-20240214-0005",
+    customer_name: "Pedro Almeida",
+    customer_email: "pedro.almeida@example.com",
     amount: 89.99,
-    currency: 'BRL',
-    payment_method_name: 'PicPay',
-    status: 'rejected',
-    created_at: '2024-02-14T14:10:00Z',
+    currency: "BRL",
+    payment_method_name: "PicPay",
+    status: "rejected",
+    created_at: "2024-02-14T14:10:00Z",
     file_count: 1,
     unread_messages: 0,
   },
@@ -84,12 +84,12 @@ const examplePayments: PaymentListItemType[] = [
 
 export function PaymentListItemExample() {
   const handleViewPayment = (paymentId: string) => {
-    console.log('Viewing payment:', paymentId);
+    console.log("Viewing payment:", paymentId);
     alert(`Visualizando pagamento: ${paymentId}`);
   };
 
   const handleExportPayment = (paymentId: string) => {
-    console.log('Exporting payment:', paymentId);
+    console.log("Exporting payment:", paymentId);
     alert(`Exportando pagamento: ${paymentId}`);
   };
 
@@ -170,7 +170,9 @@ export function PaymentListItemExample() {
                     <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
                       <span className="text-sm font-medium text-yellow-700">Pendente</span>
-                      <span className="text-xs text-yellow-600 ml-auto">Aguardando comprovante</span>
+                      <span className="text-xs text-yellow-600 ml-auto">
+                        Aguardando comprovante
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="h-3 w-3 rounded-full bg-blue-500"></div>
@@ -203,7 +205,9 @@ export function PaymentListItemExample() {
                         <span className="text-gray-600">📄</span>
                         <span className="font-medium">2</span>
                       </div>
-                      <span className="text-sm">Badge de arquivos (quantidade de comprovantes)</span>
+                      <span className="text-sm">
+                        Badge de arquivos (quantidade de comprovantes)
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 p-3 bg-white border rounded-lg">
                       <div className="flex items-center gap-1 px-2 py-1 border rounded text-xs">
@@ -232,7 +236,7 @@ export function PaymentListItemExample() {
             <div>
               <h3 className="text-sm font-medium mb-2">Importação:</h3>
               <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-{`import { PaymentListItem, PaymentListItemCard } from '@/components/admin/PaymentListItem';
+                {`import { PaymentListItem, PaymentListItemCard } from '@/components/admin/PaymentListItem';
 import type { PaymentListItem as PaymentListItemType } from '@/types/manual-payment';`}
               </pre>
             </div>
@@ -240,7 +244,7 @@ import type { PaymentListItem as PaymentListItemType } from '@/types/manual-paym
             <div>
               <h3 className="text-sm font-medium mb-2">Uso Básico:</h3>
               <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-{`// Layout de lista (desktop)
+                {`// Layout de lista (desktop)
 <PaymentListItem
   payment={paymentData}
   onViewPayment={(id) => console.log('View:', id)}
@@ -258,7 +262,7 @@ import type { PaymentListItem as PaymentListItemType } from '@/types/manual-paym
             <div>
               <h3 className="text-sm font-medium mb-2">Estrutura dos Dados:</h3>
               <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-{`interface PaymentListItemType {
+                {`interface PaymentListItemType {
   id: string;
   reference_number: string;
   customer_name: string;

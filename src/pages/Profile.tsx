@@ -6,21 +6,52 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { analyzePreferencesWithAI, getMyProfile, upsertMyProfile, type AddressBR } from "@/lib/profile";
+import {
+  analyzePreferencesWithAI,
+  getMyProfile,
+  upsertMyProfile,
+  type AddressBR,
+} from "@/lib/profile";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useEffect, useMemo, useState } from "react";
-import { X, User, Heart, MapPin, Package, Trophy, ExternalLink, Settings, CreditCard, Bell, FileText, Shield, MessageSquare } from "lucide-react";
+import {
+  X,
+  User,
+  Heart,
+  MapPin,
+  Package,
+  Trophy,
+  ExternalLink,
+  Settings,
+  CreditCard,
+  Bell,
+  FileText,
+  Shield,
+  MessageSquare,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery as useRQ } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductionTimeline } from "@/components/production/ProductionTimeline";
 import { Switch } from "@/components/ui/switch";
-import { getMyCollectorProfile, updateCollectorProfile, getUserBadges, getPublicCollection, checkUsernameAvailability } from "@/lib/collector";
+import {
+  getMyCollectorProfile,
+  updateCollectorProfile,
+  getUserBadges,
+  getPublicCollection,
+  checkUsernameAvailability,
+} from "@/lib/collector";
 import { Link, useSearchParams } from "react-router-dom";
 import { ManagePublicCollection } from "@/components/collector/ManagePublicCollection";
 import { cn } from "@/lib/utils";
-import { PersonalDataSection, PaymentSection, NotificationsSection, SubscriptionSection, SupportSection } from "./ProfileSections";
+import {
+  PersonalDataSection,
+  PaymentSection,
+  NotificationsSection,
+  SubscriptionSection,
+  SupportSection,
+} from "./ProfileSections";
 
 const addressSchema = z
   .object({
@@ -55,8 +86,8 @@ function parseTagsCSV(input: string) {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean)
-        .slice(0, 40),
-    ),
+        .slice(0, 40)
+    )
   );
 }
 
@@ -71,10 +102,34 @@ export default function Profile() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  
+
   // Estado para controlar a seção ativa - verifica URL params
-  const sectionFromUrl = searchParams.get('section') as 'info' | 'personal' | 'collector' | 'preferences' | 'address' | 'subscriptions' | 'support' | 'orders' | 'collection' | 'payment' | 'notifications' | null;
-  const [activeSection, setActiveSection] = useState<'info' | 'personal' | 'collector' | 'preferences' | 'address' | 'subscriptions' | 'support' | 'orders' | 'collection' | 'payment' | 'notifications'>(sectionFromUrl || 'info');
+  const sectionFromUrl = searchParams.get("section") as
+    | "info"
+    | "personal"
+    | "collector"
+    | "preferences"
+    | "address"
+    | "subscriptions"
+    | "support"
+    | "orders"
+    | "collection"
+    | "payment"
+    | "notifications"
+    | null;
+  const [activeSection, setActiveSection] = useState<
+    | "info"
+    | "personal"
+    | "collector"
+    | "preferences"
+    | "address"
+    | "subscriptions"
+    | "support"
+    | "orders"
+    | "collection"
+    | "payment"
+    | "notifications"
+  >(sectionFromUrl || "info");
 
   // Atualizar seção quando URL mudar
   useEffect(() => {
@@ -192,9 +247,15 @@ export default function Profile() {
       return analyzePreferencesWithAI(text);
     },
     onSuccess: (data) => {
-      const merged = Array.from(new Set([...parseTagsCSV(tagsCSV), ...(data.tags ?? [])])).slice(0, 40);
+      const merged = Array.from(new Set([...parseTagsCSV(tagsCSV), ...(data.tags ?? [])])).slice(
+        0,
+        40
+      );
       setTagsCSV(merged.join(", "));
-      toast({ title: "Preferências analisadas", description: "Tags atualizadas com base no seu texto." });
+      toast({
+        title: "Preferências analisadas",
+        description: "Tags atualizadas com base no seu texto.",
+      });
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
@@ -228,7 +289,10 @@ export default function Profile() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["collector-profile"] });
-      toast({ title: "Perfil público atualizado", description: "Suas configurações foram salvas." });
+      toast({
+        title: "Perfil público atualizado",
+        description: "Suas configurações foram salvas.",
+      });
       setUsernameError("");
     },
     onError: (e) => {
@@ -288,18 +352,16 @@ export default function Profile() {
       <SEOHead
         title="Minha Conta"
         description="Gerencie suas preferências, endereço e informações de perfil na Ordax."
-        keywords={['perfil', 'conta', 'preferências', 'endereço']}
+        keywords={["perfil", "conta", "preferências", "endereço"]}
         noindex={true}
       />
-      
+
       <div className="container py-8 sm:py-12 max-w-7xl">
         {/* Header */}
         <header className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Minha Conta</h1>
-          <p className="text-muted-foreground">
-            Gerencie seu perfil, preferências e coleção
-          </p>
-          
+          <p className="text-muted-foreground">Gerencie seu perfil, preferências e coleção</p>
+
           {/* Indicador de Progresso do Perfil */}
           {profileQuery.data && (
             <div className="mt-6 p-4 rounded-lg border bg-card">
@@ -330,141 +392,141 @@ export default function Profile() {
               <CardContent className="p-4">
                 <nav className="space-y-1">
                   <button
-                    onClick={() => setActiveSection('info')}
+                    onClick={() => setActiveSection("info")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'info' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "info"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <User className="h-4 w-4" />
                     Conta
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('personal')}
+                    onClick={() => setActiveSection("personal")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'personal' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "personal"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <FileText className="h-4 w-4" />
                     Dados Pessoais
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('collector')}
+                    onClick={() => setActiveSection("collector")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'collector' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "collector"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <Trophy className="h-4 w-4" />
                     Perfil Público
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('preferences')}
+                    onClick={() => setActiveSection("preferences")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'preferences' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "preferences"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <Heart className="h-4 w-4" />
                     Preferências
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('address')}
+                    onClick={() => setActiveSection("address")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'address' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "address"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <MapPin className="h-4 w-4" />
                     Endereço
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('payment')}
+                    onClick={() => setActiveSection("payment")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'payment' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "payment"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <CreditCard className="h-4 w-4" />
                     Pagamento
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('subscriptions')}
+                    onClick={() => setActiveSection("subscriptions")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'subscriptions' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "subscriptions"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <Package className="h-4 w-4" />
                     Assinaturas
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('support')}
+                    onClick={() => setActiveSection("support")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'support' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "support"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <MessageSquare className="h-4 w-4" />
                     Suporte
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('orders')}
+                    onClick={() => setActiveSection("orders")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'orders' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "orders"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <Package className="h-4 w-4" />
                     Meus Pedidos
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('collection')}
+                    onClick={() => setActiveSection("collection")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'collection' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "collection"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <Settings className="h-4 w-4" />
                     Minha Coleção
                   </button>
-                  
+
                   <button
-                    onClick={() => setActiveSection('notifications')}
+                    onClick={() => setActiveSection("notifications")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'notifications' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "notifications"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
@@ -478,8 +540,8 @@ export default function Profile() {
 
           {/* Conteúdo Principal */}
           <main className="flex-1 min-w-0">
-            {activeSection === 'info' && <InfoSection user={user} />}
-            {activeSection === 'personal' && (
+            {activeSection === "info" && <InfoSection user={user} />}
+            {activeSection === "personal" && (
               <PersonalDataSection
                 profileQuery={profileQuery}
                 fullName={fullName}
@@ -495,7 +557,7 @@ export default function Profile() {
                 saveMutation={saveMutation}
               />
             )}
-            {activeSection === 'collector' && (
+            {activeSection === "collector" && (
               <CollectorSection
                 user={user}
                 collectorQuery={collectorQuery}
@@ -513,7 +575,7 @@ export default function Profile() {
                 savePublicProfileMutation={savePublicProfileMutation}
               />
             )}
-            {activeSection === 'preferences' && (
+            {activeSection === "preferences" && (
               <PreferencesSection
                 preferencesText={preferencesText}
                 setPreferencesText={setPreferencesText}
@@ -524,27 +586,21 @@ export default function Profile() {
                 saveMutation={saveMutation}
               />
             )}
-            {activeSection === 'address' && (
+            {activeSection === "address" && (
               <AddressSection
                 address={address}
                 setAddress={setAddress}
                 saveMutation={saveMutation}
               />
             )}
-            {activeSection === 'payment' && user?.id && (
-              <PaymentSection userId={user.id} />
-            )}
-            {activeSection === 'subscriptions' && user?.id && (
+            {activeSection === "payment" && user?.id && <PaymentSection userId={user.id} />}
+            {activeSection === "subscriptions" && user?.id && (
               <SubscriptionSection userId={user.id} />
             )}
-            {activeSection === 'support' && user?.id && (
-              <SupportSection userId={user.id} />
-            )}
-            {activeSection === 'orders' && <OrdersSection userId={user?.id ?? null} />}
-            {activeSection === 'collection' && user?.id && (
-              <CollectionSection userId={user.id} />
-            )}
-            {activeSection === 'notifications' && (
+            {activeSection === "support" && user?.id && <SupportSection userId={user.id} />}
+            {activeSection === "orders" && <OrdersSection userId={user?.id ?? null} />}
+            {activeSection === "collection" && user?.id && <CollectionSection userId={user.id} />}
+            {activeSection === "notifications" && (
               <NotificationsSection
                 emailNotifications={emailNotifications}
                 setEmailNotifications={setEmailNotifications}
@@ -602,7 +658,9 @@ function MyOrders(props: { userId: string | null }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-sm font-semibold">Pedido #{r.id.slice(0, 8)}</p>
-              <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(r.created_at).toLocaleString("pt-BR")}
+              </p>
             </div>
             <Badge variant="secondary" className="border border-border">
               {r.status}
@@ -615,7 +673,6 @@ function MyOrders(props: { userId: string | null }) {
   );
 }
 
-
 // Componentes de Seção
 
 function InfoSection({ user }: { user: any }) {
@@ -626,9 +683,7 @@ function InfoSection({ user }: { user: any }) {
           <User className="h-5 w-5" />
           Informações da Conta
         </CardTitle>
-        <CardDescription>
-          Informações básicas da sua conta
-        </CardDescription>
+        <CardDescription>Informações básicas da sua conta</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -641,7 +696,8 @@ function InfoSection({ user }: { user: any }) {
         </div>
         <div className="pt-4 border-t">
           <p className="text-sm text-muted-foreground">
-            Conta criada em {user?.created_at ? new Date(user.created_at).toLocaleDateString("pt-BR") : "—"}
+            Conta criada em{" "}
+            {user?.created_at ? new Date(user.created_at).toLocaleDateString("pt-BR") : "—"}
           </p>
         </div>
       </CardContent>
@@ -681,7 +737,9 @@ function CollectorSection({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-primary">{collector?.collector_level || 1}</div>
+              <div className="text-2xl font-bold text-primary">
+                {collector?.collector_level || 1}
+              </div>
               <div className="text-xs text-muted-foreground mt-1">Nível</div>
             </div>
             <div className="text-center p-4 rounded-lg bg-muted/50">
@@ -733,9 +791,7 @@ function CollectorSection({
       <Card>
         <CardHeader>
           <CardTitle>Configurações de Perfil Público</CardTitle>
-          <CardDescription>
-            Configure como outros usuários veem seu perfil
-          </CardDescription>
+          <CardDescription>Configure como outros usuários veem seu perfil</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 rounded-lg border">
@@ -776,9 +832,7 @@ function CollectorSection({
               className="mt-2"
               maxLength={20}
             />
-            {usernameError && (
-              <p className="text-sm text-destructive mt-1">{usernameError}</p>
-            )}
+            {usernameError && <p className="text-sm text-destructive mt-1">{usernameError}</p>}
             <p className="text-xs text-muted-foreground mt-1">
               3-20 caracteres (letras, números, _ ou -)
             </p>
@@ -806,9 +860,7 @@ function CollectorSection({
               className="mt-2 min-h-[100px]"
               maxLength={500}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              {bio.length}/500 caracteres
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{bio.length}/500 caracteres</p>
           </div>
 
           <Button
@@ -879,9 +931,7 @@ function PreferencesSection({
             placeholder="marvel, dc, star-wars, anime..."
             className="mt-2"
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Separe por vírgula. Máximo 40 tags.
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">Separe por vírgula. Máximo 40 tags.</p>
         </div>
 
         {tags.length > 0 && (
@@ -922,7 +972,7 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
   const searchCep = async (cep: string) => {
     // Remove caracteres não numéricos
     const cleanCep = cep.replace(/\D/g, "");
-    
+
     if (cleanCep.length !== 8) {
       toast({
         title: "CEP inválido",
@@ -933,11 +983,11 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
     }
 
     setIsSearchingCep(true);
-    
+
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data = await response.json();
-      
+
       if (data.erro) {
         toast({
           title: "CEP não encontrado",
@@ -975,7 +1025,7 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
 
   const handleCepChange = (value: string) => {
     setAddress({ ...address, cep: value });
-    
+
     // Busca automaticamente quando o CEP tiver 8 dígitos
     const cleanCep = value.replace(/\D/g, "");
     if (cleanCep.length === 8) {
@@ -990,9 +1040,7 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
           <MapPin className="h-5 w-5" />
           Endereço de Entrega
         </CardTitle>
-        <CardDescription>
-          Usado para calcular frete e facilitar futuros pedidos
-        </CardDescription>
+        <CardDescription>Usado para calcular frete e facilitar futuros pedidos</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1120,9 +1168,7 @@ function OrdersSection({ userId }: { userId: string | null }) {
           <Package className="h-5 w-5" />
           Meus Pedidos
         </CardTitle>
-        <CardDescription>
-          Acompanhe o status dos seus pedidos
-        </CardDescription>
+        <CardDescription>Acompanhe o status dos seus pedidos</CardDescription>
       </CardHeader>
       <CardContent>
         <MyOrders userId={userId} />

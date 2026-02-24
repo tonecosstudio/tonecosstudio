@@ -11,7 +11,13 @@
 /**
  * Payment method types supported by the system
  */
-export type PaymentMethodType = 'pix' | 'pagseguro' | 'picpay' | 'paypal' | 'bank_transfer' | 'other';
+export type PaymentMethodType =
+  | "pix"
+  | "pagseguro"
+  | "picpay"
+  | "paypal"
+  | "bank_transfer"
+  | "other";
 
 /**
  * Payment status workflow states
@@ -21,19 +27,25 @@ export type PaymentMethodType = 'pix' | 'pagseguro' | 'picpay' | 'paypal' | 'ban
  * - approved: payment verified and approved
  * - rejected: payment rejected by admin
  */
-export type PaymentStatus = 'pending' | 'under_review' | 'requires_info' | 'approved' | 'rejected';
+export type PaymentStatus = "pending" | "under_review" | "requires_info" | "approved" | "rejected";
 
 /**
  * Payment type classification
  * - one_time: single payment for a quote/order
  * - recurring: recurring payment for a subscription
  */
-export type PaymentType = 'one_time' | 'recurring';
+export type PaymentType = "one_time" | "recurring";
 
 /**
  * Audit log action types
  */
-export type PaymentAuditAction = 'created' | 'status_changed' | 'file_uploaded' | 'approved' | 'rejected' | 'info_requested';
+export type PaymentAuditAction =
+  | "created"
+  | "status_changed"
+  | "file_uploaded"
+  | "approved"
+  | "rejected"
+  | "info_requested";
 
 // =====================================================
 // DATABASE TABLE TYPES

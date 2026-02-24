@@ -1,28 +1,40 @@
 # Dependencies
 node_modules
 npm-debug.log
+yarn-error.log
 package-lock.json
+yarn.lock
+bun.lockb
 
 # Build outputs
 dist
 dist-ssr
 build
 .next
+.cache
 
 # Environment
 .env
 .env.local
 .env.production
+.env.*.local
+
+# Testing
+coverage
+.nyc_output
+*.lcov
 
 # Git
 .git
 .gitignore
+.github
 
 # IDE
 .vscode
 .idea
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
@@ -32,21 +44,23 @@ Thumbs.db
 logs
 *.log
 
-# Coverage
-coverage
-.nyc_output
-
-# Misc
-.cache
-.temp
+# Documentation (não necessário na imagem)
 *.md
-!README.md
-
-# CI/CD
-.github
-.husky
+docs/
+CHANGELOG.md
+README.md
 
 # Docker
-Dockerfile*
-docker-compose*.yml
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+docker-compose.dev.yml
 .dockerignore
+
+# Supabase (migrations são copiadas separadamente se necessário)
+.supabase
+
+# Misc
+*.min.js
+*.min.css
+.husky

@@ -31,8 +31,9 @@ export default function AdminCollectionFinancials() {
     queryFn: async () => {
       if (!selectedCollection) return null;
 
-      const { data, error } = await supabase
-        .rpc("get_collection_financial_analysis", { p_collection_id: selectedCollection });
+      const { data, error } = await supabase.rpc("get_collection_financial_analysis", {
+        p_collection_id: selectedCollection,
+      });
 
       if (error) throw error;
       return data?.[0];
@@ -49,9 +50,7 @@ export default function AdminCollectionFinancials() {
             <BarChart3 className="h-10 w-10" />
             Análise Financeira das Coleções
           </h1>
-          <p className="text-muted-foreground">
-            Custos, lucros, margens e ROI por coleção
-          </p>
+          <p className="text-muted-foreground">Custos, lucros, margens e ROI por coleção</p>
         </div>
 
         {/* Resumo Geral */}
@@ -66,7 +65,7 @@ export default function AdminCollectionFinancials() {
               <CardContent>
                 <div className="text-3xl font-bold">{collections.length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {collections.filter(c => c.is_active).length} ativas
+                  {collections.filter((c) => c.is_active).length} ativas
                 </p>
               </CardContent>
             </Card>
@@ -79,11 +78,13 @@ export default function AdminCollectionFinancials() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-green-600">
-                  R$ {(collections.reduce((sum, c) => sum + (c.profit_pix_gross || 0), 0) / collections.length).toFixed(2)}
+                  R${" "}
+                  {(
+                    collections.reduce((sum, c) => sum + (c.profit_pix_gross || 0), 0) /
+                    collections.length
+                  ).toFixed(2)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Por peça vendida
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Por peça vendida</p>
               </CardContent>
             </Card>
 
@@ -95,11 +96,13 @@ export default function AdminCollectionFinancials() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-blue-600">
-                  {(collections.reduce((sum, c) => sum + (c.margin_pix_gross || 0), 0) / collections.length).toFixed(1)}%
+                  {(
+                    collections.reduce((sum, c) => sum + (c.margin_pix_gross || 0), 0) /
+                    collections.length
+                  ).toFixed(1)}
+                  %
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Margem bruta PIX
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Margem bruta PIX</p>
               </CardContent>
             </Card>
 
@@ -111,10 +114,16 @@ export default function AdminCollectionFinancials() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-purple-600">
-                  {Math.max(...collections.map(c => c.margin_pix_gross || 0)).toFixed(1)}%
+                  {Math.max(...collections.map((c) => c.margin_pix_gross || 0)).toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {collections.find(c => c.margin_pix_gross === Math.max(...collections.map(c => c.margin_pix_gross || 0)))?.name}
+                  {
+                    collections.find(
+                      (c) =>
+                        c.margin_pix_gross ===
+                        Math.max(...collections.map((c) => c.margin_pix_gross || 0))
+                    )?.name
+                  }
                 </p>
               </CardContent>
             </Card>
@@ -130,7 +139,7 @@ export default function AdminCollectionFinancials() {
           <CardContent>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {collections?.map((collection) => (
-                <Card 
+                <Card
                   key={collection.id}
                   className={`cursor-pointer transition-all hover:shadow-lg ${
                     selectedCollection === collection.id ? "ring-2 ring-primary" : ""
@@ -141,9 +150,13 @@ export default function AdminCollectionFinancials() {
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-base">{collection.name}</CardTitle>
                       {collection.is_active ? (
-                        <Badge variant="default" className="text-xs">Ativa</Badge>
+                        <Badge variant="default" className="text-xs">
+                          Ativa
+                        </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-xs">Inativa</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Inativa
+                        </Badge>
                       )}
                     </div>
                   </CardHeader>
@@ -162,16 +175,23 @@ export default function AdminCollectionFinancials() {
                     <div className="pt-2 border-t space-y-1">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">Lucro Bruto:</span>
-                        <span className={`font-bold ${collection.profit_pix_gross > 0 ? "text-green-600" : "text-red-600"}`}>
+                        <span
+                          className={`font-bold ${collection.profit_pix_gross > 0 ? "text-green-600" : "text-red-600"}`}
+                        >
                           R$ {collection.profit_pix_gross?.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">Margem:</span>
-                        <span className={`font-bold ${
-                          collection.margin_pix_gross > 50 ? "text-green-600" : 
-                          collection.margin_pix_gross > 30 ? "text-yellow-600" : "text-red-600"
-                        }`}>
+                        <span
+                          className={`font-bold ${
+                            collection.margin_pix_gross > 50
+                              ? "text-green-600"
+                              : collection.margin_pix_gross > 30
+                                ? "text-yellow-600"
+                                : "text-red-600"
+                          }`}
+                        >
                           {collection.margin_pix_gross?.toFixed(1)}%
                         </span>
                       </div>
@@ -259,9 +279,7 @@ export default function AdminCollectionFinancials() {
                     <CardTitle className="text-sm">Breakeven</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {analysis.breakeven_units || 0}
-                    </div>
+                    <div className="text-2xl font-bold">{analysis.breakeven_units || 0}</div>
                     <p className="text-xs text-muted-foreground">unidades</p>
                   </CardContent>
                 </Card>

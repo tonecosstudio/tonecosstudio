@@ -13,7 +13,7 @@ export function useCatalogModels(
     category: string;
     tagsCSV: string;
     sort: CatalogSort;
-  },
+  }
 ) {
   return useQuery({
     queryKey: [

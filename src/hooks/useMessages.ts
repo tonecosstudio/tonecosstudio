@@ -13,7 +13,7 @@ interface UseMessagesOptions {
 interface OptimisticAttachment {
   id: string; // temporary client-side ID
   file: File;
-  status: 'uploading' | 'uploaded' | 'error';
+  status: "uploading" | "uploaded" | "error";
   progress: number;
   url?: string;
   error?: string;
@@ -24,7 +24,9 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
-  const [optimisticAttachments, setOptimisticAttachments] = useState<Map<string, OptimisticAttachment[]>>(new Map());
+  const [optimisticAttachments, setOptimisticAttachments] = useState<
+    Map<string, OptimisticAttachment[]>
+  >(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const LIMIT = 50;
 
@@ -52,7 +54,7 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
       setMessages(data);
       setOffset(data.length);
       setHasMore(data.length === LIMIT);
-      
+
       // Scroll após carregar
       setTimeout(scrollToBottom, 100);
     } catch (error) {
@@ -73,7 +75,7 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
         limit: LIMIT,
         offset,
       });
-      
+
       if (data.length > 0) {
         setMessages((prev) => [...data, ...prev]);
         setOffset((prev) => prev + data.length);
@@ -116,17 +118,17 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
           if (payload.eventType === "INSERT") {
             // Nova mensagem
             const rawMessage = payload.new as any;
-            
+
             console.log("[useMessages] Nova mensagem recebida:", rawMessage.id);
-            
+
             // Buscar anexos da mensagem
             const { data: attachmentsData } = await supabase
               .from("support_attachments")
               .select("*")
               .eq("message_id", rawMessage.id);
-            
+
             console.log("[useMessages] Anexos encontrados:", attachmentsData?.length || 0);
-            
+
             // Enriquecer mensagem com dados adicionais
             const enrichedMessage: Message = {
               ...rawMessage,
@@ -136,7 +138,7 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
               read_by_admin: rawMessage.read_by_admin || false,
               read_by_customer: rawMessage.read_by_customer || false,
             };
-            
+
             setMessages((prev) => {
               // Evitar duplicatas
               if (prev.some((msg) => msg.id === enrichedMessage.id)) {
@@ -146,21 +148,21 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
               console.log("[useMessages] Adicionando mensagem à lista");
               return [...prev, enrichedMessage];
             });
-            
+
             // Scroll para nova mensagem
             setTimeout(scrollToBottom, 100);
           } else if (payload.eventType === "UPDATE") {
             // Mensagem atualizada (ex: editada)
             const rawMessage = payload.new as any;
-            
+
             console.log("[useMessages] Mensagem atualizada:", rawMessage.id);
-            
+
             // Buscar anexos da mensagem
             const { data: attachmentsData } = await supabase
               .from("support_attachments")
               .select("*")
               .eq("message_id", rawMessage.id);
-            
+
             const enrichedMessage: Message = {
               ...rawMessage,
               sender_name: rawMessage.sender_type === "admin" ? "Admin" : "Cliente",
@@ -169,11 +171,9 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
               read_by_admin: rawMessage.read_by_admin || false,
               read_by_customer: rawMessage.read_by_customer || false,
             };
-            
+
             setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === enrichedMessage.id ? enrichedMessage : msg
-              )
+              prev.map((msg) => (msg.id === enrichedMessage.id ? enrichedMessage : msg))
             );
           } else if (payload.eventType === "DELETE") {
             // Mensagem deletada
@@ -200,7 +200,7 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
         async (payload) => {
           console.log("[useMessages] Attachment added:", payload);
           const attachment = payload.new as any;
-          
+
           // Atualizar a mensagem correspondente com o novo anexo
           setMessages((prev) =>
             prev.map((msg) => {
@@ -208,7 +208,7 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
                 console.log("[useMessages] Adicionando anexo à mensagem:", msg.id);
                 // Evitar duplicatas
                 const existingAttachments = msg.attachments || [];
-                if (existingAttachments.some(a => a.id === attachment.id)) {
+                if (existingAttachments.some((a) => a.id === attachment.id)) {
                   return msg;
                 }
                 return {
@@ -219,11 +219,11 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
               return msg;
             })
           );
-          
+
           // Limpar optimistic attachments para esta mensagem após confirmação
           // Aguardar um pouco para garantir que o anexo foi adicionado
           setTimeout(() => {
-            setOptimisticAttachments(prev => {
+            setOptimisticAttachments((prev) => {
               const newMap = new Map(prev);
               newMap.delete(attachment.message_id);
               return newMap;
@@ -288,10 +288,10 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
       }
 
       if (unreadMessages && unreadMessages.length > 0) {
-        const messageIds = unreadMessages.map(msg => msg.id);
-        
+        const messageIds = unreadMessages.map((msg) => msg.id);
+
         // Validar que todos os IDs são UUIDs válidos
-        const validMessageIds = messageIds.filter(id => 
+        const validMessageIds = messageIds.filter((id) =>
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
         );
 
@@ -318,35 +318,39 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
     const attachment: OptimisticAttachment = {
       id: tempId,
       file,
-      status: 'uploading',
+      status: "uploading",
       progress: 0,
     };
-    
-    setOptimisticAttachments(prev => {
+
+    setOptimisticAttachments((prev) => {
       const newMap = new Map(prev);
       const existing = newMap.get(messageId) || [];
       newMap.set(messageId, [...existing, attachment]);
       return newMap;
     });
-    
+
     return tempId;
   }, []);
 
-  const updateOptimisticAttachment = useCallback((messageId: string, tempId: string, updates: Partial<OptimisticAttachment>) => {
-    setOptimisticAttachments(prev => {
-      const newMap = new Map(prev);
-      const attachments = newMap.get(messageId) || [];
-      newMap.set(messageId, attachments.map(a => 
-        a.id === tempId ? { ...a, ...updates } : a
-      ));
-      return newMap;
-    });
-  }, []);
+  const updateOptimisticAttachment = useCallback(
+    (messageId: string, tempId: string, updates: Partial<OptimisticAttachment>) => {
+      setOptimisticAttachments((prev) => {
+        const newMap = new Map(prev);
+        const attachments = newMap.get(messageId) || [];
+        newMap.set(
+          messageId,
+          attachments.map((a) => (a.id === tempId ? { ...a, ...updates } : a))
+        );
+        return newMap;
+      });
+    },
+    []
+  );
 
   const removeOptimisticAttachment = useCallback((messageId: string, tempId: string) => {
-    setOptimisticAttachments(prev => {
+    setOptimisticAttachments((prev) => {
       const newMap = new Map(prev);
-      const attachments = (newMap.get(messageId) || []).filter(a => a.id !== tempId);
+      const attachments = (newMap.get(messageId) || []).filter((a) => a.id !== tempId);
       if (attachments.length === 0) {
         newMap.delete(messageId);
       } else {

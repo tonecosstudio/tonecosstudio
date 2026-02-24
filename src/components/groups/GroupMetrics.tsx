@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { Users, MessageSquare, Eye, TrendingUp } from 'lucide-react';
+import { useQuery } from "@tanstack/react-query";
+import { Users, MessageSquare, Eye, TrendingUp } from "lucide-react";
 
-import { Card, CardContent } from '@/components/ui/card';
-import { metricsService } from '@/lib/services/metricsService';
-import { cn } from '@/lib/utils';
+import { Card, CardContent } from "@/components/ui/card";
+import { metricsService } from "@/lib/services/metricsService";
+import { cn } from "@/lib/utils";
 
 interface GroupMetricsProps {
   groupId: string;
@@ -12,20 +12,24 @@ interface GroupMetricsProps {
 
 /**
  * GroupMetrics - Displays key metrics for a group
- * 
+ *
  * Metrics:
  * - Total members
  * - Total messages
  * - Estimated view rate (% of members who viewed after last message)
- * 
+ *
  * Features:
  * - Loading skeleton
  * - Error handling
  * - Responsive grid layout
  */
 export function GroupMetrics({ groupId, className }: GroupMetricsProps) {
-  const { data: metrics, isLoading, error } = useQuery({
-    queryKey: ['group-metrics', groupId],
+  const {
+    data: metrics,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["group-metrics", groupId],
     queryFn: () => metricsService.getGroupMetrics(groupId),
     staleTime: 30000, // 30 seconds
   });
@@ -33,7 +37,7 @@ export function GroupMetrics({ groupId, className }: GroupMetricsProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className={cn('grid grid-cols-1 md:grid-cols-3 gap-4', className)}>
+      <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-4", className)}>
         {[1, 2, 3].map((i) => (
           <Card key={i} className="animate-pulse">
             <CardContent className="p-6">
@@ -54,16 +58,16 @@ export function GroupMetrics({ groupId, className }: GroupMetricsProps) {
   // Error state
   if (error || !metrics) {
     return (
-      <div className={cn('bg-destructive/10 text-destructive px-4 py-3 rounded-lg', className)}>
+      <div className={cn("bg-destructive/10 text-destructive px-4 py-3 rounded-lg", className)}>
         <p className="text-sm">
-          Erro ao carregar métricas: {error instanceof Error ? error.message : 'Erro desconhecido'}
+          Erro ao carregar métricas: {error instanceof Error ? error.message : "Erro desconhecido"}
         </p>
       </div>
     );
   }
 
   return (
-    <div className={cn('grid grid-cols-1 md:grid-cols-3 gap-4', className)}>
+    <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-4", className)}>
       {/* Total Members */}
       <Card>
         <CardContent className="p-6">
@@ -72,9 +76,7 @@ export function GroupMetrics({ groupId, className }: GroupMetricsProps) {
               <Users className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Total de Membros
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Total de Membros</p>
               <p className="text-3xl font-bold">{metrics.total_members}</p>
             </div>
           </div>
@@ -89,9 +91,7 @@ export function GroupMetrics({ groupId, className }: GroupMetricsProps) {
               <MessageSquare className="h-6 w-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Total de Mensagens
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Total de Mensagens</p>
               <p className="text-3xl font-bold">{metrics.total_messages}</p>
             </div>
           </div>
@@ -106,12 +106,8 @@ export function GroupMetrics({ groupId, className }: GroupMetricsProps) {
               <Eye className="h-6 w-6 text-green-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Taxa de Visualização
-              </p>
-              <p className="text-3xl font-bold">
-                {Math.round(metrics.estimated_view_rate)}%
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Taxa de Visualização</p>
+              <p className="text-3xl font-bold">{Math.round(metrics.estimated_view_rate)}%</p>
             </div>
           </div>
         </CardContent>

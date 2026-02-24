@@ -1,20 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
-import type {
-  GroupMember,
-  MembershipCriteria,
-  Pagination,
-  PaginatedMembers,
-} from "@/types/groups";
+import type { GroupMember, MembershipCriteria, Pagination, PaginatedMembers } from "@/types/groups";
 
 /**
  * MembershipService - Service for managing group memberships
- * 
+ *
  * Handles:
  * - Adding/removing members from manual groups
  * - Evaluating membership criteria for automatic groups
  * - Listing members with pagination
  * - Finding users matching criteria for auto-sync
- * 
+ *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 4.3, 5.3, 6.2, 6.3, 7.4, 17.2, 17.3, 17.4
  */
 
@@ -128,9 +123,7 @@ export class MembershipService {
       .select("id, full_name, email")
       .in("id", userIds);
 
-    const profilesMap = new Map(
-      (profiles || []).map((p: any) => [p.id, p])
-    );
+    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     // Map members with user data
     const membersWithData = members.map((member) => {
@@ -160,9 +153,7 @@ export class MembershipService {
    * Used by auto-sync job to determine group membership
    * Requirements: 4.3, 5.3, 6.2, 6.3, 7.4, 17.2, 17.3, 17.4
    */
-  async getUsersMatchingCriteria(
-    criteria: MembershipCriteria
-  ): Promise<string[]> {
+  async getUsersMatchingCriteria(criteria: MembershipCriteria): Promise<string[]> {
     if (!criteria) {
       return [];
     }
@@ -195,10 +186,7 @@ export class MembershipService {
     collectionId?: string;
     plan?: string;
   }): Promise<string[]> {
-    let query = supabase
-      .from("subscriptions")
-      .select("user_id")
-      .eq("status", "active");
+    let query = supabase.from("subscriptions").select("user_id").eq("status", "active");
 
     // Optional filter by collection
     if (criteria.collectionId) {
@@ -253,9 +241,7 @@ export class MembershipService {
   }): Promise<string[]> {
     if (criteria.criteria === "all_users") {
       // Get all registered users
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id");
+      const { data, error } = await supabase.from("profiles").select("id");
 
       if (error) {
         console.error("Erro ao buscar todos os usuários:", error);
@@ -319,10 +305,7 @@ export class MembershipService {
    * Used for validation and testing
    * Requirements: 4.3, 5.3, 6.2, 6.3, 7.4
    */
-  async evaluateMembershipCriteria(
-    criteria: MembershipCriteria,
-    userId: string
-  ): Promise<boolean> {
+  async evaluateMembershipCriteria(criteria: MembershipCriteria, userId: string): Promise<boolean> {
     if (!criteria) {
       return false;
     }
@@ -366,17 +349,11 @@ export class MembershipService {
     const currentMemberIds = (currentMembers || []).map((m: any) => m.user_id);
 
     // Get expected members based on criteria
-    const expectedMemberIds = await this.getUsersMatchingCriteria(
-      group.membership_criteria
-    );
+    const expectedMemberIds = await this.getUsersMatchingCriteria(group.membership_criteria);
 
     // Calculate additions and removals
-    const toAdd = expectedMemberIds.filter(
-      (id) => !currentMemberIds.includes(id)
-    );
-    const toRemove = currentMemberIds.filter(
-      (id) => !expectedMemberIds.includes(id)
-    );
+    const toAdd = expectedMemberIds.filter((id) => !currentMemberIds.includes(id));
+    const toRemove = currentMemberIds.filter((id) => !expectedMemberIds.includes(id));
 
     // Add new members
     if (toAdd.length > 0) {

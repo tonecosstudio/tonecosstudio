@@ -1,26 +1,26 @@
 /**
  * PaymentMethodForm Component
- * 
+ *
  * Form for creating and editing payment methods in admin interface.
- * 
+ *
  * Requirements: 1.1-1.10
  * Task: 11.1 Criar componente PaymentMethodForm
  */
 
-import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import React, { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -28,20 +28,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { toast } from '@/hooks/use-toast';
-import {
-  Loader2,
-  CreditCard,
-  Banknote,
-  QrCode,
-  Link,
-  Key,
-  Building,
-} from 'lucide-react';
-import type { PaymentMethod, PaymentMethodType } from '@/types/manual-payment';
-import { createPaymentMethod, updatePaymentMethod } from '@/lib/payment-method-service';
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
+import { Loader2, CreditCard, Banknote, QrCode, Link, Key, Building } from "lucide-react";
+import type { PaymentMethod, PaymentMethodType } from "@/types/manual-payment";
+import { createPaymentMethod, updatePaymentMethod } from "@/lib/payment-method-service";
 
 interface PaymentMethodFormProps {
   method?: PaymentMethod | null;
@@ -60,12 +52,12 @@ export function PaymentMethodForm({
   const isEditing = !!method;
 
   // Form state
-  const [name, setName] = useState('');
-  const [type, setType] = useState<PaymentMethodType>('other');
-  const [instructions, setInstructions] = useState('');
-  const [paymentLink, setPaymentLink] = useState('');
-  const [pixKey, setPixKey] = useState('');
-  const [accountDetails, setAccountDetails] = useState('');
+  const [name, setName] = useState("");
+  const [type, setType] = useState<PaymentMethodType>("other");
+  const [instructions, setInstructions] = useState("");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [pixKey, setPixKey] = useState("");
+  const [accountDetails, setAccountDetails] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isDefault, setIsDefault] = useState(false);
 
@@ -74,20 +66,22 @@ export function PaymentMethodForm({
     if (method) {
       setName(method.name);
       setType(method.type);
-      setInstructions(method.instructions || '');
-      setPaymentLink(method.payment_link || '');
-      setPixKey(method.pix_key || '');
-      setAccountDetails(method.account_details ? JSON.stringify(method.account_details, null, 2) : '');
+      setInstructions(method.instructions || "");
+      setPaymentLink(method.payment_link || "");
+      setPixKey(method.pix_key || "");
+      setAccountDetails(
+        method.account_details ? JSON.stringify(method.account_details, null, 2) : ""
+      );
       setIsActive(method.is_active);
       setIsDefault(method.is_default);
     } else {
       // Reset to defaults for new method
-      setName('');
-      setType('other');
-      setInstructions('');
-      setPaymentLink('');
-      setPixKey('');
-      setAccountDetails('');
+      setName("");
+      setType("other");
+      setInstructions("");
+      setPaymentLink("");
+      setPixKey("");
+      setAccountDetails("");
       setIsActive(true);
       setIsDefault(false);
     }
@@ -95,60 +89,62 @@ export function PaymentMethodForm({
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: () => createPaymentMethod({
-      name,
-      type,
-      instructions: instructions || undefined,
-      payment_link: paymentLink || undefined,
-      pix_key: pixKey || undefined,
-      account_details: accountDetails ? JSON.parse(accountDetails) : undefined,
-      is_active: isActive,
-      is_default: isDefault,
-    }),
+    mutationFn: () =>
+      createPaymentMethod({
+        name,
+        type,
+        instructions: instructions || undefined,
+        payment_link: paymentLink || undefined,
+        pix_key: pixKey || undefined,
+        account_details: accountDetails ? JSON.parse(accountDetails) : undefined,
+        is_active: isActive,
+        is_default: isDefault,
+      }),
     onSuccess: () => {
       toast({
-        title: 'Método de pagamento criado',
+        title: "Método de pagamento criado",
         description: `O método "${name}" foi criado com sucesso.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['payment-methods'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
       onOpenChange(false);
       onSuccess?.();
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao criar método de pagamento',
+        title: "Erro ao criar método de pagamento",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: () => updatePaymentMethod(method!.id, {
-      name,
-      type,
-      instructions: instructions || undefined,
-      payment_link: paymentLink || undefined,
-      pix_key: pixKey || undefined,
-      account_details: accountDetails ? JSON.parse(accountDetails) : undefined,
-      is_active: isActive,
-      is_default: isDefault,
-    }),
+    mutationFn: () =>
+      updatePaymentMethod(method!.id, {
+        name,
+        type,
+        instructions: instructions || undefined,
+        payment_link: paymentLink || undefined,
+        pix_key: pixKey || undefined,
+        account_details: accountDetails ? JSON.parse(accountDetails) : undefined,
+        is_active: isActive,
+        is_default: isDefault,
+      }),
     onSuccess: () => {
       toast({
-        title: 'Método de pagamento atualizado',
+        title: "Método de pagamento atualizado",
         description: `O método "${name}" foi atualizado com sucesso.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['payment-methods'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
       onOpenChange(false);
       onSuccess?.();
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao atualizar método de pagamento',
+        title: "Erro ao atualizar método de pagamento",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -160,37 +156,37 @@ export function PaymentMethodForm({
     // Validate required fields
     if (!name.trim()) {
       toast({
-        title: 'Nome obrigatório',
-        description: 'Por favor, informe o nome do método de pagamento.',
-        variant: 'destructive',
+        title: "Nome obrigatório",
+        description: "Por favor, informe o nome do método de pagamento.",
+        variant: "destructive",
       });
       return;
     }
 
     if (!type) {
       toast({
-        title: 'Tipo obrigatório',
-        description: 'Por favor, selecione o tipo do método de pagamento.',
-        variant: 'destructive',
+        title: "Tipo obrigatório",
+        description: "Por favor, selecione o tipo do método de pagamento.",
+        variant: "destructive",
       });
       return;
     }
 
     // Validate type-specific fields
-    if (type === 'pix' && !pixKey.trim()) {
+    if (type === "pix" && !pixKey.trim()) {
       toast({
-        title: 'Chave PIX obrigatória',
-        description: 'Para métodos PIX, a chave PIX é obrigatória.',
-        variant: 'destructive',
+        title: "Chave PIX obrigatória",
+        description: "Para métodos PIX, a chave PIX é obrigatória.",
+        variant: "destructive",
       });
       return;
     }
 
-    if (type === 'bank_transfer' && !accountDetails.trim()) {
+    if (type === "bank_transfer" && !accountDetails.trim()) {
       toast({
-        title: 'Dados bancários obrigatórios',
-        description: 'Para transferência bancária, os dados bancários são obrigatórios.',
-        variant: 'destructive',
+        title: "Dados bancários obrigatórios",
+        description: "Para transferência bancária, os dados bancários são obrigatórios.",
+        variant: "destructive",
       });
       return;
     }
@@ -201,9 +197,9 @@ export function PaymentMethodForm({
         JSON.parse(accountDetails);
       } catch (error) {
         toast({
-          title: 'Dados bancários inválidos',
-          description: 'Os dados bancários devem estar em formato JSON válido.',
-          variant: 'destructive',
+          title: "Dados bancários inválidos",
+          description: "Os dados bancários devem estar em formato JSON válido.",
+          variant: "destructive",
         });
         return;
       }
@@ -219,11 +215,11 @@ export function PaymentMethodForm({
   // Get type icon
   const getTypeIcon = (type: PaymentMethodType) => {
     switch (type) {
-      case 'pix':
+      case "pix":
         return <QrCode className="h-4 w-4" />;
-      case 'bank_transfer':
+      case "bank_transfer":
         return <Building className="h-4 w-4" />;
-      case 'credit_card':
+      case "credit_card":
         return <CreditCard className="h-4 w-4" />;
       default:
         return <Banknote className="h-4 w-4" />;
@@ -233,14 +229,14 @@ export function PaymentMethodForm({
   // Get type label
   const getTypeLabel = (type: PaymentMethodType) => {
     switch (type) {
-      case 'pix':
-        return 'PIX';
-      case 'bank_transfer':
-        return 'Transferência Bancária';
-      case 'credit_card':
-        return 'Cartão de Crédito';
+      case "pix":
+        return "PIX";
+      case "bank_transfer":
+        return "Transferência Bancária";
+      case "credit_card":
+        return "Cartão de Crédito";
       default:
-        return 'Outro';
+        return "Outro";
     }
   };
 
@@ -251,12 +247,12 @@ export function PaymentMethodForm({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Editar Método de Pagamento' : 'Novo Método de Pagamento'}
+            {isEditing ? "Editar Método de Pagamento" : "Novo Método de Pagamento"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
               ? `Editando: ${method?.name}`
-              : 'Configure um novo método de pagamento para os clientes.'}
+              : "Configure um novo método de pagamento para os clientes."}
           </DialogDescription>
         </DialogHeader>
 
@@ -264,7 +260,7 @@ export function PaymentMethodForm({
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Informações Básicas</h3>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome *</Label>
@@ -276,9 +272,7 @@ export function PaymentMethodForm({
                   disabled={isLoading}
                   className="w-full"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Nome exibido para os clientes
-                </p>
+                <p className="text-xs text-muted-foreground">Nome exibido para os clientes</p>
               </div>
 
               <div className="space-y-2">
@@ -347,8 +341,8 @@ export function PaymentMethodForm({
           {/* Type-Specific Fields */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Configurações Específicas</h3>
-            
-            {type === 'pix' && (
+
+            {type === "pix" && (
               <div className="space-y-2">
                 <Label htmlFor="pix-key">Chave PIX *</Label>
                 <div className="flex items-center gap-2">
@@ -367,7 +361,7 @@ export function PaymentMethodForm({
               </div>
             )}
 
-            {type === 'bank_transfer' && (
+            {type === "bank_transfer" && (
               <div className="space-y-2">
                 <Label htmlFor="account-details">Dados Bancários *</Label>
                 <Textarea
@@ -386,12 +380,13 @@ export function PaymentMethodForm({
                   disabled={isLoading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Dados bancários em formato JSON. Inclua banco, agência, conta, tipo de conta, beneficiário, CNPJ, etc.
+                  Dados bancários em formato JSON. Inclua banco, agência, conta, tipo de conta,
+                  beneficiário, CNPJ, etc.
                 </p>
               </div>
             )}
 
-            {(type === 'credit_card' || type === 'other') && (
+            {(type === "credit_card" || type === "other") && (
               <div className="space-y-2">
                 <Label htmlFor="payment-link">Link de Pagamento</Label>
                 <div className="flex items-center gap-2">
@@ -416,7 +411,7 @@ export function PaymentMethodForm({
           {/* Settings */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Configurações</h3>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
                 <div className="space-y-0.5">
@@ -437,9 +432,7 @@ export function PaymentMethodForm({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
                 <div className="space-y-0.5">
                   <Label htmlFor="is-default">Padrão</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Método selecionado por padrão
-                  </p>
+                  <p className="text-xs text-muted-foreground">Método selecionado por padrão</p>
                 </div>
                 <Switch
                   id="is-default"
@@ -470,7 +463,7 @@ export function PaymentMethodForm({
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Salvar Alterações' : 'Criar Método'}
+              {isEditing ? "Salvar Alterações" : "Criar Método"}
             </Button>
           </DialogFooter>
         </form>

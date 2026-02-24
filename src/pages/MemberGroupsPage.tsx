@@ -1,4 +1,4 @@
-import { MemberGroupList } from '@/components/groups/MemberGroupList';
+import { MemberGroupList } from "@/components/groups/MemberGroupList";
 
 export default function MemberGroupsPage() {
   return (

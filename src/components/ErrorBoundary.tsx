@@ -1,7 +1,7 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertCircle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import { AlertCircle, RefreshCw, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Props {
   children: ReactNode;
@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to console in development
     if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
+      console.error("ErrorBoundary caught an error:", error, errorInfo);
     }
 
     // Update state with error details
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   render() {
@@ -91,7 +91,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 <CardTitle className="text-2xl">Algo deu errado</CardTitle>
               </div>
               <CardDescription>
-                Ocorreu um erro inesperado. Você pode tentar recarregar a página ou voltar para a página inicial.
+                Ocorreu um erro inesperado. Você pode tentar recarregar a página ou voltar para a
+                página inicial.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -118,27 +119,15 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Action buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={this.handleReset}
-                  variant="default"
-                  className="flex-1"
-                >
+                <Button onClick={this.handleReset} variant="default" className="flex-1">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Tentar Novamente
                 </Button>
-                <Button
-                  onClick={this.handleReload}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={this.handleReload} variant="outline" className="flex-1">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Recarregar Página
                 </Button>
-                <Button
-                  onClick={this.handleGoHome}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={this.handleGoHome} variant="outline" className="flex-1">
                   <Home className="w-4 h-4 mr-2" />
                   Página Inicial
                 </Button>
@@ -162,11 +151,7 @@ export class ErrorBoundary extends Component<Props, State> {
  * Hook-based Error Boundary wrapper for functional components
  * Usage: <ErrorBoundaryWrapper>...</ErrorBoundaryWrapper>
  */
-export function ErrorBoundaryWrapper({ 
-  children, 
-  fallback,
-  onError 
-}: Props) {
+export function ErrorBoundaryWrapper({ children, fallback, onError }: Props) {
   return (
     <ErrorBoundary fallback={fallback} onError={onError}>
       {children}

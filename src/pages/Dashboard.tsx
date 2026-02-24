@@ -17,10 +17,19 @@ export default function Dashboard() {
     enabled: Boolean(user?.id),
     queryFn: async () => {
       const [quotesRes, likesRes, wishlistRes, collectorRes] = await Promise.all([
-        supabase.from("quotes").select("id, status, created_at").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(5),
+        supabase
+          .from("quotes")
+          .select("id, status, created_at")
+          .eq("user_id", user!.id)
+          .order("created_at", { ascending: false })
+          .limit(5),
         supabase.from("model_likes").select("id").eq("user_id", user!.id),
         supabase.from("wishlist").select("id").eq("user_id", user!.id),
-        supabase.from("profiles").select("collector_level, collector_xp, pieces_owned, total_spent").eq("id", user!.id).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("collector_level, collector_xp, pieces_owned, total_spent")
+          .eq("id", user!.id)
+          .maybeSingle(),
       ]);
 
       return {
@@ -75,11 +84,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <SEOHead
-        title="Dashboard"
-        description="Visão geral da sua conta Ordax"
-        noindex={true}
-      />
+      <SEOHead title="Dashboard" description="Visão geral da sua conta Ordax" noindex={true} />
 
       <div className="container py-8 max-w-7xl">
         {/* Header */}
@@ -99,9 +104,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.totalQuotes || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Total de orçamentos
-              </p>
+              <p className="text-xs text-muted-foreground">Total de orçamentos</p>
             </CardContent>
           </Card>
 
@@ -112,9 +115,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.totalLikes || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Modelos curtidos
-              </p>
+              <p className="text-xs text-muted-foreground">Modelos curtidos</p>
             </CardContent>
           </Card>
 
@@ -125,9 +126,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.totalWishlist || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Na lista de desejos
-              </p>
+              <p className="text-xs text-muted-foreground">Na lista de desejos</p>
             </CardContent>
           </Card>
 
@@ -153,9 +152,7 @@ export default function Dashboard() {
                 <Clock className="h-5 w-5" />
                 Pedidos Recentes
               </CardTitle>
-              <CardDescription>
-                Seus últimos orçamentos
-              </CardDescription>
+              <CardDescription>Seus últimos orçamentos</CardDescription>
             </CardHeader>
             <CardContent>
               {stats?.quotes && stats.quotes.length > 0 ? (
@@ -166,9 +163,7 @@ export default function Dashboard() {
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                     >
                       <div>
-                        <p className="font-medium text-sm">
-                          Pedido #{quote.id.slice(0, 8)}
-                        </p>
+                        <p className="font-medium text-sm">Pedido #{quote.id.slice(0, 8)}</p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(quote.created_at).toLocaleDateString("pt-BR")}
                         </p>
@@ -204,9 +199,7 @@ export default function Dashboard() {
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription>
-                Atualizações importantes
-              </CardDescription>
+              <CardDescription>Atualizações importantes</CardDescription>
             </CardHeader>
             <CardContent>
               {notifications.length > 0 ? (
@@ -217,9 +210,7 @@ export default function Dashboard() {
                       className="p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                     >
                       <p className="font-medium text-sm">{notif.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {notif.message}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{notif.message}</p>
                       <p className="text-xs text-muted-foreground mt-2">
                         {new Date(notif.created_at).toLocaleString("pt-BR")}
                       </p>
@@ -243,15 +234,15 @@ export default function Dashboard() {
                   <TrendingUp className="h-5 w-5" />
                   Progresso
                 </CardTitle>
-                <CardDescription>
-                  Sua jornada como colecionador
-                </CardDescription>
+                <CardDescription>Sua jornada como colecionador</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Nível {stats.collector.collector_level}</span>
+                      <span className="text-sm font-medium">
+                        Nível {stats.collector.collector_level}
+                      </span>
                       <span className="text-sm text-muted-foreground">
                         {stats.collector.collector_xp} XP
                       </span>
@@ -259,7 +250,7 @@ export default function Dashboard() {
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
                         className="bg-primary h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min((stats.collector.collector_xp % 100), 100)}%` }}
+                        style={{ width: `${Math.min(stats.collector.collector_xp % 100, 100)}%` }}
                       />
                     </div>
                   </div>
@@ -294,9 +285,7 @@ export default function Dashboard() {
                 <Star className="h-5 w-5" />
                 Recomendados
               </CardTitle>
-              <CardDescription>
-                Modelos que você pode gostar
-              </CardDescription>
+              <CardDescription>Modelos que você pode gostar</CardDescription>
             </CardHeader>
             <CardContent>
               {recommendations.length > 0 ? (
@@ -304,11 +293,7 @@ export default function Dashboard() {
                   {recommendations.map((model: any) => {
                     const imageUrl = `${supabase.supabaseUrl}/storage/v1/object/public/${model.image_bucket}/${model.image_path}`;
                     return (
-                      <Link
-                        key={model.id}
-                        to={`/catalog/${model.id}`}
-                        className="group"
-                      >
+                      <Link key={model.id} to={`/catalog/${model.id}`} className="group">
                         <div className="aspect-square rounded-lg overflow-hidden bg-muted mb-2">
                           <img
                             src={imageUrl}

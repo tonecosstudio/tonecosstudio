@@ -9,7 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Check, Package, Calendar, CreditCard, Sparkles, Gift, AlertCircle } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -45,7 +51,8 @@ export default function SubscribeCollection() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
-        .select(`
+        .select(
+          `
           *,
           collection_characters (
             id,
@@ -54,7 +61,8 @@ export default function SubscribeCollection() {
             description,
             status
           )
-        `)
+        `
+        )
         .eq("is_active", true)
         .order("name", { ascending: true });
 
@@ -117,7 +125,9 @@ export default function SubscribeCollection() {
       // Validar número de coleções
       const requiredCollections = getRequiredCollections(planType);
       if (selectedCollections.length !== requiredCollections) {
-        throw new Error(`Selecione exatamente ${requiredCollections} ${requiredCollections === 1 ? 'coleção' : 'coleções'}`);
+        throw new Error(
+          `Selecione exatamente ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`
+        );
       }
 
       // Buscar plano selecionado
@@ -129,7 +139,7 @@ export default function SubscribeCollection() {
         .maybeSingle();
 
       if (planError) throw planError;
-      
+
       if (!plan) {
         throw new Error("Plano não encontrado ou inativo");
       }
@@ -150,13 +160,11 @@ export default function SubscribeCollection() {
 
       // Associar coleções selecionadas
       for (const collectionId of selectedCollections) {
-        const { error: collError } = await supabase
-          .from("subscription_collections")
-          .insert({
-            subscription_id: subscription.id,
-            collection_id: collectionId,
-          });
-        
+        const { error: collError } = await supabase.from("subscription_collections").insert({
+          subscription_id: subscription.id,
+          collection_id: collectionId,
+        });
+
         if (collError) throw collError;
       }
 
@@ -177,14 +185,12 @@ export default function SubscribeCollection() {
       if (payError) throw payError;
 
       // Criar conversa de suporte
-      await supabase
-        .from("support_conversations")
-        .insert({
-          user_id: user.id,
-          subject: `Nova Assinatura - ${planType}`,
-          status: "waiting_admin",
-          tags: ["assinatura", "pagamento"],
-        });
+      await supabase.from("support_conversations").insert({
+        user_id: user.id,
+        subject: `Nova Assinatura - ${planType}`,
+        status: "waiting_admin",
+        tags: ["assinatura", "pagamento"],
+      });
 
       return { subscription, payment };
     },
@@ -208,13 +214,13 @@ export default function SubscribeCollection() {
 
   // Buscar plano selecionado
   const plans = plansQuery.data || [];
-  const selectedPlan = plans.find(p => p.plan_type === planType);
+  const selectedPlan = plans.find((p) => p.plan_type === planType);
 
   // Determinar quantas coleções são necessárias
   const getRequiredCollections = (plan: string) => {
-    const planData = plans.find(p => p.plan_type === plan);
+    const planData = plans.find((p) => p.plan_type === plan);
     if (!planData) return 1;
-    
+
     // -1 significa todas as coleções
     if (planData.collections_count === -1) {
       return allCollections.length;
@@ -233,28 +239,34 @@ export default function SubscribeCollection() {
       if (selectedCollections.length === allCollections.length) {
         setSelectedCollections([]);
       } else {
-        setSelectedCollections(allCollections.map(c => c.id));
+        setSelectedCollections(allCollections.map((c) => c.id));
       }
       return;
     }
 
     if (selectedCollections.includes(collectionId)) {
-      setSelectedCollections(selectedCollections.filter(id => id !== collectionId));
+      setSelectedCollections(selectedCollections.filter((id) => id !== collectionId));
     } else if (canSelectMore) {
       setSelectedCollections([...selectedCollections, collectionId]);
     }
   };
 
   // Auto-selecionar todas para plano anual
-  if (isAnualPlan && selectedCollections.length !== allCollections.length && allCollections.length > 0) {
-    setSelectedCollections(allCollections.map(c => c.id));
+  if (
+    isAnualPlan &&
+    selectedCollections.length !== allCollections.length &&
+    allCollections.length > 0
+  ) {
+    setSelectedCollections(allCollections.map((c) => c.id));
   }
 
   // Preços dinâmicos da tabela subscription_plans
-  const selectedPrice = selectedPlan ? {
-    full: Number(selectedPlan.price_full),
-    pix: Number(selectedPlan.price_pix)
-  } : { full: 0, pix: 0 };
+  const selectedPrice = selectedPlan
+    ? {
+        full: Number(selectedPlan.price_full),
+        pix: Number(selectedPlan.price_pix),
+      }
+    : { full: 0, pix: 0 };
   const finalPrice = paymentMethod === "pix" ? selectedPrice.pix : selectedPrice.full;
   const discount = selectedPrice.full - finalPrice;
 
@@ -272,12 +284,8 @@ export default function SubscribeCollection() {
         <Card>
           <CardContent className="py-16 text-center">
             <h3 className="text-xl font-semibold mb-2">Nenhuma coleção disponível</h3>
-            <p className="text-muted-foreground mb-6">
-              Não há coleções ativas no momento
-            </p>
-            <Button onClick={() => navigate("/")}>
-              Voltar ao Início
-            </Button>
+            <p className="text-muted-foreground mb-6">Não há coleções ativas no momento</p>
+            <Button onClick={() => navigate("/")}>Voltar ao Início</Button>
           </CardContent>
         </Card>
       </div>
@@ -293,9 +301,7 @@ export default function SubscribeCollection() {
             <p className="text-muted-foreground mb-6">
               Não há planos de assinatura ativos no momento
             </p>
-            <Button onClick={() => navigate("/")}>
-              Voltar ao Início
-            </Button>
+            <Button onClick={() => navigate("/")}>Voltar ao Início</Button>
           </CardContent>
         </Card>
       </div>
@@ -307,15 +313,13 @@ export default function SubscribeCollection() {
       <SEOHead
         title="Assinar Coleção"
         description="Escolha seu plano e coleções favoritas"
-        keywords={['assinatura', 'coleção', 'planos']}
+        keywords={["assinatura", "coleção", "planos"]}
       />
 
       <div className="container py-8 sm:py-12 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
-            Assinar Coleções
-          </h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Assinar Coleções</h1>
           <p className="text-muted-foreground">
             Escolha seu plano e as coleções que deseja receber
           </p>
@@ -326,7 +330,11 @@ export default function SubscribeCollection() {
           <Alert className="mb-6">
             <AlertDescription>
               Você já tem uma assinatura ativa.{" "}
-              <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/assinaturas")}>
+              <Button
+                variant="link"
+                className="p-0 h-auto"
+                onClick={() => navigate("/assinaturas")}
+              >
                 Ver minhas assinaturas
               </Button>
             </AlertDescription>
@@ -337,8 +345,8 @@ export default function SubscribeCollection() {
         <Alert className="mb-6 border-amber-500 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-900">
-            <strong>Sistema em Desenvolvimento:</strong> A funcionalidade de assinatura está sendo implementada. 
-            Por enquanto, você pode explorar os planos e coleções disponíveis.
+            <strong>Sistema em Desenvolvimento:</strong> A funcionalidade de assinatura está sendo
+            implementada. Por enquanto, você pode explorar os planos e coleções disponíveis.
           </AlertDescription>
         </Alert>
 
@@ -348,10 +356,9 @@ export default function SubscribeCollection() {
             <CardHeader>
               <CardTitle>Escolha suas Coleções</CardTitle>
               <CardDescription>
-                {isAnualPlan 
+                {isAnualPlan
                   ? "Plano Anual: Acesso a todas as coleções"
-                  : `Selecione ${requiredCollections} ${requiredCollections === 1 ? 'coleção' : 'coleções'} (${selectedCollections.length}/${requiredCollections})`
-                }
+                  : `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"} (${selectedCollections.length}/${requiredCollections})`}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -359,13 +366,15 @@ export default function SubscribeCollection() {
                 <Alert className="mb-4">
                   <Sparkles className="h-4 w-4" />
                   <AlertDescription>
-                    Com o plano Anual, você tem acesso a TODAS as coleções e pode trocar entre elas ilimitadamente!
+                    Com o plano Anual, você tem acesso a TODAS as coleções e pode trocar entre elas
+                    ilimitadamente!
                   </AlertDescription>
                 </Alert>
               ) : (
                 <Alert className="mb-4">
                   <AlertDescription>
-                    Você poderá trocar ILIMITADAMENTE entre as coleções escolhidas até o início da produção.
+                    Você poderá trocar ILIMITADAMENTE entre as coleções escolhidas até o início da
+                    produção.
                   </AlertDescription>
                 </Alert>
               )}
@@ -375,7 +384,7 @@ export default function SubscribeCollection() {
                   const isSelected = selectedCollections.includes(col.id);
                   const canSelect = isAnualPlan || canSelectMore || isSelected;
                   const characterCount = col.collection_characters?.length || 0;
-                  
+
                   // Não mostrar coleções sem personagens
                   if (characterCount === 0) return null;
 
@@ -384,17 +393,19 @@ export default function SubscribeCollection() {
                       key={col.id}
                       onClick={() => canSelect && toggleCollection(col.id)}
                       className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                        isSelected 
-                          ? "border-primary bg-primary/5 shadow-sm" 
-                          : canSelect 
-                            ? "hover:bg-muted/50" 
+                        isSelected
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : canSelect
+                            ? "hover:bg-muted/50"
                             : "opacity-50 cursor-not-allowed"
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          isSelected ? "border-primary bg-primary" : "border-muted-foreground"
-                        }`}>
+                        <div
+                          className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                            isSelected ? "border-primary bg-primary" : "border-muted-foreground"
+                          }`}
+                        >
                           {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -405,7 +416,7 @@ export default function SubscribeCollection() {
                             </p>
                           )}
                           <p className="text-xs text-muted-foreground mt-2">
-                            {characterCount} {characterCount === 1 ? 'personagem' : 'personagens'}
+                            {characterCount} {characterCount === 1 ? "personagem" : "personagens"}
                           </p>
                         </div>
                       </div>
@@ -422,24 +433,22 @@ export default function SubscribeCollection() {
             <Card>
               <CardHeader>
                 <CardTitle>Escolha seu Plano</CardTitle>
-                <CardDescription>
-                  Receba personagens exclusivos todo mês
-                </CardDescription>
+                <CardDescription>Receba personagens exclusivos todo mês</CardDescription>
               </CardHeader>
               <CardContent>
                 <RadioGroup value={planType} onValueChange={(v: any) => setPlanType(v)}>
                   <div className="space-y-3">
                     {plans.map((plan: any) => {
                       const isSelected = planType === plan.plan_type;
-                      const priceFormatted = Number(plan.price_full).toLocaleString('pt-BR', { 
+                      const priceFormatted = Number(plan.price_full).toLocaleString("pt-BR", {
                         minimumFractionDigits: 0,
-                        maximumFractionDigits: 2 
+                        maximumFractionDigits: 2,
                       });
-                      const pixPriceFormatted = Number(plan.price_pix).toLocaleString('pt-BR', { 
+                      const pixPriceFormatted = Number(plan.price_pix).toLocaleString("pt-BR", {
                         minimumFractionDigits: 0,
-                        maximumFractionDigits: 2 
+                        maximumFractionDigits: 2,
                       });
-                      
+
                       return (
                         <label
                           key={plan.id}
@@ -447,14 +456,16 @@ export default function SubscribeCollection() {
                             isSelected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
                           }`}
                         >
-                          <RadioGroupItem value={plan.plan_type} id={plan.plan_type} className="mt-1" />
+                          <RadioGroupItem
+                            value={plan.plan_type}
+                            id={plan.plan_type}
+                            className="mt-1"
+                          />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-semibold">{plan.name}</span>
                               {plan.plan_type === "semestral" && (
-                                <Badge variant="secondary">
-                                  Inclui peça exclusiva
-                                </Badge>
+                                <Badge variant="secondary">Inclui peça exclusiva</Badge>
                               )}
                               {plan.plan_type === "anual" && (
                                 <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500">
@@ -464,7 +475,9 @@ export default function SubscribeCollection() {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground mb-2">
-                              {plan.deliveries_total} entregas • {plan.collections_count_description || `Escolha ${plan.collections_count} ${plan.collections_count === 1 ? 'coleção' : 'coleções'}`}
+                              {plan.deliveries_total} entregas •{" "}
+                              {plan.collections_count_description ||
+                                `Escolha ${plan.collections_count} ${plan.collections_count === 1 ? "coleção" : "coleções"}`}
                             </p>
                             <div className="flex items-baseline gap-2">
                               <span className="text-2xl font-bold">R$ {priceFormatted}</span>
@@ -493,13 +506,26 @@ export default function SubscribeCollection() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pix">
-                      Pagamento à vista - R$ {selectedPrice.pix.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                      Pagamento à vista - R${" "}
+                      {selectedPrice.pix.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}
                     </SelectItem>
                     <SelectItem value="credit_card">
-                      Cartão de Crédito - R$ {selectedPrice.full.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} (até 6x sem juros)
+                      Cartão de Crédito - R${" "}
+                      {selectedPrice.full.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      (até 6x sem juros)
                     </SelectItem>
                     <SelectItem value="boleto">
-                      Boleto - R$ {selectedPrice.full.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                      Boleto - R${" "}
+                      {selectedPrice.full.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -525,14 +551,16 @@ export default function SubscribeCollection() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Entregas:</span>
-                    <span className="font-medium">
-                      {selectedPlan?.deliveries_total || 0}
-                    </span>
+                    <span className="font-medium">{selectedPlan?.deliveries_total || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Forma de pagamento:</span>
                     <span className="font-medium">
-                      {paymentMethod === "pix" ? "À vista" : paymentMethod === "credit_card" ? "Cartão" : "Boleto"}
+                      {paymentMethod === "pix"
+                        ? "À vista"
+                        : paymentMethod === "credit_card"
+                          ? "Cartão"
+                          : "Boleto"}
                     </span>
                   </div>
                 </div>
@@ -542,11 +570,19 @@ export default function SubscribeCollection() {
                     <span className="text-lg font-semibold">Total:</span>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-primary">
-                        R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                        R${" "}
+                        {finalPrice.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        })}
                       </div>
                       {paymentMethod === "credit_card" && (
                         <div className="text-xs text-muted-foreground">
-                          ou 6x de R$ {(finalPrice / 6).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ou 6x de R${" "}
+                          {(finalPrice / 6).toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </div>
                       )}
                     </div>
@@ -557,17 +593,16 @@ export default function SubscribeCollection() {
                     size="lg"
                     onClick={() => subscribeMutation.mutate()}
                     disabled={
-                      subscribeMutation.isPending || 
-                      hasExistingSubscription || 
+                      subscribeMutation.isPending ||
+                      hasExistingSubscription ||
                       selectedCollections.length !== requiredCollections
                     }
                   >
-                    {subscribeMutation.isPending 
-                      ? "Processando..." 
+                    {subscribeMutation.isPending
+                      ? "Processando..."
                       : selectedCollections.length !== requiredCollections
-                        ? `Selecione ${requiredCollections} ${requiredCollections === 1 ? 'coleção' : 'coleções'}`
-                        : "Assinar Agora"
-                    }
+                        ? `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`
+                        : "Assinar Agora"}
                   </Button>
                 </div>
 

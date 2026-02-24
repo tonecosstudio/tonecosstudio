@@ -8,8 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Crown, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useContentSettings } from "@/hooks/useContentSettings";
+import { processContentVariables } from "@/lib/services/contentService";
 
 export default function Plans() {
+  const { data: content } = useContentSettings();
+
   const plansQuery = useQuery({
     queryKey: ["subscription-plans"],
     queryFn: async () => {
@@ -79,9 +83,7 @@ export default function Plans() {
         <div className="container px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-              Planos de Assinatura
-            </h1>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">Planos de Assinatura</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Escolha o plano ideal e receba colecionáveis premium todos os meses
             </p>
@@ -122,17 +124,12 @@ export default function Plans() {
                 <CardContent className="space-y-6">
                   {/* Preço */}
                   <div className="text-center space-y-2">
-                    <div className="text-4xl font-bold">
-                      R$ 500
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      por personagem
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">
-                      Total: R$ 500
-                    </div>
+                    <div className="text-4xl font-bold">R$ 500</div>
+                    <div className="text-sm text-muted-foreground">por personagem</div>
+                    <div className="text-sm text-muted-foreground mt-2">Total: R$ 500</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      <span className="text-primary">6x sem juros</span> ou <span className="text-primary">10x com juros</span>
+                      <span className="text-primary">6x sem juros</span> ou{" "}
+                      <span className="text-primary">10x com juros</span>
                     </div>
                   </div>
 
@@ -165,19 +162,12 @@ export default function Plans() {
                   </ul>
 
                   {/* CTA */}
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                  >
+                  <Button asChild variant="outline" className="w-full" size="lg">
                     <Link to="/colecoes">Ver Coleções</Link>
                   </Button>
 
                   {/* Sem compromisso */}
-                  <p className="text-xs text-center text-muted-foreground mt-2">
-                    Sem compromisso
-                  </p>
+                  <p className="text-xs text-center text-muted-foreground mt-2">Sem compromisso</p>
                 </CardContent>
               </Card>
 
@@ -196,7 +186,9 @@ export default function Plans() {
                     {/* Badge */}
                     {style.badge && (
                       <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                        <Badge className={`${style.badgeColor} px-4 py-1 text-xs font-bold shadow-lg`}>
+                        <Badge
+                          className={`${style.badgeColor} px-4 py-1 text-xs font-bold shadow-lg`}
+                        >
                           {style.badge}
                         </Badge>
                       </div>
@@ -204,30 +196,33 @@ export default function Plans() {
 
                     <CardHeader className="text-center pb-4">
                       <div className="flex justify-center mb-4">
-                        <div className={`w-16 h-16 rounded-full bg-muted flex items-center justify-center`}>
+                        <div
+                          className={`w-16 h-16 rounded-full bg-muted flex items-center justify-center`}
+                        >
                           <Icon className={`h-8 w-8 ${style.iconColor}`} />
                         </div>
                       </div>
                       <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                      <CardDescription className="text-base">
-                        {plan.description}
-                      </CardDescription>
+                      <CardDescription className="text-base">{plan.description}</CardDescription>
                     </CardHeader>
 
                     <CardContent className="space-y-6">
                       {/* Preço */}
                       <div className="text-center space-y-2">
                         <div className="text-4xl font-bold">
-                          R$ {(priceFull / plan.deliveries_total).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          R${" "}
+                          {(priceFull / plan.deliveries_total).toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          por personagem
-                        </div>
+                        <div className="text-sm text-muted-foreground">por personagem</div>
                         <div className="text-sm text-muted-foreground mt-2">
                           Total: R$ {priceFull.toLocaleString("pt-BR")}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          <span className="text-primary">6x sem juros</span> ou <span className="text-primary">10x com juros</span>
+                          <span className="text-primary">6x sem juros</span> ou{" "}
+                          <span className="text-primary">10x com juros</span>
                         </div>
                       </div>
 
@@ -237,8 +232,9 @@ export default function Plans() {
                           <Check className={`h-5 w-5 ${style.iconColor} flex-shrink-0 mt-0.5`} />
                           <span className="text-sm">
                             <strong>
-                              {plan.deliveries_total} {plan.deliveries_total === 1 ? 'peça' : 'peças'}
-                              {plan.plan_type === 'semestral' && ' (6 + 1 bônus)'}
+                              {plan.deliveries_total}{" "}
+                              {plan.deliveries_total === 1 ? "peça" : "peças"}
+                              {plan.plan_type === "semestral" && " (6 + 1 bônus)"}
                             </strong>
                           </span>
                         </li>
@@ -266,9 +262,7 @@ export default function Plans() {
                       <Button
                         asChild
                         className={`w-full ${
-                          plan.plan_type === "semestral"
-                            ? "bg-amber-500 hover:bg-amber-600"
-                            : ""
+                          plan.plan_type === "semestral" ? "bg-amber-500 hover:bg-amber-600" : ""
                         }`}
                         size="lg"
                       >
@@ -276,12 +270,12 @@ export default function Plans() {
                       </Button>
 
                       {/* Benefícios exclusivos */}
-                      {plan.plan_type === 'trimestral' && (
+                      {plan.plan_type === "trimestral" && (
                         <p className="text-xs text-center text-primary">
                           Plano com benefício exclusivo
                         </p>
                       )}
-                      {plan.plan_type === 'semestral' && (
+                      {plan.plan_type === "semestral" && (
                         <p className="text-xs text-center text-primary">
                           Inclui peça exclusiva para membros
                         </p>
@@ -316,8 +310,8 @@ export default function Plans() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Sim! Você pode trocar suas coleções quantas vezes quiser, desde que seja até 1 dia
-                    antes da produção do próximo lote.
+                    Sim! Você pode trocar suas coleções quantas vezes quiser, desde que seja até 1
+                    dia antes da produção do próximo lote.
                   </p>
                 </CardContent>
               </Card>
@@ -328,9 +322,9 @@ export default function Plans() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Seguimos um cronograma mensal fixo: Vendas do dia 15 ao dia 15 do mês seguinte (ou até atingir o limite de produção), 
-                    produção de 15 dias, e envio em até 5 dias úteis (considera feriados). Exemplo: compra em 15/02-15/03, 
-                    produção 16-30/03, envio até 5º dia útil de Abril.
+                    {content
+                      ? processContentVariables(content.faqFirstDelivery, content)
+                      : "Carregando..."}
                   </p>
                 </CardContent>
               </Card>
@@ -341,8 +335,8 @@ export default function Plans() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Sim, você pode cancelar sua assinatura a qualquer momento. As peças já pagas serão
-                    entregues normalmente.
+                    Sim, você pode cancelar sua assinatura a qualquer momento. As peças já pagas
+                    serão entregues normalmente.
                   </p>
                 </CardContent>
               </Card>
@@ -353,7 +347,8 @@ export default function Plans() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    A diferença está na quantidade de personagens recebidos e nos benefícios exclusivos para membros dos planos maiores.
+                    A diferença está na quantidade de personagens recebidos e nos benefícios
+                    exclusivos para membros dos planos maiores.
                   </p>
                 </CardContent>
               </Card>
@@ -364,8 +359,8 @@ export default function Plans() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Você escolhe a coleção, e o personagem do mês é revelado no envio. Cada peça é única e exclusiva, 
-                    tornando sua coleção ainda mais especial.
+                    Você escolhe a coleção, e o personagem do mês é revelado no envio. Cada peça é
+                    única e exclusiva, tornando sua coleção ainda mais especial.
                   </p>
                 </CardContent>
               </Card>

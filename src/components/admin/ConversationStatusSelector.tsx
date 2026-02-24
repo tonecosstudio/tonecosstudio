@@ -65,7 +65,10 @@ export function ConversationStatusSelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuRadioGroup value={status} onValueChange={(value) => handleStatusChange(value as ConversationStatus)}>
+        <DropdownMenuRadioGroup
+          value={status}
+          onValueChange={(value) => handleStatusChange(value as ConversationStatus)}
+        >
           {CONVERSATION_STATUSES.map((s) => (
             <DropdownMenuRadioItem key={s} value={s}>
               <div className="flex items-center gap-2">

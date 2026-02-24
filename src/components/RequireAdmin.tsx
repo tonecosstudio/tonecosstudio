@@ -16,7 +16,10 @@ export default function RequireAdmin({ children }: PropsWithChildren) {
   const isChecking = isLoading || (user && isAdminQuery.isLoading);
   const isAdmin = Boolean(isAdminQuery.data);
 
-  const redirectTo = useMemo(() => encodeURIComponent(location.pathname + location.search), [location]);
+  const redirectTo = useMemo(
+    () => encodeURIComponent(location.pathname + location.search),
+    [location]
+  );
 
   if (isChecking) {
     return (
@@ -36,7 +39,11 @@ export default function RequireAdmin({ children }: PropsWithChildren) {
   const bootstrap = async () => {
     const { data, error } = await supabase.functions.invoke("bootstrap-admin", { body: {} });
     if (error) {
-      toast({ title: "Falha ao criar admin inicial", description: error.message, variant: "destructive" });
+      toast({
+        title: "Falha ao criar admin inicial",
+        description: error.message,
+        variant: "destructive",
+      });
       return;
     }
     if (data?.ok) {
@@ -52,8 +59,8 @@ export default function RequireAdmin({ children }: PropsWithChildren) {
       <section className="rounded-xl border bg-surface/70 p-8 shadow-elevated">
         <h1 className="text-3xl font-semibold">Acesso restrito</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Esta área é apenas para administradores. Se este é o primeiro login do projeto, você pode se promover a admin
-          inicial uma única vez.
+          Esta área é apenas para administradores. Se este é o primeiro login do projeto, você pode
+          se promover a admin inicial uma única vez.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button variant="hero" onClick={bootstrap}>

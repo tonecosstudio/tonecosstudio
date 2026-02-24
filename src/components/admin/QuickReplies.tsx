@@ -46,11 +46,9 @@ export function QuickReplies({ onSelect }: QuickRepliesProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!e.ctrlKey) return;
-      
+
       const shortcut = "Ctrl+" + e.key;
-      const reply = quickReplies.find(
-        (r) => r.shortcut?.toLowerCase() === shortcut.toLowerCase()
-      );
+      const reply = quickReplies.find((r) => r.shortcut?.toLowerCase() === shortcut.toLowerCase());
 
       if (reply) {
         e.preventDefault();
@@ -93,9 +91,7 @@ export function QuickReplies({ onSelect }: QuickRepliesProps) {
       <CardContent className="space-y-4">
         {categories.map((category) => (
           <div key={category} className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase">
-              {category}
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase">{category}</p>
             <div className="grid grid-cols-1 gap-2">
               {quickReplies
                 .filter((r) => r.category === category)

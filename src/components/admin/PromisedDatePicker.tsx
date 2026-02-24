@@ -68,10 +68,7 @@ export function PromisedDatePicker({
           <Button
             variant={isOverdue ? "destructive" : date ? "default" : "outline"}
             size="sm"
-            className={cn(
-              "gap-2",
-              !date && "text-muted-foreground"
-            )}
+            className={cn("gap-2", !date && "text-muted-foreground")}
           >
             {isOverdue && <AlertTriangle className="h-4 w-4" />}
             <CalendarIcon className="h-4 w-4" />
@@ -80,7 +77,13 @@ export function PromisedDatePicker({
                 {format(date, "dd/MM/yyyy", { locale: ptBR })}
                 {daysUntil !== null && (
                   <span className="ml-1 text-xs">
-                    ({daysUntil === 0 ? "hoje" : daysUntil > 0 ? `${daysUntil}d` : `${Math.abs(daysUntil)}d atraso`})
+                    (
+                    {daysUntil === 0
+                      ? "hoje"
+                      : daysUntil > 0
+                        ? `${daysUntil}d`
+                        : `${Math.abs(daysUntil)}d atraso`}
+                    )
                   </span>
                 )}
               </span>
@@ -102,12 +105,7 @@ export function PromisedDatePicker({
       </Popover>
 
       {date && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClear}
-          title="Remover data prometida"
-        >
+        <Button variant="ghost" size="sm" onClick={handleClear} title="Remover data prometida">
           <X className="h-4 w-4" />
         </Button>
       )}

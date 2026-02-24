@@ -3,9 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  TrendingUp, Users, Package, DollarSign, 
-  ShoppingCart, Star, Calendar, Activity 
+import {
+  TrendingUp,
+  Users,
+  Package,
+  DollarSign,
+  ShoppingCart,
+  Star,
+  Calendar,
+  Activity,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -36,18 +42,14 @@ export default function AdminAnalytics() {
         .eq("status", "active");
 
       // Receita total (soma de total_spent)
-      const { data: revenueData } = await supabase
-        .from("profiles")
-        .select("total_spent");
-      
+      const { data: revenueData } = await supabase.from("profiles").select("total_spent");
+
       const totalRevenue = revenueData?.reduce((sum, p) => sum + (p.total_spent || 0), 0) || 0;
 
       // Média de completude de perfil
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("profile_completion");
-      
-      const avgCompletion = profileData?.length 
+      const { data: profileData } = await supabase.from("profiles").select("profile_completion");
+
+      const avgCompletion = profileData?.length
         ? profileData.reduce((sum, p) => sum + (p.profile_completion || 0), 0) / profileData.length
         : 0;
 
@@ -66,16 +68,18 @@ export default function AdminAnalytics() {
   const recentUsersQuery = useQuery({
     queryKey: ["admin-analytics-recent-users"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('admin_list_users');
-      
+      const { data, error } = await supabase.rpc("admin_list_users");
+
       if (error) {
-        console.error('Erro ao buscar usuários:', error);
+        console.error("Erro ao buscar usuários:", error);
         return [];
       }
-      
+
       const users = data || [];
       return users
-        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .sort(
+          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
         .slice(0, 5);
     },
   });
@@ -89,7 +93,7 @@ export default function AdminAnalytics() {
         .select("id, status, created_at")
         .order("created_at", { ascending: false })
         .limit(5);
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -104,7 +108,7 @@ export default function AdminAnalytics() {
         .select("id, display_name, full_name, collector_level, pieces_owned, total_spent")
         .order("total_spent", { ascending: false })
         .limit(5);
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -114,15 +118,13 @@ export default function AdminAnalytics() {
   const collectionsStatsQuery = useQuery({
     queryKey: ["admin-analytics-collections"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select("id, name, is_active");
-      
+      const { data, error } = await supabase.from("collections").select("id, name, is_active");
+
       if (error) throw error;
-      
-      const active = data?.filter(c => c.is_active).length || 0;
-      const inactive = data?.filter(c => !c.is_active).length || 0;
-      
+
+      const active = data?.filter((c) => c.is_active).length || 0;
+      const inactive = data?.filter((c) => !c.is_active).length || 0;
+
       return { total: data?.length || 0, active, inactive };
     },
   });
@@ -147,9 +149,7 @@ export default function AdminAnalytics() {
             Tempo Real
           </Badge>
         </div>
-        <p className="text-lg text-muted-foreground">
-          Métricas e estatísticas do sistema Ordax
-        </p>
+        <p className="text-lg text-muted-foreground">Métricas e estatísticas do sistema Ordax</p>
       </div>
 
       {/* Stats Cards */}
@@ -166,9 +166,7 @@ export default function AdminAnalytics() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.totalUsers}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cadastrados na plataforma
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Cadastrados na plataforma</p>
               </>
             )}
           </CardContent>
@@ -186,9 +184,7 @@ export default function AdminAnalytics() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.totalOrders}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Orçamentos solicitados
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Orçamentos solicitados</p>
               </>
             )}
           </CardContent>
@@ -206,9 +202,7 @@ export default function AdminAnalytics() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.totalModels}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  No catálogo
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">No catálogo</p>
               </>
             )}
           </CardContent>
@@ -226,9 +220,7 @@ export default function AdminAnalytics() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.activeSubscriptions}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Recorrentes
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Recorrentes</p>
               </>
             )}
           </CardContent>
@@ -245,12 +237,8 @@ export default function AdminAnalytics() {
               <Skeleton className="h-8 w-24" />
             ) : (
               <>
-                <div className="text-2xl font-bold">
-                  R$ {(stats?.totalRevenue || 0).toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Acumulado
-                </p>
+                <div className="text-2xl font-bold">R$ {(stats?.totalRevenue || 0).toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground mt-1">Acumulado</p>
               </>
             )}
           </CardContent>
@@ -268,9 +256,7 @@ export default function AdminAnalytics() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.avgCompletion}%</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Perfis completos
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Perfis completos</p>
               </>
             )}
           </CardContent>
@@ -315,7 +301,7 @@ export default function AdminAnalytics() {
           <CardContent>
             {recentUsersQuery.isLoading ? (
               <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
+                {[1, 2, 3, 4, 5].map((i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
@@ -333,7 +319,7 @@ export default function AdminAnalytics() {
                     <div>
                       <div className="font-medium text-sm">{user.email}</div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                        {new Date(user.created_at).toLocaleDateString("pt-BR")}
                       </div>
                     </div>
                     <Badge variant="secondary" className="text-xs">
@@ -358,7 +344,7 @@ export default function AdminAnalytics() {
           <CardContent>
             {recentOrdersQuery.isLoading ? (
               <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
+                {[1, 2, 3, 4, 5].map((i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
@@ -374,11 +360,9 @@ export default function AdminAnalytics() {
                     className="flex items-center justify-between p-3 rounded-lg border"
                   >
                     <div>
-                      <div className="font-medium text-sm">
-                        Pedido #{order.id.slice(0, 8)}
-                      </div>
+                      <div className="font-medium text-sm">Pedido #{order.id.slice(0, 8)}</div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString('pt-BR')}
+                        {new Date(order.created_at).toLocaleDateString("pt-BR")}
                       </div>
                     </div>
                     <Badge variant="secondary" className="text-xs">
@@ -403,7 +387,7 @@ export default function AdminAnalytics() {
           <CardContent>
             {topCollectorsQuery.isLoading ? (
               <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
+                {[1, 2, 3, 4, 5].map((i) => (
                   <Skeleton key={i} className="h-16 w-full" />
                 ))}
               </div>
@@ -424,10 +408,11 @@ export default function AdminAnalytics() {
                       </div>
                       <div>
                         <div className="font-medium">
-                          {collector.display_name || collector.full_name || 'Usuário'}
+                          {collector.display_name || collector.full_name || "Usuário"}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Nível {collector.collector_level || 1} • {collector.pieces_owned || 0} peças
+                          Nível {collector.collector_level || 1} • {collector.pieces_owned || 0}{" "}
+                          peças
                         </div>
                       </div>
                     </div>
@@ -435,9 +420,7 @@ export default function AdminAnalytics() {
                       <div className="font-bold text-primary">
                         R$ {(collector.total_spent || 0).toFixed(2)}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Investido
-                      </div>
+                      <div className="text-xs text-muted-foreground">Investido</div>
                     </div>
                   </div>
                 ))}

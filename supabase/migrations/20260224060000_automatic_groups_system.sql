@@ -26,6 +26,12 @@ BEGIN
     LIMIT 1;
   END IF;
 
+  -- Se ainda não houver usuário, não criar grupos (será criado quando houver usuários)
+  IF admin_user_id IS NULL THEN
+    RAISE NOTICE 'Nenhum usuário encontrado. Grupos serão criados quando houver usuários.';
+    RETURN;
+  END IF;
+
   -- Grupo: Novos Membros (todos os usuários cadastrados)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
@@ -104,6 +110,20 @@ BEGIN
   FROM auth.users
   WHERE raw_user_meta_data->>'role' = 'admin'
   LIMIT 1;
+
+  -- Se não houver admin, usar o primeiro usuário
+  IF admin_user_id IS NULL THEN
+    SELECT id INTO admin_user_id
+    FROM auth.users
+    ORDER BY created_at ASC
+    LIMIT 1;
+  END IF;
+
+  -- Se não houver usuário, não criar grupo
+  IF admin_user_id IS NULL THEN
+    RAISE NOTICE 'Nenhum usuário encontrado. Grupo não será criado para coleção %', NEW.name;
+    RETURN NEW;
+  END IF;
 
   -- Nome do grupo baseado no nome da coleção
   group_name := '📦 ' || NEW.name;

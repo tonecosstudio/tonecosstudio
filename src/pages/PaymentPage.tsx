@@ -1,49 +1,50 @@
 /**
  * PaymentPage Component
- * 
+ *
  * Page for initiating manual payments for quotes or subscriptions.
- * 
+ *
  * Requirements: 2.1-2.10, 15.1-15.2, 15.3-15.7
  * Tasks: 16.2 Integrar iniciação de pagamento no fluxo de orçamento
  *        16.3 Integrar iniciação de pagamento no fluxo de assinatura
  */
 
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import AppShell from '@/components/AppShell';
-import SEOHead from '@/components/SEOHead';
-import { PaymentInitiationFlow } from '@/components/customer/PaymentInitiationFlow';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, AlertCircle, CheckCircle, Package, CreditCard } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import AppShell from "@/components/AppShell";
+import SEOHead from "@/components/SEOHead";
+import { PaymentInitiationFlow } from "@/components/customer/PaymentInitiationFlow";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, AlertCircle, CheckCircle, Package, CreditCard } from "lucide-react";
 
 export default function PaymentPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const quoteId = searchParams.get('quote');
-  const subscriptionId = searchParams.get('subscription');
-  const paymentType = searchParams.get('type') || 'one_time';
-  
+
+  const quoteId = searchParams.get("quote");
+  const subscriptionId = searchParams.get("subscription");
+  const paymentType = searchParams.get("type") || "one_time";
+
   const [amount, setAmount] = useState<number>(0);
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
+  const [title, setTitle] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
 
   // Fetch quote details if quoteId is provided
   const quoteQuery = useQuery({
-    queryKey: ['quote-payment', quoteId],
+    queryKey: ["quote-payment", quoteId],
     enabled: !!quoteId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('quotes')
-        .select(`
+        .from("quotes")
+        .select(
+          `
           *,
           quote_items (
             id,
@@ -54,28 +55,30 @@ export default function PaymentPage() {
               name
             )
           )
-        `)
-        .eq('id', quoteId)
+        `
+        )
+        .eq("id", quoteId)
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
         throw new Error("Orçamento não encontrado");
       }
-      
+
       return data;
     },
   });
 
   // Fetch subscription details if subscriptionId is provided
   const subscriptionQuery = useQuery({
-    queryKey: ['subscription-payment', subscriptionId],
+    queryKey: ["subscription-payment", subscriptionId],
     enabled: !!subscriptionId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscriptions')
-        .select(`
+        .from("subscriptions")
+        .select(
+          `
           *,
           plans (
             id,
@@ -88,16 +91,17 @@ export default function PaymentPage() {
             name,
             slug
           )
-        `)
-        .eq('id', subscriptionId)
+        `
+        )
+        .eq("id", subscriptionId)
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
         throw new Error("Assinatura não encontrada");
       }
-      
+
       return data;
     },
   });
@@ -106,28 +110,30 @@ export default function PaymentPage() {
   useEffect(() => {
     if (quoteId && quoteQuery.data) {
       const quote = quoteQuery.data;
-      
-      if (paymentType === 'deposit' && quote.deposit_amount) {
+
+      if (paymentType === "deposit" && quote.deposit_amount) {
         setAmount(quote.deposit_amount);
         setTitle(`Pagamento do Sinal - Orçamento #${quoteId.slice(0, 8)}`);
-        setDescription('Realize o pagamento do sinal para iniciar a produção do seu pedido.');
-      } else if (paymentType === 'final' && quote.remaining_amount) {
+        setDescription("Realize o pagamento do sinal para iniciar a produção do seu pedido.");
+      } else if (paymentType === "final" && quote.remaining_amount) {
         setAmount(quote.remaining_amount);
         setTitle(`Pagamento Final - Orçamento #${quoteId.slice(0, 8)}`);
-        setDescription('Realize o pagamento final para liberar o envio do seu pedido.');
+        setDescription("Realize o pagamento final para liberar o envio do seu pedido.");
       } else if (quote.total_amount) {
         setAmount(quote.total_amount);
         setTitle(`Pagamento Total - Orçamento #${quoteId.slice(0, 8)}`);
-        setDescription('Realize o pagamento total do seu orçamento.');
+        setDescription("Realize o pagamento total do seu orçamento.");
       }
     } else if (subscriptionId && subscriptionQuery.data) {
       const subscription = subscriptionQuery.data;
       const plan = subscription.plans;
-      
+
       if (plan) {
         setAmount(plan.price);
         setTitle(`Assinatura - ${plan.name}`);
-        setDescription(`Pagamento da assinatura ${subscription.collections?.name || 'da coleção'}.`);
+        setDescription(
+          `Pagamento da assinatura ${subscription.collections?.name || "da coleção"}.`
+        );
       }
     }
   }, [quoteQuery.data, subscriptionQuery.data, quoteId, subscriptionId, paymentType]);
@@ -135,8 +141,8 @@ export default function PaymentPage() {
   // Handle payment success
   const handlePaymentSuccess = (paymentId: string) => {
     toast({
-      title: 'Pagamento registrado com sucesso!',
-      description: 'Agora você pode enviar o comprovante de pagamento.',
+      title: "Pagamento registrado com sucesso!",
+      description: "Agora você pode enviar o comprovante de pagamento.",
     });
 
     // Navigate to payment details page
@@ -148,9 +154,9 @@ export default function PaymentPage() {
     if (quoteId) {
       navigate(`/orcamento/acompanhar/${quoteId}`);
     } else if (subscriptionId) {
-      navigate('/assinaturas');
+      navigate("/assinaturas");
     } else {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   };
 
@@ -163,10 +169,11 @@ export default function PaymentPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Parâmetros inválidos</AlertTitle>
             <AlertDescription>
-              Não foi possível identificar o item para pagamento. Por favor, volte e tente novamente.
+              Não foi possível identificar o item para pagamento. Por favor, volte e tente
+              novamente.
             </AlertDescription>
           </Alert>
-          <Button onClick={() => navigate('/dashboard')} className="mt-4">
+          <Button onClick={() => navigate("/dashboard")} className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar ao Dashboard
           </Button>
@@ -175,7 +182,8 @@ export default function PaymentPage() {
     );
   }
 
-  const isLoading = (quoteId && quoteQuery.isLoading) || (subscriptionId && subscriptionQuery.isLoading);
+  const isLoading =
+    (quoteId && quoteQuery.isLoading) || (subscriptionId && subscriptionQuery.isLoading);
   const error = quoteQuery.error || subscriptionQuery.error;
 
   if (isLoading) {
@@ -202,9 +210,7 @@ export default function PaymentPage() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Erro ao carregar informações</AlertTitle>
-            <AlertDescription>
-              {error.message}
-            </AlertDescription>
+            <AlertDescription>{error.message}</AlertDescription>
           </Alert>
           <Button onClick={handleCancel} className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -217,40 +223,28 @@ export default function PaymentPage() {
 
   return (
     <>
-      <SEOHead
-        title={title}
-        description={description}
-      />
+      <SEOHead title={title} description={description} />
 
       <AppShell>
         <div className="container py-8 sm:py-12 max-w-5xl">
           {/* Header */}
           <div className="mb-8">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCancel}
-              className="mb-6 -ml-2"
-            >
+            <Button variant="ghost" size="sm" onClick={handleCancel} className="mb-6 -ml-2">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
 
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
-                  {title}
-                </h1>
-                <p className="text-muted-foreground">
-                  {description}
-                </p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">{title}</h1>
+                <p className="text-muted-foreground">{description}</p>
               </div>
 
               {amount > 0 && (
                 <Badge variant="outline" className="text-lg px-4 py-2">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
                   }).format(amount)}
                 </Badge>
               )}
@@ -281,9 +275,7 @@ export default function PaymentPage() {
                       <Package className="h-5 w-5" />
                       Resumo do Orçamento
                     </CardTitle>
-                    <CardDescription>
-                      Detalhes do seu pedido
-                    </CardDescription>
+                    <CardDescription>Detalhes do seu pedido</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -291,17 +283,21 @@ export default function PaymentPage() {
                         <span className="text-sm text-muted-foreground">Número</span>
                         <span className="text-sm font-medium">#{quoteId.slice(0, 8)}</span>
                       </div>
-                      
+
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Status</span>
-                        <Badge variant={
-                          quoteQuery.data.payment_status === 'pending' ? 'secondary' :
-                          quoteQuery.data.payment_status === 'deposit_paid' ? 'default' :
-                          'outline'
-                        }>
-                          {quoteQuery.data.payment_status === 'pending' && 'Aguardando Sinal'}
-                          {quoteQuery.data.payment_status === 'deposit_paid' && 'Sinal Pago'}
-                          {quoteQuery.data.payment_status === 'fully_paid' && 'Pago Totalmente'}
+                        <Badge
+                          variant={
+                            quoteQuery.data.payment_status === "pending"
+                              ? "secondary"
+                              : quoteQuery.data.payment_status === "deposit_paid"
+                                ? "default"
+                                : "outline"
+                          }
+                        >
+                          {quoteQuery.data.payment_status === "pending" && "Aguardando Sinal"}
+                          {quoteQuery.data.payment_status === "deposit_paid" && "Sinal Pago"}
+                          {quoteQuery.data.payment_status === "fully_paid" && "Pago Totalmente"}
                         </Badge>
                       </div>
 
@@ -333,9 +329,7 @@ export default function PaymentPage() {
                       <CreditCard className="h-5 w-5" />
                       Resumo da Assinatura
                     </CardTitle>
-                    <CardDescription>
-                      Detalhes da sua assinatura
-                    </CardDescription>
+                    <CardDescription>Detalhes da sua assinatura</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -345,7 +339,7 @@ export default function PaymentPage() {
                           {subscriptionQuery.data.plans?.name}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Coleção</span>
                         <span className="text-sm font-medium">
@@ -355,14 +349,18 @@ export default function PaymentPage() {
 
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Status</span>
-                        <Badge variant={
-                          subscriptionQuery.data.status === 'active' ? 'default' :
-                          subscriptionQuery.data.status === 'pending' ? 'secondary' :
-                          'outline'
-                        }>
-                          {subscriptionQuery.data.status === 'active' && 'Ativa'}
-                          {subscriptionQuery.data.status === 'pending' && 'Pendente'}
-                          {subscriptionQuery.data.status === 'cancelled' && 'Cancelada'}
+                        <Badge
+                          variant={
+                            subscriptionQuery.data.status === "active"
+                              ? "default"
+                              : subscriptionQuery.data.status === "pending"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {subscriptionQuery.data.status === "active" && "Ativa"}
+                          {subscriptionQuery.data.status === "pending" && "Pendente"}
+                          {subscriptionQuery.data.status === "cancelled" && "Cancelada"}
                         </Badge>
                       </div>
 

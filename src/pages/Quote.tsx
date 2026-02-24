@@ -30,11 +30,7 @@ const quoteSchema = z.object({
     .int("Use um número inteiro")
     .min(1, "Mínimo 1")
     .max(50, "Máximo 50"),
-  scale: z
-    .string()
-    .trim()
-    .min(1, "Informe o tamanho/escala")
-    .max(80, "Máximo 80 caracteres"),
+  scale: z.string().trim().min(1, "Informe o tamanho/escala").max(80, "Máximo 80 caracteres"),
   deadline: z.string().trim().max(80, "Máximo 80 caracteres").optional(),
   notes: z.string().trim().max(1200, "Máximo 1200 caracteres").optional(),
 });
@@ -68,7 +64,9 @@ export default function Quote() {
   });
 
   const model = modelQuery.data;
-  const imageUrl = model ? supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl : null;
+  const imageUrl = model
+    ? supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl
+    : null;
 
   const submit = async () => {
     if (!user) {
@@ -76,7 +74,7 @@ export default function Quote() {
       navigate("/login");
       return;
     }
-    
+
     if (!modelId) {
       toast({ title: "Selecione um produto", description: "Volte ao catálogo e escolha um item." });
       return;
@@ -110,7 +108,7 @@ export default function Quote() {
         })
         .select("id")
         .single();
-      
+
       if (quoteErr) throw quoteErr;
 
       const { error: itemErr } = await supabase.from("quote_items").insert({
@@ -119,14 +117,14 @@ export default function Quote() {
         quantity: parsed.data.quantity,
         scale: parsed.data.scale,
       });
-      
+
       if (itemErr) throw itemErr;
 
-      toast({ 
-        title: "Orçamento enviado!", 
-        description: "Entraremos em contato em breve com os detalhes." 
+      toast({
+        title: "Orçamento enviado!",
+        description: "Entraremos em contato em breve com os detalhes.",
       });
-      
+
       navigate("/");
     } catch (e) {
       toast({
@@ -144,7 +142,9 @@ export default function Quote() {
       <AppShell>
         <div className="container py-20 text-center">
           <h1 className="text-3xl font-bold mb-4">Nenhum modelo selecionado</h1>
-          <p className="text-muted-foreground mb-8">Volte ao catálogo e escolha um item para solicitar orçamento.</p>
+          <p className="text-muted-foreground mb-8">
+            Volte ao catálogo e escolha um item para solicitar orçamento.
+          </p>
           <Button onClick={() => navigate("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar ao Catálogo
@@ -164,12 +164,7 @@ export default function Quote() {
 
       <div className="container py-8 sm:py-12 max-w-5xl">
         {/* Breadcrumb */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate("/")}
-          className="mb-6 -ml-2"
-        >
+        <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="mb-6 -ml-2">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar ao Catálogo
         </Button>
@@ -190,7 +185,10 @@ export default function Quote() {
               <CardContent className="p-6 sm:p-8 space-y-6">
                 {/* Quantidade */}
                 <div className="space-y-2">
-                  <Label htmlFor="quantity" className="flex items-center gap-2 text-base font-semibold">
+                  <Label
+                    htmlFor="quantity"
+                    className="flex items-center gap-2 text-base font-semibold"
+                  >
                     <Package className="h-4 w-4" />
                     Quantidade
                   </Label>
@@ -211,7 +209,10 @@ export default function Quote() {
 
                 {/* Escala */}
                 <div className="space-y-2">
-                  <Label htmlFor="scale" className="flex items-center gap-2 text-base font-semibold">
+                  <Label
+                    htmlFor="scale"
+                    className="flex items-center gap-2 text-base font-semibold"
+                  >
                     <Ruler className="h-4 w-4" />
                     Tamanho / Escala *
                   </Label>
@@ -230,7 +231,10 @@ export default function Quote() {
 
                 {/* Prazo */}
                 <div className="space-y-2">
-                  <Label htmlFor="deadline" className="flex items-center gap-2 text-base font-semibold">
+                  <Label
+                    htmlFor="deadline"
+                    className="flex items-center gap-2 text-base font-semibold"
+                  >
                     <Calendar className="h-4 w-4" />
                     Prazo Desejado (Opcional)
                   </Label>
@@ -248,7 +252,10 @@ export default function Quote() {
 
                 {/* Observações */}
                 <div className="space-y-2">
-                  <Label htmlFor="notes" className="flex items-center gap-2 text-base font-semibold">
+                  <Label
+                    htmlFor="notes"
+                    className="flex items-center gap-2 text-base font-semibold"
+                  >
                     <FileText className="h-4 w-4" />
                     Observações (Opcional)
                   </Label>
@@ -260,9 +267,7 @@ export default function Quote() {
                     placeholder="Detalhes adicionais: cores específicas, poses, referências, etc."
                     maxLength={1200}
                   />
-                  <p className="text-sm text-muted-foreground">
-                    {notes.length}/1200 caracteres
-                  </p>
+                  <p className="text-sm text-muted-foreground">{notes.length}/1200 caracteres</p>
                 </div>
 
                 {/* Botão */}
@@ -305,9 +310,7 @@ export default function Quote() {
                   </CardContent>
                 </>
               ) : (
-                <div className="p-6 text-center text-muted-foreground">
-                  Modelo não encontrado
-                </div>
+                <div className="p-6 text-center text-muted-foreground">Modelo não encontrado</div>
               )}
             </Card>
           </div>

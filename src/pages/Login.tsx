@@ -46,7 +46,7 @@ export default function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -57,33 +57,35 @@ export default function Login() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { 
+          options: {
             emailRedirectTo: window.location.origin,
             data: {
-              email_confirm: false // Desabilita confirmação por email para evitar rate limit
-            }
+              email_confirm: false, // Desabilita confirmação por email para evitar rate limit
+            },
           },
         });
         if (error) {
           // Tratamento específico para erro 429 (Too Many Requests)
-          if (error.message.includes('429') || error.message.includes('rate limit')) {
-            throw new Error('Muitas tentativas. Por favor, aguarde alguns minutos e tente novamente.');
+          if (error.message.includes("429") || error.message.includes("rate limit")) {
+            throw new Error(
+              "Muitas tentativas. Por favor, aguarde alguns minutos e tente novamente."
+            );
           }
           throw error;
         }
-        toast({ 
-          title: "Conta criada com sucesso!", 
-          description: "Você já pode entrar com seu e-mail e senha." 
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Você já pode entrar com seu e-mail e senha.",
         });
         setMode("login");
         setPassword("");
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
-      toast({ 
-        title: mode === "login" ? "Erro ao entrar" : "Erro ao criar conta", 
-        description: msg, 
-        variant: "destructive" 
+      toast({
+        title: mode === "login" ? "Erro ao entrar" : "Erro ao criar conta",
+        description: msg,
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -94,7 +96,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo: `${window.location.origin}${next}`,
         },
@@ -102,10 +104,10 @@ export default function Login() {
       if (error) throw error;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
-      toast({ 
-        title: "Erro ao entrar com Google", 
-        description: msg, 
-        variant: "destructive" 
+      toast({
+        title: "Erro ao entrar com Google",
+        description: msg,
+        variant: "destructive",
       });
       setIsLoading(false);
     }
@@ -116,10 +118,10 @@ export default function Login() {
       <SEOHead
         title={mode === "login" ? "Entrar" : "Criar Conta"}
         description="Entre na sua conta Ordax para solicitar orçamentos e acompanhar pedidos de colecionáveis premium."
-        keywords={['login', 'entrar', 'criar conta', 'cadastro', 'ordax']}
+        keywords={["login", "entrar", "criar conta", "cadastro", "ordax"]}
         noindex={true}
       />
-      
+
       <div className="container py-12 sm:py-20">
         <div className="mx-auto max-w-md">
           {/* Header */}
@@ -171,11 +173,11 @@ export default function Login() {
                     <Mail className="h-4 w-4" />
                     E-mail
                   </Label>
-                  <Input 
+                  <Input
                     id="email"
                     type="email"
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
                     className="h-12 text-base"
                     placeholder="seu@email.com"
@@ -203,17 +205,17 @@ export default function Login() {
                     minLength={6}
                   />
                   {mode === "signup" && (
-                    <p className="text-xs text-muted-foreground">
-                      Mínimo de 6 caracteres
-                    </p>
+                    <p className="text-xs text-muted-foreground">Mínimo de 6 caracteres</p>
                   )}
                 </div>
 
                 {/* Botão Principal */}
-                <Button 
+                <Button
                   type="submit"
-                  className="w-full h-12 text-base bg-foreground text-background hover:bg-foreground/90 font-medium" 
-                  disabled={isLoading || !email || !password || (mode === "signup" && password.length < 6)}
+                  className="w-full h-12 text-base bg-foreground text-background hover:bg-foreground/90 font-medium"
+                  disabled={
+                    isLoading || !email || !password || (mode === "signup" && password.length < 6)
+                  }
                 >
                   {isLoading ? (
                     <span className="inline-flex items-center gap-2">
@@ -249,9 +251,13 @@ export default function Login() {
               <div className="mt-6 pt-6 border-t border-border text-center">
                 <p className="text-xs text-muted-foreground">
                   Ao continuar, você concorda com nossos{" "}
-                  <a href="#" className="underline hover:text-foreground">Termos de Uso</a>
-                  {" "}e{" "}
-                  <a href="#" className="underline hover:text-foreground">Política de Privacidade</a>
+                  <a href="#" className="underline hover:text-foreground">
+                    Termos de Uso
+                  </a>{" "}
+                  e{" "}
+                  <a href="#" className="underline hover:text-foreground">
+                    Política de Privacidade
+                  </a>
                 </p>
               </div>
             </CardContent>
@@ -259,8 +265,8 @@ export default function Login() {
 
           {/* Link Sobre */}
           <div className="mt-6 text-center">
-            <a 
-              href="/sobre" 
+            <a
+              href="/sobre"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
             >
               Saiba mais sobre a Ordax e Tonecos Studios

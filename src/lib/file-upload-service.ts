@@ -1,7 +1,7 @@
 /**
  * FileUploadService - Service for handling payment proof file uploads
  * Requirements: 3.1-3.12, 14.1-14.15
- * 
+ *
  * Features:
  * - File validation (type, size, MIME type)
  * - Upload to Supabase Storage with progress tracking
@@ -10,17 +10,17 @@
  * - Rate limiting (10 uploads per hour per user)
  */
 
-import { supabase } from '@/integrations/supabase/client';
-import type { PaymentFile, FileValidationResult } from '@/types/manual-payment';
-import { getNotificationService } from './notification-service';
-import { compressImage } from './image-compression';
+import { supabase } from "@/integrations/supabase/client";
+import type { PaymentFile, FileValidationResult } from "@/types/manual-payment";
+import { getNotificationService } from "./notification-service";
+import { compressImage } from "./image-compression";
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES_PER_PAYMENT = 5;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf'];
-const STORAGE_BUCKET = 'payment-proofs';
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"];
+const STORAGE_BUCKET = "payment-proofs";
 const SIGNED_URL_EXPIRY = 3600; // 1 hour in seconds
 const RATE_LIMIT_WINDOW = 3600000; // 1 hour in milliseconds
 const RATE_LIMIT_MAX_UPLOADS = 10;
@@ -42,7 +42,7 @@ export class FileUploadError extends Error {
     public details?: Record<string, any>
   ) {
     super(message);
-    this.name = 'FileUploadError';
+    this.name = "FileUploadError";
   }
 }
 
@@ -68,7 +68,7 @@ export class FileUploadService {
     }
 
     // Validate file extension
-    const extension = file.name.split('.').pop()?.toLowerCase();
+    const extension = file.name.split(".").pop()?.toLowerCase();
     if (!extension || !ALLOWED_EXTENSIONS.includes(extension)) {
       errors.push(`File extension not supported. Please upload JPG, PNG, or PDF files.`);
     }
@@ -82,14 +82,14 @@ export class FileUploadService {
     }
 
     // Reject executable files (Requirement 14.13)
-    const executableExtensions = ['exe', 'sh', 'bat', 'cmd', 'com', 'app', 'dmg'];
+    const executableExtensions = ["exe", "sh", "bat", "cmd", "com", "app", "dmg"];
     if (extension && executableExtensions.includes(extension)) {
       errors.push(`Executable files are not allowed for security reasons.`);
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -99,9 +99,9 @@ export class FileUploadService {
    */
   private validateMimeTypeExtension(mimeType: string, extension: string): boolean {
     const mimeExtensionMap: Record<string, string[]> = {
-      'image/jpeg': ['jpg', 'jpeg'],
-      'image/png': ['png'],
-      'application/pdf': ['pdf']
+      "image/jpeg": ["jpg", "jpeg"],
+      "image/png": ["png"],
+      "application/pdf": ["pdf"],
     };
 
     const validExtensions = mimeExtensionMap[mimeType];
@@ -117,17 +117,15 @@ export class FileUploadService {
     const userUploads = uploadTimestamps.get(userId) || [];
 
     // Remove timestamps older than 1 hour
-    const recentUploads = userUploads.filter(
-      timestamp => now - timestamp < RATE_LIMIT_WINDOW
-    );
+    const recentUploads = userUploads.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW);
 
     // Check if limit exceeded
     if (recentUploads.length >= RATE_LIMIT_MAX_UPLOADS) {
       const oldestUpload = Math.min(...recentUploads);
       const minutesRemaining = Math.ceil((RATE_LIMIT_WINDOW - (now - oldestUpload)) / 60000);
-      
+
       throw new FileUploadError(
-        'RATE_LIMIT_EXCEEDED',
+        "RATE_LIMIT_EXCEEDED",
         `Upload limit exceeded. Please try again in ${minutesRemaining} minutes.`,
         429
       );
@@ -144,17 +142,17 @@ export class FileUploadService {
    */
   private async checkMaxFiles(paymentId: string): Promise<void> {
     const { count, error } = await supabase
-      .from('payment_files')
-      .select('*', { count: 'exact', head: true })
-      .eq('payment_id', paymentId);
+      .from("payment_files")
+      .select("*", { count: "exact", head: true })
+      .eq("payment_id", paymentId);
 
     if (error) {
-      throw new FileUploadError('DATABASE_ERROR', 'Failed to check file count', 500);
+      throw new FileUploadError("DATABASE_ERROR", "Failed to check file count", 500);
     }
 
     if (count !== null && count >= MAX_FILES_PER_PAYMENT) {
       throw new FileUploadError(
-        'MAX_FILES_REACHED',
+        "MAX_FILES_REACHED",
         `Maximum of ${MAX_FILES_PER_PAYMENT} files per payment reached.`,
         400
       );
@@ -166,8 +164,8 @@ export class FileUploadService {
    * Requirement: 14.7
    */
   private generateUniqueFileName(paymentId: string, originalName: string): string {
-    const extension = originalName.split('.').pop()?.toLowerCase() || 'bin';
-    const safeExtension = extension.replace(/[^a-z0-9]/g, '');
+    const extension = originalName.split(".").pop()?.toLowerCase() || "bin";
+    const safeExtension = extension.replace(/[^a-z0-9]/g, "");
     const uniqueId = crypto.randomUUID();
     return `${paymentId}/${uniqueId}.${safeExtension}`;
   }
@@ -178,14 +176,14 @@ export class FileUploadService {
    */
   async generateThumbnail(file: File): Promise<Blob | null> {
     // Only generate thumbnails for images
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       return null;
     }
 
     return new Promise((resolve, reject) => {
       const img = new Image();
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
       if (!ctx) {
         resolve(null);
@@ -219,7 +217,7 @@ export class FileUploadService {
           (blob) => {
             resolve(blob);
           },
-          'image/jpeg',
+          "image/jpeg",
           THUMBNAIL_QUALITY
         );
       };
@@ -242,9 +240,12 @@ export class FileUploadService {
     onProgress?: (progress: number) => void
   ): Promise<PaymentFile> {
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
     if (userError || !user) {
-      throw new FileUploadError('UNAUTHORIZED', 'User not authenticated', 401);
+      throw new FileUploadError("UNAUTHORIZED", "User not authenticated", 401);
     }
 
     // Check rate limiting (Requirement 14.5)
@@ -253,12 +254,9 @@ export class FileUploadService {
     // Validate file (Requirements 3.2, 3.3, 14.1)
     const validation = await this.validateFile(file);
     if (!validation.valid) {
-      throw new FileUploadError(
-        'VALIDATION_ERROR',
-        validation.errors[0],
-        400,
-        { errors: validation.errors }
-      );
+      throw new FileUploadError("VALIDATION_ERROR", validation.errors[0], 400, {
+        errors: validation.errors,
+      });
     }
 
     // Check max files (Requirement 3.6)
@@ -266,12 +264,14 @@ export class FileUploadService {
 
     // Compress image before upload (Requirement 18.6, 18.7)
     let fileToUpload = file;
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       try {
         fileToUpload = await compressImage(file);
-        console.log(`Image compressed: ${(file.size / 1024).toFixed(2)}KB -> ${(fileToUpload.size / 1024).toFixed(2)}KB`);
+        console.log(
+          `Image compressed: ${(file.size / 1024).toFixed(2)}KB -> ${(fileToUpload.size / 1024).toFixed(2)}KB`
+        );
       } catch (error) {
-        console.warn('Image compression failed, uploading original:', error);
+        console.warn("Image compression failed, uploading original:", error);
         // Continue with original file if compression fails
       }
     }
@@ -284,21 +284,18 @@ export class FileUploadService {
       .from(STORAGE_BUCKET)
       .upload(filePath, fileToUpload, {
         upsert: false,
-        contentType: fileToUpload.type
+        contentType: fileToUpload.type,
       });
 
     if (uploadError) {
-      throw new FileUploadError(
-        'UPLOAD_FAILED',
-        'File upload failed. Please try again.',
-        500,
-        { originalError: uploadError }
-      );
+      throw new FileUploadError("UPLOAD_FAILED", "File upload failed. Please try again.", 500, {
+        originalError: uploadError,
+      });
     }
 
     // Generate thumbnail for images (Requirement 3.8, 18.8)
     let thumbnailPath: string | null = null;
-    if (fileToUpload.type.startsWith('image/')) {
+    if (fileToUpload.type.startsWith("image/")) {
       const thumbnail = await this.generateThumbnail(fileToUpload);
       if (thumbnail) {
         const thumbPath = `${paymentId}/thumb_${crypto.randomUUID()}.jpg`;
@@ -306,7 +303,7 @@ export class FileUploadService {
           .from(STORAGE_BUCKET)
           .upload(thumbPath, thumbnail, {
             upsert: false,
-            contentType: 'image/jpeg'
+            contentType: "image/jpeg",
           });
 
         if (!thumbError) {
@@ -317,7 +314,7 @@ export class FileUploadService {
 
     // Create database record (Requirement 3.9)
     const { data: fileRecord, error: dbError } = await supabase
-      .from('payment_files')
+      .from("payment_files")
       .insert({
         payment_id: paymentId,
         file_name: file.name, // Use original file name
@@ -325,7 +322,7 @@ export class FileUploadService {
         file_size: fileToUpload.size, // Use compressed file size
         file_type: fileToUpload.type,
         thumbnail_path: thumbnailPath,
-        uploaded_by: user.id
+        uploaded_by: user.id,
       })
       .select()
       .single();
@@ -338,8 +335,8 @@ export class FileUploadService {
       }
 
       throw new FileUploadError(
-        'DATABASE_ERROR',
-        'Failed to save file record. Please try again.',
+        "DATABASE_ERROR",
+        "Failed to save file record. Please try again.",
         500,
         { originalError: dbError }
       );
@@ -353,9 +350,9 @@ export class FileUploadService {
     // Check if this is the first file uploaded and send under review notification
     try {
       const { count } = await supabase
-        .from('payment_files')
-        .select('*', { count: 'exact', head: true })
-        .eq('payment_id', paymentId);
+        .from("payment_files")
+        .select("*", { count: "exact", head: true })
+        .eq("payment_id", paymentId);
 
       if (count === 1) {
         // This is the first file, payment status should now be 'under_review'
@@ -365,7 +362,7 @@ export class FileUploadService {
       }
     } catch (error) {
       // Don't fail file upload if notification fails
-      console.error('Failed to send under review notification:', error);
+      console.error("Failed to send under review notification:", error);
     }
 
     return fileRecord as PaymentFile;
@@ -381,12 +378,9 @@ export class FileUploadService {
       .createSignedUrl(filePath, expiresIn);
 
     if (error || !data) {
-      throw new FileUploadError(
-        'SIGNED_URL_ERROR',
-        'Failed to generate file access URL',
-        500,
-        { originalError: error }
-      );
+      throw new FileUploadError("SIGNED_URL_ERROR", "Failed to generate file access URL", 500, {
+        originalError: error,
+      });
     }
 
     return data.signedUrl;
@@ -398,18 +392,15 @@ export class FileUploadService {
    */
   async listByPayment(paymentId: string): Promise<PaymentFile[]> {
     const { data, error } = await supabase
-      .from('payment_files')
-      .select('*')
-      .eq('payment_id', paymentId)
-      .order('created_at', { ascending: true });
+      .from("payment_files")
+      .select("*")
+      .eq("payment_id", paymentId)
+      .order("created_at", { ascending: true });
 
     if (error) {
-      throw new FileUploadError(
-        'DATABASE_ERROR',
-        'Failed to retrieve files',
-        500,
-        { originalError: error }
-      );
+      throw new FileUploadError("DATABASE_ERROR", "Failed to retrieve files", 500, {
+        originalError: error,
+      });
     }
 
     return (data || []) as PaymentFile[];
@@ -421,17 +412,13 @@ export class FileUploadService {
   async delete(fileId: string): Promise<void> {
     // Get file record
     const { data: file, error: fetchError } = await supabase
-      .from('payment_files')
-      .select('file_path, thumbnail_path')
-      .eq('id', fileId)
+      .from("payment_files")
+      .select("file_path, thumbnail_path")
+      .eq("id", fileId)
       .single();
 
     if (fetchError || !file) {
-      throw new FileUploadError(
-        'FILE_NOT_FOUND',
-        'File not found',
-        404
-      );
+      throw new FileUploadError("FILE_NOT_FOUND", "File not found", 404);
     }
 
     // Delete from storage
@@ -445,27 +432,18 @@ export class FileUploadService {
       .remove(pathsToDelete);
 
     if (storageError) {
-      throw new FileUploadError(
-        'DELETE_FAILED',
-        'Failed to delete file from storage',
-        500,
-        { originalError: storageError }
-      );
+      throw new FileUploadError("DELETE_FAILED", "Failed to delete file from storage", 500, {
+        originalError: storageError,
+      });
     }
 
     // Delete database record
-    const { error: dbError } = await supabase
-      .from('payment_files')
-      .delete()
-      .eq('id', fileId);
+    const { error: dbError } = await supabase.from("payment_files").delete().eq("id", fileId);
 
     if (dbError) {
-      throw new FileUploadError(
-        'DATABASE_ERROR',
-        'Failed to delete file record',
-        500,
-        { originalError: dbError }
-      );
+      throw new FileUploadError("DATABASE_ERROR", "Failed to delete file record", 500, {
+        originalError: dbError,
+      });
     }
   }
 }

@@ -36,7 +36,9 @@ export function extractNameHints(originalFilenameOrPath: string | null | undefin
   };
 }
 
-export function buildPrettyModelNameFromFilename(originalFilenameOrPath: string | null | undefined): string {
+export function buildPrettyModelNameFromFilename(
+  originalFilenameOrPath: string | null | undefined
+): string {
   const { rawBaseName } = extractNameHints(originalFilenameOrPath);
   if (!rawBaseName) return "";
 
@@ -68,10 +70,7 @@ export function buildPrettyModelNameFromFilename(originalFilenameOrPath: string 
 
   // Remove os tokens que representam a variação para não duplicar
   if (matched) {
-    s = s
-      .replace(matched.test, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    s = s.replace(matched.test, " ").replace(/\s+/g, " ").trim();
   }
 
   const base = titleCase(s);

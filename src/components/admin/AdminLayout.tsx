@@ -1,13 +1,13 @@
 import { ReactNode, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  FileText, 
-  Upload, 
-  Workflow, 
+import {
+  LayoutDashboard,
+  Package,
+  Users,
+  FileText,
+  Upload,
+  Workflow,
   MessageSquare,
   Settings,
   CreditCard,
@@ -25,7 +25,7 @@ import {
   Calculator,
   Gauge,
   Wallet,
-  UsersRound
+  UsersRound,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -207,6 +207,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       label: "Configurações",
       items: [
         {
+          id: "content-settings",
+          label: "Conteúdo (SSOT)",
+          icon: Settings,
+          path: "/admin/configuracoes-conteudo",
+        },
+        {
           id: "production-limit",
           label: "Limite de Produção",
           icon: Gauge,
@@ -250,13 +256,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       {section.label}
                     </h3>
-                    
+
                     {/* Section Items */}
                     <div className="space-y-1">
                       {section.items.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.path);
-                        
+
                         return (
                           <button
                             key={item.id}
@@ -282,9 +288,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </aside>
 
         {/* Conteúdo Principal */}
-        <main className="flex-1 min-w-0">
-          {children}
-        </main>
+        <main className="flex-1 min-w-0">{children}</main>
       </div>
     </div>
   );

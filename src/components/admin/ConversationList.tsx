@@ -22,14 +22,8 @@ interface ConversationListProps {
 }
 
 export function ConversationList({ selectedId, onSelect }: ConversationListProps) {
-  const {
-    conversations,
-    loading,
-    searchTerm,
-    search,
-    filterByStatus,
-    refresh,
-  } = useConversations();
+  const { conversations, loading, searchTerm, search, filterByStatus, refresh } =
+    useConversations();
 
   const [statusFilter, setStatusFilter] = useState<ConversationStatus | "all">("all");
 
@@ -56,12 +50,7 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
       <div className="p-4 border-b space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-lg">Conversas</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={refresh}
-            disabled={loading}
-          >
+          <Button variant="ghost" size="sm" onClick={refresh} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -156,9 +145,7 @@ function ConversationCard({
               {conversation.user_name || conversation.user_email || "Usuário"}
             </p>
             {conversation.user_email && conversation.user_name && (
-              <p className="text-xs text-muted-foreground truncate">
-                {conversation.user_email}
-              </p>
+              <p className="text-xs text-muted-foreground truncate">{conversation.user_email}</p>
             )}
           </div>
           <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -167,9 +154,7 @@ function ConversationCard({
         </div>
 
         {/* Subject */}
-        <p className="text-sm text-muted-foreground truncate">
-          {conversation.subject}
-        </p>
+        <p className="text-sm text-muted-foreground truncate">{conversation.subject}</p>
 
         {/* Tags e badges */}
         <div className="flex flex-wrap items-center gap-1">
@@ -179,8 +164,8 @@ function ConversationCard({
               conversation.status === "waiting_admin"
                 ? "destructive"
                 : conversation.status === "resolved"
-                ? "secondary"
-                : "default"
+                  ? "secondary"
+                  : "default"
             }
             className="text-xs"
           >

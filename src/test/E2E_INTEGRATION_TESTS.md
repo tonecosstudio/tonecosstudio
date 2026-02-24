@@ -12,6 +12,7 @@ This directory contains comprehensive end-to-end integration tests for the Manua
 **Purpose**: Demonstrates test structure and validates workflow logic without requiring a live database
 
 This file contains 19 passing tests that validate:
+
 - Customer payment flow structure
 - Admin workflow structure
 - Rejection and resubmission flow
@@ -25,6 +26,7 @@ This file contains 19 passing tests that validate:
 - Integration points
 
 **Run with**:
+
 ```bash
 npm run test -- src/test/e2e-integration-demo.test.ts
 ```
@@ -35,6 +37,7 @@ npm run test -- src/test/e2e-integration-demo.test.ts
 **Purpose**: Full integration tests against a real Supabase instance
 
 This file contains comprehensive integration tests that:
+
 - Create real users and payments
 - Upload actual files
 - Test database triggers and RLS policies
@@ -43,11 +46,13 @@ This file contains comprehensive integration tests that:
 - Verify complete workflows end-to-end
 
 **Run with**:
+
 ```bash
 VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ```
 
 **Prerequisites**:
+
 1. Test Supabase project configured
 2. All migrations applied
 3. Test environment variables set
@@ -56,6 +61,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ## Test Coverage
 
 ### Customer Flows (5 workflows)
+
 1. **Payment Creation**: Create payment → verify conversation → track status
 2. **File Upload**: Upload proof → verify status change → verify audit log
 3. **Status Tracking**: Monitor payment status across updates
@@ -63,6 +69,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 5. **Resubmission**: Upload new proof after rejection
 
 ### Admin Flows (6 workflows)
+
 1. **Pending Payments Dashboard**: List and filter pending payments
 2. **Payment Review**: View payment details and uploaded proofs
 3. **Payment Approval**: Approve payment → update quote/subscription
@@ -71,6 +78,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 6. **Bulk Operations**: Approve/message/export multiple payments
 
 ### Integration Flows (5 workflows)
+
 1. **Quote Status Update**: Payment approval → quote marked as paid
 2. **Subscription Activation**: Payment approval → subscription activated
 3. **Deliveries Creation**: Subscription activation → deliveries created
@@ -78,6 +86,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 5. **Email Notifications**: Status changes → emails sent
 
 ### Real-time Flows (3 workflows)
+
 1. **Status Updates**: Payment status changes reflected in real-time
 2. **Message Updates**: New messages appear without refresh
 3. **Notification Badges**: Badge counts update automatically
@@ -85,6 +94,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ## Test Scenarios
 
 ### Complete Customer Payment Flow
+
 ```
 1. Customer creates payment
    ✓ Payment created with status 'pending'
@@ -102,6 +112,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ```
 
 ### Complete Admin Workflow
+
 ```
 1. Admin views pending payments
    ✓ Only 'pending', 'under_review', 'requires_info' shown
@@ -121,6 +132,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ```
 
 ### Rejection and Resubmission Flow
+
 ```
 1. Admin rejects payment
    ✓ Status changed to 'rejected'
@@ -137,6 +149,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ```
 
 ### Bulk Operations with Mixed Statuses
+
 ```
 1. Admin selects multiple payments
    ✓ Payments with different statuses selected
@@ -152,6 +165,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ```
 
 ### Subscription Payment Flow
+
 ```
 1. Customer creates subscription payment
    ✓ Payment type is 'recurring'
@@ -169,6 +183,7 @@ VITEST_INTEGRATION=true npm run test -- src/test/e2e-integration.test.ts
 ## Status Transitions
 
 ### Valid Transitions
+
 ```
 pending → under_review
 under_review → requires_info
@@ -179,6 +194,7 @@ rejected → under_review (resubmission)
 ```
 
 ### Invalid Transitions (Blocked)
+
 ```
 pending → approved ❌
 pending → rejected ❌
@@ -188,21 +204,25 @@ approved → * (terminal state) ❌
 ## Data Integrity Validations
 
 ### Payment Reference Numbers
+
 - Format: `PAY-YYYYMMDD-XXXX`
 - Must be unique
 - Generated automatically
 
 ### Quote/Subscription XOR Constraint
+
 - Must have quote_id OR subscription_id
 - Cannot have both
 - Cannot have neither
 
 ### File Upload Constraints
+
 - Maximum 5 files per payment
 - Maximum 5MB per file
 - Allowed types: JPG, PNG, PDF
 
 ### Audit Log Requirements
+
 - All admin actions logged
 - Includes: action_type, admin_id, timestamp
 - Optional: old_status, new_status, notes
@@ -210,6 +230,7 @@ approved → * (terminal state) ❌
 ## Error Handling
 
 ### Validated Error Scenarios
+
 1. Payment without quote or subscription
 2. Payment with both quote and subscription
 3. File size exceeded (>5MB)
@@ -218,6 +239,7 @@ approved → * (terminal state) ❌
 6. Invalid status transition
 
 ### Expected Error Messages
+
 - Clear and specific
 - User-friendly language
 - Actionable guidance
@@ -225,6 +247,7 @@ approved → * (terminal state) ❌
 ## Notification Triggers
 
 ### Email Notifications
+
 1. **Payment Created** → Customer receives confirmation
 2. **Payment Under Review** → Admin receives notification
 3. **Payment Approved** → Customer receives confirmation
@@ -232,6 +255,7 @@ approved → * (terminal state) ❌
 5. **Info Requested** → Customer receives request
 
 ### In-App Notifications
+
 1. **Payment Requires Info** → Customer badge incremented
 2. **New Pending Payment** → Admin badge incremented
 3. **New Message** → Message badge incremented
@@ -239,11 +263,13 @@ approved → * (terminal state) ❌
 ## Integration Points
 
 ### Quote Integration
+
 - **Trigger**: Payment approved
 - **Action**: Update quote status to 'paid'
 - **Follow-up**: Trigger order fulfillment workflow
 
 ### Subscription Integration
+
 - **Trigger**: Payment approved
 - **Actions**:
   1. Update subscription status to 'active'
@@ -252,6 +278,7 @@ approved → * (terminal state) ❌
   4. Set next_production_start
 
 ### Conversation Integration
+
 - **Trigger**: Payment created
 - **Action**: Create support_conversations record
 - **Subject**: "Pagamento - Pedido #[reference_number]"
@@ -260,11 +287,13 @@ approved → * (terminal state) ❌
 ## Running Tests
 
 ### Run Demo Tests (No Database Required)
+
 ```bash
 npm run test -- src/test/e2e-integration-demo.test.ts
 ```
 
 ### Run Full Integration Tests (Requires Database)
+
 ```bash
 # Set environment variable
 export VITEST_INTEGRATION=true
@@ -274,11 +303,13 @@ npm run test -- src/test/e2e-integration.test.ts
 ```
 
 ### Run All Tests
+
 ```bash
 npm run test
 ```
 
 ### Watch Mode
+
 ```bash
 npm run test:watch
 ```
@@ -286,6 +317,7 @@ npm run test:watch
 ## CI/CD Integration
 
 ### GitHub Actions Example
+
 ```yaml
 name: Integration Tests
 
@@ -294,21 +326,21 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '18'
-      
+          node-version: "18"
+
       - name: Install Dependencies
         run: npm ci
-      
+
       - name: Run Demo Tests
         run: npm run test -- src/test/e2e-integration-demo.test.ts
-      
+
       - name: Run Integration Tests
         if: github.ref == 'refs/heads/main'
         env:
@@ -321,18 +353,21 @@ jobs:
 ## Test Environment Setup
 
 ### 1. Create Test Supabase Project
+
 ```bash
 # Create new project for testing
 # Name: manual-payment-system-test
 ```
 
 ### 2. Apply Migrations
+
 ```bash
 # Run all migrations in order
 supabase db push
 ```
 
 ### 3. Configure Environment Variables
+
 ```bash
 # .env.test
 VITE_SUPABASE_URL=https://your-test-project.supabase.co
@@ -340,6 +375,7 @@ VITE_SUPABASE_ANON_KEY=your-test-anon-key
 ```
 
 ### 4. Enable Admin API
+
 ```bash
 # In Supabase Dashboard:
 # Settings → API → Service Role Key
@@ -349,18 +385,22 @@ VITE_SUPABASE_ANON_KEY=your-test-anon-key
 ## Troubleshooting
 
 ### Tests Fail with "Database error saving new user"
+
 - **Cause**: No live database connection
 - **Solution**: Set `VITEST_INTEGRATION=true` or run demo tests instead
 
 ### Tests Timeout
+
 - **Cause**: Slow database connection or large test data
 - **Solution**: Increase timeout in test configuration
 
 ### RLS Policy Errors
+
 - **Cause**: Missing or incorrect RLS policies
 - **Solution**: Verify all migrations applied correctly
 
 ### File Upload Errors
+
 - **Cause**: Storage bucket not configured
 - **Solution**: Create 'payment-proofs' bucket in Supabase Storage
 
@@ -391,6 +431,7 @@ VITE_SUPABASE_ANON_KEY=your-test-anon-key
 ## Support
 
 For questions or issues with integration tests:
+
 1. Check this documentation
 2. Review test output for specific errors
 3. Consult the design document for expected behavior

@@ -1,17 +1,30 @@
 /**
  * ReminderScheduler - Modal para agendar lembretes em conversas
- * 
+ *
  * Requirements: 23.5
  * Design: .kiro/specs/advanced-chat-support-system/design.md
- * 
+ *
  * Permite que admins agendem lembretes para conversas com validação de data futura.
  */
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,7 +49,8 @@ export function ReminderScheduler({
   onReminderCreated,
 }: ReminderSchedulerProps) {
   const { toast } = useToast();
-  const [reminderType, setReminderType] = useState<ConversationReminder['reminder_type']>('quote_followup');
+  const [reminderType, setReminderType] =
+    useState<ConversationReminder["reminder_type"]>("quote_followup");
   const [scheduledDate, setScheduledDate] = useState<Date>();
   const [scheduledTime, setScheduledTime] = useState<string>("09:00");
   const [customMessage, setCustomMessage] = useState<string>("");
@@ -54,7 +68,7 @@ export function ReminderScheduler({
     }
 
     // Combinar data e hora
-    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    const [hours, minutes] = scheduledTime.split(":").map(Number);
     const scheduledDateTime = new Date(scheduledDate);
     scheduledDateTime.setHours(hours, minutes, 0, 0);
 
@@ -72,11 +86,7 @@ export function ReminderScheduler({
     setIsSubmitting(true);
 
     try {
-      const reminder = await createReminder(
-        conversationId,
-        reminderType,
-        scheduledDateTime
-      );
+      const reminder = await createReminder(conversationId, reminderType, scheduledDateTime);
 
       toast({
         title: "Lembrete agendado",
@@ -84,7 +94,7 @@ export function ReminderScheduler({
       });
 
       // Resetar formulário
-      setReminderType('quote_followup');
+      setReminderType("quote_followup");
       setScheduledDate(undefined);
       setScheduledTime("09:00");
       setCustomMessage("");
@@ -97,7 +107,7 @@ export function ReminderScheduler({
       // Fechar modal
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao criar lembrete:', error);
+      console.error("Erro ao criar lembrete:", error);
       toast({
         title: "Erro ao agendar lembrete",
         description: error instanceof Error ? error.message : "Ocorreu um erro desconhecido.",
@@ -108,20 +118,20 @@ export function ReminderScheduler({
     }
   };
 
-  const getReminderTypeLabel = (type: ConversationReminder['reminder_type']) => {
+  const getReminderTypeLabel = (type: ConversationReminder["reminder_type"]) => {
     const labels = {
-      quote_followup: 'Follow-up de Orçamento',
-      payment_pending: 'Pagamento Pendente',
-      promised_date: 'Data Prometida',
+      quote_followup: "Follow-up de Orçamento",
+      payment_pending: "Pagamento Pendente",
+      promised_date: "Data Prometida",
     };
     return labels[type];
   };
 
-  const getReminderTypeDescription = (type: ConversationReminder['reminder_type']) => {
+  const getReminderTypeDescription = (type: ConversationReminder["reminder_type"]) => {
     const descriptions = {
-      quote_followup: 'Lembrar cliente sobre orçamento sem resposta',
-      payment_pending: 'Lembrar cliente sobre pagamento aguardando confirmação',
-      promised_date: 'Lembrar sobre prazo prometido ao cliente',
+      quote_followup: "Lembrar cliente sobre orçamento sem resposta",
+      payment_pending: "Lembrar cliente sobre pagamento aguardando confirmação",
+      promised_date: "Lembrar sobre prazo prometido ao cliente",
     };
     return descriptions[type];
   };
@@ -142,7 +152,9 @@ export function ReminderScheduler({
             <Label htmlFor="reminder-type">Tipo de Lembrete</Label>
             <Select
               value={reminderType}
-              onValueChange={(value) => setReminderType(value as ConversationReminder['reminder_type'])}
+              onValueChange={(value) =>
+                setReminderType(value as ConversationReminder["reminder_type"])
+              }
             >
               <SelectTrigger id="reminder-type">
                 <SelectValue />
@@ -150,25 +162,25 @@ export function ReminderScheduler({
               <SelectContent>
                 <SelectItem value="quote_followup">
                   <div className="flex flex-col items-start">
-                    <span className="font-medium">{getReminderTypeLabel('quote_followup')}</span>
+                    <span className="font-medium">{getReminderTypeLabel("quote_followup")}</span>
                     <span className="text-xs text-muted-foreground">
-                      {getReminderTypeDescription('quote_followup')}
+                      {getReminderTypeDescription("quote_followup")}
                     </span>
                   </div>
                 </SelectItem>
                 <SelectItem value="payment_pending">
                   <div className="flex flex-col items-start">
-                    <span className="font-medium">{getReminderTypeLabel('payment_pending')}</span>
+                    <span className="font-medium">{getReminderTypeLabel("payment_pending")}</span>
                     <span className="text-xs text-muted-foreground">
-                      {getReminderTypeDescription('payment_pending')}
+                      {getReminderTypeDescription("payment_pending")}
                     </span>
                   </div>
                 </SelectItem>
                 <SelectItem value="promised_date">
                   <div className="flex flex-col items-start">
-                    <span className="font-medium">{getReminderTypeLabel('promised_date')}</span>
+                    <span className="font-medium">{getReminderTypeLabel("promised_date")}</span>
                     <span className="text-xs text-muted-foreground">
-                      {getReminderTypeDescription('promised_date')}
+                      {getReminderTypeDescription("promised_date")}
                     </span>
                   </div>
                 </SelectItem>
@@ -240,17 +252,10 @@ export function ReminderScheduler({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? "Agendando..." : "Agendar Lembrete"}
           </Button>
         </DialogFooter>

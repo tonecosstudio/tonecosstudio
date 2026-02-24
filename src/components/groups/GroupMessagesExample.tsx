@@ -19,14 +19,10 @@ export function GroupMessagesExample({ groupId, groupName }: GroupMessagesExampl
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
 
-  const {
-    messages,
-    loading,
-    hasMore,
-    loadMore,
-    sendMessage,
-    messagesEndRef,
-  } = useGroupMessages({ groupId, autoScroll: true });
+  const { messages, loading, hasMore, loadMore, sendMessage, messagesEndRef } = useGroupMessages({
+    groupId,
+    autoScroll: true,
+  });
 
   const handleSendMessage = async () => {
     if (!messageText.trim()) return;
@@ -77,20 +73,15 @@ export function GroupMessagesExample({ groupId, groupName }: GroupMessagesExampl
 
               <div className="space-y-4">
                 {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className="flex flex-col space-y-1 p-3 bg-muted rounded-lg"
-                  >
+                  <div key={message.id} className="flex flex-col space-y-1 p-3 bg-muted rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-sm">
-                        {message.sender_name}
-                      </span>
+                      <span className="font-semibold text-sm">{message.sender_name}</span>
                       <span className="text-xs text-muted-foreground">
                         {new Date(message.created_at).toLocaleString()}
                       </span>
                     </div>
                     <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                    
+
                     {/* Attachments */}
                     {message.attachments && message.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -132,11 +123,7 @@ export function GroupMessagesExample({ groupId, groupName }: GroupMessagesExampl
             size="icon"
             className="self-end"
           >
-            {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground text-right">

@@ -1,14 +1,14 @@
-import { useState, useRef } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { messageService } from '@/lib/services/messageService';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { Send, Paperclip, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { messageService } from "@/lib/services/messageService";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { Send, Paperclip, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface SendMessageFormProps {
   groupId: string;
@@ -17,92 +17,100 @@ interface SendMessageFormProps {
 export function SendMessageForm({ groupId }: SendMessageFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [actionButtonText, setActionButtonText] = useState('');
-  const [actionButtonUrl, setActionButtonUrl] = useState('');
-  const [linkText, setLinkText] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
+  const [actionButtonText, setActionButtonText] = useState("");
+  const [actionButtonUrl, setActionButtonUrl] = useState("");
+  const [linkText, setLinkText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sendMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const richFields = {
         action_button_text: actionButtonText || undefined,
         action_button_url: actionButtonUrl || undefined,
         link_text: linkText || undefined,
         link_url: linkUrl || undefined,
       };
-      
-      return messageService.sendBroadcastMessage(groupId, user.id, message, richFields, attachments);
+
+      return messageService.sendBroadcastMessage(
+        groupId,
+        user.id,
+        message,
+        richFields,
+        attachments
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-messages', groupId] });
+      queryClient.invalidateQueries({ queryKey: ["group-messages", groupId] });
       toast({
-        title: 'Mensagem enviada',
-        description: 'A mensagem foi enviada para todos os membros do grupo.',
+        title: "Mensagem enviada",
+        description: "A mensagem foi enviada para todos os membros do grupo.",
       });
-      setMessage('');
+      setMessage("");
       setAttachments([]);
-      setActionButtonText('');
-      setActionButtonUrl('');
-      setLinkText('');
-      setLinkUrl('');
+      setActionButtonText("");
+      setActionButtonUrl("");
+      setLinkText("");
+      setLinkUrl("");
       setShowAdvanced(false);
     },
     onError: (error) => {
       toast({
-        title: 'Erro ao enviar mensagem',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
+        title: "Erro ao enviar mensagem",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
       });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!message.trim() && attachments.length === 0) {
       toast({
-        title: 'Mensagem vazia',
-        description: 'Por favor, digite uma mensagem ou anexe um arquivo.',
-        variant: 'destructive',
+        title: "Mensagem vazia",
+        description: "Por favor, digite uma mensagem ou anexe um arquivo.",
+        variant: "destructive",
       });
       return;
     }
-    
+
     if (message.length > 5000) {
       toast({
-        title: 'Mensagem muito longa',
-        description: 'A mensagem não pode ter mais de 5000 caracteres.',
-        variant: 'destructive',
+        title: "Mensagem muito longa",
+        description: "A mensagem não pode ter mais de 5000 caracteres.",
+        variant: "destructive",
       });
       return;
     }
-    
+
     sendMutation.mutate();
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     if (files.length + attachments.length > 5) {
       toast({
-        title: 'Limite de anexos',
-        description: 'Você pode anexar no máximo 5 arquivos por mensagem.',
-        variant: 'destructive',
+        title: "Limite de anexos",
+        description: "Você pode anexar no máximo 5 arquivos por mensagem.",
+        variant: "destructive",
       });
       return;
     }
-    
+
     setAttachments([...attachments, ...files]);
-    
+
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -144,9 +152,7 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
           />
           <div className="text-xs text-muted-foreground mt-1">
             {message.length}/5000 caracteres
-            {attachments.length > 0 && (
-              <span className="ml-4">{attachments.length}/5 anexos</span>
-            )}
+            {attachments.length > 0 && <span className="ml-4">{attachments.length}/5 anexos</span>}
           </div>
         </div>
 
@@ -158,7 +164,11 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
             onClick={() => setShowAdvanced(!showAdvanced)}
             className="text-xs"
           >
-            {showAdvanced ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
+            {showAdvanced ? (
+              <ChevronUp className="w-3 h-3 mr-1" />
+            ) : (
+              <ChevronDown className="w-3 h-3 mr-1" />
+            )}
             Opções Avançadas
           </Button>
 
@@ -166,7 +176,9 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
             <div className="mt-3 space-y-3 p-3 border rounded-md bg-muted/50">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="actionButtonText" className="text-xs">Texto do Botão</Label>
+                  <Label htmlFor="actionButtonText" className="text-xs">
+                    Texto do Botão
+                  </Label>
                   <Input
                     id="actionButtonText"
                     placeholder="Ex: Ver mais"
@@ -177,7 +189,9 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="actionButtonUrl" className="text-xs">URL do Botão</Label>
+                  <Label htmlFor="actionButtonUrl" className="text-xs">
+                    URL do Botão
+                  </Label>
                   <Input
                     id="actionButtonUrl"
                     placeholder="https://..."
@@ -191,7 +205,9 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="linkText" className="text-xs">Texto do Link</Label>
+                  <Label htmlFor="linkText" className="text-xs">
+                    Texto do Link
+                  </Label>
                   <Input
                     id="linkText"
                     placeholder="Ex: Saiba mais"
@@ -202,7 +218,9 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="linkUrl" className="text-xs">URL do Link</Label>
+                  <Label htmlFor="linkUrl" className="text-xs">
+                    URL do Link
+                  </Label>
                   <Input
                     id="linkUrl"
                     placeholder="https://..."
@@ -227,7 +245,7 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
             className="hidden"
             disabled={sendMutation.isPending || attachments.length >= 5}
           />
-          
+
           <Button
             type="button"
             variant="outline"
@@ -244,7 +262,7 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
             className="flex-1"
           >
             <Send className="w-4 h-4 mr-2" />
-            {sendMutation.isPending ? 'Enviando...' : 'Enviar'}
+            {sendMutation.isPending ? "Enviando..." : "Enviar"}
           </Button>
         </div>
       </form>

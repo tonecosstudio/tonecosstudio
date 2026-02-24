@@ -57,10 +57,10 @@ type FranchiseRuleRow = {
 
 function fmtDate(iso: string) {
   try {
-    return new Date(iso).toLocaleString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric'
+    return new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   } catch {
     return iso;
@@ -121,12 +121,10 @@ export default function AdminFranchises() {
         .map((a) => a.trim())
         .filter(Boolean);
 
-      const { error } = await supabase
-        .from("franchises")
-        .insert({
-          canonical: newFranchise.canonical.trim(),
-          aliases: aliases.length > 0 ? aliases : [],
-        });
+      const { error } = await supabase.from("franchises").insert({
+        canonical: newFranchise.canonical.trim(),
+        aliases: aliases.length > 0 ? aliases : [],
+      });
 
       if (error) throw error;
 
@@ -141,10 +139,7 @@ export default function AdminFranchises() {
 
   const deleteFranchise = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("franchises")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("franchises").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -202,14 +197,12 @@ export default function AdminFranchises() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Usuário não autenticado");
 
-      const { error } = await supabase
-        .from("franchise_rules")
-        .insert({
-          pattern: newRule.pattern.trim(),
-          franchise_canonical: newRule.franchise.trim(),
-          note: newRule.note.trim() || null,
-          created_by: userData.user.id,
-        });
+      const { error } = await supabase.from("franchise_rules").insert({
+        pattern: newRule.pattern.trim(),
+        franchise_canonical: newRule.franchise.trim(),
+        note: newRule.note.trim() || null,
+        created_by: userData.user.id,
+      });
 
       if (error) throw error;
 
@@ -241,10 +234,7 @@ export default function AdminFranchises() {
 
   const deleteRule = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("franchise_rules")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("franchise_rules").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -305,7 +295,9 @@ export default function AdminFranchises() {
           <Card className="border border-border bg-card shadow-premium">
             <CardHeader className="border-b border-border">
               <div className="flex items-center justify-between gap-4">
-                <CardTitle className="text-xl font-semibold">Franquias ({franchises.length})</CardTitle>
+                <CardTitle className="text-xl font-semibold">
+                  Franquias ({franchises.length})
+                </CardTitle>
                 <Input
                   placeholder="Buscar..."
                   value={searchTerm}
@@ -361,7 +353,9 @@ export default function AdminFranchises() {
                                   <Input
                                     id="edit-canonical"
                                     value={editForm.canonical}
-                                    onChange={(e) => setEditForm({ ...editForm, canonical: e.target.value })}
+                                    onChange={(e) =>
+                                      setEditForm({ ...editForm, canonical: e.target.value })
+                                    }
                                   />
                                 </div>
                                 <div className="grid gap-2">
@@ -369,7 +363,9 @@ export default function AdminFranchises() {
                                   <Textarea
                                     id="edit-aliases"
                                     value={editForm.aliases}
-                                    onChange={(e) => setEditForm({ ...editForm, aliases: e.target.value })}
+                                    onChange={(e) =>
+                                      setEditForm({ ...editForm, aliases: e.target.value })
+                                    }
                                     rows={3}
                                   />
                                 </div>
@@ -393,7 +389,8 @@ export default function AdminFranchises() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Deletar franquia?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  A franquia <strong>{f.canonical}</strong> será removida permanentemente.
+                                  A franquia <strong>{f.canonical}</strong> será removida
+                                  permanentemente.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -465,21 +462,31 @@ export default function AdminFranchises() {
 
           <Card className="border border-border bg-card shadow-premium">
             <CardHeader className="border-b border-border">
-              <CardTitle className="text-xl font-semibold">Regras Ativas ({rules.filter(r => r.enabled).length}/{rules.length})</CardTitle>
+              <CardTitle className="text-xl font-semibold">
+                Regras Ativas ({rules.filter((r) => r.enabled).length}/{rules.length})
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               {rulesQuery.isLoading ? (
                 <div className="text-center py-8 text-muted-foreground">Carregando…</div>
               ) : rules.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">Nenhuma regra cadastrada.</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma regra cadastrada.
+                </div>
               ) : (
                 <div className="space-y-3">
                   {rules.map((r) => (
-                    <div key={r.id} className={`rounded-sm border p-4 ${r.enabled ? 'border-border bg-muted/30' : 'border-border bg-muted/10 opacity-60'}`}>
+                    <div
+                      key={r.id}
+                      className={`rounded-sm border p-4 ${r.enabled ? "border-border bg-muted/30" : "border-border bg-muted/10 opacity-60"}`}
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={r.enabled ? "default" : "secondary"} className="text-xs">
+                            <Badge
+                              variant={r.enabled ? "default" : "secondary"}
+                              className="text-xs"
+                            >
                               {r.enabled ? "Ativa" : "Inativa"}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
@@ -490,11 +497,10 @@ export default function AdminFranchises() {
                             <span className="font-semibold">Padrão:</span> {r.pattern}
                           </p>
                           <p className="text-sm">
-                            <span className="font-semibold">→ Franquia:</span> {r.franchise_canonical}
+                            <span className="font-semibold">→ Franquia:</span>{" "}
+                            {r.franchise_canonical}
                           </p>
-                          {r.note && (
-                            <p className="text-xs text-muted-foreground mt-1">{r.note}</p>
-                          )}
+                          {r.note && <p className="text-xs text-muted-foreground mt-1">{r.note}</p>}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -514,7 +520,8 @@ export default function AdminFranchises() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Deletar regra?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  A regra "{r.pattern} → {r.franchise_canonical}" será removida permanentemente.
+                                  A regra "{r.pattern} → {r.franchise_canonical}" será removida
+                                  permanentemente.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

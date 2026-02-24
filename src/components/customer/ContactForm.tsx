@@ -36,14 +36,14 @@ export function ContactForm() {
 
     try {
       // Check if user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
         // User is not authenticated
         // Redirect to login with return URL
-        setError(
-          "Para entrar em contato, por favor faça login ou crie uma conta."
-        );
+        setError("Para entrar em contato, por favor faça login ou crie uma conta.");
         setIsSubmitting(false);
         setTimeout(() => {
           navigate("/login?returnTo=/contato");
@@ -103,9 +103,7 @@ export function ContactForm() {
               {...register("name")}
               disabled={isSubmitting}
             />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -117,9 +115,7 @@ export function ContactForm() {
               {...register("email")}
               disabled={isSubmitting}
             />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
+            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -131,9 +127,7 @@ export function ContactForm() {
               {...register("message")}
               disabled={isSubmitting}
             />
-            {errors.message && (
-              <p className="text-sm text-destructive">{errors.message.message}</p>
-            )}
+            {errors.message && <p className="text-sm text-destructive">{errors.message.message}</p>}
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>

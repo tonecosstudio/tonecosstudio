@@ -49,7 +49,7 @@ describe("CustomerChat", () => {
     });
 
     const { container } = render(<CustomerChat />);
-    
+
     await waitFor(() => {
       expect(container.firstChild).toBeNull();
     });
@@ -218,12 +218,12 @@ describe("CustomerChat", () => {
 
 /**
  * Feature: advanced-chat-support-system
- * 
+ *
  * These tests validate:
  * - Requirement 14.1: Chat button accessible to authenticated users
  * - Requirement 14.3: Displays client's conversation history
  * - Requirement 14.6: Displays unread message count on chat button
- * 
+ *
  * Additional tests needed:
  * - Property 47: Client Conversation History Display
  * - Property 48: Unread Message Count Display

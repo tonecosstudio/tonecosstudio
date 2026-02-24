@@ -7,11 +7,7 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   value?: { from?: Date; to?: Date };
@@ -29,8 +25,8 @@ export function DateRangePicker({
     value?.from && value?.to
       ? { from: value.from, to: value.to }
       : value?.from
-      ? { from: value.from, to: value.from }
-      : undefined
+        ? { from: value.from, to: value.from }
+        : undefined
   );
 
   const handleSelect = (range: DateRange | undefined) => {

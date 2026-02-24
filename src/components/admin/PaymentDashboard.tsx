@@ -1,34 +1,28 @@
 /**
  * PaymentDashboard Component
- * 
+ *
  * Admin dashboard for managing manual payments with filtering, sorting, and statistics.
- * 
+ *
  * Requirements: 5.1-5.10, 16.1-16.15
  * Task: 12.1 Criar componente PaymentDashboard
  * Task: 23.2 Integrar atualizações em tempo real nos componentes
  */
 
-import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -36,13 +30,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -50,10 +44,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 import {
   Filter,
   Search,
@@ -76,31 +70,34 @@ import {
   RefreshCw,
   CheckSquare,
   Square,
-} from 'lucide-react';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { RealtimeIndicator } from '@/components/ui/RealtimeIndicator';
-import type { PaymentListItem, PaymentFilters, PaymentStatus } from '@/types/manual-payment';
-import { listPendingPayments, getPaymentStats } from '@/lib/admin-payment-service';
-import { listAllPaymentMethods } from '@/lib/payment-method-service';
-import { PaymentListItem as PaymentListItemComponent, PaymentListItemCard } from './PaymentListItem';
-import { BulkOperationsToolbar } from './BulkOperationsToolbar';
-import { useAdminDashboardRealtime } from '@/hooks/usePaymentRealtimeDashboard';
+} from "lucide-react";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { RealtimeIndicator } from "@/components/ui/RealtimeIndicator";
+import type { PaymentListItem, PaymentFilters, PaymentStatus } from "@/types/manual-payment";
+import { listPendingPayments, getPaymentStats } from "@/lib/admin-payment-service";
+import { listAllPaymentMethods } from "@/lib/payment-method-service";
+import {
+  PaymentListItem as PaymentListItemComponent,
+  PaymentListItemCard,
+} from "./PaymentListItem";
+import { BulkOperationsToolbar } from "./BulkOperationsToolbar";
+import { useAdminDashboardRealtime } from "@/hooks/usePaymentRealtimeDashboard";
 
 interface PaymentDashboardProps {
   onViewPayment?: (paymentId: string) => void;
 }
 
-type SortField = 'created_at' | 'amount' | 'customer_name' | 'status';
-type SortDirection = 'asc' | 'desc';
+type SortField = "created_at" | "amount" | "customer_name" | "status";
+type SortDirection = "asc" | "desc";
 
 export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<PaymentFilters>({});
-  const [searchInput, setSearchInput] = useState('');
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [searchInput, setSearchInput] = useState("");
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [showRealtimeIndicator, setShowRealtimeIndicator] = useState(true);
 
@@ -113,18 +110,18 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
     resetUpdateCount,
     hasError,
     error,
-    refreshData
+    refreshData,
   } = useAdminDashboardRealtime();
 
   // Fetch payment methods for filter
   const { data: paymentMethods = [] } = useQuery({
-    queryKey: ['payment-methods', 'all'],
+    queryKey: ["payment-methods", "all"],
     queryFn: listAllPaymentMethods,
   });
 
   // Fetch payment stats
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['payment-stats'],
+    queryKey: ["payment-stats"],
     queryFn: getPaymentStats,
   });
 
@@ -135,14 +132,14 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
     error: paymentsError,
     refetch,
   } = useQuery({
-    queryKey: ['pending-payments', filters],
+    queryKey: ["pending-payments", filters],
     queryFn: () => listPendingPayments(filters),
   });
 
   // Apply search filter with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setFilters(prev => ({
+      setFilters((prev) => ({
         ...prev,
         search: searchInput.trim() || undefined,
       }));
@@ -153,7 +150,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
 
   // Apply date range filter
   useEffect(() => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       date_from: dateRange.from?.toISOString(),
       date_to: dateRange.to?.toISOString(),
@@ -162,7 +159,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
 
   // Handle status filter change
   const handleStatusFilter = (statuses: PaymentStatus[]) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       status: statuses.length > 0 ? statuses : undefined,
     }));
@@ -170,7 +167,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
 
   // Handle payment method filter change
   const handlePaymentMethodFilter = (methodId: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       payment_method_id: methodId || undefined,
     }));
@@ -179,19 +176,19 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   // Handle sort
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDirection('desc');
+      setSortDirection("desc");
     }
   };
 
   // Handle payment selection
   const handlePaymentSelect = (paymentId: string, selected: boolean) => {
     if (selected) {
-      setSelectedPayments(prev => [...prev, paymentId]);
+      setSelectedPayments((prev) => [...prev, paymentId]);
     } else {
-      setSelectedPayments(prev => prev.filter(id => id !== paymentId));
+      setSelectedPayments((prev) => prev.filter((id) => id !== paymentId));
     }
   };
 
@@ -199,7 +196,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const handleSelectAll = (selectAll: boolean) => {
     if (selectAll) {
       // Select all payments on current page
-      const allPaymentIds = sortedPayments.map(p => p.id);
+      const allPaymentIds = sortedPayments.map((p) => p.id);
       setSelectedPayments(allPaymentIds);
     } else {
       // Clear selection
@@ -215,31 +212,31 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   // Sort payments
   const sortedPayments = [...payments].sort((a, b) => {
     let aValue: any, bValue: any;
-    
+
     switch (sortField) {
-      case 'created_at':
+      case "created_at":
         aValue = new Date(a.created_at).getTime();
         bValue = new Date(b.created_at).getTime();
         break;
-      case 'amount':
+      case "amount":
         aValue = a.amount;
         bValue = b.amount;
         break;
-      case 'customer_name':
+      case "customer_name":
         aValue = a.customer_name.toLowerCase();
         bValue = b.customer_name.toLowerCase();
         break;
-      case 'status':
+      case "status":
         // Custom status order
-        const statusOrder = { 'pending': 0, 'under_review': 1, 'requires_info': 2 };
+        const statusOrder = { pending: 0, under_review: 1, requires_info: 2 };
         aValue = statusOrder[a.status as keyof typeof statusOrder] || 3;
         bValue = statusOrder[b.status as keyof typeof statusOrder] || 3;
         break;
       default:
         return 0;
     }
-    
-    if (sortDirection === 'asc') {
+
+    if (sortDirection === "asc") {
       return aValue > bValue ? 1 : -1;
     } else {
       return aValue < bValue ? 1 : -1;
@@ -249,76 +246,76 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   // Get status badge variant and icon
   const getStatusConfig = (status: PaymentStatus) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return {
-          variant: 'outline' as const,
+          variant: "outline" as const,
           icon: <Clock className="h-3 w-3" />,
-          label: 'Pendente',
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-50',
+          label: "Pendente",
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-50",
         };
-      case 'under_review':
+      case "under_review":
         return {
-          variant: 'secondary' as const,
+          variant: "secondary" as const,
           icon: <Eye className="h-3 w-3" />,
-          label: 'Em Revisão',
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-50',
+          label: "Em Revisão",
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
         };
-      case 'requires_info':
+      case "requires_info":
         return {
-          variant: 'destructive' as const,
+          variant: "destructive" as const,
           icon: <AlertCircle className="h-3 w-3" />,
-          label: 'Precisa de Info',
-          color: 'text-orange-600',
-          bgColor: 'bg-orange-50',
+          label: "Precisa de Info",
+          color: "text-orange-600",
+          bgColor: "bg-orange-50",
         };
       default:
         return {
-          variant: 'outline' as const,
+          variant: "outline" as const,
           icon: null,
           label: status,
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-50',
+          color: "text-gray-600",
+          bgColor: "bg-gray-50",
         };
     }
   };
 
   // Format currency
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency || 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: currency || "BRL",
     }).format(amount);
   };
 
   // Format date
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
   };
 
   // Clear all filters
   const clearFilters = () => {
     setFilters({});
-    setSearchInput('');
+    setSearchInput("");
     setDateRange({});
   };
 
   // Handle export payment
   const handleExportPayment = (paymentId: string) => {
     toast({
-      title: 'Exportação iniciada',
+      title: "Exportação iniciada",
       description: `O pagamento ${paymentId} será exportado em breve.`,
     });
     // TODO: Implement actual export logic
-    console.log('Exporting payment:', paymentId);
+    console.log("Exporting payment:", paymentId);
   };
 
   // Handle real-time update notification
   const handleRealtimeUpdate = () => {
     toast({
-      title: 'Atualização em tempo real',
-      description: 'Os dados foram atualizados automaticamente.',
+      title: "Atualização em tempo real",
+      description: "Os dados foram atualizados automaticamente.",
       duration: 2000,
     });
     resetUpdateCount();
@@ -335,8 +332,8 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const handleManualReconnect = () => {
     refreshData();
     toast({
-      title: 'Reconectando...',
-      description: 'Tentando reconectar ao servidor em tempo real.',
+      title: "Reconectando...",
+      description: "Tentando reconectar ao servidor em tempo real.",
     });
   };
 
@@ -351,18 +348,11 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
           <div className="rounded-md bg-red-50 p-4">
             <div className="flex">
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Erro ao carregar pagamentos
-                </h3>
+                <h3 className="text-sm font-medium text-red-800">Erro ao carregar pagamentos</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>{paymentsError.message}</p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => refetch()}
-                >
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
                   Tentar novamente
                 </Button>
               </div>
@@ -383,7 +373,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             {hasNewUpdates && (
               <Badge variant="default" className="animate-pulse">
                 <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                {newUpdateCount} nova{newUpdateCount !== 1 ? 's' : ''}
+                {newUpdateCount} nova{newUpdateCount !== 1 ? "s" : ""}
               </Badge>
             )}
           </div>
@@ -391,24 +381,20 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             <p className="text-muted-foreground">
               Gerencie pagamentos manuais pendentes de verificação
             </p>
-            <Badge 
-              variant={isConnected ? "default" : "destructive"} 
+            <Badge
+              variant={isConnected ? "default" : "destructive"}
               className="text-xs flex items-center gap-1"
             >
-              {isConnected ? (
-                <Wifi className="h-3 w-3" />
-              ) : (
-                <WifiOff className="h-3 w-3" />
-              )}
-              {isConnected ? 'Conectado' : 'Desconectado'}
+              {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+              {isConnected ? "Conectado" : "Desconectado"}
             </Badge>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               refetch();
               resetUpdateCount();
@@ -441,9 +427,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             ) : (
               <div className="text-2xl font-bold">{stats?.pending_count || 0}</div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Aguardando comprovante
-            </p>
+            <p className="text-xs text-muted-foreground">Aguardando comprovante</p>
           </CardContent>
         </Card>
 
@@ -458,9 +442,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             ) : (
               <div className="text-2xl font-bold">{stats?.under_review_count || 0}</div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Comprovante enviado
-            </p>
+            <p className="text-xs text-muted-foreground">Comprovante enviado</p>
           </CardContent>
         </Card>
 
@@ -475,9 +457,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             ) : (
               <div className="text-2xl font-bold">{stats?.requires_info_count || 0}</div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Aguardando resposta do cliente
-            </p>
+            <p className="text-xs text-muted-foreground">Aguardando resposta do cliente</p>
           </CardContent>
         </Card>
 
@@ -491,15 +471,13 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
               <Skeleton className="h-8 w-24" />
             ) : (
               <div className="text-2xl font-bold">
-                {new Intl.NumberFormat('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
                 }).format(stats?.total_pending_amount || 0)}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Em pagamentos pendentes
-            </p>
+            <p className="text-xs text-muted-foreground">Em pagamentos pendentes</p>
           </CardContent>
         </Card>
       </div>
@@ -539,19 +517,17 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                   />
                   <div className="pt-4 border-t">
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={clearFilters}
-                      >
+                      <Button variant="outline" className="flex-1" onClick={clearFilters}>
                         Limpar Filtros
                       </Button>
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         className="flex-1"
                         onClick={() => {
                           // Fecha o drawer
-                          const sheetClose = document.querySelector('[data-state="open"] button[aria-label="Close"]') as HTMLButtonElement;
+                          const sheetClose = document.querySelector(
+                            '[data-state="open"] button[aria-label="Close"]'
+                          ) as HTMLButtonElement;
                           sheetClose?.click();
                         }}
                       >
@@ -570,19 +546,19 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <div className="flex flex-wrap gap-2">
-                {(['pending', 'under_review', 'requires_info'] as PaymentStatus[]).map((status) => {
+                {(["pending", "under_review", "requires_info"] as PaymentStatus[]).map((status) => {
                   const config = getStatusConfig(status);
                   const isActive = filters.status?.includes(status);
                   return (
                     <Button
                       key={status}
-                      variant={isActive ? 'default' : 'outline'}
+                      variant={isActive ? "default" : "outline"}
                       size="sm"
                       className="h-8 px-3"
                       onClick={() => {
                         const currentStatuses = filters.status || [];
                         if (isActive) {
-                          handleStatusFilter(currentStatuses.filter(s => s !== status));
+                          handleStatusFilter(currentStatuses.filter((s) => s !== status));
                         } else {
                           handleStatusFilter([...currentStatuses, status]);
                         }
@@ -600,7 +576,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             <div className="space-y-2">
               <label className="text-sm font-medium">Método de Pagamento</label>
               <Select
-                value={filters.payment_method_id || ''}
+                value={filters.payment_method_id || ""}
                 onValueChange={handlePaymentMethodFilter}
               >
                 <SelectTrigger className="w-full">
@@ -652,24 +628,25 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             <div>
               <CardTitle>Pagamentos</CardTitle>
               <CardDescription>
-                {sortedPayments.length} pagamento{sortedPayments.length !== 1 ? 's' : ''} encontrado{sortedPayments.length !== 1 ? 's' : ''}
+                {sortedPayments.length} pagamento{sortedPayments.length !== 1 ? "s" : ""} encontrado
+                {sortedPayments.length !== 1 ? "s" : ""}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center border rounded-md">
                 <Button
-                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  variant={viewMode === "table" ? "default" : "ghost"}
                   size="sm"
                   className="rounded-r-none h-8 px-3"
-                  onClick={() => setViewMode('table')}
+                  onClick={() => setViewMode("table")}
                 >
                   <TableIcon className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                  variant={viewMode === "cards" ? "default" : "ghost"}
                   size="sm"
                   className="rounded-l-none h-8 px-3"
-                  onClick={() => setViewMode('cards')}
+                  onClick={() => setViewMode("cards")}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
@@ -678,7 +655,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="hidden sm:flex">
                     Ordenar por
-                    {sortDirection === 'asc' ? (
+                    {sortDirection === "asc" ? (
                       <ChevronUp className="ml-2 h-4 w-4" />
                     ) : (
                       <ChevronDown className="ml-2 h-4 w-4" />
@@ -686,17 +663,17 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleSort('created_at')}>
-                    Data {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("created_at")}>
+                    Data {sortField === "created_at" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort('amount')}>
-                    Valor {sortField === 'amount' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("amount")}>
+                    Valor {sortField === "amount" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort('customer_name')}>
-                    Cliente {sortField === 'customer_name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("customer_name")}>
+                    Cliente {sortField === "customer_name" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort('status')}>
-                    Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("status")}>
+                    Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -707,17 +684,17 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleSort('created_at')}>
-                    Data {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("created_at")}>
+                    Data {sortField === "created_at" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort('amount')}>
-                    Valor {sortField === 'amount' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("amount")}>
+                    Valor {sortField === "amount" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort('customer_name')}>
-                    Cliente {sortField === 'customer_name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("customer_name")}>
+                    Cliente {sortField === "customer_name" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort('status')}>
-                    Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <DropdownMenuItem onClick={() => handleSort("status")}>
+                    Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -738,7 +715,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                 Tente ajustar os filtros ou verifique se há pagamentos pendentes.
               </p>
             </div>
-          ) : viewMode === 'table' ? (
+          ) : viewMode === "table" ? (
             <>
               {/* Mobile Cards View (hidden on larger screens) */}
               <div className="sm:hidden space-y-4">
@@ -746,12 +723,17 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                   const statusConfig = getStatusConfig(payment.status);
                   const isSelected = selectedPayments.includes(payment.id);
                   return (
-                    <Card key={payment.id} className={isSelected ? 'border-primary bg-blue-50' : ''}>
+                    <Card
+                      key={payment.id}
+                      className={isSelected ? "border-primary bg-blue-50" : ""}
+                    >
                       <CardContent className="pt-6">
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <div className="font-medium text-lg">{payment.reference_number}</div>
-                            <div className="text-sm text-muted-foreground">{formatDate(payment.created_at)}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatDate(payment.created_at)}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
@@ -775,23 +757,25 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-sm font-medium">Cliente</span>
                             <span className="text-sm">{payment.customer_name}</span>
                           </div>
-                          
+
                           <div className="flex justify-between">
                             <span className="text-sm font-medium">Valor</span>
-                            <span className="font-medium">{formatCurrency(payment.amount, payment.currency)}</span>
+                            <span className="font-medium">
+                              {formatCurrency(payment.amount, payment.currency)}
+                            </span>
                           </div>
-                          
+
                           <div className="flex justify-between">
                             <span className="text-sm font-medium">Método</span>
                             <span className="text-sm">{payment.payment_method_name}</span>
                           </div>
-                          
+
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium">Status</span>
                             <Badge
@@ -802,18 +786,19 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                               {statusConfig.label}
                             </Badge>
                           </div>
-                          
+
                           <div className="flex gap-2 pt-2">
                             {payment.file_count > 0 && (
                               <Badge variant="outline" className="text-xs">
                                 <FileText className="h-3 w-3 mr-1" />
-                                {payment.file_count} arquivo{payment.file_count !== 1 ? 's' : ''}
+                                {payment.file_count} arquivo{payment.file_count !== 1 ? "s" : ""}
                               </Badge>
                             )}
                             {payment.unread_messages > 0 && (
                               <Badge variant="outline" className="text-xs">
                                 <MessageSquare className="h-3 w-3 mr-1" />
-                                {payment.unread_messages} mensagem{payment.unread_messages !== 1 ? 'ns' : ''}
+                                {payment.unread_messages} mensagem
+                                {payment.unread_messages !== 1 ? "ns" : ""}
                               </Badge>
                             )}
                           </div>
@@ -823,7 +808,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                   );
                 })}
               </div>
-              
+
               {/* Desktop Table View */}
               <div className="hidden sm:block rounded-md border">
                 <Table>
@@ -834,14 +819,18 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                           <button
                             type="button"
                             className="p-1 hover:bg-gray-100 rounded"
-                            onClick={() => handleSelectAll(selectedPayments.length !== sortedPayments.length)}
+                            onClick={() =>
+                              handleSelectAll(selectedPayments.length !== sortedPayments.length)
+                            }
                             title={
-                              selectedPayments.length === sortedPayments.length && sortedPayments.length > 0
+                              selectedPayments.length === sortedPayments.length &&
+                              sortedPayments.length > 0
                                 ? "Desmarcar todos"
                                 : "Marcar todos"
                             }
                           >
-                            {selectedPayments.length === sortedPayments.length && sortedPayments.length > 0 ? (
+                            {selectedPayments.length === sortedPayments.length &&
+                            sortedPayments.length > 0 ? (
                               <CheckSquare className="h-4 w-4 text-primary" />
                             ) : (
                               <Square className="h-4 w-4 text-gray-400" />
@@ -863,7 +852,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                       const statusConfig = getStatusConfig(payment.status);
                       const isSelected = selectedPayments.includes(payment.id);
                       return (
-                        <TableRow key={payment.id} className={isSelected ? 'bg-blue-50' : ''}>
+                        <TableRow key={payment.id} className={isSelected ? "bg-blue-50" : ""}>
                           <TableCell>
                             <div className="flex items-center">
                               <button
@@ -880,9 +869,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                               </button>
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {payment.reference_number}
-                          </TableCell>
+                          <TableCell className="font-medium">{payment.reference_number}</TableCell>
                           <TableCell>
                             <div>
                               <div className="font-medium">{payment.customer_name}</div>
@@ -1023,26 +1010,26 @@ function MobileFilters({
       <div className="space-y-3">
         <h3 className="text-sm font-medium">Status</h3>
         <div className="flex flex-wrap gap-2">
-          {(['pending', 'under_review', 'requires_info'] as PaymentStatus[]).map((status) => {
+          {(["pending", "under_review", "requires_info"] as PaymentStatus[]).map((status) => {
             const isActive = filters.status?.includes(status);
             return (
               <Button
                 key={status}
-                variant={isActive ? 'default' : 'outline'}
+                variant={isActive ? "default" : "outline"}
                 size="sm"
                 className="h-8"
                 onClick={() => {
                   const currentStatuses = filters.status || [];
                   if (isActive) {
-                    onStatusFilter(currentStatuses.filter(s => s !== status));
+                    onStatusFilter(currentStatuses.filter((s) => s !== status));
                   } else {
                     onStatusFilter([...currentStatuses, status]);
                   }
                 }}
               >
-                {status === 'pending' && 'Pendente'}
-                {status === 'under_review' && 'Em Revisão'}
-                {status === 'requires_info' && 'Precisa de Info'}
+                {status === "pending" && "Pendente"}
+                {status === "under_review" && "Em Revisão"}
+                {status === "requires_info" && "Precisa de Info"}
               </Button>
             );
           })}
@@ -1053,10 +1040,7 @@ function MobileFilters({
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium">Método de Pagamento</h3>
-        <Select
-          value={filters.payment_method_id || ''}
-          onValueChange={onPaymentMethodFilter}
-        >
+        <Select value={filters.payment_method_id || ""} onValueChange={onPaymentMethodFilter}>
           <SelectTrigger>
             <SelectValue placeholder="Todos os métodos" />
           </SelectTrigger>

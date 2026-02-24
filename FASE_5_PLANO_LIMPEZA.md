@@ -10,6 +10,7 @@ Limpar ~180 documentos .md obsoletos da raiz do projeto, mantendo apenas documen
 ## Categorias de Documentos
 
 ### 1. Documentos a MANTER na Raiz
+
 - `README.md` - Documento principal do projeto
 - `CHANGELOG.md` - Histórico de mudanças
 - `PLANO_REORGANIZACAO_DOCS.md` - Plano desta reorganização
@@ -18,46 +19,54 @@ Limpar ~180 documentos .md obsoletos da raiz do projeto, mantendo apenas documen
 - `FASE_5_PLANO_LIMPEZA.md` - Este documento
 
 ### 2. Documentos a MOVER para docs/archive/
+
 Documentos históricos que podem ser úteis para referência:
+
 - `GUIA_NAVEGACAO_DOCS.md` → `docs/archive/`
 - `RESUMO_REORGANIZACAO_FINAL.md` → `docs/archive/`
-- Documentos de análise (ANALISE_*.md)
-- Documentos de status (STATUS_*.md)
-- Documentos de implementação (IMPLEMENTACAO_*.md)
-- Documentos de resumo (RESUMO_*.md)
+- Documentos de análise (ANALISE\_\*.md)
+- Documentos de status (STATUS\_\*.md)
+- Documentos de implementação (IMPLEMENTACAO\_\*.md)
+- Documentos de resumo (RESUMO\_\*.md)
 
 ### 3. Documentos a DELETAR
+
 Documentos temporários, obsoletos ou redundantes:
-- Correções aplicadas (CORRECAO_*.md)
-- Fixes aplicados (FIX_*.md)
-- Diagnósticos resolvidos (DIAGNOSTICO_*.md)
-- Instruções temporárias (INSTRUCOES_*.md)
-- Executar agora (EXECUTAR_*.md)
-- Aplicar agora (APLICAR_*.md)
-- Testar agora (TESTAR_*.md)
+
+- Correções aplicadas (CORRECAO\_\*.md)
+- Fixes aplicados (FIX\_\*.md)
+- Diagnósticos resolvidos (DIAGNOSTICO\_\*.md)
+- Instruções temporárias (INSTRUCOES\_\*.md)
+- Executar agora (EXECUTAR\_\*.md)
+- Aplicar agora (APLICAR\_\*.md)
+- Testar agora (TESTAR\_\*.md)
 - Documentos duplicados
 - Documentos de debug temporário
 
 ## Estratégia de Limpeza
 
 ### Passo 1: Identificar Documentos
+
 - Listar todos os .md na raiz
 - Categorizar por tipo
 - Identificar duplicatas
 
 ### Passo 2: Mover Históricos
+
 - Criar `docs/archive/` se não existir
 - Mover documentos de análise
 - Mover documentos de status
 - Mover documentos de implementação
 
 ### Passo 3: Deletar Obsoletos
+
 - Deletar correções aplicadas
 - Deletar fixes aplicados
 - Deletar diagnósticos resolvidos
 - Deletar instruções temporárias
 
 ### Passo 4: Validação
+
 - Verificar links quebrados
 - Atualizar referências
 - Testar navegação
@@ -66,6 +75,7 @@ Documentos temporários, obsoletos ou redundantes:
 ## Padrões de Nomenclatura para Identificação
 
 ### Mover para Archive
+
 - `ANALISE_*.md`
 - `STATUS_*.md`
 - `IMPLEMENTACAO_*.md`
@@ -75,6 +85,7 @@ Documentos temporários, obsoletos ou redundantes:
 - `CRONOGRAMA_*.md`
 
 ### Deletar
+
 - `CORRECAO_*.md`
 - `FIX_*.md`
 - `DIAGNOSTICO_*.md`
@@ -96,16 +107,19 @@ Documentos temporários, obsoletos ou redundantes:
 ## Checklist
 
 ### Preparação
+
 - [ ] Criar `docs/archive/`
 - [ ] Listar todos os .md
 - [ ] Categorizar documentos
 
 ### Execução
+
 - [ ] Mover documentos históricos
 - [ ] Deletar documentos obsoletos
 - [ ] Atualizar referências
 
 ### Validação
+
 - [ ] Verificar links
 - [ ] Testar navegação
 - [ ] Revisar README
@@ -114,6 +128,7 @@ Documentos temporários, obsoletos ou redundantes:
 ## Resultado Esperado
 
 ### Antes
+
 ```
 ordax/
 ├── ANALISE_*.md (30 arquivos)
@@ -126,6 +141,7 @@ ordax/
 ```
 
 ### Depois
+
 ```
 ordax/
 ├── README.md

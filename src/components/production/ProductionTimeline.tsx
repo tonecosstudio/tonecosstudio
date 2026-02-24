@@ -1,12 +1,21 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PRODUCTION_STAGES, type ProductionPhotoRow, type ProductionRow, type ProductionUpdateRow } from "@/lib/production";
+import {
+  PRODUCTION_STAGES,
+  type ProductionPhotoRow,
+  type ProductionRow,
+  type ProductionUpdateRow,
+} from "@/lib/production";
 import { useProductionRealtime } from "@/hooks/use-production-realtime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export function ProductionTimeline(props: { quoteId: string; title?: string; showHeader?: boolean }) {
+export function ProductionTimeline(props: {
+  quoteId: string;
+  title?: string;
+  showHeader?: boolean;
+}) {
   const { quoteId, title = "Timeline de Produção", showHeader = true } = props;
 
   const q = useQuery({
@@ -67,7 +76,9 @@ export function ProductionTimeline(props: { quoteId: string; title?: string; sho
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-lg font-semibold">{title}</CardTitle>
             <Badge variant="secondary" className="border border-border">
-              {current ? PRODUCTION_STAGES.find((s) => s.key === current)?.label ?? current : "Aguardando início"}
+              {current
+                ? (PRODUCTION_STAGES.find((s) => s.key === current)?.label ?? current)
+                : "Aguardando início"}
             </Badge>
           </div>
         </CardHeader>
@@ -94,7 +105,11 @@ export function ProductionTimeline(props: { quoteId: string; title?: string; sho
                     >
                       {idx + 1}
                     </span>
-                    <span className={done ? "text-foreground font-medium" : "text-muted-foreground"}>{s.label}</span>
+                    <span
+                      className={done ? "text-foreground font-medium" : "text-muted-foreground"}
+                    >
+                      {s.label}
+                    </span>
                   </li>
                 );
               })}
@@ -110,28 +125,48 @@ export function ProductionTimeline(props: { quoteId: string; title?: string; sho
                   .slice()
                   .reverse()
                   .map((u) => {
-                    const label = PRODUCTION_STAGES.find((s) => s.key === u.stage)?.label ?? u.stage;
+                    const label =
+                      PRODUCTION_STAGES.find((s) => s.key === u.stage)?.label ?? u.stage;
                     const photos = photosByUpdate.get(u.id) ?? [];
                     return (
-                      <section key={u.id} className="rounded-sm border border-border bg-muted/20 p-4">
+                      <section
+                        key={u.id}
+                        className="rounded-sm border border-border bg-muted/20 p-4"
+                      >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="border border-border">
                               {label}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">{new Date(u.created_at).toLocaleString("pt-BR")}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(u.created_at).toLocaleString("pt-BR")}
+                            </span>
                           </div>
                         </div>
 
-                        {u.note ? <p className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">{u.note}</p> : null}
+                        {u.note ? (
+                          <p className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">
+                            {u.note}
+                          </p>
+                        ) : null}
 
                         {photos.length ? (
                           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             {photos.map((p) => (
-                              <figure key={p.id} className="overflow-hidden rounded-sm border border-border bg-card">
-                                <img src={p.url} alt={p.caption || "Foto de progresso"} className="h-48 w-full object-cover" loading="lazy" />
+                              <figure
+                                key={p.id}
+                                className="overflow-hidden rounded-sm border border-border bg-card"
+                              >
+                                <img
+                                  src={p.url}
+                                  alt={p.caption || "Foto de progresso"}
+                                  className="h-48 w-full object-cover"
+                                  loading="lazy"
+                                />
                                 {p.caption ? (
-                                  <figcaption className="p-2 text-xs text-muted-foreground">{p.caption}</figcaption>
+                                  <figcaption className="p-2 text-xs text-muted-foreground">
+                                    {p.caption}
+                                  </figcaption>
                                 ) : null}
                               </figure>
                             ))}

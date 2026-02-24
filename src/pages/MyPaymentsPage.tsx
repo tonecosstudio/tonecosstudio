@@ -1,40 +1,65 @@
 /**
  * MyPaymentsPage Component
- * 
+ *
  * Customer self-service page for viewing payment history and status.
- * 
+ *
  * Requirements: 13.1-13.15
  * Task: 18.1 Criar componente MyPaymentsPage
  */
 
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Filter, Search, FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, Download, Upload } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/lib/auth';
-import { listPaymentsByUser } from '@/lib/payment-service';
-import type { ManualPayment, PaymentStatus } from '@/types/manual-payment';
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  CalendarIcon,
+  Filter,
+  Search,
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Eye,
+  Download,
+  Upload,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
+import { listPaymentsByUser } from "@/lib/payment-service";
+import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
 
 export function MyPaymentsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">("all");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Fetch user payments
@@ -44,26 +69,26 @@ export function MyPaymentsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['user-payments', user?.id, statusFilter, dateRange, searchQuery],
+    queryKey: ["user-payments", user?.id, statusFilter, dateRange, searchQuery],
     queryFn: () => {
       if (!user?.id) {
-        throw new Error('Usuário não autenticado');
+        throw new Error("Usuário não autenticado");
       }
 
       const filters: any = {};
-      
-      if (statusFilter !== 'all') {
+
+      if (statusFilter !== "all") {
         filters.status = [statusFilter];
       }
-      
+
       if (dateRange.from) {
         filters.date_from = dateRange.from.toISOString();
       }
-      
+
       if (dateRange.to) {
         filters.date_to = dateRange.to.toISOString();
       }
-      
+
       if (searchQuery) {
         filters.search = searchQuery;
       }
@@ -76,15 +101,15 @@ export function MyPaymentsPage() {
   // Get status icon
   const getStatusIcon = (status: PaymentStatus) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return <Clock className="h-4 w-4" />;
-      case 'under_review':
+      case "under_review":
         return <Eye className="h-4 w-4" />;
-      case 'requires_info':
+      case "requires_info":
         return <AlertCircle className="h-4 w-4" />;
-      case 'approved':
+      case "approved":
         return <CheckCircle className="h-4 w-4" />;
-      case 'rejected':
+      case "rejected":
         return <XCircle className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
@@ -94,43 +119,43 @@ export function MyPaymentsPage() {
   // Get status color
   const getStatusColor = (status: PaymentStatus): string => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'under_review':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'requires_info':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'approved':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-200';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "under_review":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "requires_info":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "approved":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "rejected":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   // Get status label
   const getStatusLabel = (status: PaymentStatus): string => {
     switch (status) {
-      case 'pending':
-        return 'Pendente';
-      case 'under_review':
-        return 'Em Análise';
-      case 'requires_info':
-        return 'Precisa de Informações';
-      case 'approved':
-        return 'Aprovado';
-      case 'rejected':
-        return 'Rejeitado';
+      case "pending":
+        return "Pendente";
+      case "under_review":
+        return "Em Análise";
+      case "requires_info":
+        return "Precisa de Informações";
+      case "approved":
+        return "Aprovado";
+      case "rejected":
+        return "Rejeitado";
       default:
         return status;
     }
   };
 
   // Format currency
-  const formatCurrency = (amount: number, currency: string = 'BRL') => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
+  const formatCurrency = (amount: number, currency: string = "BRL") => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
       currency: currency,
     }).format(amount);
   };
@@ -151,9 +176,9 @@ export function MyPaymentsPage() {
 
   // Handle clear filters
   const handleClearFilters = () => {
-    setStatusFilter('all');
+    setStatusFilter("all");
     setDateRange({});
-    setSearchQuery('');
+    setSearchQuery("");
   };
 
   // Handle search
@@ -166,9 +191,9 @@ export function MyPaymentsPage() {
   useEffect(() => {
     if (error) {
       toast({
-        title: 'Erro ao carregar pagamentos',
+        title: "Erro ao carregar pagamentos",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   }, [error]);
@@ -234,7 +259,10 @@ export function MyPaymentsPage() {
               {/* Status Filter */}
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as PaymentStatus | 'all')}>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value as PaymentStatus | "all")}
+                >
                   <SelectTrigger id="status">
                     <SelectValue placeholder="Todos os status" />
                   </SelectTrigger>
@@ -319,7 +347,9 @@ export function MyPaymentsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">
-            {payments.length === 0 ? 'Nenhum pagamento encontrado' : `${payments.length} pagamento(s) encontrado(s)`}
+            {payments.length === 0
+              ? "Nenhum pagamento encontrado"
+              : `${payments.length} pagamento(s) encontrado(s)`}
           </h2>
           {payments.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => window.print()}>
@@ -354,16 +384,21 @@ export function MyPaymentsPage() {
                       {getStatusIcon(payment.status)}
                       <span className="hidden sm:inline">{getStatusLabel(payment.status)}</span>
                       <span className="sm:hidden">
-                        {payment.status === 'pending' ? 'Pend' :
-                         payment.status === 'under_review' ? 'Análise' :
-                         payment.status === 'requires_info' ? 'Info' :
-                         payment.status === 'approved' ? 'Aprov' : 'Rej'}
+                        {payment.status === "pending"
+                          ? "Pend"
+                          : payment.status === "under_review"
+                            ? "Análise"
+                            : payment.status === "requires_info"
+                              ? "Info"
+                              : payment.status === "approved"
+                                ? "Aprov"
+                                : "Rej"}
                       </span>
                     </div>
                   </Badge>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="pb-3">
                 <div className="space-y-3">
                   {/* Amount */}
@@ -378,7 +413,7 @@ export function MyPaymentsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Tipo</span>
                     <Badge variant="outline" className="text-xs">
-                      {payment.payment_type === 'one_time' ? 'Único' : 'Recorrente'}
+                      {payment.payment_type === "one_time" ? "Único" : "Recorrente"}
                     </Badge>
                   </div>
 
@@ -387,7 +422,7 @@ export function MyPaymentsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Vinculado a</span>
                       <Badge variant="secondary" className="text-xs">
-                        {payment.quote_id ? 'Orçamento' : 'Assinatura'}
+                        {payment.quote_id ? "Orçamento" : "Assinatura"}
                       </Badge>
                     </div>
                   )}
@@ -397,11 +432,11 @@ export function MyPaymentsPage() {
                     <div className="flex items-start text-sm text-muted-foreground">
                       <Clock className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">
-                        {payment.status === 'pending' && 'Aguardando comprovante'}
-                        {payment.status === 'under_review' && 'Em análise pelo administrador'}
-                        {payment.status === 'requires_info' && 'Aguardando informações adicionais'}
-                        {payment.status === 'approved' && 'Pagamento aprovado'}
-                        {payment.status === 'rejected' && 'Pagamento rejeitado'}
+                        {payment.status === "pending" && "Aguardando comprovante"}
+                        {payment.status === "under_review" && "Em análise pelo administrador"}
+                        {payment.status === "requires_info" && "Aguardando informações adicionais"}
+                        {payment.status === "approved" && "Pagamento aprovado"}
+                        {payment.status === "rejected" && "Pagamento rejeitado"}
                       </span>
                     </div>
                   </div>
@@ -424,9 +459,9 @@ export function MyPaymentsPage() {
           <CardHeader>
             <CardTitle>Nenhum pagamento encontrado</CardTitle>
             <CardDescription>
-              {statusFilter !== 'all' || dateRange.from || dateRange.to || searchQuery
-                ? 'Tente ajustar seus filtros de busca'
-                : 'Você ainda não realizou nenhum pagamento'}
+              {statusFilter !== "all" || dateRange.from || dateRange.to || searchQuery
+                ? "Tente ajustar seus filtros de busca"
+                : "Você ainda não realizou nenhum pagamento"}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -434,26 +469,26 @@ export function MyPaymentsPage() {
               <FileText className="h-12 w-12 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">
-              {statusFilter !== 'all' || dateRange.from || dateRange.to || searchQuery
-                ? 'Nenhum pagamento corresponde aos filtros aplicados'
-                : 'Comece seu primeiro pagamento'}
+              {statusFilter !== "all" || dateRange.from || dateRange.to || searchQuery
+                ? "Nenhum pagamento corresponde aos filtros aplicados"
+                : "Comece seu primeiro pagamento"}
             </h3>
             <p className="text-muted-foreground text-center max-w-md mb-6">
-              {statusFilter !== 'all' || dateRange.from || dateRange.to || searchQuery
-                ? 'Tente remover alguns filtros ou ajustar o período de busca.'
-                : 'Para iniciar um pagamento, acesse um orçamento ou assinatura e selecione a opção de pagamento manual.'}
+              {statusFilter !== "all" || dateRange.from || dateRange.to || searchQuery
+                ? "Tente remover alguns filtros ou ajustar o período de busca."
+                : "Para iniciar um pagamento, acesse um orçamento ou assinatura e selecione a opção de pagamento manual."}
             </p>
             <div className="flex gap-4">
-              {statusFilter !== 'all' || dateRange.from || dateRange.to || searchQuery ? (
+              {statusFilter !== "all" || dateRange.from || dateRange.to || searchQuery ? (
                 <Button onClick={handleClearFilters} variant="default">
                   Limpar Filtros
                 </Button>
               ) : (
-                <Button onClick={() => navigate('/orcamento')} variant="default">
+                <Button onClick={() => navigate("/orcamento")} variant="default">
                   Ver Orçamentos
                 </Button>
               )}
-              <Button onClick={() => navigate('/assinaturas')} variant="outline">
+              <Button onClick={() => navigate("/assinaturas")} variant="outline">
                 Ver Assinaturas
               </Button>
             </div>
@@ -478,13 +513,21 @@ export function MyPaymentsPage() {
               <div className="space-y-2">
                 <h4 className="font-semibold">Status do pagamento</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• <strong>Pendente:</strong> Aguardando envio do comprovante</li>
-                  <li>• <strong>Em Análise:</strong> Comprovante recebido, em verificação</li>
-                  <li>• <strong>Aprovado:</strong> Pagamento confirmado e processado</li>
-                  <li>• <strong>Rejeitado:</strong> Comprovante não aceito</li>
+                  <li>
+                    • <strong>Pendente:</strong> Aguardando envio do comprovante
+                  </li>
+                  <li>
+                    • <strong>Em Análise:</strong> Comprovante recebido, em verificação
+                  </li>
+                  <li>
+                    • <strong>Aprovado:</strong> Pagamento confirmado e processado
+                  </li>
+                  <li>
+                    • <strong>Rejeitado:</strong> Comprovante não aceito
+                  </li>
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-semibold">Tempo de processamento</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
@@ -494,7 +537,7 @@ export function MyPaymentsPage() {
                   <li>• Suporte disponível para dúvidas</li>
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-semibold">Ações disponíveis</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
@@ -507,7 +550,11 @@ export function MyPaymentsPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full" onClick={() => navigate('/perfil?section=support')}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/perfil?section=support")}
+            >
               Acessar Suporte
             </Button>
           </CardFooter>

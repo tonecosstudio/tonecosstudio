@@ -4,9 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, GripVertical, Save, X } from "lucide-react";
 import { toast } from "sonner";
@@ -59,13 +79,9 @@ interface SortableRowProps {
 }
 
 function SortableRow({ reply, onEdit, onDelete, onToggleActive }: SortableRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: reply.id });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: reply.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -79,19 +95,13 @@ function SortableRow({ reply, onEdit, onDelete, onToggleActive }: SortableRowPro
       </TableCell>
       <TableCell>
         <Badge variant="outline">
-          {CATEGORIES.find(c => c.value === reply.category)?.label || reply.category}
+          {CATEGORIES.find((c) => c.value === reply.category)?.label || reply.category}
         </Badge>
       </TableCell>
       <TableCell className="font-medium">{reply.title}</TableCell>
-      <TableCell className="max-w-md truncate">
-        {reply.message}
-      </TableCell>
+      <TableCell className="max-w-md truncate">{reply.message}</TableCell>
       <TableCell>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onToggleActive(reply)}
-        >
+        <Button variant="ghost" size="sm" onClick={() => onToggleActive(reply)}>
           <Badge variant={reply.is_active ? "default" : "secondary"}>
             {reply.is_active ? "Ativo" : "Inativo"}
           </Badge>
@@ -99,18 +109,10 @@ function SortableRow({ reply, onEdit, onDelete, onToggleActive }: SortableRowPro
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEdit(reply)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => onEdit(reply)}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(reply.id)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => onDelete(reply.id)}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
@@ -125,7 +127,7 @@ export function QuickRepliesManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingReply, setEditingReply] = useState<QuickReply | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  
+
   // Form state
   const [formData, setFormData] = useState({
     category: "",
@@ -198,15 +200,13 @@ export function QuickRepliesManager() {
         toast.success("Resposta rápida atualizada com sucesso");
       } else {
         // Create new
-        const maxOrder = Math.max(...quickReplies.map(r => r.display_order), 0);
-        const { error } = await supabase
-          .from("quick_replies" as any)
-          .insert({
-            category: formData.category,
-            title: formData.title,
-            message: formData.message,
-            display_order: maxOrder + 1,
-          });
+        const maxOrder = Math.max(...quickReplies.map((r) => r.display_order), 0);
+        const { error } = await supabase.from("quick_replies" as any).insert({
+          category: formData.category,
+          title: formData.title,
+          message: formData.message,
+          display_order: maxOrder + 1,
+        });
 
         if (error) throw error;
         toast.success("Resposta rápida criada com sucesso");
@@ -275,8 +275,8 @@ export function QuickRepliesManager() {
     }));
 
     // Optimistically update UI
-    const newReplies = quickReplies.map(reply => {
-      const update = updates.find(u => u.id === reply.id);
+    const newReplies = quickReplies.map((reply) => {
+      const update = updates.find((u) => u.id === reply.id);
       return update ? { ...reply, display_order: update.display_order } : reply;
     });
     setQuickReplies(newReplies);
@@ -297,9 +297,10 @@ export function QuickRepliesManager() {
     }
   };
 
-  const filteredReplies = selectedCategory === "all"
-    ? quickReplies
-    : quickReplies.filter(r => r.category === selectedCategory);
+  const filteredReplies =
+    selectedCategory === "all"
+      ? quickReplies
+      : quickReplies.filter((r) => r.category === selectedCategory);
 
   if (loading) {
     return <div className="p-4">Carregando...</div>;
@@ -331,7 +332,7 @@ export function QuickRepliesManager() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
-                {CATEGORIES.map(cat => (
+                {CATEGORIES.map((cat) => (
                   <SelectItem key={cat.value} value={cat.value}>
                     {cat.label}
                   </SelectItem>
@@ -346,7 +347,7 @@ export function QuickRepliesManager() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={filteredReplies.map(r => r.id)}
+              items={filteredReplies.map((r) => r.id)}
               strategy={verticalListSortingStrategy}
             >
               <Table>
@@ -390,7 +391,8 @@ export function QuickRepliesManager() {
               {editingReply ? "Editar Resposta Rápida" : "Nova Resposta Rápida"}
             </DialogTitle>
             <DialogDescription>
-              Preencha os campos abaixo para {editingReply ? "atualizar" : "criar"} uma resposta rápida
+              Preencha os campos abaixo para {editingReply ? "atualizar" : "criar"} uma resposta
+              rápida
             </DialogDescription>
           </DialogHeader>
 
@@ -405,7 +407,7 @@ export function QuickRepliesManager() {
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(cat => (
+                  {CATEGORIES.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
                     </SelectItem>

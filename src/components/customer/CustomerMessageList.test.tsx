@@ -153,7 +153,9 @@ describe("CustomerMessageList", () => {
     it("should display empty state when no messages", () => {
       render(<CustomerMessageList conversationId="conv-1" />);
 
-      expect(screen.getByText("Nenhuma mensagem ainda. Envie a primeira mensagem!")).toBeInTheDocument();
+      expect(
+        screen.getByText("Nenhuma mensagem ainda. Envie a primeira mensagem!")
+      ).toBeInTheDocument();
     });
   });
 
@@ -182,7 +184,7 @@ describe("CustomerMessageList", () => {
 
       // Should show system message content
       expect(screen.getByText(/Seu pedido #123 foi enviado/)).toBeInTheDocument();
-      
+
       // Should show "Atualização Automática" badge
       expect(screen.getByText("Atualização Automática")).toBeInTheDocument();
     });
@@ -216,7 +218,7 @@ describe("CustomerMessageList", () => {
 
       expect(screen.getByText("Seu pedido #123 entrou em produção")).toBeInTheDocument();
       expect(screen.getByText("Seu pedido #123 foi enviado")).toBeInTheDocument();
-      
+
       // Should have 2 "Atualização Automática" badges
       const badges = screen.getAllByText("Atualização Automática");
       expect(badges).toHaveLength(2);
@@ -384,10 +386,7 @@ describe("CustomerMessageList", () => {
     });
 
     it("should display timestamps for all messages", () => {
-      const messages = [
-        createMockMessage({ id: "msg-1" }),
-        createMockMessage({ id: "msg-2" }),
-      ];
+      const messages = [createMockMessage({ id: "msg-1" }), createMockMessage({ id: "msg-2" })];
 
       vi.mocked(useMessages).mockReturnValue({
         messages,

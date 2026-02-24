@@ -36,18 +36,12 @@ interface CustomerGroupedListProps {
 
 type SortOption = "activity" | "conversations" | "unread" | "name";
 
-export function CustomerGroupedList({ 
-  selectedConversationId, 
-  onSelectConversation 
+export function CustomerGroupedList({
+  selectedConversationId,
+  onSelectConversation,
 }: CustomerGroupedListProps) {
-  const {
-    conversations,
-    loading,
-    searchTerm,
-    search,
-    filterByStatus,
-    refresh,
-  } = useConversations();
+  const { conversations, loading, searchTerm, search, filterByStatus, refresh } =
+    useConversations();
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ConversationStatus | "all">("all");
@@ -61,7 +55,7 @@ export function CustomerGroupedList({
 
     conversations.forEach((conv) => {
       const userId = conv.user_id;
-      
+
       if (!groups.has(userId)) {
         groups.set(userId, {
           user_id: userId,
@@ -79,7 +73,7 @@ export function CustomerGroupedList({
       const group = groups.get(userId)!;
       group.conversations.push(conv);
       group.total_unread += conv.unread_count || 0;
-      
+
       // Atualizar última atividade
       if (new Date(conv.last_message_at) > new Date(group.last_activity)) {
         group.last_activity = conv.last_message_at;
@@ -127,8 +121,8 @@ export function CustomerGroupedList({
 
     switch (sortBy) {
       case "activity":
-        sorted.sort((a, b) => 
-          new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()
+        sorted.sort(
+          (a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()
         );
         break;
       case "conversations":
@@ -169,7 +163,7 @@ export function CustomerGroupedList({
   // Se um usuário está selecionado, mostrar suas conversas
   if (selectedUserId) {
     const selectedGroup = customerGroups.find((g) => g.user_id === selectedUserId);
-    
+
     if (!selectedGroup) {
       setSelectedUserId(null);
       return null;
@@ -180,11 +174,7 @@ export function CustomerGroupedList({
         {/* Header com botão voltar */}
         <div className="p-4 border-b space-y-3">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToCustomers}
-            >
+            <Button variant="ghost" size="sm" onClick={handleBackToCustomers}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex-1">
@@ -200,12 +190,7 @@ export function CustomerGroupedList({
                 </div>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refresh}
-              disabled={loading}
-            >
+            <Button variant="ghost" size="sm" onClick={refresh} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
@@ -213,7 +198,8 @@ export function CustomerGroupedList({
           {/* Stats */}
           <div className="flex gap-2">
             <Badge variant="secondary">
-              {selectedGroup.conversations.length} conversa{selectedGroup.conversations.length !== 1 ? "s" : ""}
+              {selectedGroup.conversations.length} conversa
+              {selectedGroup.conversations.length !== 1 ? "s" : ""}
             </Badge>
             {selectedGroup.total_unread > 0 && (
               <Badge variant="default">
@@ -249,16 +235,9 @@ export function CustomerGroupedList({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            <h2 className="font-semibold text-lg">
-              Clientes ({sortedGroups.length})
-            </h2>
+            <h2 className="font-semibold text-lg">Clientes ({sortedGroups.length})</h2>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={refresh}
-            disabled={loading}
-          >
+          <Button variant="ghost" size="sm" onClick={refresh} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -358,10 +337,7 @@ interface CustomerGroupCardProps {
 
 function CustomerGroupCard({ group, onClick, formatTimestamp }: CustomerGroupCardProps) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full p-4 text-left hover:bg-accent transition-colors"
-    >
+    <button onClick={onClick} className="w-full p-4 text-left hover:bg-accent transition-colors">
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-start gap-3">
@@ -370,7 +346,7 @@ function CustomerGroupCard({ group, onClick, formatTimestamp }: CustomerGroupCar
               {group.user_name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          
+
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">{group.user_name}</p>
             <p className="text-xs text-muted-foreground truncate">{group.user_email}</p>
@@ -408,7 +384,7 @@ function CustomerGroupCard({ group, onClick, formatTimestamp }: CustomerGroupCar
               🕐 Atrasado
             </Badge>
           )}
-          
+
           {/* Preview das tags das conversas */}
           {group.conversations.slice(0, 2).map((conv, idx) => (
             <Badge key={idx} variant="outline" className="text-xs">
@@ -471,8 +447,8 @@ function ConversationCard({
               conversation.status === "waiting_admin"
                 ? "destructive"
                 : conversation.status === "resolved"
-                ? "secondary"
-                : "default"
+                  ? "secondary"
+                  : "default"
             }
             className="text-xs"
           >

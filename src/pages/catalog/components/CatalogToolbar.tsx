@@ -1,7 +1,13 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import type { CatalogSort } from "@/pages/catalog/hooks/useCatalogModels";
 
@@ -63,7 +69,10 @@ export function CatalogToolbar(props: {
 
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Categoria</Label>
-              <Select value={category || "all"} onValueChange={(v) => onChangeCategory(v === "all" ? "" : v)}>
+              <Select
+                value={category || "all"}
+                onValueChange={(v) => onChangeCategory(v === "all" ? "" : v)}
+              >
                 <SelectTrigger className="h-11 border-border bg-background">
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>

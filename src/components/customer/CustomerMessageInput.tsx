@@ -25,8 +25,8 @@ interface CustomerMessageInputProps {
   updateOptimisticAttachment?: (messageId: string, tempId: string, updates: any) => void;
 }
 
-export function CustomerMessageInput({ 
-  conversationId, 
+export function CustomerMessageInput({
+  conversationId,
   currentUserId,
   currentUserName,
   isClosed = false,
@@ -49,28 +49,28 @@ export function CustomerMessageInput({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const validFiles: File[] = [];
-    
+
     for (const file of files) {
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      const validTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
       if (!validTypes.includes(file.type)) {
         toast.error(`Arquivo ${file.name} não é suportado. Use JPEG, PNG ou PDF.`);
         continue;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error(`Arquivo ${file.name} é muito grande. Máximo 5MB.`);
         continue;
       }
-      
+
       validFiles.push(file);
     }
-    
-    setSelectedFiles(prev => [...prev, ...validFiles]);
-    e.target.value = '';
+
+    setSelectedFiles((prev) => [...prev, ...validFiles]);
+    e.target.value = "";
   };
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSend = async () => {
@@ -90,11 +90,13 @@ export function CustomerMessageInput({
     try {
       setIsSending(true);
       setIsUploading(selectedFiles.length > 0);
-      
+
       // Stop typing indicator immediately when sending
       stopTyping();
-      
-      const { data: { user } } = await supabase.auth.getUser();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Você precisa estar autenticado");
         return;
@@ -118,12 +120,14 @@ export function CustomerMessageInput({
 
       // Upload de anexos com optimistic updates
       if (filesToUpload.length > 0 && addOptimisticAttachment && updateOptimisticAttachment) {
-        console.log(`[CustomerMessageInput] Enviando ${filesToUpload.length} anexos com optimistic updates`);
-        
+        console.log(
+          `[CustomerMessageInput] Enviando ${filesToUpload.length} anexos com optimistic updates`
+        );
+
         for (const file of filesToUpload) {
           // Criar optimistic attachment
           const tempId = addOptimisticAttachment(messageData.id, file);
-          
+
           try {
             // Upload com progress tracking
             const uploadResult = await fileUploadService.uploadFile(
@@ -135,37 +139,34 @@ export function CustomerMessageInput({
                 updateOptimisticAttachment(messageData.id, tempId, { progress });
               }
             );
-            
+
             console.log(`[CustomerMessageInput] Anexo enviado com sucesso:`, uploadResult);
-            
+
             // Marcar como uploaded (será substituído pelo real via Realtime)
             updateOptimisticAttachment(messageData.id, tempId, {
-              status: 'uploaded',
+              status: "uploaded",
               url: uploadResult.url,
             });
           } catch (error) {
             console.error("Erro ao fazer upload:", error);
-            
+
             // Marcar como erro
             updateOptimisticAttachment(messageData.id, tempId, {
-              status: 'error',
-              error: error instanceof Error ? error.message : 'Erro desconhecido',
+              status: "error",
+              error: error instanceof Error ? error.message : "Erro desconhecido",
             });
-            
+
             toast.error(`Erro ao enviar ${file.name}`);
           }
         }
       } else if (filesToUpload.length > 0) {
         // Fallback: upload sem optimistic updates (compatibilidade)
-        console.log(`[CustomerMessageInput] Enviando ${filesToUpload.length} anexos (modo compatibilidade)`);
+        console.log(
+          `[CustomerMessageInput] Enviando ${filesToUpload.length} anexos (modo compatibilidade)`
+        );
         for (const file of filesToUpload) {
           try {
-            await fileUploadService.uploadFile(
-              file,
-              conversationId,
-              messageData.id,
-              user.id
-            );
+            await fileUploadService.uploadFile(file, conversationId, messageData.id, user.id);
           } catch (error) {
             console.error("Erro ao fazer upload:", error);
             toast.error(`Erro ao enviar ${file.name}`);
@@ -174,10 +175,12 @@ export function CustomerMessageInput({
       }
 
       toast.success("Mensagem enviada");
-      
+
       // DEPRECATED: Callback será removido em versão futura
       if (onMessageSent) {
-        console.warn("[CustomerMessageInput] onMessageSent callback is deprecated and will be removed");
+        console.warn(
+          "[CustomerMessageInput] onMessageSent callback is deprecated and will be removed"
+        );
         onMessageSent();
       }
     } catch (error) {
@@ -202,15 +205,15 @@ export function CustomerMessageInput({
       <div className="bg-muted border-t p-6 text-center">
         <div className="text-muted-foreground mb-4">
           <p className="font-medium mb-1">Atendimento Encerrado</p>
-          <p className="text-sm">
-            Esta conversa foi encerrada. Precisa de ajuda?
-          </p>
+          <p className="text-sm">Esta conversa foi encerrada. Precisa de ajuda?</p>
         </div>
         <Button
           variant="default"
           onClick={async () => {
             try {
-              const { data: { user } } = await supabase.auth.getUser();
+              const {
+                data: { user },
+              } = await supabase.auth.getUser();
               if (!user) {
                 toast.error("Você precisa estar autenticado");
                 return;
@@ -224,11 +227,13 @@ export function CustomerMessageInput({
               });
 
               toast.success("Nova conversa iniciada!");
-              
+
               // Disparar evento customizado para o CustomerChat atualizar
-              window.dispatchEvent(new CustomEvent('newConversationCreated', { 
-                detail: { conversation: newConversation } 
-              }));
+              window.dispatchEvent(
+                new CustomEvent("newConversationCreated", {
+                  detail: { conversation: newConversation },
+                })
+              );
             } catch (error) {
               console.error("Erro ao criar nova conversa:", error);
               toast.error("Erro ao criar nova solicitação");
@@ -248,9 +253,9 @@ export function CustomerMessageInput({
         <div className="px-4 pt-3 pb-2 border-b bg-muted/20">
           <div className="flex flex-wrap gap-2">
             {selectedFiles.map((file, index) => {
-              const isImage = file.type.startsWith('image/');
+              const isImage = file.type.startsWith("image/");
               const previewUrl = isImage ? URL.createObjectURL(file) : null;
-              
+
               return (
                 <div key={index} className="relative inline-block">
                   {isImage && previewUrl ? (
@@ -299,7 +304,7 @@ export function CustomerMessageInput({
             onChange={(e) => {
               const value = e.target.value;
               setNewMessage(value);
-              
+
               // Start typing indicator if text is not empty
               if (value.trim()) {
                 startTyping();
@@ -317,7 +322,7 @@ export function CustomerMessageInput({
             <button
               type="button"
               disabled={isSending}
-              onClick={() => document.getElementById('file-input-customer')?.click()}
+              onClick={() => document.getElementById("file-input-customer")?.click()}
               title="Anexar arquivo (JPEG, PNG, PDF até 5MB)"
               className="w-10 h-10 flex items-center justify-center border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md disabled:opacity-50 disabled:pointer-events-none"
             >
@@ -349,7 +354,9 @@ export function CustomerMessageInput({
             {selectedFiles.length > 0 && ` • ${selectedFiles.length} arquivo(s)`}
           </span>
           <span>
-            {isUploading ? "Enviando arquivos..." : "Enter para enviar, Shift+Enter para quebra de linha"}
+            {isUploading
+              ? "Enviando arquivos..."
+              : "Enter para enviar, Shift+Enter para quebra de linha"}
           </span>
         </div>
       </div>

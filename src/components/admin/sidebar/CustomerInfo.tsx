@@ -67,14 +67,12 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
 
   if (!profile) {
     return (
-      <div className="text-sm text-muted-foreground py-4">
-        Dados do cliente não encontrados
-      </div>
+      <div className="text-sm text-muted-foreground py-4">Dados do cliente não encontrados</div>
     );
   }
 
   const displayName = profile.full_name || profile.display_name || profile.username || "Cliente";
-  const memberSince = profile.created_at 
+  const memberSince = profile.created_at
     ? format(new Date(profile.created_at), "MMMM 'de' yyyy", { locale: ptBR })
     : "Data desconhecida";
 
@@ -89,9 +87,7 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
           )}
         </div>
         {profile.collector_level && profile.collector_level > 1 && (
-          <Badge variant="secondary">
-            Nível {profile.collector_level}
-          </Badge>
+          <Badge variant="secondary">Nível {profile.collector_level}</Badge>
         )}
       </div>
 
@@ -132,7 +128,9 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
               {profile.address && <div>{profile.address}</div>}
               {(profile.city || profile.state) && (
                 <div className="text-muted-foreground">
-                  {profile.city}{profile.city && profile.state && ", "}{profile.state}
+                  {profile.city}
+                  {profile.city && profile.state && ", "}
+                  {profile.state}
                   {profile.zip_code && ` - ${profile.zip_code}`}
                 </div>
               )}

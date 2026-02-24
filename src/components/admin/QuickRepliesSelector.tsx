@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,11 +8,11 @@ import { Separator } from "@/components/ui/separator";
 import { Zap, Search, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  processTemplate, 
-  fetchCustomerData, 
+import {
+  processTemplate,
+  fetchCustomerData,
   detectVariables,
-  TEMPLATE_VARIABLES 
+  TEMPLATE_VARIABLES,
 } from "@/lib/services/templateService";
 
 interface QuickReply {
@@ -86,15 +82,13 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
     let filtered = quickReplies;
 
     if (selectedCategory) {
-      filtered = filtered.filter(r => r.category === selectedCategory);
+      filtered = filtered.filter((r) => r.category === selectedCategory);
     }
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        r =>
-          r.title.toLowerCase().includes(term) ||
-          r.message.toLowerCase().includes(term)
+        (r) => r.title.toLowerCase().includes(term) || r.message.toLowerCase().includes(term)
       );
     }
 
@@ -104,12 +98,12 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
   const handleSelect = async (reply: QuickReply) => {
     // Detectar se tem variáveis
     const variables = detectVariables(reply.message);
-    
+
     if (variables.length > 0 && userId) {
       // Tem variáveis e temos userId - processar template
       setPreviewReply(reply);
       setProcessingTemplate(true);
-      
+
       try {
         const customerData = await fetchCustomerData(userId);
         const processed = await processTemplate(reply.message, customerData);
@@ -144,7 +138,7 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
     setProcessedMessage("");
   };
 
-  const categories = Array.from(new Set(quickReplies.map(r => r.category)));
+  const categories = Array.from(new Set(quickReplies.map((r) => r.category)));
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -162,13 +156,11 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
               <Sparkles className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">Preview da Mensagem</h3>
             </div>
-            
+
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Template Original:</p>
-                <div className="p-2 bg-muted rounded text-sm">
-                  {previewReply.message}
-                </div>
+                <div className="p-2 bg-muted rounded text-sm">{previewReply.message}</div>
               </div>
 
               <div>
@@ -183,15 +175,15 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleConfirmProcessed} 
+                <Button
+                  onClick={handleConfirmProcessed}
                   disabled={processingTemplate}
                   className="flex-1"
                 >
                   Usar Esta Mensagem
                 </Button>
-                <Button 
-                  onClick={handleCancelPreview} 
+                <Button
+                  onClick={handleCancelPreview}
                   variant="outline"
                   disabled={processingTemplate}
                 >
@@ -225,7 +217,7 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                   >
                     Todas
                   </Badge>
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <Badge
                       key={category}
                       variant={selectedCategory === category ? "default" : "outline"}
@@ -241,9 +233,7 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
 
             <ScrollArea className="h-[300px]">
               {loading ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  Carregando...
-                </div>
+                <div className="p-4 text-center text-sm text-muted-foreground">Carregando...</div>
               ) : filteredReplies.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   Nenhuma resposta rápida encontrada
@@ -252,7 +242,7 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                 <div className="p-2">
                   {filteredReplies.map((reply) => {
                     const hasVariables = detectVariables(reply.message).length > 0;
-                    
+
                     return (
                       <button
                         key={reply.id}
@@ -263,7 +253,10 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm">{reply.title}</span>
                             {hasVariables && (
-                              <Sparkles className="h-3 w-3 text-primary" title="Contém variáveis dinâmicas" />
+                              <Sparkles
+                                className="h-3 w-3 text-primary"
+                                title="Contém variáveis dinâmicas"
+                              />
                             )}
                           </div>
                           <Badge variant="secondary" className="text-xs">

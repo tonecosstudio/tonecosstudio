@@ -24,7 +24,10 @@ export function AdminProductionTimelineEditor(props: { quoteId: string; canStart
   const [caption, setCaption] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
 
-  const stageLabel = useMemo(() => PRODUCTION_STAGES.find((s) => s.key === stage)?.label ?? stage, [stage]);
+  const stageLabel = useMemo(
+    () => PRODUCTION_STAGES.find((s) => s.key === stage)?.label ?? stage,
+    [stage]
+  );
 
   const startMutation = useMutation({
     mutationFn: async () => ensureProductionForQuote(quoteId),
@@ -33,7 +36,11 @@ export function AdminProductionTimelineEditor(props: { quoteId: string; canStart
       toast({ title: "Produção iniciada", description: "Timeline criada com status 'Em fila'." });
     },
     onError: (e) => {
-      toast({ title: "Falha", description: e instanceof Error ? e.message : "Erro inesperado", variant: "destructive" });
+      toast({
+        title: "Falha",
+        description: e instanceof Error ? e.message : "Erro inesperado",
+        variant: "destructive",
+      });
     },
   });
 
@@ -53,7 +60,11 @@ export function AdminProductionTimelineEditor(props: { quoteId: string; canStart
       toast({ title: "Atualizado", description: `Status: ${stageLabel}` });
     },
     onError: (e) => {
-      toast({ title: "Falha", description: e instanceof Error ? e.message : "Erro inesperado", variant: "destructive" });
+      toast({
+        title: "Falha",
+        description: e instanceof Error ? e.message : "Erro inesperado",
+        variant: "destructive",
+      });
     },
   });
 
@@ -81,7 +92,9 @@ export function AdminProductionTimelineEditor(props: { quoteId: string; canStart
             {startMutation.isPending ? "Iniciando…" : "Iniciar produção"}
           </Button>
           {!canStart ? (
-            <span className="text-xs text-muted-foreground self-center">Disponível após o orçamento estar aprovado/respondido.</span>
+            <span className="text-xs text-muted-foreground self-center">
+              Disponível após o orçamento estar aprovado/respondido.
+            </span>
           ) : null}
         </div>
 
@@ -103,19 +116,35 @@ export function AdminProductionTimelineEditor(props: { quoteId: string; canStart
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Fotos (opcional)</Label>
-            <Input type="file" multiple accept="image/*" onChange={(e) => setFiles(e.target.files)} className="h-11" />
+            <Input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => setFiles(e.target.files)}
+              className="h-11"
+            />
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-sm font-medium">Legenda das fotos (opcional)</Label>
-            <Input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Ex.: base pronta / pintura em andamento" className="h-11" />
+            <Input
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Ex.: base pronta / pintura em andamento"
+              className="h-11"
+            />
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Observação (opcional)</Label>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex.: iniciamos impressão hoje" className="h-11" />
+            <Input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Ex.: iniciamos impressão hoje"
+              className="h-11"
+            />
           </div>
         </div>
 

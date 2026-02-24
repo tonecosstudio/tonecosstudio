@@ -10,19 +10,15 @@ import type {
   MemberGroupView,
   GroupType,
 } from "@/types/groups";
-import {
-  validateGroupName,
-  validateGroupType,
-  validateMembershipCriteria,
-} from "@/types/groups";
+import { validateGroupName, validateGroupType, validateMembershipCriteria } from "@/types/groups";
 import { sanitizeGroupName } from "@/lib/utils/sanitize";
 
 /**
  * GroupService - Service for managing chat groups
- * 
+ *
  * NOTE: TypeScript errors about table names are expected until migrations are applied
  * and types are regenerated. The migrations exist in supabase/migrations/20260223000000_*.sql
- * 
+ *
  * To regenerate types after applying migrations:
  * npx supabase gen types typescript --project-id pabxpvqwtvbjaunjejud > src/integrations/supabase/types.ts
  */
@@ -35,7 +31,7 @@ export class GroupService {
   async createGroup(input: CreateGroupInput): Promise<Group> {
     // Sanitize group name to prevent XSS
     const sanitizedName = sanitizeGroupName(input.name);
-    
+
     // Validate group name
     const nameValidation = validateGroupName(sanitizedName);
     if (!nameValidation.valid) {
@@ -215,7 +211,9 @@ export class GroupService {
    * Uses PostgreSQL aggregations to avoid N+1 queries
    * Requirements: 1.1, 1.2, 1.3, 1.4, 16.1, 16.2
    */
-  async listGroupsWithMetrics(includeDeleted: boolean = false): Promise<import("@/types/groups").GroupWithMetrics[]> {
+  async listGroupsWithMetrics(
+    includeDeleted: boolean = false
+  ): Promise<import("@/types/groups").GroupWithMetrics[]> {
     // First, get all groups
     let query = supabase.from("chat_groups").select("*");
 
@@ -443,9 +441,7 @@ export class GroupService {
       .select("id, full_name, email")
       .in("id", userIds);
 
-    const profilesMap = new Map(
-      (profiles || []).map((p: any) => [p.id, p])
-    );
+    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     // Map members with user data
     const membersWithData = members.map((member) => {
@@ -549,35 +545,35 @@ export class GroupService {
     return Math.round(viewRate * 100) / 100; // Round to 2 decimal places
   }
 
-    /**
-     * Gets a group by ID
-     * Requirements: 1.1, 1.2, 1.3, 1.4
-     */
-    async getGroupById(groupId: string): Promise<Group> {
-      const { data, error } = await supabase
-        .from("chat_groups")
-        .select("*")
-        .eq("id", groupId)
-        .is("deleted_at", null)
-        .single();
+  /**
+   * Gets a group by ID
+   * Requirements: 1.1, 1.2, 1.3, 1.4
+   */
+  async getGroupById(groupId: string): Promise<Group> {
+    const { data, error } = await supabase
+      .from("chat_groups")
+      .select("*")
+      .eq("id", groupId)
+      .is("deleted_at", null)
+      .single();
 
-      if (error || !data) {
-        throw new Error("Grupo não encontrado");
-      }
-
-      return data as Group;
+    if (error || !data) {
+      throw new Error("Grupo não encontrado");
     }
 
-    /**
-     * Gets all groups that a user is a member of
-     * Returns groups with unread count and last message preview
-     * Requirements: 13.1, 13.2, 13.3
-     */
-    async getMemberGroups(userId: string): Promise<MemberGroupView[]> {
+    return data as Group;
+  }
+
+  /**
+   * Gets all groups that a user is a member of
+   * Returns groups with unread count and last message preview
+   * Requirements: 13.1, 13.2, 13.3
+   */
+  async getMemberGroups(userId: string): Promise<MemberGroupView[]> {
     try {
       // Use optimized database function (single query instead of N+1)
-      const { data, error } = await supabase.rpc('get_member_groups_optimized', {
-        p_user_id: userId
+      const { data, error } = await supabase.rpc("get_member_groups_optimized", {
+        p_user_id: userId,
       });
 
       if (error) {

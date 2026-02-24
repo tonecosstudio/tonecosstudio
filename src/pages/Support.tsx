@@ -9,7 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MessageSquare, Send, Clock, CheckCircle2, AlertCircle, User, Package, CreditCard, FileText } from "lucide-react";
+import {
+  MessageSquare,
+  Send,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  User,
+  Package,
+  CreditCard,
+  FileText,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -45,13 +55,17 @@ export default function Support() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'support' | 'profile' | 'orders' | 'payments'>('support');
+  const [activeSection, setActiveSection] = useState<"support" | "profile" | "orders" | "payments">(
+    "support"
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Buscar user ID
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) setUserId(user.id);
     };
     fetchUser();
@@ -60,7 +74,7 @@ export default function Support() {
   // Buscar conversas
   useEffect(() => {
     if (!userId) return;
-    
+
     const fetchConversations = async () => {
       const { data, error } = await supabase
         .from("support_conversations")
@@ -73,10 +87,10 @@ export default function Support() {
         toast.error("Erro ao carregar conversas");
       } else {
         setConversations(data || []);
-        
+
         // Se há um ID de conversa na URL, selecionar essa conversa
         if (conversationIdFromUrl && data) {
-          const conversationFromUrl = data.find(c => c.id === conversationIdFromUrl);
+          const conversationFromUrl = data.find((c) => c.id === conversationIdFromUrl);
           if (conversationFromUrl) {
             setSelectedConversation(conversationFromUrl);
           } else if (data.length > 0) {
@@ -203,13 +217,11 @@ export default function Support() {
       if (convError) throw convError;
 
       // Criar primeira mensagem
-      const { error: msgError } = await supabase
-        .from("support_messages")
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: userId,
-          message: newFirstMessage.trim(),
-        });
+      const { error: msgError } = await supabase.from("support_messages").insert({
+        conversation_id: conversation.id,
+        sender_id: userId,
+        message: newFirstMessage.trim(),
+      });
 
       if (msgError) throw msgError;
 
@@ -231,13 +243,11 @@ export default function Support() {
     setSending(true);
 
     try {
-      const { error } = await supabase
-        .from("support_messages")
-        .insert({
-          conversation_id: selectedConversation.id,
-          sender_id: userId,
-          message: newMessage.trim(),
-        });
+      const { error } = await supabase.from("support_messages").insert({
+        conversation_id: selectedConversation.id,
+        sender_id: userId,
+        message: newMessage.trim(),
+      });
 
       if (error) throw error;
 
@@ -274,10 +284,7 @@ export default function Support() {
 
   return (
     <>
-      <SEOHead
-        title="Suporte - Ordax"
-        description="Entre em contato com nossa equipe de suporte"
-      />
+      <SEOHead title="Suporte - Ordax" description="Entre em contato com nossa equipe de suporte" />
 
       <div className="container py-8 max-w-7xl">
         {/* Header */}
@@ -296,59 +303,59 @@ export default function Support() {
               <CardContent className="p-4">
                 <nav className="space-y-1">
                   <button
-                    onClick={() => setActiveSection('support')}
+                    onClick={() => setActiveSection("support")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'support' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "support"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <MessageSquare className="h-4 w-4" />
                     Suporte
                   </button>
-                  
+
                   <button
                     onClick={() => {
-                      setActiveSection('profile');
-                      navigate('/perfil');
+                      setActiveSection("profile");
+                      navigate("/perfil");
                     }}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'profile' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "profile"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <User className="h-4 w-4" />
                     Meu Perfil
                   </button>
-                  
+
                   <button
                     onClick={() => {
-                      setActiveSection('orders');
-                      navigate('/meus-pedidos');
+                      setActiveSection("orders");
+                      navigate("/meus-pedidos");
                     }}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'orders' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "orders"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <Package className="h-4 w-4" />
                     Meus Pedidos
                   </button>
-                  
+
                   <button
                     onClick={() => {
-                      setActiveSection('payments');
-                      navigate('/my-payments');
+                      setActiveSection("payments");
+                      navigate("/my-payments");
                     }}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === 'payments' 
-                        ? "bg-primary text-primary-foreground" 
+                      activeSection === "payments"
+                        ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted text-muted-foreground"
                     )}
                   >
@@ -362,161 +369,168 @@ export default function Support() {
 
           {/* Conteúdo Principal */}
           <div className="flex-1 min-w-0">
-          {/* Aviso de Prazo */}
-          <Alert className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
-            <Clock className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-900 dark:text-blue-100">
-              <strong>Prazo de resposta:</strong> Nossa equipe responde em até 48 horas úteis.
-              Você receberá um email quando houver novidades.
-            </AlertDescription>
-          </Alert>
+            {/* Aviso de Prazo */}
+            <Alert className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+              <Clock className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-900 dark:text-blue-100">
+                <strong>Prazo de resposta:</strong> Nossa equipe responde em até 48 horas úteis.
+                Você receberá um email quando houver novidades.
+              </AlertDescription>
+            </Alert>
 
-          {conversations.length === 0 ? (
-            /* Nova Conversa */
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Nova Mensagem
-                </CardTitle>
-                <CardDescription>
-                  Descreva sua dúvida ou problema e nossa equipe entrará em contato
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="subject">Assunto</Label>
-                  <Input
-                    id="subject"
-                    placeholder="Ex: Dúvida sobre meu pedido"
-                    value={newSubject}
-                    onChange={(e) => setNewSubject(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="message">Mensagem</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Descreva sua dúvida ou problema..."
-                    rows={6}
-                    value={newFirstMessage}
-                    onChange={(e) => setNewFirstMessage(e.target.value)}
-                  />
-                </div>
-                <Button
-                  onClick={handleCreateConversation}
-                  disabled={sending || !newSubject.trim() || !newFirstMessage.trim()}
-                  className="w-full"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {sending ? "Enviando..." : "Enviar Mensagem"}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            /* Chat Existente */
-            <div className="space-y-4">
-              {/* Conversa Selecionada */}
-              {selectedConversation && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{selectedConversation.subject}</CardTitle>
-                        <CardDescription>
-                          Criada em {format(new Date(selectedConversation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                        </CardDescription>
+            {conversations.length === 0 ? (
+              /* Nova Conversa */
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Nova Mensagem
+                  </CardTitle>
+                  <CardDescription>
+                    Descreva sua dúvida ou problema e nossa equipe entrará em contato
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="subject">Assunto</Label>
+                    <Input
+                      id="subject"
+                      placeholder="Ex: Dúvida sobre meu pedido"
+                      value={newSubject}
+                      onChange={(e) => setNewSubject(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="message">Mensagem</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Descreva sua dúvida ou problema..."
+                      rows={6}
+                      value={newFirstMessage}
+                      onChange={(e) => setNewFirstMessage(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleCreateConversation}
+                    disabled={sending || !newSubject.trim() || !newFirstMessage.trim()}
+                    className="w-full"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {sending ? "Enviando..." : "Enviar Mensagem"}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              /* Chat Existente */
+              <div className="space-y-4">
+                {/* Conversa Selecionada */}
+                {selectedConversation && (
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle>{selectedConversation.subject}</CardTitle>
+                          <CardDescription>
+                            Criada em{" "}
+                            {format(
+                              new Date(selectedConversation.created_at),
+                              "dd/MM/yyyy 'às' HH:mm",
+                              { locale: ptBR }
+                            )}
+                          </CardDescription>
+                        </div>
+                        {getStatusBadge(selectedConversation.status)}
                       </div>
-                      {getStatusBadge(selectedConversation.status)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Mensagens */}
-                    <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto">
-                      {messages.map((msg) => (
-                        <div
-                          key={msg.id}
-                          className={`flex ${msg.sender_id === userId ? "justify-end" : "justify-start"}`}
-                        >
+                    </CardHeader>
+                    <CardContent>
+                      {/* Mensagens */}
+                      <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto">
+                        {messages.map((msg) => (
                           <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
-                              msg.sender_id === userId
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                            }`}
+                            key={msg.id}
+                            className={`flex ${msg.sender_id === userId ? "justify-end" : "justify-start"}`}
                           >
-                            <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                            <p className={`text-xs mt-1 ${msg.sender_id === userId ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                              {format(new Date(msg.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                            <div
+                              className={`max-w-[80%] rounded-lg p-3 ${
+                                msg.sender_id === userId
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              }`}
+                            >
+                              <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                              <p
+                                className={`text-xs mt-1 ${msg.sender_id === userId ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                              >
+                                {format(new Date(msg.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                      </div>
+
+                      <Separator className="my-4" />
+
+                      {/* Input de Nova Mensagem */}
+                      {selectedConversation.status !== "closed" && (
+                        <div className="space-y-2">
+                          <Textarea
+                            placeholder="Digite sua mensagem..."
+                            rows={3}
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                              }
+                            }}
+                          />
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-muted-foreground">
+                              Pressione Enter para enviar, Shift+Enter para nova linha
                             </p>
+                            <Button
+                              onClick={handleSendMessage}
+                              disabled={sending || !newMessage.trim()}
+                              size="sm"
+                            >
+                              <Send className="h-4 w-4 mr-2" />
+                              Enviar
+                            </Button>
                           </div>
                         </div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </div>
+                      )}
 
-                    <Separator className="my-4" />
+                      {selectedConversation.status === "closed" && (
+                        <Alert>
+                          <CheckCircle2 className="h-4 w-4" />
+                          <AlertDescription>
+                            Esta conversa foi fechada. Para abrir uma nova, clique no botão abaixo.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
-                    {/* Input de Nova Mensagem */}
-                    {selectedConversation.status !== "closed" && (
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder="Digite sua mensagem..."
-                          rows={3}
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendMessage();
-                            }
-                          }}
-                        />
-                        <div className="flex justify-between items-center">
-                          <p className="text-xs text-muted-foreground">
-                            Pressione Enter para enviar, Shift+Enter para nova linha
-                          </p>
-                          <Button
-                            onClick={handleSendMessage}
-                            disabled={sending || !newMessage.trim()}
-                            size="sm"
-                          >
-                            <Send className="h-4 w-4 mr-2" />
-                            Enviar
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedConversation.status === "closed" && (
-                      <Alert>
-                        <CheckCircle2 className="h-4 w-4" />
-                        <AlertDescription>
-                          Esta conversa foi fechada. Para abrir uma nova, clique no botão abaixo.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Botão Nova Conversa */}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setSelectedConversation(null);
-                  setConversations([]);
-                }}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Iniciar Nova Conversa
-              </Button>
-            </div>
-          )}
+                {/* Botão Nova Conversa */}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setSelectedConversation(null);
+                    setConversations([]);
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Iniciar Nova Conversa
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </>
-    );
-  }
+  );
+}

@@ -1,10 +1,10 @@
 /**
  * Hook para gerenciar indicadores de atualização em tempo real
- * 
+ *
  * Requirements: 16.1-16.15
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 
 interface UseRealtimeIndicatorReturn {
   isConnected: boolean;
@@ -26,7 +26,7 @@ export function useRealtimeIndicator(): UseRealtimeIndicatorReturn {
   const [newUpdateCount, setNewUpdateCount] = useState<number>(0);
 
   const incrementUpdateCount = useCallback(() => {
-    setNewUpdateCount(prev => prev + 1);
+    setNewUpdateCount((prev) => prev + 1);
   }, []);
 
   const resetUpdateCount = useCallback(() => {
@@ -64,17 +64,17 @@ export function useRealtimeIndicator(): UseRealtimeIndicatorReturn {
     resetUpdateCount,
     setConnectionStatus,
     setReconnectingStatus,
-    setError
+    setError,
   };
 }
 
 // Hook simplificado para componentes que só precisam do indicador
 export function useRealtimeIndicatorSimple() {
   const { hasNewUpdates, newUpdateCount, resetUpdateCount } = useRealtimeIndicator();
-  
+
   return {
     hasNewUpdates,
     newUpdateCount,
-    resetUpdateCount
+    resetUpdateCount,
   };
 }

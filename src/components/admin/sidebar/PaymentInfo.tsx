@@ -1,7 +1,7 @@
 /**
  * PaymentInfo Component
  * Displays payment history and allows status updates
- * 
+ *
  * Requirements: 19.1, 19.2, 19.5, 25.3
  */
 
@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -43,7 +43,9 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
   const [updating, setUpdating] = useState(false);
 
   // Filter only manual payments (not linked to quotes)
-  const manualPayments = payments.filter(p => p.payment_type === "one_time" || p.payment_type === "recurring");
+  const manualPayments = payments.filter(
+    (p) => p.payment_type === "one_time" || p.payment_type === "recurring"
+  );
 
   if (manualPayments.length === 0) {
     return (
@@ -77,7 +79,10 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
+    const statusMap: Record<
+      string,
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }
+    > = {
       pending: { label: "Pendente", variant: "secondary", icon: Clock },
       under_review: { label: "Em Análise", variant: "outline", icon: Clock },
       requires_info: { label: "Requer Info", variant: "outline", icon: Clock },
@@ -87,7 +92,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
 
     const config = statusMap[status] || { label: status, variant: "outline" as const, icon: Clock };
     const Icon = config.icon;
-    
+
     return (
       <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
         <Icon className="h-3 w-3" />
@@ -121,11 +126,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openStatusDialog(payment)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => openStatusDialog(payment)}>
                   <Edit className="h-3 w-3" />
                 </Button>
               </div>
@@ -133,16 +134,16 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
               {/* Payment Details */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    R$ {payment.amount.toFixed(2)}
-                  </span>
+                  <span className="text-sm font-medium">R$ {payment.amount.toFixed(2)}</span>
                   {getStatusBadge(payment.status)}
                 </div>
 
                 {/* Payment Type */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Tipo:</span>
-                  <span className="text-xs font-medium">{getPaymentTypeLabel(payment.payment_type)}</span>
+                  <span className="text-xs font-medium">
+                    {getPaymentTypeLabel(payment.payment_type)}
+                  </span>
                 </div>
 
                 {/* Payment Method */}
@@ -161,9 +162,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Atualizar Status do Pagamento</DialogTitle>
-            <DialogDescription>
-              Pagamento #{selectedPayment?.reference_number}
-            </DialogDescription>
+            <DialogDescription>Pagamento #{selectedPayment?.reference_number}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">

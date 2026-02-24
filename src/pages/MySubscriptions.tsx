@@ -6,9 +6,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Package, Clock, Eye, Truck, CheckCircle2, AlertCircle, RefreshCw, XCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Calendar,
+  Package,
+  Clock,
+  Eye,
+  Truck,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Link } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
@@ -28,7 +50,8 @@ export default function MySubscriptions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select(`
+        .select(
+          `
           *,
           collections (
             id,
@@ -36,7 +59,8 @@ export default function MySubscriptions() {
             slug,
             description
           )
-        `)
+        `
+        )
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
 
@@ -52,7 +76,8 @@ export default function MySubscriptions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_collections")
-        .select(`
+        .select(
+          `
           collection_id,
           collections (
             id,
@@ -60,11 +85,12 @@ export default function MySubscriptions() {
             slug,
             description
           )
-        `)
+        `
+        )
         .eq("subscription_id", selectedSubscription);
 
       if (error) throw error;
-      return data?.map(sc => sc.collections).filter(Boolean) || [];
+      return data?.map((sc) => sc.collections).filter(Boolean) || [];
     },
   });
 
@@ -75,14 +101,16 @@ export default function MySubscriptions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_deliveries")
-        .select(`
+        .select(
+          `
           *,
           collection_characters (
             name,
             release_order,
             description
           )
-        `)
+        `
+        )
         .eq("subscription_id", selectedSubscription)
         .order("delivery_number", { ascending: true });
 
@@ -99,7 +127,8 @@ export default function MySubscriptions() {
       // Buscar coleções da assinatura
       const { data, error } = await supabase
         .from("subscription_collections")
-        .select(`
+        .select(
+          `
           collections (
             id,
             name,
@@ -107,11 +136,12 @@ export default function MySubscriptions() {
             description,
             is_active
           )
-        `)
+        `
+        )
         .eq("subscription_id", selectedSubscription);
 
       if (error) throw error;
-      return data?.map(sc => sc.collections).filter(c => c && c.is_active) || [];
+      return data?.map((sc) => sc.collections).filter((c) => c && c.is_active) || [];
     },
   });
 
@@ -125,16 +155,14 @@ export default function MySubscriptions() {
       <SEOHead
         title="Minhas Assinaturas"
         description="Gerencie suas assinaturas de coleções"
-        keywords={['assinaturas', 'coleções', 'entregas']}
+        keywords={["assinaturas", "coleções", "entregas"]}
         noindex={true}
       />
 
       <div className="container py-8 sm:py-12 max-w-7xl">
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
-            Minhas Assinaturas
-          </h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Minhas Assinaturas</h1>
           <p className="text-muted-foreground">
             Gerencie suas assinaturas de coleções e acompanhe suas entregas
           </p>
@@ -163,8 +191,12 @@ export default function MySubscriptions() {
                   subscription={subscription}
                   isSelected={selectedSubscription === subscription.id}
                   onSelect={() => setSelectedSubscription(subscription.id)}
-                  availableCollections={selectedSubscription === subscription.id ? availableCollections : []}
-                  subscriptionCollections={selectedSubscription === subscription.id ? subscriptionCollections : []}
+                  availableCollections={
+                    selectedSubscription === subscription.id ? availableCollections : []
+                  }
+                  subscriptionCollections={
+                    selectedSubscription === subscription.id ? subscriptionCollections : []
+                  }
                   onSuccess={() => qc.invalidateQueries({ queryKey: ["my-subscriptions"] })}
                 />
               ))}
@@ -212,7 +244,14 @@ export default function MySubscriptions() {
 }
 
 // Componente: Card de Assinatura
-function SubscriptionCard({ subscription, isSelected, onSelect, availableCollections, subscriptionCollections, onSuccess }: any) {
+function SubscriptionCard({
+  subscription,
+  isSelected,
+  onSelect,
+  availableCollections,
+  subscriptionCollections,
+  onSuccess,
+}: any) {
   const { toast } = useToast();
   const [isChangingCollection, setIsChangingCollection] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -289,10 +328,12 @@ function SubscriptionCard({ subscription, isSelected, onSelect, availableCollect
                 {getStatusBadge(subscription.status)}
               </div>
               <p className="text-sm text-muted-foreground">
-                Plano {planInfo.label} • {subscription.deliveries_completed}/{subscription.total_deliveries} entregas
+                Plano {planInfo.label} • {subscription.deliveries_completed}/
+                {subscription.total_deliveries} entregas
                 {subscriptionCollections.length > 0 && (
                   <span className="block mt-1">
-                    {subscriptionCollections.length} {subscriptionCollections.length === 1 ? 'coleção' : 'coleções'} disponíveis
+                    {subscriptionCollections.length}{" "}
+                    {subscriptionCollections.length === 1 ? "coleção" : "coleções"} disponíveis
                   </span>
                 )}
               </p>
@@ -306,7 +347,10 @@ function SubscriptionCard({ subscription, isSelected, onSelect, availableCollect
             <div className="flex items-center justify-between mb-2 text-sm">
               <span className="text-muted-foreground">Progresso</span>
               <span className="font-medium">
-                {Math.round((subscription.deliveries_completed / subscription.total_deliveries) * 100)}%
+                {Math.round(
+                  (subscription.deliveries_completed / subscription.total_deliveries) * 100
+                )}
+                %
               </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
@@ -342,7 +386,10 @@ function SubscriptionCard({ subscription, isSelected, onSelect, availableCollect
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    Próxima entrega: {format(new Date(subscription.next_delivery_date), "dd/MM/yyyy", { locale: ptBR })}
+                    Próxima entrega:{" "}
+                    {format(new Date(subscription.next_delivery_date), "dd/MM/yyyy", {
+                      locale: ptBR,
+                    })}
                   </span>
                 </div>
               )}
@@ -351,7 +398,10 @@ function SubscriptionCard({ subscription, isSelected, onSelect, availableCollect
                 <div className="flex items-center gap-2 text-sm">
                   <Package className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    Início da produção: {format(new Date(subscription.next_production_start), "dd/MM/yyyy", { locale: ptBR })}
+                    Início da produção:{" "}
+                    {format(new Date(subscription.next_production_start), "dd/MM/yyyy", {
+                      locale: ptBR,
+                    })}
                   </span>
                 </div>
               )}
@@ -361,18 +411,20 @@ function SubscriptionCard({ subscription, isSelected, onSelect, availableCollect
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Você pode trocar de coleção por mais <strong>{daysUntilCutoff} {daysUntilCutoff === 1 ? 'dia' : 'dias'}</strong>
+                    Você pode trocar de coleção por mais{" "}
+                    <strong>
+                      {daysUntilCutoff} {daysUntilCutoff === 1 ? "dia" : "dias"}
+                    </strong>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Trocas ilimitadas entre suas {subscriptionCollections.length} {subscriptionCollections.length === 1 ? 'coleção' : 'coleções'}.
+                      Trocas ilimitadas entre suas {subscriptionCollections.length}{" "}
+                      {subscriptionCollections.length === 1 ? "coleção" : "coleções"}.
                     </p>
                   </AlertDescription>
                 </Alert>
               ) : (
                 <Alert variant="destructive">
                   <XCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Troca bloqueada. Personagem em produção.
-                  </AlertDescription>
+                  <AlertDescription>Troca bloqueada. Personagem em produção.</AlertDescription>
                 </Alert>
               )}
             </div>
@@ -445,11 +497,21 @@ function DeliveryCard({ delivery, isLast }: any) {
       case "revealed":
         return { icon: Eye, label: "Revelada", color: "text-blue-500", bg: "bg-blue-100" };
       case "in_production":
-        return { icon: Package, label: "Em Produção", color: "text-orange-500", bg: "bg-orange-100" };
+        return {
+          icon: Package,
+          label: "Em Produção",
+          color: "text-orange-500",
+          bg: "bg-orange-100",
+        };
       case "shipped":
         return { icon: Truck, label: "Enviada", color: "text-purple-500", bg: "bg-purple-100" };
       case "delivered":
-        return { icon: CheckCircle2, label: "Entregue", color: "text-green-500", bg: "bg-green-100" };
+        return {
+          icon: CheckCircle2,
+          label: "Entregue",
+          color: "text-green-500",
+          bg: "bg-green-100",
+        };
       default:
         return { icon: AlertCircle, label: status, color: "text-gray-500", bg: "bg-gray-100" };
     }
@@ -461,13 +523,13 @@ function DeliveryCard({ delivery, isLast }: any) {
   return (
     <div className="relative">
       {/* Linha conectora */}
-      {!isLast && (
-        <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-border" />
-      )}
+      {!isLast && <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-border" />}
 
       <div className="flex gap-4">
         {/* Ícone */}
-        <div className={`flex-shrink-0 w-12 h-12 rounded-full ${statusInfo.bg} flex items-center justify-center relative z-10`}>
+        <div
+          className={`flex-shrink-0 w-12 h-12 rounded-full ${statusInfo.bg} flex items-center justify-center relative z-10`}
+        >
           <StatusIcon className={`h-6 w-6 ${statusInfo.color}`} />
         </div>
 
@@ -498,7 +560,8 @@ function DeliveryCard({ delivery, isLast }: any) {
               <div className="flex items-center gap-2">
                 <Eye className="h-3 w-3" />
                 <span>
-                  Revelado em {format(new Date(delivery.reveal_date), "dd/MM/yyyy", { locale: ptBR })}
+                  Revelado em{" "}
+                  {format(new Date(delivery.reveal_date), "dd/MM/yyyy", { locale: ptBR })}
                 </span>
               </div>
             )}
@@ -506,16 +569,17 @@ function DeliveryCard({ delivery, isLast }: any) {
               <div className="flex items-center gap-2">
                 <Calendar className="h-3 w-3" />
                 <span>
-                  Previsão: {format(new Date(delivery.expected_delivery_date), "dd/MM/yyyy", { locale: ptBR })}
+                  Previsão:{" "}
+                  {format(new Date(delivery.expected_delivery_date), "dd/MM/yyyy", {
+                    locale: ptBR,
+                  })}
                 </span>
               </div>
             )}
             {delivery.tracking_code && (
               <div className="flex items-center gap-2">
                 <Truck className="h-3 w-3" />
-                <span className="font-mono">
-                  Rastreio: {delivery.tracking_code}
-                </span>
+                <span className="font-mono">Rastreio: {delivery.tracking_code}</span>
               </div>
             )}
           </div>
@@ -526,7 +590,13 @@ function DeliveryCard({ delivery, isLast }: any) {
 }
 
 // Dialog: Trocar Coleção
-function ChangeCollectionDialog({ subscription, availableCollections, isOpen, onOpenChange, onSuccess }: any) {
+function ChangeCollectionDialog({
+  subscription,
+  availableCollections,
+  isOpen,
+  onOpenChange,
+  onSuccess,
+}: any) {
   const { toast } = useToast();
   const [selectedCollection, setSelectedCollection] = useState(subscription.collection_id);
 
@@ -568,7 +638,9 @@ function ChangeCollectionDialog({ subscription, availableCollections, isOpen, on
     },
   });
 
-  const currentCollection = availableCollections.find((c: any) => c.id === subscription.collection_id);
+  const currentCollection = availableCollections.find(
+    (c: any) => c.id === subscription.collection_id
+  );
   const newCollection = availableCollections.find((c: any) => c.id === selectedCollection);
 
   return (
@@ -576,9 +648,7 @@ function ChangeCollectionDialog({ subscription, availableCollections, isOpen, on
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Trocar Coleção</DialogTitle>
-          <DialogDescription>
-            Escolha uma nova coleção para sua próxima entrega
-          </DialogDescription>
+          <DialogDescription>Escolha uma nova coleção para sua próxima entrega</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -586,7 +656,8 @@ function ChangeCollectionDialog({ subscription, availableCollections, isOpen, on
           <Alert>
             <RefreshCw className="h-4 w-4" />
             <AlertDescription>
-              Você pode trocar ILIMITADAMENTE entre suas coleções até o início da produção. O que importa é qual coleção estará selecionada quando a produção iniciar.
+              Você pode trocar ILIMITADAMENTE entre suas coleções até o início da produção. O que
+              importa é qual coleção estará selecionada quando a produção iniciar.
             </AlertDescription>
           </Alert>
 
@@ -595,9 +666,7 @@ function ChangeCollectionDialog({ subscription, availableCollections, isOpen, on
             <label className="text-sm font-medium mb-2 block">Coleção Atual</label>
             <div className="p-4 rounded-lg border bg-muted/50">
               <h4 className="font-semibold mb-1">{currentCollection?.name}</h4>
-              <p className="text-sm text-muted-foreground">
-                {currentCollection?.description}
-              </p>
+              <p className="text-sm text-muted-foreground">{currentCollection?.description}</p>
             </div>
           </div>
 
@@ -619,9 +688,7 @@ function ChangeCollectionDialog({ subscription, availableCollections, isOpen, on
             {newCollection && newCollection.id !== subscription.collection_id && (
               <div className="mt-3 p-4 rounded-lg border">
                 <h4 className="font-semibold mb-1">{newCollection.name}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {newCollection.description}
-                </p>
+                <p className="text-sm text-muted-foreground">{newCollection.description}</p>
               </div>
             )}
           </div>
@@ -630,7 +697,8 @@ function ChangeCollectionDialog({ subscription, availableCollections, isOpen, on
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              A troca será aplicada na próxima entrega. Você pode trocar quantas vezes quiser até o início da produção.
+              A troca será aplicada na próxima entrega. Você pode trocar quantas vezes quiser até o
+              início da produção.
             </AlertDescription>
           </Alert>
         </div>
@@ -689,9 +757,7 @@ function CancelSubscriptionDialog({ subscription, isOpen, onOpenChange, onSucces
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Cancelar Assinatura</DialogTitle>
-          <DialogDescription>
-            Tem certeza que deseja cancelar esta assinatura?
-          </DialogDescription>
+          <DialogDescription>Tem certeza que deseja cancelar esta assinatura?</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

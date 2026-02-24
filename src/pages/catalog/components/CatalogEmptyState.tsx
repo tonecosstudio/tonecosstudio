@@ -6,7 +6,12 @@ export function CatalogEmptyState(props: { needle: string; onClearSearch: () => 
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-        <svg className="h-10 w-10 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+          className="h-10 w-10 text-muted-foreground"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

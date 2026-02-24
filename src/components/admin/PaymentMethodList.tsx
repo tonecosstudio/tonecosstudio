@@ -1,15 +1,15 @@
 /**
  * PaymentMethodList Component
- * 
+ *
  * Displays all payment methods with active/inactive indicators, toggle buttons,
  * set as default button, edit and delete actions, and drag-and-drop for display_order.
- * 
+ *
  * Requirements: 1.1-1.10
  * Task: 11.2 Criar componente PaymentMethodList
  */
 
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -17,26 +17,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  Star, 
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Star,
   StarOff,
   GripVertical,
   CheckCircle,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,8 +46,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 import {
   DndContext,
   closestCenter,
@@ -56,23 +56,23 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import type { PaymentMethod } from '@/types/manual-payment';
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { PaymentMethod } from "@/types/manual-payment";
 import {
   listAllPaymentMethods,
   togglePaymentMethodActive,
   setDefaultPaymentMethod,
   updatePaymentMethod,
   clearPaymentMethodCache,
-} from '@/lib/payment-method-service';
+} from "@/lib/payment-method-service";
 
 interface PaymentMethodListProps {
   onEdit?: (method: PaymentMethod) => void;
@@ -87,21 +87,10 @@ interface SortableRowProps {
   onDelete: (method: PaymentMethod) => void;
 }
 
-function SortableRow({
-  method,
-  onToggleActive,
-  onSetDefault,
-  onEdit,
-  onDelete,
-}: SortableRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: method.id });
+function SortableRow({ method, onToggleActive, onSetDefault, onEdit, onDelete }: SortableRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: method.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -140,9 +129,7 @@ function SortableRow({
           ) : (
             <XCircle className="h-4 w-4 text-gray-400" />
           )}
-          <span className="text-sm">
-            {method.is_active ? 'Ativo' : 'Inativo'}
-          </span>
+          <span className="text-sm">{method.is_active ? "Ativo" : "Inativo"}</span>
         </div>
       </TableCell>
       <TableCell>
@@ -152,9 +139,7 @@ function SortableRow({
           ) : (
             <StarOff className="h-4 w-4 text-gray-400" />
           )}
-          <span className="text-sm">
-            {method.is_default ? 'Padrão' : 'Não padrão'}
-          </span>
+          <span className="text-sm">{method.is_default ? "Padrão" : "Não padrão"}</span>
         </div>
       </TableCell>
       <TableCell className="text-right">{method.display_order}</TableCell>
@@ -181,10 +166,7 @@ function SortableRow({
                 <Edit className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDelete(method)}
-                className="text-red-600"
-              >
+              <DropdownMenuItem onClick={() => onDelete(method)} className="text-red-600">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
               </DropdownMenuItem>
@@ -203,8 +185,12 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
 
   // Fetch payment methods
-  const { data: paymentMethods = [], isLoading, error } = useQuery({
-    queryKey: ['payment-methods', 'all'],
+  const {
+    data: paymentMethods = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["payment-methods", "all"],
     queryFn: listAllPaymentMethods,
   });
 
@@ -220,18 +206,18 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       togglePaymentMethodActive(id, isActive),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payment-methods'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
       clearPaymentMethodCache();
       toast({
-        title: 'Status atualizado',
-        description: 'Status do método de pagamento foi atualizado com sucesso.',
+        title: "Status atualizado",
+        description: "Status do método de pagamento foi atualizado com sucesso.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro',
+        title: "Erro",
         description: `Falha ao atualizar status: ${error.message}`,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -240,18 +226,18 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
   const setDefaultMutation = useMutation({
     mutationFn: (id: string) => setDefaultPaymentMethod(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payment-methods'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
       clearPaymentMethodCache();
       toast({
-        title: 'Método padrão definido',
-        description: 'Método de pagamento definido como padrão com sucesso.',
+        title: "Método padrão definido",
+        description: "Método de pagamento definido como padrão com sucesso.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro',
+        title: "Erro",
         description: `Falha ao definir método padrão: ${error.message}`,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -266,18 +252,18 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
       await Promise.all(updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payment-methods'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
       clearPaymentMethodCache();
       toast({
-        title: 'Ordem atualizada',
-        description: 'Ordem de exibição dos métodos de pagamento foi atualizada.',
+        title: "Ordem atualizada",
+        description: "Ordem de exibição dos métodos de pagamento foi atualizada.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro',
+        title: "Erro",
         description: `Falha ao atualizar ordem: ${error.message}`,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -302,12 +288,12 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
       setMethods((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        
+
         const newItems = arrayMove(items, oldIndex, newIndex);
-        
+
         // Update display_order in database
         updateOrderMutation.mutate(newItems);
-        
+
         return newItems;
       });
     }
@@ -387,11 +373,7 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
   return (
     <>
       <div className="rounded-md border">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -406,7 +388,7 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
             </TableHeader>
             <TableBody>
               <SortableContext
-                items={methods.map(m => m.id)}
+                items={methods.map((m) => m.id)}
                 strategy={verticalListSortingStrategy}
               >
                 {methods.map((method) => (
@@ -427,8 +409,9 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
 
       <div className="mt-4 text-sm text-gray-500">
         <p>
-          <strong>Dica:</strong> Arraste os itens pelo ícone <GripVertical className="inline h-3 w-3" /> para reordenar.
-          A ordem afeta como os métodos são exibidos para os clientes.
+          <strong>Dica:</strong> Arraste os itens pelo ícone{" "}
+          <GripVertical className="inline h-3 w-3" /> para reordenar. A ordem afeta como os métodos
+          são exibidos para os clientes.
         </p>
       </div>
 
@@ -437,18 +420,14 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir método de pagamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o método de pagamento "{methodToDelete?.name}"?
-              Esta ação não pode ser desfeita. Métodos de pagamento excluídos não poderão
-              ser usados em novos pagamentos, mas pagamentos existentes continuarão referenciando
-              este método.
+              Tem certeza que deseja excluir o método de pagamento "{methodToDelete?.name}"? Esta
+              ação não pode ser desfeita. Métodos de pagamento excluídos não poderão ser usados em
+              novos pagamentos, mas pagamentos existentes continuarão referenciando este método.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

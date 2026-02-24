@@ -27,12 +27,12 @@ export default function PaymentCalculator() {
 
   // Calcular valores
   const valorNumerico = parseFloat(valor) || 0;
-  
+
   // PIX (com 5% desconto)
   const valorPix = valorNumerico * (1 - DESCONTO_PIX);
   const taxaPix = valorPix * TAXA_PIX;
   const recebePix = valorPix - taxaPix;
-  
+
   // Parcelado 6x (sem juros para cliente)
   // Taxa venda + Taxa parcelamento sobre valor BASE
   const taxaVenda6x = valorNumerico * TAXA_VENDA_PARCELADO;
@@ -41,7 +41,7 @@ export default function PaymentCalculator() {
   const recebeParcelado6x = valorNumerico - totalTaxas6x;
   const percentualLiquido6x = (recebeParcelado6x / valorNumerico) * 100;
   const valorParcela6x = valorNumerico / 6;
-  
+
   // Parcelado 10x (loja paga juros - SEM JUROS para cliente)
   // Taxa venda + Taxa parcelamento sobre valor BASE
   const taxaVenda10xLoja = valorNumerico * TAXA_VENDA_PARCELADO;
@@ -61,18 +61,20 @@ export default function PaymentCalculator() {
   const valorComJuros10x = valorNumerico + acrescimoCliente;
   const taxaVenda10xCliente = valorNumerico * TAXA_VENDA_PARCELADO; // Taxa sobre BASE
   const taxaParcelamento10xCliente = valorNumerico * TAXA_PARCELAMENTO_10X_CLIENTE;
-  const recebeParcelado10xCliente = valorComJuros10x - taxaVenda10xCliente - taxaParcelamento10xCliente;
+  const recebeParcelado10xCliente =
+    valorComJuros10x - taxaVenda10xCliente - taxaParcelamento10xCliente;
   const valorParcela10xCliente = valorComJuros10x / 10;
 
   // Diferença entre PIX e Parcelado
   const diferencaValor6x = recebePix - recebeParcelado6x;
-  const diferencaPercentual6x = ((diferencaValor6x / recebeParcelado6x) * 100);
-  
+  const diferencaPercentual6x = (diferencaValor6x / recebeParcelado6x) * 100;
+
   const diferencaValor10xLoja = recebePix - recebeParcelado10xLoja;
-  const diferencaPercentual10xLoja = ((diferencaValor10xLoja / recebeParcelado10xLoja) * 100);
+  const diferencaPercentual10xLoja = (diferencaValor10xLoja / recebeParcelado10xLoja) * 100;
 
   const diferencaValor10xCliente = recebePix - recebeParcelado10xCliente;
-  const diferencaPercentual10xCliente = ((diferencaValor10xCliente / recebeParcelado10xCliente) * 100);
+  const diferencaPercentual10xCliente =
+    (diferencaValor10xCliente / recebeParcelado10xCliente) * 100;
 
   return (
     <AdminLayout>
@@ -141,7 +143,9 @@ export default function PaymentCalculator() {
                   <DollarSign className="h-5 w-5 text-green-600" />
                   PIX (5% OFF)
                 </span>
-                <Badge variant="default" className="bg-green-600 text-xs">Melhor</Badge>
+                <Badge variant="default" className="bg-green-600 text-xs">
+                  Melhor
+                </Badge>
               </CardTitle>
               <CardDescription className="text-xs">Recebimento imediato</CardDescription>
             </CardHeader>
@@ -251,7 +255,9 @@ export default function PaymentCalculator() {
                   <TrendingUp className="h-5 w-5 text-orange-600" />
                   10x com juros
                 </span>
-                <Badge variant="secondary" className="text-xs">Novo</Badge>
+                <Badge variant="secondary" className="text-xs">
+                  Novo
+                </Badge>
               </CardTitle>
               <CardDescription className="text-xs">Cliente paga juros</CardDescription>
             </CardHeader>
@@ -259,7 +265,9 @@ export default function PaymentCalculator() {
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Cliente paga:</span>
-                  <span className="font-medium text-orange-600">R$ {valorComJuros10x.toFixed(2)}</span>
+                  <span className="font-medium text-orange-600">
+                    R$ {valorComJuros10x.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-xs text-orange-600">
                   <span>10x de:</span>
@@ -313,7 +321,7 @@ export default function PaymentCalculator() {
                       R$ {Math.abs(diferencaValor6x).toFixed(2)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      PIX recebe {diferencaValor6x > 0 ? 'mais' : 'menos'}
+                      PIX recebe {diferencaValor6x > 0 ? "mais" : "menos"}
                     </p>
                   </div>
 
@@ -323,7 +331,7 @@ export default function PaymentCalculator() {
                       {Math.abs(diferencaPercentual6x).toFixed(1)}%
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {diferencaPercentual6x > 0 ? 'A mais no PIX' : 'A menos no PIX'}
+                      {diferencaPercentual6x > 0 ? "A mais no PIX" : "A menos no PIX"}
                     </p>
                   </div>
 
@@ -332,9 +340,7 @@ export default function PaymentCalculator() {
                     <p className="text-xl font-bold text-green-600">
                       R$ {(valorNumerico - valorPix).toFixed(2)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      5% desconto PIX
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">5% desconto PIX</p>
                   </div>
                 </div>
               </div>
@@ -349,7 +355,7 @@ export default function PaymentCalculator() {
                       R$ {Math.abs(diferencaValor10xCliente).toFixed(2)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      10x juros recebe {diferencaValor10xCliente < 0 ? 'mais' : 'menos'}
+                      10x juros recebe {diferencaValor10xCliente < 0 ? "mais" : "menos"}
                     </p>
                   </div>
 
@@ -359,7 +365,7 @@ export default function PaymentCalculator() {
                       {Math.abs(diferencaPercentual10xCliente).toFixed(1)}%
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {diferencaPercentual10xCliente < 0 ? '10x juros melhor' : 'PIX melhor'}
+                      {diferencaPercentual10xCliente < 0 ? "10x juros melhor" : "PIX melhor"}
                     </p>
                   </div>
 
@@ -368,9 +374,7 @@ export default function PaymentCalculator() {
                     <p className="text-xl font-bold text-orange-600">
                       R$ {acrescimoCliente.toFixed(2)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      20,65% de acréscimo
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">20,65% de acréscimo</p>
                   </div>
                 </div>
               </div>
@@ -384,9 +388,7 @@ export default function PaymentCalculator() {
                     <p className="text-xl font-bold text-purple-600">
                       R$ {Math.abs(recebeParcelado6x - recebeParcelado10xLoja).toFixed(2)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      6x recebe mais
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">6x recebe mais</p>
                   </div>
 
                   <div className="p-3 rounded-lg border bg-muted/50">
@@ -394,19 +396,15 @@ export default function PaymentCalculator() {
                     <p className="text-xl font-bold text-green-600">
                       R$ {Math.abs(recebeParcelado10xCliente - recebeParcelado10xLoja).toFixed(2)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      10x juros recebe mais
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">10x juros recebe mais</p>
                   </div>
 
                   <div className="p-3 rounded-lg border bg-muted/50">
                     <p className="text-xs text-muted-foreground mb-1">Melhor opção</p>
                     <p className="text-xl font-bold text-green-600">
-                      {recebeParcelado10xCliente > recebePix ? '10x juros' : 'PIX'}
+                      {recebeParcelado10xCliente > recebePix ? "10x juros" : "PIX"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Maior valor líquido
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Maior valor líquido</p>
                   </div>
                 </div>
               </div>
@@ -438,27 +436,37 @@ export default function PaymentCalculator() {
                     const vPix = val * (1 - DESCONTO_PIX);
                     const tPix = vPix * TAXA_PIX;
                     const rPix = vPix - tPix;
-                    
+
                     const tVenda6x = val * TAXA_VENDA_PARCELADO;
                     const tParc6x = val * TAXA_PARCELAMENTO_6X;
                     const rParc6x = val - tVenda6x - tParc6x;
-                    
+
                     const acrescimo = val * TAXA_PARCELAMENTO_10X_CLIENTE;
                     const vComJuros10x = val + acrescimo;
                     const tVenda10xCliente = val * TAXA_VENDA_PARCELADO; // Taxa sobre BASE
                     const tParc10xCliente = val * TAXA_PARCELAMENTO_10X_CLIENTE;
                     const rParc10xCliente = vComJuros10x - tVenda10xCliente - tParc10xCliente;
-                    
-                    const melhor = rParc10xCliente > rPix && rParc10xCliente > rParc6x ? '10x juros' : 
-                                   rPix > rParc6x ? 'PIX' : '6x';
-                    
+
+                    const melhor =
+                      rParc10xCliente > rPix && rParc10xCliente > rParc6x
+                        ? "10x juros"
+                        : rPix > rParc6x
+                          ? "PIX"
+                          : "6x";
+
                     return (
                       <tr key={val} className="border-b hover:bg-muted/50">
                         <td className="p-2 font-medium">R$ {val.toFixed(2)}</td>
                         <td className="text-right p-2 text-green-600">R$ {vPix.toFixed(2)}</td>
-                        <td className="text-right p-2 font-semibold text-green-600">R$ {rPix.toFixed(2)}</td>
-                        <td className="text-right p-2 font-semibold text-blue-600">R$ {rParc6x.toFixed(2)}</td>
-                        <td className="text-right p-2 font-semibold text-orange-600">R$ {rParc10xCliente.toFixed(2)}</td>
+                        <td className="text-right p-2 font-semibold text-green-600">
+                          R$ {rPix.toFixed(2)}
+                        </td>
+                        <td className="text-right p-2 font-semibold text-blue-600">
+                          R$ {rParc6x.toFixed(2)}
+                        </td>
+                        <td className="text-right p-2 font-semibold text-orange-600">
+                          R$ {rParc10xCliente.toFixed(2)}
+                        </td>
                         <td className="text-right p-2 font-bold text-primary">{melhor}</td>
                       </tr>
                     );
@@ -475,16 +483,37 @@ export default function PaymentCalculator() {
             <CardTitle>ℹ️ Informações Importantes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p>• <strong>Taxa PIX (1%):</strong> Aplicada em pagamentos PIX</p>
-            <p>• <strong>Desconto PIX (5%):</strong> Cliente paga 5% menos no PIX</p>
-            <p>• <strong>Taxa venda parcelada (4,98%):</strong> Aplicada em vendas parceladas</p>
-            <p>• <strong>Taxa parcelamento 6x (9,96%):</strong> Total 14,94% (4,98% + 9,96%)</p>
-            <p>• <strong>Taxa parcelamento 10x loja (14,93%):</strong> Total 19,91% - loja paga juros</p>
-            <p>• <strong>Taxa parcelamento 10x cliente (20,65%):</strong> Cobrada sobre o valor BASE</p>
-            <p>• <strong>Acréscimo 10x cliente (20,65%):</strong> Cliente paga 20,65% a mais sobre o valor BASE</p>
-            <p className="text-green-600 font-medium">✅ PIX: Apenas 1% de taxa + 5% desconto = MELHOR para você!</p>
-            <p className="text-orange-600 font-medium">⚠️ 10x com juros: Cliente paga mais, você recebe quase igual ao valor base</p>
-            <p>• <strong>Recebimento:</strong> Imediato (Na Hora) em todos os casos</p>
+            <p>
+              • <strong>Taxa PIX (1%):</strong> Aplicada em pagamentos PIX
+            </p>
+            <p>
+              • <strong>Desconto PIX (5%):</strong> Cliente paga 5% menos no PIX
+            </p>
+            <p>
+              • <strong>Taxa venda parcelada (4,98%):</strong> Aplicada em vendas parceladas
+            </p>
+            <p>
+              • <strong>Taxa parcelamento 6x (9,96%):</strong> Total 14,94% (4,98% + 9,96%)
+            </p>
+            <p>
+              • <strong>Taxa parcelamento 10x loja (14,93%):</strong> Total 19,91% - loja paga juros
+            </p>
+            <p>
+              • <strong>Taxa parcelamento 10x cliente (20,65%):</strong> Cobrada sobre o valor BASE
+            </p>
+            <p>
+              • <strong>Acréscimo 10x cliente (20,65%):</strong> Cliente paga 20,65% a mais sobre o
+              valor BASE
+            </p>
+            <p className="text-green-600 font-medium">
+              ✅ PIX: Apenas 1% de taxa + 5% desconto = MELHOR para você!
+            </p>
+            <p className="text-orange-600 font-medium">
+              ⚠️ 10x com juros: Cliente paga mais, você recebe quase igual ao valor base
+            </p>
+            <p>
+              • <strong>Recebimento:</strong> Imediato (Na Hora) em todos os casos
+            </p>
           </CardContent>
         </Card>
       </div>

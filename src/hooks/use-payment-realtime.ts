@@ -1,9 +1,9 @@
 /**
  * usePaymentRealtime - Hook para assinar mudanças de status de pagamento em tempo real
- * 
+ *
  * Requirements: 16.1-16.15
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * Este hook fornece assinaturas em tempo real para mudanças na tabela manual_payments
  * com tratamento de perda de conexão, reconexão automática e backoff exponencial.
  */
@@ -72,7 +72,7 @@ export interface UsePaymentRealtimeOptions {
 
 /**
  * Hook para assinar mudanças de pagamento em tempo real
- * 
+ *
  * @param options Opções de configuração do hook
  * @returns Estado da conexão e funções de controle
  */
@@ -120,10 +120,14 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
   /**
    * Calcula o delay para a próxima tentativa de reconexão usando backoff exponencial
    */
-  const calculateRetryDelay = useCallback((attempt: number): number => {
-    const delay = reconnectionConfig.baseDelayMs * Math.pow(reconnectionConfig.backoffFactor, attempt);
-    return Math.min(delay, reconnectionConfig.maxDelayMs);
-  }, [reconnectionConfig]);
+  const calculateRetryDelay = useCallback(
+    (attempt: number): number => {
+      const delay =
+        reconnectionConfig.baseDelayMs * Math.pow(reconnectionConfig.backoffFactor, attempt);
+      return Math.min(delay, reconnectionConfig.maxDelayMs);
+    },
+    [reconnectionConfig]
+  );
 
   /**
    * Estabelece a conexão com o canal de realtime
@@ -154,7 +158,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
       if (statusArray.length === 1) {
         filters.push(`status=eq.${statusArray[0]}`);
       } else {
-        const statusConditions = statusArray.map(s => `status=eq.${s}`).join(",");
+        const statusConditions = statusArray.map((s) => `status=eq.${s}`).join(",");
         filters.push(`or(${statusConditions})`);
       }
     }
@@ -167,7 +171,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
     const channelName = `payment-realtime-${paymentId || "all"}-${userId || "all"}-${Date.now()}`;
 
     try {
-      setConnectionState(prev => ({
+      setConnectionState((prev) => ({
         ...prev,
         isReconnecting: true,
         error: null,
@@ -179,7 +183,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
         .on(
           "postgres_changes",
           {
-            event: events.includes("*") ? "*" : events.join(",") as any,
+            event: events.includes("*") ? "*" : (events.join(",") as any),
             schema: "public",
             table: "manual_payments",
             filter: filter || undefined,
@@ -200,7 +204,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
           if (status === "SUBSCRIBED") {
             // Conexão bem-sucedida
             retryCountRef.current = 0;
-            setConnectionState(prev => ({
+            setConnectionState((prev) => ({
               ...prev,
               isConnected: true,
               isReconnecting: false,
@@ -215,7 +219,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
             // Erro de conexão
             const errorObj = error || new Error(`Falha na conexão: ${status}`);
-            setConnectionState(prev => ({
+            setConnectionState((prev) => ({
               ...prev,
               isConnected: false,
               isReconnecting: false,
@@ -237,7 +241,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
       channelRef.current = channel;
     } catch (error) {
       console.error("Erro ao criar canal de realtime:", error);
-      setConnectionState(prev => ({
+      setConnectionState((prev) => ({
         ...prev,
         isConnected: false,
         isReconnecting: false,
@@ -279,7 +283,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
     retryCountRef.current += 1;
     const delay = calculateRetryDelay(retryCountRef.current);
 
-    setConnectionState(prev => ({
+    setConnectionState((prev) => ({
       ...prev,
       isReconnecting: true,
       retryCount: retryCountRef.current,
@@ -304,7 +308,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
       retryTimeoutRef.current = null;
     }
 
-    setConnectionState(prev => ({
+    setConnectionState((prev) => ({
       ...prev,
       isConnected: false,
       isReconnecting: false,
@@ -356,14 +360,18 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
 
 /**
  * Hook simplificado para assinar mudanças de status de um pagamento específico
- * 
+ *
  * @param paymentId ID do pagamento para assinar
  * @param onStatusChange Callback quando o status muda
  * @returns Estado da conexão
  */
 export function usePaymentStatusRealtime(
   paymentId: string,
-  onStatusChange?: (newStatus: PaymentStatus, oldStatus: PaymentStatus | null, payment: ManualPayment) => void
+  onStatusChange?: (
+    newStatus: PaymentStatus,
+    oldStatus: PaymentStatus | null,
+    payment: ManualPayment
+  ) => void
 ) {
   const { isConnected, isReconnecting, error, ...rest } = usePaymentRealtime({
     paymentId,
@@ -372,7 +380,7 @@ export function usePaymentStatusRealtime(
       if (payload.event === "UPDATE" && payload.new && onStatusChange) {
         const oldStatus = payload.old?.status as PaymentStatus | null;
         const newStatus = payload.new.status as PaymentStatus;
-        
+
         if (oldStatus !== newStatus) {
           onStatusChange(newStatus, oldStatus, payload.new as ManualPayment);
         }
@@ -390,7 +398,7 @@ export function usePaymentStatusRealtime(
 
 /**
  * Hook para assinar novos pagamentos de um usuário específico
- * 
+ *
  * @param userId ID do usuário para filtrar
  * @param onNewPayment Callback quando um novo pagamento é criado
  * @returns Estado da conexão

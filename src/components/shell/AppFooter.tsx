@@ -17,13 +17,16 @@ export default function AppFooter() {
               </div>
             </Link>
             <p className="text-sm text-background/70 leading-relaxed max-w-md">
-              Colecionáveis premium produzidos sob encomenda. Cada peça é artesanalmente criada pela Tonecos Studios com acabamento e pintura de alta qualidade.
+              Colecionáveis premium produzidos sob encomenda. Cada peça é artesanalmente criada pela
+              Tonecos Studios com acabamento e pintura de alta qualidade.
             </p>
           </div>
 
           {/* Navegação */}
           <div>
-            <h3 className="font-semibold text-background mb-4 text-sm uppercase tracking-wider">Navegação</h3>
+            <h3 className="font-semibold text-background mb-4 text-sm uppercase tracking-wider">
+              Navegação
+            </h3>
             <ul className="space-y-3 text-sm text-background/70">
               <li>
                 <Link to="/" className="hover:text-background transition-colors">
@@ -55,10 +58,15 @@ export default function AppFooter() {
 
           {/* Contato */}
           <div>
-            <h3 className="font-semibold text-background mb-4 text-sm uppercase tracking-wider">Contato</h3>
+            <h3 className="font-semibold text-background mb-4 text-sm uppercase tracking-wider">
+              Contato
+            </h3>
             <ul className="space-y-3 text-sm text-background/70">
               <li>
-                <a href="mailto:contato@tonecos.com" className="hover:text-background transition-colors">
+                <a
+                  href="mailto:contato@tonecos.com"
+                  className="hover:text-background transition-colors"
+                >
                   contato@tonecos.com
                 </a>
               </li>
@@ -73,7 +81,9 @@ export default function AppFooter() {
 
         {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-background/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-background/50">
-          <p>&copy; {new Date().getFullYear()} Ordax • Tonecos Studios. Todos os direitos reservados.</p>
+          <p>
+            &copy; {new Date().getFullYear()} Ordax • Tonecos Studios. Todos os direitos reservados.
+          </p>
           <div className="flex items-center gap-4">
             <a href="/termos" className="hover:text-background/70 transition-colors">
               Termos

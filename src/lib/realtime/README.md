@@ -73,7 +73,9 @@ function GroupChat({ groupId }: { groupId: string }) {
 const { sendMessage } = useGroupMessages({ groupId });
 
 // With attachments
-const files: File[] = [/* selected files */];
+const files: File[] = [
+  /* selected files */
+];
 await sendMessage("Check out these files!", files);
 ```
 
@@ -170,6 +172,7 @@ Update last_viewed_at timestamp
 ### Graceful Degradation
 
 If Realtime fails:
+
 - Error is logged but not thrown
 - Email notifications still sent via background job
 - User sees error toast but can continue using the app
@@ -211,13 +214,13 @@ If Realtime fails:
 
 ```typescript
 // Test membership verification
-test('verifyGroupMembership returns true for valid member', async () => {
+test("verifyGroupMembership returns true for valid member", async () => {
   const isMember = await verifyGroupMembership(groupId, userId);
   expect(isMember).toBe(true);
 });
 
 // Test broadcast function
-test('broadcastGroupMessage sends to correct channel', async () => {
+test("broadcastGroupMessage sends to correct channel", async () => {
   await broadcastGroupMessage(groupId, message);
   // Verify channel.send was called
 });
@@ -227,7 +230,7 @@ test('broadcastGroupMessage sends to correct channel', async () => {
 
 ```typescript
 // Test end-to-end message flow
-test('message is received by all online members', async () => {
+test("message is received by all online members", async () => {
   // 1. Admin sends message
   // 2. Verify all members receive via Realtime
   // 3. Verify message stored once in database

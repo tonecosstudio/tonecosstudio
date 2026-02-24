@@ -1,24 +1,28 @@
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import AppShell from '@/components/AppShell';
-import SEOHead from '@/components/SEOHead';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, ArrowRight, Sparkles, Check, Star } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ReleaseTimeline } from '@/components/collections/ReleaseTimeline';
-import { ProductionLimitBadge } from '@/components/production/ProductionLimitBadge';
+import { useParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import AppShell from "@/components/AppShell";
+import SEOHead from "@/components/SEOHead";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, ArrowRight, Sparkles, Check, Star } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ReleaseTimeline } from "@/components/collections/ReleaseTimeline";
+import { ProductionLimitBadge } from "@/components/production/ProductionLimitBadge";
+import { useContentSettings } from "@/hooks/useContentSettings";
+import { processContentVariables } from "@/lib/services/contentService";
 
 export default function CollectionDetails() {
   const { slug } = useParams<{ slug: string }>();
+  const { data: content } = useContentSettings();
 
   const { data: collection, isLoading } = useQuery({
-    queryKey: ['collection', slug],
+    queryKey: ["collection", slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('collections')
-        .select(`
+        .from("collections")
+        .select(
+          `
           *,
           collection_characters (
             id,
@@ -29,8 +33,9 @@ export default function CollectionDetails() {
             release_month,
             status
           )
-        `)
-        .eq('slug', slug)
+        `
+        )
+        .eq("slug", slug)
         .maybeSingle();
 
       if (error) throw error;
@@ -40,13 +45,13 @@ export default function CollectionDetails() {
 
   // Buscar planos de assinatura do banco
   const { data: plans } = useQuery({
-    queryKey: ['subscription-plans'],
+    queryKey: ["subscription-plans"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+        .from("subscription_plans")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
 
       if (error) throw error;
       return data || [];
@@ -88,23 +93,26 @@ export default function CollectionDetails() {
     image_url: string | null;
     release_order: number;
     release_month: number | null;
-    status: 'upcoming' | 'revealed' | 'released';
+    status: "upcoming" | "revealed" | "released";
   }>;
   const sortedCharacters = [...characters].sort((a, b) => a.release_order - b.release_order);
-  
-  const releasedCount = characters.filter(c => c.status === 'released').length;
-  const revealedCount = characters.filter(c => c.status === 'revealed').length;
-  const upcomingCount = characters.filter(c => c.status === 'upcoming').length;
 
-  const heroImage = characters.find(c => c.image_url)?.image_url;
-  const featuredCharacter = sortedCharacters.find(c => c.status === 'revealed');
+  const releasedCount = characters.filter((c) => c.status === "released").length;
+  const revealedCount = characters.filter((c) => c.status === "revealed").length;
+  const upcomingCount = characters.filter((c) => c.status === "upcoming").length;
+
+  const heroImage = characters.find((c) => c.image_url)?.image_url;
+  const featuredCharacter = sortedCharacters.find((c) => c.status === "revealed");
 
   return (
     <AppShell>
       <SEOHead
         title={`${collection.name} - Coleção Completa`}
-        description={collection.description || `Coleção ${collection.name} com ${characters.length} personagens exclusivos`}
-        keywords={[collection.name, 'coleção', 'personagens', 'colecionáveis']}
+        description={
+          collection.description ||
+          `Coleção ${collection.name} com ${characters.length} personagens exclusivos`
+        }
+        keywords={[collection.name, "coleção", "personagens", "colecionáveis"]}
         type="website"
       />
 
@@ -113,7 +121,7 @@ export default function CollectionDetails() {
         {/* Background */}
         {heroImage && (
           <>
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center opacity-10"
               style={{ backgroundImage: `url(${heroImage})` }}
             />
@@ -127,24 +135,26 @@ export default function CollectionDetails() {
               <Sparkles className="w-3 h-3 mr-1" />
               Coleção Premium
             </Badge>
-            
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-              {collection.name}
-            </h1>
-            
+
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">{collection.name}</h1>
+
             {collection.description && (
-              <p className="text-lg text-background/70 mb-6">
-                {collection.description}
-              </p>
+              <p className="text-lg text-background/70 mb-6">{collection.description}</p>
             )}
-            
+
             {/* Prova Social */}
             <div className="flex flex-wrap items-center justify-center gap-6 mb-8 text-sm">
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">👤</div>
-                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">👤</div>
-                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">👤</div>
+                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">
+                    👤
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">
+                    👤
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">
+                    👤
+                  </div>
                 </div>
                 <span className="text-background/80">+50 colecionadores</span>
               </div>
@@ -157,7 +167,7 @@ export default function CollectionDetails() {
                 <span className="text-background/80">Entrega garantida</span>
               </div>
             </div>
-            
+
             {/* Stats Inline */}
             <div className="flex flex-wrap gap-4 justify-center mb-8 text-sm">
               <div className="flex items-center gap-2">
@@ -180,8 +190,8 @@ export default function CollectionDetails() {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-background text-foreground hover:bg-background/90 shadow-xl"
                 asChild
               >
@@ -190,10 +200,10 @@ export default function CollectionDetails() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              
-              <Button 
-                size="lg" 
-                variant="outline" 
+
+              <Button
+                size="lg"
+                variant="outline"
                 className="border-2 border-background bg-background/10 text-background hover:bg-background hover:text-foreground backdrop-blur-sm"
                 asChild
               >
@@ -219,10 +229,14 @@ export default function CollectionDetails() {
         <section className="py-16 bg-gradient-to-b from-background via-muted/30 to-background relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0" style={{
-              backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
-              backgroundSize: '32px 32px'
-            }} />
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)",
+                backgroundSize: "32px 32px",
+              }}
+            />
           </div>
 
           <div className="container max-w-6xl relative z-10">
@@ -240,7 +254,7 @@ export default function CollectionDetails() {
                 </p>
               )}
             </div>
-            
+
             <div className="grid lg:grid-cols-2 gap-8 items-center">
               {/* Imagem com efeitos */}
               <div className="relative group">
@@ -275,7 +289,7 @@ export default function CollectionDetails() {
                     </p>
                   </div>
                 )}
-                
+
                 {/* Características Premium */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4">
@@ -323,9 +337,11 @@ export default function CollectionDetails() {
                 <div className="bg-gradient-to-br from-card to-muted/20 border-2 border-primary/20 rounded-2xl p-6 space-y-4">
                   {/* Contador de Vagas */}
                   <ProductionLimitBadge />
-                  
+
                   <div className="text-center pb-4 border-b">
-                    <p className="text-sm text-muted-foreground mb-2">Escolha sua forma de aquisição</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Escolha sua forma de aquisição
+                    </p>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-3">
@@ -333,14 +349,25 @@ export default function CollectionDetails() {
                       <Link to={`/colecoes/${slug}/assinar`}>
                         <span className="text-base font-bold">Assinar Coleção</span>
                         <span className="text-xs opacity-80">
-                          A partir de R$ {plans && plans.length > 0 
-                            ? Math.min(...plans.map(p => Math.floor(Number(p.price_full) / p.deliveries_total)))
-                            : 385}/peça
+                          A partir de R${" "}
+                          {plans && plans.length > 0
+                            ? Math.min(
+                                ...plans.map((p) =>
+                                  Math.floor(Number(p.price_full) / p.deliveries_total)
+                                )
+                              )
+                            : 385}
+                          /peça
                         </span>
                       </Link>
                     </Button>
-                    
-                    <Button asChild size="lg" variant="outline" className="h-auto py-4 flex-col gap-1 border-2">
+
+                    <Button
+                      asChild
+                      size="lg"
+                      variant="outline"
+                      className="h-auto py-4 flex-col gap-1 border-2"
+                    >
                       <Link to={`/colecoes/${slug}/comprar`}>
                         <span className="text-base font-bold">Comprar Avulso</span>
                         <span className="text-xs opacity-70">R$ 100 de entrada</span>
@@ -371,27 +398,32 @@ export default function CollectionDetails() {
           <div className="relative">
             <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-muted/30 to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-muted/30 to-transparent z-10 pointer-events-none" />
-            
+
             <div className="flex gap-3 overflow-x-auto pb-4 carrossel-container snap-x snap-mandatory">
               {sortedCharacters.map((character) => {
                 const getStatusBadge = (status: string) => {
                   switch (status) {
-                    case 'released':
-                      return <Badge variant="secondary" className="text-xs">Lançado</Badge>;
-                    case 'revealed':
+                    case "released":
+                      return (
+                        <Badge variant="secondary" className="text-xs">
+                          Lançado
+                        </Badge>
+                      );
+                    case "revealed":
                       return <Badge className="text-xs">Disponível</Badge>;
-                    case 'upcoming':
-                      return <Badge variant="outline" className="text-xs">Em Breve</Badge>;
+                    case "upcoming":
+                      return (
+                        <Badge variant="outline" className="text-xs">
+                          Em Breve
+                        </Badge>
+                      );
                     default:
                       return null;
                   }
                 };
 
                 return (
-                  <div 
-                    key={character.id} 
-                    className="group flex-shrink-0 w-48 snap-start"
-                  >
+                  <div key={character.id} className="group flex-shrink-0 w-48 snap-start">
                     <div className="border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-all duration-300 hover:border-primary/50">
                       {/* Imagem Compacta */}
                       <div className="relative aspect-square bg-muted">
@@ -404,12 +436,15 @@ export default function CollectionDetails() {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <span className="text-3xl opacity-20">
-                              {character.status === 'released' ? '✓' : 
-                               character.status === 'revealed' ? '⭐' : '❓'}
+                              {character.status === "released"
+                                ? "✓"
+                                : character.status === "revealed"
+                                  ? "⭐"
+                                  : "❓"}
                             </span>
                           </div>
                         )}
-                        
+
                         <div className="absolute top-2 left-2">
                           {getStatusBadge(character.status)}
                         </div>
@@ -425,7 +460,7 @@ export default function CollectionDetails() {
                         <h3 className="font-semibold text-sm mb-1 line-clamp-1">
                           {character.name}
                         </h3>
-                        
+
                         {character.release_month && (
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -478,9 +513,7 @@ export default function CollectionDetails() {
                 <span className="text-xl font-bold text-primary">1</span>
               </div>
               <h3 className="font-semibold mb-2">Reserve</h3>
-              <p className="text-sm text-muted-foreground">
-                Pague R$ 100 de entrada (valor fixo)
-              </p>
+              <p className="text-sm text-muted-foreground">Pague R$ 100 de entrada (valor fixo)</p>
             </div>
 
             <div className="bg-card border rounded-lg p-6 text-center">
@@ -508,9 +541,7 @@ export default function CollectionDetails() {
                 <span className="text-xl font-bold text-primary">4</span>
               </div>
               <h3 className="font-semibold mb-2">Receba</h3>
-              <p className="text-sm text-muted-foreground">
-                Enviamos sua peça com rastreamento
-              </p>
+              <p className="text-sm text-muted-foreground">Enviamos sua peça com rastreamento</p>
             </div>
           </div>
 
@@ -533,9 +564,7 @@ export default function CollectionDetails() {
         <div className="container max-w-6xl">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold mb-3">Escolha seu Plano</h2>
-            <p className="text-muted-foreground">
-              Monte sua coleção com nossos planos flexíveis
-            </p>
+            <p className="text-muted-foreground">Monte sua coleção com nossos planos flexíveis</p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-6">
@@ -544,7 +573,7 @@ export default function CollectionDetails() {
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
                 ESTILO IRON STUDIOS
               </div>
-              
+
               <div className="text-center mb-4 mt-2">
                 <div className="text-3xl mb-2">🎫</div>
                 <h3 className="text-xl font-bold mb-2">Avulso</h3>
@@ -563,7 +592,7 @@ export default function CollectionDetails() {
                   <div className="text-muted-foreground mt-1">Parcelado: R$ 400</div>
                 </div>
               </div>
-              
+
               <div className="space-y-2 mb-6 text-sm flex-grow">
                 <div className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-primary" />
@@ -595,72 +624,82 @@ export default function CollectionDetails() {
                 const pricePix = Number(plan.price_pix);
                 const discount = priceFull - pricePix;
                 const pricePerPiece = priceFull / plan.deliveries_total;
-                const savings = (500 * plan.deliveries_total) - priceFull;
-                
+                const savings = 500 * plan.deliveries_total - priceFull;
+
                 // Determinar estilo do card baseado no tipo
-                const isPopular = plan.plan_type === 'trimestral';
-                const isBestValue = plan.plan_type === 'anual';
-                
-                const cardClasses = isPopular 
+                const isPopular = plan.plan_type === "trimestral";
+                const isBestValue = plan.plan_type === "anual";
+
+                const cardClasses = isPopular
                   ? "border-2 border-primary rounded-xl p-6 relative shadow-lg scale-105 flex flex-col"
                   : isBestValue
                     ? "border-2 border-purple-500/50 rounded-xl p-6 hover:border-purple-500 hover:shadow-lg transition-all relative flex flex-col"
                     : "border rounded-xl p-6 hover:border-amber-500/50 hover:shadow-lg transition-all flex flex-col";
-                
+
                 const badgeClasses = isPopular
                   ? "absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold"
                   : isBestValue
                     ? "absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold"
                     : "";
-                
+
                 const badgeText = isPopular ? "Mais escolhido" : isBestValue ? "MELHOR VALOR" : "";
-                
-                const emoji = plan.plan_type === 'trimestral' ? '📦' : plan.plan_type === 'semestral' ? '💎' : '👑';
-                
-                const pixColor = plan.plan_type === 'trimestral' ? 'text-primary' : plan.plan_type === 'semestral' ? 'text-amber-600' : 'text-purple-600';
-                
-                const buttonVariant = plan.plan_type === 'trimestral' ? 'default' : 'outline';
-                const buttonClasses = plan.plan_type === 'anual' ? 'border-purple-500 text-purple-700 hover:bg-purple-50' : '';
-                
+
+                const emoji =
+                  plan.plan_type === "trimestral"
+                    ? "📦"
+                    : plan.plan_type === "semestral"
+                      ? "💎"
+                      : "👑";
+
+                const pixColor =
+                  plan.plan_type === "trimestral"
+                    ? "text-primary"
+                    : plan.plan_type === "semestral"
+                      ? "text-amber-600"
+                      : "text-purple-600";
+
+                const buttonVariant = plan.plan_type === "trimestral" ? "default" : "outline";
+                const buttonClasses =
+                  plan.plan_type === "anual"
+                    ? "border-purple-500 text-purple-700 hover:bg-purple-50"
+                    : "";
+
                 return (
                   <div key={plan.id} className={cardClasses}>
-                    {badgeText && (
-                      <div className={badgeClasses}>
-                        {badgeText}
-                      </div>
-                    )}
-                    
+                    {badgeText && <div className={badgeClasses}>{badgeText}</div>}
+
                     <div className="text-center mb-4">
                       <div className="text-3xl mb-2">{emoji}</div>
                       <h3 className="text-xl font-bold mb-2 capitalize">{plan.name}</h3>
                       <div className="text-3xl font-bold mb-1">R$ {priceFull.toFixed(0)}</div>
                       <div className="mb-3">
                         <div className="text-4xl font-bold">
-                          R$ {(priceFull / plan.deliveries_total).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          R${" "}
+                          {(priceFull / plan.deliveries_total).toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </div>
                         <div className="text-sm text-muted-foreground">por personagem</div>
                         <div className="text-sm text-muted-foreground mt-2">
-                          Total: R$ {priceFull.toFixed(0)} <span className="text-primary">em até 10x com juros</span>
+                          Total: R$ {priceFull.toFixed(0)}{" "}
+                          <span className="text-primary">em até 10x com juros</span>
                         </div>
                       </div>
-                      {plan.plan_type === 'trimestral' && (
-                        <p className="text-xs text-primary">
-                          Plano com benefício exclusivo
-                        </p>
+                      {plan.plan_type === "trimestral" && (
+                        <p className="text-xs text-primary">Plano com benefício exclusivo</p>
                       )}
-                      {plan.plan_type === 'semestral' && (
-                        <p className="text-xs text-primary">
-                          Inclui peça exclusiva para membros
-                        </p>
+                      {plan.plan_type === "semestral" && (
+                        <p className="text-xs text-primary">Inclui peça exclusiva para membros</p>
                       )}
                     </div>
-                    
+
                     <div className="space-y-2 mb-6 text-sm flex-grow">
                       <div className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary" />
-                        <span className={plan.plan_type === 'anual' ? 'font-semibold' : ''}>
-                          {plan.deliveries_total} {plan.deliveries_total === 1 ? 'peça' : 'peças'}
-                          {plan.plan_type === 'anual' && ' + 1 GRÁTIS!'}
+                        <span className={plan.plan_type === "anual" ? "font-semibold" : ""}>
+                          {plan.deliveries_total} {plan.deliveries_total === 1 ? "peça" : "peças"}
+                          {plan.plan_type === "anual" && " + 1 GRÁTIS!"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -670,25 +709,29 @@ export default function CollectionDetails() {
                       <div className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary" />
                         <span>
-                          {plan.plan_type === 'trimestral' && 'Prioridade na produção'}
-                          {plan.plan_type === 'semestral' && 'Suporte dedicado'}
-                          {plan.plan_type === 'anual' && 'Suporte VIP'}
+                          {plan.plan_type === "trimestral" && "Prioridade na produção"}
+                          {plan.plan_type === "semestral" && "Suporte dedicado"}
+                          {plan.plan_type === "anual" && "Suporte VIP"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary" />
                         <span>
-                          {plan.plan_type === 'trimestral' && 'Trocas ilimitadas'}
-                          {plan.plan_type === 'semestral' && 'Cancele quando quiser'}
-                          {plan.plan_type === 'anual' && 'Acesso antecipado'}
+                          {plan.plan_type === "trimestral" && "Trocas ilimitadas"}
+                          {plan.plan_type === "semestral" && "Cancele quando quiser"}
+                          {plan.plan_type === "anual" && "Acesso antecipado"}
                         </span>
                       </div>
                     </div>
 
-                    <Button asChild className={`w-full mt-auto ${buttonClasses}`} variant={buttonVariant}>
+                    <Button
+                      asChild
+                      className={`w-full mt-auto ${buttonClasses}`}
+                      variant={buttonVariant}
+                    >
                       <Link to={`/colecoes/${slug}/assinar`}>
                         Assinar
-                        {plan.plan_type === 'trimestral' && <ArrowRight className="ml-2 h-4 w-4" />}
+                        {plan.plan_type === "trimestral" && <ArrowRight className="ml-2 h-4 w-4" />}
                       </Link>
                     </Button>
                   </div>
@@ -718,18 +761,28 @@ export default function CollectionDetails() {
                 <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
               </summary>
               <div className="px-6 pb-6 text-muted-foreground">
-                <p>Você paga R$ 100 de entrada para reservar sua peça. Iniciamos a produção imediatamente e você acompanha todo o processo com fotos. Quando a peça estiver pronta, você paga o restante: R$ 375 no PIX (5% OFF) ou R$ 400 parcelado em até 10x.</p>
+                <p>
+                  Você paga R$ 100 de entrada para reservar sua peça. Iniciamos a produção
+                  imediatamente e você acompanha todo o processo com fotos. Quando a peça estiver
+                  pronta, você paga o restante: R$ 375 no PIX (5% OFF) ou R$ 400 parcelado em até
+                  10x.
+                </p>
               </div>
             </details>
 
             <details className="group bg-card border rounded-lg overflow-hidden">
               <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="font-semibold">Qual a diferença entre compra avulsa e assinatura?</span>
+                <span className="font-semibold">
+                  Qual a diferença entre compra avulsa e assinatura?
+                </span>
                 <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
               </summary>
               <div className="px-6 pb-6 text-muted-foreground">
-                <p>Na compra avulsa você escolhe 1 personagem específico por R$ 500. Na assinatura, você recebe personagens mensalmente 
-                com benefícios exclusivos para membros dos planos maiores.</p>
+                <p>
+                  Na compra avulsa você escolhe 1 personagem específico por R$ 500. Na assinatura,
+                  você recebe personagens mensalmente com benefícios exclusivos para membros dos
+                  planos maiores.
+                </p>
               </div>
             </details>
 
@@ -739,8 +792,10 @@ export default function CollectionDetails() {
                 <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
               </summary>
               <div className="px-6 pb-6 text-muted-foreground">
-                <p>Você escolhe a coleção, e o personagem do mês é revelado no envio. Cada peça é única e exclusiva, 
-                tornando sua coleção ainda mais especial.</p>
+                <p>
+                  Você escolhe a coleção, e o personagem do mês é revelado no envio. Cada peça é
+                  única e exclusiva, tornando sua coleção ainda mais especial.
+                </p>
               </div>
             </details>
 
@@ -750,9 +805,11 @@ export default function CollectionDetails() {
                 <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
               </summary>
               <div className="px-6 pb-6 text-muted-foreground">
-                <p>Seguimos um cronograma mensal fixo: Vendas do dia 15 ao dia 15 do mês seguinte (ou até atingir o limite de produção), 
-                produção de 15 dias, e envio em até 5 dias úteis (considera feriados). Exemplo: compra em 15/02-15/03, 
-                produção 16-30/03, envio até 5º dia útil de Abril.</p>
+                <p>
+                  {content
+                    ? processContentVariables(content.faqFirstDelivery, content)
+                    : "Carregando..."}
+                </p>
               </div>
             </details>
 
@@ -762,7 +819,10 @@ export default function CollectionDetails() {
                 <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
               </summary>
               <div className="px-6 pb-6 text-muted-foreground">
-                <p>Sim, você pode cancelar quando quiser, sem multas ou taxas. Basta acessar sua conta e solicitar o cancelamento. Você continuará recebendo as peças já pagas.</p>
+                <p>
+                  Sim, você pode cancelar quando quiser, sem multas ou taxas. Basta acessar sua
+                  conta e solicitar o cancelamento. Você continuará recebendo as peças já pagas.
+                </p>
               </div>
             </details>
 
@@ -772,7 +832,11 @@ export default function CollectionDetails() {
                 <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
               </summary>
               <div className="px-6 pb-6 text-muted-foreground">
-                <p>Oferecemos garantia de satisfação de 7 dias após o recebimento. Se houver qualquer defeito de fabricação, substituímos a peça gratuitamente. Todas as peças são enviadas com embalagem premium e seguro.</p>
+                <p>
+                  Oferecemos garantia de satisfação de 7 dias após o recebimento. Se houver qualquer
+                  defeito de fabricação, substituímos a peça gratuitamente. Todas as peças são
+                  enviadas com embalagem premium e seguro.
+                </p>
               </div>
             </details>
           </div>
@@ -780,9 +844,7 @@ export default function CollectionDetails() {
           <div className="text-center mt-10">
             <p className="text-muted-foreground mb-4">Ainda tem dúvidas?</p>
             <Button asChild variant="outline">
-              <Link to="/perfil?section=support">
-                Falar com Suporte
-              </Link>
+              <Link to="/perfil?section=support">Falar com Suporte</Link>
             </Button>
           </div>
         </div>
@@ -791,16 +853,15 @@ export default function CollectionDetails() {
       {/* CTA Final - Compacto */}
       <section className="py-12 bg-foreground text-background">
         <div className="container max-w-4xl text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Pronto para começar sua coleção?
-          </h2>
+          <h2 className="text-3xl font-bold mb-4">Pronto para começar sua coleção?</h2>
           <p className="text-background/70 mb-8 max-w-2xl mx-auto">
-            Entrada fixa de R$ 100. Acompanhe a produção e pague o restante: R$ 375 no PIX (5% OFF) ou R$ 400 parcelado.
+            Entrada fixa de R$ 100. Acompanhe a produção e pague o restante: R$ 375 no PIX (5% OFF)
+            ou R$ 400 parcelado.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-background text-foreground hover:bg-background/90"
               asChild
             >
@@ -809,9 +870,9 @@ export default function CollectionDetails() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
+            <Button
+              size="lg"
+              variant="outline"
               className="border-background/30 text-background hover:bg-background/10"
               asChild
             >

@@ -17,21 +17,22 @@ export default function AboutFinal() {
       <SEOHead
         title="Sobre a Ordax - Colecionáveis Premium Artesanais"
         description="Ordax é a plataforma brasileira de colecionáveis artesanais premium. Catálogo organizado, processo transparente e qualidade garantida em cada peça."
-        keywords={['sobre', 'ordax', 'colecionáveis', 'artesanal', 'premium', 'qualidade']}
+        keywords={["sobre", "ordax", "colecionáveis", "artesanal", "premium", "qualidade"]}
         type="website"
       />
-      
+
       {/* Hero */}
       <section className="bg-gradient-to-b from-foreground to-foreground/95 text-background border-b border-white/10 -mx-8 sm:-mx-12">
         <div className="container px-8 py-20 sm:px-12 sm:py-28">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-8 leading-tight">
-              Colecionáveis que<br />
+              Colecionáveis que
+              <br />
               contam histórias.
             </h1>
             <p className="text-xl text-background/80 leading-relaxed max-w-2xl mx-auto">
-              Ordax transforma a experiência de adquirir colecionáveis artesanais: 
-              catálogo organizado, processo transparente e qualidade garantida.
+              Ordax transforma a experiência de adquirir colecionáveis artesanais: catálogo
+              organizado, processo transparente e qualidade garantida.
             </p>
           </div>
         </div>
@@ -42,9 +43,9 @@ export default function AboutFinal() {
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold tracking-tight mb-6">Nossa Missão</h2>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Tornar colecionáveis artesanais premium acessíveis através de uma plataforma organizada, 
-            transparente e confiável. Cada peça é produzida sob encomenda com atenção aos detalhes 
-            e acompanhamento completo.
+            Tornar colecionáveis artesanais premium acessíveis através de uma plataforma organizada,
+            transparente e confiável. Cada peça é produzida sob encomenda com atenção aos detalhes e
+            acompanhamento completo.
           </p>
         </div>
       </section>
@@ -70,7 +71,7 @@ export default function AboutFinal() {
                     </div>
                     <h3 className="text-2xl font-bold">Plataforma Ordax</h3>
                   </div>
-                  
+
                   <div className="space-y-4 text-muted-foreground">
                     <div className="flex items-start gap-3">
                       <span className="text-foreground font-bold">•</span>
@@ -105,7 +106,7 @@ export default function AboutFinal() {
                     </div>
                     <h3 className="text-2xl font-bold">Produção Artesanal</h3>
                   </div>
-                  
+
                   <div className="space-y-4 text-muted-foreground">
                     <div className="flex items-start gap-3">
                       <span className="text-foreground font-bold">•</span>
@@ -142,9 +143,7 @@ export default function AboutFinal() {
       <section className="container py-16 max-w-6xl">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold tracking-tight mb-4">Nossos Valores</h2>
-          <p className="text-lg text-muted-foreground">
-            O que guia cada decisão na Ordax
-          </p>
+          <p className="text-lg text-muted-foreground">O que guia cada decisão na Ordax</p>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -155,7 +154,8 @@ export default function AboutFinal() {
               </div>
               <h3 className="font-bold text-lg mb-3">Qualidade</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Cada peça passa por inspeção rigorosa antes do envio. Padrões elevados em todas as etapas.
+                Cada peça passa por inspeção rigorosa antes do envio. Padrões elevados em todas as
+                etapas.
               </p>
             </CardContent>
           </Card>
@@ -255,7 +255,8 @@ export default function AboutFinal() {
                     <div>
                       <h3 className="font-bold text-lg mb-2">Pintura Artística</h3>
                       <p className="text-muted-foreground">
-                        Pintura à mão com técnicas profissionais, seguindo referências específicas quando solicitado.
+                        Pintura à mão com técnicas profissionais, seguindo referências específicas
+                        quando solicitado.
                       </p>
                     </div>
                   </li>
@@ -267,7 +268,8 @@ export default function AboutFinal() {
                     <div>
                       <h3 className="font-bold text-lg mb-2">Inspeção de Qualidade</h3>
                       <p className="text-muted-foreground">
-                        Verificação rigorosa de acabamento, pintura e detalhes antes da aprovação final.
+                        Verificação rigorosa de acabamento, pintura e detalhes antes da aprovação
+                        final.
                       </p>
                     </div>
                   </li>
@@ -288,7 +290,8 @@ export default function AboutFinal() {
             </Card>
 
             <p className="mt-6 text-center text-sm text-muted-foreground italic">
-              Tempo médio estimado de produção: 15 a 45 dias úteis, podendo variar conforme complexidade e escala.
+              Tempo médio estimado de produção: 15 a 45 dias úteis, podendo variar conforme
+              complexidade e escala.
             </p>
           </div>
         </div>
@@ -310,8 +313,8 @@ export default function AboutFinal() {
                 Quem produz as peças?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                As peças são produzidas artesanalmente por estúdios criativos especializados, seguindo os 
-                padrões de qualidade, processo e acompanhamento definidos pela Ordax.
+                As peças são produzidas artesanalmente por estúdios criativos especializados,
+                seguindo os padrões de qualidade, processo e acompanhamento definidos pela Ordax.
               </AccordionContent>
             </AccordionItem>
 
@@ -320,8 +323,8 @@ export default function AboutFinal() {
                 Quem é o estúdio responsável pela produção?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                A produção principal é realizada pela Tonecos Studios, estúdio especializado que integra 
-                o ecossistema Ordax.
+                A produção principal é realizada pela Tonecos Studios, estúdio especializado que
+                integra o ecossistema Ordax.
               </AccordionContent>
             </AccordionItem>
 
@@ -330,8 +333,9 @@ export default function AboutFinal() {
                 Qual o prazo de produção?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                O prazo varia de 15 a 45 dias dependendo da complexidade do modelo, escala e acabamento solicitado. 
-                Após você solicitar o orçamento, retornamos com uma previsão clara e você acompanha tudo pela timeline.
+                O prazo varia de 15 a 45 dias dependendo da complexidade do modelo, escala e
+                acabamento solicitado. Após você solicitar o orçamento, retornamos com uma previsão
+                clara e você acompanha tudo pela timeline.
               </AccordionContent>
             </AccordionItem>
 
@@ -340,8 +344,9 @@ export default function AboutFinal() {
                 Qual a garantia de qualidade?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                Todas as peças passam por inspeção rigorosa antes do envio. Caso haja algum problema de fabricação, 
-                oferecemos suporte completo para resolução, incluindo reparo ou substituição quando necessário.
+                Todas as peças passam por inspeção rigorosa antes do envio. Caso haja algum problema
+                de fabricação, oferecemos suporte completo para resolução, incluindo reparo ou
+                substituição quando necessário.
               </AccordionContent>
             </AccordionItem>
 
@@ -350,7 +355,7 @@ export default function AboutFinal() {
                 Posso personalizar a peça?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                Sim! Você pode definir escala, cores, acabamento e enviar referências específicas. 
+                Sim! Você pode definir escala, cores, acabamento e enviar referências específicas.
                 Validamos a viabilidade técnica e incluímos no orçamento personalizado.
               </AccordionContent>
             </AccordionItem>
@@ -360,8 +365,8 @@ export default function AboutFinal() {
                 Como acompanho meu pedido?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                Através da timeline visual na plataforma Ordax. Você recebe atualizações com fotos de cada etapa: 
-                modelagem, impressão, acabamento, pintura e finalização.
+                Através da timeline visual na plataforma Ordax. Você recebe atualizações com fotos
+                de cada etapa: modelagem, impressão, acabamento, pintura e finalização.
               </AccordionContent>
             </AccordionItem>
 
@@ -370,8 +375,9 @@ export default function AboutFinal() {
                 Como funciona o acompanhamento digital?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                O acompanhamento ocorre de forma digital, com registros visuais enviados durante as etapas 
-                de produção. Você recebe fotos e atualizações em tempo real através da timeline na plataforma.
+                O acompanhamento ocorre de forma digital, com registros visuais enviados durante as
+                etapas de produção. Você recebe fotos e atualizações em tempo real através da
+                timeline na plataforma.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -386,14 +392,19 @@ export default function AboutFinal() {
               Pronto para sua próxima peça?
             </h2>
             <p className="text-xl text-background/80 mb-8 max-w-2xl mx-auto">
-              Explore nosso catálogo e solicite um orçamento personalizado. 
-              Transformamos sua ideia em realidade com qualidade premium.
+              Explore nosso catálogo e solicite um orçamento personalizado. Transformamos sua ideia
+              em realidade com qualidade premium.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" variant="secondary" className="h-12 px-8 text-base">
                 <a href="/">Explorar Catálogo</a>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base border-background/20 text-background hover:bg-background/10">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="h-12 px-8 text-base border-background/20 text-background hover:bg-background/10"
+              >
                 <a href="/orcamento/carrinho">Solicitar Orçamento</a>
               </Button>
             </div>

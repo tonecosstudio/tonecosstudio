@@ -49,17 +49,19 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   // Get current user for typing indicator
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
           .single();
-        
+
         setCurrentUser({
           id: user.id,
-          name: profile?.full_name || user.email || 'Admin',
+          name: profile?.full_name || user.email || "Admin",
         });
       }
     };
@@ -69,8 +71,8 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   // Typing indicator
   const { typingText, startTyping, stopTyping } = useTypingIndicator({
     conversationId,
-    currentUserId: currentUser?.id || '',
-    currentUserName: currentUser?.name || 'Admin',
+    currentUserId: currentUser?.id || "",
+    currentUserName: currentUser?.name || "Admin",
   });
 
   // Carregar dados da conversa
@@ -105,14 +107,16 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     try {
       setIsSending(true);
       setIsUploading(selectedFiles.length > 0);
-      
+
       // Stop typing indicator immediately
       stopTyping();
 
       console.log("Iniciando envio de mensagem...");
 
       // Obter usuário atual
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error("Usuário não autenticado");
       }
@@ -141,12 +145,14 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
 
       // Upload de anexos com optimistic updates
       if (filesToUpload.length > 0 && addOptimisticAttachment && updateOptimisticAttachment) {
-        console.log(`Fazendo upload de ${filesToUpload.length} arquivo(s) com optimistic updates...`);
-        
+        console.log(
+          `Fazendo upload de ${filesToUpload.length} arquivo(s) com optimistic updates...`
+        );
+
         for (let i = 0; i < filesToUpload.length; i++) {
           const file = filesToUpload[i];
           const tempId = addOptimisticAttachment(messageData.id, file);
-          
+
           try {
             console.log(`Uploading arquivo ${i + 1}/${filesToUpload.length}: ${file.name}`);
             const result = await fileUploadService.uploadFile(
@@ -158,17 +164,17 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                 updateOptimisticAttachment(messageData.id, tempId, { progress });
               }
             );
-            
+
             console.log(`Arquivo ${file.name} enviado com sucesso`);
             updateOptimisticAttachment(messageData.id, tempId, {
-              status: 'uploaded',
+              status: "uploaded",
               url: result.url,
             });
           } catch (error) {
             console.error("Erro ao fazer upload do arquivo:", error);
             updateOptimisticAttachment(messageData.id, tempId, {
-              status: 'error',
-              error: error instanceof Error ? error.message : 'Erro desconhecido',
+              status: "error",
+              error: error instanceof Error ? error.message : "Erro desconhecido",
             });
             toast.error(`Erro ao enviar ${file.name}`);
           }
@@ -178,12 +184,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
         console.log(`Fazendo upload de ${filesToUpload.length} arquivo(s)...`);
         for (const file of filesToUpload) {
           try {
-            await fileUploadService.uploadFile(
-              file,
-              conversationId,
-              messageData.id,
-              user.id
-            );
+            await fileUploadService.uploadFile(file, conversationId, messageData.id, user.id);
           } catch (error) {
             console.error("Erro ao fazer upload do arquivo:", error);
             toast.error(`Erro ao enviar ${file.name}`);
@@ -195,7 +196,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       toast.success("Mensagem enviada");
     } catch (error) {
       console.error("Erro completo ao enviar mensagem:", error);
-      toast.error(`Erro ao enviar mensagem: ${error.message || 'Erro desconhecido'}`);
+      toast.error(`Erro ao enviar mensagem: ${error.message || "Erro desconhecido"}`);
     } finally {
       setIsSending(false);
       setIsUploading(false);
@@ -268,7 +269,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   };
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -282,7 +283,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     }
   };
 
-  const isClosed = conversation?.status === 'closed';
+  const isClosed = conversation?.status === "closed";
 
   return (
     <div className="flex flex-col h-full">
@@ -315,11 +316,11 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               size="sm"
               onClick={async () => {
                 try {
-                  await conversationService.updateStatus(conversationId, 'waiting_admin');
+                  await conversationService.updateStatus(conversationId, "waiting_admin");
                   await reloadConversation();
                   toast.success("Conversa reaberta com sucesso");
                 } catch (error) {
-                  console.error('Erro ao reabrir conversa:', error);
+                  console.error("Erro ao reabrir conversa:", error);
                   toast.error("Erro ao reabrir conversa");
                 }
               }}
@@ -335,12 +336,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
         {/* Load More Button */}
         {hasMore && (
           <div className="text-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadMore}
-              disabled={loading}
-            >
+            <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
               {loading ? "Carregando..." : "Carregar mensagens antigas"}
             </Button>
           </div>
@@ -390,11 +386,11 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               variant="default"
               onClick={async () => {
                 try {
-                  await conversationService.updateStatus(conversationId, 'waiting_admin');
+                  await conversationService.updateStatus(conversationId, "waiting_admin");
                   await reloadConversation();
                   toast.success("Conversa reaberta com sucesso");
                 } catch (error) {
-                  console.error('Erro ao reabrir conversa:', error);
+                  console.error("Erro ao reabrir conversa:", error);
                   toast.error("Erro ao reabrir conversa");
                 }
               }}
@@ -414,8 +410,8 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                 <Lock className="h-4 w-4 mr-2" />
                 Nota Interna
               </Button>
-              <QuickRepliesSelector 
-                onSelect={handleQuickReplySelect} 
+              <QuickRepliesSelector
+                onSelect={handleQuickReplySelect}
                 userId={conversation?.user_id}
               />
             </div>
@@ -441,7 +437,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                 onChange={(e) => {
                   const value = e.target.value;
                   setNewMessage(value);
-                  
+
                   // Start typing indicator if text is not empty and not internal note
                   if (value.trim() && !isInternal) {
                     startTyping();
@@ -474,7 +470,9 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                 {selectedFiles.length > 0 && ` • ${selectedFiles.length} arquivo(s)`}
               </span>
               <span>
-                {isUploading ? "Enviando arquivos..." : "Enter para enviar, Shift+Enter para quebra de linha"}
+                {isUploading
+                  ? "Enviando arquivos..."
+                  : "Enter para enviar, Shift+Enter para quebra de linha"}
               </span>
             </div>
           </>
@@ -496,16 +494,16 @@ interface MessageBubbleProps {
   onCancelEdit: () => void;
 }
 
-function MessageBubble({ 
-  message, 
-  formatTimestamp, 
-  onDelete, 
+function MessageBubble({
+  message,
+  formatTimestamp,
+  onDelete,
   onEdit,
   isEditing,
   editingText,
   onEditTextChange,
   onSaveEdit,
-  onCancelEdit
+  onCancelEdit,
 }: MessageBubbleProps) {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const isAdmin = message.sender_type === "admin";
@@ -520,7 +518,7 @@ function MessageBubble({
     const messageTime = new Date(message.created_at).getTime();
     const now = new Date().getTime();
     const fifteenMinutes = 15 * 60 * 1000;
-    return (now - messageTime) <= fifteenMinutes;
+    return now - messageTime <= fifteenMinutes;
   };
 
   // Obter usuário atual
@@ -531,9 +529,7 @@ function MessageBubble({
   }, []);
 
   const getPublicUrl = (filePath: string) => {
-    const { data } = supabase.storage
-      .from("support-attachments")
-      .getPublicUrl(filePath);
+    const { data } = supabase.storage.from("support-attachments").getPublicUrl(filePath);
     return data.publicUrl;
   };
 
@@ -546,9 +542,7 @@ function MessageBubble({
     return (
       <div className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
         <div className="max-w-[70%] rounded-lg p-3 bg-muted/50 border border-dashed">
-          <p className="text-sm text-muted-foreground italic">
-            Mensagem deletada
-          </p>
+          <p className="text-sm text-muted-foreground italic">Mensagem deletada</p>
           <span className="text-xs text-muted-foreground">
             {formatTimestamp(message.created_at)}
           </span>
@@ -590,27 +584,19 @@ function MessageBubble({
                   value={editingText}
                   onChange={(e) => onEditTextChange(e.target.value)}
                   className="w-full min-h-[60px] text-sm p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ 
-                    backgroundColor: '#ffffff', 
-                    color: '#000000',
-                    fontFamily: 'inherit'
+                  style={{
+                    backgroundColor: "#ffffff",
+                    color: "#000000",
+                    fontFamily: "inherit",
                   }}
                   autoFocus
                 />
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => onSaveEdit(message.id)}
-                  >
+                  <Button size="sm" variant="secondary" onClick={() => onSaveEdit(message.id)}>
                     <Check className="h-3 w-3 mr-1" />
                     Salvar
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={onCancelEdit}
-                  >
+                  <Button size="sm" variant="ghost" onClick={onCancelEdit}>
                     <X className="h-3 w-3 mr-1" />
                     Cancelar
                   </Button>
@@ -619,7 +605,7 @@ function MessageBubble({
             ) : (
               <>
                 <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                
+
                 {/* Attachments */}
                 {hasAttachments && (
                   <div className="mt-3 space-y-2">
@@ -675,9 +661,7 @@ function MessageBubble({
     <div className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
       <div
         className={`max-w-[70%] rounded-lg p-3 group relative ${
-          isAdmin
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted"
+          isAdmin ? "bg-primary text-primary-foreground" : "bg-muted"
         }`}
       >
         <div className="flex items-center gap-2 mb-1">
@@ -695,27 +679,19 @@ function MessageBubble({
               value={editingText}
               onChange={(e) => onEditTextChange(e.target.value)}
               className="w-full min-h-[60px] text-sm p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ 
-                backgroundColor: '#ffffff', 
-                color: '#000000',
-                fontFamily: 'inherit'
+              style={{
+                backgroundColor: "#ffffff",
+                color: "#000000",
+                fontFamily: "inherit",
               }}
               autoFocus
             />
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => onSaveEdit(message.id)}
-              >
+              <Button size="sm" variant="secondary" onClick={() => onSaveEdit(message.id)}>
                 <Check className="h-3 w-3 mr-1" />
                 Salvar
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onCancelEdit}
-              >
+              <Button size="sm" variant="ghost" onClick={onCancelEdit}>
                 <X className="h-3 w-3 mr-1" />
                 Cancelar
               </Button>
@@ -724,7 +700,7 @@ function MessageBubble({
         ) : (
           <>
             <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-            
+
             {/* Attachments */}
             {hasAttachments && (
               <div className="mt-3 space-y-2">
@@ -772,7 +748,6 @@ function MessageBubble({
   );
 }
 
-
 interface AttachmentDisplayProps {
   attachment: any;
   getPublicUrl: (filePath: string) => string;
@@ -787,7 +762,7 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
   const fileIsImage = isImage(attachment.file_type);
 
   const handleDownload = () => {
-    window.open(publicUrl, '_blank');
+    window.open(publicUrl, "_blank");
   };
 
   if (fileIsImage) {
@@ -806,12 +781,7 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
             <p className="text-xs font-medium truncate">{attachment.file_name}</p>
             <p className="text-xs opacity-70">Imagem não disponível</p>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleDownload}
-            className="flex-shrink-0"
-          >
+          <Button size="sm" variant="ghost" onClick={handleDownload} className="flex-shrink-0">
             <Download className="h-4 w-4" />
           </Button>
         </div>
@@ -820,12 +790,7 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
 
     return (
       <div className="relative group">
-        <a
-          href={publicUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-        >
+        <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="block">
           <img
             src={thumbnailUrl || publicUrl}
             alt={attachment.file_name}
@@ -866,16 +831,9 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
       <FileText className="h-5 w-5 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium truncate">{attachment.file_name}</p>
-        <p className="text-xs opacity-70">
-          {(attachment.file_size / 1024).toFixed(1)} KB
-        </p>
+        <p className="text-xs opacity-70">{(attachment.file_size / 1024).toFixed(1)} KB</p>
       </div>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={handleDownload}
-        className="flex-shrink-0"
-      >
+      <Button size="sm" variant="ghost" onClick={handleDownload} className="flex-shrink-0">
         <Download className="h-4 w-4" />
       </Button>
     </div>

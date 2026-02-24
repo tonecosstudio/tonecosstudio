@@ -38,7 +38,9 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "customers" | "subscribers" | "quotes">("all");
+  const [filterType, setFilterType] = useState<"all" | "customers" | "subscribers" | "quotes">(
+    "all"
+  );
 
   useEffect(() => {
     loadContacts();
@@ -77,11 +79,7 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
               .eq("user_id", user.id)
               .eq("status", "active")
               .limit(1),
-            supabase
-              .from("quotes")
-              .select("id")
-              .eq("user_id", user.id)
-              .limit(1),
+            supabase.from("quotes").select("id").eq("user_id", user.id).limit(1),
           ]);
 
           return {
@@ -119,9 +117,7 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (c) =>
-          c.email?.toLowerCase().includes(term) ||
-          c.full_name?.toLowerCase().includes(term)
+        (c) => c.email?.toLowerCase().includes(term) || c.full_name?.toLowerCase().includes(term)
       );
     }
 
@@ -129,11 +125,7 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
   };
 
   const handleStartConversation = (contact: Contact) => {
-    onStartConversation(
-      contact.id,
-      contact.full_name || contact.email,
-      contact.email
-    );
+    onStartConversation(contact.id, contact.full_name || contact.email, contact.email);
   };
 
   return (
@@ -142,12 +134,7 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
       <div className="p-4 border-b space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-lg">Contatos</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={loadContacts}
-            disabled={loading}
-          >
+          <Button variant="ghost" size="sm" onClick={loadContacts} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -218,13 +205,9 @@ function ContactCard({ contact, onStartConversation }: ContactCardProps) {
     <div className="p-4 hover:bg-accent transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">
-            {contact.full_name || contact.email}
-          </p>
+          <p className="font-medium truncate">{contact.full_name || contact.email}</p>
           {contact.full_name && (
-            <p className="text-xs text-muted-foreground truncate">
-              {contact.email}
-            </p>
+            <p className="text-xs text-muted-foreground truncate">{contact.email}</p>
           )}
 
           {/* Badges */}
@@ -247,12 +230,7 @@ function ContactCard({ contact, onStartConversation }: ContactCardProps) {
           </div>
         </div>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onStartConversation}
-          title="Iniciar conversa"
-        >
+        <Button size="sm" variant="ghost" onClick={onStartConversation} title="Iniciar conversa">
           <MessageSquarePlus className="h-4 w-4" />
         </Button>
       </div>

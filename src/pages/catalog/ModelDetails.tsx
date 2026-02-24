@@ -63,7 +63,10 @@ export default function ModelDetails() {
   const onToggleLike = async () => {
     if (!model) return;
     if (!user?.id) {
-      toast({ title: "Entre para favoritar", description: "Faça login para salvar seus modelos preferidos." });
+      toast({
+        title: "Entre para favoritar",
+        description: "Faça login para salvar seus modelos preferidos.",
+      });
       navigate("/login");
       return;
     }
@@ -105,7 +108,9 @@ export default function ModelDetails() {
           <Card className="border-border">
             <CardContent className="p-8 text-center">
               <h1 className="text-2xl font-bold">Modelo não encontrado</h1>
-              <p className="mt-2 text-muted-foreground">Esse item pode ter sido removido ou o link está incorreto.</p>
+              <p className="mt-2 text-muted-foreground">
+                Esse item pode ter sido removido ou o link está incorreto.
+              </p>
               <div className="mt-6">
                 <Button asChild>
                   <Link to="/">Voltar ao Catálogo</Link>
@@ -144,7 +149,9 @@ export default function ModelDetails() {
               <header>
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{title}</h1>
                 <p className="mt-2 text-muted-foreground">
-                  {[model.franchise, model.category, model.subcategory].filter(Boolean).join(" • ") || "—"}
+                  {[model.franchise, model.category, model.subcategory]
+                    .filter(Boolean)
+                    .join(" • ") || "—"}
                 </p>
               </header>
 
@@ -165,7 +172,8 @@ export default function ModelDetails() {
               <Card className="border-border">
                 <CardContent className="p-6 space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Produção artesanal sob encomenda. Você escolhe escala/tamanho e detalhes no orçamento.
+                    Produção artesanal sob encomenda. Você escolhe escala/tamanho e detalhes no
+                    orçamento.
                   </p>
                   <Button
                     className="w-full h-12 bg-foreground text-background hover:bg-foreground/90"

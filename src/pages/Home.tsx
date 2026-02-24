@@ -10,7 +10,7 @@ export default function Home() {
       <SEOHead
         title="Ordax - Colecionáveis Premium Sob Encomenda"
         description="Colecionáveis premium sob encomenda. Escolha, personalize e acompanhe em tempo real."
-        keywords={['colecionáveis', 'premium', 'sob encomenda']}
+        keywords={["colecionáveis", "premium", "sob encomenda"]}
         type="website"
       />
 
@@ -18,7 +18,6 @@ export default function Home() {
       <section className="min-h-screen flex items-center justify-center">
         <div className="container px-8 sm:px-12 py-12">
           <div className="max-w-6xl mx-auto">
-            
             {/* Next Release Banner */}
             <div className="mb-12">
               <NextReleaseBanner />
@@ -30,19 +29,29 @@ export default function Home() {
                 Colecionáveis Premium
                 <span className="block text-black/60">Sob Encomenda</span>
               </h1>
-              
+
               <p className="text-xl text-black/60 mb-8 max-w-2xl mx-auto">
-                Escolha seu modelo, personalize cada detalhe e acompanhe a produção com atualizações ao longo do processo
+                Escolha seu modelo, personalize cada detalhe e acompanhe a produção com atualizações
+                ao longo do processo
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
-                <Button asChild size="lg" className="bg-black text-white hover:bg-black/90 h-12 px-8">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-black text-white hover:bg-black/90 h-12 px-8"
+                >
                   <Link to="/catalogo">
                     Explorar Catálogo
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="border-black text-black hover:bg-black/5 h-12 px-8">
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-black text-black hover:bg-black/5 h-12 px-8"
+                >
                   <Link to="/colecoes">Ver Coleções</Link>
                 </Button>
               </div>
@@ -82,7 +91,6 @@ export default function Home() {
                 <p className="text-sm text-black/60">Produção profissional, inspeção rigorosa</p>
               </div>
             </div>
-
           </div>
         </div>
       </section>

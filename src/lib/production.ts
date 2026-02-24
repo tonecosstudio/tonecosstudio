@@ -56,7 +56,11 @@ export async function ensureProductionForQuote(quoteId: string) {
   return data as ProductionRow;
 }
 
-export async function setProductionStage(quoteId: string, stage: ProductionStageKey, note?: string) {
+export async function setProductionStage(
+  quoteId: string,
+  stage: ProductionStageKey,
+  note?: string
+) {
   const sb = supabase as any;
 
   const { error: prodErr } = await sb
@@ -98,7 +102,12 @@ export async function uploadProductionPhoto(params: {
   const sb = supabase as any;
   const { data, error } = await sb
     .from("quote_production_photos")
-    .insert({ quote_id: quoteId, update_id: updateId, url, caption: (caption ?? "").trim() || null })
+    .insert({
+      quote_id: quoteId,
+      update_id: updateId,
+      url,
+      caption: (caption ?? "").trim() || null,
+    })
     .select("id,quote_id,update_id,url,caption,created_at,created_by")
     .single();
   if (error) throw error;

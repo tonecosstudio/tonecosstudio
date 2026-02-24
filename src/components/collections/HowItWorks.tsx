@@ -1,34 +1,35 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Package, Calendar, Gift, Check } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Package, Calendar, Gift, Check } from "lucide-react";
 
 export default function HowItWorks() {
   const steps = [
     {
       icon: Package,
-      title: 'Escolha sua Coleção',
-      description: 'Selecione uma ou mais coleções temáticas. Thundercats, X-Men ou Vilões do Homem-Aranha.',
+      title: "Escolha sua Coleção",
+      description:
+        "Selecione uma ou mais coleções temáticas. Thundercats, X-Men ou Vilões do Homem-Aranha.",
     },
     {
       icon: Calendar,
-      title: 'Assine Bimestralmente',
-      description: 'Pagamento automático a cada 2 meses. Planos flexíveis disponíveis.',
+      title: "Assine Bimestralmente",
+      description: "Pagamento automático a cada 2 meses. Planos flexíveis disponíveis.",
     },
     {
       icon: Gift,
-      title: 'Receba Surpresas',
-      description: 'Um personagem diferente a cada entrega. Revelação 1 mês antes do envio.',
+      title: "Receba Surpresas",
+      description: "Um personagem diferente a cada entrega. Revelação 1 mês antes do envio.",
     },
   ];
 
   const benefits = [
-    'Personagem surpresa a cada 2 meses',
-    'Embalagem premium em MDF',
-    'Produção artesanal Tonecos Studios',
-    'Revelação antecipada do próximo personagem',
-    'Prioridade na produção',
-    'Plano anual com 10% de desconto',
-    'Pode assinar múltiplas coleções',
-    'Cancele quando quiser',
+    "Personagem surpresa a cada 2 meses",
+    "Embalagem premium em MDF",
+    "Produção artesanal Tonecos Studios",
+    "Revelação antecipada do próximo personagem",
+    "Prioridade na produção",
+    "Plano anual com 10% de desconto",
+    "Pode assinar múltiplas coleções",
+    "Cancele quando quiser",
   ];
 
   return (
@@ -36,9 +37,7 @@ export default function HowItWorks() {
       <div className="container max-w-6xl">
         {/* Title */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-            Como Funciona
-          </h2>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Como Funciona</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Simples, transparente e feito para colecionadores
           </p>
@@ -59,9 +58,7 @@ export default function HowItWorks() {
                       <Icon className="w-6 h-6 text-foreground" />
                     </div>
                     <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {step.description}
-                    </p>
+                    <p className="text-muted-foreground leading-relaxed">{step.description}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -72,9 +69,7 @@ export default function HowItWorks() {
         {/* Benefits */}
         <Card className="bg-muted/50">
           <CardContent className="p-8">
-            <h3 className="text-2xl font-bold mb-6 text-center">
-              Benefícios da Assinatura
-            </h3>
+            <h3 className="text-2xl font-bold mb-6 text-center">Benefícios da Assinatura</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {benefits.map((benefit, index) => (
                 <div key={index} className="flex items-start gap-2">

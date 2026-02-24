@@ -1,16 +1,19 @@
 /**
  * usePaymentSystemRealtime - Hook combinado para assinar todo o sistema de pagamento em tempo real
- * 
+ *
  * Requirements: 16.1-16.15
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * Este hook combina usePaymentRealtime e useConversationRealtime para fornecer
  * uma interface unificada para assinar todas as mudanças relevantes do sistema de pagamento.
  */
 
 import { useCallback } from "react";
 import { usePaymentRealtime, UsePaymentRealtimeOptions } from "./use-payment-realtime";
-import { useConversationRealtime, UseConversationRealtimeOptions } from "./use-conversation-realtime";
+import {
+  useConversationRealtime,
+  UseConversationRealtimeOptions,
+} from "./use-conversation-realtime";
 import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
 import type { SupportMessage, SupportConversation } from "./use-conversation-realtime";
 
@@ -48,7 +51,7 @@ export interface CombinedConnectionState {
 
 /**
  * Hook combinado para assinar todo o sistema de pagamento em tempo real
- * 
+ *
  * @param options Opções de configuração
  * @returns Estado combinado e funções de controle
  */
@@ -71,17 +74,20 @@ export function usePaymentSystemRealtime(options: UsePaymentSystemRealtimeOption
   const conversationRealtime = useConversationRealtime({
     ...conversationOptions,
     // Desabilitar se não deve assinar conversas
-    ...(subscribeToConversations ? {} : { subscribeToMessages: false, subscribeToConversations: false }),
+    ...(subscribeToConversations
+      ? {}
+      : { subscribeToMessages: false, subscribeToConversations: false }),
   });
 
   // Calcular estado combinado
-  const isConnected = (!subscribeToPayments || paymentRealtime.isConnected) && 
-                      (!subscribeToConversations || conversationRealtime.isConnected);
-  
+  const isConnected =
+    (!subscribeToPayments || paymentRealtime.isConnected) &&
+    (!subscribeToConversations || conversationRealtime.isConnected);
+
   const isReconnecting = paymentRealtime.isReconnecting || conversationRealtime.isReconnecting;
-  
+
   const retryCount = Math.max(paymentRealtime.retryCount, conversationRealtime.retryCount);
-  
+
   const error = paymentRealtime.error || conversationRealtime.error;
 
   /**
@@ -108,11 +114,11 @@ export function usePaymentSystemRealtime(options: UsePaymentSystemRealtimeOption
     error,
     paymentConnected: paymentRealtime.isConnected,
     conversationConnected: conversationRealtime.isConnected,
-    
+
     // Estados individuais
     paymentState: paymentRealtime,
     conversationState: conversationRealtime,
-    
+
     // Funções de controle
     disconnectAll,
     reconnectAll,
@@ -125,7 +131,7 @@ export function usePaymentSystemRealtime(options: UsePaymentSystemRealtimeOption
 
 /**
  * Hook para assinar um pagamento específico e sua conversa associada
- * 
+ *
  * @param paymentId ID do pagamento
  * @param onPaymentChange Callback quando o pagamento muda
  * @param onConversationChange Callback quando a conversa muda
@@ -167,7 +173,7 @@ export function usePaymentWithConversationRealtime(
 
 /**
  * Hook para assinar todos os pagamentos de um usuário e suas conversas
- * 
+ *
  * @param userId ID do usuário
  * @param onNewPayment Callback quando um novo pagamento é criado
  * @param onPaymentStatusChange Callback quando o status de um pagamento muda
@@ -177,7 +183,11 @@ export function usePaymentWithConversationRealtime(
 export function useUserPaymentsRealtime(
   userId: string,
   onNewPayment?: (payment: ManualPayment) => void,
-  onPaymentStatusChange?: (paymentId: string, newStatus: PaymentStatus, oldStatus: PaymentStatus | null) => void,
+  onPaymentStatusChange?: (
+    paymentId: string,
+    newStatus: PaymentStatus,
+    oldStatus: PaymentStatus | null
+  ) => void,
   onNewMessage?: (message: SupportMessage) => void
 ) {
   const combinedState = usePaymentSystemRealtime({
@@ -190,7 +200,7 @@ export function useUserPaymentsRealtime(
         } else if (payload.event === "UPDATE" && payload.new && onPaymentStatusChange) {
           const oldStatus = payload.old?.status as PaymentStatus | null;
           const newStatus = payload.new.status as PaymentStatus;
-          
+
           if (oldStatus !== newStatus) {
             onPaymentStatusChange(payload.new.id, newStatus, oldStatus);
           }
@@ -211,7 +221,7 @@ export function useUserPaymentsRealtime(
 
 /**
  * Hook para o dashboard admin assinar todos os pagamentos pendentes
- * 
+ *
  * @param onNewPayment Callback quando um novo pagamento é criado
  * @param onPaymentStatusChange Callback quando o status de um pagamento muda
  * @param onNewMessage Callback quando há nova mensagem
@@ -219,7 +229,11 @@ export function useUserPaymentsRealtime(
  */
 export function useAdminDashboardRealtime(
   onNewPayment?: (payment: ManualPayment) => void,
-  onPaymentStatusChange?: (paymentId: string, newStatus: PaymentStatus, oldStatus: PaymentStatus | null) => void,
+  onPaymentStatusChange?: (
+    paymentId: string,
+    newStatus: PaymentStatus,
+    oldStatus: PaymentStatus | null
+  ) => void,
   onNewMessage?: (message: SupportMessage) => void
 ) {
   const combinedState = usePaymentSystemRealtime({
@@ -232,7 +246,7 @@ export function useAdminDashboardRealtime(
         } else if (payload.event === "UPDATE" && payload.new && onPaymentStatusChange) {
           const oldStatus = payload.old?.status as PaymentStatus | null;
           const newStatus = payload.new.status as PaymentStatus;
-          
+
           if (oldStatus !== newStatus) {
             onPaymentStatusChange(payload.new.id, newStatus, oldStatus);
           }

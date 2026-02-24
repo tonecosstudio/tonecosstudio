@@ -1,21 +1,28 @@
 /**
  * PaymentInitiationFlow Component
- * 
+ *
  * Customer flow for initiating manual payments with active payment method selection.
- * 
+ *
  * Requirements: 2.1-2.10
  * Task: 16.1 Criar componente PaymentInitiationFlow
  */
 
-import React, { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/hooks/use-toast';
+import React, { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 import {
   CheckCircle,
   CreditCard,
@@ -28,11 +35,11 @@ import {
   Loader2,
   AlertCircle,
   ChevronRight,
-} from 'lucide-react';
-import type { PaymentMethod, PaymentType } from '@/types/manual-payment';
-import { listActivePaymentMethods } from '@/lib/payment-method-service';
-import { createPayment } from '@/lib/payment-service';
-import { useAuth } from '@/lib/auth';
+} from "lucide-react";
+import type { PaymentMethod, PaymentType } from "@/types/manual-payment";
+import { listActivePaymentMethods } from "@/lib/payment-method-service";
+import { createPayment } from "@/lib/payment-service";
+import { useAuth } from "@/lib/auth";
 
 interface PaymentInitiationFlowProps {
   quoteId?: string;
@@ -48,8 +55,8 @@ export function PaymentInitiationFlow({
   quoteId,
   subscriptionId,
   amount,
-  currency = 'BRL',
-  paymentType = 'one_time',
+  currency = "BRL",
+  paymentType = "one_time",
   onSuccess,
   onCancel,
 }: PaymentInitiationFlowProps) {
@@ -64,7 +71,7 @@ export function PaymentInitiationFlow({
     isLoading: methodsLoading,
     error: methodsError,
   } = useQuery({
-    queryKey: ['active-payment-methods'],
+    queryKey: ["active-payment-methods"],
     queryFn: listActivePaymentMethods,
   });
 
@@ -72,7 +79,7 @@ export function PaymentInitiationFlow({
   const createPaymentMutation = useMutation({
     mutationFn: () => {
       if (!selectedMethodId || !user?.id) {
-        throw new Error('Método de pagamento ou usuário não selecionado');
+        throw new Error("Método de pagamento ou usuário não selecionado");
       }
 
       return createPayment({
@@ -87,8 +94,9 @@ export function PaymentInitiationFlow({
     },
     onSuccess: (payment) => {
       toast({
-        title: 'Pagamento criado',
-        description: 'Seu pagamento foi registrado com sucesso. Agora você pode enviar o comprovante.',
+        title: "Pagamento criado",
+        description:
+          "Seu pagamento foi registrado com sucesso. Agora você pode enviar o comprovante.",
       });
 
       if (onSuccess) {
@@ -100,9 +108,9 @@ export function PaymentInitiationFlow({
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao criar pagamento',
+        title: "Erro ao criar pagamento",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
       setIsConfirming(false);
     },
@@ -111,7 +119,7 @@ export function PaymentInitiationFlow({
   // Auto-select default method if available
   useEffect(() => {
     if (paymentMethods.length > 0 && !selectedMethodId) {
-      const defaultMethod = paymentMethods.find(method => method.is_default);
+      const defaultMethod = paymentMethods.find((method) => method.is_default);
       if (defaultMethod) {
         setSelectedMethodId(defaultMethod.id);
       } else {
@@ -121,16 +129,16 @@ export function PaymentInitiationFlow({
   }, [paymentMethods, selectedMethodId]);
 
   // Get selected method details
-  const selectedMethod = paymentMethods.find(method => method.id === selectedMethodId);
+  const selectedMethod = paymentMethods.find((method) => method.id === selectedMethodId);
 
   // Get method icon
   const getMethodIcon = (method: PaymentMethod) => {
     switch (method.type) {
-      case 'pix':
+      case "pix":
         return <QrCode className="h-5 w-5" />;
-      case 'bank_transfer':
+      case "bank_transfer":
         return <Building className="h-5 w-5" />;
-      case 'credit_card':
+      case "credit_card":
         return <CreditCard className="h-5 w-5" />;
       default:
         return <Banknote className="h-5 w-5" />;
@@ -140,21 +148,21 @@ export function PaymentInitiationFlow({
   // Get method type label
   const getMethodTypeLabel = (method: PaymentMethod) => {
     switch (method.type) {
-      case 'pix':
-        return 'PIX';
-      case 'bank_transfer':
-        return 'Transferência Bancária';
-      case 'credit_card':
-        return 'Cartão de Crédito';
+      case "pix":
+        return "PIX";
+      case "bank_transfer":
+        return "Transferência Bancária";
+      case "credit_card":
+        return "Cartão de Crédito";
       default:
-        return 'Outro';
+        return "Outro";
     }
   };
 
   // Format currency
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
       currency: currency,
     }).format(value);
   };
@@ -168,9 +176,9 @@ export function PaymentInitiationFlow({
   const handleConfirmPayment = () => {
     if (!selectedMethodId) {
       toast({
-        title: 'Selecione um método',
-        description: 'Por favor, selecione um método de pagamento.',
-        variant: 'destructive',
+        title: "Selecione um método",
+        description: "Por favor, selecione um método de pagamento.",
+        variant: "destructive",
       });
       return;
     }
@@ -181,23 +189,26 @@ export function PaymentInitiationFlow({
 
   // Handle copy to clipboard
   const handleCopyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast({
-        title: 'Copiado',
-        description: 'Texto copiado para a área de transferência.',
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast({
+          title: "Copiado",
+          description: "Texto copiado para a área de transferência.",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Erro ao copiar",
+          description: "Não foi possível copiar o texto.",
+          variant: "destructive",
+        });
       });
-    }).catch(() => {
-      toast({
-        title: 'Erro ao copiar',
-        description: 'Não foi possível copiar o texto.',
-        variant: 'destructive',
-      });
-    });
   };
 
   // Handle open payment link
   const handleOpenPaymentLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   if (methodsLoading) {
@@ -227,9 +238,7 @@ export function PaymentInitiationFlow({
             <div className="flex">
               <AlertCircle className="h-5 w-5 text-red-400" />
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  {methodsError.message}
-                </h3>
+                <h3 className="text-sm font-medium text-red-800">{methodsError.message}</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>Por favor, tente novamente mais tarde.</p>
                 </div>
@@ -246,9 +255,7 @@ export function PaymentInitiationFlow({
       <Card>
         <CardHeader>
           <CardTitle>Nenhum método de pagamento disponível</CardTitle>
-          <CardDescription>
-            No momento não há métodos de pagamento configurados.
-          </CardDescription>
+          <CardDescription>No momento não há métodos de pagamento configurados.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-yellow-50 p-4">
@@ -291,7 +298,7 @@ export function PaymentInitiationFlow({
               <span className="text-sm font-medium">Valor</span>
               <span className="text-2xl font-bold">{formatCurrency(amount)}</span>
             </div>
-            
+
             {quoteId && (
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Orçamento</span>
@@ -309,7 +316,7 @@ export function PaymentInitiationFlow({
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Tipo</span>
               <Badge variant="outline">
-                {paymentType === 'one_time' ? 'Pagamento Único' : 'Recorrente'}
+                {paymentType === "one_time" ? "Pagamento Único" : "Recorrente"}
               </Badge>
             </div>
           </div>
@@ -320,9 +327,7 @@ export function PaymentInitiationFlow({
       <Card>
         <CardHeader>
           <CardTitle>Selecione o Método de Pagamento</CardTitle>
-          <CardDescription>
-            Escolha como você deseja realizar o pagamento
-          </CardDescription>
+          <CardDescription>Escolha como você deseja realizar o pagamento</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -337,8 +342,8 @@ export function PaymentInitiationFlow({
                   onClick={() => handleMethodSelect(method.id)}
                   className={`relative p-4 border rounded-lg text-left transition-all hover:border-primary ${
                     isSelected
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : 'border-gray-200 hover:shadow-sm'
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-gray-200 hover:shadow-sm"
                   }`}
                 >
                   {isDefault && (
@@ -348,20 +353,20 @@ export function PaymentInitiationFlow({
                   )}
 
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-full ${
-                      isSelected ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <div
+                      className={`p-2 rounded-full ${
+                        isSelected ? "bg-primary/10 text-primary" : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
                       {getMethodIcon(method)}
                     </div>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold">{method.name}</h3>
-                        {isSelected && (
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                        )}
+                        {isSelected && <CheckCircle className="h-5 w-5 text-primary" />}
                       </div>
-                      
+
                       <div className="mt-1">
                         <Badge variant="outline" className="text-xs">
                           {getMethodTypeLabel(method)}
@@ -369,7 +374,7 @@ export function PaymentInitiationFlow({
                       </div>
 
                       <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                        {method.instructions || 'Sem instruções específicas.'}
+                        {method.instructions || "Sem instruções específicas."}
                       </p>
                     </div>
                   </div>
@@ -385,9 +390,7 @@ export function PaymentInitiationFlow({
         <Card>
           <CardHeader>
             <CardTitle>Instruções de Pagamento</CardTitle>
-            <CardDescription>
-              Siga as instruções abaixo para realizar o pagamento
-            </CardDescription>
+            <CardDescription>Siga as instruções abaixo para realizar o pagamento</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Method-specific instructions */}
@@ -411,7 +414,7 @@ export function PaymentInitiationFlow({
               )}
 
               {/* PIX-specific instructions */}
-              {selectedMethod.type === 'pix' && selectedMethod.pix_key && (
+              {selectedMethod.type === "pix" && selectedMethod.pix_key && (
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium text-sm mb-2">Chave PIX</h4>
@@ -461,7 +464,7 @@ export function PaymentInitiationFlow({
               )}
 
               {/* Bank transfer instructions */}
-              {selectedMethod.type === 'bank_transfer' && selectedMethod.account_details && (
+              {selectedMethod.type === "bank_transfer" && selectedMethod.account_details && (
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium text-sm mb-2">Dados Bancários</h4>
@@ -501,24 +504,20 @@ export function PaymentInitiationFlow({
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div>
           {onCancel && (
-            <Button
-              variant="outline"
-              onClick={onCancel}
-              disabled={createPaymentMutation.isPending}
-            >
+            <Button variant="outline" onClick={onCancel} disabled={createPaymentMutation.isPending}>
               Cancelar
             </Button>
           )}
         </div>
-        
+
         <div className="flex gap-4">
           <Button
             variant="outline"
             onClick={() => {
               // Navigate back or show help
               toast({
-                title: 'Precisa de ajuda?',
-                description: 'Entre em contato com nosso suporte.',
+                title: "Precisa de ajuda?",
+                description: "Entre em contato com nosso suporte.",
               });
             }}
             disabled={createPaymentMutation.isPending}

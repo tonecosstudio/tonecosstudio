@@ -6,12 +6,14 @@
 ## Resumo da Reorganização
 
 ### Antes
+
 - **110 arquivos .sql** na raiz (desorganizados)
 - **76 arquivos .bat** na raiz (desorganizados)
 - Difícil encontrar scripts específicos
 - Sem categorização clara
 
 ### Depois
+
 - **~6 arquivos .sql** na raiz (apenas essenciais)
 - **~1 arquivo .bat** na raiz (apenas essencial)
 - **Scripts organizados** em `scripts/`
@@ -78,7 +80,9 @@ scripts/
 ## Categorização de Scripts
 
 ### 1. Deployment (~20 scripts)
+
 Scripts para deploy, migrations e configuração:
+
 - Deploy da aplicação
 - Deploy de Edge Functions
 - Aplicar migrations
@@ -86,14 +90,18 @@ Scripts para deploy, migrations e configuração:
 - Aplicar correções no Supabase
 
 ### 2. Testing (~15 scripts)
+
 Scripts para testes e validação:
+
 - Testes de sistema completo
 - Testes de features específicas (chat, email, coleções)
 - Verificações de instalação
 - Comandos de teste rápido
 
 ### 3. Development (~10 scripts)
+
 Scripts para auxiliar desenvolvimento:
+
 - Reiniciar servidor
 - Abrir interfaces (admin/cliente)
 - Limpar cache
@@ -103,14 +111,18 @@ Scripts para auxiliar desenvolvimento:
 ### 4. Database SQL (~100+ scripts)
 
 #### Migrations (~10 scripts)
+
 Alterações de schema do banco:
+
 - APLICAR_MIGRATIONS_CHAT.sql
 - APLICAR_MIGRATIONS_COLECOES.sql
 - MIGRACAO_FINAL_COLECOES.sql
 - aplicar-parcelamento-direto.sql
 
 #### Seeds (~20 scripts)
+
 Dados de teste e exemplos:
+
 - seed-chat-data.sql
 - popular_dados_teste_grupos.sql
 - inserir-colecoes.sql
@@ -118,22 +130,26 @@ Dados de teste e exemplos:
 - completar-colecao-thundercats.sql
 
 #### Utilities (~40 scripts)
+
 Scripts de diagnóstico e manutenção:
-- verificar-*.sql (verificações)
-- diagnostico-*.sql (diagnósticos)
-- listar-*.sql (listagens)
-- configurar-*.sql (configurações)
-- criar-*.sql (criação de recursos)
-- limpar-*.sql (limpeza)
-- test-*.sql (testes)
+
+- verificar-\*.sql (verificações)
+- diagnostico-\*.sql (diagnósticos)
+- listar-\*.sql (listagens)
+- configurar-\*.sql (configurações)
+- criar-\*.sql (criação de recursos)
+- limpar-\*.sql (limpeza)
+- test-\*.sql (testes)
 
 #### Fixes (~30 scripts)
+
 Correções específicas de problemas:
-- fix-406-*.sql (correções do erro 406)
+
+- fix-406-\*.sql (correções do erro 406)
 - FIX_ADMIN_LIST_USERS.sql
-- FIX_THUNDERCATS_*.sql
-- corrigir-*.sql
-- solucao-definitiva-*.sql
+- FIX*THUNDERCATS*\*.sql
+- corrigir-\*.sql
+- solucao-definitiva-\*.sql
 
 ## READMEs Criados
 
@@ -166,18 +182,21 @@ Cada pasta de scripts agora tem um README explicativo:
 ## Benefícios da Reorganização
 
 ### Organização
+
 ✅ Scripts categorizados por função  
 ✅ Fácil encontrar script específico  
 ✅ Estrutura hierárquica clara  
 ✅ Documentação em cada pasta
 
 ### Manutenibilidade
+
 ✅ Fácil adicionar novos scripts  
 ✅ Fácil identificar scripts obsoletos  
 ✅ Padrão consistente de nomenclatura  
 ✅ Separação clara de responsabilidades
 
 ### Experiência do Desenvolvedor
+
 ✅ Onboarding mais rápido  
 ✅ Menos confusão sobre qual script usar  
 ✅ Documentação acessível  
@@ -186,6 +205,7 @@ Cada pasta de scripts agora tem um README explicativo:
 ## Scripts que Permaneceram na Raiz
 
 Apenas scripts essenciais e de uso frequente:
+
 - `test.sql` (teste rápido)
 - Outros scripts de uso muito frequente
 
@@ -200,6 +220,7 @@ Apenas scripts essenciais e de uso frequente:
 ## Validação
 
 ### Checklist
+
 - [x] Estrutura de pastas criada
 - [x] Scripts BAT movidos
 - [x] Scripts SQL movidos
@@ -211,6 +232,7 @@ Apenas scripts essenciais e de uso frequente:
 ## Impacto
 
 ### Antes da Reorganização
+
 ```
 ordax/
 ├── fix-406.sql
@@ -223,6 +245,7 @@ ordax/
 ```
 
 ### Depois da Reorganização
+
 ```
 ordax/
 ├── scripts/

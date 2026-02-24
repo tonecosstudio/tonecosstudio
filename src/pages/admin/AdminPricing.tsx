@@ -21,14 +21,22 @@ export default function AdminPricing() {
       const { data, error } = await supabase
         .from("system_settings")
         .select("*")
-        .in("key", ["default_price_full", "default_price_pix", "default_deposit_amount", "pix_discount_percentage"]);
+        .in("key", [
+          "default_price_full",
+          "default_price_pix",
+          "default_deposit_amount",
+          "pix_discount_percentage",
+        ]);
 
       if (error) throw error;
 
-      return data.reduce((acc, setting) => {
-        acc[setting.key] = parseFloat(setting.value);
-        return acc;
-      }, {} as Record<string, number>);
+      return data.reduce(
+        (acc, setting) => {
+          acc[setting.key] = parseFloat(setting.value);
+          return acc;
+        },
+        {} as Record<string, number>
+      );
     },
   });
 
@@ -178,7 +186,10 @@ export default function AdminPricing() {
                   step="0.01"
                   value={globalForm.default_deposit_amount}
                   onChange={(e) =>
-                    setGlobalForm({ ...globalForm, default_deposit_amount: parseFloat(e.target.value) })
+                    setGlobalForm({
+                      ...globalForm,
+                      default_deposit_amount: parseFloat(e.target.value),
+                    })
                   }
                 />
                 <p className="text-xs text-muted-foreground">Valor fixo da entrada</p>
@@ -193,7 +204,10 @@ export default function AdminPricing() {
                   step="0.01"
                   value={globalForm.pix_discount_percentage}
                   onChange={(e) =>
-                    setGlobalForm({ ...globalForm, pix_discount_percentage: parseFloat(e.target.value) })
+                    setGlobalForm({
+                      ...globalForm,
+                      pix_discount_percentage: parseFloat(e.target.value),
+                    })
                   }
                 />
                 <p className="text-xs text-muted-foreground">Percentual de desconto</p>
@@ -207,7 +221,11 @@ export default function AdminPricing() {
                 <div>
                   <span className="text-muted-foreground">Preço PIX:</span>
                   <p className="font-bold text-green-600">
-                    R$ {calculatePixPrice(globalForm.default_price_full, globalForm.pix_discount_percentage).toFixed(2)}
+                    R${" "}
+                    {calculatePixPrice(
+                      globalForm.default_price_full,
+                      globalForm.pix_discount_percentage
+                    ).toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -215,23 +233,31 @@ export default function AdminPricing() {
                   <p className="font-bold">
                     R${" "}
                     {(
-                      calculatePixPrice(globalForm.default_price_full, globalForm.pix_discount_percentage) -
-                      globalForm.default_deposit_amount
+                      calculatePixPrice(
+                        globalForm.default_price_full,
+                        globalForm.pix_discount_percentage
+                      ) - globalForm.default_deposit_amount
                     ).toFixed(2)}
                   </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Restante Parcelado:</span>
                   <p className="font-bold">
-                    R$ {(globalForm.default_price_full - globalForm.default_deposit_amount).toFixed(2)}
+                    R${" "}
+                    {(globalForm.default_price_full - globalForm.default_deposit_amount).toFixed(2)}
                   </p>
                 </div>
               </div>
             </div>
 
-            <Button onClick={handleSaveGlobalSettings} disabled={updateGlobalSettingsMutation.isPending}>
+            <Button
+              onClick={handleSaveGlobalSettings}
+              disabled={updateGlobalSettingsMutation.isPending}
+            >
               <Save className="h-4 w-4 mr-2" />
-              {updateGlobalSettingsMutation.isPending ? "Salvando..." : "Salvar Configurações Globais"}
+              {updateGlobalSettingsMutation.isPending
+                ? "Salvando..."
+                : "Salvar Configurações Globais"}
             </Button>
           </CardContent>
         </Card>
@@ -356,7 +382,9 @@ function CollectionPricingRow({
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Restante Parcelado:</span>
-          <span className="font-semibold">R$ {(effectivePriceFull - effectiveDeposit).toFixed(2)}</span>
+          <span className="font-semibold">
+            R$ {(effectivePriceFull - effectiveDeposit).toFixed(2)}
+          </span>
         </div>
       </div>
 

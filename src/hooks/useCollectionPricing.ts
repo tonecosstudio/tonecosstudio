@@ -18,11 +18,12 @@ export function useCollectionPricing(collectionId: string | undefined) {
         throw new Error("Collection ID is required");
       }
 
-      const { data, error } = await supabase
-        .rpc("get_collection_pricing", { p_collection_id: collectionId });
+      const { data, error } = await supabase.rpc("get_collection_pricing", {
+        p_collection_id: collectionId,
+      });
 
       if (error) throw error;
-      
+
       // RPC retorna array, pegar primeiro item
       return data?.[0] as CollectionPricing;
     },
@@ -46,10 +47,13 @@ export function useGlobalPricingSettings() {
 
       if (error) throw error;
 
-      return data.reduce((acc, setting) => {
-        acc[setting.key] = parseFloat(setting.value);
-        return acc;
-      }, {} as Record<string, number>);
+      return data.reduce(
+        (acc, setting) => {
+          acc[setting.key] = parseFloat(setting.value);
+          return acc;
+        },
+        {} as Record<string, number>
+      );
     },
   });
 }

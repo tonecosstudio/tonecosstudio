@@ -1,7 +1,7 @@
 /**
  * AttachmentUpload - Component for uploading attachments in chat messages
  * Requirements: 4.1, 4.2, 4.6
- * 
+ *
  * Features:
  * - Drag-and-drop file upload
  * - File validation (JPEG, PNG, PDF up to 5MB)
@@ -10,21 +10,14 @@
  * - Error handling with clear messages
  */
 
-import React, { useState, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, 
-  File, 
-  Image as ImageIcon, 
-  X,
-  AlertCircle,
-  Paperclip
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { validateFile } from '@/lib/validations/support';
+import React, { useState, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Upload, File, Image as ImageIcon, X, AlertCircle, Paperclip } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { validateFile } from "@/lib/validations/support";
 
 interface AttachmentUploadProps {
   onFilesSelected: (files: File[]) => void;
@@ -42,8 +35,8 @@ interface FileWithPreview {
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
-const ACCEPTED_PDF_TYPE = 'application/pdf';
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
+const ACCEPTED_PDF_TYPE = "application/pdf";
 const ACCEPTED_TYPES = [...ACCEPTED_IMAGE_TYPES, ACCEPTED_PDF_TYPE];
 
 export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
@@ -52,7 +45,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
   selectedFiles = [],
   maxFiles = 5,
   disabled = false,
-  compact = false
+  compact = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -79,45 +72,48 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
   }, []);
 
   // Validate and process files
-  const processFiles = useCallback(async (fileList: FileList | File[]) => {
-    if (disabled) return;
+  const processFiles = useCallback(
+    async (fileList: FileList | File[]) => {
+      if (disabled) return;
 
-    setValidationErrors([]);
-    const fileArray = Array.from(fileList);
-    
-    // Check max files limit
-    if (selectedFiles.length + fileArray.length > maxFiles) {
-      setValidationErrors([
-        `Máximo de ${maxFiles} arquivos permitidos. Você tem ${selectedFiles.length} e tentou adicionar ${fileArray.length}.`
-      ]);
-      return;
-    }
+      setValidationErrors([]);
+      const fileArray = Array.from(fileList);
 
-    const validFiles: File[] = [];
-    const errors: string[] = [];
-    const newFilesWithPreviews: FileWithPreview[] = [];
-
-    for (const file of fileArray) {
-      const validation = validateFile(file);
-      
-      if (validation.valid) {
-        validFiles.push(file);
-        const preview = await generatePreview(file);
-        newFilesWithPreviews.push({ file, preview });
-      } else {
-        errors.push(validation.error || `Erro ao validar ${file.name}`);
+      // Check max files limit
+      if (selectedFiles.length + fileArray.length > maxFiles) {
+        setValidationErrors([
+          `Máximo de ${maxFiles} arquivos permitidos. Você tem ${selectedFiles.length} e tentou adicionar ${fileArray.length}.`,
+        ]);
+        return;
       }
-    }
 
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-    }
+      const validFiles: File[] = [];
+      const errors: string[] = [];
+      const newFilesWithPreviews: FileWithPreview[] = [];
 
-    if (validFiles.length > 0) {
-      setFilesWithPreviews(prev => [...prev, ...newFilesWithPreviews]);
-      onFilesSelected([...selectedFiles, ...validFiles]);
-    }
-  }, [disabled, selectedFiles, maxFiles, onFilesSelected, generatePreview]);
+      for (const file of fileArray) {
+        const validation = validateFile(file);
+
+        if (validation.valid) {
+          validFiles.push(file);
+          const preview = await generatePreview(file);
+          newFilesWithPreviews.push({ file, preview });
+        } else {
+          errors.push(validation.error || `Erro ao validar ${file.name}`);
+        }
+      }
+
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+      }
+
+      if (validFiles.length > 0) {
+        setFilesWithPreviews((prev) => [...prev, ...newFilesWithPreviews]);
+        onFilesSelected([...selectedFiles, ...validFiles]);
+      }
+    },
+    [disabled, selectedFiles, maxFiles, onFilesSelected, generatePreview]
+  );
 
   // Handle file input change
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,18 +122,21 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
     }
     // Reset input to allow selecting same file again
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   // Drag and drop handlers
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled && selectedFiles.length < maxFiles) {
-      setIsDragOver(true);
-    }
-  }, [disabled, selectedFiles.length, maxFiles]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled && selectedFiles.length < maxFiles) {
+        setIsDragOver(true);
+      }
+    },
+    [disabled, selectedFiles.length, maxFiles]
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -145,20 +144,23 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
 
-    if (disabled || selectedFiles.length >= maxFiles) {
-      return;
-    }
+      if (disabled || selectedFiles.length >= maxFiles) {
+        return;
+      }
 
-    const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles.length > 0) {
-      processFiles(droppedFiles);
-    }
-  }, [disabled, selectedFiles.length, maxFiles, processFiles]);
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles.length > 0) {
+        processFiles(droppedFiles);
+      }
+    },
+    [disabled, selectedFiles.length, maxFiles, processFiles]
+  );
 
   // Remove file
   const handleRemoveFile = (index: number) => {
@@ -166,9 +168,9 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
     if (fileToRemove?.preview) {
       URL.revokeObjectURL(fileToRemove.preview);
     }
-    
-    setFilesWithPreviews(prev => prev.filter((_, i) => i !== index));
-    
+
+    setFilesWithPreviews((prev) => prev.filter((_, i) => i !== index));
+
     if (onRemoveFile) {
       onRemoveFile(index);
     } else {
@@ -182,7 +184,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
   React.useEffect(() => {
     // Se selectedFiles foi limpo externamente, limpar filesWithPreviews também
     if (selectedFiles.length === 0 && filesWithPreviews.length > 0) {
-      filesWithPreviews.forEach(f => {
+      filesWithPreviews.forEach((f) => {
         if (f.preview) {
           URL.revokeObjectURL(f.preview);
         }
@@ -195,7 +197,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
   // Cleanup previews on unmount
   React.useEffect(() => {
     return () => {
-      filesWithPreviews.forEach(f => {
+      filesWithPreviews.forEach((f) => {
         if (f.preview) {
           URL.revokeObjectURL(f.preview);
         }
@@ -210,12 +212,12 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept={ACCEPTED_TYPES.join(',')}
+          accept={ACCEPTED_TYPES.join(",")}
           multiple
           onChange={handleFileInputChange}
           disabled={disabled || selectedFiles.length >= maxFiles}
         />
-        
+
         <Button
           type="button"
           variant="ghost"
@@ -231,19 +233,14 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         {validationErrors.length > 0 && (
           <Alert variant="destructive" className="py-2">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              {validationErrors[0]}
-            </AlertDescription>
+            <AlertDescription className="text-xs">{validationErrors[0]}</AlertDescription>
           </Alert>
         )}
 
         {filesWithPreviews.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {filesWithPreviews.map((fileWithPreview, index) => (
-              <div 
-                key={index}
-                className="relative group"
-              >
+              <div key={index} className="relative group">
                 {fileWithPreview.preview ? (
                   <div className="relative h-16 w-16 rounded border overflow-hidden">
                     <img
@@ -263,7 +260,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
                   <div className="relative h-16 w-16 rounded border bg-muted flex flex-col items-center justify-center p-2">
                     <File className="h-6 w-6 text-muted-foreground" />
                     <span className="text-[10px] text-muted-foreground truncate w-full text-center">
-                      {fileWithPreview.file.name.split('.').pop()?.toUpperCase()}
+                      {fileWithPreview.file.name.split(".").pop()?.toUpperCase()}
                     </span>
                     <button
                       type="button"
@@ -288,7 +285,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         ref={fileInputRef}
         type="file"
         className="hidden"
-        accept={ACCEPTED_TYPES.join(',')}
+        accept={ACCEPTED_TYPES.join(",")}
         multiple
         onChange={handleFileInputChange}
         disabled={disabled || selectedFiles.length >= maxFiles}
@@ -301,8 +298,8 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         onDrop={handleDrop}
         className={cn(
           "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-          isDragOver 
-            ? "border-primary bg-primary/5" 
+          isDragOver
+            ? "border-primary bg-primary/5"
             : "border-muted-foreground/25 hover:border-muted-foreground/50",
           (disabled || selectedFiles.length >= maxFiles) && "opacity-50 cursor-not-allowed"
         )}
@@ -316,14 +313,12 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
           <div className="rounded-full bg-muted p-3">
             <Upload className="h-6 w-6 text-muted-foreground" />
           </div>
-          
+
           <div className="text-center">
             <p className="text-sm font-medium">
-              {isDragOver ? 'Solte os arquivos aqui' : 'Arraste arquivos ou clique para selecionar'}
+              {isDragOver ? "Solte os arquivos aqui" : "Arraste arquivos ou clique para selecionar"}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              JPEG, PNG ou PDF • Máximo 5MB cada
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">JPEG, PNG ou PDF • Máximo 5MB cada</p>
           </div>
 
           <Badge variant="outline" className="text-xs">
@@ -352,10 +347,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
           <h4 className="text-sm font-medium">Arquivos Selecionados</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {filesWithPreviews.map((fileWithPreview, index) => (
-              <div 
-                key={index}
-                className="relative group border rounded-lg overflow-hidden"
-              >
+              <div key={index} className="relative group border rounded-lg overflow-hidden">
                 {fileWithPreview.preview ? (
                   // Image preview
                   <div className="aspect-square relative">
@@ -400,7 +392,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
                     </Button>
                   </div>
                 )}
-                
+
                 {/* File size */}
                 <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
                   {Math.round(fileWithPreview.file.size / 1024)} KB

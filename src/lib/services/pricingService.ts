@@ -11,14 +11,14 @@ export interface PricingSettings {
   defaultPriceFull: number;
   defaultPricePix: number;
   defaultDepositAmount: number;
-  
+
   // Descontos
   pixDiscountPercentage: number;
-  
+
   // Limites de Produção
   monthlyProductionLimit: number;
   salesOpenDay: number;
-  
+
   // Dados do Mês Atual
   currentMonthLimit?: number;
   currentMonthSold?: number;
@@ -47,7 +47,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 export async function fetchPricingSettings(): Promise<PricingSettings> {
   // Verificar cache
   const now = Date.now();
-  if (cachedSettings && (now - cacheTimestamp) < CACHE_DURATION) {
+  if (cachedSettings && now - cacheTimestamp < CACHE_DURATION) {
     return cachedSettings;
   }
 
@@ -71,11 +71,11 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
         "default_deposit_amount",
         "pix_discount_percentage",
         "monthly_production_limit",
-        "sales_open_day"
+        "sales_open_day",
       ]);
 
     if (!error && systemSettings) {
-      systemSettings.forEach(setting => {
+      systemSettings.forEach((setting) => {
         const value = parseFloat(setting.value);
         switch (setting.key) {
           case "default_price_full":
@@ -102,8 +102,9 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
 
     // Buscar dados de produção do mês atual
     try {
-      const { data: productionData, error: prodError } = await supabase
-        .rpc("get_current_production_limit");
+      const { data: productionData, error: prodError } = await supabase.rpc(
+        "get_current_production_limit"
+      );
 
       if (!prodError && productionData && productionData.length > 0) {
         const current = productionData[0];
@@ -119,7 +120,6 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
     // Atualizar cache
     cachedSettings = settings;
     cacheTimestamp = now;
-
   } catch (error) {
     console.error("Erro ao buscar configurações de preços:", error);
   }
@@ -167,28 +167,28 @@ export function calculateRemaining(totalPrice: number, depositAmount: number): n
  */
 export function calculateNetValues(fullPrice: number, pixDiscountPercentage: number) {
   const pixPrice = calculatePixPrice(fullPrice, pixDiscountPercentage);
-  
+
   // PIX
   const pixTax = pixPrice * TAX_RATES.taxPix;
   const netPix = pixPrice - pixTax;
-  
+
   // 6x sem juros
   const tax6xSale = fullPrice * TAX_RATES.taxSaleInstallment;
   const tax6xInstallment = fullPrice * TAX_RATES.taxInstallment6x;
   const net6x = fullPrice - tax6xSale - tax6xInstallment;
-  
+
   // 10x sem juros (loja paga)
   const tax10xStoreSale = fullPrice * TAX_RATES.taxSaleInstallment;
   const tax10xStoreInstallment = fullPrice * TAX_RATES.taxInstallment10xStore;
   const net10xStore = fullPrice - tax10xStoreSale - tax10xStoreInstallment;
-  
+
   // 10x com juros (cliente paga)
   const clientSurcharge = fullPrice * TAX_RATES.taxInstallment10xClient;
   const priceWithInterest = fullPrice + clientSurcharge;
   const tax10xClientSale = fullPrice * TAX_RATES.taxSaleInstallment;
   const tax10xClientInstallment = fullPrice * TAX_RATES.taxInstallment10xClient;
   const net10xClient = priceWithInterest - tax10xClientSale - tax10xClientInstallment;
-  
+
   return {
     pix: {
       clientPays: pixPrice,
@@ -227,7 +227,7 @@ export function calculateNetValues(fullPrice: number, pixDiscountPercentage: num
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
+    currency: "BRL",
   }).format(value);
 }
 

@@ -1,11 +1,11 @@
-import { Button } from '@/components/ui/button';
-import { ArrowDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { ArrowDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function CollectionHero() {
   const scrollToInfo = () => {
-    const infoSection = document.getElementById('how-it-works');
-    infoSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const infoSection = document.getElementById("how-it-works");
+    infoSection?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -19,22 +19,20 @@ export default function CollectionHero() {
             Coleções Personalizadas
           </h1>
           <p className="text-xl sm:text-2xl text-background/80 leading-relaxed mb-8 max-w-2xl mx-auto">
-            Escolha seus personagens favoritos e receba peças artesanais únicas, 
-            pintadas à mão, em embalagem premium.
+            Escolha seus personagens favoritos e receba peças artesanais únicas, pintadas à mão, em
+            embalagem premium.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               asChild
               className="bg-background text-foreground hover:bg-background/90"
             >
-              <Link to="/planos">
-                Ver Planos e Preços
-              </Link>
+              <Link to="/planos">Ver Planos e Preços</Link>
             </Button>
-            <Button 
-              size="lg" 
-              variant="ghost" 
+            <Button
+              size="lg"
+              variant="ghost"
               className="text-background hover:bg-background/10"
               onClick={scrollToInfo}
             >

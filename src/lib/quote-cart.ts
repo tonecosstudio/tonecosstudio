@@ -25,7 +25,9 @@ function safeParse(raw: string | null): QuoteCart | null {
         .filter((it: any) => it && typeof it.model_id === "string")
         .map((it: any) => ({
           model_id: String(it.model_id),
-          quantity: Number.isFinite(Number(it.quantity)) ? Math.max(1, Math.trunc(Number(it.quantity))) : 1,
+          quantity: Number.isFinite(Number(it.quantity))
+            ? Math.max(1, Math.trunc(Number(it.quantity)))
+            : 1,
           scale: typeof it.scale === "string" ? it.scale : "",
         })),
       updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : Date.now(),
@@ -94,7 +96,10 @@ export function useQuoteCart() {
   const count = useMemo(() => cart.items.length, [cart.items.length]);
 
   const add = useCallback((item: QuoteCartItem) => addToQuoteCart(item), []);
-  const update = useCallback((modelId: string, patch: Partial<QuoteCartItem>) => updateQuoteCartItem(modelId, patch), []);
+  const update = useCallback(
+    (modelId: string, patch: Partial<QuoteCartItem>) => updateQuoteCartItem(modelId, patch),
+    []
+  );
   const remove = useCallback((modelId: string) => removeFromQuoteCart(modelId), []);
   const clear = useCallback(() => clearQuoteCart(), []);
 

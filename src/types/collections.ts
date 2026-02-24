@@ -23,6 +23,6 @@ export interface CollectionCharacter {
   releaseOrder: number;
   releaseDate?: Date;
   revealDate?: Date;
-  status: 'upcoming' | 'revealed' | 'released';
+  status: "upcoming" | "revealed" | "released";
   availableStandalone: boolean;
 }

@@ -1,6 +1,6 @@
 /**
  * Testes para o componente NotificationBadge
- * 
+ *
  * Requirements: 10.1-10.10
  * Design: .kiro/specs/manual-payment-system/design.md
  */
@@ -46,9 +46,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuTrigger: ({ children }: any) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
-  DropdownMenuItem: ({ children, onClick }: any) => (
-    <div onClick={onClick}>{children}</div>
-  ),
+  DropdownMenuItem: ({ children, onClick }: any) => <div onClick={onClick}>{children}</div>,
   DropdownMenuLabel: ({ children }: any) => <div>{children}</div>,
   DropdownMenuSeparator: () => <hr />,
 }));
@@ -59,30 +57,28 @@ vi.mock("lucide-react", () => ({
 }));
 
 // Criar QueryClient para testes
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
     },
-  },
-});
+  });
 
 // Wrapper para testes
 const wrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = createTestQueryClient();
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 describe("NotificationBadge", () => {
-  const mockUseFormattedNotificationCount = require("@/hooks/use-notification-count").useFormattedNotificationCount;
+  const mockUseFormattedNotificationCount =
+    require("@/hooks/use-notification-count").useFormattedNotificationCount;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock padrão: sem notificações
     mockUseFormattedNotificationCount.mockReturnValue({
       total: 0,
@@ -194,7 +190,7 @@ describe("NotificationBadge", () => {
   describe("interação", () => {
     it("deve chamar onClick quando clicado", () => {
       const handleClick = vi.fn();
-      
+
       render(<NotificationBadge onClick={handleClick} />, { wrapper });
 
       const button = screen.getByRole("button");
@@ -306,11 +302,12 @@ describe("NotificationBadge", () => {
 });
 
 describe("SimpleNotificationBadge", () => {
-  const mockUseFormattedNotificationCount = require("@/hooks/use-notification-count").useFormattedNotificationCount;
+  const mockUseFormattedNotificationCount =
+    require("@/hooks/use-notification-count").useFormattedNotificationCount;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock padrão: sem notificações
     mockUseFormattedNotificationCount.mockReturnValue({
       total: 0,
@@ -328,7 +325,7 @@ describe("SimpleNotificationBadge", () => {
 
   it("não deve renderizar nada quando não há notificações", () => {
     const { container } = render(<SimpleNotificationBadge />, { wrapper });
-    
+
     // O componente retorna null quando não há notificações
     expect(container.firstChild).toBeNull();
   });

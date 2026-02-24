@@ -39,8 +39,8 @@ A Tonecos Studios permanece responsável por todos os pedidos realizados. Este �
       "✅ Usa nome → pessoal",
       "✅ Informa sobre ORDAx → transparente",
       "✅ Não promete entrega → proteção legal",
-      "✅ Cria registro interno → controle"
-    ]
+      "✅ Cria registro interno → controle",
+    ],
   },
   individual: {
     title: "Mensagem para Cliente Antigo",
@@ -62,7 +62,7 @@ Assim que se cadastrar, nossa equipe dará sequência ao seu caso.`,
     severity: "medium",
     content: `Olá [Nome], recebemos sua mensagem. Todos os contatos e pedidos antigos estão sendo analisados internamente. No momento, não podemos abrir novos compromissos nem informar prazos de entregas passadas. Agradecemos sua compreensão e paciência enquanto registramos sua situação.`,
     shortcut: "Ctrl+1",
-    description: "Mensagem neutra e defensiva para clientes antigos"
+    description: "Mensagem neutra e defensiva para clientes antigos",
   },
   publica: {
     title: "Resposta Pública - Reclamação em Feed/Comentários",
@@ -74,8 +74,8 @@ Assim que se cadastrar, nossa equipe dará sequência ao seu caso.`,
       "⚠️ NÃO falar de valores ou prazos",
       "⚠️ NÃO mencionar que novas coleções são vendidas",
       "⚠️ Manter resposta curta e neutra",
-      "⚠️ Não prometer nada específico"
-    ]
+      "⚠️ Não prometer nada específico",
+    ],
   },
   objecao: {
     title: 'Resposta: "Mudaram o nome pra fugir"',
@@ -132,9 +132,7 @@ export default function CommunicationTemplates() {
         <AdminLayout>
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold tracking-tight mb-2">
-              Templates de Comunicação
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight mb-2">Templates de Comunicação</h1>
             <p className="text-muted-foreground text-lg">
               Textos prontos para comunicação com clientes e alimentação de IA
             </p>
@@ -205,7 +203,8 @@ export default function CommunicationTemplates() {
                         <CardTitle className="text-xl">{templates.oficial.title}</CardTitle>
                       </div>
                       <CardDescription>
-                        Use este texto para comunicados públicos oficiais sobre a transição Tonecos → Ordax
+                        Use este texto para comunicados públicos oficiais sobre a transição Tonecos
+                        → Ordax
                       </CardDescription>
                       <Badge variant="destructive">{templates.oficial.category}</Badge>
                     </div>
@@ -247,7 +246,8 @@ export default function CommunicationTemplates() {
                         <CardTitle className="text-xl">{templates.publica.title}</CardTitle>
                       </div>
                       <CardDescription>
-                        Resposta padrão para reclamações públicas em feed/comentários de redes sociais
+                        Resposta padrão para reclamações públicas em feed/comentários de redes
+                        sociais
                       </CardDescription>
                       <div className="flex items-center gap-2">
                         <Badge variant="destructive">{templates.publica.category}</Badge>
@@ -277,7 +277,7 @@ export default function CommunicationTemplates() {
                   <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap">
                     {templates.publica.content}
                   </div>
-                  
+
                   {/* Avisos Críticos */}
                   <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
                     <p className="font-semibold text-sm mb-2 text-destructive flex items-center gap-2">
@@ -286,7 +286,9 @@ export default function CommunicationTemplates() {
                     </p>
                     <ul className="space-y-1 text-sm">
                       {templates.publica.warnings?.map((warning, index) => (
-                        <li key={index} className="text-muted-foreground">{warning}</li>
+                        <li key={index} className="text-muted-foreground">
+                          {warning}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -307,8 +309,7 @@ export default function CommunicationTemplates() {
                   {/* O Que NÃO Fazer */}
                   <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                     <p className="font-semibold text-sm mb-2 text-red-900 dark:text-red-100 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      O QUE NÃO FAZER:
+                      <Shield className="h-4 w-4" />O QUE NÃO FAZER:
                     </p>
                     <ul className="space-y-1 text-sm text-red-800 dark:text-red-200 list-disc list-inside">
                       <li>❌ Não discutir valores ou prazos publicamente</li>
@@ -346,12 +347,13 @@ export default function CommunicationTemplates() {
                         <Shield className="h-4 w-4 text-amber-600" />
                         <CardTitle className="text-xl">{templates.ordax.title}</CardTitle>
                       </div>
-                      <CardDescription>
-                        {templates.ordax.description}
-                      </CardDescription>
+                      <CardDescription>{templates.ordax.description}</CardDescription>
                       <div className="flex items-center gap-2">
                         <Badge variant="default">{templates.ordax.category}</Badge>
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                        <Badge
+                          variant="outline"
+                          className="bg-amber-50 text-amber-700 border-amber-300"
+                        >
                           Atalho: {templates.ordax.shortcut}
                         </Badge>
                       </div>
@@ -379,7 +381,7 @@ export default function CommunicationTemplates() {
                   <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap">
                     {templates.ordax.content}
                   </div>
-                  
+
                   {/* Características */}
                   <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <p className="font-semibold text-sm mb-2 text-amber-900 dark:text-amber-100">
@@ -421,7 +423,8 @@ export default function CommunicationTemplates() {
                         <CardTitle className="text-xl">{templates.proativo.title}</CardTitle>
                       </div>
                       <CardDescription>
-                        Mensagem proativa via WhatsApp/DM Instagram ANTES do cliente descobrir pela Ordax
+                        Mensagem proativa via WhatsApp/DM Instagram ANTES do cliente descobrir pela
+                        Ordax
                       </CardDescription>
                       <div className="flex items-center gap-2">
                         <Badge variant="default">{templates.proativo.category}</Badge>
@@ -451,13 +454,17 @@ export default function CommunicationTemplates() {
                   <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap">
                     {templates.proativo.content}
                   </div>
-                  
+
                   {/* Benefícios */}
                   <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                    <p className="font-semibold text-sm mb-2 text-primary">Por que usar este template:</p>
+                    <p className="font-semibold text-sm mb-2 text-primary">
+                      Por que usar este template:
+                    </p>
                     <ul className="space-y-1 text-sm">
                       {templates.proativo.benefits?.map((benefit, index) => (
-                        <li key={index} className="text-muted-foreground">{benefit}</li>
+                        <li key={index} className="text-muted-foreground">
+                          {benefit}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -489,7 +496,8 @@ export default function CommunicationTemplates() {
                         <CardTitle className="text-xl">{templates.individual.title}</CardTitle>
                       </div>
                       <CardDescription>
-                        Use este texto para contato direto com clientes que possuem pedidos pendentes
+                        Use este texto para contato direto com clientes que possuem pedidos
+                        pendentes
                       </CardDescription>
                       <Badge>{templates.individual.category}</Badge>
                     </div>
@@ -573,15 +581,24 @@ export default function CommunicationTemplates() {
             <CardContent className="space-y-4 text-sm text-muted-foreground">
               <div>
                 <strong className="text-foreground">Para copiar:</strong>
-                <p>Clique no botão "Copiar" ao lado de cada template. O texto será copiado para sua área de transferência.</p>
+                <p>
+                  Clique no botão "Copiar" ao lado de cada template. O texto será copiado para sua
+                  área de transferência.
+                </p>
               </div>
               <div>
                 <strong className="text-foreground">Para alimentar IA:</strong>
-                <p>Use estes textos como contexto ao treinar ou instruir assistentes de IA para atendimento ao cliente.</p>
+                <p>
+                  Use estes textos como contexto ao treinar ou instruir assistentes de IA para
+                  atendimento ao cliente.
+                </p>
               </div>
               <div>
                 <strong className="text-foreground">Importante:</strong>
-                <p className="text-destructive">Use EXATAMENTE como está escrito. Estes textos foram cuidadosamente elaborados para manter consistência estratégica.</p>
+                <p className="text-destructive">
+                  Use EXATAMENTE como está escrito. Estes textos foram cuidadosamente elaborados
+                  para manter consistência estratégica.
+                </p>
               </div>
             </CardContent>
           </Card>

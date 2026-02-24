@@ -19,9 +19,7 @@ export function useProductionLimit() {
   const limitQuery = useQuery({
     queryKey: ["production-limit"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc("get_current_production_limit")
-        .single();
+      const { data, error } = await supabase.rpc("get_current_production_limit").single();
 
       if (error) throw error;
       return data as ProductionLimit;

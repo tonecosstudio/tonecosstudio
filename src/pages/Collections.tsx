@@ -1,32 +1,35 @@
-import AppShell from '@/components/AppShell';
-import SEOHead from '@/components/SEOHead';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, ArrowRight, Package, Sparkles, Check, Zap, Crown, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Skeleton } from '@/components/ui/skeleton';
-import { NextReleaseBanner } from '@/components/collections/NextReleaseBanner';
-import { ReleaseTimeline } from '@/components/collections/ReleaseTimeline';
-import CollectionHero from '@/components/collections/CollectionHero';
-import HowItWorks from '@/components/collections/HowItWorks';
+import AppShell from "@/components/AppShell";
+import SEOHead from "@/components/SEOHead";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Package, Sparkles, Check, Zap, Crown, Star, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import { NextReleaseBanner } from "@/components/collections/NextReleaseBanner";
+import { ReleaseTimeline } from "@/components/collections/ReleaseTimeline";
+import { BatchInfoBanner } from "@/components/content/BatchInfoBanner";
+import { DynamicFAQ } from "@/components/content/DynamicFAQ";
+import CollectionHero from "@/components/collections/CollectionHero";
+import HowItWorks from "@/components/collections/HowItWorks";
 
 export default function Collections() {
   // Buscar coleções ativas do banco de dados
   const { data: collections, isLoading } = useQuery({
-    queryKey: ['collections'],
+    queryKey: ["collections"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('collections')
-        .select(`
+        .from("collections")
+        .select(
+          `
           *,
           collection_characters(count)
-        `)
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+        `
+        )
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
 
       if (error) throw error;
       return data;
@@ -35,13 +38,13 @@ export default function Collections() {
 
   // Buscar planos de assinatura do banco (SSOT)
   const { data: plans } = useQuery({
-    queryKey: ['subscription-plans'],
+    queryKey: ["subscription-plans"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+        .from("subscription_plans")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
 
       if (error) throw error;
       return data || [];
@@ -49,8 +52,8 @@ export default function Collections() {
   });
 
   // Calcular valores dinâmicos (apenas Trimestral e Semestral)
-  const trimestralPlan = plans?.find(p => p.plan_type === 'trimestral' && p.is_active);
-  const semestralPlan = plans?.find(p => p.plan_type === 'semestral' && p.is_active);
+  const trimestralPlan = plans?.find((p) => p.plan_type === "trimestral" && p.is_active);
+  const semestralPlan = plans?.find((p) => p.plan_type === "semestral" && p.is_active);
 
   // Preço avulso (fixo)
   const avulsoPrice = 500;
@@ -58,20 +61,20 @@ export default function Collections() {
   const avulsoRestante = 400;
 
   // Calcular menor preço por peça (Semestral tem melhor custo-benefício)
-  const minPricePerPiece = semestralPlan 
+  const minPricePerPiece = semestralPlan
     ? Math.floor(Number(semestralPlan.price_full) / semestralPlan.deliveries_total)
     : 385;
 
   // Calcular economia máxima (Semestral tem maior economia)
   const maxSavings = semestralPlan
-    ? (avulsoPrice * semestralPlan.deliveries_total) - Number(semestralPlan.price_full)
+    ? avulsoPrice * semestralPlan.deliveries_total - Number(semestralPlan.price_full)
     : 800;
   return (
     <AppShell>
       <SEOHead
         title="Coleções Exclusivas - Ordax"
         description="Coleções artesanais personalizadas. Escolha seus personagens favoritos e receba peças únicas pintadas à mão."
-        keywords={['coleções', 'personalizadas', 'artesanal', 'colecionáveis', 'premium']}
+        keywords={["coleções", "personalizadas", "artesanal", "colecionáveis", "premium"]}
         type="website"
       />
 
@@ -95,33 +98,15 @@ export default function Collections() {
       {/* Lote Alert */}
       <section className="py-8 bg-muted/20">
         <div className="container max-w-7xl">
-          <Alert className="border-primary/20 bg-primary/5">
-            <Calendar className="h-5 w-5 text-primary" />
-            <AlertDescription className="ml-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <span className="font-semibold text-lg">🔥 Lote Fevereiro/Março Aberto!</span>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Vendas: 15/02 a 15/03 • Produção: 16-30/03 • Envio: Até 5º dia útil de Abril
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ⏰ Todas as coleções seguem o mesmo cronograma de lançamento
-                  </p>
-                </div>
-                <Button asChild>
-                  <Link to="/planos">
-                    Ver Planos
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
+          <BatchInfoBanner showButton={true} buttonText="Ver Planos" buttonLink="/planos" />
         </div>
       </section>
 
       {/* Coleções Disponíveis */}
-      <section id="colecoes-disponiveis" className="py-20 sm:py-28 bg-gradient-to-b from-muted/20 to-background">
+      <section
+        id="colecoes-disponiveis"
+        className="py-20 sm:py-28 bg-gradient-to-b from-muted/20 to-background"
+      >
         <div className="container max-w-7xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
@@ -151,31 +136,50 @@ export default function Collections() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-7xl mx-auto">
               {collections.map((collection, index) => {
                 const characterCount = collection.collection_characters?.[0]?.count || 0;
-                
+
                 // Emojis por coleção
                 const getEmoji = (name: string) => {
-                  if (name.toLowerCase().includes('thunder')) return '⚡';
-                  if (name.toLowerCase().includes('x-men')) return '✖️';
-                  if (name.toLowerCase().includes('vilões') || name.toLowerCase().includes('spider')) return '🕷️';
-                  if (name.toLowerCase().includes('batman')) return '🦇';
-                  if (name.toLowerCase().includes('star wars')) return '⭐';
-                  if (name.toLowerCase().includes('marvel')) return '🦸';
-                  return '🎭';
+                  if (name.toLowerCase().includes("thunder")) return "⚡";
+                  if (name.toLowerCase().includes("x-men")) return "✖️";
+                  if (
+                    name.toLowerCase().includes("vilões") ||
+                    name.toLowerCase().includes("spider")
+                  )
+                    return "🕷️";
+                  if (name.toLowerCase().includes("batman")) return "🦇";
+                  if (name.toLowerCase().includes("star wars")) return "⭐";
+                  if (name.toLowerCase().includes("marvel")) return "🦸";
+                  return "🎭";
                 };
 
                 // Badge por posição
                 const getBadge = (idx: number) => {
-                  if (idx === 0) return { text: 'Mais escolhido', icon: Star, color: 'bg-primary text-primary-foreground' };
-                  if (idx === 1) return { text: 'NOVO', icon: Sparkles, color: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' };
-                  if (idx === 2) return { text: 'DESTAQUE', icon: Zap, color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' };
+                  if (idx === 0)
+                    return {
+                      text: "Mais escolhido",
+                      icon: Star,
+                      color: "bg-primary text-primary-foreground",
+                    };
+                  if (idx === 1)
+                    return {
+                      text: "NOVO",
+                      icon: Sparkles,
+                      color: "bg-gradient-to-r from-amber-500 to-orange-500 text-white",
+                    };
+                  if (idx === 2)
+                    return {
+                      text: "DESTAQUE",
+                      icon: Zap,
+                      color: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+                    };
                   return null;
                 };
 
                 const badge = getBadge(index);
 
                 return (
-                  <Card 
-                    key={collection.id} 
+                  <Card
+                    key={collection.id}
                     className="group overflow-hidden border-2 hover:border-primary/50 hover:shadow-xl transition-all duration-300 relative flex flex-col h-full"
                   >
                     {/* Badge de Destaque */}
@@ -192,8 +196,8 @@ export default function Collections() {
                     <div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
                       {collection.image_url ? (
                         <>
-                          <img 
-                            src={collection.image_url} 
+                          <img
+                            src={collection.image_url}
                             alt={collection.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
@@ -215,10 +219,11 @@ export default function Collections() {
                       <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-4">
                         <div className="text-center text-white">
                           <p className="text-xs mb-3 line-clamp-3">
-                            {collection.description || `Coleção exclusiva com ${characterCount} personagens únicos pintados à mão.`}
+                            {collection.description ||
+                              `Coleção exclusiva com ${characterCount} personagens únicos pintados à mão.`}
                           </p>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             className="bg-white/10 border-white/30 text-white hover:bg-white/20"
                             asChild
@@ -237,7 +242,8 @@ export default function Collections() {
                         {collection.name}
                       </CardTitle>
                       <CardDescription className="text-sm line-clamp-2 min-h-[40px]">
-                        {collection.description || `Coleção exclusiva com ${characterCount} personagens únicos.`}
+                        {collection.description ||
+                          `Coleção exclusiva com ${characterCount} personagens únicos.`}
                       </CardDescription>
                     </CardHeader>
 
@@ -264,7 +270,9 @@ export default function Collections() {
                           <div className="flex items-baseline justify-between">
                             <span className="text-xs text-muted-foreground">Assinatura:</span>
                             <div className="text-right">
-                              <span className="text-sm font-bold text-primary">A partir de R$ {minPricePerPiece}/peça</span>
+                              <span className="text-sm font-bold text-primary">
+                                A partir de R$ {minPricePerPiece}/peça
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -317,8 +325,8 @@ export default function Collections() {
               Pronto para começar sua coleção?
             </h2>
             <p className="text-xl text-background/80 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Escolha entre compra avulsa ou assinatura e garanta seus personagens favoritos. 
-              Cada peça é artesanal, pintada à mão e entregue com embalagem premium.
+              Escolha entre compra avulsa ou assinatura e garanta seus personagens favoritos. Cada
+              peça é artesanal, pintada à mão e entregue com embalagem premium.
             </p>
           </div>
 
@@ -331,12 +339,13 @@ export default function Collections() {
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-4xl font-bold text-background">R$ {avulsoPrice}</div>
-                  <div className="text-sm text-background/70 mt-1">R$ {avulsoEntrada} entrada + R$ {avulsoRestante}</div>
+                  <div className="text-sm text-background/70 mt-1">
+                    R$ {avulsoEntrada} entrada + R$ {avulsoRestante}
+                  </div>
                 </div>
                 <ul className="space-y-2 text-background/80">
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    1 peça artesanal
+                    <Check className="w-4 h-4" />1 peça artesanal
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4" />
@@ -351,8 +360,8 @@ export default function Collections() {
                     Sem compromisso
                   </li>
                 </ul>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full bg-background/10 border-background/30 text-background hover:bg-background/20"
                   asChild
                 >
@@ -376,7 +385,11 @@ export default function Collections() {
                         R$ {Number(semestralPlan.price_full).toFixed(0)}
                       </div>
                       <div className="text-sm text-background/80">
-                        R$ {Math.floor(Number(semestralPlan.price_full) / semestralPlan.deliveries_total)}/peça ({semestralPlan.deliveries_total} peças)
+                        R${" "}
+                        {Math.floor(
+                          Number(semestralPlan.price_full) / semestralPlan.deliveries_total
+                        )}
+                        /peça ({semestralPlan.deliveries_total} peças)
                       </div>
                     </div>
                     <ul className="space-y-2 text-background/90">
@@ -385,8 +398,7 @@ export default function Collections() {
                         {semestralPlan.deliveries_total} peças exclusivas
                       </li>
                       <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4" />
-                        1 peça por mês
+                        <Check className="w-4 h-4" />1 peça por mês
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4" />
@@ -401,7 +413,7 @@ export default function Collections() {
                 ) : (
                   <div className="text-background/70">Carregando...</div>
                 )}
-                <Button 
+                <Button
                   className="w-full bg-background text-foreground hover:bg-background/90 shadow-2xl"
                   asChild
                 >
@@ -413,20 +425,20 @@ export default function Collections() {
 
           {/* Botões Finais */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              variant="outline" 
+            <Button
+              size="lg"
+              variant="outline"
               className="bg-background/10 border-2 border-background/30 text-background hover:bg-background/20 h-14 px-10 text-lg"
               asChild
             >
               <Link to="/planos">Ver Todos os Planos</Link>
             </Button>
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-background text-foreground hover:bg-background/90 h-14 px-10 text-lg shadow-2xl font-bold"
               onClick={() => {
-                const section = document.getElementById('colecoes-disponiveis');
-                section?.scrollIntoView({ behavior: 'smooth' });
+                const section = document.getElementById("colecoes-disponiveis");
+                section?.scrollIntoView({ behavior: "smooth" });
               }}
             >
               Explorar Coleções
@@ -449,37 +461,31 @@ export default function Collections() {
           </div>
 
           <div className="space-y-4">
-            {[
-              {
-                q: 'Como funciona a assinatura?',
-                a: 'Você escolhe um plano e seleciona as coleções que deseja receber. Todo mês, você recebe uma peça surpresa de uma das suas coleções escolhidas, com revelação antecipada.',
-              },
-              {
-                q: 'Posso trocar de coleção?',
-                a: 'Sim! Você pode trocar suas coleções quantas vezes quiser, desde que seja até 1 dia antes da produção do próximo lote.',
-              },
-              {
-                q: 'Quando recebo a primeira peça?',
-                a: 'Seguimos um cronograma mensal fixo: Vendas do dia 15 ao dia 15 (30 dias), produção de 15 dias, e envio em até 5 dias úteis (considera feriados). Exemplo: compra em 15/02-15/03, produção 16-30/03, envio até 5º dia útil de Abril. Todas as coleções seguem o mesmo padrão.',
-              },
-              {
-                q: 'Posso cancelar a qualquer momento?',
-                a: 'Sim, você pode cancelar sua assinatura a qualquer momento. As peças já pagas serão entregues normalmente.',
-              },
-              {
-                q: 'Qual a diferença entre os planos?',
-                a: `A principal diferença é a quantidade de coleções e o número de entregas. Planos maiores têm mais benefícios e melhor custo-benefício, com economia de até R$ ${maxSavings.toFixed(0)} no Anual.`,
-              },
-            ].map((faq, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">{faq.q}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{faq.a}</p>
-                </CardContent>
-              </Card>
-            ))}
+            <DynamicFAQ
+              items={[
+                {
+                  q: "Como funciona a assinatura?",
+                  a: "Você escolhe um plano e seleciona as coleções que deseja receber. Todo mês, você recebe uma peça surpresa de uma das suas coleções escolhidas, com revelação antecipada.",
+                },
+                {
+                  q: "Posso trocar de coleção?",
+                  a: "{{faq_exchange}}",
+                },
+                {
+                  q: "Quando recebo a primeira peça?",
+                  a: "{{faq_first_delivery}}",
+                },
+                {
+                  q: "Posso cancelar a qualquer momento?",
+                  a: "{{faq_cancellation}}",
+                },
+                {
+                  q: "Qual a diferença entre os planos?",
+                  a: (content) =>
+                    `A principal diferença é a quantidade de coleções e o número de entregas. Planos maiores têm mais benefícios e melhor custo-benefício, com economia de até R$ ${maxSavings.toFixed(0)} no Anual.`,
+                },
+              ]}
+            />
           </div>
         </div>
       </section>

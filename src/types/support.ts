@@ -3,14 +3,29 @@
 // =====================================================
 
 // Enums
-export type ConversationStatus = 'new' | 'waiting_admin' | 'waiting_customer' | 'resolved' | 'closed';
-export type ConversationPriority = 'low' | 'normal' | 'high' | 'urgent';
-export type ConversationTag = 'pedido' | 'orcamento' | 'duvida' | 'reclamacao' | 'assinatura' | 'urgente';
-export type RiskFlag = 'cliente_conflito' | 'atraso_critico' | 'pagamento_problema';
-export type SenderType = 'admin' | 'customer' | 'system';
-export type OrderStatus = 'aguardando_pagamento' | 'em_producao' | 'enviado' | 'entregue';
-export type ProductionStage = 'molde_pronto' | 'impressao_iniciada' | 'pintura_iniciada' | 'finalizacao';
-export type ReminderType = 'quote_followup' | 'payment_pending' | 'promised_date';
+export type ConversationStatus =
+  | "new"
+  | "waiting_admin"
+  | "waiting_customer"
+  | "resolved"
+  | "closed";
+export type ConversationPriority = "low" | "normal" | "high" | "urgent";
+export type ConversationTag =
+  | "pedido"
+  | "orcamento"
+  | "duvida"
+  | "reclamacao"
+  | "assinatura"
+  | "urgente";
+export type RiskFlag = "cliente_conflito" | "atraso_critico" | "pagamento_problema";
+export type SenderType = "admin" | "customer" | "system";
+export type OrderStatus = "aguardando_pagamento" | "em_producao" | "enviado" | "entregue";
+export type ProductionStage =
+  | "molde_pronto"
+  | "impressao_iniciada"
+  | "pintura_iniciada"
+  | "finalizacao";
+export type ReminderType = "quote_followup" | "payment_pending" | "promised_date";
 
 // Main Entities
 export interface Conversation {
@@ -28,13 +43,13 @@ export interface Conversation {
   last_message_at: string;
   created_at: string;
   updated_at: string;
-  
+
   // Relacionamentos
   order_id?: string;
   quote_id?: string;
   subscription_id?: string;
   payment_id?: string;
-  
+
   // Dados computados (não vêm do banco)
   user_email?: string;
   user_name?: string;
@@ -57,7 +72,7 @@ export interface Message {
   edited_at?: string;
   deleted_at?: string;
   deleted_by?: string;
-  
+
   // Relacionamentos
   attachments?: Attachment[];
   sender_name?: string;
@@ -181,7 +196,7 @@ export interface PaginationOptions {
   limit?: number;
   offset?: number;
   order_by?: string;
-  order_direction?: 'asc' | 'desc';
+  order_direction?: "asc" | "desc";
 }
 
 // Form Data Types
@@ -223,91 +238,87 @@ export interface ValidationResult {
 
 // Constants
 export const CONVERSATION_STATUSES: ConversationStatus[] = [
-  'new',
-  'waiting_admin',
-  'waiting_customer',
-  'resolved',
-  'closed',
+  "new",
+  "waiting_admin",
+  "waiting_customer",
+  "resolved",
+  "closed",
 ];
 
 export const CONVERSATION_TAGS: ConversationTag[] = [
-  'pedido',
-  'orcamento',
-  'duvida',
-  'reclamacao',
-  'assinatura',
-  'urgente',
+  "pedido",
+  "orcamento",
+  "duvida",
+  "reclamacao",
+  "assinatura",
+  "urgente",
 ];
 
-export const RISK_FLAGS: RiskFlag[] = [
-  'cliente_conflito',
-  'atraso_critico',
-  'pagamento_problema',
-];
+export const RISK_FLAGS: RiskFlag[] = ["cliente_conflito", "atraso_critico", "pagamento_problema"];
 
 export const PRODUCTION_STAGES: ProductionStage[] = [
-  'molde_pronto',
-  'impressao_iniciada',
-  'pintura_iniciada',
-  'finalizacao',
+  "molde_pronto",
+  "impressao_iniciada",
+  "pintura_iniciada",
+  "finalizacao",
 ];
 
 export const ORDER_STATUSES: OrderStatus[] = [
-  'aguardando_pagamento',
-  'em_producao',
-  'enviado',
-  'entregue',
+  "aguardando_pagamento",
+  "em_producao",
+  "enviado",
+  "entregue",
 ];
 
 // Helper functions
 export function getStatusLabel(status: ConversationStatus): string {
   const labels: Record<ConversationStatus, string> = {
-    new: 'Nova',
-    waiting_admin: 'Aguardando Admin',
-    waiting_customer: 'Aguardando Cliente',
-    resolved: 'Resolvida',
-    closed: 'Fechada',
+    new: "Nova",
+    waiting_admin: "Aguardando Admin",
+    waiting_customer: "Aguardando Cliente",
+    resolved: "Resolvida",
+    closed: "Fechada",
   };
   return labels[status];
 }
 
 export function getTagLabel(tag: ConversationTag): string {
   const labels: Record<ConversationTag, string> = {
-    pedido: 'Pedido',
-    orcamento: 'Orçamento',
-    duvida: 'Dúvida',
-    reclamacao: 'Reclamação',
-    assinatura: 'Assinatura',
-    urgente: 'Urgente',
+    pedido: "Pedido",
+    orcamento: "Orçamento",
+    duvida: "Dúvida",
+    reclamacao: "Reclamação",
+    assinatura: "Assinatura",
+    urgente: "Urgente",
   };
   return labels[tag];
 }
 
 export function getRiskFlagLabel(flag: RiskFlag): string {
   const labels: Record<RiskFlag, string> = {
-    cliente_conflito: 'Cliente em Conflito',
-    atraso_critico: 'Atraso Crítico',
-    pagamento_problema: 'Problema de Pagamento',
+    cliente_conflito: "Cliente em Conflito",
+    atraso_critico: "Atraso Crítico",
+    pagamento_problema: "Problema de Pagamento",
   };
   return labels[flag];
 }
 
 export function getProductionStageLabel(stage: ProductionStage): string {
   const labels: Record<ProductionStage, string> = {
-    molde_pronto: 'Molde Pronto',
-    impressao_iniciada: 'Impressão Iniciada',
-    pintura_iniciada: 'Pintura Iniciada',
-    finalizacao: 'Finalização',
+    molde_pronto: "Molde Pronto",
+    impressao_iniciada: "Impressão Iniciada",
+    pintura_iniciada: "Pintura Iniciada",
+    finalizacao: "Finalização",
   };
   return labels[stage];
 }
 
 export function getOrderStatusLabel(status: OrderStatus): string {
   const labels: Record<OrderStatus, string> = {
-    aguardando_pagamento: 'Aguardando Pagamento',
-    em_producao: 'Em Produção',
-    enviado: 'Enviado',
-    entregue: 'Entregue',
+    aguardando_pagamento: "Aguardando Pagamento",
+    em_producao: "Em Produção",
+    enviado: "Enviado",
+    entregue: "Entregue",
   };
   return labels[status];
 }

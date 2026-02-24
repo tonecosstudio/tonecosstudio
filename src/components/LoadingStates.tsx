@@ -12,9 +12,7 @@ export function LoadingSpinner({ message }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12">
       <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-      {message && (
-        <p className="text-sm text-muted-foreground">{message}</p>
-      )}
+      {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </div>
   );
 }
@@ -243,9 +241,7 @@ export function EmptyState({
       <CardContent className="flex flex-col items-center justify-center py-16">
         <Icon className="h-16 w-16 text-muted-foreground mb-4" />
         <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-muted-foreground text-center mb-6 max-w-md">
-          {description}
-        </p>
+        <p className="text-muted-foreground text-center mb-6 max-w-md">{description}</p>
         {action}
       </CardContent>
     </Card>
@@ -269,9 +265,7 @@ export function ErrorState({
           <span className="text-3xl">⚠️</span>
         </div>
         <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-muted-foreground text-center mb-6 max-w-md">
-          {description}
-        </p>
+        <p className="text-muted-foreground text-center mb-6 max-w-md">{description}</p>
         {onRetry && (
           <button
             onClick={onRetry}
@@ -301,9 +295,7 @@ export function PageLoading({ message }: { message?: string }) {
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center space-y-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-        {message && (
-          <p className="text-lg text-muted-foreground">{message}</p>
-        )}
+        {message && <p className="text-lg text-muted-foreground">{message}</p>}
       </div>
     </div>
   );

@@ -24,34 +24,20 @@ interface RiskFlagManagerProps {
   onUpdate?: (flags: RiskFlag[]) => void;
 }
 
-const AVAILABLE_FLAGS: RiskFlag[] = [
-  "cliente_conflito",
-  "atraso_critico",
-  "pagamento_problema",
-];
+const AVAILABLE_FLAGS: RiskFlag[] = ["cliente_conflito", "atraso_critico", "pagamento_problema"];
 
-export function RiskFlagManager({
-  conversationId,
-  riskFlags,
-  onUpdate,
-}: RiskFlagManagerProps) {
+export function RiskFlagManager({ conversationId, riskFlags, onUpdate }: RiskFlagManagerProps) {
   const [flags, setFlags] = useState<RiskFlag[]>(riskFlags);
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleFlag = async (flag: RiskFlag) => {
-    const newFlags = flags.includes(flag)
-      ? flags.filter((f) => f !== flag)
-      : [...flags, flag];
+    const newFlags = flags.includes(flag) ? flags.filter((f) => f !== flag) : [...flags, flag];
 
     try {
       await conversationService.updateRiskFlags(conversationId, newFlags);
       setFlags(newFlags);
       onUpdate?.(newFlags);
-      toast.success(
-        flags.includes(flag)
-          ? "Flag de risco removida"
-          : "Flag de risco adicionada"
-      );
+      toast.success(flags.includes(flag) ? "Flag de risco removida" : "Flag de risco adicionada");
     } catch (error) {
       console.error("Erro ao atualizar flags de risco:", error);
       toast.error("Erro ao atualizar flags de risco");

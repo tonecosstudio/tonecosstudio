@@ -1,20 +1,20 @@
 /**
  * useTypingIndicator Hook
- * 
+ *
  * Manages typing state and broadcast/receive typing events via Supabase Realtime
- * 
+ *
  * Features:
  * - Debounced typing broadcasts (300ms)
  * - Automatic timeout after 3 seconds of inactivity
  * - Multi-user typing display
  * - Cleanup of stale typing indicators
- * 
+ *
  * Requirements: 3.1, 3.2, 3.4, 3.5, 3.7
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface TypingUser {
   userId: string;
@@ -27,7 +27,7 @@ interface UseTypingIndicatorOptions {
   currentUserId: string;
   currentUserName: string;
   debounceMs?: number; // default 300ms
-  timeoutMs?: number;  // default 3000ms
+  timeoutMs?: number; // default 3000ms
 }
 
 interface UseTypingIndicatorReturn {
@@ -54,40 +54,40 @@ export function useTypingIndicator({
   // Setup Realtime Broadcast Channel
   useEffect(() => {
     console.log(`[useTypingIndicator] Setting up channel for conversation: ${conversationId}`);
-    
+
     const channel = supabase.channel(`typing:${conversationId}`, {
       config: {
-        broadcast: { 
+        broadcast: {
           self: false, // Don't receive own events
-          ack: false,  // Don't wait for acknowledgment (faster)
+          ack: false, // Don't wait for acknowledgment (faster)
         },
       },
     });
 
     channel
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        console.log('[useTypingIndicator] Received typing event:', payload);
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        console.log("[useTypingIndicator] Received typing event:", payload);
         const { userId, userName, action } = payload;
-        
-        if (action === 'start') {
-          setTypingUsers(prev => {
+
+        if (action === "start") {
+          setTypingUsers((prev) => {
             // Remove existing entry for this user
-            const filtered = prev.filter(u => u.userId !== userId);
+            const filtered = prev.filter((u) => u.userId !== userId);
             // Add new entry
             return [...filtered, { userId, userName, timestamp: Date.now() }];
           });
-        } else if (action === 'stop') {
-          setTypingUsers(prev => prev.filter(u => u.userId !== userId));
+        } else if (action === "stop") {
+          setTypingUsers((prev) => prev.filter((u) => u.userId !== userId));
         }
       })
       .subscribe((status) => {
-        console.log('[useTypingIndicator] Channel status:', status);
+        console.log("[useTypingIndicator] Channel status:", status);
       });
 
     channelRef.current = channel;
 
     return () => {
-      console.log('[useTypingIndicator] Cleaning up channel');
+      console.log("[useTypingIndicator] Cleaning up channel");
       supabase.removeChannel(channel);
     };
   }, [conversationId]);
@@ -96,10 +96,10 @@ export function useTypingIndicator({
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      setTypingUsers(prev => {
-        const filtered = prev.filter(u => now - u.timestamp < timeoutMs);
+      setTypingUsers((prev) => {
+        const filtered = prev.filter((u) => now - u.timestamp < timeoutMs);
         if (filtered.length !== prev.length) {
-          console.log('[useTypingIndicator] Cleaned up stale typing indicators');
+          console.log("[useTypingIndicator] Cleaned up stale typing indicators");
         }
         return filtered;
       });
@@ -116,15 +116,15 @@ export function useTypingIndicator({
 
     typingTimeoutRef.current = setTimeout(() => {
       if (!isTyping) {
-        console.log('[useTypingIndicator] Broadcasting typing start');
+        console.log("[useTypingIndicator] Broadcasting typing start");
         setIsTyping(true);
         channelRef.current?.send({
-          type: 'broadcast',
-          event: 'typing',
+          type: "broadcast",
+          event: "typing",
           payload: {
             userId: currentUserId,
             userName: currentUserName,
-            action: 'start',
+            action: "start",
           },
         });
       }
@@ -149,15 +149,15 @@ export function useTypingIndicator({
     }
 
     if (isTyping) {
-      console.log('[useTypingIndicator] Broadcasting typing stop');
+      console.log("[useTypingIndicator] Broadcasting typing stop");
       setIsTyping(false);
       channelRef.current?.send({
-        type: 'broadcast',
-        event: 'typing',
+        type: "broadcast",
+        event: "typing",
         payload: {
           userId: currentUserId,
           userName: currentUserName,
-          action: 'stop',
+          action: "stop",
         },
       });
     }
@@ -165,7 +165,7 @@ export function useTypingIndicator({
 
   // Generate typing text
   const typingText = useMemo(() => {
-    if (typingUsers.length === 0) return '';
+    if (typingUsers.length === 0) return "";
     if (typingUsers.length === 1) {
       return `${typingUsers[0].userName} está digitando...`;
     }

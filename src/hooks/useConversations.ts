@@ -55,16 +55,12 @@ export function useConversations() {
             // Conversa atualizada
             const updatedConv = payload.new as Conversation;
             setConversations((prev) =>
-              prev.map((conv) =>
-                conv.id === updatedConv.id ? updatedConv : conv
-              )
+              prev.map((conv) => (conv.id === updatedConv.id ? updatedConv : conv))
             );
           } else if (payload.eventType === "DELETE") {
             // Conversa deletada
             const deletedId = payload.old.id;
-            setConversations((prev) =>
-              prev.filter((conv) => conv.id !== deletedId)
-            );
+            setConversations((prev) => prev.filter((conv) => conv.id !== deletedId));
           }
         }
       )

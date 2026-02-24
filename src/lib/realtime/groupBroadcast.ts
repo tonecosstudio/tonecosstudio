@@ -7,7 +7,7 @@ import type { GroupMessage, GroupAttachment } from "@/types/groups";
  */
 export async function broadcastGroupMessage(
   groupId: string,
-  message: GroupMessage & { 
+  message: GroupMessage & {
     sender_name: string;
     sender_avatar: string | null;
     attachments: GroupAttachment[];
@@ -15,13 +15,13 @@ export async function broadcastGroupMessage(
 ): Promise<void> {
   try {
     const channel = supabase.channel(`group:${groupId}`);
-    
+
     await channel.send({
-      type: 'broadcast',
-      event: 'new_message',
+      type: "broadcast",
+      event: "new_message",
       payload: { message },
     });
-    
+
     console.log(`[Broadcast] Message sent to group:${groupId}`, message.id);
   } catch (error) {
     console.error(`[Broadcast] Failed to broadcast message to group:${groupId}`, error);
@@ -34,10 +34,7 @@ export async function broadcastGroupMessage(
  * Verifies if a user is a member of a group before allowing channel subscription
  * Requirements: 10.2 (channel security validation)
  */
-export async function verifyGroupMembership(
-  groupId: string,
-  userId: string
-): Promise<boolean> {
+export async function verifyGroupMembership(groupId: string, userId: string): Promise<boolean> {
   try {
     const { data: membership, error } = await supabase
       .from("chat_group_members")

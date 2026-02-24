@@ -42,9 +42,7 @@ export function ConversationTagsSelector({
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleTag = async (tag: ConversationTag) => {
-    const newTags = tags.includes(tag)
-      ? tags.filter((t) => t !== tag)
-      : [...tags, tag];
+    const newTags = tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag];
 
     try {
       await conversationService.updateTags(conversationId, newTags);

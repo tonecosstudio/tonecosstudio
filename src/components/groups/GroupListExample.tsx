@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
  * Exemplo de uso do componente GroupList
- * 
+ *
  * Este exemplo demonstra:
  * - Listagem de grupos com métricas
  * - Botão de criar grupo (callback)
@@ -37,10 +37,10 @@ export function GroupListExample() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Este componente lista todos os grupos de broadcast com suas métricas básicas.
-            Clique em um grupo para selecioná-lo ou use o botão de deletar para remover.
+            Este componente lista todos os grupos de broadcast com suas métricas básicas. Clique em
+            um grupo para selecioná-lo ou use o botão de deletar para remover.
           </p>
-          
+
           {selectedGroupId && (
             <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md">
               <p className="text-sm">
@@ -51,10 +51,7 @@ export function GroupListExample() {
         </CardContent>
       </Card>
 
-      <GroupList
-        onCreateGroup={handleCreateGroup}
-        onSelectGroup={handleSelectGroup}
-      />
+      <GroupList onCreateGroup={handleCreateGroup} onSelectGroup={handleSelectGroup} />
     </div>
   );
 }
@@ -90,10 +87,7 @@ export function GroupListWithRoutingExample() {
 
   return (
     <div className="container mx-auto py-8">
-      <GroupList
-        onCreateGroup={handleCreateGroup}
-        onSelectGroup={handleSelectGroup}
-      />
+      <GroupList onCreateGroup={handleCreateGroup} onSelectGroup={handleSelectGroup} />
     </div>
   );
 }

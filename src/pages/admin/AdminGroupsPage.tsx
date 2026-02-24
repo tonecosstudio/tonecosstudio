@@ -1,18 +1,18 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, RefreshCw } from 'lucide-react';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, RefreshCw } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { groupService } from '@/lib/services/groupService';
-import { GroupList } from '@/components/groups/GroupList';
-import { CreateGroupModal } from '@/components/groups/CreateGroupModal';
-import { AutomaticGroupsManager } from '@/components/groups/AutomaticGroupsManager';
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { groupService } from "@/lib/services/groupService";
+import { GroupList } from "@/components/groups/GroupList";
+import { CreateGroupModal } from "@/components/groups/CreateGroupModal";
+import { AutomaticGroupsManager } from "@/components/groups/AutomaticGroupsManager";
 
 /**
  * AdminGroupsPage - Main page for managing broadcast groups
- * 
+ *
  * Features:
  * - List all groups with metrics
  * - Create new groups
@@ -29,7 +29,7 @@ export default function AdminGroupsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['admin-groups'],
+    queryKey: ["admin-groups"],
     queryFn: () => groupService.listGroupsWithMetrics(),
     staleTime: 30000, // 30 seconds
   });
@@ -54,13 +54,8 @@ export default function AdminGroupsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
           <Button onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -74,7 +69,7 @@ export default function AdminGroupsPage() {
         <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg mb-6">
           <p className="font-medium">Erro ao carregar grupos</p>
           <p className="text-sm mt-1">
-            {error instanceof Error ? error.message : 'Erro desconhecido'}
+            {error instanceof Error ? error.message : "Erro desconhecido"}
           </p>
         </div>
       )}

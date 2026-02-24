@@ -1,12 +1,12 @@
 /**
  * useNotificationCount - Hook para gerenciar badge de notificação in-app
- * 
+ *
  * Requirements: 10.1-10.10
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * Este hook calcula e atualiza em tempo real a contagem de notificações
  * para clientes e administradores usando Supabase Realtime.
- * 
+ *
  * Para clientes: requires_info + mensagens não lidas
  * Para admins: pending + under_review + mensagens não lidas
  */
@@ -41,7 +41,7 @@ export interface NotificationCount {
 
 /**
  * Hook para calcular e atualizar contagem de notificações em tempo real
- * 
+ *
  * @returns NotificationCount com contagens atualizadas e status
  */
 export function useNotificationCount(): NotificationCount {
@@ -55,14 +55,18 @@ export function useNotificationCount(): NotificationCount {
    */
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
       setUser(currentUser);
     };
 
     getUser();
 
     // Configurar listener para mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user || null);
     });
 
@@ -77,7 +81,11 @@ export function useNotificationCount(): NotificationCount {
   /**
    * Busca a contagem inicial de notificações
    */
-  const { data: initialCount, isLoading: isLoadingCount, error } = useQuery({
+  const {
+    data: initialCount,
+    isLoading: isLoadingCount,
+    error,
+  } = useQuery({
     queryKey: ["notification-count", user?.id, isAdmin],
     queryFn: async () => {
       if (!user?.id) {
@@ -104,7 +112,9 @@ export function useNotificationCount(): NotificationCount {
   /**
    * Calcula contagem de notificações para administradores
    */
-  const fetchAdminNotificationCount = async (adminId: string): Promise<Omit<NotificationCount, 'isLoading' | 'error'>> => {
+  const fetchAdminNotificationCount = async (
+    adminId: string
+  ): Promise<Omit<NotificationCount, "isLoading" | "error">> => {
     let pendingCount = 0;
     let underReviewCount = 0;
 
@@ -118,14 +128,17 @@ export function useNotificationCount(): NotificationCount {
       if (pendingError) {
         console.error("Erro ao buscar pagamentos pendentes:", pendingError);
         // Se a tabela não existir, retorna 0 para as contagens
-        if (pendingError.code === 'PGRST205' || pendingError.message?.includes('Could not find the table')) {
+        if (
+          pendingError.code === "PGRST205" ||
+          pendingError.message?.includes("Could not find the table")
+        ) {
           console.warn("Tabela manual_payments não encontrada. Retornando contagem zero.");
         } else {
           throw pendingError;
         }
       } else {
-        pendingCount = pendingPayments?.filter(p => p.status === "pending").length || 0;
-        underReviewCount = pendingPayments?.filter(p => p.status === "under_review").length || 0;
+        pendingCount = pendingPayments?.filter((p) => p.status === "pending").length || 0;
+        underReviewCount = pendingPayments?.filter((p) => p.status === "under_review").length || 0;
       }
     } catch (error) {
       console.error("Erro inesperado ao buscar pagamentos:", error);
@@ -160,7 +173,9 @@ export function useNotificationCount(): NotificationCount {
   /**
    * Calcula contagem de notificações para clientes
    */
-  const fetchCustomerNotificationCount = async (customerId: string): Promise<Omit<NotificationCount, 'isLoading' | 'error'>> => {
+  const fetchCustomerNotificationCount = async (
+    customerId: string
+  ): Promise<Omit<NotificationCount, "isLoading" | "error">> => {
     let requiresInfoCount = 0;
 
     try {
@@ -174,7 +189,10 @@ export function useNotificationCount(): NotificationCount {
       if (paymentsError) {
         console.error("Erro ao buscar pagamentos requires_info:", paymentsError);
         // Se a tabela não existir, apenas continua com contagem zero
-        if (paymentsError.code === 'PGRST205' || paymentsError.message?.includes('Could not find the table')) {
+        if (
+          paymentsError.code === "PGRST205" ||
+          paymentsError.message?.includes("Could not find the table")
+        ) {
           console.warn("Tabela manual_payments não encontrada. Retornando contagem zero.");
         } else {
           throw paymentsError;
@@ -200,9 +218,10 @@ export function useNotificationCount(): NotificationCount {
 
     // Filtrar apenas mensagens de conversas do cliente
     const customerConversations = await getCustomerConversations(customerId);
-    const customerUnreadMessages = unreadMessages?.filter(msg => 
-      customerConversations.some(conv => conv.id === msg.conversation_id)
-    ) || [];
+    const customerUnreadMessages =
+      unreadMessages?.filter((msg) =>
+        customerConversations.some((conv) => conv.id === msg.conversation_id)
+      ) || [];
 
     const unreadMessagesCount = customerUnreadMessages.length;
 
@@ -242,10 +261,10 @@ export function useNotificationCount(): NotificationCount {
     if (!user?.id) return;
 
     try {
-      const newCount = isAdmin 
+      const newCount = isAdmin
         ? await fetchAdminNotificationCount(user.id)
         : await fetchCustomerNotificationCount(user.id);
-      
+
       setRealTimeCount({
         ...newCount,
         isLoading: false,
@@ -256,11 +275,15 @@ export function useNotificationCount(): NotificationCount {
       queryClient.invalidateQueries({ queryKey: ["notification-count", user.id, isAdmin] });
     } catch (err) {
       console.error("Erro ao atualizar contagem de notificações:", err);
-      setRealTimeCount(prev => prev ? {
-        ...prev,
-        isLoading: false,
-        error: err as Error,
-      } : null);
+      setRealTimeCount((prev) =>
+        prev
+          ? {
+              ...prev,
+              isLoading: false,
+              error: err as Error,
+            }
+          : null
+      );
     }
   }, [user?.id, isAdmin, queryClient]);
 
@@ -278,11 +301,11 @@ export function useNotificationCount(): NotificationCount {
         .channel(`notification-payments-${user.id}`)
         .on(
           "postgres_changes",
-          { 
-            event: "*", 
-            schema: "public", 
+          {
+            event: "*",
+            schema: "public",
             table: "manual_payments",
-            filter: isAdmin ? undefined : `user_id=eq.${user.id}`
+            filter: isAdmin ? undefined : `user_id=eq.${user.id}`,
           },
           () => {
             updateCount();
@@ -292,7 +315,10 @@ export function useNotificationCount(): NotificationCount {
 
       channels.push(paymentChannel);
     } catch (error) {
-      console.warn("Não foi possível criar canal de notificação para manual_payments. A tabela pode não existir:", error);
+      console.warn(
+        "Não foi possível criar canal de notificação para manual_payments. A tabela pode não existir:",
+        error
+      );
     }
 
     // Canal para novas mensagens
@@ -300,10 +326,10 @@ export function useNotificationCount(): NotificationCount {
       .channel(`notification-messages-${user.id}`)
       .on(
         "postgres_changes",
-        { 
-          event: "INSERT", 
-          schema: "public", 
-          table: "support_messages" 
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "support_messages",
         },
         () => {
           updateCount();
@@ -318,15 +344,17 @@ export function useNotificationCount(): NotificationCount {
       .channel(`notification-messages-read-${user.id}`)
       .on(
         "postgres_changes",
-        { 
-          event: "UPDATE", 
-          schema: "public", 
-          table: "support_messages" 
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "support_messages",
         },
         (payload) => {
           // Só atualiza se o campo read_by_customer ou read_by_admin mudou
-          if (payload.new.read_by_customer !== payload.old?.read_by_customer ||
-              payload.new.read_by_admin !== payload.old?.read_by_admin) {
+          if (
+            payload.new.read_by_customer !== payload.old?.read_by_customer ||
+            payload.new.read_by_admin !== payload.old?.read_by_admin
+          ) {
             updateCount();
           }
         }
@@ -337,7 +365,7 @@ export function useNotificationCount(): NotificationCount {
 
     // Cleanup
     return () => {
-      channels.forEach(channel => {
+      channels.forEach((channel) => {
         supabase.removeChannel(channel);
       });
     };
@@ -347,21 +375,25 @@ export function useNotificationCount(): NotificationCount {
    * Retorna o resultado combinado (dados iniciais + atualizações em tempo real)
    */
   const isLoading = isLoadingAuth || isLoadingCount;
-  
-  const result = realTimeCount || (initialCount ? {
-    ...initialCount,
-    isLoading,
-    error: error as Error | null,
-  } : {
-    total: 0,
-    pendingPayments: 0,
-    underReviewPayments: 0,
-    requiresInfoPayments: 0,
-    unreadMessages: 0,
-    isAdmin: false,
-    isLoading,
-    error: error as Error | null,
-  });
+
+  const result =
+    realTimeCount ||
+    (initialCount
+      ? {
+          ...initialCount,
+          isLoading,
+          error: error as Error | null,
+        }
+      : {
+          total: 0,
+          pendingPayments: 0,
+          underReviewPayments: 0,
+          requiresInfoPayments: 0,
+          unreadMessages: 0,
+          isAdmin: false,
+          isLoading,
+          error: error as Error | null,
+        });
 
   return result;
 }
@@ -372,10 +404,10 @@ export function useNotificationCount(): NotificationCount {
  */
 export function useFormattedNotificationCount() {
   const notificationCount = useNotificationCount();
-  
+
   const formattedTotal = notificationCount.total > 99 ? "99+" : notificationCount.total.toString();
   const hasNotifications = notificationCount.total > 0;
-  
+
   return {
     ...notificationCount,
     formattedTotal,

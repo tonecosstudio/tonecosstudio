@@ -5,13 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  CheckCircle2,
-  AlertCircle
-} from "lucide-react";
+import { ExternalLink, Copy, Check, CheckCircle2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PaymentLinkCardProps {
@@ -49,14 +43,12 @@ export function PaymentLinkCard({
       if (error) throw error;
 
       // Criar notificação para admin
-      const { error: notifError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          title: "Cliente Confirmou Pagamento",
-          message: `O cliente informou que realizou o pagamento de R$ ${amount.toFixed(2)}`,
-          type: "payment",
-        });
+      const { error: notifError } = await supabase.from("notifications").insert({
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        title: "Cliente Confirmou Pagamento",
+        message: `O cliente informou que realizou o pagamento de R$ ${amount.toFixed(2)}`,
+        type: "payment",
+      });
 
       if (notifError) console.error("Erro ao criar notificação:", notifError);
     },
@@ -102,9 +94,7 @@ export function PaymentLinkCard({
           {/* Valor */}
           <div className="p-4 rounded-lg bg-background border">
             <p className="text-sm text-muted-foreground mb-1">Valor a Pagar</p>
-            <p className="text-3xl font-bold text-primary">
-              R$ {amount.toFixed(2)}
-            </p>
+            <p className="text-3xl font-bold text-primary">R$ {amount.toFixed(2)}</p>
           </div>
 
           {/* Instruções */}
@@ -118,11 +108,7 @@ export function PaymentLinkCard({
           {paymentLink && (
             <div>
               <p className="text-sm font-medium mb-2">Link de Pagamento:</p>
-              <Button
-                asChild
-                className="w-full"
-                size="lg"
-              >
+              <Button asChild className="w-full" size="lg">
                 <a href={paymentLink} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Abrir Link de Pagamento
@@ -160,7 +146,9 @@ export function PaymentLinkCard({
             {alreadyNotified ? (
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle2 className="h-5 w-5" />
-                <span className="font-medium">Confirmação enviada! Aguardando verificação do admin.</span>
+                <span className="font-medium">
+                  Confirmação enviada! Aguardando verificação do admin.
+                </span>
               </div>
             ) : (
               <Button

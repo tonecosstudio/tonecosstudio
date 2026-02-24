@@ -1,4 +1,4 @@
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 /**
  * Sanitization utilities for user-generated content
@@ -10,11 +10,11 @@ import DOMPurify from 'dompurify';
  * Removes dangerous tags and attributes while preserving safe formatting
  */
 export function sanitizeHtml(dirty: string): string {
-  if (!dirty) return '';
-  
+  if (!dirty) return "";
+
   return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "br"],
+    ALLOWED_ATTR: ["href", "target", "rel"],
     ALLOW_DATA_ATTR: false,
   });
 }
@@ -24,8 +24,8 @@ export function sanitizeHtml(dirty: string): string {
  * Use for content that should never contain HTML
  */
 export function sanitizeText(dirty: string): string {
-  if (!dirty) return '';
-  
+  if (!dirty) return "";
+
   return DOMPurify.sanitize(dirty, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
@@ -36,16 +36,16 @@ export function sanitizeText(dirty: string): string {
  * Sanitizes URLs to prevent javascript: and data: URIs
  */
 export function sanitizeUrl(url: string): string {
-  if (!url) return '';
-  
+  if (!url) return "";
+
   const cleaned = DOMPurify.sanitize(url);
-  
+
   // Additional check for dangerous protocols
   const dangerous = /^(javascript|data|vbscript):/i;
   if (dangerous.test(cleaned)) {
-    return '';
+    return "";
   }
-  
+
   return cleaned;
 }
 
@@ -54,10 +54,10 @@ export function sanitizeUrl(url: string): string {
  * Allows basic formatting but removes dangerous content
  */
 export function sanitizeGroupMessage(message: string): string {
-  if (!message) return '';
-  
+  if (!message) return "";
+
   return DOMPurify.sanitize(message, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br'],
+    ALLOWED_TAGS: ["b", "i", "em", "strong", "br"],
     ALLOWED_ATTR: [],
     ALLOW_DATA_ATTR: false,
   });

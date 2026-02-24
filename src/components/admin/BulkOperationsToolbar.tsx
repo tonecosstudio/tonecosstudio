@@ -1,17 +1,17 @@
 /**
  * BulkOperationsToolbar Component
- * 
+ *
  * Componente para operações em lote no dashboard de pagamentos admin.
- * 
+ *
  * Requirements: 12.1-12.15
  * Task: 14.2 Criar componente BulkOperationsToolbar
  */
 
-import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import React, { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -28,11 +28,11 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
 import {
   Check,
   CheckSquare,
@@ -45,18 +45,18 @@ import {
   X,
   FileText,
   ChevronDown,
-} from 'lucide-react';
-import type { PaymentListItem, BulkOperationResult } from '@/types/manual-payment';
-import { 
-  bulkApprovePayments, 
-  exportPaymentsToCSV, 
+} from "lucide-react";
+import type { PaymentListItem, BulkOperationResult } from "@/types/manual-payment";
+import {
+  bulkApprovePayments,
+  exportPaymentsToCSV,
   bulkSendMessage,
   startAsyncBulkApprove,
   startAsyncBulkMessage,
   startAsyncBulkExport,
-  getBulkOperationStatus
-} from '@/lib/admin-payment-service';
-import { useAuth } from '@/lib/auth';
+  getBulkOperationStatus,
+} from "@/lib/admin-payment-service";
+import { useAuth } from "@/lib/auth";
 
 interface BulkOperationsToolbarProps {
   selectedPayments: string[];
@@ -66,7 +66,7 @@ interface BulkOperationsToolbarProps {
   onSelectionChange?: (selectedIds: string[]) => void;
 }
 
-type BulkOperationType = 'approve' | 'export' | 'message';
+type BulkOperationType = "approve" | "export" | "message";
 
 interface OperationProgress {
   processed: number;
@@ -85,7 +85,7 @@ export function BulkOperationsToolbar({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isSelectAll, setIsSelectAll] = useState(false);
-  const [messageText, setMessageText] = useState('');
+  const [messageText, setMessageText] = useState("");
   const [activeOperation, setActiveOperation] = useState<BulkOperationType | null>(null);
   const [operationProgress, setOperationProgress] = useState<OperationProgress | null>(null);
   const [showSummary, setShowSummary] = useState(false);
@@ -94,9 +94,9 @@ export function BulkOperationsToolbar({
 
   // Check if all payments on current page are selected
   useEffect(() => {
-    const allPaymentIds = payments.map(p => p.id);
-    const allSelected = allPaymentIds.length > 0 && 
-      allPaymentIds.every(id => selectedPayments.includes(id));
+    const allPaymentIds = payments.map((p) => p.id);
+    const allSelected =
+      allPaymentIds.length > 0 && allPaymentIds.every((id) => selectedPayments.includes(id));
     setIsSelectAll(allSelected);
   }, [selectedPayments, payments]);
 
@@ -104,31 +104,34 @@ export function BulkOperationsToolbar({
   const handleSelectAllToggle = () => {
     if (isSelectAll) {
       // Deselect all payments on current page
-      const allPaymentIds = payments.map(p => p.id);
-      const newSelection = selectedPayments.filter(id => !allPaymentIds.includes(id));
+      const allPaymentIds = payments.map((p) => p.id);
+      const newSelection = selectedPayments.filter((id) => !allPaymentIds.includes(id));
       onSelectionChange?.(newSelection);
     } else {
       // Select all payments on current page
-      const allPaymentIds = payments.map(p => p.id);
+      const allPaymentIds = payments.map((p) => p.id);
       const newSelection = [...new Set([...selectedPayments, ...allPaymentIds])];
       onSelectionChange?.(newSelection);
     }
   };
 
   // Get selected payment details
-  const selectedPaymentDetails = payments.filter(p => selectedPayments.includes(p.id));
+  const selectedPaymentDetails = payments.filter((p) => selectedPayments.includes(p.id));
 
   // Get status counts for selected payments
-  const statusCounts = selectedPaymentDetails.reduce((acc, payment) => {
-    acc[payment.status] = (acc[payment.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const statusCounts = selectedPaymentDetails.reduce(
+    (acc, payment) => {
+      acc[payment.status] = (acc[payment.status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   // Get total amount for selected payments
   const totalAmount = selectedPaymentDetails.reduce((sum, payment) => sum + payment.amount, 0);
 
   // Check if bulk approve is valid (only payments with status 'under_review' can be approved)
-  const canBulkApprove = selectedPaymentDetails.some(p => p.status === 'under_review');
+  const canBulkApprove = selectedPaymentDetails.some((p) => p.status === "under_review");
 
   // Bulk approve mutation
   const bulkApproveMutation = useMutation({
@@ -137,27 +140,27 @@ export function BulkOperationsToolbar({
         setOperationProgress({ processed, total, isComplete: false });
       }),
     onMutate: () => {
-      setActiveOperation('approve');
+      setActiveOperation("approve");
       setOperationProgress({ processed: 0, total: selectedPayments.length, isComplete: false });
     },
     onSuccess: (result) => {
-      setOperationProgress(prev => prev ? { ...prev, isComplete: true, result } : null);
+      setOperationProgress((prev) => (prev ? { ...prev, isComplete: true, result } : null));
       setShowSummary(true);
-      
+
       toast({
-        title: 'Aprovação em lote concluída',
+        title: "Aprovação em lote concluída",
         description: `${result.success_count} pagamento(s) aprovado(s) com sucesso.`,
       });
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['payment-stats'] });
+      queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
     },
     onError: (error) => {
       toast({
-        title: 'Erro na aprovação em lote',
+        title: "Erro na aprovação em lote",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
       setOperationProgress(null);
     },
@@ -170,32 +173,32 @@ export function BulkOperationsToolbar({
   const bulkExportMutation = useMutation({
     mutationFn: (paymentIds: string[]) => exportPaymentsToCSV(paymentIds),
     onMutate: () => {
-      setActiveOperation('export');
+      setActiveOperation("export");
       setOperationProgress({ processed: 0, total: selectedPayments.length, isComplete: false });
     },
     onSuccess: (csvBlob) => {
-      setOperationProgress(prev => prev ? { ...prev, isComplete: true } : null);
-      
+      setOperationProgress((prev) => (prev ? { ...prev, isComplete: true } : null));
+
       // Create download link
       const url = URL.createObjectURL(csvBlob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `pagamentos-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `pagamentos-${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast({
-        title: 'Exportação concluída',
+        title: "Exportação concluída",
         description: `Arquivo CSV com ${selectedPayments.length} pagamento(s) baixado.`,
       });
     },
     onError: (error) => {
       toast({
-        title: 'Erro na exportação',
+        title: "Erro na exportação",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
       setOperationProgress(null);
     },
@@ -206,32 +209,37 @@ export function BulkOperationsToolbar({
 
   // Bulk message mutation
   const bulkMessageMutation = useMutation({
-    mutationFn: ({ paymentIds, message, adminId }: { 
-      paymentIds: string[]; 
-      message: string; 
+    mutationFn: ({
+      paymentIds,
+      message,
+      adminId,
+    }: {
+      paymentIds: string[];
+      message: string;
       adminId: string;
-    }) => bulkSendMessage(paymentIds, message, adminId, (processed, total) => {
-      setOperationProgress({ processed, total, isComplete: false });
-    }),
+    }) =>
+      bulkSendMessage(paymentIds, message, adminId, (processed, total) => {
+        setOperationProgress({ processed, total, isComplete: false });
+      }),
     onMutate: () => {
-      setActiveOperation('message');
+      setActiveOperation("message");
       setOperationProgress({ processed: 0, total: selectedPayments.length, isComplete: false });
     },
     onSuccess: (result) => {
-      setOperationProgress(prev => prev ? { ...prev, isComplete: true, result } : null);
+      setOperationProgress((prev) => (prev ? { ...prev, isComplete: true, result } : null));
       setShowSummary(true);
-      setMessageText('');
+      setMessageText("");
 
       toast({
-        title: 'Mensagem em lote enviada',
+        title: "Mensagem em lote enviada",
         description: `${result.success_count} mensagem(ns) enviada(s) com sucesso.`,
       });
     },
     onError: (error) => {
       toast({
-        title: 'Erro no envio de mensagem',
+        title: "Erro no envio de mensagem",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
       setOperationProgress(null);
     },
@@ -247,19 +255,20 @@ export function BulkOperationsToolbar({
     try {
       const operationId = await startAsyncBulkApprove(selectedPayments, user.id);
       setAsyncOperationId(operationId);
-      
+
       toast({
-        title: 'Aprovação em lote iniciada',
-        description: 'A operação está sendo processada em segundo plano. Você pode continuar trabalhando.',
+        title: "Aprovação em lote iniciada",
+        description:
+          "A operação está sendo processada em segundo plano. Você pode continuar trabalhando.",
       });
 
       // Start polling for status
       pollAsyncOperationStatus(operationId);
     } catch (error) {
       toast({
-        title: 'Erro ao iniciar aprovação em lote',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
+        title: "Erro ao iniciar aprovação em lote",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
       });
     }
   };
@@ -271,20 +280,21 @@ export function BulkOperationsToolbar({
     try {
       const operationId = await startAsyncBulkMessage(selectedPayments, messageText, user.id);
       setAsyncOperationId(operationId);
-      setMessageText('');
-      
+      setMessageText("");
+
       toast({
-        title: 'Mensagem em lote iniciada',
-        description: 'A operação está sendo processada em segundo plano. Você pode continuar trabalhando.',
+        title: "Mensagem em lote iniciada",
+        description:
+          "A operação está sendo processada em segundo plano. Você pode continuar trabalhando.",
       });
 
       // Start polling for status
       pollAsyncOperationStatus(operationId);
     } catch (error) {
       toast({
-        title: 'Erro ao iniciar mensagem em lote',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
+        title: "Erro ao iniciar mensagem em lote",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
       });
     }
   };
@@ -296,19 +306,20 @@ export function BulkOperationsToolbar({
     try {
       const operationId = await startAsyncBulkExport(selectedPayments, user.id);
       setAsyncOperationId(operationId);
-      
+
       toast({
-        title: 'Exportação em lote iniciada',
-        description: 'A operação está sendo processada em segundo plano. Você será notificado quando concluir.',
+        title: "Exportação em lote iniciada",
+        description:
+          "A operação está sendo processada em segundo plano. Você será notificado quando concluir.",
       });
 
       // Start polling for status
       pollAsyncOperationStatus(operationId);
     } catch (error) {
       toast({
-        title: 'Erro ao iniciar exportação em lote',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
+        title: "Erro ao iniciar exportação em lote",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
       });
     }
   };
@@ -320,28 +331,28 @@ export function BulkOperationsToolbar({
         const status = await getBulkOperationStatus(operationId);
         setAsyncOperationStatus(status);
 
-        if (status.status === 'completed' || status.status === 'failed') {
+        if (status.status === "completed" || status.status === "failed") {
           clearInterval(interval);
-          
-          if (status.status === 'completed') {
+
+          if (status.status === "completed") {
             toast({
-              title: 'Operação em lote concluída',
+              title: "Operação em lote concluída",
               description: `Operação ${operationId} concluída com sucesso.`,
             });
 
             // Invalidate queries to refresh data
-            queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
-            queryClient.invalidateQueries({ queryKey: ['payment-stats'] });
+            queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
+            queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
           } else {
             toast({
-              title: 'Operação em lote falhou',
+              title: "Operação em lote falhou",
               description: `Operação ${operationId} falhou.`,
-              variant: 'destructive',
+              variant: "destructive",
             });
           }
         }
       } catch (error) {
-        console.error('Error polling operation status:', error);
+        console.error("Error polling operation status:", error);
         clearInterval(interval);
       }
     }, 2000); // Poll every 2 seconds
@@ -376,9 +387,9 @@ export function BulkOperationsToolbar({
   const handleBulkMessage = () => {
     if (!user?.id || !messageText.trim()) {
       toast({
-        title: 'Mensagem obrigatória',
-        description: 'Por favor, digite uma mensagem para enviar.',
-        variant: 'destructive',
+        title: "Mensagem obrigatória",
+        description: "Por favor, digite uma mensagem para enviar.",
+        variant: "destructive",
       });
       return;
     }
@@ -387,43 +398,55 @@ export function BulkOperationsToolbar({
     if (selectedPayments.length > 10) {
       handleAsyncBulkMessage();
     } else {
-      bulkMessageMutation.mutate({ 
-        paymentIds: selectedPayments, 
+      bulkMessageMutation.mutate({
+        paymentIds: selectedPayments,
         message: messageText,
-        adminId: user.id
+        adminId: user.id,
       });
     }
   };
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(amount);
   };
 
   // Get status icon
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="h-3 w-3" />;
-      case 'under_review': return <AlertCircle className="h-3 w-3" />;
-      case 'requires_info': return <AlertCircle className="h-3 w-3" />;
-      case 'approved': return <CheckCircle className="h-3 w-3" />;
-      case 'rejected': return <X className="h-3 w-3" />;
-      default: return null;
+      case "pending":
+        return <Clock className="h-3 w-3" />;
+      case "under_review":
+        return <AlertCircle className="h-3 w-3" />;
+      case "requires_info":
+        return <AlertCircle className="h-3 w-3" />;
+      case "approved":
+        return <CheckCircle className="h-3 w-3" />;
+      case "rejected":
+        return <X className="h-3 w-3" />;
+      default:
+        return null;
     }
   };
 
   // Get status label
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending': return 'Pendente';
-      case 'under_review': return 'Em Revisão';
-      case 'requires_info': return 'Precisa de Info';
-      case 'approved': return 'Aprovado';
-      case 'rejected': return 'Rejeitado';
-      default: return status;
+      case "pending":
+        return "Pendente";
+      case "under_review":
+        return "Em Revisão";
+      case "requires_info":
+        return "Precisa de Info";
+      case "approved":
+        return "Aprovado";
+      case "rejected":
+        return "Rejeitado";
+      default:
+        return status;
     }
   };
 
@@ -445,15 +468,9 @@ export function BulkOperationsToolbar({
                 onClick={handleSelectAllToggle}
                 title={isSelectAll ? "Desmarcar todos" : "Marcar todos"}
               >
-                {isSelectAll ? (
-                  <CheckSquare className="h-4 w-4" />
-                ) : (
-                  <Square className="h-4 w-4" />
-                )}
+                {isSelectAll ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               </Button>
-              <span className="text-sm font-medium">
-                {selectedPayments.length} selecionado(s)
-              </span>
+              <span className="text-sm font-medium">{selectedPayments.length} selecionado(s)</span>
             </div>
 
             <Separator orientation="vertical" className="h-6" />
@@ -462,7 +479,7 @@ export function BulkOperationsToolbar({
               <Badge variant="outline" className="text-xs">
                 {formatCurrency(totalAmount)}
               </Badge>
-              
+
               {Object.entries(statusCounts).map(([status, count]) => (
                 <Badge key={status} variant="outline" className="text-xs flex items-center gap-1">
                   {getStatusIcon(status)}
@@ -474,11 +491,7 @@ export function BulkOperationsToolbar({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearSelection}
-            >
+            <Button variant="outline" size="sm" onClick={onClearSelection}>
               <X className="h-4 w-4 mr-2" />
               Limpar
             </Button>
@@ -501,8 +514,8 @@ export function BulkOperationsToolbar({
                     Você está prestes a aprovar {selectedPayments.length} pagamento(s).
                     {!canBulkApprove && (
                       <div className="mt-2 text-amber-600 text-sm">
-                        Apenas pagamentos com status "Em Revisão" serão aprovados.
-                        Os demais serão ignorados.
+                        Apenas pagamentos com status "Em Revisão" serão aprovados. Os demais serão
+                        ignorados.
                       </div>
                     )}
                   </DialogDescription>
@@ -512,17 +525,14 @@ export function BulkOperationsToolbar({
                     <p>Esta ação não pode ser desfeita.</p>
                     {selectedPayments.length > 10 && (
                       <p className="mt-2 text-amber-600">
-                        Como há mais de 10 pagamentos selecionados, a operação será processada
-                        em segundo plano para melhor performance.
+                        Como há mais de 10 pagamentos selecionados, a operação será processada em
+                        segundo plano para melhor performance.
                       </p>
                     )}
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => {}}
-                  >
+                  <Button variant="outline" onClick={() => {}}>
                     Cancelar
                   </Button>
                   <Button
@@ -548,11 +558,7 @@ export function BulkOperationsToolbar({
 
             <Sheet>
               <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={activeOperation !== null}
-                >
+                <Button variant="outline" size="sm" disabled={activeOperation !== null}>
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Enviar Mensagem
                 </Button>
@@ -578,22 +584,18 @@ export function BulkOperationsToolbar({
                       A mensagem será enviada para a conversa de suporte de cada pagamento.
                     </p>
                   </div>
-                  
+
                   {selectedPayments.length > 10 && (
                     <div className="rounded-md bg-amber-50 p-3 border border-amber-200">
                       <p className="text-sm text-amber-800">
-                        Como há mais de 10 pagamentos selecionados, a operação será processada
-                        em segundo plano para melhor performance.
+                        Como há mais de 10 pagamentos selecionados, a operação será processada em
+                        segundo plano para melhor performance.
                       </p>
                     </div>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {}}
-                  >
+                  <Button variant="outline" className="flex-1" onClick={() => {}}>
                     Cancelar
                   </Button>
                   <Button
@@ -615,16 +617,16 @@ export function BulkOperationsToolbar({
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">
-                {activeOperation === 'approve' && 'Aprovando pagamentos...'}
-                {activeOperation === 'export' && 'Exportando pagamentos...'}
-                {activeOperation === 'message' && 'Enviando mensagens...'}
+                {activeOperation === "approve" && "Aprovando pagamentos..."}
+                {activeOperation === "export" && "Exportando pagamentos..."}
+                {activeOperation === "message" && "Enviando mensagens..."}
               </span>
               <span className="text-sm text-gray-500">
                 {operationProgress.processed} de {operationProgress.total}
               </span>
             </div>
-            <Progress 
-              value={(operationProgress.processed / operationProgress.total) * 100} 
+            <Progress
+              value={(operationProgress.processed / operationProgress.total) * 100}
               className="h-2"
             />
           </div>
@@ -640,27 +642,32 @@ export function BulkOperationsToolbar({
                   Operação em segundo plano: {asyncOperationStatus.operation_type}
                 </span>
               </div>
-              <Badge variant={
-                asyncOperationStatus.status === 'completed' ? 'default' :
-                asyncOperationStatus.status === 'failed' ? 'destructive' :
-                'outline'
-              }>
-                {asyncOperationStatus.status === 'pending' && 'Pendente'}
-                {asyncOperationStatus.status === 'processing' && 'Processando'}
-                {asyncOperationStatus.status === 'completed' && 'Concluído'}
-                {asyncOperationStatus.status === 'failed' && 'Falhou'}
+              <Badge
+                variant={
+                  asyncOperationStatus.status === "completed"
+                    ? "default"
+                    : asyncOperationStatus.status === "failed"
+                      ? "destructive"
+                      : "outline"
+                }
+              >
+                {asyncOperationStatus.status === "pending" && "Pendente"}
+                {asyncOperationStatus.status === "processing" && "Processando"}
+                {asyncOperationStatus.status === "completed" && "Concluído"}
+                {asyncOperationStatus.status === "failed" && "Falhou"}
               </Badge>
             </div>
-            
-            {asyncOperationStatus.status === 'processing' && (
+
+            {asyncOperationStatus.status === "processing" && (
               <div className="mt-2">
                 <Progress value={50} className="h-1" />
               </div>
             )}
-            
-            {asyncOperationStatus.status === 'completed' && asyncOperationStatus.success_count && (
+
+            {asyncOperationStatus.status === "completed" && asyncOperationStatus.success_count && (
               <div className="mt-2 text-sm text-gray-600">
-                {asyncOperationStatus.success_count} de {asyncOperationStatus.payment_ids?.length || 0} concluído(s)
+                {asyncOperationStatus.success_count} de{" "}
+                {asyncOperationStatus.payment_ids?.length || 0} concluído(s)
               </div>
             )}
           </div>
@@ -676,7 +683,7 @@ export function BulkOperationsToolbar({
               Resultado da operação {activeOperation} concluída.
             </DialogDescription>
           </DialogHeader>
-          
+
           {operationProgress?.result && (
             <div className="py-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">

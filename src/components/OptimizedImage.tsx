@@ -42,13 +42,7 @@ export function OptimizedImage({
   // Estado de erro
   if (error || !src) {
     return (
-      <div
-        className={cn(
-          "flex items-center justify-center bg-muted",
-          aspectRatioClass,
-          className
-        )}
-      >
+      <div className={cn("flex items-center justify-center bg-muted", aspectRatioClass, className)}>
         {fallback || (
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <ImageOff className="h-8 w-8" />
@@ -61,12 +55,7 @@ export function OptimizedImage({
 
   // Estado de carregamento
   if (isLoading || !imageSrc) {
-    return (
-      <Skeleton
-        ref={imgRef}
-        className={cn(aspectRatioClass, className)}
-      />
-    );
+    return <Skeleton ref={imgRef} className={cn(aspectRatioClass, className)} />;
   }
 
   // Imagem carregada
@@ -77,11 +66,7 @@ export function OptimizedImage({
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
-      className={cn(
-        "object-cover w-full h-full",
-        aspectRatioClass,
-        className
-      )}
+      className={cn("object-cover w-full h-full", aspectRatioClass, className)}
     />
   );
 }
@@ -123,12 +108,7 @@ export function OptimizedAvatar({
   }
 
   if (isLoading || !imageSrc) {
-    return (
-      <Skeleton
-        ref={imgRef}
-        className={cn("rounded-full", sizeClasses[size])}
-      />
-    );
+    return <Skeleton ref={imgRef} className={cn("rounded-full", sizeClasses[size])} />;
   }
 
   return (
@@ -138,10 +118,7 @@ export function OptimizedAvatar({
       alt={alt}
       loading="lazy"
       decoding="async"
-      className={cn(
-        "rounded-full object-cover",
-        sizeClasses[size]
-      )}
+      className={cn("rounded-full object-cover", sizeClasses[size])}
     />
   );
 }
@@ -166,10 +143,7 @@ export function OptimizedBackgroundImage({
 
   if (error || !src) {
     return (
-      <div
-        ref={imgRef}
-        className={cn("bg-muted relative", className)}
-      >
+      <div ref={imgRef} className={cn("bg-muted relative", className)}>
         {children}
       </div>
     );
@@ -177,10 +151,7 @@ export function OptimizedBackgroundImage({
 
   if (isLoading || !imageSrc) {
     return (
-      <Skeleton
-        ref={imgRef}
-        className={cn("relative", className)}
-      >
+      <Skeleton ref={imgRef} className={cn("relative", className)}>
         {children}
       </Skeleton>
     );
@@ -196,12 +167,8 @@ export function OptimizedBackgroundImage({
         backgroundPosition: "center",
       }}
     >
-      {overlay && (
-        <div className="absolute inset-0 bg-black/50" />
-      )}
-      <div className="relative z-10">
-        {children}
-      </div>
+      {overlay && <div className="absolute inset-0 bg-black/50" />}
+      <div className="relative z-10">{children}</div>
     </div>
   );
 }

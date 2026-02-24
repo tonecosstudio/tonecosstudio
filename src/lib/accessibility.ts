@@ -13,7 +13,10 @@ export function generateId(prefix: string = "id"): string {
  * Anuncia mensagem para screen readers
  * Útil para feedback de ações (ex: "Item adicionado ao carrinho")
  */
-export function announceToScreenReader(message: string, priority: "polite" | "assertive" = "polite") {
+export function announceToScreenReader(
+  message: string,
+  priority: "polite" | "assertive" = "polite"
+) {
   const announcement = document.createElement("div");
   announcement.setAttribute("role", "status");
   announcement.setAttribute("aria-live", priority);
@@ -172,11 +175,7 @@ export function getTooltipAriaAttributes(tooltipId: string) {
 /**
  * Adiciona atributos ARIA para tabs
  */
-export function getTabAriaAttributes(
-  isSelected: boolean,
-  tabId: string,
-  panelId: string
-) {
+export function getTabAriaAttributes(isSelected: boolean, tabId: string, panelId: string) {
   return {
     role: "tab" as const,
     "aria-selected": isSelected,
@@ -201,4 +200,5 @@ export function getTabPanelAriaAttributes(tabId: string, panelId: string) {
 /**
  * Classe CSS para elementos visualmente ocultos mas acessíveis a screen readers
  */
-export const srOnlyClass = "absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0";
+export const srOnlyClass =
+  "absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0";

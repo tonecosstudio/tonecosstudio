@@ -32,7 +32,8 @@ export function CatalogGridSection(props: {
   return (
     <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {rows.map((m) => {
-        const imageUrl = supabase.storage.from(m.image_bucket).getPublicUrl(m.image_path).data.publicUrl;
+        const imageUrl = supabase.storage.from(m.image_bucket).getPublicUrl(m.image_path)
+          .data.publicUrl;
         const isLiked = getIsLiked(m.id);
         return (
           <ModelCard

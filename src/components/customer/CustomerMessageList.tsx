@@ -21,7 +21,7 @@ function getAttachmentUrl(filePath: string): string {
 
 /**
  * CustomerMessageList Component
- * 
+ *
  * Displays messages in a conversation for customers.
  * Features:
  * - Renders messages (excludes internal notes)
@@ -29,7 +29,7 @@ function getAttachmentUrl(filePath: string): string {
  * - Auto-scrolls to latest message
  * - Infinite scroll for older messages
  * - Typing indicator
- * 
+ *
  * Requirements: 14.2, 14.8, 3.2, 3.6
  */
 interface CustomerMessageListProps {
@@ -39,9 +39,9 @@ interface CustomerMessageListProps {
   isClosed?: boolean; // Indica se a conversa está encerrada
 }
 
-export function CustomerMessageList({ 
-  conversationId, 
-  currentUserId, 
+export function CustomerMessageList({
+  conversationId,
+  currentUserId,
   currentUserName,
   isClosed = false,
 }: CustomerMessageListProps) {
@@ -76,7 +76,7 @@ export function CustomerMessageList({
   };
 
   // Filter out internal notes (customers should never see them)
-  const visibleMessages = messages.filter(msg => !msg.is_internal);
+  const visibleMessages = messages.filter((msg) => !msg.is_internal);
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -94,7 +94,9 @@ export function CustomerMessageList({
             size="sm"
             onClick={async () => {
               try {
-                const { data: { user } } = await supabase.auth.getUser();
+                const {
+                  data: { user },
+                } = await supabase.auth.getUser();
                 if (!user) {
                   toast.error("Você precisa estar autenticado");
                   return;
@@ -108,11 +110,13 @@ export function CustomerMessageList({
                 });
 
                 toast.success("Nova conversa iniciada!");
-                
+
                 // Disparar evento customizado para o CustomerChat atualizar
-                window.dispatchEvent(new CustomEvent('newConversationCreated', { 
-                  detail: { conversation: newConversation } 
-                }));
+                window.dispatchEvent(
+                  new CustomEvent("newConversationCreated", {
+                    detail: { conversation: newConversation },
+                  })
+                );
               } catch (error) {
                 console.error("Erro ao criar nova conversa:", error);
                 toast.error("Erro ao criar nova solicitação");
@@ -127,12 +131,7 @@ export function CustomerMessageList({
       {/* Load More Button */}
       {hasMore && (
         <div className="text-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadMore}
-            disabled={loading}
-          >
+          <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
             {loading ? "Carregando..." : "Carregar mensagens antigas"}
           </Button>
         </div>
@@ -170,20 +169,27 @@ interface CustomerMessageBubbleProps {
   optimisticAttachments?: Array<{
     id: string;
     file: File;
-    status: 'uploading' | 'uploaded' | 'error';
+    status: "uploading" | "uploaded" | "error";
     progress: number;
     url?: string;
     error?: string;
   }>;
 }
 
-function CustomerMessageBubble({ message, formatTimestamp, optimisticAttachments = [] }: CustomerMessageBubbleProps) {
+function CustomerMessageBubble({
+  message,
+  formatTimestamp,
+  optimisticAttachments = [],
+}: CustomerMessageBubbleProps) {
   const isCustomer = message.sender_type === "customer";
   const isSystem = message.sender_type === "system";
 
   // Debug: log attachments
   if (message.attachments && message.attachments.length > 0) {
-    console.log(`[CustomerMessageBubble] Mensagem ${message.id} tem ${message.attachments.length} anexos:`, message.attachments);
+    console.log(
+      `[CustomerMessageBubble] Mensagem ${message.id} tem ${message.attachments.length} anexos:`,
+      message.attachments
+    );
   }
 
   // System messages (order status updates, etc.)
@@ -210,46 +216,42 @@ function CustomerMessageBubble({ message, formatTimestamp, optimisticAttachments
     <div className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}>
       <div
         className={`max-w-[80%] rounded-lg p-3 ${
-          isCustomer
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted"
+          isCustomer ? "bg-primary text-primary-foreground" : "bg-muted"
         }`}
       >
         <div className="flex items-center gap-2 mb-1">
           <span className="font-medium text-sm">
             {isCustomer ? "Você" : message.sender_name || "Suporte"}
           </span>
-          <span className="text-xs opacity-70">
-            {formatTimestamp(message.created_at)}
-          </span>
+          <span className="text-xs opacity-70">{formatTimestamp(message.created_at)}</span>
         </div>
         <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-        
+
         {/* Optimistic Attachments (uploading) */}
         {optimisticAttachments.length > 0 && (
           <div className="mt-2 space-y-2">
             {optimisticAttachments.map((attachment) => {
-              const isImage = attachment.file.type.startsWith('image/');
+              const isImage = attachment.file.type.startsWith("image/");
               const previewUrl = isImage ? URL.createObjectURL(attachment.file) : null;
-              
-              if (attachment.status === 'error') {
+
+              if (attachment.status === "error") {
                 return (
                   <div
                     key={attachment.id}
                     className={`text-xs p-2 rounded border border-destructive ${
-                      isCustomer 
-                        ? "bg-destructive/10" 
-                        : "bg-destructive/10"
+                      isCustomer ? "bg-destructive/10" : "bg-destructive/10"
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       <span>❌ {attachment.file.name}</span>
-                      <span className="text-destructive">{attachment.error || 'Erro ao enviar'}</span>
+                      <span className="text-destructive">
+                        {attachment.error || "Erro ao enviar"}
+                      </span>
                     </div>
                   </div>
                 );
               }
-              
+
               if (isImage && previewUrl) {
                 return (
                   <div key={attachment.id} className="relative">
@@ -259,32 +261,26 @@ function CustomerMessageBubble({ message, formatTimestamp, optimisticAttachments
                       className="max-w-full max-h-64 rounded border opacity-70"
                       loading="lazy"
                     />
-                    {attachment.status === 'uploading' && (
+                    {attachment.status === "uploading" && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
-                        <div className="text-white text-sm">
-                          Enviando... {attachment.progress}%
-                        </div>
+                        <div className="text-white text-sm">Enviando... {attachment.progress}%</div>
                       </div>
                     )}
-                    <span className="text-xs opacity-70 mt-1 block">
-                      📎 {attachment.file.name}
-                    </span>
+                    <span className="text-xs opacity-70 mt-1 block">📎 {attachment.file.name}</span>
                   </div>
                 );
               }
-              
+
               return (
                 <div
                   key={attachment.id}
                   className={`text-xs p-2 rounded border ${
-                    isCustomer 
-                      ? "border-primary-foreground/20" 
-                      : "border-border"
+                    isCustomer ? "border-primary-foreground/20" : "border-border"
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span>📎 {attachment.file.name}</span>
-                    {attachment.status === 'uploading' && (
+                    {attachment.status === "uploading" && (
                       <span className="opacity-70">Enviando... {attachment.progress}%</span>
                     )}
                   </div>
@@ -293,14 +289,14 @@ function CustomerMessageBubble({ message, formatTimestamp, optimisticAttachments
             })}
           </div>
         )}
-        
+
         {/* Attachments (confirmed) */}
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-2 space-y-2">
             {message.attachments.map((attachment: any) => {
-              const isImage = attachment.file_type?.startsWith('image/');
+              const isImage = attachment.file_type?.startsWith("image/");
               const publicUrl = getAttachmentUrl(attachment.file_path);
-              
+
               if (isImage) {
                 return (
                   <a
@@ -316,13 +312,11 @@ function CustomerMessageBubble({ message, formatTimestamp, optimisticAttachments
                       className="max-w-full max-h-64 rounded border"
                       loading="lazy"
                     />
-                    <span className="text-xs opacity-70 mt-1 block">
-                      📎 {attachment.file_name}
-                    </span>
+                    <span className="text-xs opacity-70 mt-1 block">📎 {attachment.file_name}</span>
                   </a>
                 );
               }
-              
+
               return (
                 <a
                   key={attachment.id}
@@ -330,8 +324,8 @@ function CustomerMessageBubble({ message, formatTimestamp, optimisticAttachments
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`text-xs underline block p-2 rounded border ${
-                    isCustomer 
-                      ? "border-primary-foreground/20 hover:bg-primary-foreground/10" 
+                    isCustomer
+                      ? "border-primary-foreground/20 hover:bg-primary-foreground/10"
                       : "border-border hover:bg-muted"
                   }`}
                 >

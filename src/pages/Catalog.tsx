@@ -60,7 +60,10 @@ export default function Catalog() {
 
   const handleToggleLike = async (m: ModelRow, isLiked: boolean) => {
     if (!user?.id) {
-      toast({ title: "Entre para favoritar", description: "Faça login para salvar seus modelos preferidos." });
+      toast({
+        title: "Entre para favoritar",
+        description: "Faça login para salvar seus modelos preferidos.",
+      });
       return;
     }
     try {
@@ -81,7 +84,15 @@ export default function Catalog() {
       <SEOHead
         title="Catálogo de Colecionáveis Premium"
         description="Explore o catálogo completo de estatuetas artesanais da Tonecos Studios. Produção sob encomenda com pintura artística feita à mão."
-        keywords={['catálogo', 'estatuetas', 'colecionáveis', 'premium', 'tonecos', 'artesanal', 'sob encomenda']}
+        keywords={[
+          "catálogo",
+          "estatuetas",
+          "colecionáveis",
+          "premium",
+          "tonecos",
+          "artesanal",
+          "sob encomenda",
+        ]}
         type="website"
       />
       <CatalogHero />

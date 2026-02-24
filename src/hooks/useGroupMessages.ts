@@ -9,10 +9,7 @@ interface UseGroupMessagesOptions {
   autoScroll?: boolean;
 }
 
-export function useGroupMessages({ 
-  groupId, 
-  autoScroll = true 
-}: UseGroupMessagesOptions) {
+export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessagesOptions) {
   const [messages, setMessages] = useState<EnrichedGroupMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -29,40 +26,42 @@ export function useGroupMessages({
   }, [autoScroll]);
 
   // Load messages
-  const loadMessages = useCallback(async (page: number = 1) => {
-    if (!groupId) {
-      setMessages([]);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) {
-        throw new Error("Usuário não autenticado");
+  const loadMessages = useCallback(
+    async (page: number = 1) => {
+      if (!groupId) {
+        setMessages([]);
+        return;
       }
 
-      const result = await messageService.listGroupMessages(
-        groupId,
-        user.id,
-        { page, limit: LIMIT }
-      );
+      try {
+        setLoading(true);
 
-      setMessages(result.messages);
-      setCurrentPage(result.pagination.page);
-      setTotalPages(result.pagination.total_pages);
-      setHasMore(result.pagination.page < result.pagination.total_pages);
+        const user = (await supabase.auth.getUser()).data.user;
+        if (!user) {
+          throw new Error("Usuário não autenticado");
+        }
 
-      // Scroll after loading
-      setTimeout(scrollToBottom, 100);
-    } catch (error) {
-      console.error("Erro ao carregar mensagens do grupo:", error);
-      toast.error("Erro ao carregar mensagens");
-    } finally {
-      setLoading(false);
-    }
-  }, [groupId, scrollToBottom]);
+        const result = await messageService.listGroupMessages(groupId, user.id, {
+          page,
+          limit: LIMIT,
+        });
+
+        setMessages(result.messages);
+        setCurrentPage(result.pagination.page);
+        setTotalPages(result.pagination.total_pages);
+        setHasMore(result.pagination.page < result.pagination.total_pages);
+
+        // Scroll after loading
+        setTimeout(scrollToBottom, 100);
+      } catch (error) {
+        console.error("Erro ao carregar mensagens do grupo:", error);
+        toast.error("Erro ao carregar mensagens");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [groupId, scrollToBottom]
+  );
 
   // Load more messages (pagination)
   const loadMore = useCallback(async () => {
@@ -117,13 +116,13 @@ export function useGroupMessages({
           config: {
             broadcast: {
               self: false, // Don't receive own messages
-              ack: false,  // Don't wait for acknowledgment
+              ack: false, // Don't wait for acknowledgment
             },
           },
         });
 
         channel
-          .on('broadcast', { event: 'new_message' }, ({ payload }) => {
+          .on("broadcast", { event: "new_message" }, ({ payload }) => {
             console.log("[useGroupMessages] New message received:", payload);
 
             const newMessage = payload.message as EnrichedGroupMessage;
@@ -148,14 +147,16 @@ export function useGroupMessages({
           })
           .subscribe((status) => {
             console.log("[useGroupMessages] Subscription status:", status);
-            if (status === 'SUBSCRIBED') {
+            if (status === "SUBSCRIBED") {
               isSubscribed = true;
             }
           });
       } catch (error) {
         console.error("[useGroupMessages] Error setting up Realtime:", error);
         // Graceful degradation - continue without Realtime
-        toast.error("Erro ao conectar ao chat em tempo real. As mensagens serão atualizadas ao recarregar.");
+        toast.error(
+          "Erro ao conectar ao chat em tempo real. As mensagens serão atualizadas ao recarregar."
+        );
       }
     };
 

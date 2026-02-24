@@ -93,7 +93,7 @@ describe("ContactForm", () => {
 
   it("should show error when user is not authenticated", async () => {
     const user = userEvent.setup();
-    
+
     // Mock unauthenticated user
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: null },
@@ -120,7 +120,7 @@ describe("ContactForm", () => {
 
   it("should create conversation and redirect when authenticated", async () => {
     const user = userEvent.setup();
-    
+
     const mockUser = { id: "user-123", email: "john@example.com" };
     const mockConversation = { id: "conv-123", user_id: mockUser.id };
 
@@ -171,7 +171,7 @@ describe("ContactForm", () => {
 
   it("should auto-tag conversation as 'duvida'", async () => {
     const user = userEvent.setup();
-    
+
     const mockUser = { id: "user-123", email: "john@example.com" };
     const mockConversation = { id: "conv-123", user_id: mockUser.id };
 
@@ -207,7 +207,7 @@ describe("ContactForm", () => {
 
   it("should show error message when submission fails", async () => {
     const user = userEvent.setup();
-    
+
     const mockUser = { id: "user-123", email: "john@example.com" };
 
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
@@ -215,9 +215,7 @@ describe("ContactForm", () => {
       error: null,
     });
 
-    vi.mocked(conversationService.createConversation).mockRejectedValue(
-      new Error("Network error")
-    );
+    vi.mocked(conversationService.createConversation).mockRejectedValue(new Error("Network error"));
 
     renderContactForm();
 
@@ -239,7 +237,7 @@ describe("ContactForm", () => {
 
   it("should disable form fields while submitting", async () => {
     const user = userEvent.setup();
-    
+
     const mockUser = { id: "user-123", email: "john@example.com" };
 
     vi.mocked(supabase.auth.getUser).mockResolvedValue({

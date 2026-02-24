@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Main application
+  # Frontend Application
   app:
     build:
       context: .
@@ -12,37 +12,74 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+    networks:
+      - ordax-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 3s
       retries: 3
-      start_period: 40s
-    networks:
-      - ordax-network
+      start_period: 5s
 
-  # Development environment (optional)
-  dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    container_name: ordax-dev
-    ports:
-      - "8080:8080"
-    volumes:
-      - .:/app
-      - /app/node_modules
+  # PostgreSQL Database (para desenvolvimento local)
+  postgres:
+    image: postgres:15-alpine
+    container_name: ordax-postgres
     environment:
-      - NODE_ENV=development
-    command: npm run dev
+      POSTGRES_DB: ordax
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
     networks:
       - ordax-network
-    profiles:
-      - dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (para cache e sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: ordax-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - ordax-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Adminer (Database Management UI)
+  adminer:
+    image: adminer:latest
+    container_name: ordax-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    restart: unless-stopped
+    networks:
+      - ordax-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
 
 networks:
   ordax-network:
     driver: bridge
-
-volumes:
-  node_modules:

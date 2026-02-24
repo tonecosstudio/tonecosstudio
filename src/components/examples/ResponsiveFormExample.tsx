@@ -1,22 +1,28 @@
 /**
  * ResponsiveFormExample Component
- * 
+ *
  * Example showing how forms should stack vertically on mobile devices.
  * This demonstrates best practices for mobile-friendly form layouts.
- * 
+ *
  * Requirements: 17.1-17.15
  * Task: 24.1 Implementar layouts responsivos
  */
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Smartphone, Monitor, CheckCircle } from 'lucide-react';
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Smartphone, Monitor, CheckCircle } from "lucide-react";
 
 export function ResponsiveFormExample() {
   return (
@@ -34,15 +40,11 @@ export function ResponsiveFormExample() {
         {/* Example 1: Basic Form Fields */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium">Exemplo 1: Campos Básicos</h3>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="example-name">Nome</Label>
-              <Input
-                id="example-name"
-                placeholder="Seu nome completo"
-                className="w-full"
-              />
+              <Input id="example-name" placeholder="Seu nome completo" className="w-full" />
               <p className="text-xs text-muted-foreground">
                 Em mobile: campo ocupa 100% da largura
               </p>
@@ -56,9 +58,7 @@ export function ResponsiveFormExample() {
                 placeholder="seu@email.com"
                 className="w-full"
               />
-              <p className="text-xs text-muted-foreground">
-                Em desktop: 2 campos lado a lado
-              </p>
+              <p className="text-xs text-muted-foreground">Em desktop: 2 campos lado a lado</p>
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@ export function ResponsiveFormExample() {
         {/* Example 2: Textarea */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium">Exemplo 2: Área de Texto</h3>
-          
+
           <div className="space-y-2">
             <Label htmlFor="example-message">Mensagem</Label>
             <Textarea
@@ -88,7 +88,7 @@ export function ResponsiveFormExample() {
         {/* Example 3: Select Fields */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium">Exemplo 3: Seleção</h3>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="example-country">País</Label>
@@ -125,7 +125,7 @@ export function ResponsiveFormExample() {
         {/* Best Practices */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium">Melhores Práticas para Mobile</h3>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className="bg-green-50 border-green-200">
               <CardContent className="pt-6">
@@ -175,8 +175,14 @@ export function ResponsiveFormExample() {
         <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
           <h4 className="text-sm font-medium text-blue-800 mb-2">Dicas de Responsividade</h4>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Use <code className="bg-blue-100 px-1 rounded">grid-cols-1 sm:grid-cols-2</code> para 2 colunas apenas em telas maiores</li>
-            <li>• Sempre use <code className="bg-blue-100 px-1 rounded">w-full</code> em inputs para mobile</li>
+            <li>
+              • Use <code className="bg-blue-100 px-1 rounded">grid-cols-1 sm:grid-cols-2</code>{" "}
+              para 2 colunas apenas em telas maiores
+            </li>
+            <li>
+              • Sempre use <code className="bg-blue-100 px-1 rounded">w-full</code> em inputs para
+              mobile
+            </li>
             <li>• Teste em diferentes tamanhos de tela (320px, 768px, 1024px)</li>
             <li>• Garanta que botões sejam fáceis de tocar (mínimo 44x44px)</li>
             <li>• Use espaçamento vertical adequado entre campos</li>

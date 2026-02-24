@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { membershipService } from '@/lib/services/membershipService';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { membershipService } from "@/lib/services/membershipService";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,10 +9,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddMemberModalProps {
   groupId: string;
@@ -23,24 +23,24 @@ interface AddMemberModalProps {
 export function AddMemberModal({ groupId, open, onOpenChange }: AddMemberModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId] = useState("");
 
   const addMutation = useMutation({
     mutationFn: () => membershipService.addMember(groupId, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-members', groupId] });
+      queryClient.invalidateQueries({ queryKey: ["group-members", groupId] });
       toast({
-        title: 'Membro adicionado',
-        description: 'O membro foi adicionado ao grupo com sucesso.',
+        title: "Membro adicionado",
+        description: "O membro foi adicionado ao grupo com sucesso.",
       });
-      setUserId('');
+      setUserId("");
       onOpenChange(false);
     },
     onError: (error) => {
       toast({
-        title: 'Erro ao adicionar membro',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
+        title: "Erro ao adicionar membro",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
       });
     },
   });
@@ -49,9 +49,9 @@ export function AddMemberModal({ groupId, open, onOpenChange }: AddMemberModalPr
     e.preventDefault();
     if (!userId.trim()) {
       toast({
-        title: 'ID do usuário obrigatório',
-        description: 'Por favor, informe o ID do usuário.',
-        variant: 'destructive',
+        title: "ID do usuário obrigatório",
+        description: "Por favor, informe o ID do usuário.",
+        variant: "destructive",
       });
       return;
     }
@@ -92,7 +92,7 @@ export function AddMemberModal({ groupId, open, onOpenChange }: AddMemberModalPr
               Cancelar
             </Button>
             <Button type="submit" disabled={addMutation.isPending}>
-              {addMutation.isPending ? 'Adicionando...' : 'Adicionar'}
+              {addMutation.isPending ? "Adicionando..." : "Adicionar"}
             </Button>
           </DialogFooter>
         </form>

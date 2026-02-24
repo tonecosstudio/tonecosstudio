@@ -1,7 +1,7 @@
 /**
  * UploadedFilesListExample - Example usage of UploadedFilesList component
  * Requirements: 3.1-3.12
- * 
+ *
  * Demonstrates:
  * - Basic usage with payment ID
  * - Usage with pre-loaded files
@@ -10,61 +10,61 @@
  * - Error handling
  */
 
-import React, { useState } from 'react';
-import { UploadedFilesList } from './UploadedFilesList';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, File, Image as ImageIcon } from 'lucide-react';
-import type { PaymentFile } from '@/types/manual-payment';
+import React, { useState } from "react";
+import { UploadedFilesList } from "./UploadedFilesList";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, File, Image as ImageIcon } from "lucide-react";
+import type { PaymentFile } from "@/types/manual-payment";
 
 export const UploadedFilesListExample: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('basic');
+  const [activeTab, setActiveTab] = useState("basic");
   const [lastClickedFile, setLastClickedFile] = useState<PaymentFile | null>(null);
   const [deletedFiles, setDeletedFiles] = useState<string[]>([]);
 
   // Example files data
   const exampleFiles: PaymentFile[] = [
     {
-      id: 'file-example-1',
-      payment_id: 'payment-example-123',
-      file_name: 'payment-confirmation.jpg',
-      file_path: 'payment-example-123/uuid1.jpg',
+      id: "file-example-1",
+      payment_id: "payment-example-123",
+      file_name: "payment-confirmation.jpg",
+      file_path: "payment-example-123/uuid1.jpg",
       file_size: 2.5 * 1024 * 1024, // 2.5MB
-      file_type: 'image/jpeg',
-      thumbnail_path: 'payment-example-123/thumb_uuid1.jpg',
-      uploaded_by: 'user-example-123',
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+      file_type: "image/jpeg",
+      thumbnail_path: "payment-example-123/thumb_uuid1.jpg",
+      uploaded_by: "user-example-123",
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
     },
     {
-      id: 'file-example-2',
-      payment_id: 'payment-example-123',
-      file_name: 'bank-receipt.pdf',
-      file_path: 'payment-example-123/uuid2.pdf',
+      id: "file-example-2",
+      payment_id: "payment-example-123",
+      file_name: "bank-receipt.pdf",
+      file_path: "payment-example-123/uuid2.pdf",
       file_size: 1.8 * 1024 * 1024, // 1.8MB
-      file_type: 'application/pdf',
+      file_type: "application/pdf",
       thumbnail_path: null,
-      uploaded_by: 'user-example-123',
-      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() // 1 hour ago
+      uploaded_by: "user-example-123",
+      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
     },
     {
-      id: 'file-example-3',
-      payment_id: 'payment-example-123',
-      file_name: 'pix-screenshot.png',
-      file_path: 'payment-example-123/uuid3.png',
+      id: "file-example-3",
+      payment_id: "payment-example-123",
+      file_name: "pix-screenshot.png",
+      file_path: "payment-example-123/uuid3.png",
       file_size: 3.2 * 1024 * 1024, // 3.2MB
-      file_type: 'image/png',
-      thumbnail_path: 'payment-example-123/thumb_uuid3.png',
-      uploaded_by: 'user-example-123',
-      created_at: new Date().toISOString() // Just now
-    }
+      file_type: "image/png",
+      thumbnail_path: "payment-example-123/thumb_uuid3.png",
+      uploaded_by: "user-example-123",
+      created_at: new Date().toISOString(), // Just now
+    },
   ];
 
   const handleFileClick = (file: PaymentFile) => {
     setLastClickedFile(file);
-    console.log('File clicked:', file);
-    
+    console.log("File clicked:", file);
+
     // In a real application, you might:
     // - Open a modal with the full-size image
     // - Navigate to a file viewer page
@@ -72,9 +72,9 @@ export const UploadedFilesListExample: React.FC = () => {
   };
 
   const handleFileDelete = (fileId: string) => {
-    console.log('File deleted:', fileId);
-    setDeletedFiles(prev => [...prev, fileId]);
-    
+    console.log("File deleted:", fileId);
+    setDeletedFiles((prev) => [...prev, fileId]);
+
     // In a real application, you would:
     // - Call an API to delete the file
     // - Update local state
@@ -113,15 +113,12 @@ export const UploadedFilesListExample: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <UploadedFilesList
-                paymentId="payment-example-123"
-                className="max-w-2xl"
-              />
-              
+              <UploadedFilesList paymentId="payment-example-123" className="max-w-2xl" />
+
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <h4 className="font-medium mb-2">Code Example:</h4>
                 <pre className="text-sm bg-black/5 p-3 rounded overflow-x-auto">
-{`<UploadedFilesList
+                  {`<UploadedFilesList
   paymentId="payment-example-123"
   className="max-w-2xl"
 />`}
@@ -146,11 +143,11 @@ export const UploadedFilesListExample: React.FC = () => {
                 files={exampleFiles}
                 className="max-w-2xl"
               />
-              
+
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <h4 className="font-medium mb-2">Code Example:</h4>
                 <pre className="text-sm bg-black/5 p-3 rounded overflow-x-auto">
-{`const exampleFiles: PaymentFile[] = [
+                  {`const exampleFiles: PaymentFile[] = [
   {
     id: 'file-example-1',
     payment_id: 'payment-example-123',
@@ -190,7 +187,7 @@ export const UploadedFilesListExample: React.FC = () => {
                 <div>
                   <UploadedFilesList
                     paymentId="payment-example-123"
-                    files={exampleFiles.filter(f => !deletedFiles.includes(f.id))}
+                    files={exampleFiles.filter((f) => !deletedFiles.includes(f.id))}
                     onFileClick={handleFileClick}
                     showDelete={true}
                     onFileDelete={handleFileDelete}
@@ -207,7 +204,7 @@ export const UploadedFilesListExample: React.FC = () => {
                       {lastClickedFile ? (
                         <div className="space-y-3">
                           <div className="flex items-center gap-3">
-                            {lastClickedFile.file_type.startsWith('image/') ? (
+                            {lastClickedFile.file_type.startsWith("image/") ? (
                               <ImageIcon className="h-5 w-5 text-blue-500" />
                             ) : (
                               <File className="h-5 w-5 text-red-500" />
@@ -220,9 +217,17 @@ export const UploadedFilesListExample: React.FC = () => {
                             </div>
                           </div>
                           <div className="text-sm space-y-1">
-                            <p><span className="font-medium">Type:</span> {lastClickedFile.file_type}</p>
-                            <p><span className="font-medium">Size:</span> {Math.round(lastClickedFile.file_size / 1024)} KB</p>
-                            <p><span className="font-medium">Uploaded:</span> {new Date(lastClickedFile.created_at).toLocaleDateString()}</p>
+                            <p>
+                              <span className="font-medium">Type:</span> {lastClickedFile.file_type}
+                            </p>
+                            <p>
+                              <span className="font-medium">Size:</span>{" "}
+                              {Math.round(lastClickedFile.file_size / 1024)} KB
+                            </p>
+                            <p>
+                              <span className="font-medium">Uploaded:</span>{" "}
+                              {new Date(lastClickedFile.created_at).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                       ) : (
@@ -239,8 +244,8 @@ export const UploadedFilesListExample: React.FC = () => {
                       <AlertDescription>
                         <p className="font-medium">Deleted Files:</p>
                         <ul className="list-disc list-inside mt-1">
-                          {deletedFiles.map(fileId => {
-                            const file = exampleFiles.find(f => f.id === fileId);
+                          {deletedFiles.map((fileId) => {
+                            const file = exampleFiles.find((f) => f.id === fileId);
                             return (
                               <li key={fileId} className="text-sm">
                                 {file?.file_name || fileId}
@@ -252,11 +257,7 @@ export const UploadedFilesListExample: React.FC = () => {
                     </Alert>
                   )}
 
-                  <Button
-                    variant="outline"
-                    onClick={resetExample}
-                    className="w-full"
-                  >
+                  <Button variant="outline" onClick={resetExample} className="w-full">
                     Reset Example
                   </Button>
                 </div>
@@ -265,7 +266,7 @@ export const UploadedFilesListExample: React.FC = () => {
               <div className="p-4 bg-muted rounded-lg">
                 <h4 className="font-medium mb-2">Code Example:</h4>
                 <pre className="text-sm bg-black/5 p-3 rounded overflow-x-auto">
-{`const [lastClickedFile, setLastClickedFile] = useState<PaymentFile | null>(null);
+                  {`const [lastClickedFile, setLastClickedFile] = useState<PaymentFile | null>(null);
 const [deletedFiles, setDeletedFiles] = useState<string[]>([]);
 
 const handleFileClick = (file: PaymentFile) => {
@@ -324,7 +325,7 @@ const handleFileDelete = (fileId: string) => {
               <div className="p-4 bg-muted rounded-lg">
                 <h4 className="font-medium mb-2">Code Example:</h4>
                 <pre className="text-sm bg-black/5 p-3 rounded overflow-x-auto">
-{`// Empty state
+                  {`// Empty state
 <UploadedFilesList
   paymentId="payment-with-no-files"
   files={[]}
@@ -352,9 +353,7 @@ const handleFileDelete = (fileId: string) => {
       <Card>
         <CardHeader>
           <CardTitle>Component Features</CardTitle>
-          <CardDescription>
-            Key features of the UploadedFilesList component
-          </CardDescription>
+          <CardDescription>Key features of the UploadedFilesList component</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -423,28 +422,36 @@ const handleFileDelete = (fileId: string) => {
         <CardContent>
           <ul className="list-disc list-inside space-y-2 text-sm">
             <li>
-              <span className="font-medium">Requirement 3.1:</span> Accept file uploads in formats: JPG, PNG, PDF
+              <span className="font-medium">Requirement 3.1:</span> Accept file uploads in formats:
+              JPG, PNG, PDF
             </li>
             <li>
-              <span className="font-medium">Requirement 3.7:</span> Store files in Supabase Storage bucket 'payment-proofs'
+              <span className="font-medium">Requirement 3.7:</span> Store files in Supabase Storage
+              bucket 'payment-proofs'
             </li>
             <li>
-              <span className="font-medium">Requirement 3.8:</span> Generate thumbnails for image files
+              <span className="font-medium">Requirement 3.8:</span> Generate thumbnails for image
+              files
             </li>
             <li>
-              <span className="font-medium">Requirement 3.10:</span> Generate secure URLs with expiration for accessing payment proof files
+              <span className="font-medium">Requirement 3.10:</span> Generate secure URLs with
+              expiration for accessing payment proof files
             </li>
             <li>
-              <span className="font-medium">Requirement 6.3:</span> Display thumbnails with option to view full size for images
+              <span className="font-medium">Requirement 6.3:</span> Display thumbnails with option
+              to view full size for images
             </li>
             <li>
-              <span className="font-medium">Requirement 6.4:</span> Display PDF icon with option to download for PDFs
+              <span className="font-medium">Requirement 6.4:</span> Display PDF icon with option to
+              download for PDFs
             </li>
             <li>
-              <span className="font-medium">Requirement 6.7:</span> Allow downloading of payment proof files
+              <span className="font-medium">Requirement 6.7:</span> Allow downloading of payment
+              proof files
             </li>
             <li>
-              <span className="font-medium">Requirement 13.7:</span> Display all uploaded payment proofs in customer payment details
+              <span className="font-medium">Requirement 13.7:</span> Display all uploaded payment
+              proofs in customer payment details
             </li>
           </ul>
         </CardContent>

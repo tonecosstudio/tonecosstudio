@@ -4,7 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { FileText, CreditCard, Bell, Plus, Trash2, Check, Clock, Send, CheckCircle } from "lucide-react";
+import {
+  FileText,
+  CreditCard,
+  Bell,
+  Plus,
+  Trash2,
+  Check,
+  Clock,
+  Send,
+  CheckCircle,
+} from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,9 +54,7 @@ export function PersonalDataSection({
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, "");
     if (numbers.length <= 11) {
-      return numbers
-        .replace(/(\d{2})(\d)/, "($1) $2")
-        .replace(/(\d{5})(\d)/, "$1-$2");
+      return numbers.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
     }
     return value;
   };
@@ -58,9 +66,7 @@ export function PersonalDataSection({
           <FileText className="h-5 w-5" />
           Dados Pessoais
         </CardTitle>
-        <CardDescription>
-          Informações pessoais para identificação e contato
-        </CardDescription>
+        <CardDescription>Informações pessoais para identificação e contato</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -86,9 +92,7 @@ export function PersonalDataSection({
               className="mt-2"
               maxLength={15}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Para contato geral
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Para contato geral</p>
           </div>
 
           <div>
@@ -104,9 +108,7 @@ export function PersonalDataSection({
               className="mt-2"
               maxLength={15}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Para atualizações de pedidos
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Para atualizações de pedidos</p>
           </div>
         </div>
 
@@ -165,7 +167,7 @@ export function PaymentSection({ userId }: { userId: string }) {
         .eq("user_id", userId)
         .eq("is_active", true)
         .order("is_default", { ascending: false });
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -173,11 +175,8 @@ export function PaymentSection({ userId }: { userId: string }) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("payment_methods")
-        .delete()
-        .eq("id", id);
-      
+      const { error } = await supabase.from("payment_methods").delete().eq("id", id);
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -195,7 +194,7 @@ export function PaymentSection({ userId }: { userId: string }) {
         .from("payment_methods")
         .update({ is_default: true })
         .eq("id", id);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -218,15 +217,9 @@ export function PaymentSection({ userId }: { userId: string }) {
               <CreditCard className="h-5 w-5" />
               Métodos de Pagamento
             </CardTitle>
-            <CardDescription>
-              Gerencie seus cartões e formas de pagamento
-            </CardDescription>
+            <CardDescription>Gerencie seus cartões e formas de pagamento</CardDescription>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setIsAdding(true)}
-            className="gap-2"
-          >
+          <Button size="sm" onClick={() => setIsAdding(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Adicionar
           </Button>
@@ -266,7 +259,8 @@ export function PaymentSection({ userId }: { userId: string }) {
                     )}
                     {method.card_expiry_month && method.card_expiry_year && (
                       <p className="text-xs text-muted-foreground">
-                        Validade: {String(method.card_expiry_month).padStart(2, '0')}/{method.card_expiry_year}
+                        Validade: {String(method.card_expiry_month).padStart(2, "0")}/
+                        {method.card_expiry_year}
                       </p>
                     )}
                   </div>
@@ -299,8 +293,8 @@ export function PaymentSection({ userId }: { userId: string }) {
 
         <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
           <p className="text-sm text-muted-foreground">
-            🔒 Seus dados de pagamento são criptografados e armazenados com segurança.
-            Nunca compartilhamos suas informações financeiras.
+            🔒 Seus dados de pagamento são criptografados e armazenados com segurança. Nunca
+            compartilhamos suas informações financeiras.
           </p>
         </div>
       </CardContent>
@@ -325,9 +319,7 @@ export function NotificationsSection({
           <Bell className="h-5 w-5" />
           Preferências de Notificação
         </CardTitle>
-        <CardDescription>
-          Escolha como e quando você quer receber notificações
-        </CardDescription>
+        <CardDescription>Escolha como e quando você quer receber notificações</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between p-4 rounded-lg border">
@@ -337,10 +329,7 @@ export function NotificationsSection({
               Receber emails sobre atividades importantes
             </p>
           </div>
-          <Switch
-            checked={emailNotifications}
-            onCheckedChange={setEmailNotifications}
-          />
+          <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
         </div>
 
         <div className="flex items-center justify-between p-4 rounded-lg border">
@@ -350,23 +339,15 @@ export function NotificationsSection({
               Notificações sobre status de produção e entrega
             </p>
           </div>
-          <Switch
-            checked={orderUpdates}
-            onCheckedChange={setOrderUpdates}
-          />
+          <Switch checked={orderUpdates} onCheckedChange={setOrderUpdates} />
         </div>
 
         <div className="flex items-center justify-between p-4 rounded-lg border">
           <div className="space-y-0.5">
             <Label>Emails de Marketing</Label>
-            <p className="text-sm text-muted-foreground">
-              Novidades, promoções e lançamentos
-            </p>
+            <p className="text-sm text-muted-foreground">Novidades, promoções e lançamentos</p>
           </div>
-          <Switch
-            checked={marketingEmails}
-            onCheckedChange={setMarketingEmails}
-          />
+          <Switch checked={marketingEmails} onCheckedChange={setMarketingEmails} />
         </div>
 
         <div className="pt-4 border-t">
@@ -393,14 +374,16 @@ export function SubscriptionSection({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select(`
+        .select(
+          `
           *,
           collections (id, name, slug)
-        `)
+        `
+        )
         .eq("user_id", userId)
         .eq("status", "active")
         .single();
-      
+
       if (error && error.code !== "PGRST116") throw error;
       return data;
     },
@@ -440,9 +423,7 @@ export function SubscriptionSection({ userId }: { userId: string }) {
           <Package className="h-5 w-5" />
           Minha Assinatura
         </CardTitle>
-        <CardDescription>
-          Gerencie sua assinatura e entregas
-        </CardDescription>
+        <CardDescription>Gerencie sua assinatura e entregas</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Status */}
@@ -515,7 +496,7 @@ export function SupportSection({ userId }: { userId: string }) {
         .select("*")
         .eq("user_id", userId)
         .order("last_message_at", { ascending: false });
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -611,13 +592,11 @@ export function SupportSection({ userId }: { userId: string }) {
       if (convError) throw convError;
 
       // Criar primeira mensagem
-      const { error: msgError } = await supabase
-        .from("support_messages")
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: userId,
-          message: newFirstMessage.trim(),
-        });
+      const { error: msgError } = await supabase.from("support_messages").insert({
+        conversation_id: conversation.id,
+        sender_id: userId,
+        message: newFirstMessage.trim(),
+      });
 
       if (msgError) throw msgError;
 
@@ -641,13 +620,11 @@ export function SupportSection({ userId }: { userId: string }) {
     setSending(true);
 
     try {
-      const { error } = await supabase
-        .from("support_messages")
-        .insert({
-          conversation_id: selectedConversation.id,
-          sender_id: userId,
-          message: newMessage.trim(),
-        });
+      const { error } = await supabase.from("support_messages").insert({
+        conversation_id: selectedConversation.id,
+        sender_id: userId,
+        message: newMessage.trim(),
+      });
 
       if (error) throw error;
 
@@ -693,8 +670,8 @@ export function SupportSection({ userId }: { userId: string }) {
           <div className="flex items-start gap-2">
             <Clock className="h-4 w-4 text-blue-600 mt-0.5" />
             <p className="text-sm text-blue-900 dark:text-blue-100">
-              <strong>Prazo de resposta:</strong> Nossa equipe responde em até 48 horas úteis.
-              Você receberá um email quando houver novidades.
+              <strong>Prazo de resposta:</strong> Nossa equipe responde em até 48 horas úteis. Você
+              receberá um email quando houver novidades.
             </p>
           </div>
         </div>
@@ -773,7 +750,9 @@ export function SupportSection({ userId }: { userId: string }) {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{conv.subject}</p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(conv.last_message_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {format(new Date(conv.last_message_at), "dd/MM/yyyy HH:mm", {
+                          locale: ptBR,
+                        })}
                       </p>
                     </div>
                     {getStatusBadge(conv.status)}
@@ -789,16 +768,15 @@ export function SupportSection({ userId }: { userId: string }) {
                   <div>
                     <h3 className="font-medium">{selectedConversation.subject}</h3>
                     <p className="text-xs text-muted-foreground">
-                      Criada em {format(new Date(selectedConversation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      Criada em{" "}
+                      {format(new Date(selectedConversation.created_at), "dd/MM/yyyy 'às' HH:mm", {
+                        locale: ptBR,
+                      })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(selectedConversation.status)}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedConversation(null)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => setSelectedConversation(null)}>
                       Voltar
                     </Button>
                   </div>
@@ -819,13 +797,15 @@ export function SupportSection({ userId }: { userId: string }) {
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                        <p className={`text-xs mt-1 ${msg.sender_id === userId ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        <p
+                          className={`text-xs mt-1 ${msg.sender_id === userId ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                        >
                           {format(new Date(msg.created_at), "dd/MM HH:mm", { locale: ptBR })}
                         </p>
                       </div>
                     </div>
                   ))}
-                  <div ref={(el) => messagesEndRef[1] = el} />
+                  <div ref={(el) => (messagesEndRef[1] = el)} />
                 </div>
 
                 {/* Input de Nova Mensagem */}
@@ -890,12 +870,8 @@ export function SupportSection({ userId }: { userId: string }) {
         {/* Informações úteis */}
         <div className="bg-muted p-3 rounded-lg text-sm mt-4">
           <p className="font-medium mb-1">Horário de Atendimento</p>
-          <p className="text-muted-foreground">
-            Segunda a Sexta: 9h às 18h
-          </p>
-          <p className="text-muted-foreground">
-            Tempo médio de resposta: 2 horas
-          </p>
+          <p className="text-muted-foreground">Segunda a Sexta: 9h às 18h</p>
+          <p className="text-muted-foreground">Tempo médio de resposta: 2 horas</p>
         </div>
       </CardContent>
     </Card>

@@ -1,13 +1,13 @@
 /**
  * MyPaymentsPage Example
- * 
+ *
  * Example usage of the MyPaymentsPage component.
  * This file demonstrates how to integrate the component into the application.
  */
 
-import React from 'react';
-import { AppShell } from '@/components/AppShell';
-import MyPaymentsPage from './MyPaymentsPage';
+import React from "react";
+import { AppShell } from "@/components/AppShell";
+import MyPaymentsPage from "./MyPaymentsPage";
 
 /**
  * Example wrapper for MyPaymentsPage that includes the application shell.

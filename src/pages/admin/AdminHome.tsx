@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { 
-  Package, 
-  Users, 
-  FileText, 
-  TrendingUp, 
+import {
+  Package,
+  Users,
+  FileText,
+  TrendingUp,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -21,22 +21,22 @@ import {
   Ticket,
   HeadphonesIcon,
   ArrowRight,
-  Activity
+  Activity,
 } from "lucide-react";
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
   Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 
 export default function AdminHome() {
@@ -94,16 +94,16 @@ export default function AdminHome() {
       // Calcular estatísticas
       const quotesStats = {
         total: quotes?.length || 0,
-        pending: quotes?.filter(q => q.status === "pending").length || 0,
-        approved: quotes?.filter(q => q.status === "approved").length || 0,
-        completed: quotes?.filter(q => q.status === "completed").length || 0,
+        pending: quotes?.filter((q) => q.status === "pending").length || 0,
+        approved: quotes?.filter((q) => q.status === "approved").length || 0,
+        completed: quotes?.filter((q) => q.status === "completed").length || 0,
       };
 
       const preordersStats = {
         total: preorders?.length || 0,
-        pending_deposit: preorders?.filter(p => p.payment_status === "pending").length || 0,
-        in_production: preorders?.filter(p => p.payment_status === "deposit_paid").length || 0,
-        completed: preorders?.filter(p => p.payment_status === "fully_paid").length || 0,
+        pending_deposit: preorders?.filter((p) => p.payment_status === "pending").length || 0,
+        in_production: preorders?.filter((p) => p.payment_status === "deposit_paid").length || 0,
+        completed: preorders?.filter((p) => p.payment_status === "fully_paid").length || 0,
         total_deposits: preorders?.reduce((acc, p) => acc + (p.deposit_amount || 0), 0) || 0,
         total_remaining: preorders?.reduce((acc, p) => acc + (p.remaining_amount || 0), 0) || 0,
       };
@@ -115,8 +115,8 @@ export default function AdminHome() {
         return date.toISOString().split("T")[0];
       });
 
-      const quotesPerDay = last7Days.map(date => {
-        const count = quotes?.filter(q => q.created_at?.startsWith(date)).length || 0;
+      const quotesPerDay = last7Days.map((date) => {
+        const count = quotes?.filter((q) => q.created_at?.startsWith(date)).length || 0;
         return {
           date: new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
           orçamentos: count,
@@ -152,9 +152,7 @@ export default function AdminHome() {
         {/* Header */}
         <div>
           <h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do sistema Ordax
-          </p>
+          <p className="text-muted-foreground">Visão geral do sistema Ordax</p>
         </div>
 
         {/* Stats Cards */}
@@ -166,9 +164,7 @@ export default function AdminHome() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.models || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                No catálogo
-              </p>
+              <p className="text-xs text-muted-foreground">No catálogo</p>
             </CardContent>
           </Card>
 
@@ -179,9 +175,7 @@ export default function AdminHome() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.users || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Cadastrados
-              </p>
+              <p className="text-xs text-muted-foreground">Cadastrados</p>
             </CardContent>
           </Card>
 
@@ -205,9 +199,7 @@ export default function AdminHome() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.subscriptions || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Recorrentes
-              </p>
+              <p className="text-xs text-muted-foreground">Recorrentes</p>
             </CardContent>
           </Card>
         </div>
@@ -236,9 +228,7 @@ export default function AdminHome() {
               <div className="text-2xl font-bold text-green-600">
                 R$ {(stats?.preorders.total_deposits || 0).toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Pagamentos iniciais
-              </p>
+              <p className="text-xs text-muted-foreground">Pagamentos iniciais</p>
             </CardContent>
           </Card>
 
@@ -251,9 +241,7 @@ export default function AdminHome() {
               <div className="text-2xl font-bold text-orange-600">
                 R$ {(stats?.preorders.total_remaining || 0).toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Pagamentos finais
-              </p>
+              <p className="text-xs text-muted-foreground">Pagamentos finais</p>
             </CardContent>
           </Card>
         </div>
@@ -274,10 +262,10 @@ export default function AdminHome() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="orçamentos" 
-                    stroke="#3b82f6" 
+                  <Line
+                    type="monotone"
+                    dataKey="orçamentos"
+                    stroke="#3b82f6"
                     strokeWidth={2}
                     dot={{ fill: "#3b82f6" }}
                   />
@@ -328,7 +316,7 @@ export default function AdminHome() {
             </CardHeader>
             <CardContent className="space-y-3">
               {stats?.queue && stats.queue > 0 && (
-                <div 
+                <div
                   className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => navigate("/admin/esteira")}
                 >
@@ -348,7 +336,7 @@ export default function AdminHome() {
               )}
 
               {stats?.quotes.pending && stats.quotes.pending > 0 && (
-                <div 
+                <div
                   className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => navigate("/admin/orcamentos")}
                 >
@@ -368,7 +356,7 @@ export default function AdminHome() {
               )}
 
               {stats?.support && stats.support > 0 && (
-                <div 
+                <div
                   className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => navigate("/admin/suporte")}
                 >
@@ -387,15 +375,15 @@ export default function AdminHome() {
                 </div>
               )}
 
-              {(!stats?.queue || stats.queue === 0) && 
-               (!stats?.quotes.pending || stats.quotes.pending === 0) && 
-               (!stats?.support || stats.support === 0) && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500" />
-                  <p className="font-medium">Tudo em dia!</p>
-                  <p className="text-sm">Nenhuma ação urgente necessária</p>
-                </div>
-              )}
+              {(!stats?.queue || stats.queue === 0) &&
+                (!stats?.quotes.pending || stats.quotes.pending === 0) &&
+                (!stats?.support || stats.support === 0) && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500" />
+                    <p className="font-medium">Tudo em dia!</p>
+                    <p className="text-sm">Nenhuma ação urgente necessária</p>
+                  </div>
+                )}
             </CardContent>
           </Card>
 
@@ -408,56 +396,56 @@ export default function AdminHome() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => navigate("/admin/upload")}
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Massivo
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => navigate("/admin/esteira")}
               >
                 <Workflow className="h-4 w-4 mr-2" />
                 Modo Esteira
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => navigate("/admin/pre-vendas")}
               >
                 <Clock className="h-4 w-4 mr-2" />
                 Pré-vendas
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => navigate("/admin/colecoes")}
               >
                 <Layers className="h-4 w-4 mr-2" />
                 Coleções
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => navigate("/admin/cupons")}
               >
                 <Ticket className="h-4 w-4 mr-2" />
                 Cupons
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => navigate("/admin/analytics")}
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Analytics Completo
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => navigate("/admin/calculadora")}
               >
@@ -481,21 +469,29 @@ export default function AdminHome() {
                   <p className="font-medium">Catálogo</p>
                   <p className="text-sm text-muted-foreground">{stats?.models || 0} modelos</p>
                 </div>
-                <Badge variant="default" className="bg-green-500">Ativo</Badge>
+                <Badge variant="default" className="bg-green-500">
+                  Ativo
+                </Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg border">
                 <div>
                   <p className="font-medium">Coleções</p>
                   <p className="text-sm text-muted-foreground">{stats?.collections || 0} ativas</p>
                 </div>
-                <Badge variant="default" className="bg-green-500">Ativo</Badge>
+                <Badge variant="default" className="bg-green-500">
+                  Ativo
+                </Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg border">
                 <div>
                   <p className="font-medium">Assinaturas</p>
-                  <p className="text-sm text-muted-foreground">{stats?.subscriptions || 0} ativas</p>
+                  <p className="text-sm text-muted-foreground">
+                    {stats?.subscriptions || 0} ativas
+                  </p>
                 </div>
-                <Badge variant="default" className="bg-green-500">Ativo</Badge>
+                <Badge variant="default" className="bg-green-500">
+                  Ativo
+                </Badge>
               </div>
             </div>
           </CardContent>

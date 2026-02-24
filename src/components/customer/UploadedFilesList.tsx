@@ -1,7 +1,7 @@
 /**
  * UploadedFilesList - Component for displaying uploaded payment proof files
  * Requirements: 3.1-3.12
- * 
+ *
  * Features:
  * - Display all uploaded files with thumbnails for images
  * - Show file name, size, upload date
@@ -10,17 +10,11 @@
  * - Show upload status (uploading, complete, error)
  */
 
-import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   File,
   Image as ImageIcon,
@@ -29,11 +23,11 @@ import {
   CheckCircle,
   AlertCircle,
   Upload,
-  X
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { fileUploadService } from '@/lib/file-upload-service';
-import type { PaymentFile } from '@/types/manual-payment';
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { fileUploadService } from "@/lib/file-upload-service";
+import type { PaymentFile } from "@/types/manual-payment";
 
 interface UploadedFilesListProps {
   paymentId: string;
@@ -58,7 +52,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
   onFileDelete,
   showDelete = false,
   isLoading = false,
-  className
+  className,
 }) => {
   const [files, setFiles] = useState<FileWithUrl[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,7 +61,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
   // Load files if not provided via props
   useEffect(() => {
     if (propFiles) {
-      setFiles(propFiles.map(file => ({ ...file, isLoadingUrl: true })));
+      setFiles(propFiles.map((file) => ({ ...file, isLoadingUrl: true })));
       // Generate signed URLs for all files
       generateSignedUrls(propFiles);
     } else {
@@ -83,14 +77,14 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
     try {
       const loadedFiles = await fileUploadService.listByPayment(paymentId);
-      const filesWithUrls = loadedFiles.map(file => ({ ...file, isLoadingUrl: true }));
+      const filesWithUrls = loadedFiles.map((file) => ({ ...file, isLoadingUrl: true }));
       setFiles(filesWithUrls);
-      
+
       // Generate signed URLs for all files
       generateSignedUrls(loadedFiles);
     } catch (err) {
-      console.error('Failed to load files:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load files');
+      console.error("Failed to load files:", err);
+      setError(err instanceof Error ? err.message : "Failed to load files");
     } finally {
       setLoading(false);
     }
@@ -98,30 +92,26 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
   const generateSignedUrls = async (filesToProcess: PaymentFile[]) => {
     const updatedFiles = [...files];
-    
+
     for (const file of filesToProcess) {
       try {
         // Generate signed URL for the main file
         const signedUrl = await fileUploadService.getSignedUrl(file.file_path);
-        
+
         // Generate thumbnail URL if available
         let thumbnailUrl: string | undefined;
         if (file.thumbnail_path) {
           thumbnailUrl = await fileUploadService.getSignedUrl(file.thumbnail_path);
         }
 
-        setFiles(prev => prev.map(f => 
-          f.id === file.id 
-            ? { ...f, signedUrl, thumbnailUrl, isLoadingUrl: false }
-            : f
-        ));
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === file.id ? { ...f, signedUrl, thumbnailUrl, isLoadingUrl: false } : f
+          )
+        );
       } catch (err) {
         console.error(`Failed to generate URL for file ${file.id}:`, err);
-        setFiles(prev => prev.map(f => 
-          f.id === file.id 
-            ? { ...f, isLoadingUrl: false }
-            : f
-        ));
+        setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, isLoadingUrl: false } : f)));
       }
     }
   };
@@ -134,46 +124,46 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
   const handleDelete = async (fileId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!onFileDelete) return;
 
     try {
       await fileUploadService.delete(fileId);
       onFileDelete(fileId);
-      setFiles(prev => prev.filter(f => f.id !== fileId));
+      setFiles((prev) => prev.filter((f) => f.id !== fileId));
     } catch (err) {
-      console.error('Failed to delete file:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete file');
+      console.error("Failed to delete file:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete file");
     }
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    
+    if (bytes === 0) return "0 Bytes";
+
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const isImage = (fileType: string): boolean => {
-    return fileType.startsWith('image/');
+    return fileType.startsWith("image/");
   };
 
   const isPDF = (fileType: string): boolean => {
-    return fileType === 'application/pdf';
+    return fileType === "application/pdf";
   };
 
   const getFileIcon = (fileType: string) => {
@@ -222,12 +212,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
               <AlertCircle className="h-4 w-4" />
               <p className="text-sm">{error}</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={loadFiles}
-            >
+            <Button variant="outline" size="sm" className="mt-3" onClick={loadFiles}>
               Try Again
             </Button>
           </div>
@@ -262,11 +247,11 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
           <div>
             <CardTitle>Uploaded Files</CardTitle>
             <CardDescription>
-              {files.length} file{files.length !== 1 ? 's' : ''} uploaded
+              {files.length} file{files.length !== 1 ? "s" : ""} uploaded
             </CardDescription>
           </div>
           <Badge variant="outline">
-            {files.length} file{files.length !== 1 ? 's' : ''}
+            {files.length} file{files.length !== 1 ? "s" : ""}
           </Badge>
         </div>
       </CardHeader>
@@ -313,9 +298,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                         {formatFileSize(file.file_size)}
                       </p>
                       <span className="text-xs text-muted-foreground">•</span>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(file.created_at)}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{formatDate(file.created_at)}</p>
                     </div>
                   </div>
 
@@ -331,14 +314,14 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                             className="h-8 w-8"
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(file.signedUrl, '_blank');
+                              window.open(file.signedUrl, "_blank");
                             }}
                             title="View full size"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                         )}
-                        
+
                         {isPDF(file.file_type) && (
                           <Button
                             type="button"
@@ -347,7 +330,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                             className="h-8 w-8"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const link = document.createElement('a');
+                              const link = document.createElement("a");
                               link.href = file.signedUrl!;
                               link.download = file.file_name;
                               document.body.appendChild(link);
@@ -396,7 +379,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                   )}
 
                   <Badge variant="outline" className="text-xs">
-                    {isImage(file.file_type) ? 'Image' : isPDF(file.file_type) ? 'PDF' : 'File'}
+                    {isImage(file.file_type) ? "Image" : isPDF(file.file_type) ? "PDF" : "File"}
                   </Badge>
                 </div>
               </div>

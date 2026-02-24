@@ -1,8 +1,8 @@
 /**
  * CustomerSidebar Integration Example
- * 
+ *
  * This example shows how to integrate CustomerSidebar into ChatInterface
- * 
+ *
  * Requirements: 7.1, 7.2, 7.3, 7.4, 7.6, 8.2, 8.3, 8.4, 9.1, 9.2, 19.1, 19.2, 19.5, 25.3
  */
 
@@ -17,26 +17,26 @@ interface ChatWithSidebarExampleProps {
 
 /**
  * Example of how to integrate CustomerSidebar with ChatInterface
- * 
+ *
  * Usage in AdminSupportV2.tsx:
- * 
+ *
  * ```tsx
  * import { CustomerSidebar } from "@/components/admin/CustomerSidebar";
- * 
+ *
  * function AdminSupportV2() {
  *   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
  *   const [sidebarOpen, setSidebarOpen] = useState(false);
- * 
+ *
  *   return (
  *     <div className="flex h-screen">
- *       <ConversationList 
+ *       <ConversationList
  *         onSelect={setSelectedConversation}
  *       />
- *       
+ *
  *       <div className="flex-1 flex flex-col">
  *         {selectedConversation && (
  *           <>
- *             <ChatHeader 
+ *             <ChatHeader
  *               conversation={selectedConversation}
  *               actions={
  *                 <CustomerSidebar

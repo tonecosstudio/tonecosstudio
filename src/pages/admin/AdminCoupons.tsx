@@ -8,10 +8,33 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit2, Trash2, Ticket, DollarSign, Users, TrendingUp, Copy, Check } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Ticket,
+  DollarSign,
+  Users,
+  TrendingUp,
+  Copy,
+  Check,
+} from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { format } from "date-fns";
@@ -77,10 +100,17 @@ export default function AdminCoupons() {
 
       if (error) throw error;
 
-      const stats = new Map<string, { uses: number; totalDiscount: number; totalRevenue: number }>();
-      
+      const stats = new Map<
+        string,
+        { uses: number; totalDiscount: number; totalRevenue: number }
+      >();
+
       (data || []).forEach((usage: any) => {
-        const current = stats.get(usage.coupon_id) || { uses: 0, totalDiscount: 0, totalRevenue: 0 };
+        const current = stats.get(usage.coupon_id) || {
+          uses: 0,
+          totalDiscount: 0,
+          totalRevenue: 0,
+        };
         stats.set(usage.coupon_id, {
           uses: current.uses + 1,
           totalDiscount: current.totalDiscount + Number(usage.discount_applied),
@@ -98,7 +128,7 @@ export default function AdminCoupons() {
   // Estatísticas gerais
   const stats = {
     total: coupons.length,
-    active: coupons.filter(c => c.is_active).length,
+    active: coupons.filter((c) => c.is_active).length,
     totalUses: Array.from(usageStats.values()).reduce((acc, s) => acc + s.uses, 0),
     totalDiscount: Array.from(usageStats.values()).reduce((acc, s) => acc + s.totalDiscount, 0),
   };
@@ -112,20 +142,14 @@ export default function AdminCoupons() {
 
   return (
     <>
-      <SEOHead
-        title="Admin - Cupons"
-        description="Gerenciar cupons de desconto"
-        noindex={true}
-      />
+      <SEOHead title="Admin - Cupons" description="Gerenciar cupons de desconto" noindex={true} />
 
       <AdminLayout>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Cupons de Desconto</h1>
-            <p className="text-muted-foreground mt-2">
-              Crie e gerencie cupons promocionais
-            </p>
+            <p className="text-muted-foreground mt-2">Crie e gerencie cupons promocionais</p>
           </div>
           <CreateCouponDialog
             isOpen={isCreateOpen}
@@ -186,20 +210,14 @@ export default function AdminCoupons() {
         <Card>
           <CardHeader>
             <CardTitle>Cupons Cadastrados</CardTitle>
-            <CardDescription>
-              {coupons.length} cupom(ns) no sistema
-            </CardDescription>
+            <CardDescription>{coupons.length} cupom(ns) no sistema</CardDescription>
           </CardHeader>
           <CardContent>
             {coupons.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Ticket className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhum cupom cadastrado</p>
-                <Button
-                  variant="link"
-                  onClick={() => setIsCreateOpen(true)}
-                  className="mt-2"
-                >
+                <Button variant="link" onClick={() => setIsCreateOpen(true)} className="mt-2">
                   Criar primeiro cupom
                 </Button>
               </div>
@@ -267,10 +285,7 @@ function CouponCard({ coupon, usageStats, onEdit, onCopy, isCopied, onSuccess }:
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("coupons")
-        .delete()
-        .eq("id", coupon.id);
+      const { error } = await supabase.from("coupons").delete().eq("id", coupon.id);
 
       if (error) throw error;
     },
@@ -306,15 +321,8 @@ function CouponCard({ coupon, usageStats, onEdit, onCopy, isCopied, onSuccess }:
         <div className="flex-1 min-w-0">
           {/* Código e Status */}
           <div className="flex items-center gap-2 mb-2">
-            <code className="text-lg font-bold bg-primary/10 px-3 py-1 rounded">
-              {coupon.code}
-            </code>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onCopy}
-              className="h-7 w-7 p-0"
-            >
+            <code className="text-lg font-bold bg-primary/10 px-3 py-1 rounded">{coupon.code}</code>
+            <Button size="sm" variant="ghost" onClick={onCopy} className="h-7 w-7 p-0">
               {isCopied ? (
                 <Check className="h-4 w-4 text-green-500" />
               ) : (
@@ -322,13 +330,21 @@ function CouponCard({ coupon, usageStats, onEdit, onCopy, isCopied, onSuccess }:
               )}
             </Button>
             {coupon.is_active && !isExpired && !isMaxedOut ? (
-              <Badge variant="default" className="text-xs">Ativo</Badge>
+              <Badge variant="default" className="text-xs">
+                Ativo
+              </Badge>
             ) : isExpired ? (
-              <Badge variant="destructive" className="text-xs">Expirado</Badge>
+              <Badge variant="destructive" className="text-xs">
+                Expirado
+              </Badge>
             ) : isMaxedOut ? (
-              <Badge variant="secondary" className="text-xs">Esgotado</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Esgotado
+              </Badge>
             ) : (
-              <Badge variant="secondary" className="text-xs">Inativo</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Inativo
+              </Badge>
             )}
             <Badge variant="outline" className="text-xs font-bold text-green-600">
               {getDiscountText()}
@@ -337,9 +353,7 @@ function CouponCard({ coupon, usageStats, onEdit, onCopy, isCopied, onSuccess }:
 
           {/* Descrição */}
           {coupon.description && (
-            <p className="text-sm text-muted-foreground mb-3">
-              {coupon.description}
-            </p>
+            <p className="text-sm text-muted-foreground mb-3">{coupon.description}</p>
           )}
 
           {/* Informações */}
@@ -392,15 +406,11 @@ function CouponCard({ coupon, usageStats, onEdit, onCopy, isCopied, onSuccess }:
 
         {/* Ações */}
         <div className="flex gap-1 items-center">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onEdit}
-          >
+          <Button size="sm" variant="ghost" onClick={onEdit}>
             <Edit2 className="h-4 w-4" />
           </Button>
           <div className="px-2">
-            <Switch 
+            <Switch
               checked={coupon.is_active}
               onCheckedChange={() => toggleActiveMutation.mutate()}
               disabled={toggleActiveMutation.isPending}
@@ -408,11 +418,7 @@ function CouponCard({ coupon, usageStats, onEdit, onCopy, isCopied, onSuccess }:
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-              >
+              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
@@ -420,8 +426,8 @@ function CouponCard({ coupon, usageStats, onEdit, onCopy, isCopied, onSuccess }:
               <AlertDialogHeader>
                 <AlertDialogTitle>Excluir cupom?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  O cupom <strong>{coupon.code}</strong> será removido permanentemente.
-                  Esta ação não pode ser desfeita.
+                  O cupom <strong>{coupon.code}</strong> será removido permanentemente. Esta ação
+                  não pode ser desfeita.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -460,20 +466,18 @@ function CreateCouponDialog({ isOpen, onOpenChange, onSuccess }: any) {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Não autenticado");
 
-      const { error } = await supabase
-        .from("coupons")
-        .insert({
-          code: code.toUpperCase().trim(),
-          description: description.trim() || null,
-          discount_type: discountType,
-          discount_value: parseFloat(discountValue),
-          min_order_value: parseFloat(minOrderValue),
-          max_uses: maxUses ? parseInt(maxUses) : null,
-          max_uses_per_user: parseInt(maxUsesPerUser),
-          valid_until: validUntil || null,
-          is_active: isActive,
-          created_by: userData.user.id,
-        });
+      const { error } = await supabase.from("coupons").insert({
+        code: code.toUpperCase().trim(),
+        description: description.trim() || null,
+        discount_type: discountType,
+        discount_value: parseFloat(discountValue),
+        min_order_value: parseFloat(minOrderValue),
+        max_uses: maxUses ? parseInt(maxUses) : null,
+        max_uses_per_user: parseInt(maxUsesPerUser),
+        valid_until: validUntil || null,
+        is_active: isActive,
+        created_by: userData.user.id,
+      });
 
       if (error) throw error;
     },
@@ -494,12 +498,12 @@ function CreateCouponDialog({ isOpen, onOpenChange, onSuccess }: any) {
     },
     onError: (error: any) => {
       let errorMessage = error.message;
-      
+
       // Tratar erro de código duplicado
-      if (error.message?.includes('duplicate') || error.code === '23505') {
+      if (error.message?.includes("duplicate") || error.code === "23505") {
         errorMessage = `O código "${code}" já existe. Escolha outro código.`;
       }
-      
+
       toast({
         title: "Erro ao criar cupom",
         description: errorMessage,
@@ -528,9 +532,7 @@ function CreateCouponDialog({ isOpen, onOpenChange, onSuccess }: any) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Criar Novo Cupom</DialogTitle>
-          <DialogDescription>
-            Configure um cupom de desconto promocional
-          </DialogDescription>
+          <DialogDescription>Configure um cupom de desconto promocional</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -619,9 +621,7 @@ function CreateCouponDialog({ isOpen, onOpenChange, onSuccess }: any) {
                 placeholder="Ilimitado"
                 className="mt-2"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Deixe vazio para ilimitado
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Deixe vazio para ilimitado</p>
             </div>
 
             <div>
@@ -655,9 +655,7 @@ function CreateCouponDialog({ isOpen, onOpenChange, onSuccess }: any) {
           <div className="flex items-center justify-between p-4 rounded-lg border">
             <div>
               <Label>Cupom Ativo</Label>
-              <p className="text-sm text-muted-foreground">
-                Disponível para uso imediatamente
-              </p>
+              <p className="text-sm text-muted-foreground">Disponível para uso imediatamente</p>
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
@@ -803,10 +801,7 @@ function EditCouponDialog({ coupon, isOpen, onOpenChange, onSuccess }: any) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}
-          >
+          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
             {updateMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </div>

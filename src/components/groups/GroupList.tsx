@@ -1,24 +1,18 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import {
-  Users,
-  MessageSquare,
-  Clock,
-  Trash2,
-  MoreVertical,
-} from 'lucide-react';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Users, MessageSquare, Clock, Trash2, MoreVertical } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,14 +22,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 
-import { groupService } from '@/lib/services/groupService';
-import { useAuth } from '@/lib/auth';
-import { getGroupTypeLabel } from '@/types/groups';
-import type { GroupWithMetrics } from '@/types/groups';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { groupService } from "@/lib/services/groupService";
+import { useAuth } from "@/lib/auth";
+import { getGroupTypeLabel } from "@/types/groups";
+import type { GroupWithMetrics } from "@/types/groups";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface GroupListProps {
   groups: GroupWithMetrics[];
@@ -46,7 +40,7 @@ interface GroupListProps {
 
 /**
  * GroupList - Displays a grid of group cards with metrics
- * 
+ *
  * Features:
  * - Grid layout with responsive columns
  * - Group metrics (members, messages, last activity)
@@ -54,12 +48,7 @@ interface GroupListProps {
  * - Empty state
  * - Loading state
  */
-export function GroupList({
-  groups,
-  isLoading,
-  onSelectGroup,
-  onRefresh,
-}: GroupListProps) {
+export function GroupList({ groups, isLoading, onSelectGroup, onRefresh }: GroupListProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -68,16 +57,14 @@ export function GroupList({
   const deleteMutation = useMutation({
     mutationFn: (groupId: string) => groupService.deleteGroup(groupId, user!.id),
     onSuccess: () => {
-      toast.success('Grupo deletado com sucesso');
-      queryClient.invalidateQueries({ queryKey: ['admin-groups'] });
+      toast.success("Grupo deletado com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["admin-groups"] });
       setDeleteDialogOpen(false);
       setGroupToDelete(null);
       onRefresh();
     },
     onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : 'Erro ao deletar grupo'
-      );
+      toast.error(error instanceof Error ? error.message : "Erro ao deletar grupo");
     },
   });
 
@@ -94,14 +81,14 @@ export function GroupList({
   };
 
   const formatTimestamp = (timestamp: string | null) => {
-    if (!timestamp) return 'Nunca';
+    if (!timestamp) return "Nunca";
     try {
       return formatDistanceToNow(new Date(timestamp), {
         addSuffix: true,
         locale: ptBR,
       });
     } catch {
-      return 'Data inválida';
+      return "Data inválida";
     }
   };
 
@@ -152,17 +139,15 @@ export function GroupList({
           <Card
             key={group.id}
             className={cn(
-              'cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]',
-              'active:scale-[0.98]'
+              "cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]",
+              "active:scale-[0.98]"
             )}
             onClick={() => onSelectGroup(group.id)}
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg truncate mb-2">
-                    {group.name}
-                  </CardTitle>
+                  <CardTitle className="text-lg truncate mb-2">{group.name}</CardTitle>
                   <Badge variant="outline" className="font-normal">
                     {getGroupTypeLabel(group.type)}
                   </Badge>
@@ -212,9 +197,7 @@ export function GroupList({
               {/* Last activity */}
               <div className="flex items-center gap-2 pt-3 border-t text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                <span>
-                  Última mensagem: {formatTimestamp(group.last_message_at || null)}
-                </span>
+                <span>Última mensagem: {formatTimestamp(group.last_message_at || null)}</span>
               </div>
             </CardContent>
           </Card>
@@ -242,15 +225,13 @@ export function GroupList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={deleteMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Deletando...' : 'Deletar Grupo'}
+              {deleteMutation.isPending ? "Deletando..." : "Deletar Grupo"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

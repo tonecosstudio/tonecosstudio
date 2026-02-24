@@ -10,14 +10,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";
-import { 
-  CreditCard, 
-  DollarSign, 
-  CheckCircle2, 
-  Clock, 
+import {
+  CreditCard,
+  DollarSign,
+  CheckCircle2,
+  Clock,
   Package,
   ArrowRight,
-  Info
+  Info,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -26,7 +26,7 @@ export default function PreorderCheckout() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const quoteId = searchParams.get("quote");
-  
+
   const [paymentOption, setPaymentOption] = useState<"full" | "preorder">("preorder");
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
 
@@ -37,7 +37,8 @@ export default function PreorderCheckout() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quotes")
-        .select(`
+        .select(
+          `
           *,
           quote_items (
             id,
@@ -50,16 +51,17 @@ export default function PreorderCheckout() {
               image_path
             )
           )
-        `)
+        `
+        )
         .eq("id", quoteId)
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
         throw new Error("Orçamento não encontrado");
       }
-      
+
       return data;
     },
   });
@@ -75,11 +77,11 @@ export default function PreorderCheckout() {
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
         throw new Error("Configurações de pré-venda não encontradas");
       }
-      
+
       return data;
     },
   });
@@ -94,9 +96,14 @@ export default function PreorderCheckout() {
 
   // Aplicar desconto PIX (5%)
   const pixDiscount = 0.05;
-  const finalAmount = paymentOption === "full" 
-    ? (paymentMethod === "pix" ? totalAmount * (1 - pixDiscount) : totalAmount)
-    : (paymentMethod === "pix" ? depositAmount * (1 - pixDiscount) : depositAmount);
+  const finalAmount =
+    paymentOption === "full"
+      ? paymentMethod === "pix"
+        ? totalAmount * (1 - pixDiscount)
+        : totalAmount
+      : paymentMethod === "pix"
+        ? depositAmount * (1 - pixDiscount)
+        : depositAmount;
 
   // Mutation: Processar pagamento (Sistema PLE - Pagamento Link Externo)
   const processPaymentMutation = useMutation({
@@ -142,20 +149,18 @@ export default function PreorderCheckout() {
       if (paymentError) throw paymentError;
 
       // 3. Criar conversa de suporte
-      const { error: conversationError } = await supabase
-        .from("support_conversations")
-        .insert({
-          user_id: userData.user.id,
-          subject: `Pagamento - Orçamento #${quoteId?.slice(0, 8)}`,
-          status: "open",
-          priority: "high",
-          metadata: {
-            payment_id: payment.id,
-            quote_id: quoteId,
-            payment_type: paymentOption,
-            amount: finalAmount,
-          },
-        });
+      const { error: conversationError } = await supabase.from("support_conversations").insert({
+        user_id: userData.user.id,
+        subject: `Pagamento - Orçamento #${quoteId?.slice(0, 8)}`,
+        status: "open",
+        priority: "high",
+        metadata: {
+          payment_id: payment.id,
+          quote_id: quoteId,
+          payment_type: paymentOption,
+          amount: finalAmount,
+        },
+      });
 
       if (conversationError) throw conversationError;
 
@@ -206,29 +211,24 @@ export default function PreorderCheckout() {
 
   return (
     <>
-      <SEOHead
-        title="Finalizar Pedido - Pré-venda"
-        description="Escolha como pagar seu pedido"
-      />
+      <SEOHead title="Finalizar Pedido - Pré-venda" description="Escolha como pagar seu pedido" />
 
       <AppShell>
         <div className="container py-12 max-w-5xl">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Finalizar Pedido</h1>
-            <p className="text-muted-foreground">
-              Escolha a melhor forma de pagamento para você
-            </p>
+            <p className="text-muted-foreground">Escolha a melhor forma de pagamento para você</p>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
             {/* Opções de Pagamento */}
             <div className="space-y-6">
               {/* Opção: Pré-venda */}
-              <Card 
+              <Card
                 className={`cursor-pointer transition-all ${
-                  paymentOption === "preorder" 
-                    ? "border-primary shadow-lg" 
+                  paymentOption === "preorder"
+                    ? "border-primary shadow-lg"
                     : "hover:border-primary/50"
                 }`}
                 onClick={() => setPaymentOption("preorder")}
@@ -249,7 +249,10 @@ export default function PreorderCheckout() {
                         </CardDescription>
                       </div>
                     </div>
-                    <RadioGroup value={paymentOption} onValueChange={(v: any) => setPaymentOption(v)}>
+                    <RadioGroup
+                      value={paymentOption}
+                      onValueChange={(v: any) => setPaymentOption(v)}
+                    >
                       <RadioGroupItem value="preorder" />
                     </RadioGroup>
                   </div>
@@ -266,9 +269,7 @@ export default function PreorderCheckout() {
                       </div>
                       <div className="p-4 rounded-lg bg-muted">
                         <p className="text-sm text-muted-foreground mb-1">Pagar Depois</p>
-                        <p className="text-2xl font-bold">
-                          R$ {remainingAmount.toFixed(2)}
-                        </p>
+                        <p className="text-2xl font-bold">R$ {remainingAmount.toFixed(2)}</p>
                       </div>
                     </div>
 
@@ -278,7 +279,10 @@ export default function PreorderCheckout() {
                       <div className="space-y-2 text-sm text-muted-foreground">
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span>Você paga <strong>R$ {depositAmount.toFixed(2)}</strong> agora para reservar</span>
+                          <span>
+                            Você paga <strong>R$ {depositAmount.toFixed(2)}</strong> agora para
+                            reservar
+                          </span>
                         </div>
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -290,7 +294,10 @@ export default function PreorderCheckout() {
                         </div>
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span>Quando pronto, você paga os <strong>R$ {remainingAmount.toFixed(2)}</strong> restantes</span>
+                          <span>
+                            Quando pronto, você paga os{" "}
+                            <strong>R$ {remainingAmount.toFixed(2)}</strong> restantes
+                          </span>
                         </div>
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -303,7 +310,8 @@ export default function PreorderCheckout() {
                     <Alert>
                       <Info className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Vantagens:</strong> Menor investimento inicial, só paga o restante quando ver o produto pronto, sem risco.
+                        <strong>Vantagens:</strong> Menor investimento inicial, só paga o restante
+                        quando ver o produto pronto, sem risco.
                       </AlertDescription>
                     </Alert>
                   </div>
@@ -311,11 +319,9 @@ export default function PreorderCheckout() {
               </Card>
 
               {/* Opção: Pagamento Completo */}
-              <Card 
+              <Card
                 className={`cursor-pointer transition-all ${
-                  paymentOption === "full" 
-                    ? "border-primary shadow-lg" 
-                    : "hover:border-primary/50"
+                  paymentOption === "full" ? "border-primary shadow-lg" : "hover:border-primary/50"
                 }`}
                 onClick={() => setPaymentOption("full")}
               >
@@ -327,12 +333,13 @@ export default function PreorderCheckout() {
                       </div>
                       <div>
                         <CardTitle>Pagamento Completo</CardTitle>
-                        <CardDescription>
-                          Pague tudo agora e ganhe desconto no PIX
-                        </CardDescription>
+                        <CardDescription>Pague tudo agora e ganhe desconto no PIX</CardDescription>
                       </div>
                     </div>
-                    <RadioGroup value={paymentOption} onValueChange={(v: any) => setPaymentOption(v)}>
+                    <RadioGroup
+                      value={paymentOption}
+                      onValueChange={(v: any) => setPaymentOption(v)}
+                    >
                       <RadioGroupItem value="full" />
                     </RadioGroup>
                   </div>
@@ -383,8 +390,8 @@ export default function PreorderCheckout() {
                       <Label
                         htmlFor="pix"
                         className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
-                          paymentMethod === "pix" 
-                            ? "border-primary bg-primary/5" 
+                          paymentMethod === "pix"
+                            ? "border-primary bg-primary/5"
                             : "hover:border-primary/50"
                         }`}
                       >
@@ -392,9 +399,7 @@ export default function PreorderCheckout() {
                           <RadioGroupItem value="pix" id="pix" />
                           <div>
                             <p className="font-medium">PIX</p>
-                            <p className="text-sm text-muted-foreground">
-                              Aprovação instantânea
-                            </p>
+                            <p className="text-sm text-muted-foreground">Aprovação instantânea</p>
                           </div>
                         </div>
                         <Badge variant="default">5% OFF</Badge>
@@ -403,8 +408,8 @@ export default function PreorderCheckout() {
                       <Label
                         htmlFor="credit_card"
                         className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
-                          paymentMethod === "credit_card" 
-                            ? "border-primary bg-primary/5" 
+                          paymentMethod === "credit_card"
+                            ? "border-primary bg-primary/5"
                             : "hover:border-primary/50"
                         }`}
                       >
@@ -443,9 +448,7 @@ export default function PreorderCheckout() {
                           />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm line-clamp-2">
-                            {item.models?.name}
-                          </p>
+                          <p className="font-medium text-sm line-clamp-2">{item.models?.name}</p>
                           <p className="text-xs text-muted-foreground">
                             Escala {item.scale} • Qtd: {item.quantity}
                           </p>
@@ -476,7 +479,9 @@ export default function PreorderCheckout() {
                     {paymentMethod === "pix" && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Desconto PIX (5%)</span>
-                        <span>- R$ {(finalAmount * pixDiscount / (1 - pixDiscount)).toFixed(2)}</span>
+                        <span>
+                          - R$ {((finalAmount * pixDiscount) / (1 - pixDiscount)).toFixed(2)}
+                        </span>
                       </div>
                     )}
 

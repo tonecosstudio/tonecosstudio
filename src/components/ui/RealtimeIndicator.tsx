@@ -1,15 +1,15 @@
 /**
  * RealtimeIndicator Component
- * 
+ *
  * Componente para mostrar indicadores visuais de atualizações em tempo real
- * 
+ *
  * Requirements: 16.8 (Mostrar indicador visual quando atualizações recebidas)
  */
 
-import React, { useState, useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { Wifi, WifiOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Wifi, WifiOff, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 
 export interface RealtimeIndicatorProps {
   /** Estado da conexão */
@@ -25,9 +25,9 @@ export interface RealtimeIndicatorProps {
   /** Contagem de atualizações novas */
   newUpdateCount?: number;
   /** Tamanho do indicador */
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   /** Posição do indicador */
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
   /** Se deve mostrar sempre ou apenas em hover */
   showAlways?: boolean;
   /** Classe CSS adicional */
@@ -38,7 +38,7 @@ export interface RealtimeIndicatorProps {
 
 /**
  * Componente RealtimeIndicator
- * 
+ *
  * Exibe indicadores visuais para o estado de conexão em tempo real
  * e notifica sobre novas atualizações recebidas.
  */
@@ -49,8 +49,8 @@ export function RealtimeIndicator({
   errorMessage,
   hasNewUpdates = false,
   newUpdateCount = 0,
-  size = 'md',
-  position = 'top-right',
+  size = "md",
+  position = "top-right",
   showAlways = false,
   className,
   onReconnect,
@@ -69,25 +69,25 @@ export function RealtimeIndicator({
 
   // Tamanhos
   const sizeClasses = {
-    sm: 'text-xs px-2 py-1',
-    md: 'text-sm px-3 py-1.5',
-    lg: 'text-base px-4 py-2',
+    sm: "text-xs px-2 py-1",
+    md: "text-sm px-3 py-1.5",
+    lg: "text-base px-4 py-2",
   };
 
   // Posições
   const positionClasses = {
-    'top-right': 'top-4 right-4',
-    'top-left': 'top-4 left-4',
-    'bottom-right': 'bottom-4 right-4',
-    'bottom-left': 'bottom-4 left-4',
+    "top-right": "top-4 right-4",
+    "top-left": "top-4 left-4",
+    "bottom-right": "bottom-4 right-4",
+    "bottom-left": "bottom-4 left-4",
   };
 
   // Cores baseadas no estado
   const getVariant = () => {
-    if (hasError) return 'destructive';
-    if (isReconnecting) return 'secondary';
-    if (isConnected) return 'default';
-    return 'outline';
+    if (hasError) return "destructive";
+    if (isReconnecting) return "secondary";
+    if (isConnected) return "default";
+    return "outline";
   };
 
   // Ícone baseado no estado
@@ -100,10 +100,10 @@ export function RealtimeIndicator({
 
   // Texto baseado no estado
   const getText = () => {
-    if (hasError) return 'Erro de conexão';
-    if (isReconnecting) return 'Reconectando...';
-    if (isConnected) return 'Conectado';
-    return 'Desconectado';
+    if (hasError) return "Erro de conexão";
+    if (isReconnecting) return "Reconectando...";
+    if (isConnected) return "Conectado";
+    return "Desconectado";
   };
 
   // Badge de novas atualizações
@@ -111,30 +111,30 @@ export function RealtimeIndicator({
     <Badge
       variant="default"
       className={cn(
-        'absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center p-0',
-        pulse && 'animate-pulse'
+        "absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center p-0",
+        pulse && "animate-pulse"
       )}
     >
-      {newUpdateCount > 99 ? '99+' : newUpdateCount}
+      {newUpdateCount > 99 ? "99+" : newUpdateCount}
     </Badge>
   );
 
   return (
-    <div className={cn('fixed z-50', positionClasses[position], className)}>
+    <div className={cn("fixed z-50", positionClasses[position], className)}>
       <div className="relative">
         <Badge
           variant={getVariant()}
           className={cn(
             sizeClasses[size],
-            'flex items-center gap-2 cursor-pointer transition-all duration-200',
-            !showAlways && 'opacity-70 hover:opacity-100',
-            pulse && 'ring-2 ring-primary ring-offset-2'
+            "flex items-center gap-2 cursor-pointer transition-all duration-200",
+            !showAlways && "opacity-70 hover:opacity-100",
+            pulse && "ring-2 ring-primary ring-offset-2"
           )}
           onClick={() => setShowDetails(!showDetails)}
         >
           {getIcon()}
           <span className="hidden sm:inline">{getText()}</span>
-          
+
           {onReconnect && (hasError || !isConnected) && (
             <button
               onClick={(e) => {
@@ -172,14 +172,16 @@ export function RealtimeIndicator({
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <span>
-                    {newUpdateCount} nova{newUpdateCount !== 1 ? 's' : ''} atualizaç
-                    {newUpdateCount !== 1 ? 'ões' : 'ão'} recebida{newUpdateCount !== 1 ? 's' : ''}
+                    {newUpdateCount} nova{newUpdateCount !== 1 ? "s" : ""} atualizaç
+                    {newUpdateCount !== 1 ? "ões" : "ão"} recebida{newUpdateCount !== 1 ? "s" : ""}
                   </span>
                 </div>
               )}
 
               <div className="text-xs text-muted-foreground">
-                <p>As atualizações em tempo real mantêm a interface sincronizada automaticamente.</p>
+                <p>
+                  As atualizações em tempo real mantêm a interface sincronizada automaticamente.
+                </p>
                 <p className="mt-1">Clique fora para fechar este painel.</p>
               </div>
             </div>
@@ -188,12 +190,7 @@ export function RealtimeIndicator({
       </div>
 
       {/* Overlay para fechar ao clicar fora */}
-      {showDetails && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowDetails(false)}
-        />
-      )}
+      {showDetails && <div className="fixed inset-0 z-40" onClick={() => setShowDetails(false)} />}
     </div>
   );
 }
@@ -207,9 +204,9 @@ export function useRealtimeIndicator() {
   const [hasNewUpdates, setHasNewUpdates] = useState(false);
 
   const incrementUpdateCount = () => {
-    setNewUpdateCount(prev => prev + 1);
+    setNewUpdateCount((prev) => prev + 1);
     setHasNewUpdates(true);
-    
+
     // Reset após 5 segundos
     setTimeout(() => {
       setHasNewUpdates(false);

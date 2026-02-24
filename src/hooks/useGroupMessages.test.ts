@@ -91,9 +91,7 @@ describe("useGroupMessages", () => {
   });
 
   it("should load messages on mount", async () => {
-    const { result } = renderHook(() =>
-      useGroupMessages({ groupId: "group-1" })
-    );
+    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 
     expect(result.current.loading).toBe(true);
 
@@ -101,20 +99,17 @@ describe("useGroupMessages", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(messageService.listGroupMessages).toHaveBeenCalledWith(
-      "group-1",
-      mockUser.id,
-      { page: 1, limit: 50 }
-    );
+    expect(messageService.listGroupMessages).toHaveBeenCalledWith("group-1", mockUser.id, {
+      page: 1,
+      limit: 50,
+    });
 
     expect(result.current.messages).toHaveLength(2);
     expect(result.current.messages[0].id).toBe("msg-1");
   });
 
   it("should not load messages when groupId is null", async () => {
-    const { result } = renderHook(() =>
-      useGroupMessages({ groupId: null })
-    );
+    const { result } = renderHook(() => useGroupMessages({ groupId: null }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -128,10 +123,7 @@ describe("useGroupMessages", () => {
     renderHook(() => useGroupMessages({ groupId: "group-1" }));
 
     await waitFor(() => {
-      expect(messageService.updateLastViewed).toHaveBeenCalledWith(
-        "group-1",
-        mockUser.id
-      );
+      expect(messageService.updateLastViewed).toHaveBeenCalledWith("group-1", mockUser.id);
     });
   });
 
@@ -146,9 +138,7 @@ describe("useGroupMessages", () => {
       },
     });
 
-    const { result } = renderHook(() =>
-      useGroupMessages({ groupId: "group-1" })
-    );
+    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -170,9 +160,7 @@ describe("useGroupMessages", () => {
       },
     });
 
-    const { result } = renderHook(() =>
-      useGroupMessages({ groupId: "group-1" })
-    );
+    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -182,13 +170,9 @@ describe("useGroupMessages", () => {
   });
 
   it("should handle errors gracefully", async () => {
-    vi.mocked(messageService.listGroupMessages).mockRejectedValue(
-      new Error("Network error")
-    );
+    vi.mocked(messageService.listGroupMessages).mockRejectedValue(new Error("Network error"));
 
-    const { result } = renderHook(() =>
-      useGroupMessages({ groupId: "group-1" })
-    );
+    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -199,9 +183,7 @@ describe("useGroupMessages", () => {
   });
 
   it("should provide refresh function", async () => {
-    const { result } = renderHook(() =>
-      useGroupMessages({ groupId: "group-1" })
-    );
+    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -213,11 +195,10 @@ describe("useGroupMessages", () => {
     result.current.refresh();
 
     await waitFor(() => {
-      expect(messageService.listGroupMessages).toHaveBeenCalledWith(
-        "group-1",
-        mockUser.id,
-        { page: 1, limit: 50 }
-      );
+      expect(messageService.listGroupMessages).toHaveBeenCalledWith("group-1", mockUser.id, {
+        page: 1,
+        limit: 50,
+      });
     });
   });
 
@@ -236,17 +217,15 @@ describe("useGroupMessages", () => {
 
     vi.mocked(supabase.from).mockImplementation(mockFrom as any);
 
-    const { result } = renderHook(() =>
-      useGroupMessages({ groupId: "group-1" })
-    );
+    const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
     // Try to send message as non-admin
-    await expect(
-      result.current.sendMessage("Test message")
-    ).rejects.toThrow("Apenas administradores podem enviar mensagens");
+    await expect(result.current.sendMessage("Test message")).rejects.toThrow(
+      "Apenas administradores podem enviar mensagens"
+    );
   });
 });

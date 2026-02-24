@@ -11,28 +11,31 @@ Este guia documenta os hooks de realtime implementados para o sistema de pagamen
 **Propósito:** Assinar mudanças na tabela `manual_payments`.
 
 **Importação:**
+
 ```typescript
-import { usePaymentRealtime } from '@/hooks/use-realtime';
+import { usePaymentRealtime } from "@/hooks/use-realtime";
 ```
 
 **Uso Básico:**
+
 ```typescript
 const { isConnected, isReconnecting, error, disconnect, reconnect } = usePaymentRealtime({
-  paymentId: 'payment-id', // Opcional: filtrar por ID específico
-  userId: 'user-id',       // Opcional: filtrar por usuário
-  status: 'pending',       // Opcional: filtrar por status
-  events: ['INSERT', 'UPDATE', 'DELETE'], // Eventos para assinar
+  paymentId: "payment-id", // Opcional: filtrar por ID específico
+  userId: "user-id", // Opcional: filtrar por usuário
+  status: "pending", // Opcional: filtrar por status
+  events: ["INSERT", "UPDATE", "DELETE"], // Eventos para assinar
   onPaymentChange: (payload) => {
-    console.log('Mudança recebida:', payload.event, payload.new);
+    console.log("Mudança recebida:", payload.event, payload.new);
   },
 });
 ```
 
 **Opções:**
+
 - `paymentId`: ID do pagamento específico
 - `userId`: ID do usuário para filtrar
 - `status`: Status ou array de status para filtrar
-- `events`: Eventos para assinar (INSERT, UPDATE, DELETE, *)
+- `events`: Eventos para assinar (INSERT, UPDATE, DELETE, \*)
 - `reconnectionConfig`: Configuração personalizada de reconexão
 - `onPaymentChange`: Callback quando há mudança
 - `onConnected`: Callback quando conectado
@@ -43,23 +46,25 @@ const { isConnected, isReconnecting, error, disconnect, reconnect } = usePayment
 **Propósito:** Assinar mudanças nas tabelas `support_messages` e `support_conversations`.
 
 **Importação:**
+
 ```typescript
-import { useConversationRealtime } from '@/hooks/use-realtime';
+import { useConversationRealtime } from "@/hooks/use-realtime";
 ```
 
 **Uso Básico:**
+
 ```typescript
 const { isConnected, isReconnecting, error } = useConversationRealtime({
-  conversationId: 'conv-id', // Opcional: filtrar por conversa
-  userId: 'user-id',         // Opcional: filtrar por usuário
-  paymentId: 'payment-id',   // Opcional: filtrar por pagamento
+  conversationId: "conv-id", // Opcional: filtrar por conversa
+  userId: "user-id", // Opcional: filtrar por usuário
+  paymentId: "payment-id", // Opcional: filtrar por pagamento
   subscribeToMessages: true, // Assinar mensagens (padrão)
   subscribeToConversations: false, // Assinar conversas
   onNewMessage: (message) => {
-    console.log('Nova mensagem:', message);
+    console.log("Nova mensagem:", message);
   },
   onMessageUpdate: (message, oldMessage) => {
-    console.log('Mensagem atualizada:', message);
+    console.log("Mensagem atualizada:", message);
   },
 });
 ```
@@ -67,49 +72,44 @@ const { isConnected, isReconnecting, error } = useConversationRealtime({
 ### 3. Hooks Especializados
 
 #### `usePaymentStatusRealtime`
+
 Assina apenas mudanças de status de um pagamento específico.
 
 ```typescript
-const { isConnected } = usePaymentStatusRealtime(
-  'payment-id',
-  (newStatus, oldStatus, payment) => {
-    console.log(`Status mudou: ${oldStatus} → ${newStatus}`);
-  }
-);
+const { isConnected } = usePaymentStatusRealtime("payment-id", (newStatus, oldStatus, payment) => {
+  console.log(`Status mudou: ${oldStatus} → ${newStatus}`);
+});
 ```
 
 #### `useNewPaymentsRealtime`
+
 Assina apenas novos pagamentos de um usuário.
 
 ```typescript
-const { isConnected } = useNewPaymentsRealtime(
-  'user-id',
-  (payment) => {
-    console.log('Novo pagamento:', payment);
-  }
-);
+const { isConnected } = useNewPaymentsRealtime("user-id", (payment) => {
+  console.log("Novo pagamento:", payment);
+});
 ```
 
 #### `useConversationMessagesRealtime`
+
 Assina apenas novas mensagens de uma conversa.
 
 ```typescript
-const { isConnected } = useConversationMessagesRealtime(
-  'conversation-id',
-  (message) => {
-    console.log('Nova mensagem:', message);
-  }
-);
+const { isConnected } = useConversationMessagesRealtime("conversation-id", (message) => {
+  console.log("Nova mensagem:", message);
+});
 ```
 
 #### `useMessageReadRealtime`
+
 Assina quando mensagens são marcadas como lidas.
 
 ```typescript
 const { isConnected } = useMessageReadRealtime(
-  'conversation-id',
+  "conversation-id",
   (message, wasReadByCustomer, wasReadByAdmin) => {
-    console.log('Mensagem lida:', message.id);
+    console.log("Mensagem lida:", message.id);
   }
 );
 ```
@@ -117,53 +117,74 @@ const { isConnected } = useMessageReadRealtime(
 ### 4. Hooks Combinados
 
 #### `usePaymentSystemRealtime`
+
 Combina assinaturas de pagamento e conversa.
 
 ```typescript
-const {
-  isConnected,
-  paymentConnected,
-  conversationConnected,
-  disconnectAll,
-  reconnectAll,
-} = usePaymentSystemRealtime({
-  paymentOptions: { /* opções de pagamento */ },
-  conversationOptions: { /* opções de conversa */ },
-});
+const { isConnected, paymentConnected, conversationConnected, disconnectAll, reconnectAll } =
+  usePaymentSystemRealtime({
+    paymentOptions: {
+      /* opções de pagamento */
+    },
+    conversationOptions: {
+      /* opções de conversa */
+    },
+  });
 ```
 
 #### `usePaymentWithConversationRealtime`
+
 Assina um pagamento específico e sua conversa associada.
 
 ```typescript
 const { isConnected } = usePaymentWithConversationRealtime(
-  'payment-id',
-  (payment, oldPayment) => { /* pagamento atualizado */ },
-  (conversation) => { /* conversa atualizada */ },
-  (message) => { /* nova mensagem */ }
+  "payment-id",
+  (payment, oldPayment) => {
+    /* pagamento atualizado */
+  },
+  (conversation) => {
+    /* conversa atualizada */
+  },
+  (message) => {
+    /* nova mensagem */
+  }
 );
 ```
 
 #### `useUserPaymentsRealtime`
+
 Assina todos os pagamentos e conversas de um usuário.
 
 ```typescript
 const { isConnected } = useUserPaymentsRealtime(
-  'user-id',
-  (payment) => { /* novo pagamento */ },
-  (paymentId, newStatus, oldStatus) => { /* status mudou */ },
-  (message) => { /* nova mensagem */ }
+  "user-id",
+  (payment) => {
+    /* novo pagamento */
+  },
+  (paymentId, newStatus, oldStatus) => {
+    /* status mudou */
+  },
+  (message) => {
+    /* nova mensagem */
+  }
 );
 ```
 
 #### `useAdminDashboardRealtime`
+
 Assina todos os pagamentos pendentes e novas mensagens (para dashboard admin).
 
 ```typescript
 const { isConnected } = useAdminDashboardRealtime(
-  (payment) => { /* novo pagamento */ },
-  (paymentId, newStatus, oldStatus) => { /* status mudou */ },
-  (message) => { /* nova mensagem */ }
+  (payment) => {
+    /* novo pagamento */
+  },
+  (paymentId, newStatus, oldStatus) => {
+    /* status mudou */
+  },
+  (message) => {
+    /* nova mensagem */
+  }
 );
 ```
 
@@ -172,6 +193,7 @@ const { isConnected } = useAdminDashboardRealtime(
 Os hooks implementam backoff exponencial para reconexão automática:
 
 **Configuração Padrão:**
+
 ```typescript
 {
   maxRetries: 10,      // Máximo de tentativas
@@ -182,6 +204,7 @@ Os hooks implementam backoff exponencial para reconexão automática:
 ```
 
 **Configuração Personalizada:**
+
 ```typescript
 usePaymentRealtime({
   reconnectionConfig: {
@@ -201,7 +224,7 @@ Os hooks fornecem informações detalhadas de erro:
 const { error, isConnected, isReconnecting } = usePaymentRealtime();
 
 if (error) {
-  console.error('Erro de conexão:', error.message);
+  console.error("Erro de conexão:", error.message);
 }
 
 if (isReconnecting) {
@@ -212,16 +235,19 @@ if (isReconnecting) {
 ## Boas Práticas
 
 ### 1. Otimização de Performance
+
 - Use filtros específicos (`paymentId`, `userId`, `status`) para reduzir tráfego
 - Assine apenas os eventos necessários (`events` option)
 - Desconecte quando o componente não estiver visível
 
 ### 2. Gerenciamento de Estado
+
 - Use callbacks para atualizar estado local
 - Implemente debounce para atualizações frequentes
 - Limpe assinaturas no cleanup do useEffect
 
 ### 3. Experiência do Usuário
+
 - Mostre indicadores de conexão/desconexão
 - Forneça botão de reconexão manual
 - Cache dados locais para fallback offline
@@ -229,6 +255,7 @@ if (isReconnecting) {
 ## Exemplos de Casos de Uso
 
 ### Dashboard Admin
+
 ```typescript
 function AdminDashboard() {
   const { isConnected } = useAdminDashboardRealtime(
@@ -250,6 +277,7 @@ function AdminDashboard() {
 ```
 
 ### Detalhes do Pagamento (Cliente)
+
 ```typescript
 function CustomerPaymentDetails({ paymentId }) {
   const [payment, setPayment] = useState(null);
@@ -270,6 +298,7 @@ function CustomerPaymentDetails({ paymentId }) {
 ```
 
 ### Chat de Suporte
+
 ```typescript
 function SupportChat({ conversationId }) {
   const [messages, setMessages] = useState([]);
@@ -292,21 +321,22 @@ function SupportChat({ conversationId }) {
 ## Integração com Componentes Existentes
 
 ### Atualizar `CustomerPaymentDetails`
+
 ```typescript
 // No componente CustomerPaymentDetails.tsx
-import { usePaymentStatusRealtime } from '@/hooks/use-realtime';
+import { usePaymentStatusRealtime } from "@/hooks/use-realtime";
 
 function CustomerPaymentDetails({ paymentId }) {
   // Hook existente para buscar dados
   const { data: payment, isLoading } = useQuery({
-    queryKey: ['payment', paymentId],
+    queryKey: ["payment", paymentId],
     queryFn: () => getPaymentById(paymentId),
   });
 
   // Hook de realtime para atualizações
   usePaymentStatusRealtime(paymentId, (newStatus, oldStatus, updatedPayment) => {
     // Atualizar dados locais ou invalidar query
-    queryClient.setQueryData(['payment', paymentId], updatedPayment);
+    queryClient.setQueryData(["payment", paymentId], updatedPayment);
   });
 
   // Resto do componente...
@@ -314,9 +344,10 @@ function CustomerPaymentDetails({ paymentId }) {
 ```
 
 ### Atualizar Dashboard Admin
+
 ```typescript
 // No componente PaymentDashboard
-import { useAdminDashboardRealtime } from '@/hooks/use-realtime';
+import { useAdminDashboardRealtime } from "@/hooks/use-realtime";
 
 function PaymentDashboard() {
   const queryClient = useQueryClient();
@@ -324,15 +355,14 @@ function PaymentDashboard() {
   useAdminDashboardRealtime(
     (newPayment) => {
       // Adicionar à lista otimisticamente
-      queryClient.setQueryData(['payments', 'pending'], (old: any) => 
-        [newPayment, ...(old || [])]
-      );
+      queryClient.setQueryData(["payments", "pending"], (old: any) => [newPayment, ...(old || [])]);
     },
     (paymentId, newStatus, oldStatus) => {
       // Remover da lista se aprovado/rejeitado
-      if (newStatus === 'approved' || newStatus === 'rejected') {
-        queryClient.setQueryData(['payments', 'pending'], (old: any) =>
-          old?.filter(p => p.id !== paymentId) || []
+      if (newStatus === "approved" || newStatus === "rejected") {
+        queryClient.setQueryData(
+          ["payments", "pending"],
+          (old: any) => old?.filter((p) => p.id !== paymentId) || []
         );
       }
     }
@@ -355,16 +385,19 @@ npm test -- use-conversation-realtime.test.ts
 ## Solução de Problemas
 
 ### Conexão Não Estabelecida
+
 1. Verifique se o Supabase Realtime está habilitado
 2. Confirme permissões RLS para as tabelas
 3. Verifique filtros muito restritivos
 
 ### Reconexão Excessiva
+
 1. Ajuste `reconnectionConfig.maxRetries`
 2. Verifique estabilidade da rede
 3. Considere aumentar `baseDelayMs`
 
 ### Performance
+
 1. Use filtros específicos
 2. Limite número de assinaturas simultâneas
 3. Implemente debounce em callbacks frequentes

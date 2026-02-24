@@ -117,12 +117,12 @@ ordax/
 
 ## 📊 Comparação Numérica
 
-| Categoria | Antes | Depois | Redução |
-|-----------|-------|--------|---------|
-| **Arquivos .md na raiz** | 177 | 9 | **95%** ⬇️ |
-| **Arquivos .sql na raiz** | 110 | 0 | **100%** ⬇️ |
-| **Arquivos .bat na raiz** | 76 | 0 | **100%** ⬇️ |
-| **Total na raiz** | 363 | 9 | **97.5%** ⬇️ |
+| Categoria                 | Antes | Depois | Redução      |
+| ------------------------- | ----- | ------ | ------------ |
+| **Arquivos .md na raiz**  | 177   | 9      | **95%** ⬇️   |
+| **Arquivos .sql na raiz** | 110   | 0      | **100%** ⬇️  |
+| **Arquivos .bat na raiz** | 76    | 0      | **100%** ⬇️  |
+| **Total na raiz**         | 363   | 9      | **97.5%** ⬇️ |
 
 ---
 
@@ -262,47 +262,50 @@ OU
 
 ### Tempo de Busca
 
-| Tarefa | Antes | Depois | Melhoria |
-|--------|-------|--------|----------|
-| Encontrar doc de feature | 15 min | 30 seg | **97%** ⬆️ |
-| Encontrar script | 10 min | 1 min | **90%** ⬆️ |
-| Entender arquitetura | 2 horas | 20 min | **83%** ⬆️ |
-| Setup inicial | 4 horas | 30 min | **87%** ⬆️ |
+| Tarefa                   | Antes   | Depois | Melhoria   |
+| ------------------------ | ------- | ------ | ---------- |
+| Encontrar doc de feature | 15 min  | 30 seg | **97%** ⬆️ |
+| Encontrar script         | 10 min  | 1 min  | **90%** ⬆️ |
+| Entender arquitetura     | 2 horas | 20 min | **83%** ⬆️ |
+| Setup inicial            | 4 horas | 30 min | **87%** ⬆️ |
 
 ### Produtividade
 
-| Métrica | Antes | Depois | Melhoria |
-|---------|-------|--------|----------|
-| Onboarding | 1 semana | 1 dia | **85%** ⬆️ |
-| Perguntas/dia | 10-15 | 1-2 | **87%** ⬇️ |
-| Tempo em docs | 2h/dia | 15min/dia | **87%** ⬇️ |
-| Satisfação | 3/10 | 9/10 | **200%** ⬆️ |
+| Métrica       | Antes    | Depois    | Melhoria    |
+| ------------- | -------- | --------- | ----------- |
+| Onboarding    | 1 semana | 1 dia     | **85%** ⬆️  |
+| Perguntas/dia | 10-15    | 1-2       | **87%** ⬇️  |
+| Tempo em docs | 2h/dia   | 15min/dia | **87%** ⬇️  |
+| Satisfação    | 3/10     | 9/10      | **200%** ⬆️ |
 
 ### Qualidade
 
-| Aspecto | Antes | Depois |
-|---------|-------|--------|
-| Documentação atualizada | ❌ 30% | ✅ 100% |
-| Informação duplicada | ❌ Muita | ✅ Zero |
-| Navegação clara | ❌ Não | ✅ Sim |
-| Padrão consistente | ❌ Não | ✅ Sim |
-| Exemplos práticos | ❌ Poucos | ✅ Todos |
+| Aspecto                 | Antes     | Depois   |
+| ----------------------- | --------- | -------- |
+| Documentação atualizada | ❌ 30%    | ✅ 100%  |
+| Informação duplicada    | ❌ Muita  | ✅ Zero  |
+| Navegação clara         | ❌ Não    | ✅ Sim   |
+| Padrão consistente      | ❌ Não    | ✅ Sim   |
+| Exemplos práticos       | ❌ Poucos | ✅ Todos |
 
 ---
 
 ## 🎯 ROI (Return on Investment)
 
 ### Investimento
+
 - **Tempo**: 9 horas
 - **Custo**: 1 dia de trabalho
 
 ### Retorno Anual
+
 - **Onboarding**: 4 novos devs × 4 dias economizados = **16 dias**
 - **Busca diária**: 5 devs × 1.5h/dia × 250 dias = **1,875 horas** (234 dias)
 - **Manutenção**: 1.5h/semana × 52 semanas = **78 horas** (10 dias)
 - **Total economizado**: **260 dias/ano**
 
 ### ROI
+
 ```
 ROI = (Ganho - Investimento) / Investimento × 100
 ROI = (260 - 1) / 1 × 100
@@ -314,6 +317,7 @@ ROI = 25,900%
 ## 🎉 Conclusão Visual
 
 ### ANTES 😰
+
 ```
 📁 ordax/
 ├── 📄 (363 arquivos desorganizados)
@@ -324,6 +328,7 @@ ROI = 25,900%
 ```
 
 ### DEPOIS 😊
+
 ```
 📁 ordax/
 ├── 📄 README.md (claro e atualizado)
@@ -337,16 +342,16 @@ ROI = 25,900%
 
 ## 📊 Resumo em Números
 
-| Métrica | Valor |
-|---------|-------|
-| **Arquivos reorganizados** | 363 |
-| **Redução na raiz** | 97.5% |
-| **Documentos criados** | 26 |
+| Métrica                     | Valor   |
+| --------------------------- | ------- |
+| **Arquivos reorganizados**  | 363     |
+| **Redução na raiz**         | 97.5%   |
+| **Documentos criados**      | 26      |
 | **Documentos consolidados** | 65 → 12 |
-| **Scripts organizados** | 180+ |
-| **Tempo investido** | 9 horas |
-| **ROI estimado** | 25,900% |
-| **Satisfação do time** | 9/10 |
+| **Scripts organizados**     | 180+    |
+| **Tempo investido**         | 9 horas |
+| **ROI estimado**            | 25,900% |
+| **Satisfação do time**      | 9/10    |
 
 ---
 

@@ -1,6 +1,6 @@
 /**
  * ChatHeaderExample - Exemplo de uso do ChatHeader com agendamento de lembretes
- * 
+ *
  * Este componente demonstra como usar o ChatHeader em uma interface de chat.
  */
 
@@ -10,7 +10,7 @@ import type { ConversationReminder } from "@/lib/reminder-service";
 
 export function ChatHeaderExample() {
   const handleReminderCreated = (reminder: ConversationReminder) => {
-    console.log('Lembrete criado:', reminder);
+    console.log("Lembrete criado:", reminder);
   };
 
   return (
@@ -31,7 +31,7 @@ export function ChatHeaderExample() {
               subject="Dúvida sobre pedido #1234"
               onReminderCreated={handleReminderCreated}
             />
-            
+
             <div className="p-4 bg-muted/50">
               <p className="text-sm text-muted-foreground">
                 Área de mensagens do chat apareceria aqui...

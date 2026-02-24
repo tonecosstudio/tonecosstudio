@@ -1,6 +1,6 @@
 /**
  * Barrel file para exportar todos os hooks de realtime do sistema de pagamento
- * 
+ *
  * Este arquivo fornece uma interface unificada para importar hooks de realtime
  * do sistema de pagamento manual.
  */
@@ -45,10 +45,7 @@ export {
 } from "./use-payment-system-realtime";
 
 // Exportar hook de notificação existente (para compatibilidade)
-export {
-  useNotificationCount,
-  useFormattedNotificationCount,
-} from "./use-notification-count";
+export { useNotificationCount, useFormattedNotificationCount } from "./use-notification-count";
 
 /**
  * Hook utilitário para verificar se o Supabase Realtime está disponível
@@ -70,10 +67,7 @@ export function useRealtimeAvailable(): boolean {
 export function useRealtimeManager() {
   const subscriptions = new Map<string, { disconnect: () => void }>();
 
-  const subscribe = <T extends { disconnect: () => void }>(
-    key: string,
-    subscription: T
-  ): T => {
+  const subscribe = <T extends { disconnect: () => void }>(key: string, subscription: T): T => {
     // Remover assinatura anterior com a mesma chave
     if (subscriptions.has(key)) {
       subscriptions.get(key)?.disconnect();
@@ -91,7 +85,7 @@ export function useRealtimeManager() {
   };
 
   const unsubscribeAll = (): void => {
-    subscriptions.forEach(subscription => {
+    subscriptions.forEach((subscription) => {
       subscription.disconnect();
     });
     subscriptions.clear();

@@ -1,9 +1,9 @@
 /**
  * PaymentMethodService - Service for managing admin payment methods
- * 
+ *
  * Requirements: 1.1-1.10, 2.1-2.4
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * This service handles CRUD operations for payment methods configured by admins.
  * Payment methods include PIX, PagSeguro, PicPay, PayPal, bank transfers, etc.
  */
@@ -28,41 +28,41 @@ const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 /**
  * List all active payment methods
  * Results are cached for 5 minutes
- * 
+ *
  * @returns Array of active payment methods sorted by display_order
  * @throws Error if database query fails
  */
 export async function listActivePaymentMethods(): Promise<PaymentMethod[]> {
   const now = Date.now();
-  
+
   // Return cached data if still valid
-  if (activeMethodsCache.data && (now - activeMethodsCache.timestamp) < CACHE_DURATION_MS) {
+  if (activeMethodsCache.data && now - activeMethodsCache.timestamp < CACHE_DURATION_MS) {
     return activeMethodsCache.data;
   }
-  
+
   const { data, error } = await supabase
     .from("admin_payment_methods")
     .select("*")
     .eq("is_active", true)
     .order("display_order", { ascending: true });
-  
+
   if (error) {
     throw new Error(`Failed to list active payment methods: ${error.message}`);
   }
-  
+
   // Update cache
   activeMethodsCache = {
     data: data as PaymentMethod[],
     timestamp: now,
   };
-  
+
   return data as PaymentMethod[];
 }
 
 /**
  * Get a payment method by ID
  * Results are cached for 5 minutes
- * 
+ *
  * @param id - Payment method UUID
  * @returns Payment method or null if not found
  * @throws Error if database query fails
@@ -73,18 +73,18 @@ export async function getPaymentMethodById(id: string): Promise<PaymentMethod | 
     .select("*")
     .eq("id", id)
     .maybeSingle();
-  
+
   if (error) {
     throw new Error(`Failed to get payment method: ${error.message}`);
   }
-  
+
   return data as PaymentMethod | null;
 }
 
 /**
  * Create a new payment method
  * Validates required fields and clears cache
- * 
+ *
  * @param input - Payment method data
  * @returns Created payment method
  * @throws Error if validation fails or database insert fails
@@ -94,15 +94,15 @@ export async function createPaymentMethod(input: PaymentMethodInput): Promise<Pa
   if (!input.name || input.name.trim().length === 0) {
     throw new Error("Payment method name is required");
   }
-  
+
   if (!input.type) {
     throw new Error("Payment method type is required");
   }
-  
+
   if (!input.instructions || input.instructions.trim().length === 0) {
     throw new Error("Payment instructions are required");
   }
-  
+
   // Prepare data for insertion
   const insertData = {
     name: input.name.trim(),
@@ -115,27 +115,27 @@ export async function createPaymentMethod(input: PaymentMethodInput): Promise<Pa
     is_default: input.is_default || false,
     display_order: input.display_order || 0,
   };
-  
+
   const { data, error } = await supabase
     .from("admin_payment_methods")
     .insert(insertData)
     .select("*")
     .single();
-  
+
   if (error) {
     throw new Error(`Failed to create payment method: ${error.message}`);
   }
-  
+
   // Clear cache
   clearPaymentMethodCache();
-  
+
   return data as PaymentMethod;
 }
 
 /**
  * Update an existing payment method
  * Clears cache after successful update
- * 
+ *
  * @param id - Payment method UUID
  * @param input - Partial payment method data to update
  * @returns Updated payment method
@@ -147,70 +147,70 @@ export async function updatePaymentMethod(
 ): Promise<PaymentMethod> {
   // Prepare update data (only include provided fields)
   const updateData: Record<string, any> = {};
-  
+
   if (input.name !== undefined) {
     if (input.name.trim().length === 0) {
       throw new Error("Payment method name cannot be empty");
     }
     updateData.name = input.name.trim();
   }
-  
+
   if (input.type !== undefined) {
     updateData.type = input.type;
   }
-  
+
   if (input.instructions !== undefined) {
     if (input.instructions.trim().length === 0) {
       throw new Error("Payment instructions cannot be empty");
     }
     updateData.instructions = input.instructions.trim();
   }
-  
+
   if (input.payment_link !== undefined) {
     updateData.payment_link = input.payment_link || null;
   }
-  
+
   if (input.pix_key !== undefined) {
     updateData.pix_key = input.pix_key || null;
   }
-  
+
   if (input.account_details !== undefined) {
     updateData.account_details = input.account_details || null;
   }
-  
+
   if (input.is_active !== undefined) {
     updateData.is_active = input.is_active;
   }
-  
+
   if (input.is_default !== undefined) {
     updateData.is_default = input.is_default;
   }
-  
+
   if (input.display_order !== undefined) {
     updateData.display_order = input.display_order;
   }
-  
+
   const { data, error } = await supabase
     .from("admin_payment_methods")
     .update(updateData)
     .eq("id", id)
     .select("*")
     .single();
-  
+
   if (error) {
     throw new Error(`Failed to update payment method: ${error.message}`);
   }
-  
+
   // Clear cache
   clearPaymentMethodCache();
-  
+
   return data as PaymentMethod;
 }
 
 /**
  * Set a payment method as default
  * Automatically unsets any previously default payment method (handled by database trigger)
- * 
+ *
  * @param id - Payment method UUID to set as default
  * @throws Error if database update fails
  */
@@ -219,18 +219,18 @@ export async function setDefaultPaymentMethod(id: string): Promise<void> {
     .from("admin_payment_methods")
     .update({ is_default: true })
     .eq("id", id);
-  
+
   if (error) {
     throw new Error(`Failed to set default payment method: ${error.message}`);
   }
-  
+
   // Clear cache
   clearPaymentMethodCache();
 }
 
 /**
  * Toggle the active status of a payment method
- * 
+ *
  * @param id - Payment method UUID
  * @param isActive - New active status
  * @throws Error if database update fails
@@ -240,11 +240,11 @@ export async function togglePaymentMethodActive(id: string, isActive: boolean): 
     .from("admin_payment_methods")
     .update({ is_active: isActive })
     .eq("id", id);
-  
+
   if (error) {
     throw new Error(`Failed to toggle payment method active status: ${error.message}`);
   }
-  
+
   // Clear cache
   clearPaymentMethodCache();
 }
@@ -263,7 +263,7 @@ export function clearPaymentMethodCache(): void {
 /**
  * List all payment methods (admin only)
  * Returns both active and inactive methods
- * 
+ *
  * @returns Array of all payment methods sorted by display_order
  * @throws Error if database query fails
  */
@@ -272,10 +272,10 @@ export async function listAllPaymentMethods(): Promise<PaymentMethod[]> {
     .from("admin_payment_methods")
     .select("*")
     .order("display_order", { ascending: true });
-  
+
   if (error) {
     throw new Error(`Failed to list all payment methods: ${error.message}`);
   }
-  
+
   return data as PaymentMethod[];
 }

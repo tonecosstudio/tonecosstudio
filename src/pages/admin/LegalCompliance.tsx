@@ -17,12 +17,18 @@ export default function LegalCompliance() {
       <AdminLayout>
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight mb-2">Conformidade Legal - CDC</h1>
-          <p className="text-muted-foreground text-lg">Diretrizes sobre precificação de produtos sob encomenda</p>
+          <p className="text-muted-foreground text-lg">
+            Diretrizes sobre precificação de produtos sob encomenda
+          </p>
         </div>
         <Alert className="mb-8 border-green-500 bg-green-50 dark:bg-green-950">
           <CheckCircle2 className="h-5 w-5 text-green-600" />
-          <AlertTitle className="text-green-900 dark:text-green-100 font-bold">É LEGAL mostrar preços estimados</AlertTitle>
-          <AlertDescription className="text-green-800 dark:text-green-200">Produtos sob encomenda podem exibir valores de referência.</AlertDescription>
+          <AlertTitle className="text-green-900 dark:text-green-100 font-bold">
+            É LEGAL mostrar preços estimados
+          </AlertTitle>
+          <AlertDescription className="text-green-800 dark:text-green-200">
+            Produtos sob encomenda podem exibir valores de referência.
+          </AlertDescription>
         </Alert>
         <Card className="mb-6">
           <CardHeader>
@@ -35,7 +41,9 @@ export default function LegalCompliance() {
           <CardContent className="space-y-4">
             <div>
               <h3 className="font-semibold text-lg mb-2">Artigo 31</h3>
-              <p className="text-sm">Informações devem ser corretas, claras, precisas e ostensivas.</p>
+              <p className="text-sm">
+                Informações devem ser corretas, claras, precisas e ostensivas.
+              </p>
             </div>
             <Separator />
             <div>

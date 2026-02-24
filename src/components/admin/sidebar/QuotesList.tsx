@@ -1,7 +1,7 @@
 /**
  * QuotesList Component
  * Displays list of customer quotes with status
- * 
+ *
  * Requirements: 8.2, 8.3, 8.4
  */
 
@@ -27,7 +27,10 @@ export function QuotesList({ quotes, onRefresh }: QuotesListProps) {
   }
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const statusMap: Record<
+      string,
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+    > = {
       pending: { label: "Pendente", variant: "secondary" },
       approved: { label: "Aprovado", variant: "default" },
       rejected: { label: "Rejeitado", variant: "destructive" },
@@ -39,14 +42,24 @@ export function QuotesList({ quotes, onRefresh }: QuotesListProps) {
   };
 
   const getPaymentStatusBadge = (paymentStatus: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const statusMap: Record<
+      string,
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+    > = {
       pending: { label: "Aguardando", variant: "secondary" },
       paid: { label: "Pago", variant: "default" },
       overdue: { label: "Atrasado", variant: "destructive" },
     };
 
-    const config = statusMap[paymentStatus] || { label: paymentStatus, variant: "outline" as const };
-    return <Badge variant={config.variant} className="text-xs">{config.label}</Badge>;
+    const config = statusMap[paymentStatus] || {
+      label: paymentStatus,
+      variant: "outline" as const,
+    };
+    return (
+      <Badge variant={config.variant} className="text-xs">
+        {config.label}
+      </Badge>
+    );
   };
 
   const isPending = (quote: Quote) => {
@@ -56,7 +69,10 @@ export function QuotesList({ quotes, onRefresh }: QuotesListProps) {
   return (
     <div className="space-y-3">
       {quotes.map((quote) => (
-        <Card key={quote.id} className={`p-3 ${isPending(quote) ? "border-yellow-500 border-2" : ""}`}>
+        <Card
+          key={quote.id}
+          className={`p-3 ${isPending(quote) ? "border-yellow-500 border-2" : ""}`}
+        >
           <div className="space-y-2">
             {/* Quote Header */}
             <div className="flex items-start justify-between">
@@ -69,17 +85,13 @@ export function QuotesList({ quotes, onRefresh }: QuotesListProps) {
                   </p>
                 </div>
               </div>
-              {isPending(quote) && (
-                <AlertCircle className="h-4 w-4 text-yellow-500" />
-              )}
+              {isPending(quote) && <AlertCircle className="h-4 w-4 text-yellow-500" />}
             </div>
 
             {/* Quote Details */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  R$ {quote.total_amount.toFixed(2)}
-                </span>
+                <span className="text-sm font-medium">R$ {quote.total_amount.toFixed(2)}</span>
                 {getStatusBadge(quote.status)}
               </div>
 

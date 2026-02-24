@@ -1,81 +1,81 @@
 /**
  * Exemplo de uso do componente BulkOperationsToolbar
- * 
+ *
  * Este componente demonstra como usar o BulkOperationsToolbar em um cenário real.
  */
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { BulkOperationsToolbar } from './BulkOperationsToolbar';
-import { PaymentListItem } from './PaymentListItem';
-import type { PaymentListItem as PaymentListItemType } from '@/types/manual-payment';
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { BulkOperationsToolbar } from "./BulkOperationsToolbar";
+import { PaymentListItem } from "./PaymentListItem";
+import type { PaymentListItem as PaymentListItemType } from "@/types/manual-payment";
 
 // Dados de exemplo
 const examplePayments: PaymentListItemType[] = [
   {
-    id: '1',
-    reference_number: 'PAY-20240215-0001',
-    customer_name: 'João Silva',
-    customer_email: 'joao@email.com',
-    amount: 150.50,
-    currency: 'BRL',
-    payment_method_name: 'PIX',
-    status: 'under_review',
-    created_at: '2024-02-15T10:30:00Z',
+    id: "1",
+    reference_number: "PAY-20240215-0001",
+    customer_name: "João Silva",
+    customer_email: "joao@email.com",
+    amount: 150.5,
+    currency: "BRL",
+    payment_method_name: "PIX",
+    status: "under_review",
+    created_at: "2024-02-15T10:30:00Z",
     file_count: 2,
     unread_messages: 1,
   },
   {
-    id: '2',
-    reference_number: 'PAY-20240215-0002',
-    customer_name: 'Maria Santos',
-    customer_email: 'maria@email.com',
-    amount: 299.90,
-    currency: 'BRL',
-    payment_method_name: 'Cartão de Crédito',
-    status: 'pending',
-    created_at: '2024-02-15T11:15:00Z',
+    id: "2",
+    reference_number: "PAY-20240215-0002",
+    customer_name: "Maria Santos",
+    customer_email: "maria@email.com",
+    amount: 299.9,
+    currency: "BRL",
+    payment_method_name: "Cartão de Crédito",
+    status: "pending",
+    created_at: "2024-02-15T11:15:00Z",
     file_count: 0,
     unread_messages: 0,
   },
   {
-    id: '3',
-    reference_number: 'PAY-20240215-0003',
-    customer_name: 'Pedro Oliveira',
-    customer_email: 'pedro@email.com',
-    amount: 450.00,
-    currency: 'BRL',
-    payment_method_name: 'Boleto',
-    status: 'requires_info',
-    created_at: '2024-02-15T12:45:00Z',
+    id: "3",
+    reference_number: "PAY-20240215-0003",
+    customer_name: "Pedro Oliveira",
+    customer_email: "pedro@email.com",
+    amount: 450.0,
+    currency: "BRL",
+    payment_method_name: "Boleto",
+    status: "requires_info",
+    created_at: "2024-02-15T12:45:00Z",
     file_count: 1,
     unread_messages: 3,
   },
   {
-    id: '4',
-    reference_number: 'PAY-20240215-0004',
-    customer_name: 'Ana Costa',
-    customer_email: 'ana@email.com',
+    id: "4",
+    reference_number: "PAY-20240215-0004",
+    customer_name: "Ana Costa",
+    customer_email: "ana@email.com",
     amount: 125.75,
-    currency: 'BRL',
-    payment_method_name: 'PIX',
-    status: 'under_review',
-    created_at: '2024-02-15T14:20:00Z',
+    currency: "BRL",
+    payment_method_name: "PIX",
+    status: "under_review",
+    created_at: "2024-02-15T14:20:00Z",
     file_count: 3,
     unread_messages: 0,
   },
   {
-    id: '5',
-    reference_number: 'PAY-20240215-0005',
-    customer_name: 'Carlos Mendes',
-    customer_email: 'carlos@email.com',
+    id: "5",
+    reference_number: "PAY-20240215-0005",
+    customer_name: "Carlos Mendes",
+    customer_email: "carlos@email.com",
     amount: 680.25,
-    currency: 'BRL',
-    payment_method_name: 'Transferência Bancária',
-    status: 'under_review',
-    created_at: '2024-02-15T15:10:00Z',
+    currency: "BRL",
+    payment_method_name: "Transferência Bancária",
+    status: "under_review",
+    created_at: "2024-02-15T15:10:00Z",
     file_count: 1,
     unread_messages: 2,
   },
@@ -83,21 +83,21 @@ const examplePayments: PaymentListItemType[] = [
 
 export function BulkOperationsToolbarExample() {
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
 
   // Função para lidar com a seleção de um pagamento
   const handlePaymentSelect = (paymentId: string, selected: boolean) => {
     if (selected) {
-      setSelectedPayments(prev => [...prev, paymentId]);
+      setSelectedPayments((prev) => [...prev, paymentId]);
     } else {
-      setSelectedPayments(prev => prev.filter(id => id !== paymentId));
+      setSelectedPayments((prev) => prev.filter((id) => id !== paymentId));
     }
   };
 
   // Função para selecionar/deselecionar todos
   const handleSelectAll = (selectAll: boolean) => {
     if (selectAll) {
-      setSelectedPayments(examplePayments.map(p => p.id));
+      setSelectedPayments(examplePayments.map((p) => p.id));
     } else {
       setSelectedPayments([]);
     }
@@ -124,8 +124,8 @@ export function BulkOperationsToolbarExample() {
         <CardHeader>
           <CardTitle>Exemplo: BulkOperationsToolbar</CardTitle>
           <CardDescription>
-            Demonstração do componente de operações em lote para pagamentos.
-            Selecione um ou mais pagamentos para habilitar as operações em lote.
+            Demonstração do componente de operações em lote para pagamentos. Selecione um ou mais
+            pagamentos para habilitar as operações em lote.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -137,19 +137,19 @@ export function BulkOperationsToolbarExample() {
                   {examplePayments.length} pagamentos disponíveis
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  variant={viewMode === "list" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setViewMode('list')}
+                  onClick={() => setViewMode("list")}
                 >
                   Lista
                 </Button>
                 <Button
-                  variant={viewMode === 'cards' ? 'default' : 'outline'}
+                  variant={viewMode === "cards" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setViewMode('cards')}
+                  onClick={() => setViewMode("cards")}
                 >
                   Cards
                 </Button>
@@ -157,7 +157,7 @@ export function BulkOperationsToolbarExample() {
             </div>
 
             {/* Lista de pagamentos */}
-            {viewMode === 'list' ? (
+            {viewMode === "list" ? (
               <div className="space-y-2">
                 {examplePayments.map((payment) => (
                   <PaymentListItem
@@ -198,31 +198,34 @@ export function BulkOperationsToolbarExample() {
                   <div className="flex items-center gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
                         }).format(
                           examplePayments
-                            .filter(p => selectedPayments.includes(p.id))
+                            .filter((p) => selectedPayments.includes(p.id))
                             .reduce((sum, p) => sum + p.amount, 0)
                         )}
                       </div>
                       <div className="text-xs text-gray-500">Valor total</div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      {['pending', 'under_review', 'requires_info'].map((status) => {
-                        const count = examplePayments
-                          .filter(p => selectedPayments.includes(p.id) && p.status === status)
-                          .length;
-                        
+                      {["pending", "under_review", "requires_info"].map((status) => {
+                        const count = examplePayments.filter(
+                          (p) => selectedPayments.includes(p.id) && p.status === status
+                        ).length;
+
                         if (count === 0) return null;
-                        
+
                         return (
                           <Badge key={status} variant="outline">
-                            {count} {status === 'pending' ? 'Pendente' : 
-                                    status === 'under_review' ? 'Em Revisão' : 
-                                    'Precisa de Info'}
+                            {count}{" "}
+                            {status === "pending"
+                              ? "Pendente"
+                              : status === "under_review"
+                                ? "Em Revisão"
+                                : "Precisa de Info"}
                           </Badge>
                         );
                       })}
@@ -255,29 +258,30 @@ export function BulkOperationsToolbarExample() {
               <h4 className="font-medium mb-2">Funcionalidades implementadas:</h4>
               <ul className="list-disc pl-5 space-y-1 text-sm">
                 <li>
-                  <strong>Seleção múltipla:</strong> Clique nas caixas de seleção individuais ou use 
+                  <strong>Seleção múltipla:</strong> Clique nas caixas de seleção individuais ou use
                   "Selecionar Todos" na barra de ferramentas
                 </li>
                 <li>
-                  <strong>Aprovação em lote:</strong> Aprove múltiplos pagamentos de uma vez (apenas 
+                  <strong>Aprovação em lote:</strong> Aprove múltiplos pagamentos de uma vez (apenas
                   pagamentos com status "Em Revisão" serão aprovados)
                 </li>
                 <li>
                   <strong>Exportação em lote:</strong> Exporte os pagamentos selecionados para CSV
                 </li>
                 <li>
-                  <strong>Mensagem em lote:</strong> Envie uma mensagem para todos os clientes dos 
+                  <strong>Mensagem em lote:</strong> Envie uma mensagem para todos os clientes dos
                   pagamentos selecionados
                 </li>
                 <li>
-                  <strong>Processamento assíncrono:</strong> Para mais de 10 itens, as operações são 
+                  <strong>Processamento assíncrono:</strong> Para mais de 10 itens, as operações são
                   processadas em segundo plano
                 </li>
                 <li>
                   <strong>Indicador de progresso:</strong> Mostra o progresso das operações em lote
                 </li>
                 <li>
-                  <strong>Relatório de conclusão:</strong> Exibe um resumo após a conclusão das operações
+                  <strong>Relatório de conclusão:</strong> Exibe um resumo após a conclusão das
+                  operações
                 </li>
               </ul>
             </div>
@@ -300,8 +304,8 @@ export function BulkOperationsToolbarExample() {
 
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Nota:</strong> Este é um componente de exemplo. Em um ambiente real, as operações 
-                se conectariam aos serviços backend implementados na tarefa 14.1.
+                <strong>Nota:</strong> Este é um componente de exemplo. Em um ambiente real, as
+                operações se conectariam aos serviços backend implementados na tarefa 14.1.
               </p>
             </div>
           </div>

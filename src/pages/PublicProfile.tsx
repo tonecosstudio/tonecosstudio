@@ -52,11 +52,13 @@ export default function PublicProfile() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("profiles")
-        .select("id, username, display_name, bio, avatar_url, collector_level, collector_xp, pieces_owned, total_spent, joined_at")
+        .select(
+          "id, username, display_name, bio, avatar_url, collector_level, collector_xp, pieces_owned, total_spent, joined_at"
+        )
         .eq("username", username)
         .eq("is_public", true)
         .maybeSingle();
-      
+
       if (error) throw error;
       if (!data) throw new Error("Perfil não encontrado ou privado");
       return data as PublicProfileData;
@@ -69,7 +71,8 @@ export default function PublicProfile() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("user_badges")
-        .select(`
+        .select(
+          `
           badge_id,
           earned_at,
           collector_badges (
@@ -79,10 +82,11 @@ export default function PublicProfile() {
             icon,
             rarity
           )
-        `)
+        `
+        )
         .eq("user_id", profileQuery.data!.id)
         .order("earned_at", { ascending: false });
-      
+
       if (error) throw error;
       return (data || []).map((item: any) => ({
         id: item.collector_badges.id,
@@ -101,7 +105,8 @@ export default function PublicProfile() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("public_collection")
-        .select(`
+        .select(
+          `
           id,
           model_id,
           notes,
@@ -112,11 +117,12 @@ export default function PublicProfile() {
             image_bucket,
             franchise
           )
-        `)
+        `
+        )
         .eq("user_id", profileQuery.data!.id)
         .order("display_order", { ascending: true })
         .order("added_at", { ascending: false });
-      
+
       if (error) throw error;
       return (data || []).map((item: any) => ({
         id: item.id,
@@ -142,7 +148,9 @@ export default function PublicProfile() {
         <Card className="border-destructive">
           <CardContent className="pt-6">
             <p className="text-center text-destructive">
-              {profileQuery.error instanceof Error ? profileQuery.error.message : "Erro ao carregar perfil"}
+              {profileQuery.error instanceof Error
+                ? profileQuery.error.message
+                : "Erro ao carregar perfil"}
             </p>
           </CardContent>
         </Card>
@@ -156,14 +164,14 @@ export default function PublicProfile() {
 
   const displayName = profile.display_name || profile.username;
   const xpForNextLevel = calculateXPForNextLevel(profile.collector_level);
-  const xpProgress = (profile.collector_xp % xpForNextLevel) / xpForNextLevel * 100;
+  const xpProgress = ((profile.collector_xp % xpForNextLevel) / xpForNextLevel) * 100;
 
   return (
     <>
       <SEOHead
         title={`${displayName} - Perfil de Colecionador`}
         description={profile.bio || `Perfil público de ${displayName} na Ordax`}
-        keywords={['colecionador', 'perfil', 'badges', 'coleção']}
+        keywords={["colecionador", "perfil", "badges", "coleção"]}
       />
 
       <div className="container py-8 sm:py-12 max-w-6xl">
@@ -184,14 +192,16 @@ export default function PublicProfile() {
                   <p className="text-muted-foreground">@{profile.username}</p>
                 </div>
 
-                {profile.bio && (
-                  <p className="text-sm max-w-2xl">{profile.bio}</p>
-                )}
+                {profile.bio && <p className="text-sm max-w-2xl">{profile.bio}</p>}
 
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" />
-                    Membro desde {new Date(profile.joined_at).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+                    Membro desde{" "}
+                    {new Date(profile.joined_at).toLocaleDateString("pt-BR", {
+                      month: "long",
+                      year: "numeric",
+                    })}
                   </div>
                 </div>
               </div>
@@ -283,7 +293,17 @@ export default function PublicProfile() {
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: string;
+}) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -308,7 +328,9 @@ function BadgeCard({ badge }: { badge: BadgeData }) {
   };
 
   return (
-    <div className={`border-2 rounded-lg p-4 ${rarityColors[badge.rarity as keyof typeof rarityColors]}`}>
+    <div
+      className={`border-2 rounded-lg p-4 ${rarityColors[badge.rarity as keyof typeof rarityColors]}`}
+    >
       <div className="flex items-start gap-3">
         <span className="text-3xl">{badge.icon}</span>
         <div className="flex-1 min-w-0">

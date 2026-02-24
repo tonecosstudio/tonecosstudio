@@ -1,6 +1,6 @@
 /**
  * FileUploadComponent Example - Demonstration of how to use the FileUploadComponent
- * 
+ *
  * This example shows:
  * 1. Basic usage with required props
  * 2. Handling upload completion
@@ -9,30 +9,30 @@
  * 5. Integration with payment flow
  */
 
-import React, { useState } from 'react';
-import { FileUploadComponent } from './FileUploadComponent';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertCircle, Upload } from 'lucide-react';
-import type { PaymentFile } from '@/types/manual-payment';
+import React, { useState } from "react";
+import { FileUploadComponent } from "./FileUploadComponent";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, AlertCircle, Upload } from "lucide-react";
+import type { PaymentFile } from "@/types/manual-payment";
 
 export const FileUploadComponentExample: React.FC = () => {
-  const [paymentId] = useState('example-payment-123');
+  const [paymentId] = useState("example-payment-123");
   const [uploadedFiles, setUploadedFiles] = useState<PaymentFile[]>([]);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleUploadComplete = (files: PaymentFile[]) => {
-    console.log('Upload complete:', files);
-    setUploadedFiles(prev => [...prev, ...files]);
+    console.log("Upload complete:", files);
+    setUploadedFiles((prev) => [...prev, ...files]);
     setUploadErrors([]);
   };
 
   const handleUploadError = (error: Error) => {
-    console.error('Upload error:', error);
-    setUploadErrors(prev => [...prev, error.message]);
+    console.error("Upload error:", error);
+    setUploadErrors((prev) => [...prev, error.message]);
   };
 
   const handleClearAll = () => {
@@ -45,7 +45,8 @@ export const FileUploadComponentExample: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold mb-2">FileUploadComponent Example</h1>
         <p className="text-muted-foreground">
-          This example demonstrates how to use the FileUploadComponent in a payment proof upload flow.
+          This example demonstrates how to use the FileUploadComponent in a payment proof upload
+          flow.
         </p>
       </div>
 
@@ -92,7 +93,7 @@ export const FileUploadComponentExample: React.FC = () => {
                 </span>
                 {uploadedFiles.length > 0 && (
                   <Badge variant="secondary">
-                    {uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''}
+                    {uploadedFiles.length} file{uploadedFiles.length !== 1 ? "s" : ""}
                   </Badge>
                 )}
               </CardTitle>
@@ -112,7 +113,7 @@ export const FileUploadComponentExample: React.FC = () => {
                   {uploadedFiles.map((file) => (
                     <div key={file.id} className="flex items-center gap-3 p-3 border rounded-lg">
                       <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
-                        {file.file_type.startsWith('image/') ? (
+                        {file.file_type.startsWith("image/") ? (
                           <div className="text-xs font-medium">IMG</div>
                         ) : (
                           <div className="text-xs font-medium">PDF</div>
@@ -153,9 +154,7 @@ export const FileUploadComponentExample: React.FC = () => {
                   <AlertCircle className="h-5 w-5" />
                   Upload Errors
                 </CardTitle>
-                <CardDescription>
-                  Errors that occurred during file upload.
-                </CardDescription>
+                <CardDescription>Errors that occurred during file upload.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Alert variant="destructive">
@@ -184,7 +183,7 @@ export const FileUploadComponentExample: React.FC = () => {
               <div>
                 <h4 className="font-medium mb-2">Basic Usage</h4>
                 <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
-{`<FileUploadComponent
+                  {`<FileUploadComponent
   paymentId="your-payment-id"
   onUploadComplete={(files) => console.log('Uploaded:', files)}
   onError={(error) => console.error('Error:', error)}
@@ -195,7 +194,7 @@ export const FileUploadComponentExample: React.FC = () => {
               <div>
                 <h4 className="font-medium mb-2">Custom Configuration</h4>
                 <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
-{`<FileUploadComponent
+                  {`<FileUploadComponent
   paymentId="your-payment-id"
   maxFiles={3} // Custom file limit
   maxSizeBytes={2 * 1024 * 1024} // 2MB limit
@@ -209,9 +208,7 @@ export const FileUploadComponentExample: React.FC = () => {
 
               <div>
                 <h4 className="font-medium mb-2">Integration with Payment Flow</h4>
-                <p className="text-sm text-muted-foreground">
-                  The component automatically:
-                </p>
+                <p className="text-sm text-muted-foreground">The component automatically:</p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1 mt-2">
                   <li>Validates file types (JPG, PNG, PDF only)</li>
                   <li>Checks file size (default 5MB max)</li>

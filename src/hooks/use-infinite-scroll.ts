@@ -3,19 +3,19 @@ import { useEffect, useRef, useCallback } from "react";
 /**
  * Hook para infinite scroll
  * Detecta quando o usuário chega ao final da página e dispara callback
- * 
+ *
  * @param callback - Função a ser chamada quando chegar ao final
  * @param hasMore - Se há mais itens para carregar
  * @param isLoading - Se está carregando
  * @param threshold - Distância do final em px para disparar (padrão: 100px)
- * 
+ *
  * @example
  * const { observerRef } = useInfiniteScroll(
  *   () => fetchNextPage(),
  *   hasNextPage,
  *   isFetchingNextPage
  * );
- * 
+ *
  * return (
  *   <div>
  *     {items.map(item => <Item key={item.id} {...item} />)}

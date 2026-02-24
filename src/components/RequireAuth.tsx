@@ -7,7 +7,10 @@ export default function RequireAuth({ children }: PropsWithChildren) {
   const location = useLocation();
   const { user, isLoading } = useAuth();
 
-  const redirectTo = useMemo(() => encodeURIComponent(location.pathname + location.search), [location.pathname, location.search]);
+  const redirectTo = useMemo(
+    () => encodeURIComponent(location.pathname + location.search),
+    [location.pathname, location.search]
+  );
 
   // Não renderizar nada durante o loading inicial para evitar flash
   if (isLoading) {

@@ -15,20 +15,29 @@ export default function About() {
       <SEOHead
         title="Sobre a Ordax - Colecionáveis Premium"
         description="Ordax é a plataforma brasileira especializada em colecionáveis premium sob encomenda. Tecnologia, qualidade e transparência em cada peça."
-        keywords={['sobre', 'ordax', 'colecionáveis premium', 'brasileiro', 'impressão 3d', 'pintura profissional']}
+        keywords={[
+          "sobre",
+          "ordax",
+          "colecionáveis premium",
+          "brasileiro",
+          "impressão 3d",
+          "pintura profissional",
+        ]}
         type="website"
       />
-      
+
       {/* Hero */}
       <section className="bg-foreground text-background border-b border-white/10 -mx-8 sm:-mx-12">
         <div className="container px-8 py-20 sm:px-12 sm:py-32">
           <div className="max-w-4xl mx-auto text-center">
-            <p className="text-xs font-medium tracking-widest text-background/60 uppercase mb-6">Sobre a Ordax</p>
+            <p className="text-xs font-medium tracking-widest text-background/60 uppercase mb-6">
+              Sobre a Ordax
+            </p>
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-8 leading-tight">
               Colecionáveis que contam histórias
             </h1>
             <p className="text-xl sm:text-2xl text-background/80 leading-relaxed max-w-3xl mx-auto">
-              Transformamos a experiência de adquirir colecionáveis premium através de tecnologia, 
+              Transformamos a experiência de adquirir colecionáveis premium através de tecnologia,
               transparência e qualidade excepcional.
             </p>
           </div>
@@ -41,8 +50,8 @@ export default function About() {
           <div className="text-center mb-12">
             <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">Nossa Missão</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Tornar colecionáveis premium acessíveis através de uma plataforma organizada, 
-              transparente e confiável. Cada peça é produzida sob encomenda com atenção aos detalhes 
+              Tornar colecionáveis premium acessíveis através de uma plataforma organizada,
+              transparente e confiável. Cada peça é produzida sob encomenda com atenção aos detalhes
               e acompanhamento completo.
             </p>
           </div>
@@ -70,31 +79,36 @@ export default function About() {
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Catálogo digital</strong> organizado por franquias e categorias
+                    <strong className="text-foreground">Catálogo digital</strong> organizado por
+                    franquias e categorias
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Sistema de pedidos</strong> personalizado com orçamento sob medida
+                    <strong className="text-foreground">Sistema de pedidos</strong> personalizado
+                    com orçamento sob medida
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Timeline de acompanhamento</strong> com fotos em tempo real
+                    <strong className="text-foreground">Timeline de acompanhamento</strong> com
+                    fotos em tempo real
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Comunicação direta</strong> e transparente durante todo processo
+                    <strong className="text-foreground">Comunicação direta</strong> e transparente
+                    durante todo processo
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Garantia de qualidade</strong> e suporte completo
+                    <strong className="text-foreground">Garantia de qualidade</strong> e suporte
+                    completo
                   </p>
                 </li>
               </ul>
@@ -112,13 +126,15 @@ export default function About() {
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Produção realizada</strong> por estúdio criativo especializado
+                    <strong className="text-foreground">Produção realizada</strong> por estúdio
+                    criativo especializado
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Impressão 3D</strong> em resina de alta qualidade
+                    <strong className="text-foreground">Impressão 3D</strong> em resina de alta
+                    qualidade
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
@@ -130,7 +146,8 @@ export default function About() {
                 <li className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 rounded-full bg-foreground shrink-0" />
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Pintura profissional</strong> feita por especialistas
+                    <strong className="text-foreground">Pintura profissional</strong> feita por
+                    especialistas
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
@@ -165,7 +182,8 @@ export default function About() {
               </div>
               <h3 className="text-xl font-bold mb-3">Qualidade</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Cada peça passa por inspeção rigorosa antes do envio. Padrões elevados em todas as etapas.
+                Cada peça passa por inspeção rigorosa antes do envio. Padrões elevados em todas as
+                etapas.
               </p>
             </div>
 
@@ -204,7 +222,9 @@ export default function About() {
         {/* Processo de Produção */}
         <section className="mb-24">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">Processo de Produção</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+              Processo de Produção
+            </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               6 etapas que garantem qualidade premium
             </p>
@@ -247,7 +267,8 @@ export default function About() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Pintura Artística</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Pintura à mão com técnicas profissionais, seguindo referências específicas quando solicitado.
+                Pintura à mão com técnicas profissionais, seguindo referências específicas quando
+                solicitado.
               </p>
             </div>
 
@@ -274,15 +295,18 @@ export default function About() {
 
           <div className="mt-12 text-center">
             <p className="text-muted-foreground italic">
-              Tempo médio estimado de produção: <strong className="text-foreground">15 a 45 dias úteis</strong>, 
-              podendo variar conforme complexidade e escala.
+              Tempo médio estimado de produção:{" "}
+              <strong className="text-foreground">15 a 45 dias úteis</strong>, podendo variar
+              conforme complexidade e escala.
             </p>
           </div>
         </section>
 
         {/* FAQ */}
         <section className="mb-16">
-          <h2 className="text-3xl font-bold tracking-tight mb-4 text-center">Perguntas Frequentes</h2>
+          <h2 className="text-3xl font-bold tracking-tight mb-4 text-center">
+            Perguntas Frequentes
+          </h2>
           <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
             Transparência faz parte do premium: prazos, escala e acabamento variam por peça.
           </p>
@@ -290,34 +314,46 @@ export default function About() {
           <div className="rounded-lg border border-border bg-card shadow-sm">
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="prazo" className="border-b border-border px-6">
-                <AccordionTrigger className="text-left font-semibold">Qual o prazo de produção?</AccordionTrigger>
+                <AccordionTrigger className="text-left font-semibold">
+                  Qual o prazo de produção?
+                </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                  O prazo depende da complexidade do modelo, da escala e do acabamento solicitado. Após você montar o orçamento,
-                  retornamos com uma previsão clara de produção e entrega.
+                  O prazo depende da complexidade do modelo, da escala e do acabamento solicitado.
+                  Após você montar o orçamento, retornamos com uma previsão clara de produção e
+                  entrega.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="escala" className="border-b border-border px-6">
-                <AccordionTrigger className="text-left font-semibold">Como funciona tamanho/escala?</AccordionTrigger>
+                <AccordionTrigger className="text-left font-semibold">
+                  Como funciona tamanho/escala?
+                </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                  A escala define presença e detalhes (e também impacta tempo e custo). No orçamento você pode
-                  informar a escala desejada — ou descrever o tamanho aproximado — e validamos a melhor solução.
+                  A escala define presença e detalhes (e também impacta tempo e custo). No orçamento
+                  você pode informar a escala desejada — ou descrever o tamanho aproximado — e
+                  validamos a melhor solução.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="pintura" className="border-b border-border px-6">
-                <AccordionTrigger className="text-left font-semibold">Vocês fazem pintura artística?</AccordionTrigger>
+                <AccordionTrigger className="text-left font-semibold">
+                  Vocês fazem pintura artística?
+                </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                  Sim. A pintura é feita à mão e pode seguir referências específicas (cenas, skins, versões alternativas) quando
-                  você enviar observações no pedido. Cada peça passa por inspeção antes do envio.
+                  Sim. A pintura é feita à mão e pode seguir referências específicas (cenas, skins,
+                  versões alternativas) quando você enviar observações no pedido. Cada peça passa
+                  por inspeção antes do envio.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="entrega" className="px-6">
-                <AccordionTrigger className="text-left font-semibold">Como é a entrega?</AccordionTrigger>
+                <AccordionTrigger className="text-left font-semibold">
+                  Como é a entrega?
+                </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                  Trabalhamos com envio conforme o destino e o tipo de peça. No retorno do orçamento, confirmamos embalagem,
-                  proteção e modalidade de frete mais adequada para garantir que a peça chegue perfeita.
+                  Trabalhamos com envio conforme o destino e o tipo de peça. No retorno do
+                  orçamento, confirmamos embalagem, proteção e modalidade de frete mais adequada
+                  para garantir que a peça chegue perfeita.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -332,7 +368,11 @@ export default function About() {
               Explore nosso catálogo e solicite um orçamento personalizado para sua próxima peça.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-foreground text-background hover:bg-foreground/90">
+              <Button
+                asChild
+                size="lg"
+                className="bg-foreground text-background hover:bg-foreground/90"
+              >
                 <a href="/">Ver Catálogo</a>
               </Button>
               <Button asChild size="lg" variant="outline">

@@ -19,7 +19,7 @@ export default function AdminPackaging() {
     careManual: true,
     bubbleWrap: true,
     box: true,
-    
+
     // Diferenciais
     postcard: true,
     sticker: true,
@@ -27,7 +27,7 @@ export default function AdminPackaging() {
     bookmark: true,
     tissuePaper: true,
     customSeal: true,
-    
+
     // Premium
     handwrittenNote: false,
     polaroidPhoto: false,
@@ -53,7 +53,7 @@ Obrigado por fazer parte da nossa comunidade!
 
 Com carinho,
 [SUA ASSINATURA]`,
-    
+
     certificateText: `✨ CERTIFICADO ORDAX
 
 Este documento certifica que a miniatura é original e faz parte do ciclo Ordax.
@@ -65,7 +65,7 @@ Material: Resina
 Altura: [XX]cm
 Pintada à mão
 Data de produção: [MES/ANO]`,
-    
+
     postcardBack: `[NOME] - [TÍTULO]
 [Série] Collection
 
@@ -79,7 +79,7 @@ Data de produção: [MES/ANO]`,
 
 www.suamarca.com.br
 @suamarca`,
-    
+
     careInstructions: `🛡️ GUIA DE CUIDADOS
 
 Como cuidar da sua miniatura:
@@ -101,16 +101,16 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
   });
 
   const [costs, setCosts] = useState({
-    box: 3.00,
-    postcard: 1.50,
-    certificate: 1.00,
-    careManual: 0.50,
-    thankYouCard: 0.50,
-    tissuePaper: 1.00,
-    bubbleWrap: 1.00,
-    sticker: 0.50,
-    bookmark: 1.00,
-    customSeal: 0.50,
+    box: 3.0,
+    postcard: 1.5,
+    certificate: 1.0,
+    careManual: 0.5,
+    thankYouCard: 0.5,
+    tissuePaper: 1.0,
+    bubbleWrap: 1.0,
+    sticker: 0.5,
+    bookmark: 1.0,
+    customSeal: 0.5,
   });
 
   const calculateTotalCost = () => {
@@ -161,9 +161,7 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
                 <CheckCircle2 className="h-5 w-5" />
                 Itens da Embalagem
               </CardTitle>
-              <CardDescription>
-                Selecione o que incluir em cada caixa
-              </CardDescription>
+              <CardDescription>Selecione o que incluir em cada caixa</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Essenciais */}
@@ -327,7 +325,10 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
                       id="handwrittenNote"
                       checked={packagingConfig.handwrittenNote}
                       onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, handwrittenNote: checked as boolean })
+                        setPackagingConfig({
+                          ...packagingConfig,
+                          handwrittenNote: checked as boolean,
+                        })
                       }
                     />
                     <label htmlFor="handwrittenNote" className="text-sm cursor-pointer">
@@ -339,7 +340,10 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
                       id="polaroidPhoto"
                       checked={packagingConfig.polaroidPhoto}
                       onCheckedChange={(checked) =>
-                        setPackagingConfig({ ...packagingConfig, polaroidPhoto: checked as boolean })
+                        setPackagingConfig({
+                          ...packagingConfig,
+                          polaroidPhoto: checked as boolean,
+                        })
                       }
                     />
                     <label htmlFor="polaroidPhoto" className="text-sm cursor-pointer">
@@ -361,9 +365,7 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
                 </div>
               </div>
 
-              <Button className="w-full">
-                Salvar Configuração
-              </Button>
+              <Button className="w-full">Salvar Configuração</Button>
             </CardContent>
           </Card>
 
@@ -384,9 +386,7 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
                   rows={12}
                   className="font-mono text-sm"
                 />
-                <Button className="w-full mt-4">
-                  Salvar Template
-                </Button>
+                <Button className="w-full mt-4">Salvar Template</Button>
               </CardContent>
             </Card>
 
@@ -405,9 +405,7 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
                   rows={10}
                   className="font-mono text-sm"
                 />
-                <Button className="w-full mt-4">
-                  Salvar Template
-                </Button>
+                <Button className="w-full mt-4">Salvar Template</Button>
               </CardContent>
             </Card>
 
@@ -426,9 +424,7 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
                   rows={12}
                   className="font-mono text-sm"
                 />
-                <Button className="w-full mt-4">
-                  Salvar Template
-                </Button>
+                <Button className="w-full mt-4">Salvar Template</Button>
               </CardContent>
             </Card>
           </div>
@@ -441,33 +437,37 @@ Produto artesanal. Pequenas variações são normais e fazem cada peça única!`
               <Image className="h-5 w-5" />
               Guia de Impressão
             </CardTitle>
-            <CardDescription>
-              Especificações técnicas para impressão dos materiais
-            </CardDescription>
+            <CardDescription>Especificações técnicas para impressão dos materiais</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <h4 className="font-semibold">Cartão de Agradecimento</h4>
                 <p className="text-sm text-muted-foreground">
-                  Tamanho: 10x15cm<br />
-                  Papel: Couché 250g<br />
+                  Tamanho: 10x15cm
+                  <br />
+                  Papel: Couché 250g
+                  <br />
                   Impressão: Colorida frente
                 </p>
               </div>
               <div className="space-y-2">
                 <h4 className="font-semibold">Certificado</h4>
                 <p className="text-sm text-muted-foreground">
-                  Tamanho: A5 (14,8x21cm)<br />
-                  Papel: Vergê 180g<br />
+                  Tamanho: A5 (14,8x21cm)
+                  <br />
+                  Papel: Vergê 180g
+                  <br />
                   Impressão: Colorida frente
                 </p>
               </div>
               <div className="space-y-2">
                 <h4 className="font-semibold">Cartão Postal</h4>
                 <p className="text-sm text-muted-foreground">
-                  Tamanho: 10x15cm<br />
-                  Papel: Couché 300g<br />
+                  Tamanho: 10x15cm
+                  <br />
+                  Papel: Couché 300g
+                  <br />
                   Impressão: Colorida frente/verso
                 </p>
               </div>

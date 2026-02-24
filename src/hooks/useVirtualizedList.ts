@@ -2,12 +2,12 @@
  * useVirtualizedList Hook
  * Requirements: 18.1-18.15
  * Task: 25.1 Implementar otimizações de performance
- * 
+ *
  * Provides virtual scrolling for large lists using @tanstack/react-virtual
  */
 
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef } from 'react';
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useRef } from "react";
 
 interface UseVirtualizedListOptions {
   itemCount: number;

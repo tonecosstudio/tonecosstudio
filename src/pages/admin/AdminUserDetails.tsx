@@ -6,10 +6,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, User, FileText, MapPin, CreditCard, 
-  Bell, Trophy, Package, Heart, Shield, Calendar,
-  Mail, Phone, MessageSquare, MapPinned
+import {
+  ArrowLeft,
+  User,
+  FileText,
+  MapPin,
+  CreditCard,
+  Bell,
+  Trophy,
+  Package,
+  Heart,
+  Shield,
+  Calendar,
+  Mail,
+  Phone,
+  MessageSquare,
+  MapPinned,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -26,13 +38,13 @@ export default function AdminUserDetails() {
         .select("*")
         .eq("id", userId!)
         .maybeSingle();
-        
+
       if (error) throw error;
-      
+
       if (!data) {
         throw new Error("Usuário não encontrado");
       }
-      
+
       return data;
     },
   });
@@ -58,11 +70,13 @@ export default function AdminUserDetails() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_badges")
-        .select(`
+        .select(
+          `
           id,
           earned_at,
           badge:collector_badges(*)
-        `)
+        `
+        )
         .eq("user_id", userId!);
       if (error) throw error;
       return data || [];
@@ -107,10 +121,12 @@ export default function AdminUserDetails() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select(`
+        .select(
+          `
           *,
           collection:collections(name, slug)
-        `)
+        `
+        )
         .eq("user_id", userId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -175,9 +191,7 @@ export default function AdminUserDetails() {
               <Mail className="h-4 w-4" />
               <span>{profile.email}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              ID: {profile.id}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">ID: {profile.id}</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -185,7 +199,7 @@ export default function AdminUserDetails() {
               <Badge variant="secondary">user</Badge>
             ) : (
               roles.map((r: any) => (
-                <Badge key={r.role} variant={r.role === 'admin' ? 'default' : 'secondary'}>
+                <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
                   {r.role}
                 </Badge>
               ))
@@ -201,9 +215,7 @@ export default function AdminUserDetails() {
                 <div className="text-2xl font-bold text-primary">
                   {profile.profile_completion || 0}%
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Perfil Completo
-                </div>
+                <div className="text-xs text-muted-foreground mt-1">Perfil Completo</div>
               </div>
             </CardContent>
           </Card>
@@ -214,9 +226,7 @@ export default function AdminUserDetails() {
                 <div className="text-2xl font-bold text-primary">
                   {profile.collector_level || 1}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Nível
-                </div>
+                <div className="text-xs text-muted-foreground mt-1">Nível</div>
               </div>
             </CardContent>
           </Card>
@@ -224,12 +234,8 @@ export default function AdminUserDetails() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  {profile.pieces_owned || 0}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Peças
-                </div>
+                <div className="text-2xl font-bold text-primary">{profile.pieces_owned || 0}</div>
+                <div className="text-xs text-muted-foreground mt-1">Peças</div>
               </div>
             </CardContent>
           </Card>
@@ -240,9 +246,7 @@ export default function AdminUserDetails() {
                 <div className="text-2xl font-bold text-primary">
                   R$ {(profile.total_spent || 0).toFixed(2)}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Investido
-                </div>
+                <div className="text-xs text-muted-foreground mt-1">Investido</div>
               </div>
             </CardContent>
           </Card>
@@ -300,15 +304,15 @@ export default function AdminUserDetails() {
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Criado em</div>
                   <div className="text-base mt-1">
-                    {new Date(profile.created_at).toLocaleString('pt-BR')}
+                    {new Date(profile.created_at).toLocaleString("pt-BR")}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Último login</div>
                   <div className="text-base mt-1">
-                    {profile.updated_at 
-                      ? new Date(profile.updated_at).toLocaleString('pt-BR')
-                      : '—'}
+                    {profile.updated_at
+                      ? new Date(profile.updated_at).toLocaleString("pt-BR")
+                      : "—"}
                   </div>
                 </div>
               </CardContent>
@@ -324,20 +328,20 @@ export default function AdminUserDetails() {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Notificações por Email</span>
-                  <Badge variant={profile.email_notifications ? 'default' : 'secondary'}>
-                    {profile.email_notifications ? 'Ativo' : 'Inativo'}
+                  <Badge variant={profile.email_notifications ? "default" : "secondary"}>
+                    {profile.email_notifications ? "Ativo" : "Inativo"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Atualizações de Pedidos</span>
-                  <Badge variant={profile.order_updates ? 'default' : 'secondary'}>
-                    {profile.order_updates ? 'Ativo' : 'Inativo'}
+                  <Badge variant={profile.order_updates ? "default" : "secondary"}>
+                    {profile.order_updates ? "Ativo" : "Inativo"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Emails de Marketing</span>
-                  <Badge variant={profile.marketing_emails ? 'default' : 'secondary'}>
-                    {profile.marketing_emails ? 'Ativo' : 'Inativo'}
+                  <Badge variant={profile.marketing_emails ? "default" : "secondary"}>
+                    {profile.marketing_emails ? "Ativo" : "Inativo"}
                   </Badge>
                 </div>
               </CardContent>
@@ -369,7 +373,8 @@ export default function AdminUserDetails() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">
-                              {method.card_brand?.toUpperCase() || method.type} •••• {method.card_last4}
+                              {method.card_brand?.toUpperCase() || method.type} ••••{" "}
+                              {method.card_last4}
                             </span>
                             {method.is_default && (
                               <Badge variant="secondary" className="text-xs">
@@ -386,7 +391,8 @@ export default function AdminUserDetails() {
                       </div>
                       {method.card_expiry_month && method.card_expiry_year && (
                         <span className="text-sm text-muted-foreground">
-                          {String(method.card_expiry_month).padStart(2, '0')}/{method.card_expiry_year}
+                          {String(method.card_expiry_month).padStart(2, "0")}/
+                          {method.card_expiry_year}
                         </span>
                       )}
                     </div>
@@ -410,32 +416,34 @@ export default function AdminUserDetails() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Nome Completo</div>
-                  <div className="text-base mt-1">{profile.full_name || '—'}</div>
+                  <div className="text-base mt-1">{profile.full_name || "—"}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">CPF</div>
-                  <div className="text-base mt-1">{profile.cpf || '—'}</div>
+                  <div className="text-base mt-1">{profile.cpf || "—"}</div>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-muted-foreground">Data de Nascimento</div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Data de Nascimento
+                  </div>
                   <div className="text-base mt-1">
-                    {profile.birth_date 
-                      ? new Date(profile.birth_date).toLocaleDateString('pt-BR')
-                      : '—'}
+                    {profile.birth_date
+                      ? new Date(profile.birth_date).toLocaleDateString("pt-BR")
+                      : "—"}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Telefone</div>
                   <div className="text-base mt-1 flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    {profile.phone || '—'}
+                    {profile.phone || "—"}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">WhatsApp</div>
                   <div className="text-base mt-1 flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-green-600" />
-                    {profile.whatsapp || '—'}
+                    {profile.whatsapp || "—"}
                   </div>
                 </div>
               </div>
@@ -462,33 +470,33 @@ export default function AdminUserDetails() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">CEP</div>
-                      <div className="text-base mt-1">{address.cep || '—'}</div>
+                      <div className="text-base mt-1">{address.cep || "—"}</div>
                     </div>
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">UF</div>
-                      <div className="text-base mt-1">{address.uf || '—'}</div>
+                      <div className="text-base mt-1">{address.uf || "—"}</div>
                     </div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground">Cidade</div>
-                    <div className="text-base mt-1">{address.cidade || '—'}</div>
+                    <div className="text-base mt-1">{address.cidade || "—"}</div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground">Bairro</div>
-                    <div className="text-base mt-1">{address.bairro || '—'}</div>
+                    <div className="text-base mt-1">{address.bairro || "—"}</div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground">Rua</div>
-                    <div className="text-base mt-1">{address.rua || '—'}</div>
+                    <div className="text-base mt-1">{address.rua || "—"}</div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">Número</div>
-                      <div className="text-base mt-1">{address.numero || '—'}</div>
+                      <div className="text-base mt-1">{address.numero || "—"}</div>
                     </div>
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">Complemento</div>
-                      <div className="text-base mt-1">{address.complemento || '—'}</div>
+                      <div className="text-base mt-1">{address.complemento || "—"}</div>
                     </div>
                   </div>
 
@@ -528,20 +536,20 @@ export default function AdminUserDetails() {
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Username</div>
-                  <div className="text-base mt-1">{profile.username || '—'}</div>
+                  <div className="text-base mt-1">{profile.username || "—"}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Nome de Exibição</div>
-                  <div className="text-base mt-1">{profile.display_name || '—'}</div>
+                  <div className="text-base mt-1">{profile.display_name || "—"}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Bio</div>
-                  <div className="text-base mt-1">{profile.bio || '—'}</div>
+                  <div className="text-base mt-1">{profile.bio || "—"}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Perfil Público</div>
-                  <Badge variant={profile.is_public ? 'default' : 'secondary'} className="mt-1">
-                    {profile.is_public ? 'Público' : 'Privado'}
+                  <Badge variant={profile.is_public ? "default" : "secondary"} className="mt-1">
+                    {profile.is_public ? "Público" : "Privado"}
                   </Badge>
                 </div>
                 {profile.is_public && profile.username && (
@@ -615,7 +623,7 @@ export default function AdminUserDetails() {
                           {badge.rarity}
                         </Badge>
                         <div className="text-xs text-muted-foreground mt-2">
-                          {new Date(userBadge.earned_at).toLocaleDateString('pt-BR')}
+                          {new Date(userBadge.earned_at).toLocaleDateString("pt-BR")}
                         </div>
                       </div>
                     );
@@ -648,11 +656,9 @@ export default function AdminUserDetails() {
                       className="flex items-center justify-between p-4 rounded-lg border"
                     >
                       <div>
-                        <div className="font-medium">
-                          Pedido #{order.id.slice(0, 8)}
-                        </div>
+                        <div className="font-medium">Pedido #{order.id.slice(0, 8)}</div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleString('pt-BR')}
+                          {new Date(order.created_at).toLocaleString("pt-BR")}
                         </div>
                       </div>
                       <Badge variant="secondary">{order.status}</Badge>
@@ -678,14 +684,12 @@ export default function AdminUserDetails() {
                     >
                       <div>
                         <div className="font-medium">{sub.collection?.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Plano: {sub.plan_type}
-                        </div>
+                        <div className="text-sm text-muted-foreground">Plano: {sub.plan_type}</div>
                         <div className="text-sm text-muted-foreground">
                           {sub.deliveries_completed}/{sub.deliveries_total} entregas
                         </div>
                       </div>
-                      <Badge variant={sub.status === 'active' ? 'default' : 'secondary'}>
+                      <Badge variant={sub.status === "active" ? "default" : "secondary"}>
                         {sub.status}
                       </Badge>
                     </div>
@@ -732,11 +736,12 @@ export default function AdminUserDetails() {
                 </div>
               )}
 
-              {!profile.preferences_text && (!profile.preference_tags || profile.preference_tags.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhuma preferência cadastrada
-                </p>
-              )}
+              {!profile.preferences_text &&
+                (!profile.preference_tags || profile.preference_tags.length === 0) && (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhuma preferência cadastrada
+                  </p>
+                )}
             </CardContent>
           </Card>
         </TabsContent>

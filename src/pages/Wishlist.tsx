@@ -6,7 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Trash2, ShoppingCart, Edit2, X, Check, Bell, BellOff } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
@@ -16,7 +22,12 @@ export default function Wishlist() {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [editingItem, setEditingItem] = useState<{ id: string; notes: string; priority: number; notify: boolean } | null>(null);
+  const [editingItem, setEditingItem] = useState<{
+    id: string;
+    notes: string;
+    priority: number;
+    notify: boolean;
+  } | null>(null);
 
   const wishlistQuery = useQuery({
     queryKey: ["wishlist", user?.id],
@@ -24,7 +35,8 @@ export default function Wishlist() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wishlist")
-        .select(`
+        .select(
+          `
           id,
           notes,
           priority,
@@ -38,7 +50,8 @@ export default function Wishlist() {
             franchise,
             category
           )
-        `)
+        `
+        )
         .eq("user_id", user!.id)
         .order("priority", { ascending: false })
         .order("added_at", { ascending: false });
@@ -50,11 +63,8 @@ export default function Wishlist() {
 
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("wishlist")
-        .delete()
-        .eq("id", id);
-      
+      const { error } = await supabase.from("wishlist").delete().eq("id", id);
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -67,7 +77,17 @@ export default function Wishlist() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, notes, priority, notify }: { id: string; notes: string; priority: number; notify: boolean }) => {
+    mutationFn: async ({
+      id,
+      notes,
+      priority,
+      notify,
+    }: {
+      id: string;
+      notes: string;
+      priority: number;
+      notify: boolean;
+    }) => {
       const { error } = await supabase
         .from("wishlist")
         .update({
@@ -76,7 +96,7 @@ export default function Wishlist() {
           notify_when_available: notify,
         })
         .eq("id", id);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -93,9 +113,12 @@ export default function Wishlist() {
 
   const getPriorityLabel = (priority: number) => {
     switch (priority) {
-      case 2: return { label: "Urgente", variant: "destructive" as const };
-      case 1: return { label: "Alta", variant: "default" as const };
-      default: return { label: "Normal", variant: "secondary" as const };
+      case 2:
+        return { label: "Urgente", variant: "destructive" as const };
+      case 1:
+        return { label: "Alta", variant: "default" as const };
+      default:
+        return { label: "Normal", variant: "secondary" as const };
     }
   };
 
@@ -104,17 +127,13 @@ export default function Wishlist() {
       <SEOHead
         title="Lista de Desejos"
         description="Gerencie sua lista de desejos de colecionáveis"
-        keywords={['wishlist', 'lista de desejos', 'favoritos']}
+        keywords={["wishlist", "lista de desejos", "favoritos"]}
       />
 
       <div className="container py-8 sm:py-12 max-w-7xl">
         <header className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
-            Lista de Desejos
-          </h1>
-          <p className="text-muted-foreground">
-            Organize os modelos que você deseja adquirir
-          </p>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Lista de Desejos</h1>
+          <p className="text-muted-foreground">Organize os modelos que você deseja adquirir</p>
         </header>
 
         {items.length === 0 ? (
@@ -134,7 +153,9 @@ export default function Wishlist() {
           <div className="grid gap-6">
             {items.map((item: any) => {
               const model = item.models;
-              const imageUrl = model ? `${supabase.supabaseUrl}/storage/v1/object/public/${model.image_bucket}/${model.image_path}` : null;
+              const imageUrl = model
+                ? `${supabase.supabaseUrl}/storage/v1/object/public/${model.image_bucket}/${model.image_path}`
+                : null;
               const priorityInfo = getPriorityLabel(item.priority);
               const isEditing = editingItem?.id === item.id;
 
@@ -165,18 +186,12 @@ export default function Wishlist() {
                               {model?.name || "Modelo sem nome"}
                             </h3>
                             <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                              {model?.franchise && (
-                                <span>{model.franchise}</span>
-                              )}
-                              {model?.category && (
-                                <span>• {model.category}</span>
-                              )}
+                              {model?.franchise && <span>{model.franchise}</span>}
+                              {model?.category && <span>• {model.category}</span>}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant={priorityInfo.variant}>
-                              {priorityInfo.label}
-                            </Badge>
+                            <Badge variant={priorityInfo.variant}>{priorityInfo.label}</Badge>
                             {item.notify_when_available && (
                               <Badge variant="outline" className="gap-1">
                                 <Bell className="h-3 w-3" />
@@ -192,7 +207,9 @@ export default function Wishlist() {
                             <div>
                               <Textarea
                                 value={editingItem.notes}
-                                onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
+                                onChange={(e) =>
+                                  setEditingItem({ ...editingItem, notes: e.target.value })
+                                }
                                 placeholder="Adicione notas sobre este item..."
                                 className="min-h-[80px]"
                                 maxLength={500}
@@ -201,7 +218,9 @@ export default function Wishlist() {
                             <div className="flex flex-wrap gap-4">
                               <Select
                                 value={String(editingItem.priority)}
-                                onValueChange={(value) => setEditingItem({ ...editingItem, priority: Number(value) })}
+                                onValueChange={(value) =>
+                                  setEditingItem({ ...editingItem, priority: Number(value) })
+                                }
                               >
                                 <SelectTrigger className="w-[180px]">
                                   <SelectValue />
@@ -216,22 +235,30 @@ export default function Wishlist() {
                               <Button
                                 variant={editingItem.notify ? "default" : "outline"}
                                 size="sm"
-                                onClick={() => setEditingItem({ ...editingItem, notify: !editingItem.notify })}
+                                onClick={() =>
+                                  setEditingItem({ ...editingItem, notify: !editingItem.notify })
+                                }
                                 className="gap-2"
                               >
-                                {editingItem.notify ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                                {editingItem.notify ? (
+                                  <Bell className="h-4 w-4" />
+                                ) : (
+                                  <BellOff className="h-4 w-4" />
+                                )}
                                 {editingItem.notify ? "Notificar" : "Não notificar"}
                               </Button>
                             </div>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => updateMutation.mutate({
-                                  id: item.id,
-                                  notes: editingItem.notes,
-                                  priority: editingItem.priority,
-                                  notify: editingItem.notify,
-                                })}
+                                onClick={() =>
+                                  updateMutation.mutate({
+                                    id: item.id,
+                                    notes: editingItem.notes,
+                                    priority: editingItem.priority,
+                                    notify: editingItem.notify,
+                                  })
+                                }
                                 disabled={updateMutation.isPending}
                                 className="gap-2"
                               >
@@ -258,22 +285,20 @@ export default function Wishlist() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setEditingItem({
-                                  id: item.id,
-                                  notes: item.notes || "",
-                                  priority: item.priority,
-                                  notify: item.notify_when_available,
-                                })}
+                                onClick={() =>
+                                  setEditingItem({
+                                    id: item.id,
+                                    notes: item.notes || "",
+                                    priority: item.priority,
+                                    notify: item.notify_when_available,
+                                  })
+                                }
                                 className="gap-2"
                               >
                                 <Edit2 className="h-4 w-4" />
                                 Editar
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                asChild
-                              >
+                              <Button size="sm" variant="outline" asChild>
                                 <Link to={`/catalog/${model?.id}`} className="gap-2">
                                   <ShoppingCart className="h-4 w-4" />
                                   Ver Detalhes

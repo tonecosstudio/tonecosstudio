@@ -5,27 +5,33 @@ This directory contains the CustomerSidebar component and its sections for displ
 ## Components
 
 ### CustomerSidebar
+
 Main sidebar component that displays customer context information.
 
 **Props:**
+
 - `userId: string` - The customer's user ID
 - `isOpen: boolean` - Whether the sidebar is open
 - `onToggle: () => void` - Callback to toggle sidebar visibility
 
 **Features:**
+
 - Collapsible sidebar using shadcn/ui Sheet component
 - Lazy loading of data when sidebar opens
 - Displays 4 sections: Orders, Quotes, Subscription, Payments
 - Only shows Subscription section if user has active subscription
 
 ### OrdersList
+
 Displays list of customer orders with status and tracking information.
 
 **Props:**
+
 - `orders: Order[]` - Array of customer orders
 - `onRefresh: () => void` - Callback to refresh data after updates
 
 **Features:**
+
 - Shows order number, date, total value, and status
 - Displays tracking code for shipped/delivered orders
 - Allows admin to update order status directly
@@ -33,25 +39,31 @@ Displays list of customer orders with status and tracking information.
 - Triggers automatic notification when status is updated
 
 ### QuotesList
+
 Displays list of customer quotes with status.
 
 **Props:**
+
 - `quotes: Quote[]` - Array of customer quotes
 - `onRefresh: () => void` - Callback to refresh data after updates
 
 **Features:**
+
 - Shows quote number, date, items summary, and status
 - Displays payment status
 - Highlights pending quotes with yellow border and alert icon
 - Shows items summary if available
 
 ### SubscriptionInfo
+
 Displays active subscription information.
 
 **Props:**
+
 - `subscription: Subscription` - Customer's active subscription
 
 **Features:**
+
 - Shows subscription plan type (trimestral, semestral, anual)
 - Displays subscription status with icon
 - Shows next billing date
@@ -59,13 +71,16 @@ Displays active subscription information.
 - Only rendered if user has active subscription
 
 ### PaymentInfo
+
 Displays payment history and allows status updates.
 
 **Props:**
+
 - `payments: ManualPayment[]` - Array of customer payments
 - `onRefresh: () => void` - Callback to refresh data after updates
 
 **Features:**
+
 - Shows payment reference number, date, amount, and status
 - Displays payment type (one_time, recurring)
 - Shows payment method ID
@@ -98,11 +113,11 @@ function AdminSupportV2() {
   return (
     <div className="flex h-screen">
       <ConversationList onSelect={setSelectedConversation} />
-      
+
       <div className="flex-1 flex flex-col">
         {selectedConversation && (
           <>
-            <ChatHeader 
+            <ChatHeader
               conversation={selectedConversation}
               actions={
                 <CustomerSidebar

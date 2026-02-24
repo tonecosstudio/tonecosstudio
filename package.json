@@ -17,10 +17,18 @@
     "test:e2e": "cross-env VITEST_INTEGRATION=true vitest run src/test/e2e-integration.test.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\" \"*.{json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\" \"*.{json,md}\"",
-    "prepare": "husky || true",
+    "prepare": "husky",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
-    "release:major": "standard-version --release-as major"
+    "release:major": "standard-version --release-as major",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
+    "docker:dev:stop": "docker-compose -f docker-compose.dev.yml down",
+    "docker:dev:logs": "docker-compose -f docker-compose.dev.yml logs -f",
+    "docker:prod:build": "docker build -t ordax-app:latest .",
+    "docker:prod": "docker-compose up -d",
+    "docker:prod:stop": "docker-compose down",
+    "docker:prod:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v && docker-compose -f docker-compose.dev.yml down -v"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -92,8 +100,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@commitlint/cli": "^18.6.0",
-    "@commitlint/config-conventional": "^18.6.0",
+    "@commitlint/cli": "^18.6.1",
+    "@commitlint/config-conventional": "^18.6.3",
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
@@ -110,12 +118,12 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "husky": "^9.0.10",
+    "husky": "^9.1.7",
     "jsdom": "^20.0.3",
-    "lint-staged": "^15.2.0",
+    "lint-staged": "^15.5.2",
     "lovable-tagger": "^1.1.13",
     "postcss": "^8.5.6",
-    "prettier": "^3.2.4",
+    "prettier": "^3.8.1",
     "standard-version": "^9.5.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

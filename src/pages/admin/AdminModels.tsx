@@ -52,10 +52,10 @@ type ModelRow = {
 
 function fmtDate(iso: string) {
   try {
-    return new Date(iso).toLocaleString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric'
+    return new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   } catch {
     return iso;
@@ -97,18 +97,13 @@ export default function AdminModels() {
   const deleteModel = async (modelId: string, imageBucket: string, imagePath: string) => {
     try {
       // Deleta a imagem do storage
-      const { error: storageError } = await supabase.storage
-        .from(imageBucket)
-        .remove([imagePath]);
-      
+      const { error: storageError } = await supabase.storage.from(imageBucket).remove([imagePath]);
+
       if (storageError) throw storageError;
 
       // Deleta o modelo do banco
-      const { error: dbError } = await supabase
-        .from("models")
-        .delete()
-        .eq("id", modelId);
-      
+      const { error: dbError } = await supabase.from("models").delete().eq("id", modelId);
+
       if (dbError) throw dbError;
 
       toast({ title: "Deletado", description: "Modelo removido com sucesso." });
@@ -132,7 +127,7 @@ export default function AdminModels() {
 
   const saveEdit = async () => {
     if (!editingModel) return;
-    
+
     try {
       const tags = editForm.tags
         .split(",")
@@ -170,12 +165,10 @@ export default function AdminModels() {
         <div className="flex items-center justify-between gap-4 mb-4">
           <h1 className="text-5xl font-bold tracking-tight">Gerenciar Modelos</h1>
           <Badge variant="secondary" className="border border-border px-4 py-2 text-base">
-            {models.length} {models.length === 1 ? 'modelo' : 'modelos'}
+            {models.length} {models.length === 1 ? "modelo" : "modelos"}
           </Badge>
         </div>
-        <p className="text-lg text-muted-foreground">
-          Edite ou remova modelos do catálogo Ordax.
-        </p>
+        <p className="text-lg text-muted-foreground">Edite ou remova modelos do catálogo Ordax.</p>
       </div>
 
       <Card className="border border-border bg-card shadow-premium">
@@ -216,12 +209,12 @@ export default function AdminModels() {
                     const imageUrl = supabase.storage
                       .from(model.image_bucket)
                       .getPublicUrl(model.image_path).data.publicUrl;
-                    
+
                     return (
                       <TableRow key={model.id}>
                         <TableCell>
-                          <img 
-                            src={imageUrl} 
+                          <img
+                            src={imageUrl}
                             alt={model.name}
                             className="h-16 w-16 object-contain rounded border border-border"
                           />
@@ -234,15 +227,11 @@ export default function AdminModels() {
                             {model.id.slice(0, 8)}...
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {model.franchise ?? "—"}
-                        </TableCell>
+                        <TableCell className="text-sm">{model.franchise ?? "—"}</TableCell>
                         <TableCell className="text-sm">
                           <div>{model.category ?? "—"}</div>
                           {model.subcategory && (
-                            <div className="text-xs text-muted-foreground">
-                              {model.subcategory}
-                            </div>
+                            <div className="text-xs text-muted-foreground">{model.subcategory}</div>
                           )}
                         </TableCell>
                         <TableCell>
@@ -266,9 +255,9 @@ export default function AdminModels() {
                           <div className="flex items-center justify-end gap-2">
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                   className="text-xs"
                                   onClick={() => openEditDialog(model)}
                                 >
@@ -288,7 +277,9 @@ export default function AdminModels() {
                                     <Input
                                       id="edit-name"
                                       value={editForm.name}
-                                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, name: e.target.value })
+                                      }
                                     />
                                   </div>
                                   <div className="grid gap-2">
@@ -296,7 +287,9 @@ export default function AdminModels() {
                                     <Input
                                       id="edit-franchise"
                                       value={editForm.franchise}
-                                      onChange={(e) => setEditForm({ ...editForm, franchise: e.target.value })}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, franchise: e.target.value })
+                                      }
                                     />
                                   </div>
                                   <div className="grid gap-2">
@@ -304,7 +297,9 @@ export default function AdminModels() {
                                     <Input
                                       id="edit-category"
                                       value={editForm.category}
-                                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, category: e.target.value })
+                                      }
                                     />
                                   </div>
                                   <div className="grid gap-2">
@@ -312,7 +307,9 @@ export default function AdminModels() {
                                     <Input
                                       id="edit-subcategory"
                                       value={editForm.subcategory}
-                                      onChange={(e) => setEditForm({ ...editForm, subcategory: e.target.value })}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, subcategory: e.target.value })
+                                      }
                                     />
                                   </div>
                                   <div className="grid gap-2">
@@ -320,7 +317,9 @@ export default function AdminModels() {
                                     <Textarea
                                       id="edit-tags"
                                       value={editForm.tags}
-                                      onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, tags: e.target.value })
+                                      }
                                       rows={3}
                                     />
                                   </div>
@@ -329,16 +328,18 @@ export default function AdminModels() {
                                   <Button variant="outline" onClick={() => setEditingModel(null)}>
                                     Cancelar
                                   </Button>
-                                  <Button onClick={saveEdit}>
-                                    Salvar
-                                  </Button>
+                                  <Button onClick={saveEdit}>Salvar</Button>
                                 </DialogFooter>
                               </DialogContent>
                             </Dialog>
 
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-xs text-destructive">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs text-destructive"
+                                >
                                   Deletar
                                 </Button>
                               </AlertDialogTrigger>
@@ -346,13 +347,17 @@ export default function AdminModels() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Deletar modelo?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    O modelo <strong>{model.name}</strong> será removido permanentemente do catálogo e a imagem será deletada do storage. Esta ação não pode ser desfeita.
+                                    O modelo <strong>{model.name}</strong> será removido
+                                    permanentemente do catálogo e a imagem será deletada do storage.
+                                    Esta ação não pode ser desfeita.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => deleteModel(model.id, model.image_bucket, model.image_path)}
+                                    onClick={() =>
+                                      deleteModel(model.id, model.image_bucket, model.image_path)
+                                    }
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
                                     Sim, deletar

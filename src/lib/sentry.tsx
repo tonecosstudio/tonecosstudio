@@ -1,14 +1,14 @@
 /**
  * Sentry Configuration
- * 
+ *
  * NOTA: Sentry é OPCIONAL. O projeto funciona perfeitamente sem ele.
- * 
+ *
  * Para habilitar o Sentry:
  * 1. Instale: npm install @sentry/react
  * 2. Crie conta em: https://sentry.io
  * 3. Adicione ao .env: VITE_SENTRY_DSN=https://your-dsn@sentry.io/project-id
  * 4. Reinicie o servidor
- * 
+ *
  * Recursos do Sentry:
  * - Error tracking automático
  * - Performance monitoring
@@ -155,13 +155,13 @@ export function withSentryErrorBoundary<P extends object>(
   }
 ) {
   if (!SENTRY_ENABLED) return Component;
-  
+
   // TODO: Descomentar após instalar @sentry/react
   // return Sentry.withErrorBoundary(Component, {
   //   fallback: options?.fallback || React.createElement(ErrorFallback),
   //   showDialog: options?.showDialog ?? false,
   // });
-  
+
   return Component;
 }
 
@@ -175,7 +175,8 @@ function ErrorFallback() {
         <div className="text-6xl">😔</div>
         <h1 className="text-2xl font-bold">Algo deu errado</h1>
         <p className="text-muted-foreground">
-          Desculpe, ocorreu um erro inesperado. Nossa equipe foi notificada e está trabalhando para resolver.
+          Desculpe, ocorreu um erro inesperado. Nossa equipe foi notificada e está trabalhando para
+          resolver.
         </p>
         <button
           onClick={() => window.location.reload()}

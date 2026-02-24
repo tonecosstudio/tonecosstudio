@@ -21,7 +21,10 @@ export function ModelCard(props: {
     return (
       <Card className="group h-full overflow-hidden border border-border bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium">
         <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
-          <Link to={`/catalogo/${encodeURIComponent(m.id)}`} aria-label={`Abrir detalhes de ${title}`}>
+          <Link
+            to={`/catalogo/${encodeURIComponent(m.id)}`}
+            aria-label={`Abrir detalhes de ${title}`}
+          >
             <img
               src={imageUrl}
               alt={m.name}
@@ -48,7 +51,10 @@ export function ModelCard(props: {
             <p className="min-w-0 truncate text-base font-semibold leading-tight">{title}</p>
           </Link>
           <div className="mt-auto pt-4">
-            <Button className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium" onClick={onQuote}>
+            <Button
+              className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
+              onClick={onQuote}
+            >
               Solicitar Orçamento
             </Button>
           </div>
@@ -63,7 +69,10 @@ export function ModelCard(props: {
   return (
     <Card className="group flex flex-col overflow-hidden border border-border bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium">
       <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
-        <Link to={`/catalogo/${encodeURIComponent(m.id)}`} aria-label={`Abrir detalhes de ${title}`}>
+        <Link
+          to={`/catalogo/${encodeURIComponent(m.id)}`}
+          aria-label={`Abrir detalhes de ${title}`}
+        >
           <img
             src={imageUrl}
             alt={m.name}
@@ -112,7 +121,10 @@ export function ModelCard(props: {
         ) : null}
 
         <div className="mt-auto pt-6">
-          <Button className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium" onClick={onQuote}>
+          <Button
+            className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
+            onClick={onQuote}
+          >
             Solicitar Orçamento
           </Button>
         </div>

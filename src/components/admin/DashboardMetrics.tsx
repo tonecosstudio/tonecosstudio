@@ -49,9 +49,7 @@ export function DashboardMetrics() {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
       // 1. open_count - conversas com status 'waiting_admin'
-      const open_count = conversations.filter(
-        (c) => c.status === "waiting_admin"
-      ).length;
+      const open_count = conversations.filter((c) => c.status === "waiting_admin").length;
 
       // 2. waiting_customer_count - conversas com status 'waiting_customer'
       const waiting_customer_count = conversations.filter(
@@ -89,9 +87,7 @@ export function DashboardMetrics() {
           const minutes = (firstResponse - created) / (1000 * 60);
           return sum + minutes;
         }, 0);
-        avg_first_response_minutes = Math.round(
-          totalMinutes / recentConversations.length
-        );
+        avg_first_response_minutes = Math.round(totalMinutes / recentConversations.length);
       }
 
       // 7. conversations_with_risk - conversas com risk_flags não vazio
@@ -284,14 +280,15 @@ function MetricCard({
     <Card className={highlight ? "border-red-500 border-2" : ""}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Badge variant={badgeVariants[variant]} className="h-6 w-6 p-0 flex items-center justify-center">
+        <Badge
+          variant={badgeVariants[variant]}
+          className="h-6 w-6 p-0 flex items-center justify-center"
+        >
           {icon}
         </Badge>
       </CardHeader>
       <CardContent>
-        <div className={`text-2xl font-bold ${variantStyles[variant]}`}>
-          {value}
-        </div>
+        <div className={`text-2xl font-bold ${variantStyles[variant]}`}>{value}</div>
         <p className="text-xs text-muted-foreground mt-1">{description}</p>
       </CardContent>
     </Card>

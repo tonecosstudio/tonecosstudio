@@ -52,6 +52,7 @@ import AdminPreorders from "./pages/admin/AdminPreorders";
 import AdminPackaging from "./pages/admin/AdminPackaging";
 import PaymentCalculator from "./pages/admin/PaymentCalculator";
 import AdminProductionLimit from "./pages/admin/AdminProductionLimit";
+import AdminContentSettings from "./pages/admin/AdminContentSettings";
 import AdminPricing from "./pages/admin/AdminPricing";
 import AdminCollectionFinancials from "./pages/admin/AdminCollectionFinancials";
 import AdminPayments from "./pages/admin/AdminPayments";
@@ -122,10 +123,7 @@ function AppContent() {
             }
           />
 
-          <Route
-            path="/suporte"
-            element={<Navigate to="/perfil?section=support" replace />}
-          />
+          <Route path="/suporte" element={<Navigate to="/perfil?section=support" replace />} />
 
           <Route
             path="/assinaturas"
@@ -388,6 +386,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/admin/configuracoes-conteudo"
+            element={
+              <RequireAdmin>
+                <AdminContentSettings />
+              </RequireAdmin>
+            }
+          />
+          <Route
             path="/admin/precos"
             element={
               <RequireAdmin>
@@ -454,7 +460,7 @@ function AppContent() {
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-        
+
         {/* Floating chat button - disponível em todas as páginas para usuários autenticados */}
         <ChatButton />
       </BrowserRouter>

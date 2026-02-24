@@ -1,14 +1,18 @@
 /**
- * Banner de Informações do Lote Atual
- * Busca dados dinamicamente de system_settings (SSOT)
+ * Banner de Informações do Ciclo Atual
+ * Busca dados dinamicamente usando o novo modelo de ciclos (v2.0)
  */
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Calendar, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useContentSettings } from "@/hooks/useContentSettings";
-import { processContentVariables, getFullScheduleText } from "@/lib/services/contentService";
+import { useBatchInfo } from "@/hooks/useBatchInfo";
+import {
+  formatBatchDate,
+  formatBatchDateFull,
+  getDaysUntilSalesEnd,
+} from "@/lib/services/batchCalculator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface BatchInfoBannerProps {
@@ -17,12 +21,12 @@ interface BatchInfoBannerProps {
   buttonLink?: string;
 }
 
-export function BatchInfoBanner({ 
-  showButton = true, 
+export function BatchInfoBanner({
+  showButton = true,
   buttonText = "Ver Planos",
-  buttonLink = "/planos"
+  buttonLink = "/planos",
 }: BatchInfoBannerProps) {
-  const { data: content, isLoading } = useContentSettings();
+  const { currentBatch, isLoading } = useBatchInfo();
 
   if (isLoading) {
     return (
@@ -32,27 +36,40 @@ export function BatchInfoBanner({
     );
   }
 
-  if (!content) {
+  if (!currentBatch) {
     return null;
   }
 
-  const title = processContentVariables(content.batchBannerTitle, content);
-  const subtitle = getFullScheduleText(content);
-  const note = processContentVariables(content.batchBannerNote, content);
+  const daysLeft = getDaysUntilSalesEnd(currentBatch);
+  const isClosingSoon = daysLeft <= 3;
 
   return (
     <Alert className="border-primary/20 bg-primary/5">
       <Calendar className="h-5 w-5 text-primary" />
-      <AlertDescription className="ml-2">
+      <AlertTitle className="ml-2 text-lg font-semibold">🔥 {currentBatch.name} Aberto!</AlertTitle>
+      <AlertDescription className="ml-2 mt-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <span className="font-semibold text-lg">{title}</span>
-            <p className="text-sm text-muted-foreground mt-1">
-              {subtitle}
+          <div className="space-y-2">
+            <p className="text-sm">
+              <strong>Vendas:</strong> {formatBatchDate(currentBatch.salesStart)} a{" "}
+              {formatBatchDate(currentBatch.salesEnd)} ({currentBatch.salesDuration} dias)
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {note}
+            <p className="text-sm">
+              <strong>Produção:</strong> {formatBatchDate(currentBatch.productionStart)} a{" "}
+              {formatBatchDate(currentBatch.productionEnd)} ({currentBatch.productionDuration} dias)
             </p>
+            <p className="text-sm">
+              <strong>Envio:</strong> Até {formatBatchDateFull(currentBatch.shippingDeadlineDate)} (
+              {currentBatch.shippingMonth}/{currentBatch.shippingYear})
+            </p>
+            {daysLeft > 0 && (
+              <p
+                className={`text-sm font-semibold flex items-center gap-2 ${isClosingSoon ? "text-orange-600" : "text-primary"}`}
+              >
+                <Clock className="w-4 h-4" />
+                {isClosingSoon ? "⚠️ " : ""}Faltam {daysLeft} dias para o fechamento!
+              </p>
+            )}
           </div>
           {showButton && (
             <Button asChild>

@@ -8,14 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";
-import { 
-  CheckCircle2, 
-  Clock, 
+import {
+  CheckCircle2,
+  Clock,
   Package,
   CreditCard,
   AlertCircle,
   ArrowRight,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format } from "date-fns";
@@ -44,7 +44,8 @@ export default function PreorderTracking() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quotes")
-        .select(`
+        .select(
+          `
           *,
           quote_items (
             id,
@@ -74,16 +75,17 @@ export default function PreorderTracking() {
               caption
             )
           )
-        `)
+        `
+        )
         .eq("id", quoteId)
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
         throw new Error("Orçamento não encontrado");
       }
-      
+
       return data;
     },
   });
@@ -107,42 +109,44 @@ export default function PreorderTracking() {
   const quote = quoteQuery.data;
   const payments = paymentsQuery.data || [];
 
-  const depositPayment = payments.find(p => p.payment_type === "deposit" && p.status === "completed");
-  const finalPayment = payments.find(p => p.payment_type === "final" && p.status === "completed");
+  const depositPayment = payments.find(
+    (p) => p.payment_type === "deposit" && p.status === "completed"
+  );
+  const finalPayment = payments.find((p) => p.payment_type === "final" && p.status === "completed");
 
   // Status do pedido
   const getStatusInfo = () => {
     if (!quote) return { label: "Carregando...", color: "gray", icon: Clock };
 
     if (quote.payment_status === "pending") {
-      return { 
-        label: "Aguardando Pagamento do Sinal", 
-        color: "yellow", 
-        icon: AlertCircle 
+      return {
+        label: "Aguardando Pagamento do Sinal",
+        color: "yellow",
+        icon: AlertCircle,
       };
     }
 
     if (quote.payment_status === "deposit_paid" && !quote.ready_for_final_payment) {
-      return { 
-        label: "Em Produção", 
-        color: "blue", 
-        icon: Package 
+      return {
+        label: "Em Produção",
+        color: "blue",
+        icon: Package,
       };
     }
 
     if (quote.payment_status === "deposit_paid" && quote.ready_for_final_payment) {
-      return { 
-        label: "Aguardando Pagamento Final", 
-        color: "orange", 
-        icon: CreditCard 
+      return {
+        label: "Aguardando Pagamento Final",
+        color: "orange",
+        icon: CreditCard,
       };
     }
 
     if (quote.payment_status === "fully_paid") {
-      return { 
-        label: "Pago - Pronto para Envio", 
-        color: "green", 
-        icon: CheckCircle2 
+      return {
+        label: "Pago - Pronto para Envio",
+        color: "green",
+        icon: CheckCircle2,
       };
     }
 
@@ -196,14 +200,10 @@ export default function PreorderTracking() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">
-                  Pedido #{quoteId?.slice(0, 8)}
-                </h1>
-                <p className="text-muted-foreground">
-                  Acompanhe o progresso do seu pedido
-                </p>
+                <h1 className="text-3xl font-bold mb-2">Pedido #{quoteId?.slice(0, 8)}</h1>
+                <p className="text-muted-foreground">Acompanhe o progresso do seu pedido</p>
               </div>
-              <Badge 
+              <Badge
                 variant={statusInfo.color === "green" ? "default" : "secondary"}
                 className="text-sm px-4 py-2"
               >
@@ -220,7 +220,11 @@ export default function PreorderTracking() {
               {quote?.payment_link_sent_at && (
                 <PaymentLinkCard
                   quoteId={quoteId!}
-                  amount={quote.payment_status === "pending" ? (quote.deposit_amount || 100) : (quote.remaining_amount || 0)}
+                  amount={
+                    quote.payment_status === "pending"
+                      ? quote.deposit_amount || 100
+                      : quote.remaining_amount || 0
+                  }
                   paymentLink={quote.payment_link}
                   pixKey={quote.pix_key}
                   instructions={quote.payment_instructions}
@@ -230,20 +234,22 @@ export default function PreorderTracking() {
               )}
 
               {/* Alerta de Pagamento Final (fallback se não tiver link) */}
-              {quote?.ready_for_final_payment && quote?.payment_status === "deposit_paid" && !quote?.payment_link_sent_at && (
-                <Alert className="border-orange-500 bg-orange-500/10">
-                  <CreditCard className="h-5 w-5 text-orange-600" />
-                  <AlertTitle className="text-orange-600 font-bold">
-                    🎉 Seu Pedido Está Pronto!
-                  </AlertTitle>
-                  <AlertDescription className="text-orange-600">
-                    <p className="mb-3">
-                      A produção foi finalizada e seu pedido está pronto para envio.
-                      Aguarde o link de pagamento do restante.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              )}
+              {quote?.ready_for_final_payment &&
+                quote?.payment_status === "deposit_paid" &&
+                !quote?.payment_link_sent_at && (
+                  <Alert className="border-orange-500 bg-orange-500/10">
+                    <CreditCard className="h-5 w-5 text-orange-600" />
+                    <AlertTitle className="text-orange-600 font-bold">
+                      🎉 Seu Pedido Está Pronto!
+                    </AlertTitle>
+                    <AlertDescription className="text-orange-600">
+                      <p className="mb-3">
+                        A produção foi finalizada e seu pedido está pronto para envio. Aguarde o
+                        link de pagamento do restante.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
               {/* Informações de Pagamento */}
               <Card>
@@ -276,7 +282,10 @@ export default function PreorderTracking() {
                       </p>
                       {depositPayment && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Pago em {format(new Date(depositPayment.paid_at!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          Pago em{" "}
+                          {format(new Date(depositPayment.paid_at!), "dd/MM/yyyy 'às' HH:mm", {
+                            locale: ptBR,
+                          })}
                         </p>
                       )}
                     </div>
@@ -304,12 +313,13 @@ export default function PreorderTracking() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-2xl font-bold">
-                        R$ {quote?.remaining_amount?.toFixed(2)}
-                      </p>
+                      <p className="text-2xl font-bold">R$ {quote?.remaining_amount?.toFixed(2)}</p>
                       {finalPayment ? (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Pago em {format(new Date(finalPayment.paid_at!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          Pago em{" "}
+                          {format(new Date(finalPayment.paid_at!), "dd/MM/yyyy 'às' HH:mm", {
+                            locale: ptBR,
+                          })}
                         </p>
                       ) : quote?.ready_for_final_payment ? (
                         <p className="text-xs text-orange-600 mt-1">
@@ -343,9 +353,7 @@ export default function PreorderTracking() {
                       <Package className="h-5 w-5" />
                       Progresso da Produção
                     </CardTitle>
-                    <CardDescription>
-                      Acompanhe cada etapa da produção
-                    </CardDescription>
+                    <CardDescription>Acompanhe cada etapa da produção</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {quote.quote_production_updates && quote.quote_production_updates.length > 0 ? (
@@ -353,12 +361,18 @@ export default function PreorderTracking() {
                         {quote.quote_production_updates.map((update: any, index: number) => (
                           <div key={update.id} className="flex gap-4">
                             <div className="flex flex-col items-center">
-                              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                                index === 0 ? "bg-primary" : "bg-muted"
-                              }`}>
-                                <CheckCircle2 className={`h-5 w-5 ${
-                                  index === 0 ? "text-primary-foreground" : "text-muted-foreground"
-                                }`} />
+                              <div
+                                className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                                  index === 0 ? "bg-primary" : "bg-muted"
+                                }`}
+                              >
+                                <CheckCircle2
+                                  className={`h-5 w-5 ${
+                                    index === 0
+                                      ? "text-primary-foreground"
+                                      : "text-muted-foreground"
+                                  }`}
+                                />
                               </div>
                               {index < quote.quote_production_updates.length - 1 && (
                                 <div className="w-0.5 h-full bg-border mt-2" />
@@ -368,42 +382,43 @@ export default function PreorderTracking() {
                               <div className="flex items-center justify-between mb-2">
                                 <p className="font-medium">{update.stage}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {format(new Date(update.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                                  {format(new Date(update.created_at), "dd/MM/yyyy", {
+                                    locale: ptBR,
+                                  })}
                                 </p>
                               </div>
                               {update.note && (
-                                <p className="text-sm text-muted-foreground mb-3">
-                                  {update.note}
-                                </p>
+                                <p className="text-sm text-muted-foreground mb-3">{update.note}</p>
                               )}
-                              {update.quote_production_photos && update.quote_production_photos.length > 0 && (
-                                <div className="grid grid-cols-3 gap-2">
-                                  {update.quote_production_photos.map((photo: any) => (
-                                    <Dialog key={photo.id}>
-                                      <DialogTrigger asChild>
-                                        <img
-                                          src={photo.url}
-                                          alt={photo.caption || "Foto da produção"}
-                                          className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                                        />
-                                      </DialogTrigger>
-                                      <DialogContent className="max-w-3xl">
-                                        <DialogHeader>
-                                          <DialogTitle>{update.stage}</DialogTitle>
-                                          {photo.caption && (
-                                            <DialogDescription>{photo.caption}</DialogDescription>
-                                          )}
-                                        </DialogHeader>
-                                        <img
-                                          src={photo.url}
-                                          alt={photo.caption || "Foto da produção"}
-                                          className="w-full h-auto rounded"
-                                        />
-                                      </DialogContent>
-                                    </Dialog>
-                                  ))}
-                                </div>
-                              )}
+                              {update.quote_production_photos &&
+                                update.quote_production_photos.length > 0 && (
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {update.quote_production_photos.map((photo: any) => (
+                                      <Dialog key={photo.id}>
+                                        <DialogTrigger asChild>
+                                          <img
+                                            src={photo.url}
+                                            alt={photo.caption || "Foto da produção"}
+                                            className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                          />
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-3xl">
+                                          <DialogHeader>
+                                            <DialogTitle>{update.stage}</DialogTitle>
+                                            {photo.caption && (
+                                              <DialogDescription>{photo.caption}</DialogDescription>
+                                            )}
+                                          </DialogHeader>
+                                          <img
+                                            src={photo.url}
+                                            alt={photo.caption || "Foto da produção"}
+                                            className="w-full h-auto rounded"
+                                          />
+                                        </DialogContent>
+                                      </Dialog>
+                                    ))}
+                                  </div>
+                                )}
                             </div>
                           </div>
                         ))}
@@ -444,15 +459,9 @@ export default function PreorderTracking() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm line-clamp-2">
-                          {item.models?.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Escala {item.scale}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Quantidade: {item.quantity}
-                        </p>
+                        <p className="font-medium text-sm line-clamp-2">{item.models?.name}</p>
+                        <p className="text-xs text-muted-foreground">Escala {item.scale}</p>
+                        <p className="text-xs text-muted-foreground">Quantidade: {item.quantity}</p>
                       </div>
                     </div>
                   ))}
@@ -469,10 +478,7 @@ export default function PreorderTracking() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Seu pedido está pronto! Pague o restante para liberarmos o envio.
                     </p>
-                    <Button 
-                      className="w-full"
-                      onClick={() => processFinalPaymentMutation.mutate()}
-                    >
+                    <Button className="w-full" onClick={() => processFinalPaymentMutation.mutate()}>
                       Pagar R$ {quote.remaining_amount?.toFixed(2)}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -489,8 +495,8 @@ export default function PreorderTracking() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Entre em contato conosco para qualquer dúvida sobre seu pedido.
                   </p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full"
                     onClick={() => navigate("/perfil?section=support")}
                   >

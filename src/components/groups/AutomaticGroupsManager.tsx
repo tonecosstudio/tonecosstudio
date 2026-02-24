@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /**
  * AutomaticGroupsManager - Gerencia sincronização de grupos automáticos
- * 
+ *
  * Permite ao admin:
  * - Ver status dos grupos automáticos
  * - Forçar sincronização manual
@@ -21,15 +21,15 @@ export function AutomaticGroupsManager() {
     setSyncing(true);
     try {
       // Chamar função do banco para sincronizar todos os grupos
-      const { error } = await supabase.rpc('sync_all_automatic_groups' as any);
-      
+      const { error } = await supabase.rpc("sync_all_automatic_groups" as any);
+
       if (error) throw error;
 
       setLastSync(new Date());
-      toast.success('Todos os grupos foram sincronizados com sucesso!');
+      toast.success("Todos os grupos foram sincronizados com sucesso!");
     } catch (error) {
-      console.error('Erro ao sincronizar grupos:', error);
-      toast.error('Erro ao sincronizar grupos. Verifique o console.');
+      console.error("Erro ao sincronizar grupos:", error);
+      toast.error("Erro ao sincronizar grupos. Verifique o console.");
     } finally {
       setSyncing(false);
     }
@@ -37,16 +37,16 @@ export function AutomaticGroupsManager() {
 
   const handleSyncGroup = async (groupId: string) => {
     try {
-      const { error } = await supabase.rpc('sync_automatic_group_members' as any, {
-        p_group_id: groupId
+      const { error } = await supabase.rpc("sync_automatic_group_members" as any, {
+        p_group_id: groupId,
       });
-      
+
       if (error) throw error;
 
-      toast.success('Grupo sincronizado com sucesso!');
+      toast.success("Grupo sincronizado com sucesso!");
     } catch (error) {
-      console.error('Erro ao sincronizar grupo:', error);
-      toast.error('Erro ao sincronizar grupo. Verifique o console.');
+      console.error("Erro ao sincronizar grupo:", error);
+      toast.error("Erro ao sincronizar grupo. Verifique o console.");
     }
   };
 
@@ -68,9 +68,7 @@ export function AutomaticGroupsManager() {
         <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
           <CheckCircle className="h-5 w-5 text-green-600" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-green-900 dark:text-green-100">
-              Sistema Ativo
-            </p>
+            <p className="text-sm font-medium text-green-900 dark:text-green-100">Sistema Ativo</p>
             <p className="text-xs text-green-700 dark:text-green-300">
               Triggers automáticos estão funcionando
             </p>
@@ -80,18 +78,14 @@ export function AutomaticGroupsManager() {
         {/* Last Sync */}
         {lastSync && (
           <div className="text-sm text-muted-foreground">
-            Última sincronização manual: {lastSync.toLocaleString('pt-BR')}
+            Última sincronização manual: {lastSync.toLocaleString("pt-BR")}
           </div>
         )}
 
         {/* Sync Button */}
-        <Button
-          onClick={handleSyncAll}
-          disabled={syncing}
-          className="w-full"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-          {syncing ? 'Sincronizando...' : 'Sincronizar Todos os Grupos Agora'}
+        <Button onClick={handleSyncAll} disabled={syncing} className="w-full">
+          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Sincronizando..." : "Sincronizar Todos os Grupos Agora"}
         </Button>
 
         {/* Info */}
@@ -126,7 +120,9 @@ export function AutomaticGroupsManager() {
             <div className="flex items-center justify-between p-2 border rounded">
               <div>
                 <p className="text-sm font-medium">📦 Grupos por Coleção</p>
-                <p className="text-xs text-muted-foreground">Criados automaticamente para cada coleção</p>
+                <p className="text-xs text-muted-foreground">
+                  Criados automaticamente para cada coleção
+                </p>
               </div>
             </div>
           </div>

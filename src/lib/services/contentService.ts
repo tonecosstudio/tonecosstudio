@@ -2,21 +2,24 @@
  * Content Service - SSOT (Single Source of Truth)
  * Centraliza TODOS os textos, políticas, prazos e informações do sistema
  * Garante consistência total em todas as páginas
+ *
+ * Versão 2.0: Suporte a Modelo Recorrente Mensal (2 ciclos por mês)
  */
 
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import type { CycleType } from "./batchCalculator";
 
 export interface ContentSettings {
-  // Prazos
+  // Prazos (Legado - mantido para compatibilidade)
   productionDaysMin: number;
   productionDaysMax: number;
   shippingDays: number;
   salesDurationDays: number;
   salesOpenDay: number;
-  
-  // Lote Atual
+
+  // Lote Atual (Legado - mantido para compatibilidade)
   currentBatchName: string;
   currentBatchSalesStart: Date;
   currentBatchSalesEnd: Date;
@@ -24,27 +27,46 @@ export interface ContentSettings {
   currentBatchProductionEnd: Date;
   currentBatchShippingMonth: string;
   currentBatchShippingDeadline: number;
-  
+
+  // Novo Modelo de Ciclos (v2.0)
+  currentCycleType: CycleType;
+  currentCycleMonth: number;
+  currentCycleYear: number;
+
+  cycle1SalesStart: Date;
+  cycle1SalesEnd: Date;
+  cycle1ProductionStart: Date;
+  cycle1ProductionEnd: Date;
+  cycle1ShippingDeadline: Date;
+
+  cycle2SalesStart: Date;
+  cycle2SalesEnd: Date;
+  cycle2ProductionStart: Date;
+  cycle2ProductionEnd: Date;
+  cycle2ShippingDeadline: Date;
+
+  shippingBusinessDays: number;
+
   // Políticas
   exchangeDeadlineDays: number;
   exchangePolicyText: string;
   cancellationPolicyText: string;
   refundPolicyText: string;
-  
+
   // Suporte
   supportResponseHours: number;
   supportResponseText: string;
-  
+
   // FAQ
   faqFirstDelivery: string;
   faqExchange: string;
   faqCancellation: string;
   faqPlanDifference: string;
-  
+
   // Documentos
   termsLastUpdate: Date;
   privacyLastUpdate: Date;
-  
+
   // Banners
   batchBannerTitle: string;
   batchBannerSubtitle: string;
@@ -62,12 +84,13 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 export async function fetchContentSettings(): Promise<ContentSettings> {
   // Verificar cache
   const now = Date.now();
-  if (cachedContent && (now - cacheTimestamp) < CACHE_DURATION) {
+  if (cachedContent && now - cacheTimestamp < CACHE_DURATION) {
     return cachedContent;
   }
 
   // Valores padrão (fallback)
   const settings: ContentSettings = {
+    // Legado
     productionDaysMin: 15,
     productionDaysMax: 20,
     shippingDays: 5,
@@ -80,6 +103,25 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
     currentBatchProductionEnd: new Date("2026-03-30"),
     currentBatchShippingMonth: "Abril",
     currentBatchShippingDeadline: 5,
+
+    // Novo Modelo de Ciclos (v2.0)
+    currentCycleType: "cycle1",
+    currentCycleMonth: 2, // Março (0-indexed)
+    currentCycleYear: 2026,
+
+    cycle1SalesStart: new Date("2026-03-01"),
+    cycle1SalesEnd: new Date("2026-03-15"),
+    cycle1ProductionStart: new Date("2026-03-16"),
+    cycle1ProductionEnd: new Date("2026-03-31"),
+    cycle1ShippingDeadline: new Date("2026-04-07"),
+
+    cycle2SalesStart: new Date("2026-03-16"),
+    cycle2SalesEnd: new Date("2026-03-31"),
+    cycle2ProductionStart: new Date("2026-04-01"),
+    cycle2ProductionEnd: new Date("2026-04-30"),
+    cycle2ShippingDeadline: new Date("2026-05-07"),
+
+    shippingBusinessDays: 5,
     exchangeDeadlineDays: 1,
     exchangePolicyText: "Você pode trocar suas coleções quantas vezes quiser.",
     cancellationPolicyText: "Você pode cancelar a qualquer momento.",
@@ -104,11 +146,12 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
       .select("key, value");
 
     if (!error && systemSettings) {
-      const settingsMap = new Map(systemSettings.map(s => [s.key, s.value]));
+      const settingsMap = new Map(systemSettings.map((s) => [s.key, s.value]));
 
       // Processar cada configuração
       const get = (key: string, defaultValue: any) => settingsMap.get(key) || defaultValue;
-      const getNum = (key: string, defaultValue: number) => parseFloat(get(key, defaultValue.toString()));
+      const getNum = (key: string, defaultValue: number) =>
+        parseFloat(get(key, defaultValue.toString()));
       const getDate = (key: string, defaultValue: Date) => {
         const value = get(key, "");
         return value ? new Date(value) : defaultValue;
@@ -119,40 +162,70 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
       settings.shippingDays = getNum("shipping_days", 5);
       settings.salesDurationDays = getNum("sales_duration_days", 30);
       settings.salesOpenDay = getNum("sales_open_day", 15);
-      
+
       settings.currentBatchName = get("current_batch_name", "Fevereiro/Março");
-      settings.currentBatchSalesStart = getDate("current_batch_sales_start", new Date("2026-02-15"));
+      settings.currentBatchSalesStart = getDate(
+        "current_batch_sales_start",
+        new Date("2026-02-15")
+      );
       settings.currentBatchSalesEnd = getDate("current_batch_sales_end", new Date("2026-03-15"));
-      settings.currentBatchProductionStart = getDate("current_batch_production_start", new Date("2026-03-16"));
-      settings.currentBatchProductionEnd = getDate("current_batch_production_end", new Date("2026-03-30"));
+      settings.currentBatchProductionStart = getDate(
+        "current_batch_production_start",
+        new Date("2026-03-16")
+      );
+      settings.currentBatchProductionEnd = getDate(
+        "current_batch_production_end",
+        new Date("2026-03-30")
+      );
       settings.currentBatchShippingMonth = get("current_batch_shipping_month", "Abril");
       settings.currentBatchShippingDeadline = getNum("current_batch_shipping_deadline", 5);
-      
+
       settings.exchangeDeadlineDays = getNum("exchange_deadline_days", 1);
       settings.exchangePolicyText = get("exchange_policy_text", settings.exchangePolicyText);
-      settings.cancellationPolicyText = get("cancellation_policy_text", settings.cancellationPolicyText);
+      settings.cancellationPolicyText = get(
+        "cancellation_policy_text",
+        settings.cancellationPolicyText
+      );
       settings.refundPolicyText = get("refund_policy_text", settings.refundPolicyText);
-      
+
       settings.supportResponseHours = getNum("support_response_hours", 48);
       settings.supportResponseText = get("support_response_text", settings.supportResponseText);
-      
+
       settings.faqFirstDelivery = get("faq_first_delivery", settings.faqFirstDelivery);
       settings.faqExchange = get("faq_exchange", settings.faqExchange);
       settings.faqCancellation = get("faq_cancellation", settings.faqCancellation);
       settings.faqPlanDifference = get("faq_plan_difference", settings.faqPlanDifference);
-      
+
       settings.termsLastUpdate = getDate("terms_last_update", new Date("2026-02-03"));
       settings.privacyLastUpdate = getDate("privacy_last_update", new Date("2026-02-03"));
-      
+
       settings.batchBannerTitle = get("batch_banner_title", settings.batchBannerTitle);
       settings.batchBannerSubtitle = get("batch_banner_subtitle", settings.batchBannerSubtitle);
       settings.batchBannerNote = get("batch_banner_note", settings.batchBannerNote);
+
+      // Novo Modelo de Ciclos (v2.0)
+      settings.currentCycleType = get("current_cycle_type", "cycle1") as CycleType;
+      settings.currentCycleMonth = getNum("current_cycle_month", 2);
+      settings.currentCycleYear = getNum("current_cycle_year", 2026);
+
+      settings.cycle1SalesStart = getDate("cycle1_sales_start", new Date("2026-03-01"));
+      settings.cycle1SalesEnd = getDate("cycle1_sales_end", new Date("2026-03-15"));
+      settings.cycle1ProductionStart = getDate("cycle1_production_start", new Date("2026-03-16"));
+      settings.cycle1ProductionEnd = getDate("cycle1_production_end", new Date("2026-03-31"));
+      settings.cycle1ShippingDeadline = getDate("cycle1_shipping_deadline", new Date("2026-04-07"));
+
+      settings.cycle2SalesStart = getDate("cycle2_sales_start", new Date("2026-03-16"));
+      settings.cycle2SalesEnd = getDate("cycle2_sales_end", new Date("2026-03-31"));
+      settings.cycle2ProductionStart = getDate("cycle2_production_start", new Date("2026-04-01"));
+      settings.cycle2ProductionEnd = getDate("cycle2_production_end", new Date("2026-04-30"));
+      settings.cycle2ShippingDeadline = getDate("cycle2_shipping_deadline", new Date("2026-05-07"));
+
+      settings.shippingBusinessDays = getNum("shipping_business_days", 5);
     }
 
     // Atualizar cache
     cachedContent = settings;
     cacheTimestamp = now;
-
   } catch (error) {
     console.error("Erro ao buscar configurações de conteúdo:", error);
   }
@@ -168,28 +241,61 @@ export function processContentVariables(text: string, settings: ContentSettings)
   let processed = text;
 
   // Substituir variáveis simples
-  processed = processed.replace(/\{\{production_days_min\}\}/g, settings.productionDaysMin.toString());
-  processed = processed.replace(/\{\{production_days_max\}\}/g, settings.productionDaysMax.toString());
+  processed = processed.replace(
+    /\{\{production_days_min\}\}/g,
+    settings.productionDaysMin.toString()
+  );
+  processed = processed.replace(
+    /\{\{production_days_max\}\}/g,
+    settings.productionDaysMax.toString()
+  );
   processed = processed.replace(/\{\{shipping_days\}\}/g, settings.shippingDays.toString());
-  processed = processed.replace(/\{\{sales_duration_days\}\}/g, settings.salesDurationDays.toString());
+  processed = processed.replace(
+    /\{\{sales_duration_days\}\}/g,
+    settings.salesDurationDays.toString()
+  );
   processed = processed.replace(/\{\{sales_open_day\}\}/g, settings.salesOpenDay.toString());
-  
+
   processed = processed.replace(/\{\{current_batch_name\}\}/g, settings.currentBatchName);
-  processed = processed.replace(/\{\{current_batch_shipping_month\}\}/g, settings.currentBatchShippingMonth);
-  processed = processed.replace(/\{\{current_batch_shipping_deadline\}\}/g, settings.currentBatchShippingDeadline.toString());
-  
-  processed = processed.replace(/\{\{exchange_deadline_days\}\}/g, settings.exchangeDeadlineDays.toString());
-  processed = processed.replace(/\{\{support_response_hours\}\}/g, settings.supportResponseHours.toString());
-  
+  processed = processed.replace(
+    /\{\{current_batch_shipping_month\}\}/g,
+    settings.currentBatchShippingMonth
+  );
+  processed = processed.replace(
+    /\{\{current_batch_shipping_deadline\}\}/g,
+    settings.currentBatchShippingDeadline.toString()
+  );
+
+  processed = processed.replace(
+    /\{\{exchange_deadline_days\}\}/g,
+    settings.exchangeDeadlineDays.toString()
+  );
+  processed = processed.replace(
+    /\{\{support_response_hours\}\}/g,
+    settings.supportResponseHours.toString()
+  );
+
   // Substituir datas formatadas
   const formatDate = (date: Date) => format(date, "dd/MM", { locale: ptBR });
   const formatDateFull = (date: Date) => format(date, "dd-MM", { locale: ptBR });
-  
-  processed = processed.replace(/\{\{current_batch_sales_start_formatted\}\}/g, formatDate(settings.currentBatchSalesStart));
-  processed = processed.replace(/\{\{current_batch_sales_end_formatted\}\}/g, formatDate(settings.currentBatchSalesEnd));
-  processed = processed.replace(/\{\{current_batch_production_start_formatted\}\}/g, formatDateFull(settings.currentBatchProductionStart));
-  processed = processed.replace(/\{\{current_batch_production_end_formatted\}\}/g, formatDateFull(settings.currentBatchProductionEnd));
-  
+
+  processed = processed.replace(
+    /\{\{current_batch_sales_start_formatted\}\}/g,
+    formatDate(settings.currentBatchSalesStart)
+  );
+  processed = processed.replace(
+    /\{\{current_batch_sales_end_formatted\}\}/g,
+    formatDate(settings.currentBatchSalesEnd)
+  );
+  processed = processed.replace(
+    /\{\{current_batch_production_start_formatted\}\}/g,
+    formatDateFull(settings.currentBatchProductionStart)
+  );
+  processed = processed.replace(
+    /\{\{current_batch_production_end_formatted\}\}/g,
+    formatDateFull(settings.currentBatchProductionEnd)
+  );
+
   return processed;
 }
 
@@ -204,7 +310,10 @@ export function clearContentCache() {
 /**
  * Formata data para exibição
  */
-export function formatContentDate(date: Date, formatStr: string = "dd 'de' MMMM 'de' yyyy"): string {
+export function formatContentDate(
+  date: Date,
+  formatStr: string = "dd 'de' MMMM 'de' yyyy"
+): string {
   return format(date, formatStr, { locale: ptBR });
 }
 
@@ -226,6 +335,6 @@ export function getFullScheduleText(settings: ContentSettings): string {
   const salesEnd = formatContentDate(settings.currentBatchSalesEnd, "dd/MM");
   const prodStart = formatContentDate(settings.currentBatchProductionStart, "dd-MM");
   const prodEnd = formatContentDate(settings.currentBatchProductionEnd, "dd-MM");
-  
+
   return `Vendas: ${salesStart} a ${salesEnd} • Produção: ${prodStart} a ${prodEnd} • Envio: Até ${settings.currentBatchShippingDeadline}º dia útil de ${settings.currentBatchShippingMonth}`;
 }

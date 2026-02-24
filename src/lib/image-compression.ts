@@ -4,7 +4,7 @@
  * Task: 25.2 Otimizar operações de arquivo
  */
 
-import imageCompression from 'browser-image-compression';
+import imageCompression from "browser-image-compression";
 
 interface CompressionOptions {
   maxSizeMB?: number;
@@ -24,12 +24,9 @@ const DEFAULT_OPTIONS: CompressionOptions = {
  * Compress an image file before upload
  * Requirements: 18.6, 18.7
  */
-export async function compressImage(
-  file: File,
-  options: CompressionOptions = {}
-): Promise<File> {
+export async function compressImage(file: File, options: CompressionOptions = {}): Promise<File> {
   // Only compress images
-  if (!file.type.startsWith('image/')) {
+  if (!file.type.startsWith("image/")) {
     return file;
   }
 
@@ -54,7 +51,7 @@ export async function compressImage(
 
     return compressedFile;
   } catch (error) {
-    console.error('Image compression failed:', error);
+    console.error("Image compression failed:", error);
     // Return original file if compression fails
     return file;
   }
@@ -87,11 +84,8 @@ export async function compressImages(
  * Generate thumbnail from image
  * Requirements: 18.8
  */
-export async function generateThumbnail(
-  file: File,
-  maxSize: number = 300
-): Promise<File | null> {
-  if (!file.type.startsWith('image/')) {
+export async function generateThumbnail(file: File, maxSize: number = 300): Promise<File | null> {
+  if (!file.type.startsWith("image/")) {
     return null;
   }
 
@@ -105,7 +99,7 @@ export async function generateThumbnail(
 
     return thumbnail;
   } catch (error) {
-    console.error('Thumbnail generation failed:', error);
+    console.error("Thumbnail generation failed:", error);
     return null;
   }
 }

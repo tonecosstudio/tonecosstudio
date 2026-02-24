@@ -1,9 +1,9 @@
 /**
  * useConversationRealtime - Hook para assinar novas mensagens e mudanças em conversas em tempo real
- * 
+ *
  * Requirements: 16.1-16.15
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * Este hook fornece assinaturas em tempo real para mudanças nas tabelas support_messages
  * e support_conversations com tratamento de perda de conexão, reconexão automática e backoff exponencial.
  */
@@ -64,7 +64,10 @@ export interface UseConversationRealtimeOptions {
   /** Callback quando uma mensagem é atualizada (ex: marcada como lida) */
   onMessageUpdate?: (message: SupportMessage, oldMessage: SupportMessage | null) => void;
   /** Callback quando uma conversa é atualizada */
-  onConversationUpdate?: (conversation: SupportConversation, oldConversation: SupportConversation | null) => void;
+  onConversationUpdate?: (
+    conversation: SupportConversation,
+    oldConversation: SupportConversation | null
+  ) => void;
   /** Callback quando a conexão é estabelecida */
   onConnected?: () => void;
   /** Callback quando a conexão é perdida */
@@ -73,7 +76,7 @@ export interface UseConversationRealtimeOptions {
 
 /**
  * Hook para assinar mudanças em conversas e mensagens em tempo real
- * 
+ *
  * @param options Opções de configuração do hook
  * @returns Estado da conexão e funções de controle
  */
@@ -125,10 +128,14 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
   /**
    * Calcula o delay para a próxima tentativa de reconexão usando backoff exponencial
    */
-  const calculateRetryDelay = useCallback((attempt: number): number => {
-    const delay = reconnectionConfig.baseDelayMs * Math.pow(reconnectionConfig.backoffFactor, attempt);
-    return Math.min(delay, reconnectionConfig.maxDelayMs);
-  }, [reconnectionConfig]);
+  const calculateRetryDelay = useCallback(
+    (attempt: number): number => {
+      const delay =
+        reconnectionConfig.baseDelayMs * Math.pow(reconnectionConfig.backoffFactor, attempt);
+      return Math.min(delay, reconnectionConfig.maxDelayMs);
+    },
+    [reconnectionConfig]
+  );
 
   /**
    * Estabelece a conexão com os canais de realtime
@@ -137,7 +144,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     if (!isMountedRef.current) return;
 
     // Limpar canais anteriores se existirem
-    channelsRef.current.forEach(channel => {
+    channelsRef.current.forEach((channel) => {
       supabase.removeChannel(channel);
     });
     channelsRef.current = [];
@@ -175,7 +182,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     }
 
     try {
-      setConnectionState(prev => ({
+      setConnectionState((prev) => ({
         ...prev,
         isReconnecting: true,
         error: null,
@@ -192,7 +199,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
         if (subscribedChannels === totalChannels) {
           // Todos os canais conectados
           retryCountRef.current = 0;
-          setConnectionState(prev => ({
+          setConnectionState((prev) => ({
             ...prev,
             isConnected: true,
             isReconnecting: false,
@@ -212,10 +219,10 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
        */
       const handleChannelError = (channelName: string, error: Error) => {
         console.error(`Erro no canal ${channelName}:`, error);
-        
+
         if (!isMountedRef.current) return;
 
-        setConnectionState(prev => ({
+        setConnectionState((prev) => ({
           ...prev,
           isConnected: false,
           isReconnecting: false,
@@ -237,13 +244,13 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
       if (subscribeToMessages) {
         totalChannels++;
         const messageChannelName = `conversation-messages-${conversationId || "all"}-${Date.now()}`;
-        
+
         const messageChannel = supabase
           .channel(messageChannelName)
           .on(
             "postgres_changes",
             {
-              event: events.includes("*") ? "*" : events.join(",") as any,
+              event: events.includes("*") ? "*" : (events.join(",") as any),
               schema: "public",
               table: "support_messages",
               filter: messageFilter || undefined,
@@ -278,7 +285,10 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
               subscribedChannels++;
               checkAllChannelsConnected();
             } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-              handleChannelError(messageChannelName, error || new Error(`Falha na conexão: ${status}`));
+              handleChannelError(
+                messageChannelName,
+                error || new Error(`Falha na conexão: ${status}`)
+              );
             }
           });
 
@@ -289,13 +299,13 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
       if (subscribeToConversations) {
         totalChannels++;
         const conversationChannelName = `conversation-conversations-${conversationId || "all"}-${Date.now()}`;
-        
+
         const conversationChannel = supabase
           .channel(conversationChannelName)
           .on(
             "postgres_changes",
             {
-              event: events.includes("*") ? "*" : events.join(",") as any,
+              event: events.includes("*") ? "*" : (events.join(",") as any),
               schema: "public",
               table: "support_conversations",
               filter: conversationFilter || undefined,
@@ -304,7 +314,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
               if (!isMountedRef.current && onConversationUpdate) {
                 const conversation = payload.new as SupportConversation;
                 const oldConversation = payload.old as SupportConversation | null;
-                
+
                 if (payload.eventType === "UPDATE") {
                   onConversationUpdate(conversation, oldConversation);
                 }
@@ -318,7 +328,10 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
               subscribedChannels++;
               checkAllChannelsConnected();
             } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-              handleChannelError(conversationChannelName, error || new Error(`Falha na conexão: ${status}`));
+              handleChannelError(
+                conversationChannelName,
+                error || new Error(`Falha na conexão: ${status}`)
+              );
             }
           });
 
@@ -327,7 +340,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
 
       // Se não há canais para assinar, considerar como conectado
       if (totalChannels === 0) {
-        setConnectionState(prev => ({
+        setConnectionState((prev) => ({
           ...prev,
           isConnected: true,
           isReconnecting: false,
@@ -343,7 +356,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
       channelsRef.current = channels;
     } catch (error) {
       console.error("Erro ao criar canais de realtime:", error);
-      setConnectionState(prev => ({
+      setConnectionState((prev) => ({
         ...prev,
         isConnected: false,
         isReconnecting: false,
@@ -389,7 +402,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     retryCountRef.current += 1;
     const delay = calculateRetryDelay(retryCountRef.current);
 
-    setConnectionState(prev => ({
+    setConnectionState((prev) => ({
       ...prev,
       isReconnecting: true,
       retryCount: retryCountRef.current,
@@ -404,7 +417,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
    * Desconecta dos canais de realtime
    */
   const disconnect = useCallback(() => {
-    channelsRef.current.forEach(channel => {
+    channelsRef.current.forEach((channel) => {
       supabase.removeChannel(channel);
     });
     channelsRef.current = [];
@@ -414,7 +427,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
       retryTimeoutRef.current = null;
     }
 
-    setConnectionState(prev => ({
+    setConnectionState((prev) => ({
       ...prev,
       isConnected: false,
       isReconnecting: false,
@@ -455,7 +468,15 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
       // Reconectar com novas configurações
       reconnect();
     }
-  }, [conversationId, userId, paymentId, events, subscribeToMessages, subscribeToConversations, reconnect]);
+  }, [
+    conversationId,
+    userId,
+    paymentId,
+    events,
+    subscribeToMessages,
+    subscribeToConversations,
+    reconnect,
+  ]);
 
   return {
     ...connectionState,
@@ -466,7 +487,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
 
 /**
  * Hook simplificado para assinar novas mensagens de uma conversa específica
- * 
+ *
  * @param conversationId ID da conversa para assinar
  * @param onNewMessage Callback quando uma nova mensagem é recebida
  * @returns Estado da conexão
@@ -493,14 +514,18 @@ export function useConversationMessagesRealtime(
 
 /**
  * Hook para assinar atualizações de leitura de mensagens
- * 
+ *
  * @param conversationId ID da conversa para filtrar (opcional)
  * @param onMessageRead Callback quando uma mensagem é marcada como lida
  * @returns Estado da conexão
  */
 export function useMessageReadRealtime(
   conversationId?: string,
-  onMessageRead?: (message: SupportMessage, wasReadByCustomer: boolean, wasReadByAdmin: boolean) => void
+  onMessageRead?: (
+    message: SupportMessage,
+    wasReadByCustomer: boolean,
+    wasReadByAdmin: boolean
+  ) => void
 ) {
   const { isConnected, isReconnecting, error, ...rest } = useConversationRealtime({
     conversationId,
@@ -511,7 +536,7 @@ export function useMessageReadRealtime(
       if (onMessageRead && oldMessage) {
         const wasReadByCustomer = !oldMessage.read_by_customer && message.read_by_customer;
         const wasReadByAdmin = !oldMessage.read_by_admin && message.read_by_admin;
-        
+
         if (wasReadByCustomer || wasReadByAdmin) {
           onMessageRead(message, wasReadByCustomer, wasReadByAdmin);
         }
@@ -529,7 +554,7 @@ export function useMessageReadRealtime(
 
 /**
  * Hook para assinar conversas relacionadas a um pagamento
- * 
+ *
  * @param paymentId ID do pagamento para filtrar
  * @param onConversationUpdate Callback quando a conversa é atualizada
  * @returns Estado da conexão

@@ -1,14 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import type {
-  Message,
-  SendMessageData,
-  PaginationOptions,
-} from "@/types/support";
-import type {
-  GroupMessage,
-  GroupAttachment,
-  Pagination,
-} from "@/types/groups";
+import type { Message, SendMessageData, PaginationOptions } from "@/types/support";
+import type { GroupMessage, GroupAttachment, Pagination } from "@/types/groups";
 import { fileUploadService } from "./fileUploadService";
 import { sanitizeGroupMessage, sanitizeText } from "@/lib/utils/sanitize";
 
@@ -16,10 +8,7 @@ export class MessageService {
   /**
    * Lista mensagens de uma conversa
    */
-  async listMessages(
-    conversationId: string,
-    options?: PaginationOptions
-  ): Promise<Message[]> {
+  async listMessages(conversationId: string, options?: PaginationOptions): Promise<Message[]> {
     const limit = options?.limit || 50;
     const offset = options?.offset || 0;
 
@@ -103,11 +92,13 @@ export class MessageService {
     }
 
     // Se for mensagem do admin para cliente, enviar notificação por email
-    if (messageData.sender_type === 'admin' && !messageData.is_internal) {
-      this.sendEmailNotification(data.id, messageData.conversation_id, messageData.message).catch(err => {
-        console.error('❌ Erro ao enviar notificação por email:', err);
-        // Não falha a operação se o email falhar
-      });
+    if (messageData.sender_type === "admin" && !messageData.is_internal) {
+      this.sendEmailNotification(data.id, messageData.conversation_id, messageData.message).catch(
+        (err) => {
+          console.error("❌ Erro ao enviar notificação por email:", err);
+          // Não falha a operação se o email falhar
+        }
+      );
     }
 
     return {
@@ -131,18 +122,18 @@ export class MessageService {
     try {
       // Buscar informações da conversa
       const { data: conversation } = await supabase
-        .from('support_conversations')
-        .select('user_id')
-        .eq('id', conversationId)
+        .from("support_conversations")
+        .select("user_id")
+        .eq("id", conversationId)
         .single();
 
       if (!conversation) {
-        console.warn('Conversa não encontrada para envio de email');
+        console.warn("Conversa não encontrada para envio de email");
         return;
       }
 
       // Chamar Edge Function (usa service role key internamente)
-      const { data, error } = await supabase.functions.invoke('send-email', {
+      const { data, error } = await supabase.functions.invoke("send-email", {
         body: {
           conversationId,
           messageId,
@@ -152,13 +143,13 @@ export class MessageService {
       });
 
       if (error) {
-        console.error('❌ Erro ao chamar Edge Function de email:', error);
-        console.error('Detalhes:', error.message);
+        console.error("❌ Erro ao chamar Edge Function de email:", error);
+        console.error("Detalhes:", error.message);
       } else {
-        console.log('✅ Email enviado com sucesso!', data);
+        console.log("✅ Email enviado com sucesso!", data);
       }
     } catch (error) {
-      console.error('❌ Erro ao enviar notificação por email:', error);
+      console.error("❌ Erro ao enviar notificação por email:", error);
     }
   }
 
@@ -182,10 +173,7 @@ export class MessageService {
   /**
    * Edita uma nota interna (apenas dentro de 5 minutos)
    */
-  async editInternalNote(
-    messageId: string,
-    newMessage: string
-  ): Promise<Message> {
+  async editInternalNote(messageId: string, newMessage: string): Promise<Message> {
     const { data, error } = await supabase
       .from("support_messages")
       .update({
@@ -231,12 +219,9 @@ export class MessageService {
   /**
    * Marca mensagens como lidas
    */
-  async markAsRead(
-    messageIds: string[],
-    readerType: "admin" | "customer"
-  ): Promise<void> {
+  async markAsRead(messageIds: string[], readerType: "admin" | "customer"): Promise<void> {
     const updateField = readerType === "admin" ? "read_by_admin" : "read_by_customer";
-    
+
     const { error } = await supabase
       .from("support_messages")
       .update({ [updateField]: true })
@@ -253,8 +238,10 @@ export class MessageService {
    * Apenas admins podem deletar mensagens
    */
   async deleteMessage(messageId: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       throw new Error("Usuário não autenticado");
     }
@@ -289,8 +276,10 @@ export class MessageService {
    * Apenas o autor pode editar, dentro de 15 minutos
    */
   async editMessage(messageId: string, newMessage: string): Promise<Message> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       throw new Error("Usuário não autenticado");
     }
@@ -371,9 +360,7 @@ export class MessageService {
       ...attachment,
     }));
 
-    const { error } = await supabase
-      .from("support_attachments")
-      .insert(attachmentsData);
+    const { error } = await supabase.from("support_attachments").insert(attachmentsData);
 
     if (error) {
       console.error("Erro ao criar anexos:", error);
@@ -404,83 +391,82 @@ export class MessageService {
    * Requirements: 8.1, 8.2, 8.3, 8.4, 9.1, 9.2, 9.3
    */
   async sendBroadcastMessage(
-      groupId: string,
-      senderId: string,
-      message: string,
-      richFields?: {
-        action_button_text?: string;
-        action_button_url?: string;
-        link_text?: string;
-        link_url?: string;
-      },
-      attachmentFiles?: File[]
-    ): Promise<GroupMessage & { attachments: GroupAttachment[] }> {
-      // Validate message length (1-5000 chars)
-      if (!message || message.trim().length < 1) {
-        throw new Error("Mensagem não pode estar vazia");
-      }
-      if (message.length > 5000) {
-        throw new Error("Mensagem não pode ter mais de 5000 caracteres");
-      }
-
-      // Sanitize message content to prevent XSS
-      const sanitizedMessage = sanitizeGroupMessage(message.trim());
-
-      // Verify group exists and is not deleted
-      const { data: group, error: groupError } = await supabase
-        .from("chat_groups")
-        .select("id, deleted_at")
-        .eq("id", groupId)
-        .single();
-
-      if (groupError || !group) {
-        throw new Error("Grupo não encontrado");
-      }
-
-      if (group.deleted_at) {
-        throw new Error("Não é possível enviar mensagens para um grupo deletado");
-      }
-
-      // Create the message (stored ONCE, not per member) with rich fields
-      const { data: messageData, error: messageError } = await supabase
-        .from("chat_group_messages")
-        .insert({
-          group_id: groupId,
-          sender_id: senderId,
-          message: sanitizedMessage,
-          action_button_text: richFields?.action_button_text || null,
-          action_button_url: richFields?.action_button_url || null,
-          link_text: richFields?.link_text || null,
-          link_url: richFields?.link_url || null,
-        })
-        .select()
-        .single();
-
-      if (messageError) {
-        console.error("Erro ao criar mensagem de grupo:", messageError);
-        throw new Error("Erro ao enviar mensagem");
-      }
-
-      // Handle attachments if provided
-      let attachments: GroupAttachment[] = [];
-      if (attachmentFiles && attachmentFiles.length > 0) {
-        attachments = await this.uploadGroupAttachments(
-          messageData.id,
-          groupId,
-          attachmentFiles,
-          senderId
-        );
-      }
-
-      // Broadcast via Realtime (handled by frontend subscription)
-      // Email notifications handled by background job
-
-      return {
-        ...messageData,
-        attachments,
-      };
+    groupId: string,
+    senderId: string,
+    message: string,
+    richFields?: {
+      action_button_text?: string;
+      action_button_url?: string;
+      link_text?: string;
+      link_url?: string;
+    },
+    attachmentFiles?: File[]
+  ): Promise<GroupMessage & { attachments: GroupAttachment[] }> {
+    // Validate message length (1-5000 chars)
+    if (!message || message.trim().length < 1) {
+      throw new Error("Mensagem não pode estar vazia");
+    }
+    if (message.length > 5000) {
+      throw new Error("Mensagem não pode ter mais de 5000 caracteres");
     }
 
+    // Sanitize message content to prevent XSS
+    const sanitizedMessage = sanitizeGroupMessage(message.trim());
+
+    // Verify group exists and is not deleted
+    const { data: group, error: groupError } = await supabase
+      .from("chat_groups")
+      .select("id, deleted_at")
+      .eq("id", groupId)
+      .single();
+
+    if (groupError || !group) {
+      throw new Error("Grupo não encontrado");
+    }
+
+    if (group.deleted_at) {
+      throw new Error("Não é possível enviar mensagens para um grupo deletado");
+    }
+
+    // Create the message (stored ONCE, not per member) with rich fields
+    const { data: messageData, error: messageError } = await supabase
+      .from("chat_group_messages")
+      .insert({
+        group_id: groupId,
+        sender_id: senderId,
+        message: sanitizedMessage,
+        action_button_text: richFields?.action_button_text || null,
+        action_button_url: richFields?.action_button_url || null,
+        link_text: richFields?.link_text || null,
+        link_url: richFields?.link_url || null,
+      })
+      .select()
+      .single();
+
+    if (messageError) {
+      console.error("Erro ao criar mensagem de grupo:", messageError);
+      throw new Error("Erro ao enviar mensagem");
+    }
+
+    // Handle attachments if provided
+    let attachments: GroupAttachment[] = [];
+    if (attachmentFiles && attachmentFiles.length > 0) {
+      attachments = await this.uploadGroupAttachments(
+        messageData.id,
+        groupId,
+        attachmentFiles,
+        senderId
+      );
+    }
+
+    // Broadcast via Realtime (handled by frontend subscription)
+    // Email notifications handled by background job
+
+    return {
+      ...messageData,
+      attachments,
+    };
+  }
 
   /**
    * Uploads attachments for a group message
@@ -539,9 +525,7 @@ export class MessageService {
         if (dbError) {
           console.error("Erro ao salvar metadata do anexo:", dbError);
           // Try to delete uploaded file
-          await supabase.storage
-            .from("support-attachments")
-            .remove([filePath]);
+          await supabase.storage.from("support-attachments").remove([filePath]);
           continue;
         }
 
@@ -563,11 +547,13 @@ export class MessageService {
     userId: string,
     pagination: Pagination = { page: 1, limit: 50 }
   ): Promise<{
-    messages: Array<GroupMessage & { 
-      sender_name: string;
-      sender_avatar: string | null;
-      attachments: GroupAttachment[];
-    }>;
+    messages: Array<
+      GroupMessage & {
+        sender_name: string;
+        sender_avatar: string | null;
+        attachments: GroupAttachment[];
+      }
+    >;
     pagination: {
       page: number;
       limit: number;
@@ -577,7 +563,7 @@ export class MessageService {
   }> {
     // Removida validação de membership que causava erro 406
     // A segurança é garantida pelas políticas RLS na tabela chat_group_messages
-    
+
     // Get total message count
     const { count: totalCount, error: countError } = await supabase
       .from("chat_group_messages")
@@ -702,9 +688,7 @@ export class MessageService {
    * Requirements: 9.4
    */
   getGroupAttachmentUrl(filePath: string): string {
-    const { data } = supabase.storage
-      .from("support-attachments")
-      .getPublicUrl(filePath);
+    const { data } = supabase.storage.from("support-attachments").getPublicUrl(filePath);
     return data.publicUrl;
   }
 }

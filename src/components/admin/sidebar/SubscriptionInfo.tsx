@@ -1,7 +1,7 @@
 /**
  * SubscriptionInfo Component
  * Displays active subscription information
- * 
+ *
  * Requirements: 9.1, 9.2
  */
 
@@ -18,16 +18,23 @@ interface SubscriptionInfoProps {
 
 export function SubscriptionInfo({ subscription }: SubscriptionInfoProps) {
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
+    const statusMap: Record<
+      string,
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }
+    > = {
       active: { label: "Ativa", variant: "default", icon: CheckCircle },
       inactive: { label: "Inativa", variant: "secondary", icon: XCircle },
       cancelled: { label: "Cancelada", variant: "destructive", icon: XCircle },
       suspended: { label: "Suspensa", variant: "destructive", icon: XCircle },
     };
 
-    const config = statusMap[status] || { label: status, variant: "outline" as const, icon: Calendar };
+    const config = statusMap[status] || {
+      label: status,
+      variant: "outline" as const,
+      icon: Calendar,
+    };
     const Icon = config.icon;
-    
+
     return (
       <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
         <Icon className="h-3 w-3" />
@@ -67,7 +74,9 @@ export function SubscriptionInfo({ subscription }: SubscriptionInfoProps) {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-medium">
-                {format(new Date(subscription.next_delivery_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {format(new Date(subscription.next_delivery_date), "dd 'de' MMMM 'de' yyyy", {
+                  locale: ptBR,
+                })}
               </p>
             </div>
           </div>

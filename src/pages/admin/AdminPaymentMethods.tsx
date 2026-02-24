@@ -1,6 +1,6 @@
 /**
  * AdminPaymentMethods Page
- * 
+ *
  * Admin interface for managing payment methods (PIX, boleto, bank transfer, etc.)
  * Allows creating, editing, activating/deactivating, and reordering payment methods.
  */
@@ -64,14 +64,12 @@ export default function AdminPaymentMethods() {
           <CardHeader>
             <CardTitle>Métodos Cadastrados</CardTitle>
             <CardDescription>
-              Gerencie os métodos de pagamento, configure chaves PIX, instruções e prioridade de exibição
+              Gerencie os métodos de pagamento, configure chaves PIX, instruções e prioridade de
+              exibição
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PaymentMethodList
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+            <PaymentMethodList onEdit={handleEdit} onDelete={handleDelete} />
           </CardContent>
         </Card>
       </div>

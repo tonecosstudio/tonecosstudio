@@ -1,9 +1,9 @@
 /**
  * ChatHeader - Cabeçalho da interface de chat com informações da conversa
- * 
+ *
  * Requirements: 23.5, 12.2
  * Design: .kiro/specs/advanced-chat-support-system/design.md
- * 
+ *
  * Exibe informações da conversa e permite agendar lembretes.
  * O nome do usuário é clicável para abrir o sidebar com dados completos.
  * Permite editar status, tags, data prometida e flags de risco.
@@ -56,12 +56,18 @@ export function ChatHeader({
         <div className="flex items-center justify-between p-4 pb-2">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h2 
+              <h2
                 className={`text-lg font-semibold ${
-                  conversation?.user_id && onUserClick ? 'cursor-pointer hover:text-primary transition-colors' : ''
+                  conversation?.user_id && onUserClick
+                    ? "cursor-pointer hover:text-primary transition-colors"
+                    : ""
                 }`}
                 onClick={handleUserClick}
-                title={conversation?.user_id && onUserClick ? 'Clique para ver dados do cliente' : undefined}
+                title={
+                  conversation?.user_id && onUserClick
+                    ? "Clique para ver dados do cliente"
+                    : undefined
+                }
               >
                 {conversation?.user_name || conversation?.user_email || "Conversa"}
               </h2>
@@ -75,18 +81,23 @@ export function ChatHeader({
           </div>
 
           <div className="flex items-center gap-2">
-            {conversation?.status !== 'closed' && (
+            {conversation?.status !== "closed" && (
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={async () => {
-                  if (confirm('Deseja realmente encerrar este atendimento? O cliente não poderá mais enviar mensagens.')) {
+                  if (
+                    confirm(
+                      "Deseja realmente encerrar este atendimento? O cliente não poderá mais enviar mensagens."
+                    )
+                  ) {
                     try {
-                      const { conversationService } = await import('@/lib/services/conversationService');
-                      await conversationService.updateStatus(conversationId, 'closed');
+                      const { conversationService } =
+                        await import("@/lib/services/conversationService");
+                      await conversationService.updateStatus(conversationId, "closed");
                       handleUpdate();
                     } catch (error) {
-                      console.error('Erro ao encerrar:', error);
+                      console.error("Erro ao encerrar:", error);
                     }
                   }
                 }}
@@ -95,7 +106,7 @@ export function ChatHeader({
                 Encerrar Atendimento
               </Button>
             )}
-            
+
             <Button
               variant="outline"
               size="sm"

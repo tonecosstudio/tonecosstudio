@@ -31,8 +31,8 @@ export default function AdminSupport() {
 
   return (
     <>
-      <SEOHead 
-        title="Central de Suporte - Admin" 
+      <SEOHead
+        title="Central de Suporte - Admin"
         description="Gerenciamento avançado de conversas com clientes"
       />
 
@@ -42,9 +42,7 @@ export default function AdminSupport() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Central de Suporte</h1>
-              <p className="text-muted-foreground">
-                Gerencie conversas e atendimento ao cliente
-              </p>
+              <p className="text-muted-foreground">Gerencie conversas e atendimento ao cliente</p>
             </div>
 
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grouped" | "list")}>
@@ -99,9 +97,7 @@ export default function AdminSupport() {
                       <div className="text-center text-muted-foreground">
                         <Users className="h-16 w-16 mx-auto mb-4 opacity-20" />
                         <p className="text-lg font-medium">Nenhuma conversa selecionada</p>
-                        <p className="text-sm">
-                          Selecione uma conversa para começar o atendimento
-                        </p>
+                        <p className="text-sm">Selecione uma conversa para começar o atendimento</p>
                       </div>
                     </div>
                   )}

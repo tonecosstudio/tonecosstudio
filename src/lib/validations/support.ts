@@ -80,21 +80,9 @@ export const createConversationSchema = z.object({
     .enum(["new", "waiting_admin", "waiting_customer", "resolved", "closed"])
     .optional()
     .default("new"),
-  priority: z
-    .enum(["low", "normal", "high", "urgent"])
-    .optional()
-    .default("normal"),
+  priority: z.enum(["low", "normal", "high", "urgent"]).optional().default("normal"),
   tags: z
-    .array(
-      z.enum([
-        "pedido",
-        "orcamento",
-        "duvida",
-        "reclamacao",
-        "assinatura",
-        "urgente",
-      ])
-    )
+    .array(z.enum(["pedido", "orcamento", "duvida", "reclamacao", "assinatura", "urgente"]))
     .optional()
     .default([]),
   order_id: z.string().uuid().optional(),
@@ -104,32 +92,15 @@ export const createConversationSchema = z.object({
 });
 
 export const updateConversationStatusSchema = z.object({
-  status: z.enum([
-    "new",
-    "waiting_admin",
-    "waiting_customer",
-    "resolved",
-    "closed",
-  ]),
+  status: z.enum(["new", "waiting_admin", "waiting_customer", "resolved", "closed"]),
 });
 
 export const updateConversationTagsSchema = z.object({
-  tags: z.array(
-    z.enum([
-      "pedido",
-      "orcamento",
-      "duvida",
-      "reclamacao",
-      "assinatura",
-      "urgente",
-    ])
-  ),
+  tags: z.array(z.enum(["pedido", "orcamento", "duvida", "reclamacao", "assinatura", "urgente"])),
 });
 
 export const updateConversationRiskFlagsSchema = z.object({
-  risk_flags: z.array(
-    z.enum(["cliente_conflito", "atraso_critico", "pagamento_problema"])
-  ),
+  risk_flags: z.array(z.enum(["cliente_conflito", "atraso_critico", "pagamento_problema"])),
 });
 
 export const updatePromisedDateSchema = z.object({
@@ -174,46 +145,25 @@ export const reminderSchema = z.object({
   scheduled_for: z
     .string()
     .datetime()
-    .refine(
-      (date) => new Date(date) > new Date(),
-      "Data deve ser no futuro"
-    ),
+    .refine((date) => new Date(date) > new Date(), "Data deve ser no futuro"),
   message: z.string().max(500).optional(),
 });
 
 // Production stage validation
 export const productionStageSchema = z.object({
   order_id: z.string().uuid("ID de pedido inválido"),
-  stage: z.enum([
-    "molde_pronto",
-    "impressao_iniciada",
-    "pintura_iniciada",
-    "finalizacao",
-  ]),
+  stage: z.enum(["molde_pronto", "impressao_iniciada", "pintura_iniciada", "finalizacao"]),
   notes: z.string().max(500).optional(),
 });
 
 // Search and filter validation
 export const conversationFiltersSchema = z.object({
-  status: z
-    .enum(["new", "waiting_admin", "waiting_customer", "resolved", "closed"])
-    .optional(),
+  status: z.enum(["new", "waiting_admin", "waiting_customer", "resolved", "closed"]).optional(),
   tags: z
-    .array(
-      z.enum([
-        "pedido",
-        "orcamento",
-        "duvida",
-        "reclamacao",
-        "assinatura",
-        "urgente",
-      ])
-    )
+    .array(z.enum(["pedido", "orcamento", "duvida", "reclamacao", "assinatura", "urgente"]))
     .optional(),
   risk_flags: z
-    .array(
-      z.enum(["cliente_conflito", "atraso_critico", "pagamento_problema"])
-    )
+    .array(z.enum(["cliente_conflito", "atraso_critico", "pagamento_problema"]))
     .optional(),
   search: z.string().max(200).optional(),
   assigned_to: z.string().uuid().optional(),

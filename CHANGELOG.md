@@ -16,6 +16,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Funcionalidades Principais
 
 #### Sistema de Catálogo
+
 - Catálogo de colecionáveis com busca e filtros
 - Visualização detalhada de personagens
 - Sistema de franquias e coleções
@@ -23,6 +24,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Classificação automática por IA (OpenAI GPT-4o-mini)
 
 #### Sistema de Autenticação
+
 - Login com email/senha
 - Login com Google OAuth
 - Gestão de perfis de usuário
@@ -30,6 +32,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Perfis públicos de colecionador
 
 #### Sistema de Chat/Suporte
+
 - Chat em tempo real entre cliente e admin
 - Sistema de conversas e mensagens
 - Upload de anexos (imagens, documentos)
@@ -40,6 +43,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Tags e flags de risco
 
 #### Sistema de Grupos
+
 - Grupos de comunicação automáticos
 - Segmentação de clientes
 - Mensagens em lote
@@ -47,6 +51,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Notificações por email
 
 #### Sistema de Assinaturas
+
 - Planos de assinatura (mensal, semestral)
 - Gestão de coleções por assinatura
 - Sistema de pré-pedidos
@@ -54,6 +59,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Limites de produção configuráveis
 
 #### Sistema de Pagamentos
+
 - Múltiplos métodos de pagamento
 - Parcelamento configurável (6x, 10x)
 - Desconto PIX (5%)
@@ -63,6 +69,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Análise financeira de coleções
 
 #### Painel Administrativo
+
 - Dashboard com métricas
 - Gestão de usuários
 - Gestão de orçamentos
@@ -74,6 +81,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Analytics e relatórios
 
 #### Área do Cliente
+
 - Dashboard personalizado
 - Minhas assinaturas
 - Meus pagamentos
@@ -123,12 +131,14 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### 🐛 Correções Críticas
 
 #### Erro 406 Eliminado
+
 - Corrigido `.single()` → `.maybeSingle()` em 13 locais
 - Implementado graceful degradation
 - Mensagens de erro específicas
 - Tratamento de casos vazios
 
 #### Sistema de Grupos Otimizado
+
 - Criada função SQL otimizada `get_user_groups_with_details`
 - Redução de 30+ queries para 1-2 queries
 - Melhoria de 80% no tempo de carregamento (2-3s → 0.3-0.5s)
@@ -148,6 +158,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Novas Funcionalidades
 
 #### Sistema de Grupos
+
 - Grupos automáticos por tipo de cliente
 - Segmentação inteligente
 - Sincronização automática via cron job
@@ -155,12 +166,14 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Gestão de membros
 
 #### Templates Dinâmicos
+
 - Templates de status de pedido
 - Templates de email
 - Variáveis dinâmicas
 - Personalização por cliente
 
 #### Sistema de Anexos
+
 - Upload de múltiplos arquivos
 - Preview de imagens
 - Suporte a documentos
@@ -181,6 +194,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Novas Funcionalidades
 
 #### Sistema de Chat Completo
+
 - Interface admin completa
 - Interface cliente (modal flutuante)
 - Mensagens em tempo real
@@ -190,6 +204,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Métricas de atendimento
 
 #### Sistema de Suporte
+
 - Conversas organizadas
 - Sidebar com dados do cliente
 - Quick replies
@@ -211,6 +226,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Novas Funcionalidades
 
 #### Sistema de Pagamentos
+
 - Múltiplos métodos de pagamento
 - Parcelamento configurável
 - Desconto PIX 5%
@@ -218,6 +234,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Calculadora de preços
 
 #### Sistema de Preços Dinâmicos
+
 - Preços configuráveis por coleção
 - Análise financeira
 - Custos e margens
@@ -237,6 +254,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Novas Funcionalidades
 
 #### Sistema de Assinaturas
+
 - Planos mensais e semestrais
 - Gestão de coleções
 - Sistema de pré-pedidos
@@ -256,12 +274,14 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Novas Funcionalidades
 
 #### Sistema de Coleções
+
 - Coleções dinâmicas
 - Gestão de personagens
 - Análise financeira
 - Cronograma de produção
 
 #### Sistema de Colecionador
+
 - Perfis públicos
 - Sistema de badges
 - Níveis de colecionador
@@ -280,12 +300,14 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Novas Funcionalidades
 
 #### Sistema de Orçamentos
+
 - Solicitação de orçamentos
 - Carrinho de orçamento
 - Gestão admin de orçamentos
 - Aprovação/rejeição
 
 #### Sistema de Perfis
+
 - Perfis de usuário
 - Dados pessoais
 - Preferências
@@ -304,12 +326,14 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### ✨ Novas Funcionalidades
 
 #### Classificação por IA
+
 - Integração com OpenAI GPT-4o-mini
 - Classificação automática de imagens
 - Análise de preferências
 - Sugestões inteligentes
 
 #### Sistema de Upload
+
 - Upload massivo (até 2000 imagens)
 - Fila de processamento
 - Modo esteira
@@ -328,6 +352,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 ### 🎉 Versão Inicial
 
 #### Funcionalidades Básicas
+
 - Catálogo de personagens
 - Sistema de autenticação
 - Painel administrativo básico
@@ -335,6 +360,7 @@ Primeira versão estável da plataforma Ordax, pronta para produção.
 - Upload de imagens
 
 #### Infraestrutura
+
 - Setup do Supabase
 - Migrations iniciais
 - Configuração do Vite

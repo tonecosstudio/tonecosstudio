@@ -1,13 +1,13 @@
 /**
  * useDebounce - Hook para debounce de valores
- * 
+ *
  * Requirements: 16.15 (debounce de 500ms)
- * 
+ *
  * Este hook implementa debounce para evitar atualizações muito frequentes
  * que podem causar thrashing na UI.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 /**
  * Hook para debounce de valores

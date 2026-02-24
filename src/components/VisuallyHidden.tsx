@@ -2,7 +2,7 @@ import { srOnlyClass } from "@/lib/accessibility";
 
 /**
  * Componente para texto visualmente oculto mas acessível a screen readers
- * 
+ *
  * @example
  * <button>
  *   <Icon />

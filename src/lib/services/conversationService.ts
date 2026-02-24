@@ -18,9 +18,7 @@ export class ConversationService {
     filters?: ConversationFilters,
     pagination?: PaginationOptions
   ): Promise<Conversation[]> {
-    let query = supabase
-      .from("support_conversations")
-      .select("*");
+    let query = supabase.from("support_conversations").select("*");
 
     // Aplicar filtros
     if (filters?.status) {
@@ -41,9 +39,7 @@ export class ConversationService {
 
     if (filters?.search) {
       // Busca por subject ou ID da conversa
-      query = query.or(
-        `subject.ilike.%${filters.search}%,id.ilike.%${filters.search}%`
-      );
+      query = query.or(`subject.ilike.%${filters.search}%,id.ilike.%${filters.search}%`);
     }
 
     // Aplicar ordenação
@@ -56,10 +52,7 @@ export class ConversationService {
       query = query.limit(pagination.limit);
     }
     if (pagination?.offset) {
-      query = query.range(
-        pagination.offset,
-        pagination.offset + (pagination.limit || 50) - 1
-      );
+      query = query.range(pagination.offset, pagination.offset + (pagination.limit || 50) - 1);
     }
 
     const { data, error } = await query;
@@ -76,9 +69,7 @@ export class ConversationService {
       .select("id, full_name, email")
       .in("id", userIds);
 
-    const profilesMap = new Map(
-      (profiles || []).map((p: any) => [p.id, p])
-    );
+    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     // Mapear conversas com dados do usuário
     return (data || []).map((conv: any) => {
@@ -133,9 +124,7 @@ export class ConversationService {
   /**
    * Cria uma nova conversa
    */
-  async createConversation(
-    conversationData: CreateConversationData
-  ): Promise<Conversation> {
+  async createConversation(conversationData: CreateConversationData): Promise<Conversation> {
     const { data, error } = await supabase
       .from("support_conversations")
       .insert({
@@ -308,7 +297,7 @@ export class ConversationService {
       .from("support_conversations")
       .select("*")
       .or(`subject.ilike.%${searchTerm}%,id.ilike.%${searchTerm}%`)
-      .order("last_message_at", { ascending: false});
+      .order("last_message_at", { ascending: false });
 
     if (error) {
       console.error("Erro ao buscar conversas:", error);
@@ -322,9 +311,7 @@ export class ConversationService {
       .select("id, full_name, email")
       .in("id", userIds);
 
-    const profilesMap = new Map(
-      (profiles || []).map((p: any) => [p.id, p])
-    );
+    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     return (data || []).map((conv: any) => {
       const profile = profilesMap.get(conv.user_id);
@@ -345,11 +332,11 @@ export class ConversationService {
    * @param conversationId ID da conversa
    * @param viewerType Tipo de visualizador ('customer' ou 'admin')
    */
-  async getUnreadCount(conversationId: string, viewerType: 'customer' | 'admin'): Promise<number> {
+  async getUnreadCount(conversationId: string, viewerType: "customer" | "admin"): Promise<number> {
     // Para cliente: contar mensagens do admin/system que não foram lidas
     // Para admin: contar mensagens do cliente que não foram lidas
-    const senderType = viewerType === 'customer' ? ['admin', 'system'] : ['customer'];
-    
+    const senderType = viewerType === "customer" ? ["admin", "system"] : ["customer"];
+
     const { count, error } = await supabase
       .from("support_messages")
       .select("*", { count: "exact", head: true })

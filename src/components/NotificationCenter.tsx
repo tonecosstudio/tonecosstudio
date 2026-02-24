@@ -4,11 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Bell, Check, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -62,10 +58,7 @@ export function NotificationCenter() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("notifications").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -150,18 +143,14 @@ export function NotificationCenter() {
                           onClick={() => handleNotificationClick(notification)}
                           className="block"
                         >
-                          <p className="font-medium text-sm line-clamp-2">
-                            {notification.title}
-                          </p>
+                          <p className="font-medium text-sm line-clamp-2">{notification.title}</p>
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {notification.message}
                           </p>
                         </Link>
                       ) : (
                         <>
-                          <p className="font-medium text-sm line-clamp-2">
-                            {notification.title}
-                          </p>
+                          <p className="font-medium text-sm line-clamp-2">{notification.title}</p>
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {notification.message}
                           </p>

@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2 } from "lucide-react";
-import { buildPrettyModelNameFromFilename, extractNameHints, prettyFolderName } from "@/lib/collectible-naming";
+import {
+  buildPrettyModelNameFromFilename,
+  extractNameHints,
+  prettyFolderName,
+} from "@/lib/collectible-naming";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import {
   Dialog,
@@ -93,9 +97,18 @@ export default function Conveyor() {
     queryFn: async () => {
       try {
         const [{ count: pending }, { count: processed }, { count: review }] = await Promise.all([
-          supabase.from("images_queue").select("id", { count: "exact", head: true }).eq("status", "pending"),
-          supabase.from("images_queue").select("id", { count: "exact", head: true }).eq("status", "processed"),
-          supabase.from("images_queue").select("id", { count: "exact", head: true }).eq("status", "review_later"),
+          supabase
+            .from("images_queue")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending"),
+          supabase
+            .from("images_queue")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "processed"),
+          supabase
+            .from("images_queue")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "review_later"),
         ]);
         return { pending: pending ?? 0, processed: processed ?? 0, review: review ?? 0 };
       } catch (error) {
@@ -112,7 +125,9 @@ export default function Conveyor() {
       try {
         const { data, error } = await supabase
           .from("images_queue")
-          .select("id,storage_bucket,storage_path,status,original_filename,ai_suggested_name,ai_confidence,ai_model_used")
+          .select(
+            "id,storage_bucket,storage_path,status,original_filename,ai_suggested_name,ai_confidence,ai_model_used"
+          )
           .eq("status", "pending")
           .order("priority_at", { ascending: true })
           .order("created_at", { ascending: true })
@@ -131,11 +146,15 @@ export default function Conveyor() {
   const current = nextQuery.data;
   const imageUrl = useMemo(() => {
     if (!current) return null;
-    return supabase.storage.from(current.storage_bucket).getPublicUrl(current.storage_path).data.publicUrl;
+    return supabase.storage.from(current.storage_bucket).getPublicUrl(current.storage_path).data
+      .publicUrl;
   }, [current]);
 
   const relativePath = current?.original_filename ?? null;
-  const prettyNameFromFile = useMemo(() => buildPrettyModelNameFromFilename(relativePath), [relativePath]);
+  const prettyNameFromFile = useMemo(
+    () => buildPrettyModelNameFromFilename(relativePath),
+    [relativePath]
+  );
   const folderFromFile = useMemo(() => extractNameHints(relativePath).folder, [relativePath]);
 
   const resetForNext = () => {
@@ -187,7 +206,9 @@ export default function Conveyor() {
     (async () => {
       try {
         // Usamos a mesma função de texto (barata) para entender a pasta como franquia/projeto.
-        const { data, error } = await supabase.functions.invoke("classify-name", { body: { name: folder } });
+        const { data, error } = await supabase.functions.invoke("classify-name", {
+          body: { name: folder },
+        });
         if (error) throw error;
         if (cancelled) return;
 
@@ -220,7 +241,9 @@ export default function Conveyor() {
     }
     setIsClassifying(true);
     try {
-      const { data, error } = await supabase.functions.invoke("classify-name", { body: { name: trimmed } });
+      const { data, error } = await supabase.functions.invoke("classify-name", {
+        body: { name: trimmed },
+      });
       if (error) throw error;
       setAi({
         franchise: data.franchise ?? null,
@@ -258,20 +281,17 @@ export default function Conveyor() {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) throw new Error("VITE_SUPABASE_URL não configurado");
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/classify-image-vision`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${authData.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            queue_id: current.id,
-            model: "gpt-4o-mini",
-          }),
-        }
-      );
+      const response = await fetch(`${supabaseUrl}/functions/v1/classify-image-vision`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authData.session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          queue_id: current.id,
+          model: "gpt-4o-mini",
+        }),
+      });
 
       if (!response.ok) {
         const error = await response.json();
@@ -279,7 +299,7 @@ export default function Conveyor() {
       }
 
       const result = await response.json();
-      
+
       setName(result.name || "");
       setAi({
         franchise: result.franchise ?? null,
@@ -301,7 +321,6 @@ export default function Conveyor() {
         title: "Reanálise concluída",
         description: `Confiança: ${Math.round(Number(result.confidence ?? 0))}%`,
       });
-
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
       toast({ title: "Falha ao reanalisar", description: msg, variant: "destructive" });
@@ -325,7 +344,10 @@ export default function Conveyor() {
     if (!current) return;
     // Mantém status pending, só joga para o fim da fila
     const future = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365); // +365d
-    const { error } = await supabase.from("images_queue").update({ priority_at: future.toISOString() }).eq("id", current.id);
+    const { error } = await supabase
+      .from("images_queue")
+      .update({ priority_at: future.toISOString() })
+      .eq("id", current.id);
     if (error) throw error;
     resetForNext();
   };
@@ -334,7 +356,9 @@ export default function Conveyor() {
     if (!current) return;
     setIsSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("queue-reject", { body: { queueId: current.id } });
+      const { data, error } = await supabase.functions.invoke("queue-reject", {
+        body: { queueId: current.id },
+      });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error ?? "Falha ao rejeitar");
       toast({ title: "Rejeitada", description: "Imagem deletada e removida da fila." });
@@ -453,347 +477,393 @@ export default function Conveyor() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-      {/* Error Display */}
-      {(progressQuery.error || nextQuery.error) && (
-        <Card className="bg-destructive/10 border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Erro ao carregar dados</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {progressQuery.error && (
-              <div>
-                <p className="font-medium">Erro ao buscar contadores:</p>
-                <p className="text-sm text-muted-foreground">
-                  {progressQuery.error instanceof Error ? progressQuery.error.message : "Erro desconhecido"}
-                </p>
-              </div>
-            )}
-            {nextQuery.error && (
-              <div>
-                <p className="font-medium">Erro ao buscar próxima imagem:</p>
-                <p className="text-sm text-muted-foreground">
-                  {nextQuery.error instanceof Error ? nextQuery.error.message : "Erro desconhecido"}
-                </p>
-              </div>
-            )}
-            <div className="mt-4 p-4 bg-background/50 rounded-lg">
-              <p className="font-medium mb-2">Possíveis causas:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>As migrations não foram aplicadas no Supabase</li>
-                <li>Seu usuário não tem permissão de admin</li>
-                <li>A tabela images_queue não existe</li>
-              </ul>
-              <p className="mt-3 text-sm">
-                Execute o arquivo <code className="bg-background px-1 py-0.5 rounded">diagnostico-conveyor.sql</code> no Supabase SQL Editor para identificar o problema.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-semibold">Modo Esteira</h1>
-        <Badge variant="secondary">ENTER salvar</Badge>
-        <Badge variant="secondary">SHIFT+ENTER pular</Badge>
-        <Badge variant="secondary">ESC revisar depois</Badge>
-        <div className="ml-auto flex gap-2">
-          <Badge variant="secondary">Pending: {progressQuery.data?.pending ?? "—"}</Badge>
-          <Badge variant="secondary">Processed: {progressQuery.data?.processed ?? "—"}</Badge>
-          <Badge variant="secondary">Review: {progressQuery.data?.review ?? "—"}</Badge>
-        </div>
-      </div>
-
-      {!current ? (
-        <Card className="bg-surface/70 shadow-elevated">
-          <CardHeader>
-            <CardTitle>Fila vazia</CardTitle>
-          </CardHeader>
-          <CardContent className="text-muted-foreground">Sem imagens em pending. Faça upload para começar.</CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-surface/70 shadow-elevated">
-          <CardHeader>
-            <CardTitle>Próxima imagem</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-6 lg:grid-cols-2">
-            <div className="overflow-hidden rounded-xl border bg-background/40">
-              {imageUrl ? (
-                <img src={imageUrl} alt={current.original_filename ?? "Imagem"} className="h-full w-full object-contain" />
-              ) : (
-                <div className="p-10 text-muted-foreground">Sem preview</div>
+        {/* Error Display */}
+        {(progressQuery.error || nextQuery.error) && (
+          <Card className="bg-destructive/10 border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive">Erro ao carregar dados</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {progressQuery.error && (
+                <div>
+                  <p className="font-medium">Erro ao buscar contadores:</p>
+                  <p className="text-sm text-muted-foreground">
+                    {progressQuery.error instanceof Error
+                      ? progressQuery.error.message
+                      : "Erro desconhecido"}
+                  </p>
+                </div>
               )}
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Nome (obrigatório)</label>
-                  {current?.ai_suggested_name && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      Sugestão IA {current.ai_confidence != null ? `(${Math.round(current.ai_confidence)}%)` : ""}
-                    </Badge>
-                  )}
+              {nextQuery.error && (
+                <div>
+                  <p className="font-medium">Erro ao buscar próxima imagem:</p>
+                  <p className="text-sm text-muted-foreground">
+                    {nextQuery.error instanceof Error
+                      ? nextQuery.error.message
+                      : "Erro desconhecido"}
+                  </p>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {folderHint?.prettyFolder ? (
-                    <Badge variant="secondary">
-                      Pasta: {folderHint.prettyFolder}
-                      {isFolderHintLoading ? " (analisando…)" : ""}
-                    </Badge>
-                  ) : null}
-                  {folderHint?.suggestedCategory ? (
-                    <Badge variant="secondary">Sug. pasta cat: {folderHint.suggestedCategory}</Badge>
-                  ) : null}
-                  {folderHint?.suggestedSubcategory ? (
-                    <Badge variant="secondary">Sug. pasta sub: {folderHint.suggestedSubcategory}</Badge>
-                  ) : null}
-                </div>
-
-                <Input
-                  value={name}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setName(v);
-                    scheduleClassify(v);
-                  }}
-                  list="name-suggestions"
-                  placeholder="Ex: Boneco do herói X…"
-                />
-
-                {prettyNameFromFile && prettyNameFromFile !== name.trim() ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setName(prettyNameFromFile);
-                        scheduleClassify(prettyNameFromFile);
-                      }}
-                    >
-                      Usar nome sugerido: {prettyNameFromFile}
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      (baseado no nome do arquivo; ajuste se precisar)
-                    </span>
-                  </div>
-                ) : null}
-                <datalist id="name-suggestions">
-                  {(nameSuggestionsQuery.data ?? []).map((n) => (
-                    <option key={n} value={n} />
-                  ))}
-                </datalist>
-                <p className="text-xs text-muted-foreground">
-                  Ao digitar, a IA sugere franquia/categoria/subcategoria/tags. {isClassifying ? "(classificando…)" : ""}
+              )}
+              <div className="mt-4 p-4 bg-background/50 rounded-lg">
+                <p className="font-medium mb-2">Possíveis causas:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>As migrations não foram aplicadas no Supabase</li>
+                  <li>Seu usuário não tem permissão de admin</li>
+                  <li>A tabela images_queue não existe</li>
+                </ul>
+                <p className="mt-3 text-sm">
+                  Execute o arquivo{" "}
+                  <code className="bg-background px-1 py-0.5 rounded">
+                    diagnostico-conveyor.sql
+                  </code>{" "}
+                  no Supabase SQL Editor para identificar o problema.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="rounded-xl border bg-background/50 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">Sugestão IA</p>
-                  {ai?.fromCache ? <Badge variant="secondary">cache</Badge> : null}
-                </div>
-                <div className="mt-3 grid gap-2 text-sm">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">
-                      Franquia: {franchiseOverride.trim() ? franchiseOverride.trim() : ai?.franchise ?? "—"}
-                    </Badge>
-                    <Badge variant="secondary">Categoria: {ai?.category ?? "—"}</Badge>
-                    <Badge variant="secondary">Sub: {ai?.subcategory ?? "—"}</Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(ai?.tags ?? []).slice(0, 10).map((t) => (
-                      <Badge key={t} variant="secondary">
-                        {t}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={nameConfirmed ? "hero" : "outline"}
-                      onClick={() => setNameConfirmed((v) => !v)}
-                    >
-                      Nome OK
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={franchiseConfirmed ? "hero" : "outline"}
-                      onClick={() => setFranchiseConfirmed((v) => !v)}
-                    >
-                      Franquia OK
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={categoryConfirmed ? "hero" : "outline"}
-                      onClick={() => setCategoryConfirmed((v) => !v)}
-                    >
-                      Categoria/Sub OK
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Clique nos botões acima para marcar que Nome, Franquia e Categoria/Subcategoria estão corretos. A imagem só é
-                    aprovada quando os três estiverem verdes.
-                  </p>
-                </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold">Modo Esteira</h1>
+          <Badge variant="secondary">ENTER salvar</Badge>
+          <Badge variant="secondary">SHIFT+ENTER pular</Badge>
+          <Badge variant="secondary">ESC revisar depois</Badge>
+          <div className="ml-auto flex gap-2">
+            <Badge variant="secondary">Pending: {progressQuery.data?.pending ?? "—"}</Badge>
+            <Badge variant="secondary">Processed: {progressQuery.data?.processed ?? "—"}</Badge>
+            <Badge variant="secondary">Review: {progressQuery.data?.review ?? "—"}</Badge>
+          </div>
+        </div>
+
+        {!current ? (
+          <Card className="bg-surface/70 shadow-elevated">
+            <CardHeader>
+              <CardTitle>Fila vazia</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground">
+              Sem imagens em pending. Faça upload para começar.
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-surface/70 shadow-elevated">
+            <CardHeader>
+              <CardTitle>Próxima imagem</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-6 lg:grid-cols-2">
+              <div className="overflow-hidden rounded-xl border bg-background/40">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={current.original_filename ?? "Imagem"}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <div className="p-10 text-muted-foreground">Sem preview</div>
+                )}
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <Button variant="hero" onClick={confirm} disabled={isSaving || !name.trim()}>
-                  {isSaving ? "Salvando…" : "Confirmar (ENTER)"}
-                </Button>
-                <Button variant="outline" onClick={() => classify(name)} disabled={isSaving || !name.trim() || isClassifying}>
-                  Reclassificar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={reanalyzeWithVision} 
-                  disabled={isSaving || isReanalyzing}
-                  className="flex items-center gap-2"
-                >
-                  {isReanalyzing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Analisando...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Reanalisar com IA Vision
-                    </>
-                  )}
-                </Button>
-                {progressQuery.data && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Nome (obrigatório)</label>
+                    {current?.ai_suggested_name && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        Sugestão IA{" "}
+                        {current.ai_confidence != null
+                          ? `(${Math.round(current.ai_confidence)}%)`
+                          : ""}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {folderHint?.prettyFolder ? (
+                      <Badge variant="secondary">
+                        Pasta: {folderHint.prettyFolder}
+                        {isFolderHintLoading ? " (analisando…)" : ""}
+                      </Badge>
+                    ) : null}
+                    {folderHint?.suggestedCategory ? (
+                      <Badge variant="secondary">
+                        Sug. pasta cat: {folderHint.suggestedCategory}
+                      </Badge>
+                    ) : null}
+                    {folderHint?.suggestedSubcategory ? (
+                      <Badge variant="secondary">
+                        Sug. pasta sub: {folderHint.suggestedSubcategory}
+                      </Badge>
+                    ) : null}
+                  </div>
+
+                  <Input
+                    value={name}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setName(v);
+                      scheduleClassify(v);
+                    }}
+                    list="name-suggestions"
+                    placeholder="Ex: Boneco do herói X…"
+                  />
+
+                  {prettyNameFromFile && prettyNameFromFile !== name.trim() ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setName(prettyNameFromFile);
+                          scheduleClassify(prettyNameFromFile);
+                        }}
+                      >
+                        Usar nome sugerido: {prettyNameFromFile}
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        (baseado no nome do arquivo; ajuste se precisar)
+                      </span>
+                    </div>
+                  ) : null}
+                  <datalist id="name-suggestions">
+                    {(nameSuggestionsQuery.data ?? []).map((n) => (
+                      <option key={n} value={n} />
+                    ))}
+                  </datalist>
                   <p className="text-xs text-muted-foreground">
-                    {progressQuery.data.pending
-                      ? "Dica: use IA Vision principalmente para as imagens que sobraram depois de limpar a fila Pending."
-                      : progressQuery.data.review
-                        ? "Agora é um bom momento para usar IA Vision nas imagens marcadas para Revisar depois."
-                        : "IA Vision é mais cara — priorize o acerto pelo nome sempre que possível."}
+                    Ao digitar, a IA sugere franquia/categoria/subcategoria/tags.{" "}
+                    {isClassifying ? "(classificando…)" : ""}
                   </p>
-                )}
+                </div>
 
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" disabled={isSaving}>
-                      Confirmar franquia…
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Confirmar franquia</DialogTitle>
-                      <DialogDescription>
-                        Use isto quando houver ambiguidade (ex.: "X-Men" vs "Patrulha Canina"). Ao confirmar, salvamos uma regra
-                        automática para sugerir/aplicar na próxima vez.
-                      </DialogDescription>
-                    </DialogHeader>
+                <div className="rounded-xl border bg-background/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Sugestão IA</p>
+                    {ai?.fromCache ? <Badge variant="secondary">cache</Badge> : null}
+                  </div>
+                  <div className="mt-3 grid gap-2 text-sm">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary">
+                        Franquia:{" "}
+                        {franchiseOverride.trim()
+                          ? franchiseOverride.trim()
+                          : (ai?.franchise ?? "—")}
+                      </Badge>
+                      <Badge variant="secondary">Categoria: {ai?.category ?? "—"}</Badge>
+                      <Badge variant="secondary">Sub: {ai?.subcategory ?? "—"}</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(ai?.tags ?? []).slice(0, 10).map((t) => (
+                        <Badge key={t} variant="secondary">
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={nameConfirmed ? "hero" : "outline"}
+                        onClick={() => setNameConfirmed((v) => !v)}
+                      >
+                        Nome OK
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={franchiseConfirmed ? "hero" : "outline"}
+                        onClick={() => setFranchiseConfirmed((v) => !v)}
+                      >
+                        Franquia OK
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={categoryConfirmed ? "hero" : "outline"}
+                        onClick={() => setCategoryConfirmed((v) => !v)}
+                      >
+                        Categoria/Sub OK
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Clique nos botões acima para marcar que Nome, Franquia e
+                      Categoria/Subcategoria estão corretos. A imagem só é aprovada quando os três
+                      estiverem verdes.
+                    </p>
+                  </div>
+                </div>
 
-                    <div className="grid gap-3">
-                      <div className="grid gap-2">
-                        <label className="text-sm font-medium">Buscar franquia canônica</label>
-                        <Input
-                          value={franchiseSearch}
-                          onChange={(e) => setFranchiseSearch(e.target.value)}
-                          placeholder={ai?.franchise ? `Ex: ${ai.franchise}` : "Ex: X-Men"}
-                        />
-                      </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="hero" onClick={confirm} disabled={isSaving || !name.trim()}>
+                    {isSaving ? "Salvando…" : "Confirmar (ENTER)"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => classify(name)}
+                    disabled={isSaving || !name.trim() || isClassifying}
+                  >
+                    Reclassificar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={reanalyzeWithVision}
+                    disabled={isSaving || isReanalyzing}
+                    className="flex items-center gap-2"
+                  >
+                    {isReanalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Analisando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Reanalisar com IA Vision
+                      </>
+                    )}
+                  </Button>
+                  {progressQuery.data && (
+                    <p className="text-xs text-muted-foreground">
+                      {progressQuery.data.pending
+                        ? "Dica: use IA Vision principalmente para as imagens que sobraram depois de limpar a fila Pending."
+                        : progressQuery.data.review
+                          ? "Agora é um bom momento para usar IA Vision nas imagens marcadas para Revisar depois."
+                          : "IA Vision é mais cara — priorize o acerto pelo nome sempre que possível."}
+                    </p>
+                  )}
 
-                      <div className="rounded-lg border bg-background/50 p-3">
-                        <p className="text-sm font-medium">Sugestões</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {(franchiseCandidatesQuery.data ?? []).slice(0, 12).map((f) => (
-                            <Button
-                              key={f.canonical}
-                              type="button"
-                              variant={franchiseOverride === f.canonical ? "hero" : "outline"}
-                              onClick={() => setFranchiseOverride(f.canonical)}
-                            >
-                              {f.canonical}
-                            </Button>
-                          ))}
-                          {(franchiseCandidatesQuery.data ?? []).length === 0 ? (
-                            <span className="text-sm text-muted-foreground">Nenhuma franquia encontrada — você pode digitar uma nova.</span>
-                          ) : null}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" disabled={isSaving}>
+                        Confirmar franquia…
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle>Confirmar franquia</DialogTitle>
+                        <DialogDescription>
+                          Use isto quando houver ambiguidade (ex.: "X-Men" vs "Patrulha Canina"). Ao
+                          confirmar, salvamos uma regra automática para sugerir/aplicar na próxima
+                          vez.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="grid gap-3">
+                        <div className="grid gap-2">
+                          <label className="text-sm font-medium">Buscar franquia canônica</label>
+                          <Input
+                            value={franchiseSearch}
+                            onChange={(e) => setFranchiseSearch(e.target.value)}
+                            placeholder={ai?.franchise ? `Ex: ${ai.franchise}` : "Ex: X-Men"}
+                          />
+                        </div>
+
+                        <div className="rounded-lg border bg-background/50 p-3">
+                          <p className="text-sm font-medium">Sugestões</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(franchiseCandidatesQuery.data ?? []).slice(0, 12).map((f) => (
+                              <Button
+                                key={f.canonical}
+                                type="button"
+                                variant={franchiseOverride === f.canonical ? "hero" : "outline"}
+                                onClick={() => setFranchiseOverride(f.canonical)}
+                              >
+                                {f.canonical}
+                              </Button>
+                            ))}
+                            {(franchiseCandidatesQuery.data ?? []).length === 0 ? (
+                              <span className="text-sm text-muted-foreground">
+                                Nenhuma franquia encontrada — você pode digitar uma nova.
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <label className="text-sm font-medium">Franquia selecionada</label>
+                          <Input
+                            value={franchiseOverride}
+                            onChange={(e) => setFranchiseOverride(e.target.value)}
+                            placeholder="Ex: X-Men"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Se deixar vazio, usamos a franquia sugerida pela IA/regra.
+                          </p>
                         </div>
                       </div>
 
-                      <div className="grid gap-2">
-                        <label className="text-sm font-medium">Franquia selecionada</label>
-                        <Input
-                          value={franchiseOverride}
-                          onChange={(e) => setFranchiseOverride(e.target.value)}
-                          placeholder="Ex: X-Men"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Se deixar vazio, usamos a franquia sugerida pela IA/regra.
-                        </p>
-                      </div>
-                    </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="hero" disabled={!name.trim()}>
+                            Pronto
+                          </Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button variant="hero" disabled={!name.trim()}>
-                          Pronto
-                        </Button>
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                <Button variant="outline" onClick={() => setStatus("skipped")} disabled={isSaving}>
-                  Pular (SHIFT+ENTER)
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    skipToEnd().catch((e) =>
-                      toast({ title: "Falha ao pular", description: e instanceof Error ? e.message : "Erro inesperado", variant: "destructive" }),
-                    );
-                  }}
-                  disabled={isSaving}
-                >
-                  Pular pro final
-                </Button>
-                <Button variant="outline" onClick={() => setStatus("review_later")} disabled={isSaving}>
-                  Revisar depois (ESC)
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" disabled={isSaving}>
-                      Rejeitar (deletar)
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Deletar esta imagem?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Isso remove o arquivo do armazenamento e apaga o item da fila. Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel disabled={isSaving}>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={(e) => {
-                          e.preventDefault();
-                          rejectDelete();
-                        }}
-                        disabled={isSaving}
-                      >
-                        Sim, deletar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                  <Button
+                    variant="outline"
+                    onClick={() => setStatus("skipped")}
+                    disabled={isSaving}
+                  >
+                    Pular (SHIFT+ENTER)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      skipToEnd().catch((e) =>
+                        toast({
+                          title: "Falha ao pular",
+                          description: e instanceof Error ? e.message : "Erro inesperado",
+                          variant: "destructive",
+                        })
+                      );
+                    }}
+                    disabled={isSaving}
+                  >
+                    Pular pro final
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setStatus("review_later")}
+                    disabled={isSaving}
+                  >
+                    Revisar depois (ESC)
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={isSaving}>
+                        Rejeitar (deletar)
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Deletar esta imagem?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso remove o arquivo do armazenamento e apaga o item da fila. Esta ação
+                          não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSaving}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            e.preventDefault();
+                            rejectDelete();
+                          }}
+                          disabled={isSaving}
+                        >
+                          Sim, deletar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AdminLayout>
   );

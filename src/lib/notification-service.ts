@@ -1,9 +1,9 @@
 /**
  * NotificationService - Service for sending email notifications for payment status changes
- * 
+ *
  * Requirements: 9.1-9.12
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * This service handles all email notifications related to manual payments,
  * including payment creation, status changes, and conversation messages.
  * It integrates with the existing email service in the project.
@@ -34,7 +34,11 @@ export interface EmailRecipient {
  * This should be implemented by the existing email service
  */
 export interface EmailService {
-  sendEmail(to: EmailRecipient[], template: EmailTemplate, data?: Record<string, any>): Promise<void>;
+  sendEmail(
+    to: EmailRecipient[],
+    template: EmailTemplate,
+    data?: Record<string, any>
+  ): Promise<void>;
 }
 
 /**
@@ -43,203 +47,208 @@ export interface EmailService {
  */
 export class NotificationService {
   private emailService: EmailService;
-  
+
   constructor(emailService: EmailService) {
     this.emailService = emailService;
   }
-  
+
   /**
    * Send payment creation email to customer
    * Requirements: 9.1-9.2
-   * 
+   *
    * @param paymentId - UUID of the created payment
    * @throws Error if payment not found or email sending fails
    */
   async sendPaymentCreated(paymentId: string): Promise<void> {
     const paymentDetails = await this.getPaymentDetails(paymentId);
-    
+
     if (!paymentDetails.customer_email) {
       throw new Error("Customer email not found");
     }
-    
+
     const template = this.getPaymentCreatedTemplate(paymentDetails);
     const recipient: EmailRecipient = {
       email: paymentDetails.customer_email,
       name: paymentDetails.customer_name,
     };
-    
+
     await this.emailService.sendEmail([recipient], template, {
       payment: paymentDetails,
       paymentMethod: paymentDetails.payment_method,
     });
   }
-  
+
   /**
    * Send payment under review notification to all admins
    * Requirements: 9.3-9.4
-   * 
+   *
    * @param paymentId - UUID of the payment under review
    * @throws Error if payment not found or email sending fails
    */
   async sendPaymentUnderReview(paymentId: string): Promise<void> {
     const paymentDetails = await this.getPaymentDetails(paymentId);
     const admins = await this.getAdminEmails();
-    
+
     if (admins.length === 0) {
       console.warn("No admin emails found for payment under review notification");
       return;
     }
-    
+
     const template = this.getPaymentUnderReviewTemplate(paymentDetails);
-    const recipients = admins.map(email => ({ email }));
-    
+    const recipients = admins.map((email) => ({ email }));
+
     await this.emailService.sendEmail(recipients, template, {
       payment: paymentDetails,
       customerName: paymentDetails.customer_name,
     });
   }
-  
+
   /**
    * Send payment approval email to customer
    * Requirements: 9.5-9.6
-   * 
+   *
    * @param paymentId - UUID of the approved payment
    * @throws Error if payment not found or email sending fails
    */
   async sendPaymentApproved(paymentId: string): Promise<void> {
     const paymentDetails = await this.getPaymentDetails(paymentId);
-    
+
     if (!paymentDetails.customer_email) {
       throw new Error("Customer email not found");
     }
-    
+
     const template = this.getPaymentApprovedTemplate(paymentDetails);
     const recipient: EmailRecipient = {
       email: paymentDetails.customer_email,
       name: paymentDetails.customer_name,
     };
-    
+
     await this.emailService.sendEmail([recipient], template, {
       payment: paymentDetails,
       approvedAt: paymentDetails.approved_at,
     });
   }
-  
+
   /**
    * Send payment rejection email to customer with reason
    * Requirements: 9.7-9.8
-   * 
+   *
    * @param paymentId - UUID of the rejected payment
    * @param reason - Rejection reason provided by admin
    * @throws Error if payment not found or email sending fails
    */
   async sendPaymentRejected(paymentId: string, reason: string): Promise<void> {
     const paymentDetails = await this.getPaymentDetails(paymentId);
-    
+
     if (!paymentDetails.customer_email) {
       throw new Error("Customer email not found");
     }
-    
+
     const template = this.getPaymentRejectedTemplate(paymentDetails, reason);
     const recipient: EmailRecipient = {
       email: paymentDetails.customer_email,
       name: paymentDetails.customer_name,
     };
-    
+
     await this.emailService.sendEmail([recipient], template, {
       payment: paymentDetails,
       rejectionReason: reason,
     });
   }
-  
+
   /**
    * Send info requested email to customer with admin message
    * Requirements: 9.9-9.10
-   * 
+   *
    * @param paymentId - UUID of the payment requiring more info
    * @param message - Admin message requesting more information
    * @throws Error if payment not found or email sending fails
    */
   async sendInfoRequested(paymentId: string, message: string): Promise<void> {
     const paymentDetails = await this.getPaymentDetails(paymentId);
-    
+
     if (!paymentDetails.customer_email) {
       throw new Error("Customer email not found");
     }
-    
+
     const template = this.getInfoRequestedTemplate(paymentDetails, message);
     const recipient: EmailRecipient = {
       email: paymentDetails.customer_email,
       name: paymentDetails.customer_name,
     };
-    
+
     await this.emailService.sendEmail([recipient], template, {
       payment: paymentDetails,
       adminMessage: message,
     });
   }
-  
+
   /**
    * Send new message notification for conversation
    * Requirements: 9.11-9.12
-   * 
+   *
    * @param conversationId - UUID of the support conversation
    * @param messageId - UUID of the new message
    * @throws Error if conversation or message not found
    */
   async sendNewMessage(conversationId: string, messageId: string): Promise<void> {
-    const { conversation, message, recipient } = await this.getConversationDetails(conversationId, messageId);
-    
+    const { conversation, message, recipient } = await this.getConversationDetails(
+      conversationId,
+      messageId
+    );
+
     if (!recipient.email) {
       throw new Error("Recipient email not found");
     }
-    
+
     const template = this.getNewMessageTemplate(conversation, message);
     const emailRecipient: EmailRecipient = {
       email: recipient.email,
       name: recipient.name,
     };
-    
+
     await this.emailService.sendEmail([emailRecipient], template, {
       conversation,
       message,
       senderName: message.sender_name,
     });
   }
-  
+
   /**
    * Get payment details with customer information
    */
   private async getPaymentDetails(paymentId: string): Promise<PaymentDetails> {
     const { data: payment, error } = await supabase
       .from("manual_payments")
-      .select(`
+      .select(
+        `
         *,
         payment_method:admin_payment_methods(*),
         files:payment_files(*),
         audit_logs:payment_audit_log(*)
-      `)
+      `
+      )
       .eq("id", paymentId)
       .single();
-    
+
     if (error) {
       throw new Error(`Failed to fetch payment: ${error.message}`);
     }
-    
+
     // Get customer profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name, email")
       .eq("id", payment.user_id)
       .single();
-    
+
     // Get conversation if exists
     const { data: conversation } = await supabase
       .from("support_conversations")
       .select("*")
       .eq("payment_id", paymentId)
       .maybeSingle();
-    
+
     return {
       ...payment,
       payment_method: payment.payment_method,
@@ -250,7 +259,7 @@ export class NotificationService {
       customer_email: profile?.email,
     } as PaymentDetails;
   }
-  
+
   /**
    * Get admin email addresses
    */
@@ -261,15 +270,15 @@ export class NotificationService {
       .select("email")
       .eq("is_admin", true)
       .not("email", "is", null);
-    
+
     if (error) {
       console.error("Failed to fetch admin emails:", error);
       return [];
     }
-    
-    return data.map(profile => profile.email).filter(Boolean) as string[];
+
+    return data.map((profile) => profile.email).filter(Boolean) as string[];
   }
-  
+
   /**
    * Get conversation details for message notification
    */
@@ -280,34 +289,35 @@ export class NotificationService {
       .select("*")
       .eq("id", conversationId)
       .single();
-    
+
     if (convError) {
       throw new Error(`Failed to fetch conversation: ${convError.message}`);
     }
-    
+
     // Get message
     const { data: message, error: msgError } = await supabase
       .from("support_messages")
       .select("*")
       .eq("id", messageId)
       .single();
-    
+
     if (msgError) {
       throw new Error(`Failed to fetch message: ${msgError.message}`);
     }
-    
+
     // Determine recipient (opposite of sender)
-    const recipientId = message.sender_id === conversation.user_id 
-      ? (await this.getAdminEmails())[0] // First admin for now
-      : conversation.user_id;
-    
+    const recipientId =
+      message.sender_id === conversation.user_id
+        ? (await this.getAdminEmails())[0] // First admin for now
+        : conversation.user_id;
+
     // Get recipient profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name, email")
       .eq("id", recipientId)
       .single();
-    
+
     return {
       conversation,
       message: {
@@ -320,7 +330,7 @@ export class NotificationService {
       },
     };
   }
-  
+
   /**
    * Generate email HTML template with consistent styling and branding
    */
@@ -401,7 +411,7 @@ export class NotificationService {
 
   /**
    * Email template generators
-   * 
+   *
    * These templates follow email design best practices with:
    * - Responsive design for mobile devices
    * - Professional branding with Ordax colors
@@ -409,14 +419,14 @@ export class NotificationService {
    * - Accessible HTML structure
    * - Plain text fallback for email clients that don't support HTML
    */
-  
+
   private getPaymentCreatedTemplate(payment: PaymentDetails): EmailTemplate {
     const subject = `Pagamento Criado - Referência: ${payment.reference_number}`;
     const html = this.generateEmailTemplate(`
       <h1 style="color: #2563eb; margin-bottom: 20px;">Pagamento Criado com Sucesso!</h1>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-        Olá <strong>${payment.customer_name || 'Cliente'}</strong>,
+        Olá <strong>${payment.customer_name || "Cliente"}</strong>,
       </p>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
@@ -448,23 +458,31 @@ export class NotificationService {
           ${payment.payment_method.instructions}
         </p>
         
-        ${payment.payment_method.payment_link ? `
+        ${
+          payment.payment_method.payment_link
+            ? `
         <div style="text-align: center; margin: 20px 0;">
           <a href="${payment.payment_method.payment_link}" 
              style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
             Acessar Link de Pagamento
           </a>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
         
-        ${payment.payment_method.pix_key ? `
+        ${
+          payment.payment_method.pix_key
+            ? `
         <div style="background-color: white; border-radius: 6px; padding: 15px; margin-top: 15px; border: 1px solid #e2e8f0;">
           <p style="margin: 0 0 10px 0; font-weight: 600; color: #1e293b;">Chave PIX:</p>
           <p style="margin: 0; font-size: 18px; font-weight: 700; color: #059669; background-color: #f0fdf4; padding: 10px; border-radius: 4px; text-align: center;">
             ${payment.payment_method.pix_key}
           </p>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
       
       <div style="background-color: #fef3c7; border-radius: 8px; padding: 20px; margin-bottom: 25px; border: 1px solid #fbbf24;">
@@ -490,10 +508,10 @@ export class NotificationService {
         Em caso de dúvidas, entre em contato através do suporte da plataforma.
       </p>
     `);
-    
+
     const text = `PAGAMENTO CRIADO - REFERÊNCIA: ${payment.reference_number}
 
-Olá ${payment.customer_name || 'Cliente'},
+Olá ${payment.customer_name || "Cliente"},
 
 Seu pagamento foi criado com sucesso na plataforma Ordax.
 
@@ -505,8 +523,8 @@ DETALHES DO PAGAMENTO:
 INSTRUÇÕES PARA PAGAMENTO:
 ${payment.payment_method.instructions}
 
-${payment.payment_method.payment_link ? `LINK PARA PAGAMENTO: ${payment.payment_method.payment_link}` : ''}
-${payment.payment_method.pix_key ? `CHAVE PIX: ${payment.payment_method.pix_key}` : ''}
+${payment.payment_method.payment_link ? `LINK PARA PAGAMENTO: ${payment.payment_method.payment_link}` : ""}
+${payment.payment_method.pix_key ? `CHAVE PIX: ${payment.payment_method.pix_key}` : ""}
 
 PRÓXIMOS PASSOS:
 1. Realize o pagamento usando as instruções acima
@@ -522,10 +540,10 @@ Em caso de dúvidas, entre em contato através do suporte da plataforma.
 
 Atenciosamente,
 Equipe Ordax`;
-    
+
     return { subject, html, text };
   }
-  
+
   private getPaymentUnderReviewTemplate(payment: PaymentDetails): EmailTemplate {
     const subject = `⚠️ Pagamento em Análise - ${payment.reference_number}`;
     const html = this.generateEmailTemplate(`
@@ -541,7 +559,7 @@ Equipe Ordax`;
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #fde68a;"><strong>Cliente:</strong></td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #fde68a; text-align: right;">${payment.customer_name || 'N/A'}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fde68a; text-align: right;">${payment.customer_name || "N/A"}</td>
           </tr>
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #fde68a;"><strong>Referência:</strong></td>
@@ -584,13 +602,13 @@ Equipe Ordax`;
         Este pagamento foi adicionado à sua lista de pendências no painel administrativo.
       </p>
     `);
-    
+
     const text = `PAGAMENTO EM ANÁLISE - REFERÊNCIA: ${payment.reference_number}
 
 Um novo pagamento foi enviado e está aguardando análise da equipe administrativa.
 
 DETALHES DO PAGAMENTO:
-- Cliente: ${payment.customer_name || 'N/A'}
+- Cliente: ${payment.customer_name || "N/A"}
 - Referência: ${payment.reference_number}
 - Valor: ${payment.amount} ${payment.currency}
 - Método: ${payment.payment_method.name}
@@ -606,10 +624,10 @@ Este pagamento foi adicionado à sua lista de pendências no painel administrati
 
 Atenciosamente,
 Sistema de Pagamentos Ordax`;
-    
+
     return { subject, html, text };
   }
-  
+
   private getPaymentApprovedTemplate(payment: PaymentDetails): EmailTemplate {
     const subject = `✅ Pagamento Aprovado - ${payment.reference_number}`;
     const html = this.generateEmailTemplate(`
@@ -625,7 +643,7 @@ Sistema de Pagamentos Ordax`;
       </div>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-        Olá <strong>${payment.customer_name || 'Cliente'}</strong>,
+        Olá <strong>${payment.customer_name || "Cliente"}</strong>,
       </p>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
@@ -646,7 +664,7 @@ Sistema de Pagamentos Ordax`;
           </tr>
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #a7f3d0;"><strong>Data de Aprovação:</strong></td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #a7f3d0; text-align: right;">${new Date(payment.approved_at || '').toLocaleDateString('pt-BR')}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #a7f3d0; text-align: right;">${new Date(payment.approved_at || "").toLocaleDateString("pt-BR")}</td>
           </tr>
           <tr>
             <td style="padding: 10px 0;"><strong>Status:</strong></td>
@@ -683,19 +701,19 @@ Sistema de Pagamentos Ordax`;
         Agradecemos pela sua confiança na Ordax Collectibles!
       </p>
     `);
-    
+
     const text = `PAGAMENTO APROVADO - REFERÊNCIA: ${payment.reference_number}
 
 ✅ SEU PAGAMENTO FOI APROVADO!
 
-Olá ${payment.customer_name || 'Cliente'},
+Olá ${payment.customer_name || "Cliente"},
 
 Temos uma ótima notícia! Seu pagamento foi analisado e aprovado pela nossa equipe.
 
 DETALHES DA APROVAÇÃO:
 - Referência: ${payment.reference_number}
 - Valor Aprovado: ${payment.amount} ${payment.currency}
-- Data de Aprovação: ${new Date(payment.approved_at || '').toLocaleDateString('pt-BR')}
+- Data de Aprovação: ${new Date(payment.approved_at || "").toLocaleDateString("pt-BR")}
 - Status: Aprovado
 
 PRÓXIMOS PASSOS:
@@ -711,10 +729,10 @@ Agradecemos pela sua confiança na Ordax Collectibles!
 
 Atenciosamente,
 Equipe Ordax`;
-    
+
     return { subject, html, text };
   }
-  
+
   private getPaymentRejectedTemplate(payment: PaymentDetails, reason: string): EmailTemplate {
     const subject = `❌ Pagamento Rejeitado - ${payment.reference_number}`;
     const html = this.generateEmailTemplate(`
@@ -730,7 +748,7 @@ Equipe Ordax`;
       </div>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-        Olá <strong>${payment.customer_name || 'Cliente'}</strong>,
+        Olá <strong>${payment.customer_name || "Cliente"}</strong>,
       </p>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
@@ -796,12 +814,12 @@ Equipe Ordax`;
         Se tiver dúvidas sobre o motivo da rejeição, entre em contato com nosso suporte.
       </p>
     `);
-    
+
     const text = `PAGAMENTO REJEITADO - REFERÊNCIA: ${payment.reference_number}
 
 ❌ SEU PAGAMENTO FOI REJEITADO
 
-Olá ${payment.customer_name || 'Cliente'},
+Olá ${payment.customer_name || "Cliente"},
 
 Infelizmente, seu pagamento não pôde ser aprovado após análise. Mas não se preocupe, você pode tentar novamente.
 
@@ -828,10 +846,10 @@ Se tiver dúvidas sobre o motivo da rejeição, entre em contato com nosso supor
 
 Atenciosamente,
 Equipe Ordax`;
-    
+
     return { subject, html, text };
   }
-  
+
   private getInfoRequestedTemplate(payment: PaymentDetails, message: string): EmailTemplate {
     const subject = `📋 Informações Adicionais Necessárias - ${payment.reference_number}`;
     const html = this.generateEmailTemplate(`
@@ -847,7 +865,7 @@ Equipe Ordax`;
       </div>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-        Olá <strong>${payment.customer_name || 'Cliente'}</strong>,
+        Olá <strong>${payment.customer_name || "Cliente"}</strong>,
       </p>
       
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
@@ -916,12 +934,12 @@ Equipe Ordax`;
         Sua resposta ajudará a agilizar a análise do seu pagamento.
       </p>
     `);
-    
+
     const text = `INFORMAÇÕES ADICIONAIS NECESSÁRIAS - REFERÊNCIA: ${payment.reference_number}
 
 📋 PRECISAMOS DE MAIS INFORMAÇÕES
 
-Olá ${payment.customer_name || 'Cliente'},
+Olá ${payment.customer_name || "Cliente"},
 
 Para continuar a análise do seu pagamento, nossa equipe precisa de algumas informações adicionais.
 
@@ -947,10 +965,10 @@ Sua resposta ajudará a agilizar a análise do seu pagamento.
 
 Atenciosamente,
 Equipe Ordax`;
-    
+
     return { subject, html, text };
   }
-  
+
   private getNewMessageTemplate(conversation: any, message: any): EmailTemplate {
     const subject = `💬 Nova mensagem - ${conversation.subject}`;
     const html = this.generateEmailTemplate(`
@@ -973,14 +991,14 @@ Equipe Ordax`;
         <div style="background-color: white; border-radius: 6px; padding: 20px; border: 1px solid #e2e8f0;">
           <div style="display: flex; align-items: flex-start; margin-bottom: 15px;">
             <div style="background-color: #3b82f6; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-              <span style="font-weight: bold; font-size: 18px;">${message.sender_name?.charAt(0) || 'U'}</span>
+              <span style="font-weight: bold; font-size: 18px;">${message.sender_name?.charAt(0) || "U"}</span>
             </div>
             <div>
               <p style="margin: 0 0 5px 0; font-weight: 600; color: #1e293b;">
                 ${message.sender_name}
               </p>
               <p style="margin: 0; color: #64748b; font-size: 14px;">
-                ${new Date().toLocaleString('pt-BR')}
+                ${new Date().toLocaleString("pt-BR")}
               </p>
             </div>
           </div>
@@ -1011,7 +1029,7 @@ Equipe Ordax`;
         Esta é uma notificação automática. Por favor, não responda este e-mail.
       </p>
     `);
-    
+
     const text = `NOVA MENSAGEM RECEBIDA
 
 Você recebeu uma nova mensagem na conversa de suporte.
@@ -1021,7 +1039,7 @@ ID DA CONVERSA: ${conversation.id}
 
 NOVA MENSAGEM:
 De: ${message.sender_name}
-Data: ${new Date().toLocaleString('pt-BR')}
+Data: ${new Date().toLocaleString("pt-BR")}
 
 ${message.message}
 
@@ -1035,18 +1053,18 @@ Equipe de Suporte Ordax`;
 
     return { subject, html, text };
   }
-  
+
   /**
    * URL helpers
    */
   private getAdminPaymentUrl(paymentId: string): string {
     return `${window.location.origin}/admin/payments/${paymentId}`;
   }
-  
+
   private getCustomerPaymentUrl(paymentId: string): string {
     return `${window.location.origin}/my-payments/${paymentId}`;
   }
-  
+
   private getConversationUrl(conversationId: string): string {
     return `${window.location.origin}/support/conversations/${conversationId}`;
   }
@@ -1057,17 +1075,21 @@ Equipe de Suporte Ordax`;
  * This is a placeholder - should be replaced with actual email service integration
  */
 export class DefaultEmailService implements EmailService {
-  async sendEmail(to: EmailRecipient[], template: EmailTemplate, data?: Record<string, any>): Promise<void> {
+  async sendEmail(
+    to: EmailRecipient[],
+    template: EmailTemplate,
+    data?: Record<string, any>
+  ): Promise<void> {
     // This is a placeholder implementation
     // In a real implementation, this would call an email service API
     // For now, we'll log the email and use Supabase Edge Functions if available
-    
-    console.log('Email would be sent:', {
+
+    console.log("Email would be sent:", {
       to,
       subject: template.subject,
       data,
     });
-    
+
     // TODO: Implement actual email sending
     // Example with Supabase Edge Functions:
     // const { error } = await supabase.functions.invoke('send-email', {

@@ -1,7 +1,14 @@
-import { Collection } from '@/types/collections';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Collection } from "@/types/collections";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface CollectionCardProps {
   collection: Collection;
@@ -31,9 +38,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
       </CardHeader>
 
       <CardContent className="flex-1">
-        <p className="text-muted-foreground leading-relaxed">
-          {collection.description}
-        </p>
+        <p className="text-muted-foreground leading-relaxed">{collection.description}</p>
       </CardContent>
 
       <CardFooter className="flex-col gap-4 border-t pt-6">
@@ -61,10 +66,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
         </div>
 
         {/* CTA Button */}
-        <Button 
-          className="w-full bg-foreground text-background hover:bg-foreground/90" 
-          size="lg"
-        >
+        <Button className="w-full bg-foreground text-background hover:bg-foreground/90" size="lg">
           Assinar Agora
         </Button>
       </CardFooter>

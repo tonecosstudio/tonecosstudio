@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   isAdmin,
   isGroupMember,
@@ -9,10 +9,10 @@ import {
   requireAdmin,
   requireGroupMember,
   requireGroupManagement,
-} from './groupPermissions';
-import { supabase } from '@/integrations/supabase/client';
+} from "./groupPermissions";
+import { supabase } from "@/integrations/supabase/client";
 
-vi.mock('@/integrations/supabase/client', () => ({
+vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
@@ -21,15 +21,15 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-describe('groupPermissions', () => {
+describe("groupPermissions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('isAdmin', () => {
-    it('returns true for admin users', async () => {
+  describe("isAdmin", () => {
+    it("returns true for admin users", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -37,7 +37,7 @@ describe('groupPermissions', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
-              data: { role: 'admin' },
+              data: { role: "admin" },
               error: null,
             }),
           }),
@@ -48,9 +48,9 @@ describe('groupPermissions', () => {
       expect(result).toBe(true);
     });
 
-    it('returns false for non-admin users', async () => {
+    it("returns false for non-admin users", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -58,7 +58,7 @@ describe('groupPermissions', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
-              data: { role: 'customer' },
+              data: { role: "customer" },
               error: null,
             }),
           }),
@@ -69,7 +69,7 @@ describe('groupPermissions', () => {
       expect(result).toBe(false);
     });
 
-    it('returns false when user not found', async () => {
+    it("returns false when user not found", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: null,
@@ -80,10 +80,10 @@ describe('groupPermissions', () => {
     });
   });
 
-  describe('isGroupMember', () => {
-    it('returns true when user is a member', async () => {
+  describe("isGroupMember", () => {
+    it("returns true when user is a member", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -92,7 +92,7 @@ describe('groupPermissions', () => {
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               single: vi.fn().mockResolvedValue({
-                data: { id: 'member-1' },
+                data: { id: "member-1" },
                 error: null,
               }),
             }),
@@ -100,13 +100,13 @@ describe('groupPermissions', () => {
         }),
       } as any);
 
-      const result = await isGroupMember('group-1');
+      const result = await isGroupMember("group-1");
       expect(result).toBe(true);
     });
 
-    it('returns false when user is not a member', async () => {
+    it("returns false when user is not a member", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -116,22 +116,22 @@ describe('groupPermissions', () => {
             eq: vi.fn().mockReturnValue({
               single: vi.fn().mockResolvedValue({
                 data: null,
-                error: { code: 'PGRST116' },
+                error: { code: "PGRST116" },
               }),
             }),
           }),
         }),
       } as any);
 
-      const result = await isGroupMember('group-1');
+      const result = await isGroupMember("group-1");
       expect(result).toBe(false);
     });
   });
 
-  describe('requireAdmin', () => {
-    it('does not throw for admin users', async () => {
+  describe("requireAdmin", () => {
+    it("does not throw for admin users", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -139,7 +139,7 @@ describe('groupPermissions', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
-              data: { role: 'admin' },
+              data: { role: "admin" },
               error: null,
             }),
           }),
@@ -149,9 +149,9 @@ describe('groupPermissions', () => {
       await expect(requireAdmin()).resolves.not.toThrow();
     });
 
-    it('throws for non-admin users', async () => {
+    it("throws for non-admin users", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -159,21 +159,21 @@ describe('groupPermissions', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
-              data: { role: 'customer' },
+              data: { role: "customer" },
               error: null,
             }),
           }),
         }),
       } as any);
 
-      await expect(requireAdmin()).rejects.toThrow('Acesso negado');
+      await expect(requireAdmin()).rejects.toThrow("Acesso negado");
     });
   });
 
-  describe('requireGroupMember', () => {
-    it('does not throw for group members', async () => {
+  describe("requireGroupMember", () => {
+    it("does not throw for group members", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -182,7 +182,7 @@ describe('groupPermissions', () => {
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               single: vi.fn().mockResolvedValue({
-                data: { id: 'member-1' },
+                data: { id: "member-1" },
                 error: null,
               }),
             }),
@@ -190,12 +190,12 @@ describe('groupPermissions', () => {
         }),
       } as any);
 
-      await expect(requireGroupMember('group-1')).resolves.not.toThrow();
+      await expect(requireGroupMember("group-1")).resolves.not.toThrow();
     });
 
-    it('throws for non-members', async () => {
+    it("throws for non-members", async () => {
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: 'user-1' } },
+        data: { user: { id: "user-1" } },
         error: null,
       } as any);
 
@@ -205,14 +205,14 @@ describe('groupPermissions', () => {
             eq: vi.fn().mockReturnValue({
               single: vi.fn().mockResolvedValue({
                 data: null,
-                error: { code: 'PGRST116' },
+                error: { code: "PGRST116" },
               }),
             }),
           }),
         }),
       } as any);
 
-      await expect(requireGroupMember('group-1')).rejects.toThrow('não é membro');
+      await expect(requireGroupMember("group-1")).rejects.toThrow("não é membro");
     });
   });
 });

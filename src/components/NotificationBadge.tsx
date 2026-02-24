@@ -1,9 +1,9 @@
 /**
  * NotificationBadge - Componente para exibir badge de notificação in-app
- * 
+ *
  * Requirements: 10.1-10.10
  * Design: .kiro/specs/manual-payment-system/design.md
- * 
+ *
  * Este componente exibe um badge com a contagem de notificações não lidas
  * e atualiza em tempo real usando Supabase Realtime.
  */
@@ -13,12 +13,7 @@ import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFormattedNotificationCount } from "@/hooks/use-notification-count";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +39,7 @@ interface NotificationBadgeProps {
 
 /**
  * Componente NotificationBadge
- * 
+ *
  * Exibe um badge com contagem de notificações e atualiza em tempo real.
  * Pode ser usado como botão simples ou dropdown com detalhes.
  */
@@ -113,13 +108,13 @@ export function NotificationBadge({
         <span>Notificações</span>
         {hasNotifications && (
           <span className="text-xs text-muted-foreground">
-            {total} não lida{total !== 1 ? 's' : ''}
+            {total} não lida{total !== 1 ? "s" : ""}
           </span>
         )}
       </DropdownMenuLabel>
-      
+
       <DropdownMenuSeparator />
-      
+
       {isLoading ? (
         <DropdownMenuItem disabled className="text-center">
           Carregando notificações...
@@ -137,7 +132,9 @@ export function NotificationBadge({
           {isAdmin ? (
             <>
               {pendingPayments > 0 && (
-                <DropdownMenuItem onClick={() => window.location.href = "/admin/payments?status=pending"}>
+                <DropdownMenuItem
+                  onClick={() => (window.location.href = "/admin/payments?status=pending")}
+                >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos Pendentes</span>
                     <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
@@ -146,9 +143,11 @@ export function NotificationBadge({
                   </div>
                 </DropdownMenuItem>
               )}
-              
+
               {underReviewPayments > 0 && (
-                <DropdownMenuItem onClick={() => window.location.href = "/admin/payments?status=under_review"}>
+                <DropdownMenuItem
+                  onClick={() => (window.location.href = "/admin/payments?status=under_review")}
+                >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos em Análise</span>
                     <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
@@ -161,7 +160,9 @@ export function NotificationBadge({
           ) : (
             <>
               {requiresInfoPayments > 0 && (
-                <DropdownMenuItem onClick={() => window.location.href = "/my-payments?status=requires_info"}>
+                <DropdownMenuItem
+                  onClick={() => (window.location.href = "/my-payments?status=requires_info")}
+                >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos com Informações Solicitadas</span>
                     <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">
@@ -172,9 +173,9 @@ export function NotificationBadge({
               )}
             </>
           )}
-          
+
           {unreadMessages > 0 && (
-            <DropdownMenuItem onClick={() => window.location.href = "/support"}>
+            <DropdownMenuItem onClick={() => (window.location.href = "/support")}>
               <div className="flex items-center justify-between w-full">
                 <span>Mensagens Não Lidas</span>
                 <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
@@ -183,9 +184,9 @@ export function NotificationBadge({
               </div>
             </DropdownMenuItem>
           )}
-          
+
           <DropdownMenuSeparator />
-          
+
           <DropdownMenuItem onClick={handleNavigation} className="text-center font-medium">
             Ver todas as notificações
           </DropdownMenuItem>
@@ -208,10 +209,10 @@ export function NotificationBadge({
         hasNotifications && "text-primary"
       )}
       onClick={showDetails ? undefined : handleNavigation}
-      aria-label={`Notificações ${hasNotifications ? `(${formattedTotal} não lidas)` : ''}`}
+      aria-label={`Notificações ${hasNotifications ? `(${formattedTotal} não lidas)` : ""}`}
     >
       <Bell size={iconSizes[size]} />
-      
+
       {hasNotifications && (
         <span
           className={cn(
@@ -233,15 +234,13 @@ export function NotificationBadge({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                {renderBadgeButton()}
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild>{renderBadgeButton()}</DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>
               <p>
-                {hasNotifications 
-                  ? `${formattedTotal} notificação${total !== 1 ? 'es' : ''} não lida${total !== 1 ? 's' : ''}`
-                  : 'Nenhuma notificação'}
+                {hasNotifications
+                  ? `${formattedTotal} notificação${total !== 1 ? "es" : ""} não lida${total !== 1 ? "s" : ""}`
+                  : "Nenhuma notificação"}
               </p>
             </TooltipContent>
           </Tooltip>
@@ -255,14 +254,12 @@ export function NotificationBadge({
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          {renderBadgeButton()}
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{renderBadgeButton()}</TooltipTrigger>
         <TooltipContent>
           <p>
-            {hasNotifications 
-              ? `${formattedTotal} notificação${total !== 1 ? 'es' : ''} não lida${total !== 1 ? 's' : ''}`
-              : 'Nenhuma notificação'}
+            {hasNotifications
+              ? `${formattedTotal} notificação${total !== 1 ? "es" : ""} não lida${total !== 1 ? "s" : ""}`
+              : "Nenhuma notificação"}
           </p>
         </TooltipContent>
       </Tooltip>

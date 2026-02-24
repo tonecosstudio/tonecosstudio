@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, Trash2, RefreshCw, Users, MessageSquare, TrendingUp } from 'lucide-react';
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Settings, Trash2, RefreshCw, Users, MessageSquare, TrendingUp } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,27 +14,27 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 
-import { groupService } from '@/lib/services/groupService';
-import { useAuth } from '@/lib/auth';
-import { getGroupTypeLabel } from '@/types/groups';
-import { toast } from 'sonner';
+import { groupService } from "@/lib/services/groupService";
+import { useAuth } from "@/lib/auth";
+import { getGroupTypeLabel } from "@/types/groups";
+import { toast } from "sonner";
 
-import { GroupListSidebar } from '@/components/groups/GroupListSidebar';
-import { GroupMembersSidebar } from '@/components/groups/GroupMembersSidebar';
-import { GroupMessageList } from '@/components/groups/GroupMessageList';
-import { SendMessageForm } from '@/components/groups/SendMessageForm';
-import { metricsService } from '@/lib/services/metricsService';
+import { GroupListSidebar } from "@/components/groups/GroupListSidebar";
+import { GroupMembersSidebar } from "@/components/groups/GroupMembersSidebar";
+import { GroupMessageList } from "@/components/groups/GroupMessageList";
+import { SendMessageForm } from "@/components/groups/SendMessageForm";
+import { metricsService } from "@/lib/services/metricsService";
 
 /**
  * AdminGroupDetailsPage - Three-column layout for group management
- * 
+ *
  * Layout:
  * - Left sidebar: List of all groups
  * - Center: Messages and send form
  * - Right sidebar: Members online/offline
- * 
+ *
  * Features:
  * - View group information and metrics in header
  * - Send broadcast messages
@@ -57,7 +57,7 @@ export default function AdminGroupDetailsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['group-details', groupId],
+    queryKey: ["group-details", groupId],
     queryFn: () => groupService.getGroupDetails(groupId!),
     enabled: !!groupId,
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -67,7 +67,7 @@ export default function AdminGroupDetailsPage() {
 
   // Fetch group metrics with optimized caching
   const { data: metrics } = useQuery({
-    queryKey: ['group-metrics', groupId],
+    queryKey: ["group-metrics", groupId],
     queryFn: () => metricsService.getGroupMetrics(groupId!),
     enabled: !!groupId,
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -79,14 +79,12 @@ export default function AdminGroupDetailsPage() {
   const deleteMutation = useMutation({
     mutationFn: () => groupService.deleteGroup(groupId!, user!.id),
     onSuccess: () => {
-      toast.success('Grupo deletado com sucesso');
-      queryClient.invalidateQueries({ queryKey: ['admin-groups'] });
-      navigate('/admin/grupos');
+      toast.success("Grupo deletado com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["admin-groups"] });
+      navigate("/admin/grupos");
     },
     onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : 'Erro ao deletar grupo'
-      );
+      toast.error(error instanceof Error ? error.message : "Erro ao deletar grupo");
     },
   });
 
@@ -128,7 +126,7 @@ export default function AdminGroupDetailsPage() {
           </div>
           <div className="flex-1 p-6 bg-gray-50 space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+              <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
                 <div className="w-2/3 h-24 bg-white rounded-lg animate-pulse"></div>
               </div>
             ))}
@@ -157,7 +155,7 @@ export default function AdminGroupDetailsPage() {
         <div className="bg-destructive/10 text-destructive px-6 py-4 rounded-lg max-w-md">
           <p className="font-medium">Erro ao carregar grupo</p>
           <p className="text-sm mt-1">
-            {error instanceof Error ? error.message : 'Grupo não encontrado'}
+            {error instanceof Error ? error.message : "Grupo não encontrado"}
           </p>
         </div>
       </div>
@@ -172,9 +170,9 @@ export default function AdminGroupDetailsPage() {
           <h2 className="font-semibold text-lg">Grupos de Broadcast</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <GroupListSidebar 
-            activeGroupId={groupId} 
-            onGroupSelect={(id) => navigate(`/admin/grupos/${id}`)} 
+          <GroupListSidebar
+            activeGroupId={groupId}
+            onGroupSelect={(id) => navigate(`/admin/grupos/${id}`)}
           />
         </div>
       </div>
@@ -191,9 +189,7 @@ export default function AdminGroupDetailsPage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">{group.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {getGroupTypeLabel(group.type)}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{getGroupTypeLabel(group.type)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -203,11 +199,7 @@ export default function AdminGroupDetailsPage() {
                 <Button variant="outline" size="icon">
                   <Settings className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
+                <Button variant="destructive" size="icon" onClick={() => setDeleteDialogOpen(true)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -280,15 +272,13 @@ export default function AdminGroupDetailsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Deletando...' : 'Deletar Grupo'}
+              {deleteMutation.isPending ? "Deletando..." : "Deletar Grupo"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

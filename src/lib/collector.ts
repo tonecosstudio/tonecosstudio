@@ -38,10 +38,12 @@ export type PublicCollectionItem = {
 export async function getMyCollectorProfile(userId: string) {
   const { data, error } = await (supabase as any)
     .from("profiles")
-    .select("id, username, display_name, bio, avatar_url, is_public, collector_level, collector_xp, pieces_owned, total_spent")
+    .select(
+      "id, username, display_name, bio, avatar_url, is_public, collector_level, collector_xp, pieces_owned, total_spent"
+    )
     .eq("id", userId)
     .maybeSingle();
-  
+
   if (error) throw error;
   return data as CollectorProfile | null;
 }
@@ -49,20 +51,23 @@ export async function getMyCollectorProfile(userId: string) {
 /**
  * Atualiza configurações públicas do perfil
  */
-export async function updateCollectorProfile(userId: string, updates: {
-  username?: string;
-  display_name?: string;
-  bio?: string;
-  avatar_url?: string;
-  is_public?: boolean;
-}) {
+export async function updateCollectorProfile(
+  userId: string,
+  updates: {
+    username?: string;
+    display_name?: string;
+    bio?: string;
+    avatar_url?: string;
+    is_public?: boolean;
+  }
+) {
   const { data, error } = await (supabase as any)
     .from("profiles")
     .update(updates)
     .eq("id", userId)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data as CollectorProfile;
 }
@@ -75,7 +80,7 @@ export async function getAllBadges() {
     .from("collector_badges")
     .select("*")
     .order("requirement_value", { ascending: true });
-  
+
   if (error) throw error;
   return data as CollectorBadge[];
 }
@@ -86,7 +91,8 @@ export async function getAllBadges() {
 export async function getUserBadges(userId: string) {
   const { data, error } = await (supabase as any)
     .from("user_badges")
-    .select(`
+    .select(
+      `
       earned_at,
       collector_badges (
         id,
@@ -95,12 +101,13 @@ export async function getUserBadges(userId: string) {
         icon,
         rarity
       )
-    `)
+    `
+    )
     .eq("user_id", userId)
     .order("earned_at", { ascending: false });
-  
+
   if (error) throw error;
-  
+
   return (data || []).map((item: any) => ({
     id: item.collector_badges.id,
     name: item.collector_badges.name,
@@ -117,7 +124,8 @@ export async function getUserBadges(userId: string) {
 export async function getPublicCollection(userId: string) {
   const { data, error } = await (supabase as any)
     .from("public_collection")
-    .select(`
+    .select(
+      `
       id,
       model_id,
       notes,
@@ -128,11 +136,12 @@ export async function getPublicCollection(userId: string) {
         image_bucket,
         franchise
       )
-    `)
+    `
+    )
     .eq("user_id", userId)
     .order("display_order", { ascending: true })
     .order("added_at", { ascending: false });
-  
+
   if (error) throw error;
   return data || [];
 }
@@ -150,7 +159,7 @@ export async function addToPublicCollection(userId: string, modelId: string, not
     })
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 }
@@ -163,7 +172,7 @@ export async function removeFromPublicCollection(collectionId: string) {
     .from("public_collection")
     .delete()
     .eq("id", collectionId);
-  
+
   if (error) throw error;
 }
 
@@ -177,7 +186,7 @@ export async function updateCollectionNotes(collectionId: string, notes: string)
     .eq("id", collectionId)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 }
@@ -192,10 +201,10 @@ export async function updateCollectionOrder(items: Array<{ id: string; display_o
       .update({ display_order: item.display_order })
       .eq("id", item.id)
   );
-  
+
   const results = await Promise.all(promises);
   const errors = results.filter((r) => r.error);
-  
+
   if (errors.length > 0) {
     throw errors[0].error;
   }
@@ -205,17 +214,14 @@ export async function updateCollectionOrder(items: Array<{ id: string; display_o
  * Verifica se um username está disponível
  */
 export async function checkUsernameAvailability(username: string, currentUserId?: string) {
-  const query = (supabase as any)
-    .from("profiles")
-    .select("id")
-    .eq("username", username);
-  
+  const query = (supabase as any).from("profiles").select("id").eq("username", username);
+
   if (currentUserId) {
     query.neq("id", currentUserId);
   }
-  
+
   const { data, error } = await query.maybeSingle();
-  
+
   if (error) throw error;
   return data === null; // Disponível se não encontrou ninguém
 }

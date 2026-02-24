@@ -1,7 +1,7 @@
 /**
  * CustomerSidebar Component
  * Displays customer context: orders, quotes, subscription, and payments
- * 
+ *
  * Requirements: 7.1, 7.2, 7.3, 7.4, 7.6, 8.2, 8.3, 8.4, 9.1, 9.2, 19.1, 19.2, 19.5, 25.3
  */
 
@@ -12,14 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  PanelRightOpen, 
-  Package, 
-  FileText, 
-  CreditCard, 
+import {
+  PanelRightOpen,
+  Package,
+  FileText,
+  CreditCard,
   Calendar,
   Loader2,
-  User
+  User,
 } from "lucide-react";
 import {
   getUserOrders,

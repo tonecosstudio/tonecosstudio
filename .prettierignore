@@ -33,7 +33,14 @@ Thumbs.db
 
 # Supabase
 .supabase
+src/integrations/supabase/types*.ts
 
 # Misc
 *.min.js
 *.min.css
+
+# Test files with JSX issues
+src/components/customer/CustomerPaymentDetailsExample.tsx
+src/hooks/use-conversation-realtime.test.ts
+src/hooks/use-notification-count.test.ts
+src/hooks/use-payment-realtime.test.ts

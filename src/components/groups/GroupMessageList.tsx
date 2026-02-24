@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
-import { messageService } from '@/lib/services/messageService';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useAuth } from '@/lib/auth';
-import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare } from 'lucide-react';
-import type { GroupMessage, GroupAttachment } from '@/types/groups';
+import { useQuery } from "@tanstack/react-query";
+import { messageService } from "@/lib/services/messageService";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { MessageSquare } from "lucide-react";
+import type { GroupMessage, GroupAttachment } from "@/types/groups";
 
 interface GroupMessageListProps {
   groupId: string;
@@ -25,22 +25,23 @@ function getAttachmentUrl(filePath: string): string {
  */
 function linkifyText(text: string, isCurrentUser: boolean): React.ReactNode {
   // Regex para detectar URLs (http, https, www)
-  const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g;
-  
+  const urlRegex =
+    /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g;
+
   const parts = text.split(urlRegex);
-  
+
   return parts.map((part, index) => {
     if (!part) return null;
-    
+
     // Verifica se é uma URL
     if (part.match(urlRegex)) {
       let url = part;
-      
+
       // Adiciona https:// se não tiver protocolo
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "https://" + url;
       }
-      
+
       return (
         <a
           key={index}
@@ -53,18 +54,18 @@ function linkifyText(text: string, isCurrentUser: boolean): React.ReactNode {
         </a>
       );
     }
-    
+
     return <span key={index}>{part}</span>;
   });
 }
 
 export function GroupMessageList({ groupId }: GroupMessageListProps) {
   const { user } = useAuth();
-  
+
   const { data, isLoading } = useQuery({
-    queryKey: ['group-messages', groupId],
+    queryKey: ["group-messages", groupId],
     queryFn: async () => {
-      if (!user) throw new Error('Usuário não autenticado');
+      if (!user) throw new Error("Usuário não autenticado");
       return messageService.listGroupMessages(groupId, user.id);
     },
     enabled: !!user,
@@ -80,10 +81,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}
-          >
+          <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
             <div className="max-w-[70%] rounded-lg p-4 bg-white border border-gray-200 animate-pulse">
               <div className="flex items-center gap-2 mb-2">
                 <div className="h-4 w-20 bg-gray-200 rounded"></div>
@@ -118,28 +116,23 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
     <div className="space-y-4">
       {messages.map((message) => {
         const isCurrentUser = message.sender_id === user?.id;
-        const msg = message as GroupMessage & { 
-          sender_name: string; 
-          sender_avatar: string; 
+        const msg = message as GroupMessage & {
+          sender_name: string;
+          sender_avatar: string;
           attachments: GroupAttachment[];
           link_text?: string | null;
           link_url?: string | null;
           action_button_text?: string | null;
           action_button_url?: string | null;
         };
-        
+
         return (
-          <div
-            key={msg.id}
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className="max-w-[70%] rounded-lg p-4 shadow-sm bg-white border border-gray-200"
-            >
+          <div key={msg.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
+            <div className="max-w-[70%] rounded-lg p-4 shadow-sm bg-white border border-gray-200">
               {/* Header */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-semibold text-sm text-gray-700">
-                  {isCurrentUser ? 'Você' : msg.sender_name || 'Admin'}
+                  {isCurrentUser ? "Você" : msg.sender_name || "Admin"}
                 </span>
                 <span className="text-xs text-gray-500">
                   {formatDistanceToNow(new Date(msg.created_at), {
@@ -182,9 +175,9 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
               {msg.attachments && msg.attachments.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {msg.attachments.map((attachment: any) => {
-                    const isImage = attachment.file_type?.startsWith('image/');
+                    const isImage = attachment.file_type?.startsWith("image/");
                     const publicUrl = getAttachmentUrl(attachment.file_path);
-                    
+
                     if (isImage) {
                       return (
                         <a
@@ -206,7 +199,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                         </a>
                       );
                     }
-                    
+
                     return (
                       <a
                         key={attachment.id}
@@ -229,9 +222,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
 
               {/* Edited indicator */}
               {msg.updated_at !== msg.created_at && (
-                <p className="text-xs mt-2 italic text-gray-500">
-                  (editada)
-                </p>
+                <p className="text-xs mt-2 italic text-gray-500">(editada)</p>
               )}
             </div>
           </div>

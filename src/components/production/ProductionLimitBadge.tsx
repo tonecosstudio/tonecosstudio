@@ -19,9 +19,7 @@ export function ProductionLimitBadge() {
   const { data: limit, isLoading } = useQuery({
     queryKey: ["production-limit"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc("get_current_production_limit")
-        .single();
+      const { data, error } = await supabase.rpc("get_current_production_limit").single();
 
       if (error) throw error;
       return data as ProductionLimit;
@@ -42,10 +40,9 @@ export function ProductionLimitBadge() {
 
   const isClosed = limit.prod_is_closed;
   const isAlmostFull = limit.prod_percentage_sold >= 80;
-  const monthName = new Date(limit.prod_year, limit.prod_month - 1).toLocaleDateString(
-    "pt-BR",
-    { month: "long" }
-  );
+  const monthName = new Date(limit.prod_year, limit.prod_month - 1).toLocaleDateString("pt-BR", {
+    month: "long",
+  });
 
   if (isClosed) {
     return (
@@ -78,10 +75,7 @@ export function ProductionLimitBadge() {
             Ciclo de {monthName} {limit.prod_year}
           </span>
         </div>
-        <Badge
-          variant={isAlmostFull ? "destructive" : "secondary"}
-          className="gap-1"
-        >
+        <Badge variant={isAlmostFull ? "destructive" : "secondary"} className="gap-1">
           Produção limitada: {limit.prod_global_limit} peças
         </Badge>
       </div>
@@ -91,9 +85,7 @@ export function ProductionLimitBadge() {
           <Progress
             value={limit.prod_percentage_sold}
             className="h-2"
-            indicatorClassName={
-              isAlmostFull ? "bg-orange-500" : "bg-green-500"
-            }
+            indicatorClassName={isAlmostFull ? "bg-orange-500" : "bg-green-500"}
           />
           <p className="text-xs text-muted-foreground text-right">
             {limit.prod_available} vagas restantes

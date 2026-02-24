@@ -1,14 +1,14 @@
 /**
  * PaymentActionButtons Component
- * 
+ *
  * Action buttons for admin payment actions: Approve, Reject, Request More Info
- * 
+ *
  * Requirements: 7.1-7.15
  * Task: 13.2 Criar componente PaymentActionButtons
  */
 
-import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -17,20 +17,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/lib/auth';
-import {
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
-import type { PaymentStatus } from '@/types/manual-payment';
-import { approvePayment, rejectPayment, requestPaymentInfo } from '@/lib/payment-service';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
+import { CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import type { PaymentStatus } from "@/types/manual-payment";
+import { approvePayment, rejectPayment, requestPaymentInfo } from "@/lib/payment-service";
 
 interface PaymentActionButtonsProps {
   paymentId: string;
@@ -48,84 +43,84 @@ export function PaymentActionButtons({
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [requestInfoOpen, setRequestInfoOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [infoMessage, setInfoMessage] = useState('');
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
 
   // Approve mutation
   const approveMutation = useMutation({
-    mutationFn: () => approvePayment(paymentId, user?.id || ''),
+    mutationFn: () => approvePayment(paymentId, user?.id || ""),
     onSuccess: () => {
       toast({
-        title: 'Pagamento aprovado',
-        description: 'O pagamento foi aprovado com sucesso.',
+        title: "Pagamento aprovado",
+        description: "O pagamento foi aprovado com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: ['payment-details', paymentId] });
-      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['payment-stats'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-details", paymentId] });
+      queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
       setApproveOpen(false);
       onActionComplete?.();
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao aprovar pagamento',
+        title: "Erro ao aprovar pagamento",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   // Reject mutation
   const rejectMutation = useMutation({
-    mutationFn: (reason: string) => rejectPayment(paymentId, user?.id || '', reason),
+    mutationFn: (reason: string) => rejectPayment(paymentId, user?.id || "", reason),
     onSuccess: () => {
       toast({
-        title: 'Pagamento rejeitado',
-        description: 'O pagamento foi rejeitado com sucesso.',
+        title: "Pagamento rejeitado",
+        description: "O pagamento foi rejeitado com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: ['payment-details', paymentId] });
-      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['payment-stats'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-details", paymentId] });
+      queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
       setRejectOpen(false);
-      setRejectionReason('');
+      setRejectionReason("");
       onActionComplete?.();
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao rejeitar pagamento',
+        title: "Erro ao rejeitar pagamento",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   // Request info mutation
   const requestInfoMutation = useMutation({
-    mutationFn: (message: string) => requestPaymentInfo(paymentId, user?.id || '', message),
+    mutationFn: (message: string) => requestPaymentInfo(paymentId, user?.id || "", message),
     onSuccess: () => {
       toast({
-        title: 'Informações solicitadas',
-        description: 'A solicitação de informações foi enviada ao cliente.',
+        title: "Informações solicitadas",
+        description: "A solicitação de informações foi enviada ao cliente.",
       });
-      queryClient.invalidateQueries({ queryKey: ['payment-details', paymentId] });
-      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['payment-stats'] });
+      queryClient.invalidateQueries({ queryKey: ["payment-details", paymentId] });
+      queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
       setRequestInfoOpen(false);
-      setInfoMessage('');
+      setInfoMessage("");
       onActionComplete?.();
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao solicitar informações',
+        title: "Erro ao solicitar informações",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   // Check if actions are disabled based on current status
-  const isApproveDisabled = currentStatus === 'approved' || currentStatus === 'rejected';
-  const isRejectDisabled = currentStatus === 'approved' || currentStatus === 'rejected';
-  const isRequestInfoDisabled = currentStatus === 'approved' || currentStatus === 'rejected';
+  const isApproveDisabled = currentStatus === "approved" || currentStatus === "rejected";
+  const isRejectDisabled = currentStatus === "approved" || currentStatus === "rejected";
+  const isRequestInfoDisabled = currentStatus === "approved" || currentStatus === "rejected";
 
   // Handle approve
   const handleApprove = () => {
@@ -136,9 +131,9 @@ export function PaymentActionButtons({
   const handleReject = () => {
     if (!rejectionReason.trim()) {
       toast({
-        title: 'Motivo obrigatório',
-        description: 'Por favor, informe o motivo da rejeição.',
-        variant: 'destructive',
+        title: "Motivo obrigatório",
+        description: "Por favor, informe o motivo da rejeição.",
+        variant: "destructive",
       });
       return;
     }
@@ -149,9 +144,9 @@ export function PaymentActionButtons({
   const handleRequestInfo = () => {
     if (!infoMessage.trim()) {
       toast({
-        title: 'Mensagem obrigatória',
-        description: 'Por favor, informe a mensagem para o cliente.',
-        variant: 'destructive',
+        title: "Mensagem obrigatória",
+        description: "Por favor, informe a mensagem para o cliente.",
+        variant: "destructive",
       });
       return;
     }
@@ -185,9 +180,7 @@ export function PaymentActionButtons({
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Ao aprovar o pagamento:
-            </p>
+            <p className="text-sm text-muted-foreground">Ao aprovar o pagamento:</p>
             <ul className="mt-2 text-sm text-muted-foreground list-disc list-inside space-y-1">
               <li>O status será alterado para "aprovado"</li>
               <li>O cliente receberá uma notificação por email</li>
@@ -214,7 +207,7 @@ export function PaymentActionButtons({
                   Aprovando...
                 </>
               ) : (
-                'Confirmar Aprovação'
+                "Confirmar Aprovação"
               )}
             </Button>
           </DialogFooter>
@@ -240,9 +233,7 @@ export function PaymentActionButtons({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rejeitar Pagamento</DialogTitle>
-            <DialogDescription>
-              Informe o motivo da rejeição para o cliente.
-            </DialogDescription>
+            <DialogDescription>Informe o motivo da rejeição para o cliente.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -264,7 +255,7 @@ export function PaymentActionButtons({
               variant="outline"
               onClick={() => {
                 setRejectOpen(false);
-                setRejectionReason('');
+                setRejectionReason("");
               }}
               disabled={rejectMutation.isPending}
             >
@@ -281,7 +272,7 @@ export function PaymentActionButtons({
                   Rejeitando...
                 </>
               ) : (
-                'Confirmar Rejeição'
+                "Confirmar Rejeição"
               )}
             </Button>
           </DialogFooter>
@@ -331,7 +322,7 @@ export function PaymentActionButtons({
               variant="outline"
               onClick={() => {
                 setRequestInfoOpen(false);
-                setInfoMessage('');
+                setInfoMessage("");
               }}
               disabled={requestInfoMutation.isPending}
             >
@@ -347,7 +338,7 @@ export function PaymentActionButtons({
                   Enviando...
                 </>
               ) : (
-                'Enviar Solicitação'
+                "Enviar Solicitação"
               )}
             </Button>
           </DialogFooter>

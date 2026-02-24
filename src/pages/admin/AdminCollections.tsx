@@ -8,10 +8,34 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit2, Trash2, Package, Image as ImageIcon, Calendar, Upload, Eye, X } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Package,
+  Image as ImageIcon,
+  Calendar,
+  Upload,
+  Eye,
+  X,
+} from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
@@ -22,8 +46,18 @@ const COLLECTION_SIZES = [
 ];
 
 const MONTHS = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
 ];
 
 export default function AdminCollectionsV2() {
@@ -126,9 +160,7 @@ export default function AdminCollectionsV2() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{collections.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Coleções cadastradas
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Coleções cadastradas</p>
             </CardContent>
           </Card>
 
@@ -141,9 +173,7 @@ export default function AdminCollectionsV2() {
               <div className="text-3xl font-bold text-green-600">
                 {collections.filter((c: any) => c.is_active).length}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Disponíveis para assinatura
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Disponíveis para assinatura</p>
             </CardContent>
           </Card>
 
@@ -156,9 +186,7 @@ export default function AdminCollectionsV2() {
               <div className="text-3xl font-bold text-blue-600">
                 {collections.reduce((acc: number, c: any) => acc + (c.character_count || 0), 0)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Personagens cadastrados
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Personagens cadastrados</p>
             </CardContent>
           </Card>
 
@@ -171,9 +199,7 @@ export default function AdminCollectionsV2() {
               <div className="text-3xl font-bold text-amber-600">
                 {collections.filter((c: any) => c.image_url).length}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Coleções com capa
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Coleções com capa</p>
             </CardContent>
           </Card>
         </div>
@@ -187,20 +213,14 @@ export default function AdminCollectionsV2() {
                 <Package className="h-5 w-5" />
                 Coleções ({collections.length})
               </CardTitle>
-              <CardDescription>
-                Selecione uma coleção para gerenciar
-              </CardDescription>
+              <CardDescription>Selecione uma coleção para gerenciar</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               {collections.length === 0 ? (
                 <div className="text-center py-12">
                   <Package className="h-16 w-16 mx-auto mb-4 opacity-20" />
                   <p className="text-muted-foreground mb-4">Nenhuma coleção cadastrada</p>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateOpen(true)}
-                    className="gap-2"
-                  >
+                  <Button variant="outline" onClick={() => setIsCreateOpen(true)} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Criar Primeira Coleção
                   </Button>
@@ -265,8 +285,12 @@ export default function AdminCollectionsV2() {
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-4 mb-2">
                           <div>
-                            <h2 className="text-2xl font-bold mb-1">{selectedCollectionData?.name}</h2>
-                            <p className="text-muted-foreground">{selectedCollectionData?.description}</p>
+                            <h2 className="text-2xl font-bold mb-1">
+                              {selectedCollectionData?.name}
+                            </h2>
+                            <p className="text-muted-foreground">
+                              {selectedCollectionData?.description}
+                            </p>
                           </div>
                           {selectedCollectionData?.is_active ? (
                             <Badge className="bg-green-500">Ativa</Badge>
@@ -274,14 +298,16 @@ export default function AdminCollectionsV2() {
                             <Badge variant="secondary">Inativa</Badge>
                           )}
                         </div>
-                        
+
                         <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <ImageIcon className="h-4 w-4" />
                             {characters.length} personagens
                           </span>
                           <span>•</span>
-                          <span>{characters.filter((c: any) => c.image_url).length} com imagem</span>
+                          <span>
+                            {characters.filter((c: any) => c.image_url).length} com imagem
+                          </span>
                           <span>•</span>
                           <span className="font-mono">/{selectedCollectionData?.slug}</span>
                         </div>
@@ -412,10 +438,7 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("collections")
-        .delete()
-        .eq("id", collection.id);
+      const { error } = await supabase.from("collections").delete().eq("id", collection.id);
 
       if (error) throw error;
     },
@@ -436,8 +459,8 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
     <div
       className={cn(
         "group relative p-4 rounded-lg border cursor-pointer transition-all",
-        isSelected 
-          ? "border-primary bg-primary/10 shadow-md" 
+        isSelected
+          ? "border-primary bg-primary/10 shadow-md"
           : "hover:bg-muted/50 hover:border-primary/50"
       )}
       onClick={onSelect}
@@ -458,16 +481,18 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold line-clamp-1">{collection.name}</h3>
           {collection.is_active ? (
-            <Badge variant="default" className="text-xs shrink-0">Ativa</Badge>
+            <Badge variant="default" className="text-xs shrink-0">
+              Ativa
+            </Badge>
           ) : (
-            <Badge variant="secondary" className="text-xs shrink-0">Inativa</Badge>
+            <Badge variant="secondary" className="text-xs shrink-0">
+              Inativa
+            </Badge>
           )}
         </div>
 
         {collection.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {collection.description}
-          </p>
+          <p className="text-sm text-muted-foreground line-clamp-2">{collection.description}</p>
         )}
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -477,16 +502,11 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
       </div>
 
       {/* Actions */}
-      <div 
+      <div
         className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => e.stopPropagation()}
       >
-        <Button
-          size="sm"
-          variant="secondary"
-          className="h-7 w-7 p-0"
-          onClick={onEdit}
-        >
+        <Button size="sm" variant="secondary" className="h-7 w-7 p-0" onClick={onEdit}>
           <Edit2 className="h-3 w-3" />
         </Button>
         <Button
@@ -569,7 +589,7 @@ function CharacterCardPremium({ character, onSuccess }: any) {
               <ImageIcon className="h-16 w-16 text-muted-foreground opacity-20" />
             </div>
           )}
-          
+
           {/* Badge de Ordem */}
           <div className="absolute top-2 left-2">
             <Badge variant="secondary" className="font-mono font-bold">
@@ -614,9 +634,7 @@ function CharacterCardPremium({ character, onSuccess }: any) {
             </div>
 
             {character.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {character.description}
-              </p>
+              <p className="text-sm text-muted-foreground line-clamp-2">{character.description}</p>
             )}
 
             {character.release_month && (
@@ -661,9 +679,7 @@ function CalendarView({ characters }: any) {
           <Calendar className="h-5 w-5" />
           Calendário de Lançamentos
         </CardTitle>
-        <CardDescription>
-          Visualização mensal dos personagens
-        </CardDescription>
+        <CardDescription>Visualização mensal dos personagens</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -743,23 +759,21 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("models")
-          .getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("models").getPublicUrl(filePath);
 
         imageUrl = publicUrl;
       }
 
       // Criar coleção
-      const { error } = await supabase
-        .from("collections")
-        .insert({
-          name,
-          slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
-          description,
-          is_active: isActive,
-          image_url: imageUrl,
-        });
+      const { error } = await supabase.from("collections").insert({
+        name,
+        slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
+        description,
+        is_active: isActive,
+        image_url: imageUrl,
+      });
 
       if (error) throw error;
     },
@@ -798,11 +812,9 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Criar Nova Coleção</DialogTitle>
-          <DialogDescription>
-            Crie uma coleção temática com 6 ou 12 personagens
-          </DialogDescription>
+          <DialogDescription>Crie uma coleção temática com 6 ou 12 personagens</DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* Upload de Imagem */}
           <div>
@@ -906,7 +918,11 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
             onClick={() => createMutation.mutate()}
             disabled={!name.trim() || createMutation.isPending || isUploading}
           >
-            {isUploading ? "Fazendo upload..." : createMutation.isPending ? "Criando..." : "Criar Coleção"}
+            {isUploading
+              ? "Fazendo upload..."
+              : createMutation.isPending
+                ? "Criando..."
+                : "Criar Coleção"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -954,9 +970,9 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("models")
-          .getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("models").getPublicUrl(filePath);
 
         imageUrl = publicUrl;
       }
@@ -993,7 +1009,7 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
         <DialogHeader>
           <DialogTitle className="text-2xl">Editar Coleção</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* Upload de Imagem */}
           <div>
@@ -1077,7 +1093,11 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
             onClick={() => updateMutation.mutate()}
             disabled={!name.trim() || updateMutation.isPending || isUploading}
           >
-            {isUploading ? "Fazendo upload..." : updateMutation.isPending ? "Salvando..." : "Salvar"}
+            {isUploading
+              ? "Fazendo upload..."
+              : updateMutation.isPending
+                ? "Salvando..."
+                : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1128,24 +1148,22 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: a
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("models")
-          .getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("models").getPublicUrl(filePath);
 
         imageUrl = publicUrl;
       }
 
-      const { error } = await supabase
-        .from("collection_characters")
-        .insert({
-          collection_id: collectionId,
-          name,
-          description,
-          release_order: parseInt(releaseOrder),
-          release_month: releaseMonth ? parseInt(releaseMonth) : null,
-          status,
-          image_url: imageUrl,
-        });
+      const { error } = await supabase.from("collection_characters").insert({
+        collection_id: collectionId,
+        name,
+        description,
+        release_order: parseInt(releaseOrder),
+        release_month: releaseMonth ? parseInt(releaseMonth) : null,
+        status,
+        image_url: imageUrl,
+      });
 
       if (error) throw error;
     },
@@ -1188,11 +1206,9 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: a
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Adicionar Personagem</DialogTitle>
-          <DialogDescription>
-            Adicione um novo personagem à coleção
-          </DialogDescription>
+          <DialogDescription>Adicione um novo personagem à coleção</DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* Upload de Imagem */}
           <div>
@@ -1314,7 +1330,11 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: a
             onClick={() => createMutation.mutate()}
             disabled={!name.trim() || !releaseOrder || createMutation.isPending || isUploading}
           >
-            {isUploading ? "Fazendo upload..." : createMutation.isPending ? "Adicionando..." : "Adicionar"}
+            {isUploading
+              ? "Fazendo upload..."
+              : createMutation.isPending
+                ? "Adicionando..."
+                : "Adicionar"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1329,7 +1349,9 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
   const [name, setName] = useState(character.name);
   const [description, setDescription] = useState(character.description || "");
   const [releaseOrder, setReleaseOrder] = useState(String(character.release_order));
-  const [releaseMonth, setReleaseMonth] = useState(character.release_month ? String(character.release_month) : "");
+  const [releaseMonth, setReleaseMonth] = useState(
+    character.release_month ? String(character.release_month) : ""
+  );
   const [status, setStatus] = useState(character.status);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(character.image_url);
@@ -1364,9 +1386,9 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("models")
-          .getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("models").getPublicUrl(filePath);
 
         imageUrl = publicUrl;
       }
@@ -1409,7 +1431,7 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
         <DialogHeader>
           <DialogTitle className="text-2xl">Editar Personagem</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* Upload de Imagem */}
           <div>
@@ -1456,11 +1478,7 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Nome</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-2"
-              />
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-2" />
             </div>
 
             <div>
@@ -1524,7 +1542,11 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
             onClick={() => updateMutation.mutate()}
             disabled={!name.trim() || updateMutation.isPending || isUploading}
           >
-            {isUploading ? "Fazendo upload..." : updateMutation.isPending ? "Salvando..." : "Salvar"}
+            {isUploading
+              ? "Fazendo upload..."
+              : updateMutation.isPending
+                ? "Salvando..."
+                : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>

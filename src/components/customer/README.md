@@ -36,6 +36,7 @@ function App() {
 ```
 
 The component will:
+
 1. Check if user is authenticated
 2. Load user's conversations
 3. Display floating button with unread count
@@ -44,23 +45,28 @@ The component will:
 ### Components
 
 #### CustomerChat
+
 Main component that manages the chat interface.
 
 **Props**: None (uses authenticated user from Supabase)
 
 **Features**:
+
 - Floating button with unread badge
 - Side panel with conversation list
 - Real-time conversation updates
 - Automatic unread count calculation
 
 #### CustomerMessageList
+
 Displays messages in a conversation.
 
 **Props**:
+
 - `conversationId: string` - ID of the conversation to display
 
 **Features**:
+
 - Filters out internal notes (customers never see them)
 - Shows system messages (order status updates)
 - Auto-scrolls to latest message
@@ -68,12 +74,15 @@ Displays messages in a conversation.
 - Displays attachments
 
 #### CustomerMessageInput
+
 Provides message input for customers.
 
 **Props**:
+
 - `conversationId: string` - ID of the conversation
 
 **Features**:
+
 - Text input with validation
 - Character count (max 2000)
 - Send on Enter (Shift+Enter for line break)
@@ -102,6 +111,7 @@ Provides message input for customers.
 ### Real-time Updates
 
 The component subscribes to:
+
 1. **Conversation changes**: New conversations, status updates
 2. **New messages**: Updates unread count when admin/system sends message
 3. **Message updates**: Reflects edits and deletions
@@ -109,6 +119,7 @@ The component subscribes to:
 ### Styling
 
 The component uses:
+
 - Tailwind CSS for styling
 - shadcn/ui components (Button, Sheet, Badge, Textarea)
 - Responsive design (full width on mobile, 500px on desktop)
@@ -136,20 +147,24 @@ To test the component:
 ### Troubleshooting
 
 **Chat button doesn't appear**:
+
 - Check if user is authenticated
 - Verify Supabase client is configured correctly
 
 **Messages don't load**:
+
 - Check browser console for errors
 - Verify user has conversations in database
 - Check Supabase RLS policies
 
 **Real-time not working**:
+
 - Verify Supabase Realtime is enabled
 - Check network tab for WebSocket connection
 - Ensure subscriptions are set up correctly
 
 **Unread count incorrect**:
+
 - Check `read_by_customer` field in database
 - Verify `markAsRead` is called when opening conversation
 - Check subscription filters

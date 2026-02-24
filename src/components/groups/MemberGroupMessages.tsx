@@ -1,14 +1,14 @@
-import { Card } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useGroupMessages } from '@/hooks/useGroupMessages';
-import { RefreshCw, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { sanitizeGroupMessage, sanitizeText } from '@/lib/utils/sanitize';
-import { GroupErrorBoundary } from './GroupErrorBoundary';
+import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useGroupMessages } from "@/hooks/useGroupMessages";
+import { RefreshCw, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { sanitizeGroupMessage, sanitizeText } from "@/lib/utils/sanitize";
+import { GroupErrorBoundary } from "./GroupErrorBoundary";
 
 interface MemberGroupMessagesProps {
   groupId: string;
@@ -24,14 +24,9 @@ function getAttachmentUrl(filePath: string): string {
 }
 
 function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
-  const { 
-    messages, 
-    loading, 
-    messagesEndRef, 
-    refresh 
-  } = useGroupMessages({ 
-    groupId, 
-    autoScroll: true 
+  const { messages, loading, messagesEndRef, refresh } = useGroupMessages({
+    groupId,
+    autoScroll: true,
   });
 
   if (loading && messages.length === 0) {
@@ -49,20 +44,13 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Mensagens</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={refresh}
-          disabled={loading}
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        <Button variant="ghost" size="sm" onClick={refresh} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
       {messages.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">
-          Nenhuma mensagem ainda.
-        </p>
+        <p className="text-muted-foreground text-center py-8">Nenhuma mensagem ainda.</p>
       ) : (
         <ScrollArea className="h-[600px] pr-4">
           <div className="space-y-4">
@@ -73,11 +61,9 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
               >
                 <Avatar className="w-10 h-10 flex-shrink-0">
                   <AvatarImage src={message.sender_avatar || undefined} />
-                  <AvatarFallback>
-                    {message.sender_name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
+                  <AvatarFallback>{message.sender_name.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1 gap-2">
                     <span className="text-sm font-medium truncate">
@@ -90,14 +76,14 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
                       })}
                     </span>
                   </div>
-                  
-                  <p 
+
+                  <p
                     className="text-sm whitespace-pre-wrap break-words"
-                    dangerouslySetInnerHTML={{ 
-                      __html: sanitizeGroupMessage(message.message) 
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeGroupMessage(message.message),
                     }}
                   />
-                  
+
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {message.attachments.map((attachment) => (
@@ -113,11 +99,9 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
                       ))}
                     </div>
                   )}
-                  
+
                   {message.updated_at !== message.created_at && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Editada
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Editada</p>
                   )}
                 </div>
               </div>
@@ -129,7 +113,6 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
     </Card>
   );
 }
-
 
 // Wrapper com Error Boundary
 export function MemberGroupMessages({ groupId }: MemberGroupMessagesProps) {

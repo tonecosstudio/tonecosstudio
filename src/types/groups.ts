@@ -3,14 +3,14 @@
 // =====================================================
 
 // Enums
-export type GroupType = 'manual' | 'assinantes' | 'colecao' | 'lancamentos' | 'pedidos';
+export type GroupType = "manual" | "assinantes" | "colecao" | "lancamentos" | "pedidos";
 
 // Membership Criteria Types
 export type MembershipCriteria =
-  | { type: 'assinantes'; subscriptionStatus: 'active'; collectionId?: string; plan?: string }
-  | { type: 'colecao'; collectionId: string }
-  | { type: 'lancamentos'; criteria: 'all_users' | 'previous_buyers' }
-  | { type: 'pedidos'; status?: string[]; dateFrom?: string; dateTo?: string }
+  | { type: "assinantes"; subscriptionStatus: "active"; collectionId?: string; plan?: string }
+  | { type: "colecao"; collectionId: string }
+  | { type: "lancamentos"; criteria: "all_users" | "previous_buyers" }
+  | { type: "pedidos"; status?: string[]; dateFrom?: string; dateTo?: string }
   | null;
 
 // Main Entities
@@ -135,21 +135,21 @@ export interface ValidationResult {
 
 // Constants
 export const GROUP_TYPES: GroupType[] = [
-  'manual',
-  'assinantes',
-  'colecao',
-  'lancamentos',
-  'pedidos',
+  "manual",
+  "assinantes",
+  "colecao",
+  "lancamentos",
+  "pedidos",
 ];
 
 // Helper functions
 export function getGroupTypeLabel(type: GroupType): string {
   const labels: Record<GroupType, string> = {
-    manual: 'Manual',
-    assinantes: 'Assinantes',
-    colecao: 'Coleção',
-    lancamentos: 'Lançamentos',
-    pedidos: 'Pedidos',
+    manual: "Manual",
+    assinantes: "Assinantes",
+    colecao: "Coleção",
+    lancamentos: "Lançamentos",
+    pedidos: "Pedidos",
   };
   return labels[type];
 }
@@ -157,17 +157,17 @@ export function getGroupTypeLabel(type: GroupType): string {
 // Validation functions
 export function validateGroupName(name: string): ValidationResult {
   if (!name || name.trim().length < 3) {
-    return { valid: false, error: 'Nome do grupo deve ter pelo menos 3 caracteres' };
+    return { valid: false, error: "Nome do grupo deve ter pelo menos 3 caracteres" };
   }
   if (name.length > 100) {
-    return { valid: false, error: 'Nome do grupo deve ter no máximo 100 caracteres' };
+    return { valid: false, error: "Nome do grupo deve ter no máximo 100 caracteres" };
   }
   return { valid: true };
 }
 
 export function validateGroupType(type: string): ValidationResult {
   if (!GROUP_TYPES.includes(type as GroupType)) {
-    return { valid: false, error: 'Tipo de grupo inválido' };
+    return { valid: false, error: "Tipo de grupo inválido" };
   }
   return { valid: true };
 }
@@ -177,18 +177,18 @@ export function validateMembershipCriteria(
   criteria: MembershipCriteria
 ): ValidationResult {
   // Manual groups should not have criteria
-  if (type === 'manual' && criteria !== null) {
-    return { valid: false, error: 'Grupos manuais não devem ter critérios de associação' };
+  if (type === "manual" && criteria !== null) {
+    return { valid: false, error: "Grupos manuais não devem ter critérios de associação" };
   }
 
   // Non-manual groups should have criteria
-  if (type !== 'manual' && !criteria) {
-    return { valid: false, error: 'Grupos automáticos devem ter critérios de associação' };
+  if (type !== "manual" && !criteria) {
+    return { valid: false, error: "Grupos automáticos devem ter critérios de associação" };
   }
 
   // Validate collection groups have collectionId
-  if (type === 'colecao' && criteria?.type === 'colecao' && !criteria.collectionId) {
-    return { valid: false, error: 'Grupos de coleção devem especificar um ID de coleção' };
+  if (type === "colecao" && criteria?.type === "colecao" && !criteria.collectionId) {
+    return { valid: false, error: "Grupos de coleção devem especificar um ID de coleção" };
   }
 
   return { valid: true };

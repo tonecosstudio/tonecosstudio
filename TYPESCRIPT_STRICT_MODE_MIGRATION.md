@@ -30,6 +30,7 @@ Migrar o projeto de TypeScript modo não-strict para strict mode completo, aumen
 ## 🗺️ Plano de Migração (4 Fases)
 
 ### Fase 1: strictNullChecks (1 semana)
+
 **Objetivo**: Eliminar null/undefined errors
 
 ```typescript
@@ -42,27 +43,29 @@ Migrar o projeto de TypeScript modo não-strict para strict mode completo, aumen
 **Erros Esperados**: ~200-300 erros
 
 **Como Corrigir**:
+
 ```typescript
 // ❌ Antes
 function getUser(id: string) {
-  const user = users.find(u => u.id === id);
+  const user = users.find((u) => u.id === id);
   return user.name; // Error: user pode ser undefined
 }
 
 // ✅ Depois
 function getUser(id: string) {
-  const user = users.find(u => u.id === id);
-  if (!user) throw new Error('User not found');
+  const user = users.find((u) => u.id === id);
+  if (!user) throw new Error("User not found");
   return user.name;
 }
 
 // Ou com optional chaining
 function getUserName(id: string) {
-  return users.find(u => u.id === id)?.name ?? 'Unknown';
+  return users.find((u) => u.id === id)?.name ?? "Unknown";
 }
 ```
 
 **Checklist**:
+
 - [ ] Habilitar strictNullChecks
 - [ ] Corrigir erros em src/lib/
 - [ ] Corrigir erros em src/components/
@@ -74,6 +77,7 @@ function getUserName(id: string) {
 ---
 
 ### Fase 2: noImplicitAny (1 semana)
+
 **Objetivo**: Tipar todo código explicitamente
 
 ```typescript
@@ -87,10 +91,12 @@ function getUserName(id: string) {
 **Erros Esperados**: ~150-200 erros
 
 **Como Corrigir**:
+
 ```typescript
 // ❌ Antes
-function processData(data) {  // Error: 'data' implicitly has 'any' type
-  return data.map(item => item.value);
+function processData(data) {
+  // Error: 'data' implicitly has 'any' type
+  return data.map((item) => item.value);
 }
 
 // ✅ Depois
@@ -99,11 +105,12 @@ interface DataItem {
 }
 
 function processData(data: DataItem[]): number[] {
-  return data.map(item => item.value);
+  return data.map((item) => item.value);
 }
 ```
 
 **Checklist**:
+
 - [ ] Habilitar noImplicitAny
 - [ ] Criar types em src/types/
 - [ ] Tipar funções em src/lib/
@@ -115,6 +122,7 @@ function processData(data: DataItem[]): number[] {
 ---
 
 ### Fase 3: strict: true (3-5 dias)
+
 **Objetivo**: Habilitar todas verificações strict
 
 ```typescript
@@ -125,6 +133,7 @@ function processData(data: DataItem[]): number[] {
 ```
 
 **Inclui**:
+
 - strictNullChecks ✅
 - noImplicitAny ✅
 - strictBindCallApply ✅
@@ -136,10 +145,11 @@ function processData(data: DataItem[]): number[] {
 **Erros Esperados**: ~50-100 erros
 
 **Como Corrigir**:
+
 ```typescript
 // strictBindCallApply
 const fn = (a: number, b: string) => {};
-fn.call(null, 1, 'test'); // ✅ Type-safe
+fn.call(null, 1, "test"); // ✅ Type-safe
 
 // strictFunctionTypes
 type Handler = (event: MouseEvent) => void;
@@ -148,15 +158,16 @@ const handler: Handler = (event: Event) => {}; // ❌ Error
 // strictPropertyInitialization
 class User {
   name: string; // ❌ Error: not initialized
-  
+
   // ✅ Opções:
-  name!: string;  // Definite assignment
-  name?: string;  // Optional
-  name: string = ''; // Default value
+  name!: string; // Definite assignment
+  name?: string; // Optional
+  name: string = ""; // Default value
 }
 ```
 
 **Checklist**:
+
 - [ ] Habilitar strict: true
 - [ ] Corrigir erros de bind/call/apply
 - [ ] Corrigir erros de function types
@@ -167,6 +178,7 @@ class User {
 ---
 
 ### Fase 4: Unused Checks (2-3 dias)
+
 **Objetivo**: Limpar código não usado
 
 ```typescript
@@ -181,6 +193,7 @@ class User {
 **Erros Esperados**: ~100-150 erros
 
 **Como Corrigir**:
+
 ```typescript
 // ❌ Antes
 function processUser(id: string, name: string, age: number) {
@@ -199,6 +212,7 @@ function processUser(id: string, _name: string, _age: number) {
 ```
 
 **Checklist**:
+
 - [ ] Habilitar noUnusedLocals
 - [ ] Habilitar noUnusedParameters
 - [ ] Remover variáveis não usadas
@@ -211,18 +225,21 @@ function processUser(id: string, _name: string, _age: number) {
 ## 📋 Checklist Geral
 
 ### Antes de Começar
+
 - [ ] Criar branch: `feat/typescript-strict-mode`
 - [ ] Backup do código atual
 - [ ] Rodar todos os testes (devem passar)
 - [ ] Comunicar ao time
 
 ### Durante Migração
+
 - [ ] Trabalhar em pequenos commits
 - [ ] Rodar testes após cada fase
 - [ ] Documentar decisões complexas
 - [ ] Pedir review de código crítico
 
 ### Após Conclusão
+
 - [ ] Todos os testes passando
 - [ ] Build sem erros
 - [ ] Documentação atualizada
@@ -234,6 +251,7 @@ function processUser(id: string, _name: string, _age: number) {
 ## 🛠️ Ferramentas Úteis
 
 ### VSCode Settings
+
 ```json
 {
   "typescript.tsdk": "node_modules/typescript/lib",
@@ -245,6 +263,7 @@ function processUser(id: string, _name: string, _age: number) {
 ```
 
 ### Scripts Úteis
+
 ```bash
 # Ver todos os erros TypeScript
 npx tsc --noEmit
@@ -261,12 +280,14 @@ npx tsc --noEmit 2>&1 | grep "error TS" | wc -l
 ## 📊 Métricas de Sucesso
 
 ### Antes
+
 - ❌ 0% type safety
 - ❌ Bugs em produção por null/undefined
 - ❌ Refatoração arriscada
 - ❌ IntelliSense limitado
 
 ### Depois
+
 - ✅ 100% type safety
 - ✅ 90% menos bugs em produção
 - ✅ Refatoração segura
@@ -315,6 +336,7 @@ git commit -m "feat: enable strictNullChecks"
 ## 📞 Suporte
 
 Se encontrar dificuldades:
+
 1. Consultar [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
 2. Ver exemplos em projetos similares
 3. Perguntar no time

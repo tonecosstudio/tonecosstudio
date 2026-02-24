@@ -1,17 +1,23 @@
-# Development Dockerfile
+# Dockerfile para desenvolvimento com hot reload
+
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Instalar dependências do sistema
+RUN apk add --no-cache git
+
+# Copiar package files
 COPY package*.json ./
+
+# Instalar dependências (incluindo dev)
 RUN npm install
 
-# Copy source
+# Copiar código fonte
 COPY . .
 
-# Expose dev server port
-EXPOSE 8080
+# Expor porta do Vite
+EXPOSE 5173
 
-# Start dev server
-CMD ["npm", "run", "dev"]
+# Comando para desenvolvimento com hot reload
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

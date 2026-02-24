@@ -1,7 +1,7 @@
 /**
  * Integration Service for Customer Sidebar
  * Fetches user orders, quotes, subscriptions, and payments
- * 
+ *
  * Requirements: 7.1, 7.2, 7.3, 7.4, 8.2, 8.3, 8.4, 9.1, 9.2, 19.1, 19.2, 19.5
  */
 
@@ -22,7 +22,7 @@ export interface Order {
 export interface OrderProductionStage {
   id: string;
   order_id: string;
-  stage: 'molde_pronto' | 'impressao_iniciada' | 'pintura_iniciada' | 'finalizacao';
+  stage: "molde_pronto" | "impressao_iniciada" | "pintura_iniciada" | "finalizacao";
   notes?: string;
   created_by: string;
   created_at: string;
@@ -140,7 +140,7 @@ export async function getUserPayments(userId: string): Promise<ManualPayment[]> 
 /**
  * Get production stages for an order
  * Requirements: 25.3
- * 
+ *
  * Note: This function is currently disabled because order_production_stages
  * table is not yet in the Supabase types. It will be enabled after migration.
  */
@@ -148,7 +148,7 @@ export async function getOrderProductionStages(orderId: string): Promise<OrderPr
   // TODO: Enable after order_production_stages table is added to Supabase types
   console.warn("getOrderProductionStages is not yet implemented - table not in types");
   return [];
-  
+
   /* Uncomment after migration:
   const { data, error } = await supabase
     .from("order_production_stages")
@@ -179,10 +179,7 @@ export async function updateOrderStatus(
     updateData.tracking_code = trackingCode;
   }
 
-  const { error } = await supabase
-    .from("manual_payments")
-    .update(updateData)
-    .eq("id", orderId);
+  const { error } = await supabase.from("manual_payments").update(updateData).eq("id", orderId);
 
   if (error) {
     console.error("Error updating order status:", error);
@@ -194,14 +191,8 @@ export async function updateOrderStatus(
  * Update payment status
  * Requirements: 19.1, 19.2
  */
-export async function updatePaymentStatus(
-  paymentId: string,
-  status: string
-): Promise<void> {
-  const { error } = await supabase
-    .from("manual_payments")
-    .update({ status })
-    .eq("id", paymentId);
+export async function updatePaymentStatus(paymentId: string, status: string): Promise<void> {
+  const { error } = await supabase.from("manual_payments").update({ status }).eq("id", paymentId);
 
   if (error) {
     console.error("Error updating payment status:", error);

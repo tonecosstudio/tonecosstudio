@@ -17,10 +17,10 @@ export default function AboutV2() {
       <SEOHead
         title="Sobre a Ordax - Colecionáveis Premium Artesanais"
         description="Ordax é a plataforma brasileira de colecionáveis artesanais premium. Produção sob encomenda com qualidade excepcional e acompanhamento em tempo real."
-        keywords={['sobre', 'ordax', 'colecionáveis', 'artesanal', 'premium', 'brasileiro']}
+        keywords={["sobre", "ordax", "colecionáveis", "artesanal", "premium", "brasileiro"]}
         type="website"
       />
-      
+
       {/* Hero */}
       <section className="bg-gradient-to-b from-foreground to-foreground/95 text-background border-b border-white/10 -mx-8 sm:-mx-12">
         <div className="container px-8 py-20 sm:px-12 sm:py-28">
@@ -29,12 +29,13 @@ export default function AboutV2() {
               Sobre a Ordax
             </p>
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-8 leading-tight">
-              Colecionáveis premium<br />
+              Colecionáveis premium
+              <br />
               feitos para você.
             </h1>
             <p className="text-xl text-background/80 leading-relaxed max-w-2xl mx-auto">
-              Ordax é a plataforma brasileira especializada em colecionáveis artesanais de alta qualidade, 
-              produzidos sob encomenda com atenção aos detalhes.
+              Ordax é a plataforma brasileira especializada em colecionáveis artesanais de alta
+              qualidade, produzidos sob encomenda com atenção aos detalhes.
             </p>
           </div>
         </div>
@@ -80,9 +81,7 @@ export default function AboutV2() {
                 <Clock className="h-6 w-6 text-foreground" />
               </div>
               <h3 className="font-semibold text-lg mb-2">Acompanhamento</h3>
-              <p className="text-sm text-muted-foreground">
-                Timeline visual do início ao fim
-              </p>
+              <p className="text-sm text-muted-foreground">Timeline visual do início ao fim</p>
             </CardContent>
           </Card>
 
@@ -106,29 +105,29 @@ export default function AboutV2() {
             <div>
               <h4 className="font-semibold text-lg mb-2">🎨 Produção Artesanal</h4>
               <p className="text-muted-foreground">
-                Cada peça passa por modelagem 3D, impressão em resina de alta qualidade, 
-                acabamento manual e pintura artística feita à mão.
+                Cada peça passa por modelagem 3D, impressão em resina de alta qualidade, acabamento
+                manual e pintura artística feita à mão.
               </p>
             </div>
             <div>
               <h4 className="font-semibold text-lg mb-2">📦 Personalização Total</h4>
               <p className="text-muted-foreground">
-                Escolha escala, acabamento, cores e detalhes. Você define como quer sua peça, 
-                nós validamos a viabilidade e produzimos.
+                Escolha escala, acabamento, cores e detalhes. Você define como quer sua peça, nós
+                validamos a viabilidade e produzimos.
               </p>
             </div>
             <div>
               <h4 className="font-semibold text-lg mb-2">⏱️ Transparência</h4>
               <p className="text-muted-foreground">
-                Acompanhe cada etapa da produção com fotos e atualizações em tempo real. 
-                Sem surpresas, sem mistério.
+                Acompanhe cada etapa da produção com fotos e atualizações em tempo real. Sem
+                surpresas, sem mistério.
               </p>
             </div>
             <div>
               <h4 className="font-semibold text-lg mb-2">✨ Peças Únicas</h4>
               <p className="text-muted-foreground">
-                Por ser 100% artesanal, nenhuma peça é idêntica à outra. 
-                Cada entrega é exclusiva e especial.
+                Por ser 100% artesanal, nenhuma peça é idêntica à outra. Cada entrega é exclusiva e
+                especial.
               </p>
             </div>
           </div>
@@ -148,35 +147,35 @@ export default function AboutV2() {
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                { 
-                  num: 1, 
-                  title: "Escolha seu modelo", 
-                  desc: "Navegue pelo catálogo e selecione a peça desejada" 
+                {
+                  num: 1,
+                  title: "Escolha seu modelo",
+                  desc: "Navegue pelo catálogo e selecione a peça desejada",
                 },
-                { 
-                  num: 2, 
-                  title: "Personalize", 
-                  desc: "Defina escala, acabamento e detalhes específicos" 
+                {
+                  num: 2,
+                  title: "Personalize",
+                  desc: "Defina escala, acabamento e detalhes específicos",
                 },
-                { 
-                  num: 3, 
-                  title: "Solicite orçamento", 
-                  desc: "Receba prazo e valor personalizado em até 48h" 
+                {
+                  num: 3,
+                  title: "Solicite orçamento",
+                  desc: "Receba prazo e valor personalizado em até 48h",
                 },
-                { 
-                  num: 4, 
-                  title: "Aprovação", 
-                  desc: "Confirme o pedido e acompanhe a produção" 
+                {
+                  num: 4,
+                  title: "Aprovação",
+                  desc: "Confirme o pedido e acompanhe a produção",
                 },
-                { 
-                  num: 5, 
-                  title: "Produção", 
-                  desc: "Veja fotos e atualizações de cada etapa" 
+                {
+                  num: 5,
+                  title: "Produção",
+                  desc: "Veja fotos e atualizações de cada etapa",
                 },
-                { 
-                  num: 6, 
-                  title: "Entrega", 
-                  desc: "Receba sua peça com embalagem premium" 
+                {
+                  num: 6,
+                  title: "Entrega",
+                  desc: "Receba sua peça com embalagem premium",
                 },
               ].map((step) => (
                 <Card key={step.num} className="border-border shadow-sm">
@@ -306,8 +305,9 @@ export default function AboutV2() {
                     Qual o prazo de produção?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                    O prazo varia de 15 a 45 dias dependendo da complexidade do modelo, escala e acabamento solicitado. 
-                    Após você montar o orçamento, retornamos com uma previsão clara e você acompanha tudo pela timeline.
+                    O prazo varia de 15 a 45 dias dependendo da complexidade do modelo, escala e
+                    acabamento solicitado. Após você montar o orçamento, retornamos com uma previsão
+                    clara e você acompanha tudo pela timeline.
                   </AccordionContent>
                 </AccordionItem>
 
@@ -316,8 +316,9 @@ export default function AboutV2() {
                     Como funciona a escala?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                    A escala define o tamanho final da peça (ex: 1/6 = aproximadamente 30cm para um personagem humano). 
-                    Você pode informar a escala desejada ou o tamanho aproximado, e validamos a melhor opção técnica e de custo.
+                    A escala define o tamanho final da peça (ex: 1/6 = aproximadamente 30cm para um
+                    personagem humano). Você pode informar a escala desejada ou o tamanho
+                    aproximado, e validamos a melhor opção técnica e de custo.
                   </AccordionContent>
                 </AccordionItem>
 
@@ -326,8 +327,9 @@ export default function AboutV2() {
                     Posso personalizar a pintura?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                    Sim! A pintura pode seguir referências específicas como cenas, skins alternativas ou versões especiais. 
-                    Basta enviar as referências no campo de observações do orçamento.
+                    Sim! A pintura pode seguir referências específicas como cenas, skins
+                    alternativas ou versões especiais. Basta enviar as referências no campo de
+                    observações do orçamento.
                   </AccordionContent>
                 </AccordionItem>
 
@@ -336,8 +338,8 @@ export default function AboutV2() {
                     Como acompanho meu pedido?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                    Através da timeline visual na plataforma Ordax. Você recebe atualizações com fotos de cada etapa: 
-                    modelagem, impressão, acabamento, pintura e finalização.
+                    Através da timeline visual na plataforma Ordax. Você recebe atualizações com
+                    fotos de cada etapa: modelagem, impressão, acabamento, pintura e finalização.
                   </AccordionContent>
                 </AccordionItem>
 
@@ -346,8 +348,9 @@ export default function AboutV2() {
                     Como é a entrega?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground leading-relaxed pb-6">
-                    Enviamos com embalagem premium e proteção adequada para o tipo de peça. 
-                    No retorno do orçamento, confirmamos a modalidade de frete mais adequada para seu destino.
+                    Enviamos com embalagem premium e proteção adequada para o tipo de peça. No
+                    retorno do orçamento, confirmamos a modalidade de frete mais adequada para seu
+                    destino.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -364,11 +367,15 @@ export default function AboutV2() {
               Pronto para sua próxima peça?
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Explore nosso catálogo e solicite um orçamento personalizado. 
-              Transformamos sua ideia em realidade com qualidade premium.
+              Explore nosso catálogo e solicite um orçamento personalizado. Transformamos sua ideia
+              em realidade com qualidade premium.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8">
+              <Button
+                asChild
+                size="lg"
+                className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8"
+              >
                 <a href="/">Explorar Catálogo</a>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 px-8">

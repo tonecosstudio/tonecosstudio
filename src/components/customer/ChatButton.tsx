@@ -24,11 +24,11 @@ export function ChatButton() {
   const [loading, setLoading] = useState(false);
 
   // Buscar status da conversa selecionada
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
-  const isClosed = selectedConversation?.status === 'closed';
+  const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
+  const isClosed = selectedConversation?.status === "closed";
 
   // Não renderizar o botão na página de suporte para evitar duplicação
-  if (location.pathname === '/suporte') {
+  if (location.pathname === "/suporte") {
     return null;
   }
 
@@ -50,7 +50,7 @@ export function ChatButton() {
           return;
         }
 
-        const conversationIds = conversations.map(c => c.id);
+        const conversationIds = conversations.map((c) => c.id);
         const { count, error: msgError } = await supabase
           .from("support_messages")
           .select("*", { count: "exact", head: true })
@@ -110,8 +110,8 @@ export function ChatButton() {
 
         if (error) throw error;
 
-        setConversations(data as Conversation[] || []);
-        
+        setConversations((data as Conversation[]) || []);
+
         if (data && data.length > 0) {
           setSelectedConversationId(data[0].id);
         }
@@ -167,7 +167,7 @@ export function ChatButton() {
                     onClick={async () => {
                       try {
                         if (!user) return;
-                        
+
                         const { data: newConv, error } = await supabase
                           .from("support_conversations")
                           .insert({
@@ -180,7 +180,7 @@ export function ChatButton() {
 
                         if (error) throw error;
 
-                        setConversations(prev => [newConv as Conversation, ...prev]);
+                        setConversations((prev) => [newConv as Conversation, ...prev]);
                         setSelectedConversationId(newConv.id);
                         toast.success("Nova conversa iniciada!");
                       } catch (error) {
@@ -219,7 +219,7 @@ export function ChatButton() {
                     Você ainda não iniciou nenhuma conversa com nosso suporte.
                   </p>
                   <button
-                    onClick={() => window.location.href = "/contato"}
+                    onClick={() => (window.location.href = "/contato")}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Ir para Contato
@@ -231,10 +231,10 @@ export function ChatButton() {
                 {/* Área de mensagens */}
                 <div className="flex-1 overflow-y-auto">
                   {selectedConversationId && (
-                    <CustomerMessageList 
+                    <CustomerMessageList
                       conversationId={selectedConversationId}
                       currentUserId={user.id}
-                      currentUserName={user.user_metadata?.full_name || user.email || 'Cliente'}
+                      currentUserName={user.user_metadata?.full_name || user.email || "Cliente"}
                       isClosed={isClosed}
                     />
                   )}
@@ -255,7 +255,7 @@ export function ChatButton() {
                           onClick={async () => {
                             try {
                               if (!user) return;
-                              
+
                               const { data: newConv, error } = await supabase
                                 .from("support_conversations")
                                 .insert({
@@ -268,7 +268,7 @@ export function ChatButton() {
 
                               if (error) throw error;
 
-                              setConversations(prev => [newConv as Conversation, ...prev]);
+                              setConversations((prev) => [newConv as Conversation, ...prev]);
                               setSelectedConversationId(newConv.id);
                               toast.success("Nova conversa iniciada!");
                             } catch (error) {
@@ -282,10 +282,10 @@ export function ChatButton() {
                         </button>
                       </div>
                     ) : (
-                      <CustomerMessageInput 
+                      <CustomerMessageInput
                         conversationId={selectedConversationId}
                         currentUserId={user.id}
-                        currentUserName={user.user_metadata?.full_name || user.email || 'Cliente'}
+                        currentUserName={user.user_metadata?.full_name || user.email || "Cliente"}
                         isClosed={isClosed}
                       />
                     )}

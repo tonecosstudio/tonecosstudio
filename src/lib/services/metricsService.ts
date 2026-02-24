@@ -2,22 +2,22 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * MetricsService - Service for calculating group metrics
- * 
+ *
  * Provides methods to calculate:
  * - Total members in a group
  * - Total messages in a group
  * - Estimated view rate (% members who viewed after last message)
- * 
+ *
  * Requirements: 16.1, 16.2, 16.3, 16.4
- * 
+ *
  * CRITICAL CLARIFICATION - Estimated View Rate Calculation:
- * 
+ *
  * "Viewed" means: User opened the group page (last_viewed_at updated)
  * NOT "read the message" or "scrolled to bottom"
  * This is an estimated metric for engagement, not precise read tracking
- * 
+ *
  * Formula: COUNT(members where last_viewed_at > last_message.created_at) / COUNT(members) * 100
- * 
+ *
  * "last_message" = the MOST RECENT message in the group
  * If multiple messages exist after last_viewed_at, still counts as "not viewed"
  * This is intentionally simple to avoid complexity
@@ -68,12 +68,12 @@ export class MetricsService {
 
   /**
    * Calculates the estimated view rate for a group
-   * 
+   *
    * View rate = % of members who viewed the group after the last message was sent
-   * 
+   *
    * Returns a percentage (0-100) rounded to 2 decimal places
    * Returns 0 if there are no messages or no members
-   * 
+   *
    * Requirements: 16.3, 16.4
    */
   async getEstimatedViewRate(groupId: string): Promise<number> {
@@ -131,12 +131,12 @@ export class MetricsService {
 
   /**
    * Gets all metrics for a group in a single call
-   * 
+   *
    * Returns an object with:
    * - total_members: number of active members
    * - total_messages: number of messages
    * - estimated_view_rate: percentage (0-100) of members who viewed after last message
-   * 
+   *
    * Requirements: 16.1, 16.2, 16.3, 16.4
    */
   async getGroupMetrics(groupId: string): Promise<{

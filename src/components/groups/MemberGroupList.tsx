@@ -1,23 +1,27 @@
-import { useQuery } from '@tanstack/react-query';
-import { groupService } from '@/lib/services/groupService';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { MessageSquare } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/lib/auth';
-import { Skeleton } from '@/components/ui/skeleton';
-import { GroupErrorBoundary } from './GroupErrorBoundary';
+import { useQuery } from "@tanstack/react-query";
+import { groupService } from "@/lib/services/groupService";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { GroupErrorBoundary } from "./GroupErrorBoundary";
 
 function MemberGroupListContent() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: groups = [], isLoading, error } = useQuery({
-    queryKey: ['member-groups', user?.id],
+  const {
+    data: groups = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["member-groups", user?.id],
     queryFn: async () => {
-      if (!user) throw new Error('Usuário não autenticado');
+      if (!user) throw new Error("Usuário não autenticado");
       return groupService.getMemberGroups(user.id);
     },
     enabled: !!user,
@@ -50,7 +54,7 @@ function MemberGroupListContent() {
         <MessageSquare className="w-12 h-12 mx-auto mb-4 text-destructive" />
         <h3 className="text-lg font-semibold mb-2">Erro ao carregar grupos</h3>
         <p className="text-muted-foreground mb-4">
-          {error instanceof Error ? error.message : 'Erro desconhecido'}
+          {error instanceof Error ? error.message : "Erro desconhecido"}
         </p>
       </Card>
     );
@@ -75,11 +79,11 @@ function MemberGroupListContent() {
           key={group.id}
           role="button"
           tabIndex={0}
-          aria-label={`Abrir grupo ${group.name}${group.unread_count > 0 ? `, ${group.unread_count} mensagens não lidas` : ''}`}
+          aria-label={`Abrir grupo ${group.name}${group.unread_count > 0 ? `, ${group.unread_count} mensagens não lidas` : ""}`}
           className="p-4 hover:bg-accent/50 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
           onClick={() => navigate(`/grupos/${group.id}`)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               navigate(`/grupos/${group.id}`);
             }
@@ -90,12 +94,16 @@ function MemberGroupListContent() {
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold">{group.name}</h3>
                 {group.unread_count > 0 && (
-                  <Badge variant="destructive" className="rounded-full" aria-label={`${group.unread_count} não lidas`}>
+                  <Badge
+                    variant="destructive"
+                    className="rounded-full"
+                    aria-label={`${group.unread_count} não lidas`}
+                  >
                     {group.unread_count}
                   </Badge>
                 )}
               </div>
-              
+
               {group.last_message ? (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground line-clamp-2">
@@ -109,9 +117,7 @@ function MemberGroupListContent() {
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma mensagem ainda
-                </p>
+                <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda</p>
               )}
             </div>
           </div>

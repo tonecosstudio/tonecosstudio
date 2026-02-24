@@ -1,7 +1,7 @@
 /**
  * OrdersList Component
  * Displays list of customer orders with status and tracking
- * 
+ *
  * Requirements: 7.2, 7.3, 7.4, 7.6, 25.3
  */
 
@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -30,7 +30,12 @@ import { Package, Truck, CheckCircle, Clock, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { updateOrderStatus, getOrderProductionStages, type Order, type OrderProductionStage } from "@/lib/services/integrationService";
+import {
+  updateOrderStatus,
+  getOrderProductionStages,
+  type Order,
+  type OrderProductionStage,
+} from "@/lib/services/integrationService";
 
 interface OrdersListProps {
   orders: Order[];
@@ -47,9 +52,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
 
   if (orders.length === 0) {
     return (
-      <div className="text-center py-4 text-muted-foreground text-sm">
-        Nenhum pedido encontrado
-      </div>
+      <div className="text-center py-4 text-muted-foreground text-sm">Nenhum pedido encontrado</div>
     );
   }
 
@@ -86,7 +89,10 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const statusMap: Record<
+      string,
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+    > = {
       pending: { label: "Aguardando Pagamento", variant: "secondary" },
       under_review: { label: "Em Análise", variant: "outline" },
       approved: { label: "Aprovado", variant: "default" },
@@ -143,30 +149,25 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openStatusDialog(order)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => openStatusDialog(order)}>
                   <Edit className="h-3 w-3" />
                 </Button>
               </div>
 
               {/* Order Details */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  R$ {order.amount.toFixed(2)}
-                </span>
+                <span className="text-sm font-medium">R$ {order.amount.toFixed(2)}</span>
                 {getStatusBadge(order.status)}
               </div>
 
               {/* Tracking Code */}
-              {order.tracking_code && (order.status === "enviado" || order.status === "entregue") && (
-                <div className="bg-muted p-2 rounded text-xs">
-                  <p className="text-muted-foreground">Código de rastreamento:</p>
-                  <p className="font-mono font-medium">{order.tracking_code}</p>
-                </div>
-              )}
+              {order.tracking_code &&
+                (order.status === "enviado" || order.status === "entregue") && (
+                  <div className="bg-muted p-2 rounded text-xs">
+                    <p className="text-muted-foreground">Código de rastreamento:</p>
+                    <p className="font-mono font-medium">{order.tracking_code}</p>
+                  </div>
+                )}
             </div>
           </Card>
         ))}
@@ -177,9 +178,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Atualizar Status do Pedido</DialogTitle>
-            <DialogDescription>
-              Pedido #{selectedOrder?.reference_number}
-            </DialogDescription>
+            <DialogDescription>Pedido #{selectedOrder?.reference_number}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -228,9 +227,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
                           {format(new Date(stage.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </span>
                       </div>
-                      {stage.notes && (
-                        <p className="text-muted-foreground mt-1">{stage.notes}</p>
-                      )}
+                      {stage.notes && <p className="text-muted-foreground mt-1">{stage.notes}</p>}
                     </div>
                   ))}
                 </div>

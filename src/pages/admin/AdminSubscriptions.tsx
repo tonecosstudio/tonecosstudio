@@ -7,9 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Package, DollarSign, Clock, Eye, Truck, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Calendar,
+  Package,
+  DollarSign,
+  Clock,
+  Eye,
+  Truck,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,13 +48,15 @@ export default function AdminSubscriptions() {
     queryFn: async () => {
       let query = supabase
         .from("subscriptions")
-        .select(`
+        .select(
+          `
           *,
           collections (
             name,
             slug
           )
-        `)
+        `
+        )
         .order("created_at", { ascending: false });
 
       if (statusFilter !== "all") {
@@ -47,11 +70,11 @@ export default function AdminSubscriptions() {
       const subscriptionsWithEmails = await Promise.all(
         (data || []).map(async (sub: any) => {
           const { data: profileData } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', sub.user_id)
+            .from("profiles")
+            .select("email")
+            .eq("id", sub.user_id)
             .maybeSingle();
-          
+
           return {
             ...sub,
             user_email: profileData?.email || "N/A",
@@ -70,14 +93,16 @@ export default function AdminSubscriptions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_deliveries")
-        .select(`
+        .select(
+          `
           *,
           collection_characters (
             name,
             release_order,
             description
           )
-        `)
+        `
+        )
         .eq("subscription_id", selectedSubscription)
         .order("delivery_number", { ascending: true });
 
@@ -91,7 +116,8 @@ export default function AdminSubscriptions() {
     total: subscriptionsQuery.data?.length || 0,
     active: subscriptionsQuery.data?.filter((s: any) => s.status === "active").length || 0,
     paused: subscriptionsQuery.data?.filter((s: any) => s.status === "paused").length || 0,
-    revenue: subscriptionsQuery.data?.reduce((acc: number, s: any) => acc + (s.total_paid || 0), 0) || 0,
+    revenue:
+      subscriptionsQuery.data?.reduce((acc: number, s: any) => acc + (s.total_paid || 0), 0) || 0,
   };
 
   const subscriptions = subscriptionsQuery.data || [];
@@ -155,9 +181,7 @@ export default function AdminSubscriptions() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {stats.revenue.toFixed(2)}
-              </div>
+              <div className="text-2xl font-bold">R$ {stats.revenue.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">Total recebido</p>
             </CardContent>
           </Card>
@@ -192,9 +216,7 @@ export default function AdminSubscriptions() {
           <Card>
             <CardHeader>
               <CardTitle>Assinaturas</CardTitle>
-              <CardDescription>
-                {subscriptions.length} assinatura(s) encontrada(s)
-              </CardDescription>
+              <CardDescription>{subscriptions.length} assinatura(s) encontrada(s)</CardDescription>
             </CardHeader>
             <CardContent>
               {subscriptions.length === 0 ? (
@@ -304,9 +326,7 @@ function SubscriptionCard({ subscription, isSelected, onSelect, onSuccess }: any
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-sm">
-                  {subscription.user_email}
-                </h4>
+                <h4 className="font-semibold text-sm">{subscription.user_email}</h4>
                 {getStatusBadge(subscription.status)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -357,7 +377,10 @@ function SubscriptionCard({ subscription, isSelected, onSelect, onSuccess }: any
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 <span>
-                  Próxima entrega: {format(new Date(subscription.next_delivery_date), "dd/MM/yyyy", { locale: ptBR })}
+                  Próxima entrega:{" "}
+                  {format(new Date(subscription.next_delivery_date), "dd/MM/yyyy", {
+                    locale: ptBR,
+                  })}
                 </span>
               </div>
             </div>
@@ -424,11 +447,7 @@ function DeliveryCard({ delivery, onSuccess }: any) {
               <span className={statusInfo.color}>{statusInfo.label}</span>
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setIsUpdating(true)}
-          >
+          <Button size="sm" variant="outline" onClick={() => setIsUpdating(true)}>
             Atualizar
           </Button>
         </div>
@@ -462,9 +481,7 @@ function DeliveryCard({ delivery, onSuccess }: any) {
           {delivery.tracking_code && (
             <div>
               <span>Rastreio:</span>
-              <p className="font-medium text-foreground font-mono">
-                {delivery.tracking_code}
-              </p>
+              <p className="font-medium text-foreground font-mono">{delivery.tracking_code}</p>
             </div>
           )}
         </div>
@@ -563,10 +580,7 @@ function ManageSubscriptionDialog({ subscription, isOpen, onOpenChange, onSucces
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}
-          >
+          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
             {updateMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </div>
@@ -683,10 +697,7 @@ function UpdateDeliveryDialog({ delivery, isOpen, onOpenChange, onSuccess }: any
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}
-          >
+          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
             {updateMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </div>

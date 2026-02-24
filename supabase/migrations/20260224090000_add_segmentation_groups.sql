@@ -37,6 +37,12 @@ BEGIN
     LIMIT 1;
   END IF;
 
+  -- Se ainda não houver usuário, não criar grupos (será criado quando houver usuários)
+  IF admin_user_id IS NULL THEN
+    RAISE NOTICE 'Nenhum usuário encontrado. Grupos serão criados quando houver usuários.';
+    RETURN;
+  END IF;
+
   -- Grupo: Novos Membros (todos os usuários cadastrados)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (

@@ -12,24 +12,39 @@ export function useProductionRealtime(quoteId: string | null, enabled: boolean) 
       .channel(`prod:${quoteId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "quote_production", filter: `quote_id=eq.${quoteId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "quote_production",
+          filter: `quote_id=eq.${quoteId}`,
+        },
         () => {
           qc.invalidateQueries({ queryKey: ["production", quoteId] });
-        },
+        }
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "quote_production_updates", filter: `quote_id=eq.${quoteId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "quote_production_updates",
+          filter: `quote_id=eq.${quoteId}`,
+        },
         () => {
           qc.invalidateQueries({ queryKey: ["production", quoteId] });
-        },
+        }
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "quote_production_photos", filter: `quote_id=eq.${quoteId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "quote_production_photos",
+          filter: `quote_id=eq.${quoteId}`,
+        },
         () => {
           qc.invalidateQueries({ queryKey: ["production", quoteId] });
-        },
+        }
       )
       .subscribe();
 

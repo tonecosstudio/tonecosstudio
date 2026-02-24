@@ -14,12 +14,15 @@ export function CatalogForYouSection(props: {
     <section className="container py-12 border-b border-border">
       <div className="mb-8">
         <h2 className="text-3xl font-bold">Para você</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Seleção personalizada baseada nas suas preferências</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Seleção personalizada baseada nas suas preferências
+        </p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {models.map((m) => {
-          const imageUrl = supabase.storage.from(m.image_bucket).getPublicUrl(m.image_path).data.publicUrl;
+          const imageUrl = supabase.storage.from(m.image_bucket).getPublicUrl(m.image_path)
+            .data.publicUrl;
           const isLiked = getIsLiked(m.id);
           return (
             <ModelCard

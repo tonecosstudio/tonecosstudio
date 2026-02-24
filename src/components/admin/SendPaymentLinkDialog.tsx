@@ -48,17 +48,15 @@ export function SendPaymentLinkDialog({
       if (!userData.user) throw new Error("Não autenticado");
 
       // 1. Criar registro de payment_link
-      const { error: linkError } = await supabase
-        .from("payment_links")
-        .insert({
-          quote_id: quoteId,
-          payment_type: paymentType,
-          amount: amount,
-          payment_link: paymentLink || null,
-          pix_key: pixKey || null,
-          instructions: instructions,
-          sent_by: userData.user.id,
-        });
+      const { error: linkError } = await supabase.from("payment_links").insert({
+        quote_id: quoteId,
+        payment_type: paymentType,
+        amount: amount,
+        payment_link: paymentLink || null,
+        pix_key: pixKey || null,
+        instructions: instructions,
+        sent_by: userData.user.id,
+      });
 
       if (linkError) throw linkError;
 
@@ -139,15 +137,14 @@ export function SendPaymentLinkDialog({
           {/* Alert Info */}
           <Alert>
             <AlertDescription>
-              O cliente receberá uma notificação no site e poderá ver o link na página de acompanhamento do pedido.
+              O cliente receberá uma notificação no site e poderá ver o link na página de
+              acompanhamento do pedido.
             </AlertDescription>
           </Alert>
 
           {/* Link de Pagamento */}
           <div>
-            <Label htmlFor="payment-link">
-              Link de Pagamento (Opcional)
-            </Label>
+            <Label htmlFor="payment-link">Link de Pagamento (Opcional)</Label>
             <Input
               id="payment-link"
               value={paymentLink}
@@ -172,12 +169,7 @@ export function SendPaymentLinkDialog({
                 className="flex-1"
               />
               {pixKey && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={copyPixKey}
-                >
+                <Button type="button" variant="outline" size="icon" onClick={copyPixKey}>
                   {copiedPix ? (
                     <Check className="h-4 w-4 text-green-500" />
                   ) : (
@@ -211,15 +203,11 @@ export function SendPaymentLinkDialog({
             <p className="text-sm font-medium mb-2">Preview da Notificação:</p>
             <div className="space-y-2 text-sm">
               <p className="font-medium">💳 Link de Pagamento Disponível</p>
-              <p className="text-muted-foreground">
-                Valor: R$ {amount.toFixed(2)}
-              </p>
+              <p className="text-muted-foreground">Valor: R$ {amount.toFixed(2)}</p>
               {paymentLink && (
                 <p className="text-primary">🔗 Link: {paymentLink.substring(0, 50)}...</p>
               )}
-              {pixKey && (
-                <p className="text-primary">🔑 PIX: {pixKey}</p>
-              )}
+              {pixKey && <p className="text-primary">🔑 PIX: {pixKey}</p>}
             </div>
           </div>
         </div>

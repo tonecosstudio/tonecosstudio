@@ -2,22 +2,19 @@
  * useScreenReaderAnnouncement Hook
  * Requirements: 20.1-20.15
  * Task: 27.2 Implementar regiões ARIA live
- * 
+ *
  * Provides a way to announce messages to screen readers
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from "react";
 
-type AnnouncementPriority = 'polite' | 'assertive';
+type AnnouncementPriority = "polite" | "assertive";
 
 export function useScreenReaderAnnouncement() {
   const announcementRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
-  const announce = useCallback((
-    message: string,
-    priority: AnnouncementPriority = 'polite'
-  ) => {
+  const announce = useCallback((message: string, priority: AnnouncementPriority = "polite") => {
     if (!announcementRef.current) return;
 
     // Clear any existing timeout
@@ -26,15 +23,15 @@ export function useScreenReaderAnnouncement() {
     }
 
     // Set the priority
-    announcementRef.current.setAttribute('aria-live', priority);
-    
+    announcementRef.current.setAttribute("aria-live", priority);
+
     // Set the message
     announcementRef.current.textContent = message;
 
     // Clear the message after it's been announced
     timeoutRef.current = setTimeout(() => {
       if (announcementRef.current) {
-        announcementRef.current.textContent = '';
+        announcementRef.current.textContent = "";
       }
     }, 1000);
   }, []);
@@ -57,25 +54,30 @@ export function useScreenReaderAnnouncement() {
 export function useStatusAnnouncement() {
   const { announcementRef, announce } = useScreenReaderAnnouncement();
 
-  const announceStatusChange = useCallback((
-    oldStatus: string,
-    newStatus: string,
-    context?: string
-  ) => {
-    const message = context
-      ? `${context}: Status alterado de ${oldStatus} para ${newStatus}`
-      : `Status alterado de ${oldStatus} para ${newStatus}`;
-    
-    announce(message, 'polite');
-  }, [announce]);
+  const announceStatusChange = useCallback(
+    (oldStatus: string, newStatus: string, context?: string) => {
+      const message = context
+        ? `${context}: Status alterado de ${oldStatus} para ${newStatus}`
+        : `Status alterado de ${oldStatus} para ${newStatus}`;
 
-  const announceSuccess = useCallback((message: string) => {
-    announce(`Sucesso: ${message}`, 'polite');
-  }, [announce]);
+      announce(message, "polite");
+    },
+    [announce]
+  );
 
-  const announceError = useCallback((message: string) => {
-    announce(`Erro: ${message}`, 'assertive');
-  }, [announce]);
+  const announceSuccess = useCallback(
+    (message: string) => {
+      announce(`Sucesso: ${message}`, "polite");
+    },
+    [announce]
+  );
+
+  const announceError = useCallback(
+    (message: string) => {
+      announce(`Erro: ${message}`, "assertive");
+    },
+    [announce]
+  );
 
   return {
     announcementRef,
