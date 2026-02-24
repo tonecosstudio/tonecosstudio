@@ -1,4 +1,3 @@
-// @ts-nocheck
 import AppShell from '@/components/AppShell';
 import SEOHead from '@/components/SEOHead';
 import { Button } from '@/components/ui/button';

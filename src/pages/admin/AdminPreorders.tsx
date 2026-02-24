@@ -66,7 +66,7 @@ export default function AdminPreorders() {
             .from('profiles')
             .select('full_name, email')
             .eq('id', quote.user_id)
-            .single();
+            .maybeSingle();
           
           return {
             ...quote,

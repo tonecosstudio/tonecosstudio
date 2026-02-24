@@ -126,10 +126,12 @@ export default function SubscribeCollection() {
         .select("*")
         .eq("plan_type", planType)
         .eq("is_active", true)
-        .single();
+        .maybeSingle();
 
-      if (planError || !plan) {
-        throw new Error("Plano não encontrado");
+      if (planError) throw planError;
+      
+      if (!plan) {
+        throw new Error("Plano não encontrado ou inativo");
       }
 
       // Criar assinatura pendente de pagamento

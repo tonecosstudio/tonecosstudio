@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import type { GroupMessage, GroupAttachment } from "@/types/groups";
 
@@ -45,7 +44,7 @@ export async function verifyGroupMembership(
       .select("id")
       .eq("group_id", groupId)
       .eq("user_id", userId)
-      .single();
+      .maybeSingle(); // Mudado de .single() para .maybeSingle() para evitar erro 406
 
     if (error || !membership) {
       console.warn(`[Security] User ${userId} is not a member of group ${groupId}`);

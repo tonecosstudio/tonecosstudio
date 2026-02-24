@@ -25,8 +25,14 @@ export default function AdminUserDetails() {
         .from("profiles")
         .select("*")
         .eq("id", userId!)
-        .single();
+        .maybeSingle();
+        
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("Usuário não encontrado");
+      }
+      
       return data;
     },
   });

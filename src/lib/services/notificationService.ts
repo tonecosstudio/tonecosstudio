@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * NotificationService - Service for sending email notifications for chat messages
  * 

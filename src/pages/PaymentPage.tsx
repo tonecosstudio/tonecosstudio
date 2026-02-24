@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentPage Component
  * 
@@ -57,9 +56,14 @@ export default function PaymentPage() {
           )
         `)
         .eq('id', quoteId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("Orçamento não encontrado");
+      }
+      
       return data;
     },
   });
@@ -86,9 +90,14 @@ export default function PaymentPage() {
           )
         `)
         .eq('id', subscriptionId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("Assinatura não encontrada");
+      }
+      
       return data;
     },
   });

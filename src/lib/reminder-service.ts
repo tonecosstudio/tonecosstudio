@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ReminderService - Service for processing automatic conversation reminders
  * 

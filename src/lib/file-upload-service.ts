@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * FileUploadService - Service for handling payment proof file uploads
  * Requirements: 3.1-3.12, 14.1-14.15

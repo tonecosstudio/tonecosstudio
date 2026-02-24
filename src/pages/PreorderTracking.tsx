@@ -76,9 +76,14 @@ export default function PreorderTracking() {
           )
         `)
         .eq("id", quoteId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("Orçamento não encontrado");
+      }
+      
       return data;
     },
   });

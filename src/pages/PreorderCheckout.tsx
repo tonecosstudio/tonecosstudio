@@ -52,9 +52,14 @@ export default function PreorderCheckout() {
           )
         `)
         .eq("id", quoteId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("Orçamento não encontrado");
+      }
+      
       return data;
     },
   });
@@ -67,9 +72,14 @@ export default function PreorderCheckout() {
         .from("preorder_settings")
         .select("*")
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("Configurações de pré-venda não encontradas");
+      }
+      
       return data;
     },
   });

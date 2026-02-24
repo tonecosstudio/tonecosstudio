@@ -1,4 +1,3 @@
-// @ts-nocheck
 import SEOHead from "@/components/SEOHead";
 import AppShell from "@/components/AppShell";
 import { useMemo, useState } from "react";

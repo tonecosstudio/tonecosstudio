@@ -265,7 +265,7 @@ const handlePaymentClick = (paymentId: string) => {
                         <h4 className="font-medium">Optional Props</h4>
                         <ul className="text-sm space-y-2 mt-2">
                           <li className="flex items-start gap-2">
-                            <code className="bg-muted px-2 py-1 rounded text-xs">{'onBack?: () => void'}</code>
+                            <code className="bg-muted px-2 py-1 rounded text-xs">onBack?: () => void</code>
                             <span className="text-muted-foreground">Callback for back button click</span>
                           </li>
                         </ul>

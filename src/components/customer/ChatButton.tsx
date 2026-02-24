@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ChatButton - Botão flutuante de chat para clientes
  * ATUALIZADO: Removidos workarounds (setTimeout, refreshKey)

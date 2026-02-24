@@ -1,12 +1,9 @@
-// @ts-nocheck
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useToast } from "@/hooks/use-toast";
-import { groupService } from "@/lib/services/groupService";
-import type { GroupType, CreateGroupInput } from "@/types/groups";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
 
 import {
   Dialog,
@@ -15,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -24,36 +21,40 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
-// Schema de validação
+import { groupService } from '@/lib/services/groupService';
+import { supabase } from '@/integrations/supabase/client';
+import type { GroupType, CreateGroupInput } from '@/types/groups';
+import { toast } from 'sonner';
+
+// =====================================================
+// Validation Schema
+// =====================================================
+
 const createGroupSchema = z.object({
   name: z
     .string()
-    .min(3, "Nome deve ter pelo menos 3 caracteres")
-    .max(100, "Nome deve ter no máximo 100 caracteres"),
-  type: z.enum(["manual", "assinantes", "colecao", "lancamentos", "pedidos"], {
-    required_error: "Selecione um tipo de grupo",
+    .min(3, 'Nome deve ter pelo menos 3 caracteres')
+    .max(100, 'Nome deve ter no máximo 100 caracteres'),
+  type: z.enum(['manual', 'assinantes', 'colecao', 'lancamentos', 'pedidos'], {
+    required_error: 'Selecione um tipo de grupo',
   }),
-  // Campos condicionais para assinantes
+  // Conditional fields
   subscriptionCollectionId: z.string().optional(),
   subscriptionPlan: z.string().optional(),
-  // Campo para coleção
   collectionId: z.string().optional(),
-  // Campo para lançamentos
-  launchCriteria: z.enum(["all_users", "previous_buyers"]).optional(),
-  // Campos para pedidos
+  launchCriteria: z.enum(['all_users', 'previous_buyers']).optional(),
   orderStatuses: z.array(z.string()).optional(),
   orderDateFrom: z.string().optional(),
   orderDateTo: z.string().optional(),
@@ -61,122 +62,123 @@ const createGroupSchema = z.object({
 
 type CreateGroupFormData = z.infer<typeof createGroupSchema>;
 
+// =====================================================
+// Component Props
+// =====================================================
+
 interface CreateGroupModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
+// =====================================================
+// Main Component
+// =====================================================
+
+/**
+ * CreateGroupModal - Modal for creating new broadcast groups
+ * 
+ * Features:
+ * - Form validation with Zod
+ * - Conditional fields based on group type
+ * - Collection selection for assinantes/colecao types
+ * - Order status selection for pedidos type
+ * - Date range selection for pedidos type
+ */
 export function CreateGroupModal({
   open,
   onOpenChange,
   onSuccess,
 }: CreateGroupModalProps) {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [collections, setCollections] = useState<Array<{ id: string; name: string }>>([]);
-  const [loadingCollections, setLoadingCollections] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CreateGroupFormData>({
     resolver: zodResolver(createGroupSchema),
     defaultValues: {
-      name: "",
+      name: '',
       type: undefined,
-      subscriptionCollectionId: "",
-      subscriptionPlan: "",
-      collectionId: "",
+      subscriptionCollectionId: '',
+      subscriptionPlan: '',
+      collectionId: '',
       launchCriteria: undefined,
       orderStatuses: [],
-      orderDateFrom: "",
-      orderDateTo: "",
+      orderDateFrom: '',
+      orderDateTo: '',
     },
   });
 
-  const selectedType = form.watch("type");
+  const selectedType = form.watch('type');
 
-  // Carregar coleções quando o tipo for "assinantes" ou "colecao"
-  const loadCollections = async () => {
-    if (collections.length > 0) return; // Já carregou
-
-    setLoadingCollections(true);
-    try {
+  // Fetch collections when needed
+  const { data: collections = [] } = useQuery({
+    queryKey: ['collections-for-groups'],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("collections")
-        .select("id, name")
-        .order("name");
+        .from('collections')
+        .select('id, name')
+        .order('name');
 
       if (error) throw error;
-      setCollections(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar coleções:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar as coleções",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingCollections(false);
-    }
-  };
+      return data || [];
+    },
+    enabled: selectedType === 'assinantes' || selectedType === 'colecao',
+  });
 
-  // Carregar coleções quando necessário
-  if ((selectedType === "assinantes" || selectedType === "colecao") && collections.length === 0 && !loadingCollections) {
-    loadCollections();
-  }
+  // Reset conditional fields when type changes
+  useEffect(() => {
+    form.setValue('subscriptionCollectionId', '');
+    form.setValue('subscriptionPlan', '');
+    form.setValue('collectionId', '');
+    form.setValue('launchCriteria', undefined);
+    form.setValue('orderStatuses', []);
+    form.setValue('orderDateFrom', '');
+    form.setValue('orderDateTo', '');
+  }, [selectedType, form]);
 
   const onSubmit = async (data: CreateGroupFormData) => {
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
-      // Obter ID do usuário atual
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
 
-      // Validar coleção existe (para tipo coleção)
-      if (data.type === "colecao" && data.collectionId) {
-        const { data: collection, error } = await supabase
-          .from("collections")
-          .select("id")
-          .eq("id", data.collectionId)
-          .single();
-
-        if (error || !collection) {
-          throw new Error("Coleção selecionada não existe");
-        }
-      }
-
-      // Construir membership_criteria baseado no tipo
+      // Build membership criteria based on type
       let membershipCriteria = null;
 
-      if (data.type === "assinantes") {
+      if (data.type === 'assinantes') {
         membershipCriteria = {
-          type: "assinantes",
-          subscriptionStatus: "active",
-          ...(data.subscriptionCollectionId && { collectionId: data.subscriptionCollectionId }),
+          type: 'assinantes' as const,
+          subscriptionStatus: 'active' as const,
+          ...(data.subscriptionCollectionId && {
+            collectionId: data.subscriptionCollectionId,
+          }),
           ...(data.subscriptionPlan && { plan: data.subscriptionPlan }),
         };
-      } else if (data.type === "colecao") {
+      } else if (data.type === 'colecao') {
         if (!data.collectionId) {
-          throw new Error("Selecione uma coleção");
+          throw new Error('Selecione uma coleção');
         }
         membershipCriteria = {
-          type: "colecao",
+          type: 'colecao' as const,
           collectionId: data.collectionId,
         };
-      } else if (data.type === "lancamentos") {
+      } else if (data.type === 'lancamentos') {
         if (!data.launchCriteria) {
-          throw new Error("Selecione um critério de lançamento");
+          throw new Error('Selecione um critério de lançamento');
         }
         membershipCriteria = {
-          type: "lancamentos",
+          type: 'lancamentos' as const,
           criteria: data.launchCriteria,
         };
-      } else if (data.type === "pedidos") {
+      } else if (data.type === 'pedidos') {
         membershipCriteria = {
-          type: "pedidos",
-          ...(data.orderStatuses && data.orderStatuses.length > 0 && { status: data.orderStatuses }),
+          type: 'pedidos' as const,
+          ...(data.orderStatuses &&
+            data.orderStatuses.length > 0 && { status: data.orderStatuses }),
           ...(data.orderDateFrom && { dateFrom: data.orderDateFrom }),
           ...(data.orderDateTo && { dateTo: data.orderDateTo }),
         };
@@ -191,23 +193,17 @@ export function CreateGroupModal({
 
       await groupService.createGroup(input);
 
-      toast({
-        title: "Sucesso",
-        description: "Grupo criado com sucesso",
-      });
-
+      toast.success('Grupo criado com sucesso');
       form.reset();
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      console.error("Erro ao criar grupo:", error);
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao criar grupo",
-        variant: "destructive",
-      });
+      console.error('Erro ao criar grupo:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao criar grupo'
+      );
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -217,13 +213,13 @@ export function CreateGroupModal({
         <DialogHeader>
           <DialogTitle>Criar Novo Grupo</DialogTitle>
           <DialogDescription>
-            Crie um grupo para enviar mensagens broadcast para clientes
+            Crie um grupo para enviar mensagens broadcast para segmentos de clientes
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Nome do Grupo */}
+            {/* Group Name */}
             <FormField
               control={form.control}
               name="name"
@@ -244,7 +240,7 @@ export function CreateGroupModal({
               )}
             />
 
-            {/* Tipo de Grupo */}
+            {/* Group Type */}
             <FormField
               control={form.control}
               name="type"
@@ -276,10 +272,10 @@ export function CreateGroupModal({
               )}
             />
 
-            {/* Inputs Condicionais - Assinantes */}
-            {selectedType === "assinantes" && (
-              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                <h3 className="font-medium">Filtros de Assinantes</h3>
+            {/* Conditional Fields - Assinantes */}
+            {selectedType === 'assinantes' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <h3 className="font-medium text-sm">Filtros de Assinantes</h3>
 
                 <FormField
                   control={form.control}
@@ -288,7 +284,7 @@ export function CreateGroupModal({
                     <FormItem>
                       <FormLabel>Coleção (Opcional)</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value || undefined)}
+                        onValueChange={field.onChange}
                         value={field.value || undefined}
                       >
                         <FormControl>
@@ -305,7 +301,7 @@ export function CreateGroupModal({
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Filtrar por coleção específica (deixe vazio para todas)
+                        Filtrar por coleção específica
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -319,10 +315,7 @@ export function CreateGroupModal({
                     <FormItem>
                       <FormLabel>Plano (Opcional)</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Ex: premium, basic"
-                          {...field}
-                        />
+                        <Input placeholder="Ex: premium, basic" {...field} />
                       </FormControl>
                       <FormDescription>
                         Filtrar por plano específico
@@ -334,10 +327,10 @@ export function CreateGroupModal({
               </div>
             )}
 
-            {/* Inputs Condicionais - Coleção */}
-            {selectedType === "colecao" && (
-              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                <h3 className="font-medium">Seleção de Coleção</h3>
+            {/* Conditional Fields - Coleção */}
+            {selectedType === 'colecao' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <h3 className="font-medium text-sm">Seleção de Coleção</h3>
 
                 <FormField
                   control={form.control}
@@ -372,10 +365,10 @@ export function CreateGroupModal({
               </div>
             )}
 
-            {/* Inputs Condicionais - Lançamentos */}
-            {selectedType === "lancamentos" && (
-              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                <h3 className="font-medium">Critério de Lançamento</h3>
+            {/* Conditional Fields - Lançamentos */}
+            {selectedType === 'lancamentos' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <h3 className="font-medium text-sm">Critério de Lançamento</h3>
 
                 <FormField
                   control={form.control}
@@ -393,8 +386,12 @@ export function CreateGroupModal({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="all_users">Todos os usuários</SelectItem>
-                          <SelectItem value="previous_buyers">Compradores anteriores</SelectItem>
+                          <SelectItem value="all_users">
+                            Todos os usuários
+                          </SelectItem>
+                          <SelectItem value="previous_buyers">
+                            Compradores anteriores
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
@@ -407,10 +404,10 @@ export function CreateGroupModal({
               </div>
             )}
 
-            {/* Inputs Condicionais - Pedidos */}
-            {selectedType === "pedidos" && (
-              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                <h3 className="font-medium">Filtros de Pedidos</h3>
+            {/* Conditional Fields - Pedidos */}
+            {selectedType === 'pedidos' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <h3 className="font-medium text-sm">Filtros de Pedidos</h3>
 
                 <FormField
                   control={form.control}
@@ -419,31 +416,35 @@ export function CreateGroupModal({
                     <FormItem>
                       <FormLabel>Status dos Pedidos</FormLabel>
                       <div className="space-y-2">
-                        {["pending", "processing", "shipped", "delivered"].map((status) => (
+                        {[
+                          { value: 'pending', label: 'Pendente' },
+                          { value: 'processing', label: 'Processando' },
+                          { value: 'shipped', label: 'Enviado' },
+                          { value: 'delivered', label: 'Entregue' },
+                        ].map((status) => (
                           <FormField
-                            key={status}
+                            key={status.value}
                             control={form.control}
                             name="orderStatuses"
                             render={({ field }) => (
                               <FormItem className="flex items-center space-x-2 space-y-0">
                                 <FormControl>
                                   <Checkbox
-                                    checked={field.value?.includes(status)}
+                                    checked={field.value?.includes(status.value)}
                                     onCheckedChange={(checked) => {
                                       const current = field.value || [];
                                       if (checked) {
-                                        field.onChange([...current, status]);
+                                        field.onChange([...current, status.value]);
                                       } else {
-                                        field.onChange(current.filter((s) => s !== status));
+                                        field.onChange(
+                                          current.filter((s) => s !== status.value)
+                                        );
                                       }
                                     }}
                                   />
                                 </FormControl>
                                 <FormLabel className="font-normal cursor-pointer">
-                                  {status === "pending" && "Pendente"}
-                                  {status === "processing" && "Processando"}
-                                  {status === "shipped" && "Enviado"}
-                                  {status === "delivered" && "Entregue"}
+                                  {status.label}
                                 </FormLabel>
                               </FormItem>
                             )}
@@ -458,39 +459,37 @@ export function CreateGroupModal({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="orderDateFrom"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data Inicial (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Pedidos a partir desta data
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="orderDateFrom"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data Inicial</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormDescription>Pedidos a partir de</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="orderDateTo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data Final (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Pedidos até esta data
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="orderDateTo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data Final</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormDescription>Pedidos até</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             )}
 
@@ -499,12 +498,12 @@ export function CreateGroupModal({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Criar Grupo
               </Button>
             </DialogFooter>

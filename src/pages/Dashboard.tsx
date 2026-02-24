@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +20,7 @@ export default function Dashboard() {
         supabase.from("quotes").select("id, status, created_at").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(5),
         supabase.from("model_likes").select("id").eq("user_id", user!.id),
         supabase.from("wishlist").select("id").eq("user_id", user!.id),
-        supabase.from("profiles").select("collector_level, collector_xp, pieces_owned, total_spent").eq("id", user!.id).single(),
+        supabase.from("profiles").select("collector_level, collector_xp, pieces_owned, total_spent").eq("id", user!.id).maybeSingle(),
       ]);
 
       return {

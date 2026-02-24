@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +50,7 @@ export default function AdminSubscriptions() {
             .from('profiles')
             .select('email')
             .eq('id', sub.user_id)
-            .single();
+            .maybeSingle();
           
           return {
             ...sub,

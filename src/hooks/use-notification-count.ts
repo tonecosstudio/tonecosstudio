@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * useNotificationCount - Hook para gerenciar badge de notificação in-app
  * 

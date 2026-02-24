@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * useVirtualizedList Hook
  * Requirements: 18.1-18.15

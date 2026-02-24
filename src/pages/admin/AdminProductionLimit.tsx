@@ -47,9 +47,15 @@ export default function AdminProductionLimit() {
         .from("system_settings")
         .select("*")
         .eq("key", "monthly_production_limit")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        // Retornar valor padrão se não existir configuração
+        return { key: "monthly_production_limit", value: "100" };
+      }
+      
       return data;
     },
   });

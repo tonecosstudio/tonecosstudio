@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * useConversationRealtime - Hook para assinar novas mensagens e mudanças em conversas em tempo real
  * 

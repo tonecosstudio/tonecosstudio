@@ -1,20 +1,12 @@
-// @ts-nocheck
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { messageService } from "@/lib/services/messageService";
-import { verifyGroupMembership } from "@/lib/realtime/groupBroadcast";
-import type { GroupMessage, GroupAttachment, Pagination } from "@/types/groups";
+import type { EnrichedGroupMessage, Pagination } from "@/types/groups";
 import { toast } from "sonner";
 
 interface UseGroupMessagesOptions {
   groupId: string | null;
   autoScroll?: boolean;
-}
-
-interface EnrichedGroupMessage extends GroupMessage {
-  sender_name: string;
-  sender_avatar: string | null;
-  attachments: GroupAttachment[];
 }
 
 export function useGroupMessages({ 
@@ -119,14 +111,6 @@ export function useGroupMessages({
           return;
         }
 
-        // Verify membership before subscribing (security validation)
-        const isMember = await verifyGroupMembership(groupId, user.id);
-        if (!isMember) {
-          console.error("[useGroupMessages] User is not a member of this group");
-          toast.error("Você não tem permissão para acessar este grupo");
-          return;
-        }
-
         console.log(`[useGroupMessages] Setting up Realtime for group: ${groupId}`);
 
         channel = supabase.channel(`group:${groupId}`, {
@@ -194,15 +178,14 @@ export function useGroupMessages({
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) throw new Error("Usuário não autenticado");
 
-        // Verify user is admin via user_roles
-        const { data: userRole } = await (supabase as any)
-          .from("user_roles")
+        // Verify user is admin
+        const { data: profile } = await supabase
+          .from("profiles")
           .select("role")
-          .eq("user_id", user.id)
-          .eq("role", "admin")
+          .eq("id", user.id)
           .single();
 
-        if (!userRole) {
+        if (profile?.role !== "admin") {
           throw new Error("Apenas administradores podem enviar mensagens");
         }
 

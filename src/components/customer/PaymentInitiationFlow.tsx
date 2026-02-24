@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentInitiationFlow Component
  * 

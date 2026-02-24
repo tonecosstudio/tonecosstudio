@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -55,7 +54,7 @@ export async function isGroupMember(
       .select('id')
       .eq('group_id', groupId)
       .eq('user_id', uid)
-      .single();
+      .maybeSingle(); // Mudado de .single() para .maybeSingle() para evitar erro 406
 
     if (error || !data) {
       return false;

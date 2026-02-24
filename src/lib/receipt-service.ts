@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ReceiptService - Service for generating payment receipts
  * 

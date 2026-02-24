@@ -39,8 +39,18 @@ export interface GroupMessage {
   group_id: string;
   sender_id: string;
   message: string;
+  action_button_text?: string | null;
+  action_button_url?: string | null;
+  link_text?: string | null;
+  link_url?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface EnrichedGroupMessage extends GroupMessage {
+  sender_name: string;
+  sender_avatar: string | null;
+  attachments: GroupAttachment[];
 }
 
 export interface GroupAttachment {
@@ -61,6 +71,12 @@ export interface GroupDetails extends Group {
   message_count: number;
   last_message_at: string | null;
   estimated_view_rate: number;
+}
+
+export interface GroupWithMetrics extends Group {
+  member_count: number;
+  message_count: number;
+  last_message_at: string | null;
 }
 
 export interface MemberGroupView {
