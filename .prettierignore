@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+dist
+dist-ssr
+build
+.next
+.cache
+
+# Coverage
+coverage
+.nyc_output
+*.lcov
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+logs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# Supabase
+.supabase
+
+# Misc
+*.min.js
+*.min.css
