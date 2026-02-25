@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { renderWithProviders, screen, waitFor } from "@/test/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { CreateGroupModal } from "./CreateGroupModal";
 import { groupService } from "@/lib/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
+import { mockQuerySuccess } from "@/test/utils/supabase-mocks";
 
 // Mock dos serviços
 vi.mock("@/lib/services/groupService");
-vi.mock("@/integrations/supabase/client");
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({
     toast: vi.fn(),
@@ -34,18 +34,25 @@ describe("CreateGroupModal", () => {
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({
-        data: [
-          { id: "col-1", name: "Coleção 1" },
-          { id: "col-2", name: "Coleção 2" },
-        ],
-        error: null,
+      then: vi.fn((resolve) => {
+        resolve(
+          mockQuerySuccess([
+            { id: "col-1", name: "Coleção 1" },
+            { id: "col-2", name: "Coleção 2" },
+          ])
+        );
+        return Promise.resolve(
+          mockQuerySuccess([
+            { id: "col-1", name: "Coleção 1" },
+            { id: "col-2", name: "Coleção 2" },
+          ])
+        );
       }),
     } as any);
   });
 
   it("deve renderizar o modal quando aberto", () => {
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -55,7 +62,7 @@ describe("CreateGroupModal", () => {
   });
 
   it("não deve renderizar quando fechado", () => {
-    render(
+    renderWithProviders(
       <CreateGroupModal open={false} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -65,7 +72,7 @@ describe("CreateGroupModal", () => {
   it("deve validar nome do grupo (mínimo 3 caracteres)", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -83,7 +90,7 @@ describe("CreateGroupModal", () => {
   it("deve validar nome do grupo (máximo 100 caracteres)", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -113,7 +120,7 @@ describe("CreateGroupModal", () => {
       deleted_by: null,
     });
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -146,7 +153,7 @@ describe("CreateGroupModal", () => {
   it("deve mostrar inputs condicionais para tipo assinantes", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -183,7 +190,7 @@ describe("CreateGroupModal", () => {
       deleted_by: null,
     });
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -225,7 +232,7 @@ describe("CreateGroupModal", () => {
   it("deve mostrar inputs condicionais para tipo coleção", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -245,7 +252,7 @@ describe("CreateGroupModal", () => {
   it("deve validar coleção obrigatória para tipo coleção", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -272,7 +279,7 @@ describe("CreateGroupModal", () => {
   it("deve mostrar inputs condicionais para tipo lançamentos", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -307,7 +314,7 @@ describe("CreateGroupModal", () => {
       deleted_by: null,
     });
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -350,7 +357,7 @@ describe("CreateGroupModal", () => {
   it("deve mostrar inputs condicionais para tipo pedidos", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -388,7 +395,7 @@ describe("CreateGroupModal", () => {
       deleted_by: null,
     });
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -436,7 +443,7 @@ describe("CreateGroupModal", () => {
   it("deve fechar modal ao clicar em cancelar", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
@@ -454,7 +461,7 @@ describe("CreateGroupModal", () => {
       () => new Promise((resolve) => setTimeout(resolve, 1000))
     );
 
-    render(
+    renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 

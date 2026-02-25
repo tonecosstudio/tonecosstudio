@@ -48,7 +48,7 @@ describe("CustomerChat", () => {
       error: null,
     });
 
-    const { container } = render(<CustomerChat />);
+    const { container } = renderWithProviders(<CustomerChat />);
 
     await waitFor(() => {
       expect(container.firstChild).toBeNull();
@@ -75,7 +75,7 @@ describe("CustomerChat", () => {
     const { conversationService } = await import("@/lib/services/conversationService");
     vi.mocked(conversationService.listConversations).mockResolvedValue([]);
 
-    render(<CustomerChat />);
+    renderWithProviders(<CustomerChat />);
 
     await waitFor(() => {
       const button = screen.getByRole("button");
@@ -117,7 +117,7 @@ describe("CustomerChat", () => {
     ]);
     vi.mocked(conversationService.getUnreadCount).mockResolvedValue(3);
 
-    render(<CustomerChat />);
+    renderWithProviders(<CustomerChat />);
 
     await waitFor(() => {
       const badge = screen.getByText("3");
@@ -159,7 +159,7 @@ describe("CustomerChat", () => {
     ]);
     vi.mocked(conversationService.getUnreadCount).mockResolvedValue(0);
 
-    render(<CustomerChat />);
+    renderWithProviders(<CustomerChat />);
 
     await waitFor(() => {
       const button = screen.getByRole("button");
@@ -197,7 +197,7 @@ describe("CustomerChat", () => {
     const { conversationService } = await import("@/lib/services/conversationService");
     vi.mocked(conversationService.listConversations).mockResolvedValue([]);
 
-    render(<CustomerChat />);
+    renderWithProviders(<CustomerChat />);
 
     // Open chat
     await waitFor(() => {

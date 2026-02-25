@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { renderWithProviders, screen, waitFor } from "@/test/utils/test-utils";
 import userEvent from "@testing-library/user-event";
 import { GroupList } from "./GroupList";
 import { groupService } from "@/lib/services/groupService";
@@ -82,12 +82,12 @@ describe("GroupList", () => {
 
   describe("Renderização", () => {
     it("deve exibir loading state inicialmente", () => {
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
       expect(screen.getByText(/carregando grupos/i)).toBeInTheDocument();
     });
 
     it("deve exibir lista de grupos após carregar", async () => {
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe("GroupList", () => {
     it("deve exibir empty state quando não há grupos", async () => {
       vi.mocked(groupService.listGroups).mockResolvedValue([]);
 
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(screen.getByText(/nenhum grupo criado/i)).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe("GroupList", () => {
 
     it("deve exibir botão de criar grupo quando callback é fornecido", async () => {
       const onCreateGroup = vi.fn();
-      render(<GroupList onCreateGroup={onCreateGroup} />);
+      renderWithProviders(<GroupList onCreateGroup={onCreateGroup} />);
 
       await waitFor(() => {
         expect(screen.getAllByText(/criar grupo/i)[0]).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe("GroupList", () => {
     });
 
     it("não deve exibir botão de criar quando callback não é fornecido", async () => {
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(screen.queryByText(/criar grupo/i)).not.toBeInTheDocument();
@@ -125,7 +125,7 @@ describe("GroupList", () => {
 
   describe("Métricas dos Grupos", () => {
     it("deve exibir contagem de membros corretamente", async () => {
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(screen.getByText("150")).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe("GroupList", () => {
     });
 
     it("deve exibir contagem de mensagens corretamente", async () => {
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(screen.getByText("25")).toBeInTheDocument();
@@ -143,7 +143,7 @@ describe("GroupList", () => {
     });
 
     it("deve exibir timestamp da última mensagem", async () => {
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         const timestamps = screen.getAllByText(/última mensagem:/i);
@@ -152,7 +152,7 @@ describe("GroupList", () => {
     });
 
     it("deve exibir tipo do grupo como badge", async () => {
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(screen.getByText("Assinantes")).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe("GroupList", () => {
       const onCreateGroup = vi.fn();
       const user = userEvent.setup();
 
-      render(<GroupList onCreateGroup={onCreateGroup} />);
+      renderWithProviders(<GroupList onCreateGroup={onCreateGroup} />);
 
       await waitFor(() => {
         expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
@@ -182,7 +182,7 @@ describe("GroupList", () => {
       const onSelectGroup = vi.fn();
       const user = userEvent.setup();
 
-      render(<GroupList onSelectGroup={onSelectGroup} />);
+      renderWithProviders(<GroupList onSelectGroup={onSelectGroup} />);
 
       await waitFor(() => {
         expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
@@ -202,7 +202,7 @@ describe("GroupList", () => {
       const { toast } = await import("sonner");
       vi.mocked(groupService.listGroups).mockRejectedValue(new Error("Erro de rede"));
 
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Erro ao carregar grupos");
@@ -217,7 +217,7 @@ describe("GroupList", () => {
         return Promise.resolve(mockGroupDetails[groupId]);
       });
 
-      render(<GroupList />);
+      renderWithProviders(<GroupList />);
 
       await waitFor(() => {
         expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();

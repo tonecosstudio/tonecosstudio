@@ -27,14 +27,14 @@ describe("GroupMembersList", () => {
   it("renders loading state", () => {
     vi.mocked(membershipService.getGroupMembers).mockReturnValue(new Promise(() => {}));
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
     expect(screen.getByText(/carregando membros/i)).toBeInTheDocument();
   });
 
   it("renders empty state when no members", async () => {
     vi.mocked(membershipService.getGroupMembers).mockResolvedValue([]);
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
 
     await waitFor(() => {
       expect(screen.getByText(/nenhum membro neste grupo/i)).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe("GroupMembersList", () => {
 
     vi.mocked(membershipService.getGroupMembers).mockResolvedValue(members);
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
 
     await waitFor(() => {
       expect(screen.getByText("user1@example.com")).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("GroupMembersList", () => {
     vi.mocked(membershipService.getGroupMembers).mockResolvedValue([]);
     const onAddMember = vi.fn();
 
-    render(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
+    renderWithProviders(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
       wrapper: createWrapper(),
     });
 
@@ -90,7 +90,7 @@ describe("GroupMembersList", () => {
     const onAddMember = vi.fn();
     const user = userEvent.setup();
 
-    render(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
+    renderWithProviders(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
       wrapper: createWrapper(),
     });
 
@@ -118,7 +118,7 @@ describe("GroupMembersList", () => {
     vi.mocked(membershipService.removeMember).mockResolvedValue();
     const user = userEvent.setup();
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
 
     await waitFor(() => {
       expect(screen.getByText("user1@example.com")).toBeInTheDocument();
@@ -157,7 +157,7 @@ describe("GroupMembersList", () => {
 
     vi.mocked(membershipService.getGroupMembers).mockResolvedValue(members);
 
-    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
 
     await waitFor(() => {
       expect(screen.getByText(/membros \(2\)/i)).toBeInTheDocument();

@@ -8,9 +8,13 @@
  */
 
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import {
+  renderWithProviders,
+  screen,
+  fireEvent,
+  waitFor,
+  createTestQueryClient,
+} from "@/test/utils/test-utils";
 import { PaymentInitiationFlow } from "./PaymentInitiationFlow";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import * as paymentMethodService from "@/lib/payment-method-service";
@@ -50,16 +54,10 @@ vi.mock("react-router-dom", async () => {
 });
 
 describe("PaymentInitiationFlow", () => {
-  let queryClient: QueryClient;
+  let queryClient: ReturnType<typeof createTestQueryClient>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
+    queryClient = createTestQueryClient();
     vi.clearAllMocks();
   });
 
@@ -118,13 +116,7 @@ describe("PaymentInitiationFlow", () => {
       ...props,
     };
 
-    return render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <PaymentInitiationFlow {...defaultProps} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    );
+    return renderWithProviders(<PaymentInitiationFlow {...defaultProps} />, { queryClient });
   };
 
   it("should render loading state initially", () => {
