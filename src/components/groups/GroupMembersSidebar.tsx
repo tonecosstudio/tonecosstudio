@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { MemberDetailsDrawer } from "./MemberDetailsDrawer";
+import { ImportMembersDialog } from "./ImportMembersDialog";
 
 interface GroupMembersSidebarProps {
   groupId: string;
@@ -85,11 +86,17 @@ export function GroupMembersSidebar({ groupId }: GroupMembersSidebarProps) {
   return (
     <>
       <div className="p-4 space-y-4">
+        {/* Header with Import Button */}
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold">Membros ({members.length})</h3>
+          <ImportMembersDialog groupId={groupId} />
+        </div>
+
         {/* Online Members */}
         {onlineMembers.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-2">
-              Membros Online ({onlineMembers.length})
+              Online ({onlineMembers.length})
             </h3>
             <div className="space-y-1">
               {onlineMembers.map((member) => (
@@ -103,7 +110,7 @@ export function GroupMembersSidebar({ groupId }: GroupMembersSidebarProps) {
         {offlineMembers.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-2">
-              Membros Offline ({offlineMembers.length})
+              Offline ({offlineMembers.length})
             </h3>
             <div className="space-y-1">
               {offlineMembers.map((member) => (

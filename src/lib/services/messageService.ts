@@ -691,6 +691,81 @@ export class MessageService {
     const { data } = supabase.storage.from("support-attachments").getPublicUrl(filePath);
     return data.publicUrl;
   }
+
+  /**
+   * Edita uma mensagem de grupo
+   * Apenas o autor (admin) pode editar
+   */
+  async editGroupMessage(messageId: string, newMessage: string, userId: string): Promise<void> {
+    // Buscar mensagem para verificar permissões
+    const { data: message, error: fetchError } = await supabase
+      .from("chat_group_messages")
+      .select("*")
+      .eq("id", messageId)
+      .single();
+
+    if (fetchError || !message) {
+      throw new Error("Mensagem não encontrada");
+    }
+
+    // Verificar se é o autor
+    if (message.sender_id !== userId) {
+      throw new Error("Você só pode editar suas próprias mensagens");
+    }
+
+    // Sanitizar nova mensagem
+    const sanitizedMessage = sanitizeGroupMessage(newMessage);
+
+    // Atualizar mensagem
+    const { error } = await supabase
+      .from("chat_group_messages")
+      .update({
+        message: sanitizedMessage,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", messageId);
+
+    if (error) {
+      console.error("Erro ao editar mensagem:", error);
+      throw new Error("Erro ao editar mensagem");
+    }
+  }
+
+  /**
+   * Deleta uma mensagem de grupo (soft delete)
+   * Apenas o autor (admin) pode deletar
+   */
+  async deleteGroupMessage(messageId: string, userId: string): Promise<void> {
+    // Buscar mensagem para verificar permissões
+    const { data: message, error: fetchError } = await supabase
+      .from("chat_group_messages")
+      .select("*")
+      .eq("id", messageId)
+      .single();
+
+    if (fetchError || !message) {
+      throw new Error("Mensagem não encontrada");
+    }
+
+    // Verificar se é o autor
+    if (message.sender_id !== userId) {
+      throw new Error("Você só pode deletar suas próprias mensagens");
+    }
+
+    // Soft delete - apenas marca como deletada
+    const { error } = await supabase
+      .from("chat_group_messages")
+      .update({
+        message: "[Mensagem deletada]",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", messageId);
+
+    if (error) {
+      console.error("Erro ao deletar mensagem:", error);
+      throw new Error("Erro ao deletar mensagem");
+    }
+  }
 }
 
 export const messageService = new MessageService();

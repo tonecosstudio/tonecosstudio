@@ -40,7 +40,7 @@ export default function AdminPaymentMethods() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEOHead
         title="Métodos de Pagamento - Admin"
         description="Gerenciar métodos de pagamento disponíveis"
@@ -80,6 +80,6 @@ export default function AdminPaymentMethods() {
         onOpenChange={handleFormClose}
         onSuccess={handleFormSuccess}
       />
-    </AdminLayout>
+    </>
   );
 }

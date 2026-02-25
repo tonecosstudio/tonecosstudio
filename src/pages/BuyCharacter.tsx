@@ -10,10 +10,12 @@ import { ArrowLeft, Check, CreditCard, Smartphone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProductionLimitBadge } from "@/components/production/ProductionLimitBadge";
 import { useCollectionPricing, useGlobalPricingSettings } from "@/hooks/useCollectionPricing";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export default function BuyCharacter() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { data: settings } = useSystemSettings();
 
   const { data: collection, isLoading } = useQuery({
     queryKey: ["collection", slug],
@@ -90,12 +92,13 @@ export default function BuyCharacter() {
   const currentMonthCharacter = characters.find((c) => c.status === "revealed");
 
   // Valores de preço (com fallback para valores padrão)
-  const priceFull = pricing?.price_full || 500;
-  const pricePix = pricing?.price_pix || 475;
-  const depositAmount = pricing?.deposit_amount || 100;
-  const remainingPix = pricing?.remaining_pix || 375;
-  const remainingFull = pricing?.remaining_full || 400;
-  const pixDiscount = globalSettings?.pix_discount_percentage || 5;
+  const priceFull = pricing?.price_full || settings?.default_price_full || 500;
+  const pricePix = pricing?.price_pix || settings?.default_price_pix || 475;
+  const depositAmount = pricing?.deposit_amount || settings?.default_deposit_amount || 100;
+  const remainingPix = pricing?.remaining_pix || pricePix - depositAmount;
+  const remainingFull = pricing?.remaining_full || priceFull - depositAmount;
+  const pixDiscount =
+    globalSettings?.pix_discount_percentage || settings?.pix_discount_percentage || 5;
 
   return (
     <AppShell>

@@ -32,6 +32,7 @@
 
 import { format, endOfMonth, addMonths, differenceInDays, addDays, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BATCH } from "@/config/constants";
 
 /**
  * Tipo de ciclo
@@ -239,7 +240,7 @@ function getCycleStatus(
  * Calcula o ciclo atual baseado na data de hoje
  */
 export function calculateCurrentBatch(
-  rules: BatchRules = { shippingBusinessDays: 5 },
+  rules: BatchRules = { shippingBusinessDays: BATCH.SHIPPING_BUSINESS_DAYS },
   referenceDate: Date = new Date()
 ): CalculatedBatch {
   const cycleType = getCurrentCycleType(referenceDate);
@@ -273,8 +274,8 @@ export function calculateNextBatch(
  * Calcula múltiplos ciclos futuros
  */
 export function calculateFutureBatches(
-  rules: BatchRules = { shippingBusinessDays: 5 },
-  count: number = 12
+  rules: BatchRules = { shippingBusinessDays: BATCH.SHIPPING_BUSINESS_DAYS },
+  count: number = BATCH.FUTURE_BATCHES_COUNT
 ): CalculatedBatch[] {
   const batches: CalculatedBatch[] = [];
   let currentBatch = calculateCurrentBatch(rules);
@@ -370,7 +371,7 @@ export function getStatusText(status: CycleStatus): string {
 /**
  * Exemplo de uso:
  *
- * const rules: BatchRules = { shippingBusinessDays: 5 };
+ * const rules: BatchRules = { shippingBusinessDays: BATCH.SHIPPING_BUSINESS_DAYS };
  *
  * // Ciclo atual
  * const current = calculateCurrentBatch(rules);

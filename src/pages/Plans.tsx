@@ -10,9 +10,11 @@ import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useContentSettings } from "@/hooks/useContentSettings";
 import { processContentVariables } from "@/lib/services/contentService";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export default function Plans() {
   const { data: content } = useContentSettings();
+  const { data: settings } = useSystemSettings();
 
   const plansQuery = useQuery({
     queryKey: ["subscription-plans"],
@@ -64,10 +66,10 @@ export default function Plans() {
   const avulsoCard = {
     name: "Avulso",
     description: "Compra única sem compromisso",
-    price_full: 500,
-    price_pix: 475,
+    price_full: settings?.default_price_full || 500,
+    price_pix: settings?.default_price_pix || 475,
     deliveries_total: 1,
-    max_installments: 6,
+    max_installments: settings?.max_installments_no_interest || 6,
     plan_type: "avulso",
   };
 
@@ -128,8 +130,13 @@ export default function Plans() {
                     <div className="text-sm text-muted-foreground">por personagem</div>
                     <div className="text-sm text-muted-foreground mt-2">Total: R$ 500</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      <span className="text-primary">6x sem juros</span> ou{" "}
-                      <span className="text-primary">10x com juros</span>
+                      <span className="text-primary">
+                        {settings?.max_installments_no_interest || 6}x sem juros
+                      </span>{" "}
+                      ou{" "}
+                      <span className="text-primary">
+                        {settings?.max_installments_with_interest || 10}x com juros
+                      </span>
                     </div>
                   </div>
 
@@ -175,8 +182,9 @@ export default function Plans() {
               {plans.map((plan) => {
                 const style = getPlanStyle(plan.plan_type);
                 const Icon = style.icon;
-                const priceFull = plan.price_full || 0;
-                const pricePix = plan.price_pix || priceFull * 0.95;
+                const priceFull = plan.price_full || settings?.default_price_full || 500;
+                const pixDiscountMultiplier = 1 - (settings?.pix_discount_percentage || 5) / 100;
+                const pricePix = plan.price_pix || priceFull * pixDiscountMultiplier;
 
                 return (
                   <Card
@@ -221,8 +229,13 @@ export default function Plans() {
                           Total: R$ {priceFull.toLocaleString("pt-BR")}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          <span className="text-primary">6x sem juros</span> ou{" "}
-                          <span className="text-primary">10x com juros</span>
+                          <span className="text-primary">
+                            {settings?.max_installments_no_interest || 6}x sem juros
+                          </span>{" "}
+                          ou{" "}
+                          <span className="text-primary">
+                            {settings?.max_installments_with_interest || 10}x com juros
+                          </span>
                         </div>
                       </div>
 

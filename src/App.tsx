@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useSentry } from "@/hooks/use-sentry";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Home from "./pages/Home";
 import Catalog from "./pages/Catalog";
 import NotFound from "./pages/NotFound";
@@ -19,8 +20,6 @@ import AdminFranchises from "./pages/admin/AdminFranchises";
 import Quote from "./pages/Quote";
 import QuoteCart from "./pages/QuoteCart";
 import AdminQuotes from "./pages/admin/AdminQuotes";
-import LegalCompliance from "./pages/admin/LegalCompliance";
-import CommunicationTemplates from "./pages/admin/CommunicationTemplates";
 import PublicProfile from "./pages/PublicProfile";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -30,8 +29,6 @@ import ModelDetails from "./pages/catalog/ModelDetails";
 import Collections from "./pages/Collections";
 import CollectionDetails from "./pages/CollectionDetails";
 import BuyCharacter from "./pages/BuyCharacter";
-import Support from "./pages/Support";
-import AdminSupport from "./pages/admin/AdminSupport";
 import AdminCollections from "./pages/admin/AdminCollections";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminPlans from "./pages/admin/AdminPlans";
@@ -50,10 +47,11 @@ import PreorderTracking from "./pages/PreorderTracking";
 import PaymentPage from "./pages/PaymentPage";
 import AdminPreorders from "./pages/admin/AdminPreorders";
 import AdminPackaging from "./pages/admin/AdminPackaging";
-import PaymentCalculator from "./pages/admin/PaymentCalculator";
-import AdminProductionLimit from "./pages/admin/AdminProductionLimit";
-import AdminContentSettings from "./pages/admin/AdminContentSettings";
-import AdminPricing from "./pages/admin/AdminPricing";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminNotificationSettings from "./pages/admin/AdminNotificationSettings";
+import AdminNotificationHistory from "./pages/admin/AdminNotificationHistory";
+import AdminPaymentHub from "./pages/admin/AdminPaymentHub";
+import AdminCommunication from "./pages/admin/AdminCommunication";
 import AdminCollectionFinancials from "./pages/admin/AdminCollectionFinancials";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPaymentMethods from "./pages/admin/AdminPaymentMethods";
@@ -290,30 +288,6 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/conformidade-legal"
-            element={
-              <RequireAdmin>
-                <LegalCompliance />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/templates-comunicacao"
-            element={
-              <RequireAdmin>
-                <CommunicationTemplates />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/suporte"
-            element={
-              <RequireAdmin>
-                <AdminSupport />
-              </RequireAdmin>
-            }
-          />
-          <Route
             path="/admin/colecoes"
             element={
               <RequireAdmin>
@@ -370,36 +344,53 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/calculadora"
+            path="/admin/configuracoes"
             element={
               <RequireAdmin>
-                <PaymentCalculator />
+                <AdminSettings />
               </RequireAdmin>
             }
           />
           <Route
-            path="/admin/limite-producao"
+            path="/admin/notificacoes"
             element={
               <RequireAdmin>
-                <AdminProductionLimit />
+                <AdminNotificationSettings />
               </RequireAdmin>
             }
+          />
+          <Route
+            path="/admin/notificacoes/historico"
+            element={
+              <RequireAdmin>
+                <AdminNotificationHistory />
+              </RequireAdmin>
+            }
+          />
+          {/* Redirects para compatibilidade com URLs antigas - Configurações */}
+          <Route
+            path="/admin/configuracoes-sistema"
+            element={<Navigate to="/admin/configuracoes?tab=general" replace />}
           />
           <Route
             path="/admin/configuracoes-conteudo"
-            element={
-              <RequireAdmin>
-                <AdminContentSettings />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/configuracoes?tab=content" replace />}
           />
           <Route
             path="/admin/precos"
-            element={
-              <RequireAdmin>
-                <AdminPricing />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/configuracoes?tab=pricing" replace />}
+          />
+          <Route
+            path="/admin/limite-producao"
+            element={<Navigate to="/admin/configuracoes?tab=production" replace />}
+          />
+          <Route
+            path="/admin/conformidade-legal"
+            element={<Navigate to="/admin/configuracoes?tab=legal" replace />}
+          />
+          <Route
+            path="/admin/calculadora"
+            element={<Navigate to="/admin/pagamentos?tab=calculator" replace />}
           />
           <Route
             path="/admin/financeiro"
@@ -410,44 +401,46 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/payments"
+            path="/admin/pagamentos"
             element={
               <RequireAdmin>
-                <AdminPayments />
+                <AdminPaymentHub />
               </RequireAdmin>
             }
+          />
+          {/* Redirects para compatibilidade - Pagamentos */}
+          <Route
+            path="/admin/payments"
+            element={<Navigate to="/admin/pagamentos?tab=payments" replace />}
           />
           <Route
             path="/admin/payments/:paymentId"
-            element={
-              <RequireAdmin>
-                <AdminPayments />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/pagamentos?tab=payments" replace />}
           />
           <Route
             path="/admin/metodos-pagamento"
+            element={<Navigate to="/admin/pagamentos?tab=methods" replace />}
+          />
+          <Route
+            path="/admin/calculadora"
+            element={<Navigate to="/admin/pagamentos?tab=calculator" replace />}
+          />
+          <Route
+            path="/admin/comunicacao"
             element={
               <RequireAdmin>
-                <AdminPaymentMethods />
+                <AdminCommunication />
               </RequireAdmin>
             }
           />
+          {/* Redirects para compatibilidade - Comunicação */}
           <Route
-            path="/admin/respostas-rapidas"
-            element={
-              <RequireAdmin>
-                <AdminQuickReplies />
-              </RequireAdmin>
-            }
+            path="/admin/suporte"
+            element={<Navigate to="/admin/comunicacao?tab=support" replace />}
           />
           <Route
             path="/admin/grupos"
-            element={
-              <RequireAdmin>
-                <AdminGroupsPage />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/comunicacao?tab=groups" replace />}
           />
           <Route
             path="/admin/grupos/:groupId"
@@ -456,6 +449,14 @@ function AppContent() {
                 <AdminGroupDetailsPage />
               </RequireAdmin>
             }
+          />
+          <Route
+            path="/admin/respostas-rapidas"
+            element={<Navigate to="/admin/comunicacao?tab=quick-replies" replace />}
+          />
+          <Route
+            path="/admin/templates-comunicacao"
+            element={<Navigate to="/admin/comunicacao?tab=templates" replace />}
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
@@ -470,9 +471,11 @@ function AppContent() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AppContent />
-    </TooltipProvider>
+    <ThemeProvider defaultTheme="system" storageKey="ordax-ui-theme">
+      <TooltipProvider>
+        <AppContent />
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

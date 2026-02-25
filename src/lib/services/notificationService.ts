@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { CONTACT, NOTIFICATIONS } from "@/config/constants";
 
 /**
  * Email template interface
@@ -56,8 +57,8 @@ interface QueuedNotification {
 export class NotificationService {
   private emailService: EmailService;
   private notificationQueue: Map<string, QueuedNotification> = new Map();
-  private readonly GROUPING_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-  private readonly ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  private readonly GROUPING_WINDOW_MS = NOTIFICATIONS.USER_ONLINE_THRESHOLD_MINUTES * 60 * 1000;
+  private readonly ONLINE_THRESHOLD_MS = NOTIFICATIONS.USER_ONLINE_THRESHOLD_MINUTES * 60 * 1000;
 
   constructor(emailService: EmailService) {
     this.emailService = emailService;
@@ -407,8 +408,7 @@ Este é um email automático. Por favor, não responda diretamente a este email.
    * Get conversation URL for email link
    */
   private getConversationUrl(): string {
-    // This should be configured based on environment
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://ordax.com.br";
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : CONTACT.WEBSITE_URL;
     return `${baseUrl}/chat`;
   }
 

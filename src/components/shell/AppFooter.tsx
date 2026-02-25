@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export default function AppFooter() {
+  const { data: settings } = useSystemSettings();
+
   return (
     <footer className="border-t border-white/10 bg-foreground text-background">
       <div className="container py-16">
@@ -64,17 +67,34 @@ export default function AppFooter() {
             <ul className="space-y-3 text-sm text-background/70">
               <li>
                 <a
-                  href="mailto:contato@tonecos.com"
+                  href={`mailto:${settings?.contact_email || "contato@ordax.com.br"}`}
                   className="hover:text-background transition-colors"
                 >
-                  contato@tonecos.com
+                  {settings?.contact_email || "contato@ordax.com.br"}
                 </a>
               </li>
-              <li>
-                <a href="tel:+5511999999999" className="hover:text-background transition-colors">
-                  +55 (11) 9999-9999
-                </a>
-              </li>
+              {settings?.phone_primary && (
+                <li>
+                  <a
+                    href={`tel:${settings.phone_primary}`}
+                    className="hover:text-background transition-colors"
+                  >
+                    {settings.phone_primary}
+                  </a>
+                </li>
+              )}
+              {settings?.phone_whatsapp && (
+                <li>
+                  <a
+                    href={`https://wa.me/${settings.phone_whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-background transition-colors"
+                  >
+                    WhatsApp: {settings.phone_whatsapp}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
         </div>

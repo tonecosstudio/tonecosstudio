@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Trash2, RefreshCw, Users, MessageSquare, TrendingUp } from "lucide-react";
+import {
+  Settings,
+  Trash2,
+  RefreshCw,
+  Users,
+  MessageSquare,
+  TrendingUp,
+  ArrowLeft,
+  BarChart3,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { groupService } from "@/lib/services/groupService";
 import { useAuth } from "@/lib/auth";
 import { getGroupTypeLabel } from "@/types/groups";
@@ -25,7 +36,9 @@ import { GroupListSidebar } from "@/components/groups/GroupListSidebar";
 import { GroupMembersSidebar } from "@/components/groups/GroupMembersSidebar";
 import { GroupMessageList } from "@/components/groups/GroupMessageList";
 import { SendMessageForm } from "@/components/groups/SendMessageForm";
+import { GroupAnalytics } from "@/components/groups/GroupAnalytics";
 import { metricsService } from "@/lib/services/metricsService";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 /**
  * AdminGroupDetailsPage - Three-column layout for group management
@@ -49,6 +62,8 @@ export default function AdminGroupDetailsPage() {
   const { user } = useAuth();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<"messages" | "members">("messages");
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   // Fetch group details with optimized caching
   const {
@@ -162,127 +177,271 @@ export default function AdminGroupDetailsPage() {
     );
   }
 
-  return (
-    <div className="flex h-screen bg-background">
-      {/* Left Sidebar - Groups List */}
-      <div className="w-64 border-r bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold text-lg">Grupos de Broadcast</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <GroupListSidebar
-            activeGroupId={groupId}
-            onGroupSelect={(id) => navigate(`/admin/grupos/${id}`)}
-          />
-        </div>
-      </div>
-
-      {/* Center - Messages Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header with metrics */}
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        {/* Mobile Header */}
         <div className="border-b bg-card">
           <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold">{group.name}</h1>
-                  <p className="text-sm text-muted-foreground">{getGroupTypeLabel(group.type)}</p>
-                </div>
+            <div className="flex items-center gap-3 mb-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/admin/grupos")}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-bold truncate">{group.name}</h1>
+                <p className="text-xs text-muted-foreground">{getGroupTypeLabel(group.type)}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => refetch()}>
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Settings className="h-4 w-4" />
-                </Button>
-                <Button variant="destructive" size="icon" onClick={() => setDeleteDialogOpen(true)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button variant="outline" size="icon" onClick={() => refetch()}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
 
-            {/* Metrics Bar */}
+            {/* Mobile Metrics */}
             {metrics && (
-              <div className="flex gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Membros Ativos:</span>
-                  <span className="font-semibold">{metrics.total_members}</span>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="text-center p-2 bg-muted rounded-lg">
+                  <div className="font-semibold">{metrics.total_members}</div>
+                  <div className="text-muted-foreground">Membros</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Mensagens Enviadas:</span>
-                  <span className="font-semibold">{metrics.total_messages}</span>
+                <div className="text-center p-2 bg-muted rounded-lg">
+                  <div className="font-semibold">{metrics.total_messages}</div>
+                  <div className="text-muted-foreground">Mensagens</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Taxa de Abertura:</span>
-                  <span className="font-semibold text-green-600">
+                <div className="text-center p-2 bg-muted rounded-lg">
+                  <div className="font-semibold text-green-600">
                     {Math.round(metrics.estimated_view_rate)}%
-                  </span>
+                  </div>
+                  <div className="text-muted-foreground">Abertura</div>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Messages List */}
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <GroupMessageList groupId={groupId!} />
+        {/* Mobile Content */}
+        {mobileView === "messages" ? (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+              <GroupMessageList groupId={groupId!} />
+            </div>
+            <div className="border-t bg-card p-3">
+              <SendMessageForm groupId={groupId!} />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            <GroupMembersSidebar groupId={groupId!} />
+          </div>
+        )}
+
+        {/* Mobile Footer Navigation */}
+        <div className="border-t bg-card p-2 flex gap-2">
+          <Button
+            variant={mobileView === "messages" ? "default" : "outline"}
+            onClick={() => setMobileView("messages")}
+            className="flex-1"
+            size="sm"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Mensagens
+          </Button>
+          <Button
+            variant={mobileView === "members" ? "default" : "outline"}
+            onClick={() => setMobileView("members")}
+            className="flex-1"
+            size="sm"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Membros ({metrics?.total_members || 0})
+          </Button>
         </div>
 
-        {/* Send Message Form */}
-        <div className="border-t bg-card p-4">
-          <SendMessageForm groupId={groupId!} />
-        </div>
+        {/* Delete Dialog (shared) */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deletar Grupo</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>
+                  Tem certeza que deseja deletar o grupo <strong>{group.name}</strong>?
+                </p>
+                <p className="text-sm">Esta ação irá:</p>
+                <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                  <li>Ocultar o grupo de todos os usuários</li>
+                  <li>Preservar o histórico de mensagens para auditoria</li>
+                  <li>Impedir novos envios de mensagens</li>
+                </ul>
+                <p className="text-sm font-medium mt-3">
+                  Os dados não serão permanentemente deletados e podem ser recuperados se
+                  necessário.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteMutation.isPending ? "Deletando..." : "Deletar Grupo"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
+    );
+  }
 
-      {/* Right Sidebar - Members */}
-      <div className="w-80 border-l bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold">Membros ({metrics?.total_members || 0})</h2>
+  // Desktop Layout (3 columns)
+  return (
+    <AdminLayout>
+      <div className="flex h-[calc(100vh-4rem)] bg-background">
+        {/* Left Sidebar - Groups List (Desktop only) */}
+        <div className="hidden lg:flex w-64 border-r bg-card flex-col">
+          <div className="p-4 border-b">
+            <h2 className="font-semibold text-lg">Grupos de Broadcast</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <GroupListSidebar
+              activeGroupId={groupId}
+              onGroupSelect={(id) => navigate(`/admin/grupos/${id}`)}
+            />
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          <GroupMembersSidebar groupId={groupId!} />
+
+        {/* Center - Messages Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Header with metrics */}
+          <div className="border-b bg-card">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold">{group.name}</h1>
+                    <p className="text-sm text-muted-foreground">{getGroupTypeLabel(group.type)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" onClick={() => refetch()}>
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Metrics Bar */}
+              {metrics && (
+                <div className="flex gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Membros Ativos:</span>
+                    <span className="font-semibold">{metrics.total_members}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Mensagens Enviadas:</span>
+                    <span className="font-semibold">{metrics.total_messages}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Taxa de Abertura:</span>
+                    <span className="font-semibold text-green-600">
+                      {Math.round(metrics.estimated_view_rate)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Messages List and Analytics Tabs */}
+          <Tabs defaultValue="messages" className="flex-1 flex flex-col">
+            <div className="border-b bg-card px-4">
+              <TabsList className="h-12">
+                <TabsTrigger value="messages" className="gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Mensagens
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Analytics
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="messages" className="flex-1 flex flex-col m-0">
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
+                <GroupMessageList groupId={groupId!} />
+              </div>
+              <div className="border-t bg-card p-4">
+                <SendMessageForm groupId={groupId!} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="analytics" className="flex-1 overflow-y-auto p-6 m-0">
+              <GroupAnalytics groupId={groupId!} />
+            </TabsContent>
+          </Tabs>
         </div>
+
+        {/* Right Sidebar - Members (Desktop only) */}
+        <div className="hidden lg:flex w-80 border-l bg-card flex-col">
+          <div className="p-4 border-b">
+            <h2 className="font-semibold">Membros ({metrics?.total_members || 0})</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <GroupMembersSidebar groupId={groupId!} />
+          </div>
+        </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deletar Grupo</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>
+                  Tem certeza que deseja deletar o grupo <strong>{group.name}</strong>?
+                </p>
+                <p className="text-sm">Esta ação irá:</p>
+                <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                  <li>Ocultar o grupo de todos os usuários</li>
+                  <li>Preservar o histórico de mensagens para auditoria</li>
+                  <li>Impedir novos envios de mensagens</li>
+                </ul>
+                <p className="text-sm font-medium mt-3">
+                  Os dados não serão permanentemente deletados e podem ser recuperados se
+                  necessário.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteMutation.isPending ? "Deletando..." : "Deletar Grupo"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deletar Grupo</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                Tem certeza que deseja deletar o grupo <strong>{group.name}</strong>?
-              </p>
-              <p className="text-sm">Esta ação irá:</p>
-              <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-                <li>Ocultar o grupo de todos os usuários</li>
-                <li>Preservar o histórico de mensagens para auditoria</li>
-                <li>Impedir novos envios de mensagens</li>
-              </ul>
-              <p className="text-sm font-medium mt-3">
-                Os dados não serão permanentemente deletados e podem ser recuperados se necessário.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? "Deletando..." : "Deletar Grupo"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    </AdminLayout>
   );
 }

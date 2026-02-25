@@ -1,6 +1,10 @@
 import { ReactNode, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { NotificationCenter } from "@/components/admin/NotificationCenter";
 import {
   LayoutDashboard,
   Package,
@@ -26,6 +30,9 @@ import {
   Gauge,
   Wallet,
   UsersRound,
+  MessageSquare as MessageSquareIcon,
+  Menu,
+  X,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -50,6 +57,7 @@ interface MenuSection {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuSections: MenuSection[] = [
     {
@@ -72,7 +80,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     },
     {
       id: "sales",
-      label: "Vendas",
+      label: "Vendas & Pagamentos",
       items: [
         {
           id: "quotes",
@@ -92,11 +100,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           icon: CreditCard,
           path: "/admin/assinaturas",
         },
+        {
+          id: "payments",
+          label: "Pagamentos",
+          icon: Wallet,
+          path: "/admin/pagamentos",
+        },
       ],
     },
     {
       id: "products",
-      label: "Produtos",
+      label: "Produtos & Catálogo",
       items: [
         {
           id: "upload",
@@ -128,11 +142,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           icon: Layers,
           path: "/admin/colecoes",
         },
+        {
+          id: "packaging",
+          label: "Embalagem",
+          icon: Package,
+          path: "/admin/embalagem",
+        },
       ],
     },
     {
       id: "marketing",
-      label: "Marketing",
+      label: "Marketing & Planos",
       items: [
         {
           id: "plans",
@@ -145,12 +165,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           label: "Cupons",
           icon: Ticket,
           path: "/admin/cupons",
-        },
-        {
-          id: "calculator",
-          label: "Calculadora",
-          icon: Calculator,
-          path: "/admin/calculadora",
         },
       ],
     },
@@ -170,33 +184,33 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           icon: TrendingUp,
           path: "/admin/financeiro",
         },
-        {
-          id: "payment-methods",
-          label: "Métodos de Pagamento",
-          icon: Wallet,
-          path: "/admin/metodos-pagamento",
-        },
       ],
     },
     {
-      id: "support",
-      label: "Suporte",
+      id: "communication",
+      label: "Comunicação & Suporte",
       items: [
         {
-          id: "support",
-          label: "Tickets",
-          icon: HeadphonesIcon,
-          path: "/admin/suporte",
-        },
-        {
           id: "groups",
-          label: "Grupos",
+          label: "Grupos de Broadcast",
           icon: UsersRound,
           path: "/admin/grupos",
         },
         {
+          id: "communication",
+          label: "Comunicação",
+          icon: HeadphonesIcon,
+          path: "/admin/comunicacao",
+        },
+      ],
+    },
+    {
+      id: "users",
+      label: "Usuários",
+      items: [
+        {
           id: "users",
-          label: "Usuários",
+          label: "Lista de Usuários",
           icon: Users,
           path: "/admin/users",
         },
@@ -207,28 +221,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       label: "Configurações",
       items: [
         {
-          id: "content-settings",
-          label: "Conteúdo (SSOT)",
+          id: "settings",
+          label: "Configurações",
           icon: Settings,
-          path: "/admin/configuracoes-conteudo",
-        },
-        {
-          id: "production-limit",
-          label: "Limite de Produção",
-          icon: Gauge,
-          path: "/admin/limite-producao",
-        },
-        {
-          id: "templates",
-          label: "Templates",
-          icon: Settings,
-          path: "/admin/templates-comunicacao",
-        },
-        {
-          id: "legal",
-          label: "Conformidade",
-          icon: Settings,
-          path: "/admin/conformidade-legal",
+          path: "/admin/configuracoes",
         },
       ],
     },
@@ -241,48 +237,93 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     return location.pathname.startsWith(path);
   };
 
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setSidebarOpen(false); // Fecha sidebar no mobile após navegação
+  };
+
+  // Componente de navegação reutilizável
+  const SidebarNav = () => (
+    <nav className="space-y-6">
+      {menuSections.map((section) => (
+        <div key={section.id}>
+          {/* Section Label */}
+          <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {section.label}
+          </h3>
+
+          {/* Section Items */}
+          <div className="space-y-1">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigate(item.path)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+
   return (
-    <div className="container py-8 sm:py-12 max-w-7xl">
+    <div className="container py-4 sm:py-8 lg:py-12 max-w-7xl">
+      {/* Mobile Header com Menu Hamburguer */}
+      <div className="lg:hidden mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold">Admin</h1>
+        <div className="flex items-center gap-2">
+          <NotificationCenter />
+          <ThemeToggle />
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Abrir menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <div className="p-4 h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Menu</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                <Separator className="mb-4" />
+                <SidebarNav />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
       {/* Layout com Sidebar */}
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
-        <aside className="lg:w-64 flex-shrink-0">
+        {/* Sidebar Desktop */}
+        <aside className="hidden lg:block lg:w-64 flex-shrink-0">
           <Card className="sticky top-4">
             <CardContent className="p-4">
-              <nav className="space-y-6">
-                {menuSections.map((section) => (
-                  <div key={section.id}>
-                    {/* Section Label */}
-                    <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {section.label}
-                    </h3>
-
-                    {/* Section Items */}
-                    <div className="space-y-1">
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const active = isActive(item.path);
-
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => navigate(item.path)}
-                            className={cn(
-                              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                              active
-                                ? "bg-primary text-primary-foreground"
-                                : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                            )}
-                          >
-                            <Icon className="h-4 w-4 flex-shrink-0" />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </nav>
+              {/* Theme Toggle & Notifications */}
+              <div className="flex justify-end items-center gap-2 mb-4">
+                <NotificationCenter />
+                <ThemeToggle />
+              </div>
+              <Separator className="mb-4" />
+              <SidebarNav />
             </CardContent>
           </Card>
         </aside>

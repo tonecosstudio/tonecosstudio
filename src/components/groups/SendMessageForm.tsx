@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MessageTemplates } from "./MessageTemplates";
+import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 
 interface SendMessageFormProps {
   groupId: string;
@@ -235,7 +237,7 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -244,6 +246,22 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
             onChange={handleFileSelect}
             className="hidden"
             disabled={sendMutation.isPending || attachments.length >= 5}
+          />
+
+          <MessageTemplates onSelect={(content) => setMessage(content)} />
+
+          <ScheduleMessageDialog
+            groupId={groupId}
+            message={message}
+            onScheduled={() => {
+              setMessage("");
+              setAttachments([]);
+              setActionButtonText("");
+              setActionButtonUrl("");
+              setLinkText("");
+              setLinkUrl("");
+              setShowAdvanced(false);
+            }}
           />
 
           <Button

@@ -14,8 +14,12 @@ import { BatchInfoBanner } from "@/components/content/BatchInfoBanner";
 import { DynamicFAQ } from "@/components/content/DynamicFAQ";
 import CollectionHero from "@/components/collections/CollectionHero";
 import HowItWorks from "@/components/collections/HowItWorks";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export default function Collections() {
+  // Buscar configurações do sistema
+  const { data: settings } = useSystemSettings();
+
   // Buscar coleções ativas do banco de dados
   const { data: collections, isLoading } = useQuery({
     queryKey: ["collections"],
@@ -55,20 +59,20 @@ export default function Collections() {
   const trimestralPlan = plans?.find((p) => p.plan_type === "trimestral" && p.is_active);
   const semestralPlan = plans?.find((p) => p.plan_type === "semestral" && p.is_active);
 
-  // Preço avulso (fixo)
-  const avulsoPrice = 500;
-  const avulsoEntrada = 100;
-  const avulsoRestante = 400;
+  // Preços avulsos (do banco de dados)
+  const avulsoPrice = settings?.default_price_full || 500;
+  const avulsoEntrada = settings?.default_deposit_amount || 100;
+  const avulsoRestante = avulsoPrice - avulsoEntrada;
 
   // Calcular menor preço por peça (Semestral tem melhor custo-benefício)
   const minPricePerPiece = semestralPlan
     ? Math.floor(Number(semestralPlan.price_full) / semestralPlan.deliveries_total)
-    : 385;
+    : Math.floor(avulsoPrice * 0.77); // 77% do preço avulso como fallback
 
   // Calcular economia máxima (Semestral tem maior economia)
   const maxSavings = semestralPlan
     ? avulsoPrice * semestralPlan.deliveries_total - Number(semestralPlan.price_full)
-    : 800;
+    : Math.floor(avulsoPrice * 1.6); // ~1.6x o preço avulso como fallback
   return (
     <AppShell>
       <SEOHead

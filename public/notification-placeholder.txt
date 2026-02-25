@@ -1,0 +1,15 @@
+# Arquivo de Som de Notificação
+
+Para habilitar o som de notificação, adicione um arquivo de áudio chamado `notification.mp3` nesta pasta.
+
+Você pode usar:
+- Um som curto (0.5-2 segundos)
+- Formato MP3, OGG ou WAV
+- Volume moderado (será controlado pela configuração do usuário)
+
+Sugestões de sons gratuitos:
+- https://notificationsounds.com/
+- https://freesound.org/
+- https://mixkit.co/free-sound-effects/notification/
+
+Ou grave seu próprio som!

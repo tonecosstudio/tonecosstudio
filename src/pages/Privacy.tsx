@@ -2,8 +2,11 @@ import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export default function Privacy() {
+  const { data: settings } = useSystemSettings();
+
   return (
     <AppShell>
       <SEOHead
@@ -203,8 +206,8 @@ export default function Privacy() {
                     </li>
                   </ul>
                   <p className="text-muted-foreground leading-relaxed mt-3">
-                    Para exercer seus direitos, entre em contato através do email:
-                    privacidade@ordax.com.br
+                    Para exercer seus direitos, entre em contato através do email:{" "}
+                    {settings?.privacy_email}
                   </p>
                 </section>
 
@@ -255,9 +258,9 @@ export default function Privacy() {
                     <p className="text-sm">
                       <strong>Encarregado de Dados</strong>
                     </p>
-                    <p className="text-sm text-muted-foreground">Email: dpo@ordax.com.br</p>
+                    <p className="text-sm text-muted-foreground">Email: {settings?.dpo_email}</p>
                     <p className="text-sm text-muted-foreground">
-                      Privacidade: privacidade@ordax.com.br
+                      Privacidade: {settings?.privacy_email}
                     </p>
                   </div>
                 </section>

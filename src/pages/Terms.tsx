@@ -1,9 +1,12 @@
 import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Terms() {
+  const { data: settings } = useSystemSettings();
+
   return (
     <AppShell>
       <SEOHead
@@ -173,9 +176,11 @@ export default function Terms() {
                   </p>
                   <div className="bg-muted/50 p-4 rounded-lg">
                     <p className="text-sm">
-                      <strong>Tonecos Studios</strong>
+                      <strong>{settings?.company_name || "Tonecos Studios"}</strong>
                     </p>
-                    <p className="text-sm text-muted-foreground">Email: contato@ordax.com.br</p>
+                    <p className="text-sm text-muted-foreground">
+                      Email: {settings?.contact_email || "contato@ordax.com.br"}
+                    </p>
                     <p className="text-sm text-muted-foreground">Suporte: /suporte</p>
                   </div>
                 </section>
@@ -183,7 +188,8 @@ export default function Terms() {
                 {/* Footer */}
                 <div className="pt-6 border-t">
                   <p className="text-sm text-muted-foreground text-center">
-                    © {new Date().getFullYear()} Tonecos Studios. Todos os direitos reservados.
+                    © {new Date().getFullYear()} {settings?.company_name || "Tonecos Studios"}.
+                    Todos os direitos reservados.
                   </p>
                 </div>
               </div>

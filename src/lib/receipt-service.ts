@@ -10,14 +10,15 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { PaymentDetails } from "@/types/manual-payment";
+import { CONTACT } from "@/config/constants";
 
 // Company information for receipt branding
 const COMPANY_INFO = {
-  name: "Ordax",
+  name: CONTACT.COMPANY_NAME,
   logoUrl: "/logo.png", // Default logo path - can be configured
-  address: "São Paulo, Brasil",
-  contact: "contato@ordax.com.br",
-  website: "https://ordax.com.br",
+  address: CONTACT.COMPANY_ADDRESS,
+  contact: CONTACT.CONTACT_EMAIL,
+  website: CONTACT.WEBSITE_URL,
 };
 
 /**
