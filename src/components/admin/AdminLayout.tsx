@@ -100,12 +100,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           icon: CreditCard,
           path: "/admin/assinaturas",
         },
-        {
-          id: "payments",
-          label: "Pagamentos",
-          icon: Wallet,
-          path: "/admin/pagamentos",
-        },
       ],
     },
     {
@@ -184,18 +178,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           icon: TrendingUp,
           path: "/admin/financeiro",
         },
+        {
+          id: "payments",
+          label: "Hub de Pagamentos",
+          icon: Wallet,
+          path: "/admin/pagamentos",
+        },
       ],
     },
     {
       id: "communication",
       label: "Comunicação & Suporte",
       items: [
-        {
-          id: "groups",
-          label: "Grupos de Broadcast",
-          icon: UsersRound,
-          path: "/admin/grupos",
-        },
         {
           id: "communication",
           label: "Comunicação",

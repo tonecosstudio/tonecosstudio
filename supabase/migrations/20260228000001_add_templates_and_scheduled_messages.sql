@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS message_templates (
 );
 
 -- Indexes
-CREATE INDEX idx_message_templates_created_by ON message_templates(created_by);
-CREATE INDEX idx_message_templates_created_at ON message_templates(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_message_templates_created_by ON message_templates(created_by);
+CREATE INDEX IF NOT EXISTS idx_message_templates_created_at ON message_templates(created_at DESC);
 
 -- RLS Policies
 ALTER TABLE message_templates ENABLE ROW LEVEL SECURITY;
@@ -64,10 +64,10 @@ CREATE TABLE IF NOT EXISTS scheduled_messages (
 );
 
 -- Indexes
-CREATE INDEX idx_scheduled_messages_group_id ON scheduled_messages(group_id);
-CREATE INDEX idx_scheduled_messages_status ON scheduled_messages(status);
-CREATE INDEX idx_scheduled_messages_scheduled_for ON scheduled_messages(scheduled_for);
-CREATE INDEX idx_scheduled_messages_created_by ON scheduled_messages(created_by);
+CREATE INDEX IF NOT EXISTS idx_scheduled_messages_group_id ON scheduled_messages(group_id);
+CREATE INDEX IF NOT EXISTS idx_scheduled_messages_status ON scheduled_messages(status);
+CREATE INDEX IF NOT EXISTS idx_scheduled_messages_scheduled_for ON scheduled_messages(scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_scheduled_messages_created_by ON scheduled_messages(created_by);
 
 -- RLS Policies
 ALTER TABLE scheduled_messages ENABLE ROW LEVEL SECURITY;

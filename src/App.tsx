@@ -55,12 +55,15 @@ import AdminCommunication from "./pages/admin/AdminCommunication";
 import AdminCollectionFinancials from "./pages/admin/AdminCollectionFinancials";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPaymentMethods from "./pages/admin/AdminPaymentMethods";
+import AdminPaymentKeys from "./pages/admin/AdminPaymentKeys";
+import AdminPricing from "./pages/admin/AdminPricing";
 import AdminQuickReplies from "./pages/admin/AdminQuickReplies";
 import AdminGroupsPage from "./pages/admin/AdminGroupsPage";
 import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
 import Contact from "./pages/Contact";
+import NotificationHistory from "./pages/NotificationHistory";
 import { ChatButton } from "@/components/customer/ChatButton";
 
 const queryClient = new QueryClient();
@@ -173,6 +176,15 @@ function AppContent() {
             element={
               <RequireAuth>
                 <Dashboard />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/notificacoes"
+            element={
+              <RequireAuth>
+                <NotificationHistory />
               </RequireAuth>
             }
           />
@@ -352,6 +364,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/admin/chaves-pagamento"
+            element={
+              <RequireAdmin>
+                <AdminPaymentKeys />
+              </RequireAdmin>
+            }
+          />
+          <Route
             path="/admin/notificacoes"
             element={
               <RequireAdmin>
@@ -378,7 +398,11 @@ function AppContent() {
           />
           <Route
             path="/admin/precos"
-            element={<Navigate to="/admin/configuracoes?tab=pricing" replace />}
+            element={
+              <RequireAdmin>
+                <AdminPricing />
+              </RequireAdmin>
+            }
           />
           <Route
             path="/admin/limite-producao"

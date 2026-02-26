@@ -19,6 +19,7 @@ import {
 import { Check, Package, Calendar, CreditCard, Sparkles, Gift, AlertCircle } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PaymentInstructions } from "@/components/payment/PaymentInstructions";
 
 export default function SubscribeCollection() {
   const { slug } = useParams();
@@ -29,6 +30,13 @@ export default function SubscribeCollection() {
   const [planType, setPlanType] = useState<"trimestral" | "semestral" | "anual">("trimestral");
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card" | "boleto">("pix");
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+
+  // Mapear planType para subscriptionPeriod
+  const periodMap = {
+    trimestral: "quarterly" as const,
+    semestral: "semiannual" as const,
+    anual: "annual" as const,
+  };
 
   // Buscar planos disponíveis
   const plansQuery = useQuery({
@@ -531,6 +539,13 @@ export default function SubscribeCollection() {
                 </Select>
               </CardContent>
             </Card>
+
+            {/* Informações de Pagamento */}
+            <PaymentInstructions
+              paymentType="subscription"
+              subscriptionPeriod={periodMap[planType]}
+              amount={finalPrice}
+            />
 
             {/* Resumo */}
             <Card>

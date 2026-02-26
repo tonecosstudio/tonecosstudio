@@ -31,8 +31,7 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
     .select(
       `
       *,
-      payment_method:admin_payment_methods(name),
-      profiles!manual_payments_user_id_fkey(full_name, email)
+      payment_method:admin_payment_methods!manual_payments_payment_method_id_fkey(name)
     `
     )
     .in("status", ["pending", "under_review", "requires_info"]);
@@ -84,8 +83,8 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
       return {
         id: payment.id,
         reference_number: payment.reference_number,
-        customer_name: payment.profiles?.full_name || "Cliente",
-        customer_email: payment.profiles?.email || "",
+        customer_name: `Cliente ${payment.reference_number}`, // Temporário - precisa de view ou RPC
+        customer_email: "", // Temporário - precisa de view ou RPC
         amount: payment.amount,
         currency: payment.currency,
         payment_method_name: payment.payment_method?.name || "Método desconhecido",

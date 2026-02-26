@@ -22,6 +22,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, AlertCircle, CheckCircle, Package, CreditCard } from "lucide-react";
+import { PaymentInstructions } from "@/components/payment/PaymentInstructions";
+import type { PaymentType, SubscriptionPeriod } from "@/hooks/usePaymentKeys";
 
 export default function PaymentPage() {
   const [searchParams] = useSearchParams();
@@ -35,6 +37,30 @@ export default function PaymentPage() {
   const [amount, setAmount] = useState<number>(0);
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+
+  // Determinar tipo de pagamento para as chaves
+  const getPaymentType = (): PaymentType => {
+    if (quoteId) {
+      if (paymentType === "deposit") return "voucher";
+      return "onetime";
+    }
+    if (subscriptionId) return "subscription";
+    return "onetime";
+  };
+
+  const getSubscriptionPeriod = (): SubscriptionPeriod | undefined => {
+    if (!subscriptionId || !subscriptionQuery.data) return undefined;
+    const plan = subscriptionQuery.data.plans;
+    // Mapear do banco para o tipo correto
+    if (plan?.billing_cycle === "quarterly") return "quarterly";
+    if (plan?.billing_cycle === "semiannual") return "semiannual";
+    if (plan?.billing_cycle === "annual") return "annual";
+    // Fallback baseado no nome do plano
+    if (plan?.name?.toLowerCase().includes("trimestral")) return "quarterly";
+    if (plan?.name?.toLowerCase().includes("semestral")) return "semiannual";
+    if (plan?.name?.toLowerCase().includes("anual")) return "annual";
+    return "quarterly";
+  };
 
   // Fetch quote details if quoteId is provided
   const quoteQuery = useQuery({
@@ -253,7 +279,14 @@ export default function PaymentPage() {
 
           <div className="grid gap-8 lg:grid-cols-[1fr_350px]">
             {/* Payment Flow */}
-            <div>
+            <div className="space-y-6">
+              {/* Informações de Pagamento */}
+              <PaymentInstructions
+                paymentType={getPaymentType()}
+                subscriptionPeriod={getSubscriptionPeriod()}
+                amount={amount}
+              />
+
               <PaymentInitiationFlow
                 quoteId={quoteId || undefined}
                 subscriptionId={subscriptionId || undefined}

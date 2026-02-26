@@ -169,7 +169,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const handlePaymentMethodFilter = (methodId: string) => {
     setFilters((prev) => ({
       ...prev,
-      payment_method_id: methodId || undefined,
+      payment_method_id: methodId === "all" ? undefined : methodId,
     }));
   };
 
@@ -583,7 +583,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                   <SelectValue placeholder="Todos os métodos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os métodos</SelectItem>
+                  <SelectItem value="all">Todos os métodos</SelectItem>
                   {paymentMethods.map((method) => (
                     <SelectItem key={method.id} value={method.id}>
                       {method.name}
@@ -1045,7 +1045,7 @@ function MobileFilters({
             <SelectValue placeholder="Todos os métodos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os métodos</SelectItem>
+            <SelectItem value="all">Todos os métodos</SelectItem>
             {paymentMethods.map((method) => (
               <SelectItem key={method.id} value={method.id}>
                 {method.name}

@@ -20,6 +20,7 @@ import {
   Info,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PaymentInstructions } from "@/components/payment/PaymentInstructions";
 
 export default function PreorderCheckout() {
   const navigate = useNavigate();
@@ -427,6 +428,12 @@ export default function PreorderCheckout() {
                   </RadioGroup>
                 </CardContent>
               </Card>
+
+              {/* Informações de Pagamento */}
+              <PaymentInstructions
+                paymentType={paymentOption === "preorder" ? "voucher" : "onetime"}
+                amount={finalAmount}
+              />
             </div>
 
             {/* Resumo */}

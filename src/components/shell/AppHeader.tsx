@@ -6,6 +6,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationBadge } from "@/components/NotificationBadge";
+import { UserNotificationCenter } from "@/components/user/UserNotificationCenter";
 
 type Props = {
   user: unknown | null;
@@ -115,14 +116,8 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
           <div className="mx-2 h-5 w-px bg-background/20" />
 
-          {/* Badge de Notificação */}
-          {user && (
-            <NotificationBadge
-              size="sm"
-              showDetails={true}
-              className="text-background hover:text-background hover:bg-background/10"
-            />
-          )}
+          {/* Centro de Notificações */}
+          {user && <UserNotificationCenter />}
 
           {user ? (
             <Button
@@ -228,23 +223,16 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
                 </NavLink>
               )}
 
-              {/* Badge de Notificação no Mobile */}
+              {/* Notificações no Mobile */}
               {user && (
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-medium text-background">Notificações</span>
-                  <NotificationBadge
-                    size="sm"
-                    showDetails={false}
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      if (isAdmin) {
-                        navigate("/admin/payments");
-                      } else {
-                        navigate("/my-payments");
-                      }
-                    }}
-                  />
-                </div>
+                <NavLink
+                  to="/notificacoes"
+                  className="text-lg font-medium text-background hover:text-background/80 transition-colors"
+                  activeClassName="underline"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Notificações
+                </NavLink>
               )}
 
               <div className="h-px bg-background/20 my-2" />
