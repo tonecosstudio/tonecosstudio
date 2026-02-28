@@ -20,7 +20,7 @@ import {
   Clock,
   Palette,
 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 interface Setting {
   key: string;
@@ -47,12 +47,24 @@ export default function AdminSystemSettings() {
   // Mutation para atualizar configurações
   const updateMutation = useMutation({
     mutationFn: async (updates: Record<string, string>) => {
-      const updatePromises = Object.entries(updates).map(([key, value]) =>
-        supabase
+      const updatePromises = Object.entries(updates).map(async ([key, value]) => {
+        // Usar UPSERT para criar ou atualizar
+        const { error } = await supabase
           .from("system_settings")
-          .update({ value, updated_at: new Date().toISOString() })
-          .eq("key", key)
-      );
+          .upsert(
+            { 
+              key, 
+              value, 
+              updated_at: new Date().toISOString() 
+            },
+            { 
+              onConflict: 'key',
+              ignoreDuplicates: false 
+            }
+          );
+        
+        return { key, error };
+      });
 
       const results = await Promise.all(updatePromises);
       const errors = results.filter((r) => r.error);
@@ -632,6 +644,18 @@ export default function AdminSystemSettings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4">
+                  {/* Hero Image Upload */}
+                  <ImageUpload
+                    label="Imagem do Hero (Página Coleções)"
+                    description="Imagem do guerreiro exibida na página de coleções. Recomendado: proporção 3:4 ou 2:3 (vertical), ex: 600x800px"
+                    currentImageUrl={getValue("hero_image_url")}
+                    bucket="images"
+                    folder="hero"
+                    onUploadComplete={(url) => handleChange("hero_image_url", url)}
+                    maxSizeMB={5}
+                    acceptedFormats={["image/png", "image/jpeg", "image/jpg", "image/webp"]}
+                  />
+
                   <div>
                     <Label htmlFor="default_page_size">Itens por Página</Label>
                     <Input

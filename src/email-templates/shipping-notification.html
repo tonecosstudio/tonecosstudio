@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Pedido Enviado</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #333333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #ffffff;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    h1 {
+      color: #28a745;
+      font-size: 24px;
+      margin: 0 0 20px 0;
+    }
+    p {
+      line-height: 1.6;
+      margin: 0 0 15px 0;
+      color: #555555;
+    }
+    .success-box {
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      border: 2px solid #28a745;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 25px 0;
+      text-align: center;
+    }
+    .success-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    .tracking-box {
+      background-color: #f9f9f9;
+      border: 2px dashed #667eea;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 25px 0;
+      text-align: center;
+    }
+    .tracking-code {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+      margin: 15px 0;
+      padding: 10px;
+      background-color: #ffffff;
+      border-radius: 6px;
+    }
+    .info-box {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .shipping-address {
+      background-color: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #28a745;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 30px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .button-secondary {
+      background-color: #667eea;
+    }
+    .footer {
+      background-color: #f9f9f9;
+      padding: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #888888;
+    }
+    @media only screen and (max-width: 600px) {
+      .content {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      .tracking-code {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">ORDAX</h1>
+    </div>
+    
+    <div class="content">
+      <h1>📦 Seu Pedido Foi Enviado!</h1>
+      
+      <p>Olá, {{userName}}!</p>
+      
+      <p>
+        Excelentes notícias! Sua peça colecionável foi enviada e está a caminho do seu endereço. 
+        Você pode acompanhar a entrega em tempo real usando o código de rastreamento abaixo.
+      </p>
+      
+      <div class="success-box">
+        <div class="success-icon">✅</div>
+        <p style="margin: 0; font-size: 18px; font-weight: bold; color: #155724;">
+          Pedido Enviado com Sucesso!
+        </p>
+        <p style="margin: 10px 0 0 0; color: #155724;">
+          Data de envio: <strong>{{shippingDate}}</strong>
+        </p>
+      </div>
+      
+      <div class="tracking-box">
+        <p style="margin: 0 0 10px 0; font-weight: bold; color: #333;">
+          📍 Código de Rastreamento
+        </p>
+        <div class="tracking-code">{{trackingCode}}</div>
+        <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">
+          Use este código para rastrear sua entrega
+        </p>
+      </div>
+      
+      <center>
+        <a href="{{trackingUrl}}" class="button">Rastrear Minha Entrega</a>
+      </center>
+      
+      <div class="info-box">
+        <p style="margin: 0;"><strong>Detalhes do pedido:</strong></p>
+        <p style="margin: 10px 0 0 0;">
+          Coleção: <strong>{{collectionName}}</strong><br>
+          {{#if characterName}}
+          Personagem: <strong>{{characterName}}</strong><br>
+          {{/if}}
+          Número da entrega: <strong>{{deliveryNumber}}</strong><br>
+          Transportadora: <strong>{{carrier}}</strong><br>
+          Previsão de entrega: <strong>{{estimatedDeliveryDate}}</strong>
+          {{#if isBonusPiece}}
+          <br><span style="color: #764ba2; font-weight: bold;">✨ Inclui Peça Bônus Exclusiva</span>
+          {{/if}}
+        </p>
+      </div>
+      
+      <div class="shipping-address">
+        <p style="margin: 0 0 10px 0; font-weight: bold; color: #333;">
+          📍 Endereço de entrega:
+        </p>
+        <p style="margin: 0; color: #555; line-height: 1.5;">
+          {{shippingAddress.street}}, {{shippingAddress.number}}<br>
+          {{#if shippingAddress.complement}}{{shippingAddress.complement}}<br>{{/if}}
+          {{shippingAddress.neighborhood}}<br>
+          {{shippingAddress.city}} - {{shippingAddress.state}}<br>
+          CEP: {{shippingAddress.zipCode}}
+        </p>
+      </div>
+      
+      <h2 style="color: #28a745; font-size: 18px; margin: 30px 0 15px 0;">📋 Informações Importantes</h2>
+      
+      <ul style="line-height: 1.8; color: #555555;">
+        <li>O prazo de entrega pode variar de acordo com sua região</li>
+        <li>Você receberá atualizações automáticas sobre o status da entrega</li>
+        <li>Certifique-se de que alguém esteja disponível para receber o pacote</li>
+        <li>Em caso de ausência, a transportadora deixará um aviso de tentativa de entrega</li>
+        <li>Guarde o código de rastreamento para consultas futuras</li>
+      </ul>
+      
+      <p style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+        <strong>⚠️ Atenção:</strong> Se você não estiver em casa no momento da entrega, 
+        a transportadora fará até 3 tentativas. Fique atento aos avisos!
+      </p>
+      
+      <center>
+        <a href="{{dashboardUrl}}" class="button button-secondary">Acessar Meu Painel</a>
+      </center>
+      
+      <p style="margin-top: 30px;">
+        Qualquer dúvida sobre sua entrega, estamos à disposição para ajudar!
+      </p>
+      
+      <p style="margin-top: 20px; color: #888888; font-size: 14px;">
+        Atenciosamente,<br>
+        <strong>Equipe ORDAX</strong>
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>ORDAX - Colecionáveis Premium sob Encomenda</p>
+      <p>Este é um e-mail automático. Por favor, não responda.</p>
+      <p>Para suporte, entre em contato: {{supportEmail}}</p>
+    </div>
+  </div>
+</body>
+</html>

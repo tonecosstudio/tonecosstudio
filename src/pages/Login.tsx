@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 
 // Google Icon Component
@@ -39,7 +40,7 @@ export default function Login() {
   const next = useMemo(() => params.get("next") || "/", [params]);
 
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
+  const [email, setEmail, sanitizedEmail] = useSanitizedInput("", "email");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,13 +50,13 @@ export default function Login() {
 
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: sanitizedEmail, password });
         if (error) throw error;
         toast({ title: "Bem-vindo de volta!", description: "Login realizado com sucesso." });
         navigate(next);
       } else {
         const { error } = await supabase.auth.signUp({
-          email,
+          email: sanitizedEmail,
           password,
           options: {
             emailRedirectTo: window.location.origin,
@@ -129,7 +130,7 @@ export default function Login() {
             <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-foreground text-background mb-6">
               <span className="text-2xl font-bold">O</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-3">
               {mode === "login" ? "Bem-vindo de volta" : "Criar sua conta"}
             </h1>
             <p className="text-muted-foreground">

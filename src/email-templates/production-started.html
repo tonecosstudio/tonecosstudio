@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Produção Iniciada</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #333333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #ffffff;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    h1 {
+      color: #667eea;
+      font-size: 24px;
+      margin: 0 0 20px 0;
+    }
+    p {
+      line-height: 1.6;
+      margin: 0 0 15px 0;
+      color: #555555;
+    }
+    .status-box {
+      background: linear-gradient(135deg, #f0f4ff 0%, #fff 100%);
+      border: 2px solid #667eea;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 25px 0;
+      text-align: center;
+    }
+    .status-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    .status-title {
+      font-size: 22px;
+      font-weight: bold;
+      color: #667eea;
+      margin: 10px 0;
+    }
+    .info-box {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .timeline {
+      margin: 30px 0;
+      padding: 0;
+      list-style: none;
+    }
+    .timeline-item {
+      padding: 15px 0 15px 40px;
+      position: relative;
+      border-left: 2px solid #e0e0e0;
+    }
+    .timeline-item.active {
+      border-left-color: #667eea;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 20px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: #e0e0e0;
+      border: 2px solid #ffffff;
+    }
+    .timeline-item.active::before {
+      background-color: #667eea;
+    }
+    .timeline-item.completed::before {
+      background-color: #28a745;
+    }
+    .button {
+      display: inline-block;
+      background-color: #667eea;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 30px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-weight: 600;
+    }
+    .footer {
+      background-color: #f9f9f9;
+      padding: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #888888;
+    }
+    @media only screen and (max-width: 600px) {
+      .content {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">ORDAX</h1>
+    </div>
+    
+    <div class="content">
+      <h1>🎨 Sua Peça Entrou em Produção!</h1>
+      
+      <p>Olá, {{userName}}!</p>
+      
+      <p>
+        Temos ótimas notícias! Sua peça colecionável entrou oficialmente em produção. 
+        Nossa equipe está trabalhando com dedicação para criar sua peça exclusiva com a máxima qualidade.
+      </p>
+      
+      <div class="status-box">
+        <div class="status-icon">⚙️</div>
+        <div class="status-title">EM PRODUÇÃO</div>
+        <p style="margin: 10px 0 0 0; color: #555555;">
+          Sua peça está sendo cuidadosamente produzida
+        </p>
+      </div>
+      
+      <div class="info-box">
+        <p style="margin: 0;"><strong>Detalhes da sua entrega:</strong></p>
+        <p style="margin: 10px 0 0 0;">
+          Coleção: <strong>{{collectionName}}</strong><br>
+          {{#if characterName}}
+          Personagem: <strong>{{characterName}}</strong><br>
+          {{/if}}
+          Número da entrega: <strong>{{deliveryNumber}}</strong><br>
+          Previsão de envio: <strong>{{expectedShippingDate}}</strong>
+          {{#if isBonusPiece}}
+          <br><span style="color: #764ba2; font-weight: bold;">✨ Inclui Peça Bônus Exclusiva</span>
+          {{/if}}
+        </p>
+      </div>
+      
+      <h2 style="color: #667eea; font-size: 18px; margin: 30px 0 15px 0;">📍 Acompanhe o Progresso</h2>
+      
+      <ul class="timeline">
+        <li class="timeline-item completed">
+          <strong>Escolha Confirmada</strong><br>
+          <span style="color: #888888; font-size: 14px;">Sua coleção foi selecionada</span>
+        </li>
+        <li class="timeline-item active">
+          <strong>Em Produção</strong><br>
+          <span style="color: #888888; font-size: 14px;">Sua peça está sendo produzida</span>
+        </li>
+        <li class="timeline-item">
+          <strong>Pronto para Envio</strong><br>
+          <span style="color: #888888; font-size: 14px;">Aguardando expedição</span>
+        </li>
+        <li class="timeline-item">
+          <strong>Enviado</strong><br>
+          <span style="color: #888888; font-size: 14px;">A caminho do seu endereço</span>
+        </li>
+        <li class="timeline-item">
+          <strong>Entregue</strong><br>
+          <span style="color: #888888; font-size: 14px;">Peça recebida</span>
+        </li>
+      </ul>
+      
+      <p>
+        <strong>O que acontece agora?</strong>
+      </p>
+      <ul style="line-height: 1.8; color: #555555;">
+        <li>Sua peça será produzida com atenção aos mínimos detalhes</li>
+        <li>Após a conclusão, ela será preparada para envio</li>
+        <li>Você receberá um e-mail com o código de rastreamento quando for enviada</li>
+        <li>A previsão de envio é até <strong>{{expectedShippingDate}}</strong></li>
+      </ul>
+      
+      <center>
+        <a href="{{trackingUrl}}" class="button">Acompanhar Minha Entrega</a>
+      </center>
+      
+      <p style="margin-top: 30px; color: #888888; font-size: 14px;">
+        Atenciosamente,<br>
+        <strong>Equipe ORDAX</strong>
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>ORDAX - Colecionáveis Premium sob Encomenda</p>
+      <p>Este é um e-mail automático. Por favor, não responda.</p>
+      <p>Para suporte, entre em contato: {{supportEmail}}</p>
+    </div>
+  </div>
+</body>
+</html>

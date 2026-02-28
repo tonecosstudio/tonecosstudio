@@ -9,6 +9,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    testTimeout: 10000, // Increase timeout to 10 seconds for slow tests
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],

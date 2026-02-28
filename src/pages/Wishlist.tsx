@@ -132,16 +132,16 @@ export default function Wishlist() {
 
       <div className="container py-8 sm:py-12 max-w-7xl">
         <header className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Lista de Desejos</h1>
-          <p className="text-muted-foreground">Organize os modelos que você deseja adquirir</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-2">Lista de Desejos</h1>
+          <p className="text-xs text-muted-foreground">Organize os modelos que você deseja adquirir</p>
         </header>
 
         {items.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Heart className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Sua lista está vazia</h3>
-              <p className="text-muted-foreground text-center mb-6">
+              <h3 className="text-base font-semibold mb-2">Sua lista está vazia</h3>
+              <p className="text-xs text-muted-foreground text-center mb-6">
                 Adicione modelos à sua lista de desejos enquanto navega pelo catálogo
               </p>
               <Button asChild>

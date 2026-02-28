@@ -189,7 +189,7 @@ export function CycleInfo({ cycle, showCountdown = true, isLoading = false }: Cy
               {format(shippingDate, "dd/MM/yyyy", { locale: ptBR })}
             </p>
             <p className="text-xs text-muted-foreground">
-              5º dia útil após o fechamento do ciclo
+              Envio até o 5º dia útil após o fechamento do ciclo
             </p>
           </div>
         </div>

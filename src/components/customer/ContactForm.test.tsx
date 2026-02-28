@@ -247,7 +247,7 @@ describe("ContactForm", () => {
 
     // Make the submission slow
     vi.mocked(conversationService.createConversation).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({} as any), 1000))
+      () => new Promise((resolve) => setTimeout(() => resolve({} as any), 2000))
     );
 
     renderContactForm();
@@ -264,9 +264,11 @@ describe("ContactForm", () => {
     await user.click(submitButton);
 
     // Check that fields are disabled during submission
-    expect(nameInput).toBeDisabled();
-    expect(emailInput).toBeDisabled();
-    expect(messageInput).toBeDisabled();
-    expect(submitButton).toBeDisabled();
+    await waitFor(() => {
+      expect(nameInput).toBeDisabled();
+      expect(emailInput).toBeDisabled();
+      expect(messageInput).toBeDisabled();
+      expect(submitButton).toBeDisabled();
+    }, { timeout: 3000 });
   });
 });

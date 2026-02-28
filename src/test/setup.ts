@@ -17,6 +17,16 @@ Object.defineProperty(window, "matchMedia", {
   }),
 });
 
+// Mock hasPointerCapture for Radix UI components (fixes jsdom compatibility issue)
+if (typeof Element !== "undefined") {
+  Element.prototype.hasPointerCapture = Element.prototype.hasPointerCapture || function() {
+    return false;
+  };
+  Element.prototype.setPointerCapture = Element.prototype.setPointerCapture || function() {};
+  Element.prototype.releasePointerCapture = Element.prototype.releasePointerCapture || function() {};
+  Element.prototype.scrollIntoView = Element.prototype.scrollIntoView || function() {};
+}
+
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}

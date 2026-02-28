@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Lembrete: Escolha sua Coleção</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #333333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #ffffff;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    h1 {
+      color: #667eea;
+      font-size: 24px;
+      margin: 0 0 20px 0;
+    }
+    p {
+      line-height: 1.6;
+      margin: 0 0 15px 0;
+      color: #555555;
+    }
+    .urgent-box {
+      background-color: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .urgent-box.critical {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+    .countdown {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ffc107;
+      margin: 10px 0;
+    }
+    .countdown.critical {
+      color: #dc3545;
+    }
+    .info-box {
+      background-color: #f0f4ff;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #667eea;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 30px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .button.urgent {
+      background-color: #dc3545;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .footer {
+      background-color: #f9f9f9;
+      padding: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #888888;
+    }
+    @media only screen and (max-width: 600px) {
+      .content {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      .countdown {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">ORDAX</h1>
+    </div>
+    
+    <div class="content">
+      <h1>{{#if isUrgent}}⚠️ Atenção: Prazo Próximo!{{else}}📦 Hora de Escolher sua Coleção{{/if}}</h1>
+      
+      <p>Olá, {{userName}}!</p>
+      
+      {{#if isUrgent}}
+      <div class="urgent-box critical">
+        <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #721c24;">
+          ⏰ ÚLTIMOS DIAS PARA ESCOLHER!
+        </p>
+        <div class="countdown critical">{{daysUntilCutoff}} {{#if (eq daysUntilCutoff 1)}}dia{{else}}dias{{/if}}</div>
+        <p style="margin: 10px 0 0 0; color: #721c24;">
+          Prazo final: <strong>Dia 15 às 23:59:59</strong> (horário de Salvador/BA)
+        </p>
+      </div>
+      
+      <p style="font-size: 16px;">
+        <strong>Você ainda não escolheu sua coleção para este mês!</strong> 
+        Se não fizer sua escolha até o prazo, manteremos automaticamente sua escolha anterior.
+      </p>
+      {{else}}
+      <div class="urgent-box">
+        <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #856404;">
+          🎨 Novo mês, nova escolha!
+        </p>
+        <div class="countdown">{{daysUntilCutoff}} dias</div>
+        <p style="margin: 10px 0 0 0; color: #856404;">
+          Você tem até o dia 15 às 23:59:59 para escolher
+        </p>
+      </div>
+      
+      <p>
+        É hora de escolher qual coleção você deseja receber na sua próxima entrega! 
+        Explore as opções disponíveis e faça sua escolha.
+      </p>
+      {{/if}}
+      
+      <div class="info-box">
+        <p style="margin: 0;"><strong>Informações da sua entrega:</strong></p>
+        <p style="margin: 10px 0 0 0;">
+          Número da entrega: <strong>{{deliveryNumber}}</strong><br>
+          Previsão de envio: <strong>{{expectedShippingDate}}</strong><br>
+          {{#if currentCollection}}
+          Escolha atual: <strong>{{currentCollection}}</strong>
+          {{else}}
+          Status: <strong>Aguardando escolha</strong>
+          {{/if}}
+        </p>
+      </div>
+      
+      <p><strong>Lembre-se:</strong></p>
+      <ul style="line-height: 1.8; color: #555555;">
+        <li>Escolhas devem ser feitas até o dia 15 às 23:59:59 (horário de Salvador/BA)</li>
+        <li>Após o prazo, a produção é iniciada e não é possível fazer alterações</li>
+        <li>Se não escolher, sua escolha anterior será mantida automaticamente</li>
+        <li>Você pode mudar sua escolha quantas vezes quiser antes do prazo</li>
+      </ul>
+      
+      <center>
+        <a href="{{collectionSelectionUrl}}" class="button {{#if isUrgent}}urgent{{/if}}">
+          {{#if isUrgent}}Escolher Agora - Prazo Urgente!{{else}}Escolher Minha Coleção{{/if}}
+        </a>
+      </center>
+      
+      <p style="margin-top: 30px; color: #888888; font-size: 14px;">
+        Atenciosamente,<br>
+        <strong>Equipe ORDAX</strong>
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>ORDAX - Colecionáveis Premium sob Encomenda</p>
+      <p>Este é um e-mail automático. Por favor, não responda.</p>
+      <p>Para suporte, entre em contato: {{supportEmail}}</p>
+    </div>
+  </div>
+</body>
+</html>

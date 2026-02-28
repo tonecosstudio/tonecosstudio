@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
+import { nowInBahia, toUTC } from "../_shared/timezone.ts";
 
 interface CancelSubscriptionRequest {
   subscriptionId: string;
@@ -78,7 +79,7 @@ serve(async (req) => {
       .from("subscriptions")
       .update({
         status: "cancelled",
-        cancelled_at: new Date().toISOString(),
+        cancelled_at: toUTC(nowInBahia()).toISOString(),
         notes: reason ? `Motivo do cancelamento: ${reason}` : null,
       })
       .eq("id", subscriptionId);
@@ -95,6 +96,59 @@ serve(async (req) => {
     if (deliveriesError) {
       console.error("Error cancelling deliveries:", deliveriesError);
       // Não falha a operação se não conseguir cancelar entregas
+    }
+
+    // Release capacity for future deliveries (before cutoff only)
+    // Get all future deliveries that haven't started production
+    const { data: futureDeliveries, error: futureDeliveriesError } = await service
+      .from("subscription_deliveries")
+      .select("id, cycle_id, status")
+      .eq("subscription_id", subscriptionId)
+      .in("status", ["scheduled", "pending_choice"]);
+
+    if (futureDeliveriesError) {
+      console.error("Error fetching future deliveries:", futureDeliveriesError);
+    } else if (futureDeliveries && futureDeliveries.length > 0) {
+      // Check if before cutoff
+      const { data: beforeCutoff, error: cutoffError } = await service
+        .rpc("is_before_cutoff");
+
+      if (cutoffError) {
+        console.error("Error checking cutoff:", cutoffError);
+      } else if (beforeCutoff) {
+        // Release capacity for each delivery that has a cycle_id
+        for (const delivery of futureDeliveries) {
+          if (delivery.cycle_id) {
+            try {
+              const { error: releaseError } = await service
+                .rpc("release_capacity", {
+                  p_cycle_id: delivery.cycle_id,
+                  p_quantity: 1,
+                });
+
+              if (releaseError) {
+                console.error(
+                  `Error releasing capacity for delivery ${delivery.id}:`,
+                  releaseError,
+                );
+              } else {
+                console.log(
+                  `Released capacity for delivery ${delivery.id} in cycle ${delivery.cycle_id}`,
+                );
+              }
+            } catch (error) {
+              console.error(
+                `Exception releasing capacity for delivery ${delivery.id}:`,
+                error,
+              );
+            }
+          }
+        }
+      } else {
+        console.log(
+          "Cutoff has passed - capacity not released for cancelled deliveries",
+        );
+      }
     }
 
     return new Response(

@@ -195,7 +195,7 @@ export class MembershipService {
 
     // Optional filter by plan
     if (criteria.plan) {
-      query = query.eq("plan", criteria.plan);
+      query = query.eq("plan_type", criteria.plan);
     }
 
     const { data, error } = await query;

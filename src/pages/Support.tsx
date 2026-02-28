@@ -289,8 +289,8 @@ export default function Support() {
       <div className="container py-8 max-w-7xl">
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Central de Ajuda</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-bold tracking-tight mb-2">Central de Ajuda</h1>
+          <p className="text-xs text-muted-foreground">
             Entre em contato conosco. Respondemos em até 48 horas úteis.
           </p>
         </header>

@@ -85,8 +85,8 @@ export default function Plans() {
         <div className="container px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4">Planos de Assinatura</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4">Planos de Assinatura</h1>
+            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
               Escolha o plano ideal e receba colecionáveis premium todos os meses
             </p>
           </div>
@@ -382,8 +382,8 @@ export default function Plans() {
 
           {/* CTA Final */}
           <div className="text-center mt-16">
-            <h2 className="text-3xl font-bold mb-4">Pronto para começar?</h2>
-            <p className="text-xl text-muted-foreground mb-8">
+            <h2 className="text-lg font-bold mb-4">Pronto para começar?</h2>
+            <p className="text-sm text-muted-foreground mb-8">
               Escolha suas coleções favoritas e comece sua jornada de colecionador
             </p>
             <Button asChild size="lg" className="text-lg px-8">

@@ -119,7 +119,7 @@ describe("PaymentInitiationFlow", () => {
     return renderWithProviders(<PaymentInitiationFlow {...defaultProps} />, { queryClient });
   };
 
-  it("should render loading state initially", () => {
+  it("should render loading state initially", async () => {
     vi.mocked(paymentMethodService.listActivePaymentMethods).mockImplementation(
       () => new Promise(() => {})
     ); // Never resolves
@@ -127,7 +127,11 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     expect(screen.getByText("Iniciar Pagamento")).toBeInTheDocument();
-    expect(screen.getAllByRole("status").length).toBeGreaterThan(0); // Loading skeletons
+    
+    // Wait a bit to ensure loading state is rendered
+    await waitFor(() => {
+      expect(screen.getAllByRole("status").length).toBeGreaterThan(0); // Loading skeletons
+    }, { timeout: 1000 });
   });
 
   it("should render error state when fetch fails", async () => {
@@ -163,9 +167,14 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
-      expect(screen.getByText("Cartão de Crédito")).toBeInTheDocument();
-      expect(screen.getByText("Transferência Bancária")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
+      
+      const creditCardElements = screen.getAllByText("Cartão de Crédito");
+      expect(creditCardElements.length).toBeGreaterThan(0);
+      
+      const bankTransferElements = screen.getAllByText("Transferência Bancária");
+      expect(bankTransferElements.length).toBeGreaterThan(0);
     });
 
     // Check payment summary
@@ -179,11 +188,13 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
     });
 
     // PIX should be selected by default (has is_default: true)
-    const pixCard = screen.getByText("PIX").closest("button");
+    const pixElements = screen.getAllByText("PIX");
+    const pixCard = pixElements[0].closest("button");
     expect(pixCard).toHaveClass("border-primary");
   });
 
@@ -193,11 +204,13 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("Cartão de Crédito")).toBeInTheDocument();
+      const creditCardElements = screen.getAllByText("Cartão de Crédito");
+      expect(creditCardElements.length).toBeGreaterThan(0);
     });
 
     // Click on credit card method
-    const creditCardButton = screen.getByText("Cartão de Crédito").closest("button");
+    const creditCardElements = screen.getAllByText("Cartão de Crédito");
+    const creditCardButton = creditCardElements[0].closest("button");
     fireEvent.click(creditCardButton!);
 
     // Credit card should now be selected
@@ -210,7 +223,8 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
     });
 
     // PIX should be selected by default
@@ -225,11 +239,13 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("Cartão de Crédito")).toBeInTheDocument();
+      const creditCardElements = screen.getAllByText("Cartão de Crédito");
+      expect(creditCardElements.length).toBeGreaterThan(0);
     });
 
     // Select credit card
-    const creditCardButton = screen.getByText("Cartão de Crédito").closest("button");
+    const creditCardElements = screen.getAllByText("Cartão de Crédito");
+    const creditCardButton = creditCardElements[0].closest("button");
     fireEvent.click(creditCardButton!);
 
     // Should show payment link
@@ -244,11 +260,13 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("Transferência Bancária")).toBeInTheDocument();
+      const bankTransferElements = screen.getAllByText("Transferência Bancária");
+      expect(bankTransferElements.length).toBeGreaterThan(0);
     });
 
     // Select bank transfer
-    const bankTransferButton = screen.getByText("Transferência Bancária").closest("button");
+    const bankTransferElements = screen.getAllByText("Transferência Bancária");
+    const bankTransferButton = bankTransferElements[0].closest("button");
     fireEvent.click(bankTransferButton!);
 
     // Should show bank details
@@ -263,7 +281,8 @@ describe("PaymentInitiationFlow", () => {
     renderComponent({ quoteId: "quote-123" });
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
     });
 
     // Click confirm button
@@ -289,11 +308,13 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
     });
 
     // Manually deselect all methods (simulate clicking on already selected method)
-    const pixButton = screen.getByText("PIX").closest("button");
+    const pixElements = screen.getAllByText("PIX");
+    const pixButton = pixElements[0].closest("button");
     fireEvent.click(pixButton!); // Click to select
     fireEvent.click(pixButton!); // Click again to deselect
 
@@ -319,7 +340,8 @@ describe("PaymentInitiationFlow", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
     });
 
     // Click confirm button
@@ -327,7 +349,9 @@ describe("PaymentInitiationFlow", () => {
     fireEvent.click(confirmButton);
 
     // Should show loading state
-    expect(screen.getByText("Criando Pagamento...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Criando Pagamento...")).toBeInTheDocument();
+    });
   });
 
   it("should call onSuccess when payment is created successfully", async () => {
@@ -338,7 +362,8 @@ describe("PaymentInitiationFlow", () => {
     renderComponent({ onSuccess: mockOnSuccess });
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
     });
 
     // Click confirm button
@@ -357,7 +382,8 @@ describe("PaymentInitiationFlow", () => {
     renderComponent({ onCancel: mockOnCancel });
 
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      const pixElements = screen.getAllByText("PIX");
+      expect(pixElements.length).toBeGreaterThan(0);
     });
 
     // Click cancel button

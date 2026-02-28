@@ -35,49 +35,6 @@ export function initSentry() {
     }
     return;
   }
-
-  // TODO: Descomentar após instalar @sentry/react
-  /*
-  import("@sentry/react").then((Sentry) => {
-    Sentry.init({
-      dsn: SENTRY_DSN,
-      environment: IS_PRODUCTION ? "production" : "development",
-      release: `ordax@${APP_VERSION}`,
-      integrations: [
-        Sentry.browserTracingIntegration(),
-        Sentry.replayIntegration({
-          maskAllText: true,
-          blockAllMedia: true,
-        }),
-      ],
-      tracesSampleRate: IS_PRODUCTION ? 0.1 : 1.0,
-      replaysSessionSampleRate: IS_PRODUCTION ? 0.1 : 1.0,
-      replaysOnErrorSampleRate: 1.0,
-      beforeSend(event, hint) {
-        if (!IS_PRODUCTION && event.exception) {
-          console.error("Sentry Error (dev):", hint.originalException || hint.syntheticException);
-          return null;
-        }
-        const error = hint.originalException as Error;
-        if (error?.message?.includes("ResizeObserver loop")) {
-          return null;
-        }
-        return event;
-      },
-      ignoreErrors: [
-        "ResizeObserver loop limit exceeded",
-        "Non-Error promise rejection captured",
-        "NetworkError",
-        "Failed to fetch",
-        "chrome-extension://",
-        "moz-extension://",
-      ],
-    });
-    console.log("✅ Sentry inicializado com sucesso");
-  }).catch((error) => {
-    console.error("❌ Erro ao inicializar Sentry:", error);
-  });
-  */
 }
 
 /**
@@ -88,8 +45,6 @@ export function captureError(error: Error, context?: Record<string, any>) {
     console.error("Error:", error, context);
     return;
   }
-  // TODO: Descomentar após instalar @sentry/react
-  // Sentry.captureException(error, { extra: context });
 }
 
 /**
@@ -100,8 +55,6 @@ export function captureMessage(message: string, level: "info" | "warning" | "err
     console[level === "error" ? "error" : level === "warning" ? "warn" : "log"](message);
     return;
   }
-  // TODO: Descomentar após instalar @sentry/react
-  // Sentry.captureMessage(message, level);
 }
 
 /**
@@ -109,12 +62,6 @@ export function captureMessage(message: string, level: "info" | "warning" | "err
  */
 export function setUser(user: { id: string; email?: string; username?: string } | null) {
   if (!SENTRY_ENABLED) return;
-  // TODO: Descomentar após instalar @sentry/react
-  // if (user) {
-  //   Sentry.setUser({ id: user.id, email: user.email, username: user.username });
-  // } else {
-  //   Sentry.setUser(null);
-  // }
 }
 
 /**
@@ -122,8 +69,6 @@ export function setUser(user: { id: string; email?: string; username?: string } 
  */
 export function addBreadcrumb(message: string, category: string, data?: Record<string, any>) {
   if (!SENTRY_ENABLED) return;
-  // TODO: Descomentar após instalar @sentry/react
-  // Sentry.addBreadcrumb({ message, category, data, level: "info" });
 }
 
 /**
@@ -131,8 +76,6 @@ export function addBreadcrumb(message: string, category: string, data?: Record<s
  */
 export function setTag(key: string, value: string) {
   if (!SENTRY_ENABLED) return;
-  // TODO: Descomentar após instalar @sentry/react
-  // Sentry.setTag(key, value);
 }
 
 /**
@@ -140,8 +83,6 @@ export function setTag(key: string, value: string) {
  */
 export function setContext(name: string, context: Record<string, any>) {
   if (!SENTRY_ENABLED) return;
-  // TODO: Descomentar após instalar @sentry/react
-  // Sentry.setContext(name, context);
 }
 
 /**
@@ -155,13 +96,6 @@ export function withSentryErrorBoundary<P extends object>(
   }
 ) {
   if (!SENTRY_ENABLED) return Component;
-
-  // TODO: Descomentar após instalar @sentry/react
-  // return Sentry.withErrorBoundary(Component, {
-  //   fallback: options?.fallback || React.createElement(ErrorFallback),
-  //   showDialog: options?.showDialog ?? false,
-  // });
-
   return Component;
 }
 

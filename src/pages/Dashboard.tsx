@@ -89,8 +89,8 @@ export default function Dashboard() {
       <div className="container py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-xs text-muted-foreground mt-2">
             Bem-vindo de volta! Aqui está um resumo da sua conta.
           </p>
         </div>

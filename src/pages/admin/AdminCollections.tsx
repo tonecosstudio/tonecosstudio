@@ -499,6 +499,25 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
           <ImageIcon className="h-3 w-3" />
           <span>{collection.character_count || 0} personagens</span>
         </div>
+
+        {/* Rotation Type Badge */}
+        {(collection as any).rotation_type && (
+          <div className="mt-2">
+            {(collection as any).rotation_type === 'fixed' ? (
+              <Badge variant="outline" className="text-xs">
+                📅 Fixa (Todos os meses)
+              </Badge>
+            ) : (collection as any).rotation_type === 'odd_months' ? (
+              <Badge variant="outline" className="text-xs bg-blue-500/10 border-blue-500/20 text-blue-600">
+                📅 Meses Ímpares
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs bg-purple-500/10 border-purple-500/20 text-purple-600">
+                📅 Meses Pares
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -726,6 +745,8 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [rotationType, setRotationType] = useState<'fixed' | 'odd_months' | 'even_months'>('fixed');
+  const [characterRevelationDate, setCharacterRevelationDate] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -773,6 +794,8 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
         description,
         is_active: isActive,
         image_url: imageUrl,
+        rotation_type: rotationType,
+        character_revelation_date: characterRevelationDate || null,
       });
 
       if (error) throw error;
@@ -786,6 +809,8 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
       setSlug("");
       setDescription("");
       setIsActive(true);
+      setRotationType('fixed');
+      setCharacterRevelationDate("");
       setImageFile(null);
       setImagePreview(null);
       setIsUploading(false);
@@ -908,6 +933,45 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
+
+          {/* Rotation Type */}
+          <div>
+            <Label htmlFor="rotation-type">Tipo de Rotação *</Label>
+            <Select value={rotationType} onValueChange={(value: any) => setRotationType(value)}>
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="Selecione o tipo de rotação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Fixa (Disponível todos os meses)</SelectItem>
+                <SelectItem value="odd_months">Meses Ímpares (Jan, Mar, Mai, Jul, Set, Nov)</SelectItem>
+                <SelectItem value="even_months">Meses Pares (Fev, Abr, Jun, Ago, Out, Dez)</SelectItem>
+              </SelectContent>
+            </Select>
+            {rotationType !== 'fixed' && (
+              <div className="mt-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                  📅 Disponível em: {rotationType === 'odd_months' 
+                    ? 'Janeiro, Março, Maio, Julho, Setembro, Novembro'
+                    : 'Fevereiro, Abril, Junho, Agosto, Outubro, Dezembro'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Character Revelation Date */}
+          <div>
+            <Label htmlFor="revelation-date">Data de Revelação do Personagem</Label>
+            <Input
+              id="revelation-date"
+              type="datetime-local"
+              value={characterRevelationDate}
+              onChange={(e) => setCharacterRevelationDate(e.target.value)}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Data em que o personagem da coleção será revelado aos assinantes
+            </p>
+          </div>
         </div>
 
         <DialogFooter>
@@ -937,6 +1001,14 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
   const [name, setName] = useState(collection.name);
   const [slug, setSlug] = useState(collection.slug);
   const [description, setDescription] = useState(collection.description || "");
+  const [rotationType, setRotationType] = useState<'fixed' | 'odd_months' | 'even_months'>(
+    (collection as any).rotation_type || 'fixed'
+  );
+  const [characterRevelationDate, setCharacterRevelationDate] = useState(
+    (collection as any).character_revelation_date 
+      ? new Date((collection as any).character_revelation_date).toISOString().slice(0, 16)
+      : ""
+  );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(collection.image_url);
   const [isUploading, setIsUploading] = useState(false);
@@ -955,6 +1027,22 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      // Validate minimum fixed collections if changing from fixed to rotating
+      if ((collection as any).rotation_type === 'fixed' && rotationType !== 'fixed') {
+        const { count, error: countError } = await supabase
+          .from('collections')
+          .select('*', { count: 'exact', head: true })
+          .eq('rotation_type', 'fixed')
+          .eq('is_active', true);
+
+        if (countError) throw countError;
+
+        // Need at least 2 fixed collections, so if count is 2 or less, we can't change this one
+        if ((count || 0) <= 2) {
+          throw new Error('Deve haver pelo menos 2 coleções fixas ativas. Não é possível alterar esta coleção para rotativa.');
+        }
+      }
+
       setIsUploading(true);
       let imageUrl = collection.image_url;
 
@@ -979,7 +1067,14 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
 
       const { error } = await supabase
         .from("collections")
-        .update({ name, slug, description, image_url: imageUrl })
+        .update({ 
+          name, 
+          slug, 
+          description, 
+          image_url: imageUrl,
+          rotation_type: rotationType,
+          character_revelation_date: characterRevelationDate || null,
+        })
         .eq("id", collection.id);
 
       if (error) throw error;
@@ -1082,6 +1177,45 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
               onChange={(e) => setDescription(e.target.value)}
               className="mt-2 min-h-[120px]"
             />
+          </div>
+
+          {/* Rotation Type */}
+          <div>
+            <Label htmlFor="edit-rotation-type">Tipo de Rotação *</Label>
+            <Select value={rotationType} onValueChange={(value: any) => setRotationType(value)}>
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="Selecione o tipo de rotação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Fixa (Disponível todos os meses)</SelectItem>
+                <SelectItem value="odd_months">Meses Ímpares (Jan, Mar, Mai, Jul, Set, Nov)</SelectItem>
+                <SelectItem value="even_months">Meses Pares (Fev, Abr, Jun, Ago, Out, Dez)</SelectItem>
+              </SelectContent>
+            </Select>
+            {rotationType !== 'fixed' && (
+              <div className="mt-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                  📅 Disponível em: {rotationType === 'odd_months' 
+                    ? 'Janeiro, Março, Maio, Julho, Setembro, Novembro'
+                    : 'Fevereiro, Abril, Junho, Agosto, Outubro, Dezembro'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Character Revelation Date */}
+          <div>
+            <Label htmlFor="edit-revelation-date">Data de Revelação do Personagem</Label>
+            <Input
+              id="edit-revelation-date"
+              type="datetime-local"
+              value={characterRevelationDate}
+              onChange={(e) => setCharacterRevelationDate(e.target.value)}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Data em que o personagem da coleção será revelado aos assinantes
+            </p>
           </div>
         </div>
 

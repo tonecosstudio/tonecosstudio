@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
+import { scheduleConsecutiveDeliveries } from "../_shared/delivery-scheduling.ts";
 
 /**
  * Edge Function: create-subscription-v2
@@ -74,7 +75,121 @@ function checkCycleCapacity(cycle: CycleData): void {
 }
 
 /**
- * Agenda entregas consecutivas
+ * Calcula os ciclos que serão usados para as entregas
+ * Retorna array de objetos com informações dos ciclos consecutivos
+ */
+function calculateDeliveryCycles(
+  entryCycle: CycleData,
+  deliveryCount: number
+): Array<{ cycleNumber: 1 | 2; month: number; year: number }> {
+  const cycles: Array<{ cycleNumber: 1 | 2; month: number; year: number }> = [];
+  
+  let currentCycleNumber = entryCycle.cycle_number;
+  let currentMonth = entryCycle.month;
+  let currentYear = entryCycle.year;
+  
+  for (let i = 0; i < deliveryCount; i++) {
+    // Avançar para o próximo ciclo
+    if (currentCycleNumber === 1) {
+      // Ciclo 1 -> Ciclo 2 (mesmo mês)
+      currentCycleNumber = 2;
+    } else {
+      // Ciclo 2 -> Ciclo 1 (próximo mês)
+      currentCycleNumber = 1;
+      currentMonth = currentMonth + 1;
+      
+      // Virar o ano se necessário
+      if (currentMonth > 12) {
+        currentMonth = 1;
+        currentYear = currentYear + 1;
+      }
+    }
+    
+    cycles.push({
+      cycleNumber: currentCycleNumber,
+      month: currentMonth,
+      year: currentYear
+    });
+  }
+  
+  return cycles;
+}
+
+/**
+ * Verifica capacidade disponível para todos os ciclos de entrega
+ * Lança erro se qualquer ciclo não tiver capacidade disponível
+ */
+async function checkAllDeliveryCyclesCapacity(
+  service: any,
+  entryCycle: CycleData,
+  deliveryCount: number
+): Promise<void> {
+  // Calcular quais ciclos serão usados
+  const deliveryCycles = calculateDeliveryCycles(entryCycle, deliveryCount);
+  
+  // Verificar capacidade para cada ciclo
+  for (let i = 0; i < deliveryCycles.length; i++) {
+    const cycleInfo = deliveryCycles[i];
+    
+    // Buscar ou criar o ciclo
+    const { data: existingCycle } = await service
+      .from('cycles')
+      .select('id, capacity_current, capacity_max, capacity_limit')
+      .eq('cycle_number', cycleInfo.cycleNumber)
+      .eq('month', cycleInfo.month)
+      .eq('year', cycleInfo.year)
+      .maybeSingle();
+    
+    if (existingCycle) {
+      // Verificar capacidade usando a função do banco
+      const { data: hasCapacity, error } = await service.rpc('check_capacity_available', {
+        p_cycle_id: existingCycle.id,
+        p_quantity: 1
+      });
+      
+      if (error) {
+        throw new Error(`Erro ao verificar capacidade: ${error.message}`);
+      }
+      
+      if (!hasCapacity) {
+        throw new Error(
+          `Capacidade esgotada para o Ciclo ${cycleInfo.cycleNumber} de ` +
+          `${cycleInfo.month}/${cycleInfo.year} (entrega ${i + 1} de ${deliveryCount}). ` +
+          `Não é possível criar a assinatura.`
+        );
+      }
+    }
+    // Se o ciclo não existe ainda, será criado com capacidade disponível
+  }
+}
+
+/**
+ * Reserva capacidade para todos os ciclos de entrega
+ */
+async function reserveAllDeliveryCyclesCapacity(
+  service: any,
+  deliveries: any[],
+  subscriptionId: string
+): Promise<void> {
+  for (const delivery of deliveries) {
+    if (delivery.cycle_id) {
+      const { error } = await service.rpc('reserve_capacity', {
+        p_cycle_id: delivery.cycle_id,
+        p_quantity: 1
+      });
+      
+      if (error) {
+        console.error(`Erro ao reservar capacidade para ciclo ${delivery.cycle_id}:`, error);
+        // Continuar mesmo com erro, pois a entrega já foi criada
+      }
+    }
+  }
+}
+
+/**
+ * Agenda entregas consecutivas usando o serviço compartilhado
+ * 
+ * Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.7
  */
 async function scheduleDeliveries(
   service: any,
@@ -82,21 +197,15 @@ async function scheduleDeliveries(
   planType: PlanType,
   entryCycleId: string
 ): Promise<any[]> {
-  const deliveryCount = planType === 'trimestral' ? 3 : 6;
+  // Call the shared delivery scheduling service from task 18.1
+  const deliveries = await scheduleConsecutiveDeliveries(
+    service,
+    subscriptionId,
+    entryCycleId,
+    planType
+  );
   
-  // Chamar função do banco de dados para agendar entregas
-  const { data, error } = await service.rpc('schedule_consecutive_deliveries', {
-    p_subscription_id: subscriptionId,
-    p_plan_type: planType,
-    p_entry_cycle_id: entryCycleId,
-    p_delivery_count: deliveryCount
-  });
-  
-  if (error) {
-    throw new Error(`Erro ao agendar entregas: ${error.message}`);
-  }
-  
-  return data || [];
+  return deliveries;
 }
 
 /**
@@ -118,31 +227,6 @@ async function createBonusPiece(
   
   if (error) {
     throw new Error(`Erro ao criar peça bônus: ${error.message}`);
-  }
-}
-
-/**
- * Incrementa capacidade do ciclo
- */
-async function incrementCycleCapacity(service: any, cycleId: string): Promise<void> {
-  const { error } = await service.rpc('increment_cycle_capacity', {
-    cycle_id: cycleId
-  });
-  
-  if (error) {
-    // Fallback: incrementar manualmente
-    const { data: cycle } = await service
-      .from('cycles')
-      .select('capacity_current')
-      .eq('id', cycleId)
-      .single();
-    
-    if (cycle) {
-      await service
-        .from('cycles')
-        .update({ capacity_current: cycle.capacity_current + 1 })
-        .eq('id', cycleId);
-    }
   }
 }
 
@@ -242,10 +326,19 @@ serve(async (req) => {
     // Obter ciclo atual
     const currentCycle = await getCurrentCycle(service);
     
-    // Verificar capacidade
+    // Verificar capacidade do ciclo de entrada
     checkCycleCapacity(currentCycle);
 
-    // Criar assinatura
+    // Calcular número de entregas baseado no plano
+    const deliveryCount = plan.plan_type === 'trimestral' ? 3 : 6;
+    
+    // Verificar capacidade disponível para TODOS os ciclos de entrega
+    // Isso garante que a assinatura só será criada se houver capacidade
+    // para todas as entregas (Requirements 3.2, 9.9, 22.1)
+    await checkAllDeliveryCyclesCapacity(service, currentCycle, deliveryCount);
+
+    // Criar assinatura (Requirements 20.1, 20.2, 20.3, 20.4)
+    // entry_cycle_id stores the cycle when subscription was created
     const { data: subscription, error: subscriptionError } = await service
       .from("subscriptions")
       .insert({
@@ -257,7 +350,7 @@ serve(async (req) => {
         payment_method: paymentMethod,
         payment_id: paymentId || null,
         deliveries_total: plan.deliveries_total,
-        entry_cycle_id: currentCycle.id,
+        entry_cycle_id: currentCycle.id, // Requirement 20.4: Store cycle association
         current_delivery_number: 1,
         is_legacy_model: false,
       })
@@ -266,7 +359,7 @@ serve(async (req) => {
 
     if (subscriptionError) throw subscriptionError;
 
-    // Agendar entregas consecutivas
+    // Agendar entregas consecutivas (Requirements 20.5)
     const deliveries = await scheduleDeliveries(
       service,
       subscription.id,
@@ -280,8 +373,9 @@ serve(async (req) => {
       await createBonusPiece(service, subscription.id, lastDelivery.id);
     }
 
-    // Incrementar capacidade do ciclo
-    await incrementCycleCapacity(service, currentCycle.id);
+    // Reservar capacidade para todos os ciclos de entrega (Requirement 20.7)
+    // This increments capacity_current for each cycle used
+    await reserveAllDeliveryCyclesCapacity(service, deliveries, subscription.id);
 
     return new Response(
       JSON.stringify({

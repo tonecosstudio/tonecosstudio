@@ -376,7 +376,22 @@ export function SubscriptionSection({ userId }: { userId: string }) {
         .from("subscriptions")
         .select(
           `
-          *,
+          id,
+          user_id,
+          collection_id,
+          plan_type,
+          status,
+          total_paid,
+          payment_method,
+          payment_id,
+          deliveries_total,
+          deliveries_completed,
+          next_delivery_date,
+          next_production_start,
+          entry_cycle_id,
+          pause_count,
+          created_at,
+          updated_at,
           collections (id, name, slug)
         `
         )

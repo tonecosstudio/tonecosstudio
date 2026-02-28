@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Revelação do Personagem</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #333333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #ffffff;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    h1 {
+      color: #764ba2;
+      font-size: 28px;
+      margin: 0 0 20px 0;
+      text-align: center;
+    }
+    p {
+      line-height: 1.6;
+      margin: 0 0 15px 0;
+      color: #555555;
+    }
+    .reveal-box {
+      background: linear-gradient(135deg, #f0f4ff 0%, #fff0f8 100%);
+      border: 3px solid #764ba2;
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px 0;
+      text-align: center;
+    }
+    .character-image {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 20px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .character-name {
+      font-size: 32px;
+      font-weight: bold;
+      color: #764ba2;
+      margin: 20px 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .collection-badge {
+      display: inline-block;
+      background-color: #667eea;
+      color: #ffffff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 600;
+      margin: 10px 0;
+    }
+    .info-box {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #764ba2;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 30px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-weight: 600;
+    }
+    .footer {
+      background-color: #f9f9f9;
+      padding: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #888888;
+    }
+    .sparkle {
+      font-size: 24px;
+      animation: sparkle 1.5s infinite;
+    }
+    @keyframes sparkle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @media only screen and (max-width: 600px) {
+      .content {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      .character-name {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">ORDAX</h1>
+    </div>
+    
+    <div class="content">
+      <h1><span class="sparkle">✨</span> Revelação do Personagem <span class="sparkle">✨</span></h1>
+      
+      <p style="text-align: center; font-size: 18px;">Olá, {{userName}}!</p>
+      
+      <p style="text-align: center; font-size: 16px;">
+        O momento que você esperava chegou! É hora de revelar qual personagem está na coleção que você escolheu.
+      </p>
+      
+      <div class="reveal-box">
+        <div class="collection-badge">{{collectionName}}</div>
+        
+        <img src="{{characterImageUrl}}" alt="{{characterName}}" class="character-image">
+        
+        <div class="character-name">{{characterName}}</div>
+        
+        {{#if characterDescription}}
+        <p style="color: #555555; font-size: 15px; margin-top: 15px;">
+          {{characterDescription}}
+        </p>
+        {{/if}}
+      </div>
+      
+      <p style="text-align: center; font-size: 16px; margin-top: 30px;">
+        <strong>Sua peça exclusiva está sendo produzida com todo cuidado e atenção aos detalhes!</strong>
+      </p>
+      
+      <div class="info-box">
+        <p style="margin: 0;"><strong>Informações da sua entrega:</strong></p>
+        <p style="margin: 10px 0 0 0;">
+          Coleção: <strong>{{collectionName}}</strong><br>
+          Personagem: <strong>{{characterName}}</strong><br>
+          Número da entrega: <strong>{{deliveryNumber}}</strong><br>
+          Previsão de envio: <strong>{{expectedShippingDate}}</strong>
+        </p>
+      </div>
+      
+      <p style="text-align: center;">
+        Você receberá uma notificação quando sua peça entrar em produção e outra quando for enviada com o código de rastreamento.
+      </p>
+      
+      <center>
+        <a href="{{dashboardUrl}}" class="button">Ver Detalhes da Entrega</a>
+      </center>
+      
+      <p style="margin-top: 30px; text-align: center; color: #888888; font-size: 14px;">
+        Atenciosamente,<br>
+        <strong>Equipe ORDAX</strong>
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>ORDAX - Colecionáveis Premium sob Encomenda</p>
+      <p>Este é um e-mail automático. Por favor, não responda.</p>
+      <p>Para suporte, entre em contato: {{supportEmail}}</p>
+    </div>
+  </div>
+</body>
+</html>

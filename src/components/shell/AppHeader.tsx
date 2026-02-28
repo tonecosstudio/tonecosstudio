@@ -33,14 +33,14 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
               O
             </div>
           </div>
-          <span className="text-lg font-bold tracking-tight text-background">ORDAX</span>
+          <span className="text-sm font-bold tracking-tight text-background">ORDAX</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
           <NavLink
             to="/"
-            className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
             Home
@@ -48,7 +48,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
           <NavLink
             to="/catalogo"
-            className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
             Catálogo
@@ -56,7 +56,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
           <NavLink
             to="/colecoes"
-            className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
             Coleções
@@ -64,7 +64,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
           <NavLink
             to="/planos"
-            className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
             Planos
@@ -72,7 +72,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
           <NavLink
             to="/sobre"
-            className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
             Sobre
@@ -80,7 +80,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
           <NavLink
             to="/contato"
-            className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
             Contato
@@ -88,7 +88,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
           <NavLink
             to="/orcamento/carrinho"
-            className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
             Carrinho{cartCount ? ` (${cartCount})` : ""}
@@ -97,7 +97,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
           {user && (
             <NavLink
               to="/perfil"
-              className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+              className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
               activeClassName="text-background bg-background/15"
             >
               Conta
@@ -107,7 +107,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
           {isAdmin && (
             <NavLink
               to="/admin"
-              className="rounded-md px-3 py-2 text-sm font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+              className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
               activeClassName="text-background bg-background/15"
             >
               Admin
@@ -127,7 +127,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
                 await onSignOut();
                 setMobileMenuOpen(false);
               }}
-              className="text-background/70 hover:text-background hover:bg-background/10"
+              className="text-background/70 hover:text-background hover:bg-background/10 text-xs"
             >
               Sair
             </Button>
@@ -135,7 +135,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
             <Button
               size="sm"
               onClick={() => navigate("/login")}
-              className="bg-background text-foreground hover:bg-background/90"
+              className="bg-background text-foreground hover:bg-background/90 text-xs"
             >
               Entrar
             </Button>

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
+import { nowInBahia, addDays, toUTC } from "../_shared/timezone.ts";
 
 type PlanType = "trimestral" | "semestral" | "anual";
 
@@ -174,7 +175,7 @@ serve(async (req) => {
         payment_method: paymentMethod,
         payment_id: paymentId || null,
         deliveries_total: deliveriesTotal,
-        next_delivery_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 dias
+        next_delivery_at: toUTC(addDays(nowInBahia(), 30)).toISOString(), // +30 dias em horário da Bahia
       })
       .select()
       .single();

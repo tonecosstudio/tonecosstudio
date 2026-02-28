@@ -62,6 +62,9 @@ export interface SystemSettings {
   input_debounce_ms: number;
   image_compression_quality: number;
   max_image_size_mb: number;
+  
+  // Imagens
+  hero_image_url?: string;
 }
 
 /**
@@ -107,6 +110,9 @@ const DEFAULT_SETTINGS: SystemSettings = {
   input_debounce_ms: UI.INPUT_DEBOUNCE_MS,
   image_compression_quality: UI.IMAGE_COMPRESSION_QUALITY,
   max_image_size_mb: UI.MAX_IMAGE_SIZE_MB,
+  
+  // Imagens
+  hero_image_url: undefined,
 };
 
 /**
@@ -131,8 +137,8 @@ export function useSystemSettings() {
         ...data,
       } as SystemSettings;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    cacheTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: 1 * 60 * 1000, // 1 minuto
+    gcTime: 5 * 60 * 1000, // 5 minutos
   });
 }
 

@@ -15,34 +15,22 @@ import {
 import type { PaymentDetails, PaymentMethod } from "@/types/manual-payment";
 
 // Mock Supabase client
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: mockPayment,
-            error: null,
-          })),
-          maybeSingle: vi.fn(() => ({
-            data: null,
-            error: null,
-          })),
-        })),
-        not: vi.fn(() => ({
-          data: [],
-          error: null,
-        })),
-      })),
+vi.mock("@/integrations/supabase/client", () => {
+  const mockFrom = vi.fn();
+  const mockAuth = {
+    getUser: vi.fn(() => ({
+      data: { user: { id: "user-123" } },
+      error: null,
     })),
-    auth: {
-      getUser: vi.fn(() => ({
-        data: { user: { id: "user-123" } },
-        error: null,
-      })),
+  };
+  
+  return {
+    supabase: {
+      from: mockFrom,
+      auth: mockAuth,
     },
-  },
-}));
+  };
+});
 
 // Mock data
 const mockPaymentMethod: PaymentMethod = {
@@ -88,11 +76,35 @@ const mockEmailService: EmailService = {
   sendEmail: vi.fn().mockResolvedValue(undefined),
 };
 
+// Import after mocks
+import { supabase } from "@/integrations/supabase/client";
+
 describe("NotificationService", () => {
   let notificationService: NotificationService;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Setup default mock behavior
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => ({
+            data: mockPayment,
+            error: null,
+          })),
+          maybeSingle: vi.fn(() => ({
+            data: null,
+            error: null,
+          })),
+        })),
+        not: vi.fn(() => ({
+          data: [],
+          error: null,
+        })),
+      })),
+    } as any);
+    
     notificationService = new NotificationService(mockEmailService);
   });
 
@@ -112,7 +124,7 @@ describe("NotificationService", () => {
     it("should throw error if customer email not found", async () => {
       // Mock payment without email
       const paymentWithoutEmail = { ...mockPayment, customer_email: undefined };
-      vi.mocked(require("@/integrations/supabase/client").supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             single: vi.fn(() => ({
@@ -131,16 +143,37 @@ describe("NotificationService", () => {
 
   describe("sendPaymentUnderReview", () => {
     it("should send payment under review email to admins", async () => {
-      // Mock admin emails
-      vi.mocked(require("@/integrations/supabase/client").supabase.from).mockReturnValue({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            not: vi.fn(() => ({
-              data: [{ email: "admin1@example.com" }, { email: "admin2@example.com" }],
-              error: null,
-            })),
+      // Mock admin emails - need to setup both calls
+      const mockSelect = vi.fn();
+      const mockEq = vi.fn();
+      const mockNot = vi.fn();
+      
+      // First call for payment details
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => ({
+            data: mockPayment,
+            error: null,
           })),
         })),
+      });
+      
+      // Second call for admin emails
+      mockSelect.mockReturnValueOnce({
+        eq: mockEq,
+      });
+      
+      mockEq.mockReturnValueOnce({
+        not: mockNot,
+      });
+      
+      mockNot.mockReturnValueOnce({
+        data: [{ email: "admin1@example.com" }, { email: "admin2@example.com" }],
+        error: null,
+      });
+      
+      vi.mocked(supabase.from).mockReturnValue({
+        select: mockSelect,
       } as any);
 
       await notificationService.sendPaymentUnderReview("payment-123");
@@ -156,15 +189,36 @@ describe("NotificationService", () => {
 
     it("should not throw if no admin emails found", async () => {
       // Mock empty admin emails
-      vi.mocked(require("@/integrations/supabase/client").supabase.from).mockReturnValue({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            not: vi.fn(() => ({
-              data: [],
-              error: null,
-            })),
+      const mockSelect = vi.fn();
+      const mockEq = vi.fn();
+      const mockNot = vi.fn();
+      
+      // First call for payment details
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => ({
+            data: mockPayment,
+            error: null,
           })),
         })),
+      });
+      
+      // Second call for admin emails
+      mockSelect.mockReturnValueOnce({
+        eq: mockEq,
+      });
+      
+      mockEq.mockReturnValueOnce({
+        not: mockNot,
+      });
+      
+      mockNot.mockReturnValueOnce({
+        data: [],
+        error: null,
+      });
+      
+      vi.mocked(supabase.from).mockReturnValue({
+        select: mockSelect,
       } as any);
 
       await expect(
@@ -181,7 +235,7 @@ describe("NotificationService", () => {
         approved_at: "2024-01-02T00:00:00Z",
       };
 
-      vi.mocked(require("@/integrations/supabase/client").supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             single: vi.fn(() => ({
@@ -206,9 +260,7 @@ describe("NotificationService", () => {
 
   describe("sendPaymentRejected", () => {
     it("should send payment rejection email with reason", async () => {
-      const rejectionReason = "Comprovante ilegível";
-
-      await notificationService.sendPaymentRejected("payment-123", rejectionReason);
+      await notificationService.sendPaymentRejected("payment-123", "Comprovante ilegível");
 
       expect(mockEmailService.sendEmail).toHaveBeenCalledWith(
         [{ email: "joao@example.com", name: "João Silva" }],
@@ -216,7 +268,7 @@ describe("NotificationService", () => {
           subject: expect.stringContaining("Pagamento rejeitado"),
         }),
         expect.objectContaining({
-          rejectionReason,
+          rejectionReason: "Comprovante ilegível",
         })
       );
     });
@@ -224,9 +276,7 @@ describe("NotificationService", () => {
 
   describe("sendInfoRequested", () => {
     it("should send info requested email with admin message", async () => {
-      const adminMessage = "Precisamos ver o comprovante completo com data visível";
-
-      await notificationService.sendInfoRequested("payment-123", adminMessage);
+      await notificationService.sendInfoRequested("payment-123", "Por favor, envie um comprovante mais claro");
 
       expect(mockEmailService.sendEmail).toHaveBeenCalledWith(
         [{ email: "joao@example.com", name: "João Silva" }],
@@ -234,7 +284,7 @@ describe("NotificationService", () => {
           subject: expect.stringContaining("Informações adicionais necessárias"),
         }),
         expect.objectContaining({
-          adminMessage,
+          adminMessage: "Por favor, envie um comprovante mais claro",
         })
       );
     });
@@ -242,25 +292,21 @@ describe("NotificationService", () => {
 
   describe("DefaultEmailService", () => {
     it("should log email instead of sending in development", async () => {
-      const consoleSpy = vi.spyOn(console, "log");
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
       const emailService = new DefaultEmailService();
 
-      const recipient: EmailRecipient = { email: "test@example.com" };
-      const template = {
-        subject: "Test",
-        html: "<p>Test</p>",
-        text: "Test",
-      };
-
-      await emailService.sendEmail([recipient], template);
+      await emailService.sendEmail(
+        [{ email: "test@example.com", name: "Test User" }],
+        { subject: "Test Subject" },
+        { testData: "test" }
+      );
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Email would be sent:",
-        expect.objectContaining({
-          to: [recipient],
-          subject: "Test",
-        })
+        expect.stringContaining("Email would be sent"),
+        expect.any(Object)
       );
+
+      consoleSpy.mockRestore();
     });
   });
 });

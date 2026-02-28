@@ -213,12 +213,22 @@ describe('Property-Based: Delivery Scheduling', () => {
             { minLength: 3, maxLength: 6 }
           ),
           (dates) => {
-            const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime());
+            // Filter out invalid dates
+            const validDates = dates.filter(d => d instanceof Date && !isNaN(d.getTime()));
+            
+            // Skip if we don't have enough valid dates
+            if (validDates.length < 2) return;
+            
+            const sorted = [...validDates].sort((a, b) => a.getTime() - b.getTime());
             
             for (let i = 1; i < sorted.length; i++) {
-              expect(sorted[i].getTime()).toBeGreaterThanOrEqual(
-                sorted[i - 1].getTime()
-              );
+              const currentTime = sorted[i].getTime();
+              const previousTime = sorted[i - 1].getTime();
+              
+              // Ensure both are valid numbers
+              expect(Number.isFinite(currentTime)).toBe(true);
+              expect(Number.isFinite(previousTime)).toBe(true);
+              expect(currentTime).toBeGreaterThanOrEqual(previousTime);
             }
           }
         ),

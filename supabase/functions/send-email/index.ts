@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { nowInBahia, toUTC, addDays } from '../_shared/timezone.ts';
 
 // Types
 interface EmailNotificationRequest {
@@ -110,7 +111,7 @@ class EmailService {
 
 // Check if user is online (activity within last 5 minutes)
 async function isUserOnline(supabase: any, userId: string): Promise<boolean> {
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const fiveMinutesAgo = toUTC(addDays(nowInBahia(), -5 / (24 * 60))).toISOString(); // 5 minutes ago in Bahia time
   
   const { data, error } = await supabase
     .from('support_messages')
@@ -454,7 +455,7 @@ serve(async (req) => {
       message_id: payload.messageId,
       recipient_user_id: payload.recipientUserId,
       status: notificationStatus,
-      sent_at: emailId ? new Date().toISOString() : null,
+      sent_at: emailId ? toUTC(nowInBahia()).toISOString() : null,
       error_message: lastError,
       retry_count: emailId ? 0 : maxRetries,
     });

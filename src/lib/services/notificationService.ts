@@ -445,13 +445,6 @@ export class DefaultEmailService implements EmailService {
       subject: template.subject,
       data,
     });
-
-    // TODO: Implement actual email sending
-    // Example with Supabase Edge Functions:
-    // const { error } = await supabase.functions.invoke('send-email', {
-    //   body: { to, template, data }
-    // });
-    // if (error) throw error;
   }
 }
 

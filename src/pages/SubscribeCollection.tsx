@@ -1,25 +1,21 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Check, Package, Calendar, CreditCard, Sparkles, Gift, AlertCircle } from "lucide-react";
+  Check, Package, Crown, Sparkles, Gift, AlertCircle, 
+  ArrowRight, Star, Shield, Truck, Calendar, ChevronRight,
+  Info, TrendingDown, Lock
+} from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PaymentInstructions } from "@/components/payment/PaymentInstructions";
+import { PaymentVoucherUpload } from "@/components/PaymentVoucherUpload";
 
 export default function SubscribeCollection() {
   const { slug } = useParams();
@@ -27,19 +23,13 @@ export default function SubscribeCollection() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [planType, setPlanType] = useState<"trimestral" | "semestral" | "anual">("trimestral");
-  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card" | "boleto">("pix");
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
-
-  // Mapear planType para subscriptionPeriod
-  const periodMap = {
-    trimestral: "quarterly" as const,
-    semestral: "semiannual" as const,
-    anual: "annual" as const,
-  };
+  const [paymentVoucherUrl, setPaymentVoucherUrl] = useState<string | null>(null);
 
   // Buscar planos disponíveis
-  const plansQuery = useQuery({
+  const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ["subscription-plans"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -47,40 +37,27 @@ export default function SubscribeCollection() {
         .select("*")
         .eq("is_active", true)
         .order("display_order", { ascending: true });
-
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Buscar todas as coleções ativas
-  const collectionsQuery = useQuery({
+  // Buscar coleções ativas
+  const { data: collections, isLoading: collectionsLoading } = useQuery({
     queryKey: ["active-collections"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
-        .select(
-          `
-          *,
-          collection_characters (
-            id,
-            name,
-            release_order,
-            description,
-            status
-          )
-        `
-        )
+        .select(`*, collection_characters (id, name, status)`)
         .eq("is_active", true)
         .order("name", { ascending: true });
-
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Buscar coleção inicial (se veio de uma coleção específica)
-  const collectionQuery = useQuery({
+  // Buscar coleção específica se veio de uma
+  const { data: initialCollection } = useQuery({
     queryKey: ["collection", slug],
     enabled: Boolean(slug),
     queryFn: async () => {
@@ -90,37 +67,35 @@ export default function SubscribeCollection() {
         .eq("slug", slug)
         .eq("is_active", true)
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
   });
 
-  // Verificar se já tem assinatura ativa
-  const existingSubscriptionQuery = useQuery({
-    queryKey: ["existing-subscription", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("id, status, plan_type")
-        .eq("user_id", user!.id)
-        .in("status", ["active", "paused"])
-        .maybeSingle();
+  // Auto-selecionar primeira coleção
+  useEffect(() => {
+    if (initialCollection && selectedCollections.length === 0) {
+      setSelectedCollections([initialCollection.id]);
+    }
+  }, [initialCollection, selectedCollections.length]);
 
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Auto-selecionar primeiro plano
+  useEffect(() => {
+    if (plans && plans.length > 0 && !selectedPlanId) {
+      const popularPlan = plans.find(p => p.plan_type === "trimestral") || plans[0];
+      setSelectedPlanId(popularPlan.id);
+    }
+  }, [plans, selectedPlanId]);
 
-  // Inicializar coleções selecionadas quando carregar
-  const collection = collectionQuery.data;
-  const allCollections = collectionsQuery.data || [];
-
-  // Auto-selecionar primeira coleção se veio de uma específica
-  if (collection && selectedCollections.length === 0 && allCollections.length > 0) {
-    setSelectedCollections([collection.id]);
-  }
+  // Auto-selecionar todas para plano anual
+  useEffect(() => {
+    const selectedPlan = plans?.find(p => p.id === selectedPlanId);
+    const isAnualPlan = selectedPlan?.plan_type === "anual";
+    
+    if (isAnualPlan && collections && selectedCollections.length !== collections.length) {
+      setSelectedCollections(collections.map(c => c.id));
+    }
+  }, [selectedPlanId, plans, collections, selectedCollections.length]);
 
   // Criar assinatura
   const subscribeMutation = useMutation({
@@ -130,60 +105,51 @@ export default function SubscribeCollection() {
         throw new Error("Faça login para continuar");
       }
 
-      // Validar número de coleções
-      const requiredCollections = getRequiredCollections(planType);
+      const selectedPlan = plans?.find(p => p.id === selectedPlanId);
+      if (!selectedPlan) throw new Error("Selecione um plano");
+
+      const requiredCollections = selectedPlan.collections_count === -1 
+        ? collections?.length || 0 
+        : selectedPlan.collections_count;
+
       if (selectedCollections.length !== requiredCollections) {
-        throw new Error(
-          `Selecione exatamente ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`
-        );
+        throw new Error(`Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`);
       }
 
-      // Buscar plano selecionado
-      const { data: plan, error: planError } = await supabase
-        .from("subscription_plans")
-        .select("*")
-        .eq("plan_type", planType)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (planError) throw planError;
-
-      if (!plan) {
-        throw new Error("Plano não encontrado ou inativo");
-      }
-
-      // Criar assinatura pendente de pagamento
+      // Criar assinatura
       const { data: subscription, error: subError } = await supabase
         .from("subscriptions")
         .insert({
           user_id: user.id,
-          plan_id: plan.id,
-          plan_type: planType,
+          plan_id: selectedPlan.id,
+          plan_type: selectedPlan.plan_type,
           status: "pending_payment",
+          payment_voucher_url: paymentVoucherUrl,
         })
         .select()
         .single();
 
       if (subError) throw subError;
 
-      // Associar coleções selecionadas
+      // Associar coleções
       for (const collectionId of selectedCollections) {
-        const { error: collError } = await supabase.from("subscription_collections").insert({
+        await supabase.from("subscription_collections").insert({
           subscription_id: subscription.id,
           collection_id: collectionId,
         });
-
-        if (collError) throw collError;
       }
 
-      // Criar solicitação de pagamento manual
+      // Criar pagamento
+      const amount = paymentMethod === "pix" ? selectedPlan.price_pix : selectedPlan.price_full;
+      const paymentStatus = paymentVoucherUrl ? "under_review" : "pending";
+      
       const { data: payment, error: payError } = await supabase
         .from("manual_payments")
         .insert({
           user_id: user.id,
-          amount: plan.price_full,
+          amount: Number(amount),
           payment_type: "subscription",
-          status: "pending",
+          status: paymentStatus,
           reference_number: `SUB-${Date.now()}`,
           subscription_id: subscription.id,
         })
@@ -192,20 +158,12 @@ export default function SubscribeCollection() {
 
       if (payError) throw payError;
 
-      // Criar conversa de suporte
-      await supabase.from("support_conversations").insert({
-        user_id: user.id,
-        subject: `Nova Assinatura - ${planType}`,
-        status: "waiting_admin",
-        tags: ["assinatura", "pagamento"],
-      });
-
       return { subscription, payment };
     },
     onSuccess: (data) => {
       toast({
         title: "Assinatura criada!",
-        description: "Aguarde o link de pagamento. Você receberá uma notificação em breve.",
+        description: "Redirecionando para pagamento...",
       });
       navigate(`/pagamentos/${data.payment.id}`);
     },
@@ -218,430 +176,479 @@ export default function SubscribeCollection() {
     },
   });
 
-  const hasExistingSubscription = Boolean(existingSubscriptionQuery.data);
+  if (plansLoading || collectionsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-slate-600 dark:text-slate-400">Carregando planos...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Buscar plano selecionado
-  const plans = plansQuery.data || [];
-  const selectedPlan = plans.find((p) => p.plan_type === planType);
-
-  // Determinar quantas coleções são necessárias
-  const getRequiredCollections = (plan: string) => {
-    const planData = plans.find((p) => p.plan_type === plan);
-    if (!planData) return 1;
-
-    // -1 significa todas as coleções
-    if (planData.collections_count === -1) {
-      return allCollections.length;
-    }
-    return planData.collections_count;
-  };
-
-  const requiredCollections = getRequiredCollections(planType);
+  const selectedPlan = plans?.find(p => p.id === selectedPlanId);
+  const requiredCollections = selectedPlan 
+    ? (selectedPlan.collections_count === -1 ? collections?.length || 0 : selectedPlan.collections_count)
+    : 0;
+  const isAnualPlan = selectedPlan?.plan_type === "anual";
   const canSelectMore = selectedCollections.length < requiredCollections;
-  const isAnualPlan = planType === "anual";
 
-  // Toggle seleção de coleção
   const toggleCollection = (collectionId: string) => {
-    if (isAnualPlan) {
-      // Anual: seleciona todas automaticamente
-      if (selectedCollections.length === allCollections.length) {
-        setSelectedCollections([]);
-      } else {
-        setSelectedCollections(allCollections.map((c) => c.id));
-      }
-      return;
-    }
+    if (isAnualPlan) return; // Anual não permite desmarcar
 
     if (selectedCollections.includes(collectionId)) {
-      setSelectedCollections(selectedCollections.filter((id) => id !== collectionId));
+      setSelectedCollections(selectedCollections.filter(id => id !== collectionId));
     } else if (canSelectMore) {
       setSelectedCollections([...selectedCollections, collectionId]);
     }
   };
 
-  // Auto-selecionar todas para plano anual
-  if (
-    isAnualPlan &&
-    selectedCollections.length !== allCollections.length &&
-    allCollections.length > 0
-  ) {
-    setSelectedCollections(allCollections.map((c) => c.id));
-  }
-
-  // Preços dinâmicos da tabela subscription_plans
-  const selectedPrice = selectedPlan
-    ? {
-        full: Number(selectedPlan.price_full),
-        pix: Number(selectedPlan.price_pix),
-      }
-    : { full: 0, pix: 0 };
-  const finalPrice = paymentMethod === "pix" ? selectedPrice.pix : selectedPrice.full;
-  const discount = selectedPrice.full - finalPrice;
-
-  if (collectionsQuery.isLoading || plansQuery.isLoading) {
-    return (
-      <div className="container py-8">
-        <div className="text-center">Carregando...</div>
-      </div>
-    );
-  }
-
-  if (allCollections.length === 0) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardContent className="py-16 text-center">
-            <h3 className="text-xl font-semibold mb-2">Nenhuma coleção disponível</h3>
-            <p className="text-muted-foreground mb-6">Não há coleções ativas no momento</p>
-            <Button onClick={() => navigate("/")}>Voltar ao Início</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (plans.length === 0) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardContent className="py-16 text-center">
-            <h3 className="text-xl font-semibold mb-2">Nenhum plano disponível</h3>
-            <p className="text-muted-foreground mb-6">
-              Não há planos de assinatura ativos no momento
-            </p>
-            <Button onClick={() => navigate("/")}>Voltar ao Início</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const finalPrice = selectedPlan 
+    ? (paymentMethod === "pix" ? Number(selectedPlan.price_pix) : Number(selectedPlan.price_full))
+    : 0;
+  const discount = selectedPlan 
+    ? Number(selectedPlan.price_full) - Number(selectedPlan.price_pix)
+    : 0;
 
   return (
     <>
       <SEOHead
-        title="Assinar Coleção"
-        description="Escolha seu plano e coleções favoritas"
-        keywords={["assinatura", "coleção", "planos"]}
+        title="Assinar Coleção - Planos Premium"
+        description="Escolha seu plano e receba personagens exclusivos todo mês"
+        keywords={["assinatura", "coleção", "planos", "premium"]}
       />
 
-      <div className="container py-8 sm:py-12 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Assinar Coleções</h1>
-          <p className="text-muted-foreground">
-            Escolha seu plano e as coleções que deseja receber
-          </p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="container max-w-7xl px-6 py-12">
+          {/* Header */}
+          <div className="mb-12 text-center">
+            <Badge className="mb-4 bg-amber-500 text-white px-4 py-2">
+              <Crown className="w-4 h-4 mr-2" />
+              Planos Premium
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-slate-950 dark:text-white">
+              Assine e Economize
+            </h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              Receba personagens exclusivos todo mês com desconto progressivo.<br />
+              Quanto mais meses, menor o valor por peça.
+            </p>
+          </div>
 
-        {/* Alerta se já tem assinatura */}
-        {hasExistingSubscription && (
-          <Alert className="mb-6">
-            <AlertDescription>
-              Você já tem uma assinatura ativa.{" "}
-              <Button
-                variant="link"
-                className="p-0 h-auto"
-                onClick={() => navigate("/assinaturas")}
-              >
-                Ver minhas assinaturas
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Coluna Esquerda - Seleção de Plano e Coleções */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Escolha do Plano */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg">
+                    1
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-950 dark:text-white">Escolha seu Plano</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Selecione o período de assinatura</p>
+                  </div>
+                </div>
 
-        {/* Alerta de desenvolvimento */}
-        <Alert className="mb-6 border-amber-500 bg-amber-50">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-900">
-            <strong>Sistema em Desenvolvimento:</strong> A funcionalidade de assinatura está sendo
-            implementada. Por enquanto, você pode explorar os planos e coleções disponíveis.
-          </AlertDescription>
-        </Alert>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Seleção de Coleções */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Escolha suas Coleções</CardTitle>
-              <CardDescription>
-                {isAnualPlan
-                  ? "Plano Anual: Acesso a todas as coleções"
-                  : `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"} (${selectedCollections.length}/${requiredCollections})`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isAnualPlan ? (
-                <Alert className="mb-4">
-                  <Sparkles className="h-4 w-4" />
-                  <AlertDescription>
-                    Com o plano Anual, você tem acesso a TODAS as coleções e pode trocar entre elas
-                    ilimitadamente!
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Alert className="mb-4">
-                  <AlertDescription>
-                    Você poderá trocar ILIMITADAMENTE entre as coleções escolhidas até o início da
-                    produção.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                {allCollections.map((col: any) => {
-                  const isSelected = selectedCollections.includes(col.id);
-                  const canSelect = isAnualPlan || canSelectMore || isSelected;
-                  const characterCount = col.collection_characters?.length || 0;
-
-                  // Não mostrar coleções sem personagens
-                  if (characterCount === 0) return null;
-
-                  return (
-                    <div
-                      key={col.id}
-                      onClick={() => canSelect && toggleCollection(col.id)}
-                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                        isSelected
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : canSelect
-                            ? "hover:bg-muted/50"
-                            : "opacity-50 cursor-not-allowed"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            isSelected ? "border-primary bg-primary" : "border-muted-foreground"
-                          }`}
-                        >
-                          {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold mb-1">{col.name}</h4>
-                          {col.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {col.description}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {characterCount} {characterCount === 1 ? "personagem" : "personagens"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Formulário de Assinatura */}
-          <div className="space-y-6">
-            {/* Escolher Plano */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Escolha seu Plano</CardTitle>
-                <CardDescription>Receba personagens exclusivos todo mês</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup value={planType} onValueChange={(v: any) => setPlanType(v)}>
-                  <div className="space-y-3">
-                    {plans.map((plan: any) => {
-                      const isSelected = planType === plan.plan_type;
-                      const priceFormatted = Number(plan.price_full).toLocaleString("pt-BR", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      });
-                      const pixPriceFormatted = Number(plan.price_pix).toLocaleString("pt-BR", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      });
+                <RadioGroup value={selectedPlanId || ""} onValueChange={setSelectedPlanId}>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {plans?.map((plan: any) => {
+                      const isSelected = selectedPlanId === plan.id;
+                      const isPopular = plan.plan_type === "trimestral";
+                      const isBestValue = plan.plan_type === "anual";
+                      const pricePerPiece = (Number(plan.price_full) / plan.deliveries_total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      const savings = 500 * plan.deliveries_total - Number(plan.price_full);
+                      const savingsPercent = Math.round((savings / (500 * plan.deliveries_total)) * 100);
 
                       return (
                         <label
                           key={plan.id}
-                          className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
-                            isSelected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                          className={`relative cursor-pointer transition-all ${
+                            isSelected ? 'scale-105' : 'hover:scale-102'
                           }`}
                         >
-                          <RadioGroupItem
-                            value={plan.plan_type}
-                            id={plan.plan_type}
-                            className="mt-1"
+                          <input
+                            type="radio"
+                            value={plan.id}
+                            checked={isSelected}
+                            onChange={() => setSelectedPlanId(plan.id)}
+                            className="sr-only"
                           />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold">{plan.name}</span>
-                              {plan.plan_type === "semestral" && (
-                                <Badge variant="secondary">Inclui peça exclusiva</Badge>
-                              )}
-                              {plan.plan_type === "anual" && (
-                                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500">
-                                  <Sparkles className="h-3 w-3 mr-1" />
-                                  Melhor Valor
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {plan.deliveries_total} entregas •{" "}
-                              {plan.collections_count_description ||
-                                `Escolha ${plan.collections_count} ${plan.collections_count === 1 ? "coleção" : "coleções"}`}
-                            </p>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-2xl font-bold">R$ {priceFormatted}</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Pagamento à vista: R$ {pixPriceFormatted}
-                            </p>
-                          </div>
+                          
+                          <Card className={`relative overflow-visible ${
+                            isSelected 
+                              ? 'ring-4 ring-amber-500 shadow-2xl' 
+                              : 'shadow-lg hover:shadow-xl'
+                          }`}>
+                            {(isPopular || isBestValue) && (
+                              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg z-10 whitespace-nowrap">
+                                {isPopular ? '⭐ POPULAR' : '👑 MELHOR'}
+                              </div>
+                            )}
+                            
+                            <CardContent className="p-5 pt-6">
+                              <div className="text-center">
+                                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl">
+                                  {plan.plan_type === "trimestral" ? "⭐" : plan.plan_type === "semestral" ? "💎" : "👑"}
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-950 dark:text-white mb-1 capitalize">
+                                  {plan.name}
+                                </h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                                  {plan.deliveries_total} entregas
+                                </p>
+                                
+                                {/* Bonus Piece Highlight for Semestral Plan */}
+                                {plan.plan_type === "semestral" && (
+                                  <div className="mb-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-2 border-purple-200 dark:border-purple-800 rounded-lg">
+                                    <div className="flex items-center justify-center gap-2 mb-1">
+                                      <span className="text-2xl">🎁</span>
+                                      <span className="text-xs font-bold text-purple-900 dark:text-purple-100">
+                                        PEÇA BÔNUS EXCLUSIVA
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-purple-700 dark:text-purple-300">
+                                      Ganhe uma peça especial na 6ª entrega!
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                <div className="text-3xl font-bold text-slate-950 dark:text-white mb-1">
+                                  R$ {pricePerPiece}
+                                </div>
+                                <div className="text-xs text-slate-600 dark:text-slate-400">por peça</div>
+                                
+                                {savings > 0 && (
+                                  <div className="mt-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold">
+                                    Economize {savingsPercent}%
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
                         </label>
                       );
                     })}
                   </div>
                 </RadioGroup>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Forma de Pagamento */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Forma de Pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select value={paymentMethod} onValueChange={(v: any) => setPaymentMethod(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pix">
-                      Pagamento à vista - R${" "}
-                      {selectedPrice.pix.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      })}
-                    </SelectItem>
-                    <SelectItem value="credit_card">
-                      Cartão de Crédito - R${" "}
-                      {selectedPrice.full.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      (até 6x sem juros)
-                    </SelectItem>
-                    <SelectItem value="boleto">
-                      Boleto - R${" "}
-                      {selectedPrice.full.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      })}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-
-            {/* Informações de Pagamento */}
-            <PaymentInstructions
-              paymentType="subscription"
-              subscriptionPeriod={periodMap[planType]}
-              amount={finalPrice}
-            />
-
-            {/* Resumo */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Resumo do Pedido</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Plano:</span>
-                    <span className="font-medium capitalize">{planType}</span>
+              {/* Escolha de Coleções */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg">
+                    2
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Coleções:</span>
-                    <span className="font-medium">
-                      {isAnualPlan ? "Todas" : `${selectedCollections.length} selecionadas`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Entregas:</span>
-                    <span className="font-medium">{selectedPlan?.deliveries_total || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Forma de pagamento:</span>
-                    <span className="font-medium">
-                      {paymentMethod === "pix"
-                        ? "À vista"
-                        : paymentMethod === "credit_card"
-                          ? "Cartão"
-                          : "Boleto"}
-                    </span>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-950 dark:text-white">Escolha suas Coleções</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {isAnualPlan 
+                        ? "Acesso a todas as coleções" 
+                        : `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"} (${selectedCollections.length}/${requiredCollections})`
+                      }
+                    </p>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-baseline mb-4">
-                    <span className="text-lg font-semibold">Total:</span>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">
-                        R${" "}
-                        {finalPrice.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        })}
-                      </div>
-                      {paymentMethod === "credit_card" && (
-                        <div className="text-xs text-muted-foreground">
-                          ou 6x de R${" "}
-                          {(finalPrice / 6).toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {isAnualPlan && (
+                  <Alert className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+                    <Sparkles className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-900 dark:text-amber-100">
+                      Com o plano Anual, você tem acesso a TODAS as coleções e pode trocar entre elas ilimitadamente!
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                  <Button
-                    className="w-full h-12"
-                    size="lg"
-                    onClick={() => subscribeMutation.mutate()}
-                    disabled={
-                      subscribeMutation.isPending ||
-                      hasExistingSubscription ||
-                      selectedCollections.length !== requiredCollections
-                    }
+                <div className="grid md:grid-cols-2 gap-4">
+                  {collections?.map((col: any) => {
+                    const isSelected = selectedCollections.includes(col.id);
+                    const canSelect = isAnualPlan || canSelectMore || isSelected;
+                    const characterCount = col.collection_characters?.length || 0;
+
+                    if (characterCount === 0) return null;
+
+                    return (
+                      <Card
+                        key={col.id}
+                        onClick={() => canSelect && toggleCollection(col.id)}
+                        className={`cursor-pointer transition-all ${
+                          isSelected
+                            ? 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-950/20'
+                            : canSelect
+                            ? 'hover:shadow-lg'
+                            : 'opacity-50 cursor-not-allowed'
+                        } ${isAnualPlan ? 'cursor-default' : ''}`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                              isSelected ? 'border-amber-500 bg-amber-500' : 'border-slate-300'
+                            }`}>
+                              {isSelected && <Check className="h-4 w-4 text-white" />}
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-slate-950 dark:text-white mb-1">{col.name}</h4>
+                              {col.description && (
+                                <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">
+                                  {col.description}
+                                </p>
+                              )}
+                              <p className="text-xs text-slate-500 dark:text-slate-500">
+                                {characterCount} {characterCount === 1 ? "personagem" : "personagens"}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Forma de Pagamento */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg">
+                    3
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-950 dark:text-white">Forma de Pagamento</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Escolha como prefere pagar</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card
+                    onClick={() => setPaymentMethod("pix")}
+                    className={`cursor-pointer transition-all ${
+                      paymentMethod === "pix"
+                        ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950/20'
+                        : 'hover:shadow-lg'
+                    }`}
                   >
-                    {subscribeMutation.isPending
-                      ? "Processando..."
-                      : selectedCollections.length !== requiredCollections
-                        ? `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`
-                        : "Assinar Agora"}
-                  </Button>
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                          paymentMethod === "pix" ? 'border-green-500 bg-green-500' : 'border-slate-300'
+                        }`}>
+                          {paymentMethod === "pix" && <Check className="h-4 w-4 text-white" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-bold text-slate-950 dark:text-white">PIX</h4>
+                            <Badge className="bg-green-500 text-white text-xs">5% OFF</Badge>
+                          </div>
+                          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
+                            R$ {selectedPlan ? Number(selectedPlan.price_pix).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+                          </p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">Pagamento à vista</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    onClick={() => setPaymentMethod("credit_card")}
+                    className={`cursor-pointer transition-all ${
+                      paymentMethod === "credit_card"
+                        ? 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-950/20'
+                        : 'hover:shadow-lg'
+                    }`}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                          paymentMethod === "credit_card" ? 'border-amber-500 bg-amber-500' : 'border-slate-300'
+                        }`}>
+                          {paymentMethod === "credit_card" && <Check className="h-4 w-4 text-white" />}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-slate-950 dark:text-white mb-2">Cartão de Crédito</h4>
+                          <p className="text-2xl font-bold text-slate-950 dark:text-white mb-1">
+                            R$ {selectedPlan ? Number(selectedPlan.price_full).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+                          </p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">Até 6x sem juros</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
+              </div>
+
+              {/* Upload de Comprovante */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg">
+                    4
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-950 dark:text-white">Comprovante de Pagamento</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Envie o comprovante após realizar o pagamento
+                    </p>
+                  </div>
+                </div>
+
+                <Alert className="mb-6 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-900 dark:text-blue-100">
+                    Após realizar o pagamento via {paymentMethod === "pix" ? "PIX" : "cartão de crédito"}, 
+                    faça upload do comprovante para que possamos verificar e aprovar sua assinatura.
+                  </AlertDescription>
+                </Alert>
+
+                <PaymentVoucherUpload
+                  onUploadSuccess={(url) => {
+                    setPaymentVoucherUrl(url);
+                    toast({
+                      title: "Comprovante enviado!",
+                      description: "Seu comprovante foi enviado com sucesso.",
+                    });
+                  }}
+                  onUploadError={(error) => {
+                    toast({
+                      title: "Erro ao enviar comprovante",
+                      description: error,
+                      variant: "destructive",
+                    });
+                  }}
+                  userId={user?.id}
+                  pathPrefix="subscriptions"
+                  label="Comprovante de Pagamento"
+                  showPreview={true}
+                />
+              </div>
+            </div>
+
+            {/* Coluna Direita - Resumo e Checkout */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-6 space-y-6">
+                {/* Resumo do Pedido */}
+                <Card className="shadow-2xl border-2">
+                  <CardContent className="p-6">
+                    <h3 className="text-xl font-bold text-slate-950 dark:text-white mb-6">Resumo do Pedido</h3>
+                    
+                    <div className="space-y-4 mb-6">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Plano:</span>
+                        <span className="font-semibold text-slate-950 dark:text-white capitalize">
+                          {selectedPlan?.name || "-"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Entregas:</span>
+                        <span className="font-semibold text-slate-950 dark:text-white">
+                          {selectedPlan?.deliveries_total || 0}x
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Coleções:</span>
+                        <span className="font-semibold text-slate-950 dark:text-white">
+                          {isAnualPlan ? "Todas" : `${selectedCollections.length} selecionadas`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Pagamento:</span>
+                        <span className="font-semibold text-slate-950 dark:text-white">
+                          {paymentMethod === "pix" ? "PIX" : "Cartão"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Comprovante:</span>
+                        <span className={`font-semibold ${paymentVoucherUrl ? 'text-green-600' : 'text-amber-600'}`}>
+                          {paymentVoucherUrl ? "✓ Enviado" : "Pendente"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {paymentMethod === "pix" && discount > 0 && (
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg p-4 mb-6">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-sm font-semibold mb-1">
+                          <TrendingDown className="w-4 h-4" />
+                          Desconto PIX
+                        </div>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          - R$ {discount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="border-t pt-6 mb-6">
+                      <div className="flex justify-between items-baseline mb-2">
+                        <span className="text-lg font-semibold text-slate-950 dark:text-white">Total:</span>
+                        <div className="text-right">
+                          <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                            R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                          {paymentMethod === "credit_card" && (
+                            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                              ou 6x de R$ {(finalPrice / 6).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-6 text-base shadow-xl"
+                      onClick={() => subscribeMutation.mutate()}
+                      disabled={
+                        subscribeMutation.isPending ||
+                        !selectedPlanId ||
+                        selectedCollections.length !== requiredCollections ||
+                        !paymentVoucherUrl
+                      }
+                    >
+                      {subscribeMutation.isPending ? (
+                        "Processando..."
+                      ) : !paymentVoucherUrl ? (
+                        "Envie o comprovante"
+                      ) : selectedCollections.length !== requiredCollections ? (
+                        `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`
+                      ) : (
+                        <>
+                          Confirmar Assinatura
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+
+                    <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-4">
+                      Ao assinar, você concorda com nossos termos de serviço
+                    </p>
+                  </CardContent>
+                </Card>
 
                 {/* Benefícios */}
-                <div className="pt-4 border-t space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Trocas ilimitadas antes da produção</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Acompanhamento do processo</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Entrega rastreada</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Cancelamento simples</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+                  <CardContent className="p-6">
+                    <h4 className="font-bold text-slate-950 dark:text-white mb-4 flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-amber-500" />
+                      Benefícios Inclusos
+                    </h4>
+                    <div className="space-y-3">
+                      {[
+                        { icon: Check, text: "Trocas ilimitadas" },
+                        { icon: Star, text: "Prioridade na produção" },
+                        { icon: Truck, text: "Envio rastreado" },
+                        { icon: Shield, text: "Garantia de 7 dias" },
+                        { icon: Calendar, text: "Cancele quando quiser" }
+                      ].map((benefit, idx) => {
+                        const Icon = benefit.icon;
+                        return (
+                          <div key={idx} className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+                            <Icon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            <span>{benefit.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>

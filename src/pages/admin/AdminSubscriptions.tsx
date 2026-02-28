@@ -35,6 +35,7 @@ import SEOHead from "@/components/SEOHead";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { nowInBahia, toUTC } from "@/lib/timezone";
 
 export default function AdminSubscriptions() {
   const { toast } = useToast();
@@ -604,16 +605,16 @@ function UpdateDeliveryDialog({ delivery, isOpen, onOpenChange, onSuccess }: any
         updates.tracking_code = trackingCode || null;
         updates.shipping_carrier = shippingCarrier || null;
         if (!delivery.shipping_date) {
-          updates.shipping_date = new Date().toISOString();
+          updates.shipping_date = toUTC(nowInBahia()).toISOString();
         }
       }
 
       if (status === "delivered" && !delivery.delivered_at) {
-        updates.delivered_at = new Date().toISOString();
+        updates.delivered_at = toUTC(nowInBahia()).toISOString();
       }
 
       if (status === "in_production" && !delivery.production_start_date) {
-        updates.production_start_date = new Date().toISOString();
+        updates.production_start_date = toUTC(nowInBahia()).toISOString();
       }
 
       const { error } = await supabase

@@ -218,8 +218,8 @@ export function MyPaymentsPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Meus Pagamentos</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-xl font-bold tracking-tight">Meus Pagamentos</h1>
+        <p className="text-xs text-muted-foreground mt-2">
           Acompanhe o status e histórico de todos os seus pagamentos
         </p>
       </div>

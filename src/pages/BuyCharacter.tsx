@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,8 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 export default function BuyCharacter() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { data: settings } = useSystemSettings();
 
   const { data: collection, isLoading } = useQuery({
@@ -337,15 +341,36 @@ export default function BuyCharacter() {
                             }
 
                             try {
+                              // Buscar método de pagamento padrão
+                              const { data: defaultPaymentMethod, error: paymentMethodError } = await supabase
+                                .from("admin_payment_methods")
+                                .select("id")
+                                .eq("is_active", true)
+                                .eq("is_default", true)
+                                .single();
+
+                              if (paymentMethodError || !defaultPaymentMethod) {
+                                toast({
+                                  title: "Erro",
+                                  description: "Nenhum método de pagamento disponível no momento.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+
+                              // Gerar número de referência único
+                              const referenceNumber = `BUY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
                               // Criar pedido manual
                               const { data: payment, error } = await supabase
                                 .from("manual_payments")
                                 .insert({
                                   user_id: user.id,
-                                  amount: totalAmount,
+                                  payment_method_id: defaultPaymentMethod.id,
+                                  amount: depositAmount,
                                   payment_type: "one_time",
                                   status: "pending",
-                                  reference_number: `BUY-${Date.now()}`,
+                                  reference_number: referenceNumber,
                                 })
                                 .select()
                                 .single();

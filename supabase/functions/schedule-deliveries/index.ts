@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { nowInBahia, toUTC } from "../_shared/timezone.ts";
 
 /**
  * Edge Function: schedule-deliveries
@@ -124,17 +125,17 @@ async function updateDeliveryStatus(
 ): Promise<void> {
   const updateData: any = {
     status,
-    status_changed_at: new Date().toISOString(),
+    status_changed_at: toUTC(nowInBahia()).toISOString(),
   };
   
   // Adicionar timestamps específicos baseado no status
   if (status === 'shipped') {
-    updateData.shipped_at = new Date().toISOString();
+    updateData.shipped_at = toUTC(nowInBahia()).toISOString();
     if (trackingCode) {
       updateData.tracking_code = trackingCode;
     }
   } else if (status === 'delivered') {
-    updateData.delivered_at = new Date().toISOString();
+    updateData.delivered_at = toUTC(nowInBahia()).toISOString();
   }
   
   const { error } = await service

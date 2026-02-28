@@ -158,12 +158,12 @@ export default function QuoteCart() {
         <div className="mb-12">
           <div className="h-px w-20 bg-foreground mb-6" />
           <div className="flex items-center justify-between gap-4 mb-4">
-            <h1 className="text-5xl font-bold tracking-tight">Carrinho de Orçamentos</h1>
-            <Badge variant="secondary" className="border border-border px-4 py-2 text-base">
+            <h1 className="text-2xl font-bold tracking-tight">Carrinho de Orçamentos</h1>
+            <Badge variant="secondary" className="border border-border px-3 py-1 text-xs">
               {cart.items.length} {cart.items.length === 1 ? "item" : "itens"}
             </Badge>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl">
+          <p className="text-xs text-muted-foreground max-w-2xl">
             A Ordax organiza os itens e dados do pedido. A Tonecos Studios analisa e retorna com
             valores e prazos.
           </p>
@@ -172,7 +172,7 @@ export default function QuoteCart() {
         <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
           <Card className="border border-border bg-card shadow-premium">
             <CardHeader className="border-b border-border">
-              <CardTitle className="text-2xl font-semibold">Itens do Carrinho</CardTitle>
+              <CardTitle className="text-base font-semibold">Itens do Carrinho</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
               {cart.items.length === 0 ? (
@@ -286,7 +286,7 @@ export default function QuoteCart() {
 
           <Card className="border border-border bg-card shadow-sm h-fit">
             <CardHeader className="border-b border-border">
-              <CardTitle className="text-xl font-semibold">Finalizar Pedido</CardTitle>
+              <CardTitle className="text-sm font-semibold">Finalizar Pedido</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5 pt-6">
               <div className="space-y-2">

@@ -359,8 +359,8 @@ export default function Profile() {
       <div className="container py-8 sm:py-12 max-w-7xl">
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Minha Conta</h1>
-          <p className="text-muted-foreground">Gerencie seu perfil, preferências e coleção</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-2">Minha Conta</h1>
+          <p className="text-xs text-muted-foreground">Gerencie seu perfil, preferências e coleção</p>
 
           {/* Indicador de Progresso do Perfil */}
           {profileQuery.data && (

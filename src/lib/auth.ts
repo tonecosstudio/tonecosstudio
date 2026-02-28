@@ -6,14 +6,27 @@ type AuthState = {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
+  error: Error | null;
 };
 
 /**
- * IMPORTANT: Fixed to prevent infinite re-renders
- * Only updates state when values actually change
+ * Authentication hook with proper error handling
+ * 
+ * Features:
+ * - Prevents infinite re-renders by only updating when values change
+ * - Proper error handling and error state
+ * - Type-safe implementation
+ * - Cleanup on unmount
+ * 
+ * @returns Authentication state with session, user, loading, and error
  */
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({ session: null, user: null, isLoading: true });
+  const [state, setState] = useState<AuthState>({ 
+    session: null, 
+    user: null, 
+    isLoading: true,
+    error: null
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -22,43 +35,69 @@ export function useAuth() {
     // First, get the current session
     supabase.auth
       .getSession()
-      .then(({ data }) => {
-        if (mounted && !initialLoadDone) {
-          initialLoadDone = true;
+      .then(({ data, error }) => {
+        if (!mounted || initialLoadDone) return;
+        
+        initialLoadDone = true;
+        
+        if (error) {
+          console.error('Failed to get session:', error);
           setState({
-            session: data.session ?? null,
-            user: data.session?.user ?? null,
+            session: null,
+            user: null,
             isLoading: false,
+            error: new Error(`Failed to get session: ${error.message}`)
           });
+          return;
         }
+
+        setState({
+          session: data.session ?? null,
+          user: data.session?.user ?? null,
+          isLoading: false,
+          error: null
+        });
       })
-      .catch(() => {
-        if (mounted && !initialLoadDone) {
-          initialLoadDone = true;
-          setState((s) => ({ ...s, isLoading: false }));
-        }
+      .catch((error) => {
+        if (!mounted || initialLoadDone) return;
+        
+        initialLoadDone = true;
+        console.error('Exception while getting session:', error);
+        
+        setState({
+          session: null,
+          user: null,
+          isLoading: false,
+          error: error instanceof Error ? error : new Error('Unknown error while getting session')
+        });
       });
 
     // Then, listen for auth changes
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted && initialLoadDone) {
-        // Only update if values actually changed
-        setState((prev) => {
-          const newUser = session?.user ?? null;
-          const prevUser = prev.user;
+      if (!mounted || !initialLoadDone) return;
 
-          // Check if user actually changed
-          const userChanged =
-            newUser?.id !== prevUser?.id ||
-            newUser?.email !== prevUser?.email ||
-            newUser?.user_metadata !== prevUser?.user_metadata;
+      // Only update if values actually changed
+      setState((prev) => {
+        const newUser = session?.user ?? null;
+        const prevUser = prev.user;
 
-          if (userChanged || session !== prev.session) {
-            return { session, user: newUser, isLoading: false };
-          }
-          return prev;
-        });
-      }
+        // Check if user actually changed
+        const userChanged =
+          newUser?.id !== prevUser?.id ||
+          newUser?.email !== prevUser?.email ||
+          newUser?.user_metadata !== prevUser?.user_metadata;
+
+        if (userChanged || session !== prev.session) {
+          return { 
+            session, 
+            user: newUser, 
+            isLoading: false,
+            error: null
+          };
+        }
+        
+        return prev;
+      });
     });
 
     return () => {

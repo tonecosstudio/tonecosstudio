@@ -11,15 +11,15 @@ export default function AppFooter() {
           {/* Sobre */}
           <div>
             <Link to="/" className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 bg-background rounded-sm flex items-center justify-center">
-                <span className="text-foreground font-bold text-lg">O</span>
+              <div className="h-8 w-8 bg-background rounded-sm flex items-center justify-center">
+                <span className="text-foreground font-bold text-sm">O</span>
               </div>
               <div>
-                <p className="font-bold text-background text-lg">ORDAX</p>
-                <p className="text-xs text-background/60">by Tonecos Studios</p>
+                <p className="font-bold text-background text-sm">ORDAX</p>
+                <p className="text-[10px] text-background/60">by Tonecos Studios</p>
               </div>
             </Link>
-            <p className="text-sm text-background/70 leading-relaxed max-w-md">
+            <p className="text-xs text-background/70 leading-relaxed max-w-md">
               Colecionáveis premium produzidos sob encomenda. Cada peça é artesanalmente criada pela
               Tonecos Studios com acabamento e pintura de alta qualidade.
             </p>
@@ -27,10 +27,10 @@ export default function AppFooter() {
 
           {/* Navegação */}
           <div>
-            <h3 className="font-semibold text-background mb-4 text-sm uppercase tracking-wider">
+            <h3 className="font-semibold text-background mb-4 text-xs uppercase tracking-wider">
               Navegação
             </h3>
-            <ul className="space-y-3 text-sm text-background/70">
+            <ul className="space-y-3 text-xs text-background/70">
               <li>
                 <Link to="/" className="hover:text-background transition-colors">
                   Catálogo
@@ -61,10 +61,10 @@ export default function AppFooter() {
 
           {/* Contato */}
           <div>
-            <h3 className="font-semibold text-background mb-4 text-sm uppercase tracking-wider">
+            <h3 className="font-semibold text-background mb-4 text-xs uppercase tracking-wider">
               Contato
             </h3>
-            <ul className="space-y-3 text-sm text-background/70">
+            <ul className="space-y-3 text-xs text-background/70">
               <li>
                 <a
                   href={`mailto:${settings?.contact_email || "contato@ordax.com.br"}`}
@@ -100,7 +100,7 @@ export default function AppFooter() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 pt-8 border-t border-background/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-background/50">
+        <div className="mt-12 pt-8 border-t border-background/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-background/50">
           <p>
             &copy; {new Date().getFullYear()} Ordax • Tonecos Studios. Todos os direitos reservados.
           </p>

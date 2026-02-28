@@ -46,7 +46,7 @@ export default function AppShell({ children }: PropsWithChildren) {
       <AppHeader {...headerProps} />
 
       {/* Corpo */}
-      <main className="bg-background">{children}</main>
+      <main>{children}</main>
       {!hideFooter && <AppFooter />}
     </div>
   );

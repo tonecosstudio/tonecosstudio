@@ -1,49 +1,59 @@
 import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ArrowRight, Sparkles, Check, Star } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ReleaseTimeline } from "@/components/collections/ReleaseTimeline";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Calendar, ArrowRight, Sparkles, Check, Star, Package, Truck, Shield, Crown, 
+  Lock, Grid3x3, List, TrendingDown, Users, Award, Palette, 
+  ChevronRight, Info, Gift, Clock, RefreshCw
+} from "lucide-react";
 import { ProductionLimitBadge } from "@/components/production/ProductionLimitBadge";
-import { useContentSettings } from "@/hooks/useContentSettings";
-import { processContentVariables } from "@/lib/services/contentService";
+import { getRotationSchedule } from "@/services/collection-service";
+
+type Character = {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  release_order: number;
+  release_month: number | null;
+  status: "upcoming" | "revealed" | "released";
+};
 
 export default function CollectionDetails() {
   const { slug } = useParams<{ slug: string }>();
-  const { data: content } = useContentSettings();
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   const { data: collection, isLoading } = useQuery({
     queryKey: ["collection", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
-        .select(
-          `
-          *,
-          collection_characters (
-            id,
-            name,
-            description,
-            image_url,
-            release_order,
-            release_month,
-            status
-          )
-        `
-        )
-        .eq("slug", slug)
+        .select(`*, collection_characters (id, name, description, image_url, release_order, release_month, status)`)
+        .eq("slug", slug || "")
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
   });
 
-  // Buscar planos de assinatura do banco
+  // Fetch rotation schedule for the collection
+  const { data: rotationSchedule } = useQuery({
+    queryKey: ["collection-rotation", collection?.id],
+    queryFn: async () => {
+      if (!collection?.id) return null;
+      return await getRotationSchedule(collection.id);
+    },
+    enabled: !!collection?.id,
+  });
+
   const { data: plans } = useQuery({
     queryKey: ["subscription-plans"],
     queryFn: async () => {
@@ -52,7 +62,6 @@ export default function CollectionDetails() {
         .select("*")
         .eq("is_active", true)
         .order("display_order", { ascending: true });
-
       if (error) throw error;
       return data || [];
     },
@@ -61,12 +70,10 @@ export default function CollectionDetails() {
   if (isLoading) {
     return (
       <AppShell>
-        <div className="container max-w-7xl py-16">
-          <Skeleton className="h-64 w-full mb-8" />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-80" />
-            ))}
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-slate-600 dark:text-slate-400">Carregando coleção...</p>
           </div>
         </div>
       </AppShell>
@@ -76,816 +83,1133 @@ export default function CollectionDetails() {
   if (!collection) {
     return (
       <AppShell>
-        <div className="container max-w-7xl py-16 text-center">
-          <h1 className="text-3xl font-bold mb-4">Coleção não encontrada</h1>
-          <Button asChild>
-            <Link to="/colecoes">Ver todas as coleções</Link>
-          </Button>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-6">
+            <Package className="w-24 h-24 text-slate-300 mx-auto" />
+            <h1 className="text-4xl font-bold">Coleção não encontrada</h1>
+            <Button asChild size="lg" className="bg-amber-500 hover:bg-amber-600">
+              <Link to="/colecoes">Explorar Coleções</Link>
+            </Button>
+          </div>
         </div>
       </AppShell>
     );
   }
 
-  const characters = (collection.collection_characters || []) as Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    image_url: string | null;
-    release_order: number;
-    release_month: number | null;
-    status: "upcoming" | "revealed" | "released";
-  }>;
+  const characters = (collection.collection_characters || []) as Character[];
   const sortedCharacters = [...characters].sort((a, b) => a.release_order - b.release_order);
-
   const releasedCount = characters.filter((c) => c.status === "released").length;
   const revealedCount = characters.filter((c) => c.status === "revealed").length;
   const upcomingCount = characters.filter((c) => c.status === "upcoming").length;
-
   const heroImage = characters.find((c) => c.image_url)?.image_url;
   const featuredCharacter = sortedCharacters.find((c) => c.status === "revealed");
 
+  const lowestPricePerMonth = plans && plans.length > 0
+    ? Math.min(...plans.map(p => Math.floor(Number(p.price_full) / p.deliveries_total)))
+    : null;
+
+  // Determine rotation type and format display
+  const rotationType = (collection as any)?.rotation_type || 'fixed';
+  const isRotating = rotationType !== 'fixed';
+  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const rotationDisplay = isRotating && rotationSchedule
+    ? rotationSchedule.map((m: number) => monthNames[m - 1]).join(', ')
+    : null;
+
   return (
     <AppShell>
-      <SEOHead
-        title={`${collection.name} - Coleção Completa`}
-        description={
-          collection.description ||
-          `Coleção ${collection.name} com ${characters.length} personagens exclusivos`
-        }
-        keywords={[collection.name, "coleção", "personagens", "colecionáveis"]}
-        type="website"
-      />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <SEOHead
+          title={`${collection.name} - Coleção Exclusiva`}
+          description={collection.description || `Descubra a coleção ${collection.name} com ${characters.length} personagens artesanais`}
+          keywords={[collection.name, "coleção", "artesanal", "exclusivo"]}
+          type="website"
+        />
 
-      {/* Hero Compacto e Moderno */}
-      <section className="relative bg-foreground text-background overflow-hidden">
-        {/* Background */}
-        {heroImage && (
-          <>
-            <div
-              className="absolute inset-0 bg-cover bg-center opacity-10"
-              style={{ backgroundImage: `url(${heroImage})` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-foreground/95 to-foreground" />
-          </>
-        )}
-
-        <div className="relative container max-w-6xl py-16 px-6">
-          <div className="text-center max-w-3xl mx-auto">
-            <Badge className="mb-4 bg-background/10 text-background border-background/20">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Coleção Premium
-            </Badge>
-
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4">{collection.name}</h1>
-
-            {collection.description && (
-              <p className="text-lg text-background/70 mb-6">{collection.description}</p>
-            )}
-
-            {/* Prova Social */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mb-8 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">
-                    👤
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">
-                    👤
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-background/20 border-2 border-background flex items-center justify-center text-xs">
-                    👤
+        {/* Hero Split Screen - Imagem + Info */}
+        <section className="relative min-h-[85vh] lg:h-auto overflow-hidden">
+          <div className="container max-w-7xl mx-auto px-6 py-12 lg:py-20">
+            <div className="grid lg:grid-cols-5 gap-12 items-center">
+              {/* Lado Esquerdo - Informações (3 colunas) */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Badge + Categoria */}
+                <div className="flex items-center gap-4">
+                  <Badge className="bg-amber-500 text-slate-950 px-4 py-2 text-sm font-bold shadow-lg">
+                    <Crown className="w-4 h-4 mr-2" />
+                    Edição Limitada
+                  </Badge>
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <div className="h-px w-8 bg-amber-500" />
+                    <span className="text-xs font-semibold uppercase tracking-widest">Coleção Premium</span>
                   </div>
                 </div>
-                <span className="text-background/80">+50 colecionadores</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                <span className="text-background/80">4.9/5 avaliação</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-background/80" />
-                <span className="text-background/80">Entrega garantida</span>
-              </div>
-            </div>
 
-            {/* Stats Inline */}
-            <div className="flex flex-wrap gap-4 justify-center mb-8 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-background/50" />
-                <span className="text-background/80">{characters.length} Personagens</span>
-              </div>
-              {revealedCount > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-primary">{revealedCount} Disponível Agora</span>
-                </div>
-              )}
-              {releasedCount > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span className="text-amber-400">{releasedCount} Lançados</span>
-                </div>
-              )}
-            </div>
+                {/* Título */}
+                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-950 dark:text-white leading-tight">
+                  {collection.name}
+                </h1>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
-                size="lg"
-                className="bg-background text-foreground hover:bg-background/90 shadow-xl"
-                asChild
-              >
-                <Link to={`/colecoes/${slug}/assinar`}>
-                  Assinar Coleção
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-background bg-background/10 text-background hover:bg-background hover:text-foreground backdrop-blur-sm"
-                asChild
-              >
-                <Link to={`/colecoes/${slug}/comprar`}>
-                  <span className="flex flex-col items-center">
-                    <span className="text-sm font-semibold">Comprar Avulso</span>
-                    <span className="text-xs">R$ 100 de entrada</span>
-                  </span>
-                </Link>
-              </Button>
-            </div>
-
-            {/* Garantia */}
-            <p className="text-xs text-background/60 mt-6">
-              ✓ Garantia de satisfação • ✓ Cancele quando quiser • ✓ Suporte dedicado
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Personagem em Destaque - Premium */}
-      {featuredCharacter && (
-        <section className="py-16 bg-gradient-to-b from-background via-muted/30 to-background relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)",
-                backgroundSize: "32px 32px",
-              }}
-            />
-          </div>
-
-          <div className="container max-w-6xl relative z-10">
-            {/* Header */}
-            <div className="text-center mb-10">
-              <Badge className="mb-3 text-base px-4 py-1.5">
-                <Star className="w-4 h-4 mr-2" />
-                Personagem do Mês
-              </Badge>
-              <h2 className="text-4xl font-bold mb-3">{featuredCharacter.name}</h2>
-              {featuredCharacter.release_month && (
-                <p className="text-muted-foreground flex items-center justify-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Disponível no mês {featuredCharacter.release_month} da coleção
-                </p>
-              )}
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
-              {/* Imagem com efeitos */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-2xl blur-2xl group-hover:blur-3xl transition-all duration-500" />
-                <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-                  {featuredCharacter.image_url ? (
-                    <img
-                      src={featuredCharacter.image_url}
-                      alt={featuredCharacter.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                      <Star className="w-24 h-24 text-muted-foreground/20" />
-                    </div>
-                  )}
-                  <div className="absolute top-4 left-4">
-                    <Badge className="font-bold text-base px-3 py-1.5 shadow-lg">
-                      #{featuredCharacter.release_order}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              {/* Informações Premium */}
-              <div className="space-y-6">
                 {/* Descrição */}
-                {featuredCharacter.description && (
-                  <div className="bg-card border rounded-xl p-6">
-                    <p className="text-lg leading-relaxed text-muted-foreground">
-                      {featuredCharacter.description}
-                    </p>
+                {collection.description && (
+                  <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                    {collection.description}
+                  </p>
+                )}
+
+                {/* Rotation Schedule Display */}
+                <div className="flex items-center gap-2">
+                  {isRotating ? (
+                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 px-4 py-2">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      <span className="font-medium">Disponível: {rotationDisplay}</span>
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-2">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span className="font-medium">Disponível todo mês</span>
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Stats em linha */}
+                <div className="flex flex-wrap gap-6 py-4">
+                  {[
+                    { value: characters.length, label: 'Personagens', icon: Package },
+                    { value: revealedCount, label: 'Disponíveis', icon: Star },
+                    { value: releasedCount, label: 'Lançados', icon: Check }
+                  ].map((stat, idx) => {
+                    const Icon = stat.icon;
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                          <Icon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-slate-950 dark:text-white">{stat.value}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">{stat.label}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Preço Destaque */}
+                {lowestPricePerMonth && (
+                  <div className="inline-flex items-baseline gap-3 p-5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl border-2 border-amber-200 dark:border-amber-900">
+                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">A partir de</span>
+                    <span className="text-4xl font-bold text-amber-600 dark:text-amber-400">R$ {lowestPricePerMonth}</span>
+                    <span className="text-base text-slate-600 dark:text-slate-400">/mês</span>
                   </div>
                 )}
 
-                {/* Características Premium */}
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Check className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className="font-semibold">Artesanal</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Peça única pintada à mão</p>
-                  </div>
+                {/* CTAs */}
+                <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                  <Button 
+                    size="lg" 
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-6 text-base group shadow-xl"
+                    asChild
+                  >
+                    <Link to={`/colecoes/${slug}/assinar`}>
+                      <Crown className="mr-2 h-5 w-5" />
+                      Assinar Coleção
+                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </Button>
 
-                  <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Check className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className="font-semibold">Premium</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Embalagem em MDF</p>
-                  </div>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="border-2 px-8 py-6 text-base font-semibold"
+                    asChild
+                  >
+                    <Link to={`/colecoes/${slug}/comprar`}>
+                      Comprar Avulso
+                    </Link>
+                  </Button>
+                </div>
 
-                  <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Check className="h-5 w-5 text-primary" />
+                {/* Features Rápidas */}
+                <div className="flex flex-wrap gap-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  {[
+                    { icon: Sparkles, text: 'Pintado à Mão', desc: 'Artesanato premium' },
+                    { icon: Truck, text: 'Envio Garantido', desc: 'Envio até 5° dia útil' },
+                    { icon: Shield, text: 'Produção Limitada', desc: 'Por ciclo mensal' }
+                  ].map((feature, idx) => {
+                    const Icon = feature.icon;
+                    return (
+                      <div key={idx} className="flex items-start gap-3">
+                        <Icon className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-sm font-semibold text-slate-950 dark:text-white">{feature.text}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">{feature.desc}</div>
+                        </div>
                       </div>
-                      <span className="font-semibold">Rastreável</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Entrega com tracking</p>
-                  </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Check className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className="font-semibold">Exclusivo</span>
+              {/* Lado Direito - Imagem (2 colunas) */}
+              <div className="lg:col-span-2 relative">
+                <div className="relative aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-200 dark:border-slate-800 group">
+                  {heroImage ? (
+                    <>
+                      <img 
+                        src={heroImage} 
+                        alt={collection.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+                      <Package className="w-24 h-24 text-slate-300 dark:text-slate-700" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Ciclo Mensal</p>
+                  )}
+                  
+                  {/* Badge no canto */}
+                  <div className="absolute top-6 right-6">
+                    <div className="bg-amber-500 text-slate-950 rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-2xl">
+                      #{sortedCharacters[0]?.release_order || 1}
+                    </div>
                   </div>
                 </div>
 
-                {/* CTAs Premium */}
-                <div className="bg-gradient-to-br from-card to-muted/20 border-2 border-primary/20 rounded-2xl p-6 space-y-4">
-                  {/* Contador de Vagas */}
-                  <ProductionLimitBadge />
+                {/* Decoração */}
+                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -z-10" />
+                <div className="absolute -top-6 -left-6 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -z-10" />
+              </div>
+            </div>
+          </div>
 
-                  <div className="text-center pb-4 border-b">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Escolha sua forma de aquisição
-                    </p>
+          {/* Scroll Indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce hidden lg:block">
+            <div className="flex flex-col items-center gap-2 text-slate-400">
+              <span className="text-xs uppercase tracking-widest">Role para explorar</span>
+              <ChevronRight className="w-6 h-6 rotate-90" />
+            </div>
+          </div>
+        </section>
+
+        {/* Personagem em Destaque - Card Grande Interativo */}
+        {featuredCharacter && (
+          <section className="py-24 px-6">
+            <div className="container max-w-7xl">
+              {/* Header com Badge */}
+              <div className="text-center mb-12">
+                <Badge className="mb-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 text-sm font-bold">
+                  <Star className="w-4 h-4 mr-2" />
+                  Personagem em Destaque Este Mês
+                </Badge>
+                <h2 className="text-3xl font-bold text-slate-950 dark:text-white mb-3">
+                  {featuredCharacter.name}
+                </h2>
+                {featuredCharacter.release_month && (
+                  <p className="text-base text-slate-600 dark:text-slate-400 flex items-center justify-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Disponível no mês {featuredCharacter.release_month} da coleção
+                  </p>
+                )}
+              </div>
+
+              {/* Card Grande */}
+              <div className="relative max-w-5xl mx-auto">
+                <div className="grid lg:grid-cols-5 gap-8 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                  {/* Imagem - 3 colunas */}
+                  <div className="lg:col-span-3 relative aspect-square lg:aspect-auto">
+                    {featuredCharacter.image_url ? (
+                      <img 
+                        src={featuredCharacter.image_url} 
+                        alt={featuredCharacter.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                        <Star className="w-24 h-24 text-slate-300" />
+                      </div>
+                    )}
+                    
+                    {/* Badge de Número */}
+                    <div className="absolute top-6 right-6 w-16 h-16 bg-amber-500 text-slate-950 rounded-full flex items-center justify-center font-bold text-2xl shadow-xl">
+                      #{featuredCharacter.release_order}
+                    </div>
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <Button asChild size="lg" className="h-auto py-4 flex-col gap-1">
-                      <Link to={`/colecoes/${slug}/assinar`}>
-                        <span className="text-base font-bold">Assinar Coleção</span>
-                        <span className="text-xs opacity-80">
-                          A partir de R${" "}
-                          {plans && plans.length > 0
-                            ? Math.min(
-                                ...plans.map((p) =>
-                                  Math.floor(Number(p.price_full) / p.deliveries_total)
-                                )
-                              )
-                            : 385}
-                          /peça
-                        </span>
-                      </Link>
-                    </Button>
+                  {/* Info - 2 colunas */}
+                  <div className="lg:col-span-2 p-6 lg:p-8 flex flex-col justify-between">
+                    <div className="space-y-4">
+                      {featuredCharacter.description && (
+                        <p className="text-base text-slate-700 dark:text-slate-300 leading-relaxed">
+                          {featuredCharacter.description}
+                        </p>
+                      )}
 
-                    <Button
-                      asChild
-                      size="lg"
-                      variant="outline"
-                      className="h-auto py-4 flex-col gap-1 border-2"
-                    >
-                      <Link to={`/colecoes/${slug}/comprar`}>
-                        <span className="text-base font-bold">Comprar Avulso</span>
-                        <span className="text-xs opacity-70">R$ 100 de entrada</span>
-                      </Link>
-                    </Button>
-                  </div>
+                      {/* Características em Pills */}
+                      <div className="flex flex-wrap gap-3">
+                        {[
+                          { icon: Palette, label: 'Artesanal', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+                          { icon: Crown, label: 'Premium', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+                          { icon: Lock, label: 'Exclusivo', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' }
+                        ].map((item, idx) => {
+                          const Icon = item.icon;
+                          return (
+                            <div key={idx} className={`flex items-center gap-2 px-4 py-2 rounded-full ${item.color} font-semibold text-sm`}>
+                              <Icon className="w-4 h-4" />
+                              <span>{item.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
 
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
-                    <Sparkles className="w-3 h-3" />
-                    <span>Produção inicia imediatamente após confirmação</span>
+                      {/* Produção Limitada */}
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <ProductionLimitBadge />
+                      </div>
+                    </div>
+
+                    {/* CTAs */}
+                    <div className="space-y-2 mt-6">
+                      <Button 
+                        size="lg" 
+                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3"
+                        asChild
+                      >
+                        <Link to={`/colecoes/${slug}/assinar`}>
+                          <Crown className="mr-2 h-4 w-4" />
+                          Assinar Coleção Completa
+                        </Link>
+                      </Button>
+                      
+                      <Button 
+                        size="lg" 
+                        variant="outline"
+                        className="w-full py-3"
+                        asChild
+                      >
+                        <Link to={`/colecoes/${slug}/comprar`}>
+                          Comprar Este Personagem
+                        </Link>
+                      </Button>
+
+                      <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-2">
+                        Entrada: R$ 100 • Restante: R$ 375 (PIX) ou R$ 400 (parcelado)
+                      </p>
+                    </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Galeria com Tabs - Grid ou Lista */}
+        <section className="py-24 bg-slate-50 dark:bg-slate-900">
+          <div className="container max-w-7xl px-6">
+            {/* Header com Controles */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-950 dark:text-white mb-1">
+                  Todos os Personagens
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {sortedCharacters.length} personagens únicos • {revealedCount} disponíveis agora
+                </p>
+              </div>
+
+              {/* Toggle View Mode */}
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    viewMode === "grid" 
+                      ? "bg-amber-500 text-white" 
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Grid</span>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    viewMode === "list" 
+                      ? "bg-amber-500 text-white" 
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                  <span className="text-sm font-medium">Lista</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs por Status */}
+            <Tabs defaultValue="all" className="w-full">
+              <TabsList className="mb-8 bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
+                <TabsTrigger value="all" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+                  Todos ({sortedCharacters.length})
+                </TabsTrigger>
+                <TabsTrigger value="revealed" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">
+                  Disponíveis ({revealedCount})
+                </TabsTrigger>
+                <TabsTrigger value="released" className="data-[state=active]:bg-slate-500 data-[state=active]:text-white">
+                  Lançados ({releasedCount})
+                </TabsTrigger>
+                <TabsTrigger value="upcoming" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                  Em Breve ({upcomingCount})
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Grid View */}
+              {viewMode === "grid" && (
+                <>
+                  <TabsContent value="all" className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {sortedCharacters.map((char) => (
+                      <CharacterCard key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent value="revealed" className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {sortedCharacters.filter(c => c.status === "revealed").map((char) => (
+                      <CharacterCard key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent value="released" className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {sortedCharacters.filter(c => c.status === "released").map((char) => (
+                      <CharacterCard key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent value="upcoming" className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {sortedCharacters.filter(c => c.status === "upcoming").map((char) => (
+                      <CharacterCard key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+                </>
+              )}
+
+              {/* List View */}
+              {viewMode === "list" && (
+                <>
+                  <TabsContent value="all" className="space-y-4">
+                    {sortedCharacters.map((char) => (
+                      <CharacterListItem key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent value="revealed" className="space-y-4">
+                    {sortedCharacters.filter(c => c.status === "revealed").map((char) => (
+                      <CharacterListItem key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent value="released" className="space-y-4">
+                    {sortedCharacters.filter(c => c.status === "released").map((char) => (
+                      <CharacterListItem key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent value="upcoming" className="space-y-4">
+                    {sortedCharacters.filter(c => c.status === "upcoming").map((char) => (
+                      <CharacterListItem key={char.id} character={char} />
+                    ))}
+                  </TabsContent>
+                </>
+              )}
+            </Tabs>
+          </div>
+        </section>
+
+        {/* Timeline de Lançamentos - Compacto */}
+        <section className="py-16 bg-white dark:bg-slate-950">
+          <div className="container max-w-6xl px-6">
+            <div className="text-center mb-10">
+              <Badge className="mb-3 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 text-sm">
+                <Clock className="w-4 h-4 mr-2" />
+                Processo Simples
+              </Badge>
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-950 dark:text-white mb-2">
+                Como Funciona a Compra
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                4 passos para receber sua peça exclusiva
+              </p>
+            </div>
+
+            {/* Timeline Horizontal */}
+            <div className="grid md:grid-cols-4 gap-4 mb-8">
+              {[
+                { 
+                  step: '1', 
+                  title: 'Reserve sua Vaga', 
+                  desc: 'Pague R$ 100 de entrada e garanta sua peça no ciclo',
+                  icon: Lock,
+                  color: 'amber'
+                },
+                { 
+                  step: '2', 
+                  title: 'Produção Artesanal', 
+                  desc: 'Acompanhe fotos exclusivas do processo de pintura',
+                  icon: Palette,
+                  color: 'purple'
+                },
+                { 
+                  step: '3', 
+                  title: 'Finalize o Pagamento', 
+                  desc: 'PIX: R$ 375 (5% OFF) ou Parcele: R$ 400',
+                  icon: Check,
+                  color: 'green'
+                },
+                { 
+                  step: '4', 
+                  title: 'Envio e Entrega', 
+                  desc: 'Enviamos até o 5° dia útil. Entrega em 7-15 dias',
+                  icon: Truck,
+                  color: 'blue'
+                }
+              ].map((item, idx) => {
+                const Icon = item.icon;
+                
+                return (
+                  <div key={idx} className="relative">
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500 transition-all hover:shadow-lg h-full flex flex-col">
+                      {/* Header do card */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`w-10 h-10 rounded-full bg-${item.color}-500 flex items-center justify-center`}>
+                          <Icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className={`text-3xl font-bold text-${item.color}-200 dark:text-${item.color}-900/30`}>
+                          {item.step}
+                        </div>
+                      </div>
+                      
+                      {/* Conteúdo */}
+                      <div className="flex-1">
+                        <h3 className="text-base font-bold text-slate-950 dark:text-white mb-2">
+                          {item.title}
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Seta conectora (desktop) */}
+                    {idx < 3 && (
+                      <div className="hidden md:block absolute top-1/2 -right-2 transform -translate-y-1/2 z-10">
+                        <ArrowRight className="w-4 h-4 text-amber-500" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Info adicional + CTA */}
+            <div className="max-w-4xl mx-auto">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl border-2 border-amber-200 dark:border-amber-900">
+                <div className="text-center sm:text-left flex-1">
+                  <p className="text-base font-bold text-slate-950 dark:text-white mb-2">
+                    Pronto para começar sua coleção?
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-sm text-slate-600 dark:text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Lock className="w-4 h-4 text-amber-500" />
+                      Entrada: <strong className="text-slate-950 dark:text-white">R$ 100</strong>
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="flex items-center gap-1">
+                      <Check className="w-4 h-4 text-green-500" />
+                      PIX: <strong className="text-green-600 dark:text-green-400">R$ 375</strong> (5% OFF)
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4 text-blue-500" />
+                      Parcele: <strong className="text-slate-950 dark:text-white">R$ 400</strong>
+                    </span>
+                  </div>
+                </div>
+                <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-6 text-base whitespace-nowrap shadow-xl" asChild>
+                  <Link to={`/colecoes/${slug}/comprar`}>
+                    Reservar Agora
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
         </section>
-      )}
 
-      {/* Carrossel de Personagens - Compacto */}
-      <section className="py-12 bg-muted/30">
-        <div className="container max-w-7xl">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Todos os Personagens</h2>
-            <Badge variant="outline">{sortedCharacters.length} personagens</Badge>
+        {/* Comparador de Planos - Design Premium */}
+        <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+          {/* Pattern Background */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
           </div>
+          
+          <div className="container max-w-7xl px-6 relative z-10">
+            <div className="text-center mb-16">
+              <Badge className="mb-4 bg-amber-500 text-slate-950 px-5 py-2.5 text-sm font-bold shadow-xl">
+                <TrendingDown className="w-4 h-4 mr-2" />
+                Economize Até 40% Assinando
+              </Badge>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-amber-100 to-white bg-clip-text text-transparent">
+                Planos de Assinatura
+              </h2>
+              <p className="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                Receba personagens exclusivos todo mês com desconto progressivo.<br />
+                <span className="text-amber-400 font-semibold">Quanto mais meses, menor o valor por peça.</span>
+              </p>
+            </div>
 
-          {/* Carrossel */}
-          <div className="relative">
-            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-muted/30 to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-muted/30 to-transparent z-10 pointer-events-none" />
+            {/* Grid de Planos */}
+            <div className="grid md:grid-cols-4 gap-6 mb-10 pt-8 justify-items-center max-w-7xl mx-auto">
+              {/* Plano Avulso */}
+              <Card 
+                className={`relative cursor-pointer transition-all w-full max-w-xs ${
+                  selectedPlan === 'avulso' 
+                    ? 'ring-4 ring-amber-500 scale-105' 
+                    : 'hover:scale-105'
+                } bg-white dark:bg-slate-900 overflow-visible shadow-2xl hover:shadow-amber-500/20`}
+                onClick={() => setSelectedPlan('avulso')}
+              >
+                <CardContent className="p-6">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center text-3xl shadow-lg">
+                      🎫
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-950 dark:text-white mb-2">Compra Avulsa</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">Escolha 1 personagem</p>
+                    <div className="mb-4">
+                      <div className="text-4xl font-bold text-slate-950 dark:text-white mb-1">R$ 500</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">por personagem</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-xl p-4 border-2 border-slate-200 dark:border-slate-600">
+                      <div className="text-xs text-slate-600 dark:text-slate-400 mb-1 font-medium">Entrada</div>
+                      <div className="text-2xl font-bold text-slate-950 dark:text-white">R$ 100</div>
+                    </div>
+                  </div>
 
-            <div className="flex gap-3 overflow-x-auto pb-4 carrossel-container snap-x snap-mandatory">
-              {sortedCharacters.map((character) => {
-                const getStatusBadge = (status: string) => {
-                  switch (status) {
-                    case "released":
-                      return (
-                        <Badge variant="secondary" className="text-xs">
-                          Lançado
-                        </Badge>
-                      );
-                    case "revealed":
-                      return <Badge className="text-xs">Disponível</Badge>;
-                    case "upcoming":
-                      return (
-                        <Badge variant="outline" className="text-xs">
-                          Em Breve
-                        </Badge>
-                      );
-                    default:
-                      return null;
-                  }
-                };
+                  <div className="space-y-2 text-sm mb-6">
+                    {[
+                      '1 personagem escolhido',
+                      'Pintado à mão',
+                      'Produção limitada',
+                      'Acompanhe com fotos'
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <Check className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <span className="text-xs text-left">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button 
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-lg"
+                    asChild
+                  >
+                    <Link to={`/colecoes/${slug}/comprar`}>Comprar Avulso</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Planos Dinâmicos */}
+              {plans && plans.length > 0 && plans.map((plan: any) => {
+                const priceFull = Number(plan.price_full);
+                const pricePerPiece = Math.floor(priceFull / plan.deliveries_total);
+                const savings = 500 * plan.deliveries_total - priceFull;
+                const savingsPercent = Math.round((savings / (500 * plan.deliveries_total)) * 100);
+                const isPopular = plan.plan_type === "trimestral";
+                const isBestValue = plan.plan_type === "anual";
+                const planId = plan.id;
 
                 return (
-                  <div key={character.id} className="group flex-shrink-0 w-48 snap-start">
-                    <div className="border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-all duration-300 hover:border-primary/50">
-                      {/* Imagem Compacta */}
-                      <div className="relative aspect-square bg-muted">
-                        {character.image_url ? (
-                          <img
-                            src={character.image_url}
-                            alt={character.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-3xl opacity-20">
-                              {character.status === "released"
-                                ? "✓"
-                                : character.status === "revealed"
-                                  ? "⭐"
-                                  : "❓"}
-                            </span>
+                  <Card 
+                    key={planId}
+                    className={`relative cursor-pointer transition-all w-full max-w-xs ${
+                      selectedPlan === planId 
+                        ? 'ring-4 ring-amber-500 scale-105' 
+                        : isPopular 
+                        ? 'ring-2 ring-amber-400 scale-105' 
+                        : 'hover:scale-105'
+                    } bg-white dark:bg-slate-900 overflow-visible shadow-2xl hover:shadow-amber-500/20`}
+                    onClick={() => setSelectedPlan(planId)}
+                  >
+                    {(isPopular || isBestValue) && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-xl z-10 whitespace-nowrap">
+                        {isPopular ? '⭐ MAIS POPULAR' : '👑 MELHOR CUSTO'}
+                      </div>
+                    )}
+                    
+                    <CardContent className="p-6">
+                      <div className="text-center mb-6">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-3xl shadow-lg">
+                          {plan.plan_type === "trimestral" ? "⭐" : plan.plan_type === "semestral" ? "💎" : "👑"}
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-950 dark:text-white mb-2 capitalize">
+                          Plano {plan.name}
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">{plan.deliveries_total} entregas mensais</p>
+                        <div className="mb-4">
+                          <div className="flex items-baseline justify-center gap-2 mb-1">
+                            <div className="text-4xl font-bold text-slate-950 dark:text-white">R$ {pricePerPiece}</div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400">/peça</div>
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-500 line-through">R$ 500 por peça</div>
+                        </div>
+                        
+                        {savings > 0 && (
+                          <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-xl font-bold shadow-lg">
+                            <div className="text-xl mb-0.5">Economize R$ {savings}</div>
+                            <div className="text-xs opacity-90">{savingsPercent}% de desconto total</div>
                           </div>
                         )}
-
-                        <div className="absolute top-2 left-2">
-                          {getStatusBadge(character.status)}
-                        </div>
-                        <div className="absolute top-2 right-2">
-                          <Badge variant="secondary" className="font-mono text-xs">
-                            #{character.release_order}
-                          </Badge>
-                        </div>
                       </div>
 
-                      {/* Info Compacta */}
-                      <div className="p-3">
-                        <h3 className="font-semibold text-sm mb-1 line-clamp-1">
-                          {character.name}
-                        </h3>
+                      <div className="space-y-2 text-sm mb-6">
+                        {[
+                          { text: `${plan.deliveries_total} peças garantidas`, highlight: true },
+                          { text: '1 personagem por mês', highlight: false },
+                          { text: 'Prioridade na produção', highlight: false },
+                          { text: 'Trocas ilimitadas', highlight: false },
+                          { text: 'Cancele quando quiser', highlight: false }
+                        ].map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                            <Check className={`w-4 h-4 flex-shrink-0 ${item.highlight ? 'text-amber-500' : 'text-green-500'}`} />
+                            <span className={`text-xs text-left ${item.highlight ? 'font-semibold' : ''}`}>{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
 
-                        {character.release_month && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Mês {character.release_month}
-                          </p>
-                        )}
+                      <Button 
+                        className={`w-full font-semibold shadow-lg ${isPopular || isBestValue ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900'}`}
+                        asChild
+                      >
+                        <Link to={`/colecoes/${slug}/assinar`}>
+                          Assinar Agora
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Calculadora de Economia Premium */}
+            {selectedPlan && selectedPlan !== 'avulso' && (
+              <div className="max-w-4xl mx-auto mb-12">
+                <div className="bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 backdrop-blur-md rounded-3xl p-8 border-2 border-green-500/50 shadow-2xl">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="flex items-center gap-6">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-xl">
+                        <Gift className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-3xl font-bold mb-2 text-white">Sua Economia Total</h3>
+                        <p className="text-base text-green-100">
+                          Comparado com compra avulsa
+                        </p>
                       </div>
                     </div>
+                    <div className="text-center md:text-right bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-6">
+                      <div className="text-5xl font-bold text-green-400 mb-2">
+                        {plans && plans.find((p: any) => p.id === selectedPlan) && (() => {
+                          const plan = plans.find((p: any) => p.id === selectedPlan);
+                          return plan ? `R$ ${500 * plan.deliveries_total - Number(plan.price_full)}` : '';
+                        })()}
+                      </div>
+                      <div className="text-base text-green-200 font-semibold">
+                        {plans && plans.find((p: any) => p.id === selectedPlan) && (() => {
+                          const plan = plans.find((p: any) => p.id === selectedPlan);
+                          if (!plan) return '';
+                          const savings = 500 * plan.deliveries_total - Number(plan.price_full);
+                          const percent = Math.round((savings / (500 * plan.deliveries_total)) * 100);
+                          return `${percent}% de desconto total`;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Benefícios da Assinatura - Design Premium */}
+            <div className="mt-16 grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {[
+                { 
+                  icon: Crown, 
+                  title: 'Prioridade VIP', 
+                  desc: 'Fila preferencial na produção e acesso antecipado',
+                  gradient: 'from-amber-500 to-orange-500'
+                },
+                { 
+                  icon: Gift, 
+                  title: 'Desconto Progressivo', 
+                  desc: 'Quanto mais meses assinar, menor o preço por peça',
+                  gradient: 'from-green-500 to-emerald-500'
+                },
+                { 
+                  icon: Check, 
+                  title: 'Flexibilidade Total', 
+                  desc: 'Cancele quando quiser sem multas ou taxas',
+                  gradient: 'from-blue-500 to-cyan-500'
+                }
+              ].map((benefit, idx) => {
+                const Icon = benefit.icon;
+                return (
+                  <div key={idx} className="group text-center p-8 bg-white/5 backdrop-blur-sm rounded-2xl border-2 border-white/10 hover:border-amber-500/50 transition-all hover:scale-105">
+                    <div className={`w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br ${benefit.gradient} flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-8 h-8 text-white" />
+                    </div>
+                    <h4 className="font-bold text-xl mb-3 text-white">{benefit.title}</h4>
+                    <p className="text-sm text-slate-300 leading-relaxed">{benefit.desc}</p>
                   </div>
                 );
               })}
             </div>
           </div>
+        </section>
 
-          {/* Legenda */}
-          <div className="flex flex-wrap gap-4 justify-center mt-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-primary" />
-              <span>Disponível ({revealedCount})</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-muted border" />
-              <span>Lançados ({releasedCount})</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full border-2" />
-              <span>Em breve ({upcomingCount})</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Como Funciona o Voucher - Estilo Iron Studios */}
-      <section className="py-12 bg-muted/50">
-        <div className="container max-w-5xl">
-          <div className="text-center mb-8">
-            <Badge className="mb-3">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Sistema de Pré-venda
-            </Badge>
-            <h2 className="text-3xl font-bold mb-3">Como Funciona a Compra Avulsa</h2>
-            <p className="text-muted-foreground">
-              Entrada fixa de R$ 100 + Restante no PIX: R$ 375 (5% OFF) ou parcele R$ 400
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="bg-card border rounded-lg p-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl font-bold text-primary">1</span>
-              </div>
-              <h3 className="font-semibold mb-2">Reserve</h3>
-              <p className="text-sm text-muted-foreground">Pague R$ 100 de entrada (valor fixo)</p>
+        {/* Depoimentos */}
+        <section className="py-24 bg-slate-50 dark:bg-slate-900">
+          <div className="container max-w-6xl px-6">
+            <div className="text-center mb-12">
+              <Badge className="mb-3 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 text-sm">
+                <Users className="w-4 h-4 mr-2" />
+                Depoimentos
+              </Badge>
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-950 dark:text-white mb-3">
+                O Que Nossos Colecionadores Dizem
+              </h2>
             </div>
 
-            <div className="bg-card border rounded-lg p-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl font-bold text-primary">2</span>
-              </div>
-              <h3 className="font-semibold mb-2">Produção</h3>
-              <p className="text-sm text-muted-foreground">
-                Iniciamos a produção e você acompanha com fotos
-              </p>
-            </div>
-
-            <div className="bg-card border rounded-lg p-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl font-bold text-primary">3</span>
-              </div>
-              <h3 className="font-semibold mb-2">Finalização</h3>
-              <p className="text-sm text-muted-foreground">
-                PIX: R$ 375 (5% OFF) ou Parcele: R$ 400
-              </p>
-            </div>
-
-            <div className="bg-card border rounded-lg p-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl font-bold text-primary">4</span>
-              </div>
-              <h3 className="font-semibold mb-2">Receba</h3>
-              <p className="text-sm text-muted-foreground">Enviamos sua peça com rastreamento</p>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  name: 'Carlos Silva',
+                  role: 'Colecionador há 2 anos',
+                  text: 'A qualidade das peças é excepcional. Cada detalhe é perfeito e a pintura à mão faz toda a diferença.',
+                  rating: 5
+                },
+                {
+                  name: 'Ana Paula',
+                  role: 'Assinante Anual',
+                  text: 'Adoro receber uma surpresa todo mês! O acompanhamento da produção com fotos é incrível.',
+                  rating: 5
+                },
+                {
+                  name: 'Roberto Costa',
+                  role: 'Colecionador Premium',
+                  text: 'Melhor investimento que fiz. As peças valorizam com o tempo e a embalagem é premium.',
+                  rating: 5
+                }
+              ].map((testimonial, idx) => (
+                <Card key={idx} className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex gap-1 mb-3">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      ))}
+                    </div>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
+                      "{testimonial.text}"
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold text-lg">
+                        {testimonial.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-950 dark:text-white">{testimonial.name}</div>
+                        <div className="text-sm text-slate-600 dark:text-slate-400">{testimonial.role}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
+        </section>
 
-          <div className="mt-8 text-center">
-            <Button asChild size="lg">
-              <Link to={`/colecoes/${slug}/comprar`}>
-                Reservar por R$ 100
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              Entrada: R$ 100 • Restante: R$ 375 (PIX 5% OFF) ou R$ 400 (parcelado)
-            </p>
-          </div>
-        </div>
-      </section>
+        {/* FAQ Accordion */}
+        <section className="py-24 bg-white dark:bg-slate-950">
+          <div className="container max-w-4xl px-6">
+            <div className="text-center mb-12">
+              <Badge className="mb-3 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 text-sm">
+                <Info className="w-4 h-4 mr-2" />
+                Perguntas Frequentes
+              </Badge>
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-950 dark:text-white">
+                Tire Suas Dúvidas
+              </h2>
+            </div>
 
-      {/* Planos - Compacto */}
-      <section className="py-12 bg-background">
-        <div className="container max-w-6xl">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold mb-3">Escolha seu Plano</h2>
-            <p className="text-muted-foreground">Monte sua coleção com nossos planos flexíveis</p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-6">
-            {/* Avulso */}
-            <div className="border-2 border-primary/30 rounded-xl p-6 hover:border-primary/50 hover:shadow-lg transition-all relative flex flex-col">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
-                ESTILO IRON STUDIOS
-              </div>
-
-              <div className="text-center mb-4 mt-2">
-                <div className="text-3xl mb-2">🎫</div>
-                <h3 className="text-xl font-bold mb-2">Avulso</h3>
-                <div className="mb-3">
-                  <div className="text-4xl font-bold">R$ 500</div>
-                  <div className="text-sm text-muted-foreground">por personagem</div>
-                  <div className="text-sm text-muted-foreground mt-2">
-                    Total: R$ 500 <span className="text-primary">em até 10x com juros</span>
+            <div className="space-y-4">
+              {[
+                { 
+                  q: 'Como funciona o sistema de ciclos de produção?', 
+                  a: 'Trabalhamos com ciclos mensais de produção limitada. Você entra em um ciclo, sua peça é produzida artesanalmente durante aquele mês, e o envio é feito sempre até o 5° dia útil do mês seguinte. Isso garante qualidade e exclusividade em cada peça.' 
+                },
+                { 
+                  q: 'Como funciona a compra avulsa com entrada de R$ 100?', 
+                  a: 'Você paga R$ 100 de entrada para reservar sua vaga no ciclo de produção. Acompanha todo o processo artesanal com fotos exclusivas. Quando a peça estiver pronta, você finaliza o pagamento: R$ 375 no PIX (5% de desconto) ou R$ 400 parcelado em até 10x.' 
+                },
+                { 
+                  q: 'Qual a diferença entre compra avulsa e assinatura?', 
+                  a: 'Na compra avulsa você escolhe 1 personagem específico por R$ 500 (R$ 100 entrada + R$ 400 restante). Na assinatura, você recebe personagens automaticamente todo mês com desconto progressivo: quanto mais meses assinar, menor o valor por peça. Além disso, assinantes têm prioridade na produção e podem trocar personagens até o fechamento do ciclo.' 
+                },
+                { 
+                  q: 'Quando recebo minha primeira peça?', 
+                  a: 'Após confirmar sua compra ou assinatura, sua peça entra no próximo ciclo de produção disponível. A produção leva aproximadamente 30 dias e o envio é feito sempre até o 5° dia útil do mês seguinte. Você acompanha todo o processo com fotos exclusivas da produção. O prazo de entrega após o envio é de 7 a 15 dias úteis.' 
+                },
+                { 
+                  q: 'Posso trocar o personagem escolhido?', 
+                  a: 'Sim! Assinantes podem trocar o personagem escolhido quantas vezes quiser até o fechamento do ciclo de produção. Na compra avulsa, você pode solicitar troca até 48h após a confirmação do pagamento da entrada.' 
+                },
+                { 
+                  q: 'Posso cancelar minha assinatura?', 
+                  a: 'Sim, você pode cancelar sua assinatura quando quiser, sem multas ou taxas. Você continuará recebendo todas as peças dos ciclos já pagos. O cancelamento vale a partir do próximo ciclo ainda não pago.' 
+                },
+                { 
+                  q: 'Qual a garantia oferecida?', 
+                  a: 'Oferecemos garantia de satisfação de 7 dias após o recebimento. Se houver qualquer defeito de fabricação ou dano no transporte, substituímos a peça gratuitamente. Todas as peças são enviadas com embalagem premium e seguro.' 
+                },
+                { 
+                  q: 'Como funciona o rastreamento da entrega?', 
+                  a: 'Todas as entregas incluem código de rastreamento completo dos Correios. Você recebe o código por e-mail assim que a peça é despachada e pode acompanhar em tempo real pelo site dos Correios ou pelo seu painel na plataforma.' 
+                }
+              ].map((faq, idx) => (
+                <details 
+                  key={idx} 
+                  className="group bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-slate-200 dark:border-slate-800 overflow-hidden hover:border-amber-500 transition-colors"
+                >
+                  <summary className="flex items-center justify-between p-4 cursor-pointer font-semibold text-base text-slate-950 dark:text-white">
+                    <span>{faq.q}</span>
+                    <ChevronRight className="w-5 h-5 transition-transform group-open:rotate-90 text-amber-500" />
+                  </summary>
+                  <div className="px-4 pb-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {faq.a}
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5 mb-2">
-                  Entrada: R$ 100 + Restante quando pronto
-                </div>
-                <div className="text-xs font-semibold">
-                  <div className="text-primary">PIX: R$ 375 (5% OFF)</div>
-                  <div className="text-muted-foreground mt-1">Parcelado: R$ 400</div>
-                </div>
-              </div>
+                </details>
+              ))}
+            </div>
 
-              <div className="space-y-2 mb-6 text-sm flex-grow">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  <span>1 peça exclusiva</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  <span>Pintada à mão</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  <span>Produção limitada mensal</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  <span>Acompanhe a produção</span>
-                </div>
-              </div>
+            <div className="text-center mt-8">
+              <p className="text-slate-600 dark:text-slate-400 mb-4 text-sm">Ainda tem dúvidas?</p>
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/perfil?section=support">
+                  Falar com Suporte
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
 
-              <Button asChild className="w-full mt-auto">
-                <Link to={`/colecoes/${slug}/comprar`}>Comprar Agora</Link>
+        {/* CTA Final com Garantias */}
+        <section className="py-24 bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 text-white relative overflow-hidden">
+          {/* Pattern Background */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+          </div>
+
+          <div className="container max-w-5xl px-6 text-center relative z-10">
+            <div className="mb-8">
+              <Crown className="w-12 h-12 mx-auto mb-4" />
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Pronto para Começar<br />Sua Coleção?
+              </h2>
+              <p className="text-base text-amber-50 max-w-2xl mx-auto leading-relaxed">
+                Cada peça é artesanal, pintada à mão e entregue com embalagem premium.<br />
+                Produção limitada por ciclo mensal.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <Button 
+                size="lg" 
+                className="bg-white text-amber-600 hover:bg-amber-50 font-bold px-8 py-3 text-base shadow-2xl"
+                asChild
+              >
+                <Link to={`/colecoes/${slug}/assinar`}>
+                  Assinar Agora
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="border-2 border-white text-white hover:bg-white hover:text-amber-600 px-8 py-3 text-base"
+                asChild
+              >
+                <Link to={`/colecoes/${slug}/comprar`}>
+                  Comprar Avulso
+                </Link>
               </Button>
             </div>
 
-            {/* Planos de Assinatura - Dinâmicos */}
-            {plans && plans.length > 0 ? (
-              plans.map((plan: any) => {
-                const priceFull = Number(plan.price_full);
-                const pricePix = Number(plan.price_pix);
-                const discount = priceFull - pricePix;
-                const pricePerPiece = priceFull / plan.deliveries_total;
-                const savings = 500 * plan.deliveries_total - priceFull;
-
-                // Determinar estilo do card baseado no tipo
-                const isPopular = plan.plan_type === "trimestral";
-                const isBestValue = plan.plan_type === "anual";
-
-                const cardClasses = isPopular
-                  ? "border-2 border-primary rounded-xl p-6 relative shadow-lg scale-105 flex flex-col"
-                  : isBestValue
-                    ? "border-2 border-purple-500/50 rounded-xl p-6 hover:border-purple-500 hover:shadow-lg transition-all relative flex flex-col"
-                    : "border rounded-xl p-6 hover:border-amber-500/50 hover:shadow-lg transition-all flex flex-col";
-
-                const badgeClasses = isPopular
-                  ? "absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold"
-                  : isBestValue
-                    ? "absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold"
-                    : "";
-
-                const badgeText = isPopular ? "Mais escolhido" : isBestValue ? "MELHOR VALOR" : "";
-
-                const emoji =
-                  plan.plan_type === "trimestral"
-                    ? "📦"
-                    : plan.plan_type === "semestral"
-                      ? "💎"
-                      : "👑";
-
-                const pixColor =
-                  plan.plan_type === "trimestral"
-                    ? "text-primary"
-                    : plan.plan_type === "semestral"
-                      ? "text-amber-600"
-                      : "text-purple-600";
-
-                const buttonVariant = plan.plan_type === "trimestral" ? "default" : "outline";
-                const buttonClasses =
-                  plan.plan_type === "anual"
-                    ? "border-purple-500 text-purple-700 hover:bg-purple-50"
-                    : "";
-
+            {/* Garantias */}
+            <div className="grid sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              {[
+                { icon: Shield, title: 'Garantia de 7 Dias', desc: 'Satisfação garantida' },
+                { icon: Truck, title: 'Envio Rastreado', desc: 'Acompanhe sua entrega' },
+                { icon: Award, title: 'Qualidade Premium', desc: 'Artesanato certificado' }
+              ].map((item, idx) => {
+                const Icon = item.icon;
                 return (
-                  <div key={plan.id} className={cardClasses}>
-                    {badgeText && <div className={badgeClasses}>{badgeText}</div>}
-
-                    <div className="text-center mb-4">
-                      <div className="text-3xl mb-2">{emoji}</div>
-                      <h3 className="text-xl font-bold mb-2 capitalize">{plan.name}</h3>
-                      <div className="text-3xl font-bold mb-1">R$ {priceFull.toFixed(0)}</div>
-                      <div className="mb-3">
-                        <div className="text-4xl font-bold">
-                          R${" "}
-                          {(priceFull / plan.deliveries_total).toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </div>
-                        <div className="text-sm text-muted-foreground">por personagem</div>
-                        <div className="text-sm text-muted-foreground mt-2">
-                          Total: R$ {priceFull.toFixed(0)}{" "}
-                          <span className="text-primary">em até 10x com juros</span>
-                        </div>
-                      </div>
-                      {plan.plan_type === "trimestral" && (
-                        <p className="text-xs text-primary">Plano com benefício exclusivo</p>
-                      )}
-                      {plan.plan_type === "semestral" && (
-                        <p className="text-xs text-primary">Inclui peça exclusiva para membros</p>
-                      )}
+                  <div key={idx} className="text-center">
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4">
+                      <Icon className="w-8 h-8" />
                     </div>
-
-                    <div className="space-y-2 mb-6 text-sm flex-grow">
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span className={plan.plan_type === "anual" ? "font-semibold" : ""}>
-                          {plan.deliveries_total} {plan.deliveries_total === 1 ? "peça" : "peças"}
-                          {plan.plan_type === "anual" && " + 1 GRÁTIS!"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>1 peça por mês</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>
-                          {plan.plan_type === "trimestral" && "Prioridade na produção"}
-                          {plan.plan_type === "semestral" && "Suporte dedicado"}
-                          {plan.plan_type === "anual" && "Suporte VIP"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>
-                          {plan.plan_type === "trimestral" && "Trocas ilimitadas"}
-                          {plan.plan_type === "semestral" && "Cancele quando quiser"}
-                          {plan.plan_type === "anual" && "Acesso antecipado"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <Button
-                      asChild
-                      className={`w-full mt-auto ${buttonClasses}`}
-                      variant={buttonVariant}
-                    >
-                      <Link to={`/colecoes/${slug}/assinar`}>
-                        Assinar
-                        {plan.plan_type === "trimestral" && <ArrowRight className="ml-2 h-4 w-4" />}
-                      </Link>
-                    </Button>
+                    <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                    <p className="text-sm text-amber-50">{item.desc}</p>
                   </div>
                 );
-              })
-            ) : (
-              <div className="col-span-3 text-center py-8 text-muted-foreground">
-                Carregando planos...
+              })}
+            </div>
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  );
+}
+
+// Componente de Card de Personagem
+function CharacterCard({ character }: { character: Character }) {
+  const statusConfig = {
+    released: { label: 'Lançado', color: 'bg-slate-500' },
+    revealed: { label: 'Disponível', color: 'bg-green-500' },
+    upcoming: { label: 'Em Breve', color: 'bg-blue-500' }
+  };
+  const config = statusConfig[character.status];
+  
+  // Show mystery placeholder if not revealed (Requirements 12.7, 28.4)
+  const isRevealed = character.status === "revealed" || character.status === "released";
+  const displayImage = isRevealed ? character.image_url : null;
+  const displayName = isRevealed ? character.name : "Personagem Misterioso";
+
+  return (
+    <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-300 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500">
+      <div className="relative aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden">
+        {displayImage ? (
+          <img 
+            src={displayImage} 
+            alt={displayName}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900">
+            <Lock className="w-16 h-16 text-slate-400 dark:text-slate-600 mb-3" />
+            <span className="text-sm font-semibold text-slate-500 dark:text-slate-500">Mistério</span>
+          </div>
+        )}
+        
+        <div className="absolute top-3 left-3">
+          <div className={`${config.color} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg`}>
+            {config.label}
+          </div>
+        </div>
+
+        <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white text-sm font-bold px-3 py-1.5 rounded-full">
+          #{character.release_order}
+        </div>
+
+        {character.status === "revealed" && (
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white font-bold">
+              Ver Detalhes
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <CardContent className="p-4">
+        <h3 className="font-bold text-lg mb-2 text-slate-950 dark:text-white line-clamp-1">
+          {displayName}
+        </h3>
+        {character.release_month && (
+          <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Mês {character.release_month}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Componente de Item de Lista
+function CharacterListItem({ character }: { character: Character }) {
+  const statusConfig = {
+    released: { label: 'Lançado', color: 'bg-slate-500' },
+    revealed: { label: 'Disponível', color: 'bg-green-500' },
+    upcoming: { label: 'Em Breve', color: 'bg-blue-500' }
+  };
+  const config = statusConfig[character.status];
+  
+  // Show mystery placeholder if not revealed (Requirements 12.7, 28.4)
+  const isRevealed = character.status === "revealed" || character.status === "released";
+  const displayImage = isRevealed ? character.image_url : null;
+  const displayName = isRevealed ? character.name : "Personagem Misterioso";
+  const displayDescription = isRevealed ? character.description : "Este personagem será revelado em breve. Aguarde a data de revelação!";
+
+  return (
+    <Card className="overflow-hidden hover:shadow-xl transition-all bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500">
+      <div className="flex gap-6 p-4">
+        <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
+          {displayImage ? (
+            <img 
+              src={displayImage} 
+              alt={displayName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900">
+              <Lock className="w-8 h-8 text-slate-400 dark:text-slate-600 mb-1" />
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-500">Mistério</span>
+            </div>
+          )}
+          
+          <div className="absolute top-2 right-2 bg-slate-950/80 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-full">
+            #{character.release_order}
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <h3 className="font-bold text-lg text-slate-950 dark:text-white">
+                {displayName}
+              </h3>
+              <div className={`${config.color} text-white text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap`}>
+                {config.label}
               </div>
+            </div>
+            
+            {displayDescription && (
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 line-clamp-2">
+                {displayDescription}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            {character.release_month && (
+              <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Mês {character.release_month}
+              </p>
+            )}
+            
+            {character.status === "revealed" && (
+              <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white">
+                Ver Detalhes
+              </Button>
             )}
           </div>
         </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="container max-w-4xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">Perguntas Frequentes</h2>
-            <p className="text-muted-foreground">Tudo que você precisa saber sobre a coleção</p>
-          </div>
-
-          <div className="space-y-4">
-            <details className="group bg-card border rounded-lg overflow-hidden">
-              <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="font-semibold">Como funciona o sistema de pré-venda?</span>
-                <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
-              </summary>
-              <div className="px-6 pb-6 text-muted-foreground">
-                <p>
-                  Você paga R$ 100 de entrada para reservar sua peça. Iniciamos a produção
-                  imediatamente e você acompanha todo o processo com fotos. Quando a peça estiver
-                  pronta, você paga o restante: R$ 375 no PIX (5% OFF) ou R$ 400 parcelado em até
-                  10x.
-                </p>
-              </div>
-            </details>
-
-            <details className="group bg-card border rounded-lg overflow-hidden">
-              <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="font-semibold">
-                  Qual a diferença entre compra avulsa e assinatura?
-                </span>
-                <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
-              </summary>
-              <div className="px-6 pb-6 text-muted-foreground">
-                <p>
-                  Na compra avulsa você escolhe 1 personagem específico por R$ 500. Na assinatura,
-                  você recebe personagens mensalmente com benefícios exclusivos para membros dos
-                  planos maiores.
-                </p>
-              </div>
-            </details>
-
-            <details className="group bg-card border rounded-lg overflow-hidden">
-              <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="font-semibold">O que é revelação surpresa?</span>
-                <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
-              </summary>
-              <div className="px-6 pb-6 text-muted-foreground">
-                <p>
-                  Você escolhe a coleção, e o personagem do mês é revelado no envio. Cada peça é
-                  única e exclusiva, tornando sua coleção ainda mais especial.
-                </p>
-              </div>
-            </details>
-
-            <details className="group bg-card border rounded-lg overflow-hidden">
-              <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="font-semibold">Quando recebo a primeira peça?</span>
-                <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
-              </summary>
-              <div className="px-6 pb-6 text-muted-foreground">
-                <p>
-                  {content
-                    ? processContentVariables(content.faqFirstDelivery, content)
-                    : "Carregando..."}
-                </p>
-              </div>
-            </details>
-
-            <details className="group bg-card border rounded-lg overflow-hidden">
-              <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="font-semibold">Posso cancelar minha assinatura?</span>
-                <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
-              </summary>
-              <div className="px-6 pb-6 text-muted-foreground">
-                <p>
-                  Sim, você pode cancelar quando quiser, sem multas ou taxas. Basta acessar sua
-                  conta e solicitar o cancelamento. Você continuará recebendo as peças já pagas.
-                </p>
-              </div>
-            </details>
-
-            <details className="group bg-card border rounded-lg overflow-hidden">
-              <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="font-semibold">Qual a garantia oferecida?</span>
-                <ArrowRight className="w-5 h-5 transition-transform group-open:rotate-90" />
-              </summary>
-              <div className="px-6 pb-6 text-muted-foreground">
-                <p>
-                  Oferecemos garantia de satisfação de 7 dias após o recebimento. Se houver qualquer
-                  defeito de fabricação, substituímos a peça gratuitamente. Todas as peças são
-                  enviadas com embalagem premium e seguro.
-                </p>
-              </div>
-            </details>
-          </div>
-
-          <div className="text-center mt-10">
-            <p className="text-muted-foreground mb-4">Ainda tem dúvidas?</p>
-            <Button asChild variant="outline">
-              <Link to="/perfil?section=support">Falar com Suporte</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Final - Compacto */}
-      <section className="py-12 bg-foreground text-background">
-        <div className="container max-w-4xl text-center">
-          <h2 className="text-3xl font-bold mb-4">Pronto para começar sua coleção?</h2>
-          <p className="text-background/70 mb-8 max-w-2xl mx-auto">
-            Entrada fixa de R$ 100. Acompanhe a produção e pague o restante: R$ 375 no PIX (5% OFF)
-            ou R$ 400 parcelado.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              className="bg-background text-foreground hover:bg-background/90"
-              asChild
-            >
-              <Link to={`/colecoes/${slug}/assinar`}>
-                Assinar Agora
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-background/30 text-background hover:bg-background/10"
-              asChild
-            >
-              <Link to={`/colecoes/${slug}/comprar`}>
-                <span className="flex flex-col items-center">
-                  <span className="text-sm">Comprar Avulso</span>
-                  <span className="text-xs opacity-70">R$ 500 (R$ 100 entrada)</span>
-                </span>
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-    </AppShell>
+      </div>
+    </Card>
   );
 }

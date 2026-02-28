@@ -33,6 +33,12 @@ import AdminCollections from "./pages/admin/AdminCollections";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminPlans from "./pages/admin/AdminPlans";
 import AdminCoupons from "./pages/admin/AdminCoupons";
+import AuditTrail from "./pages/admin/AuditTrail";
+import CollectionManagement from "./pages/admin/CollectionManagement";
+import BonusPieces from "./pages/admin/BonusPieces";
+import CycleDashboard from "./pages/admin/CycleDashboard";
+import DeliveryManagement from "./pages/admin/DeliveryManagement";
+import CapacityManagement from "./pages/admin/CapacityManagement";
 import MySubscriptions from "./pages/MySubscriptions";
 import MyPaymentsPage from "./pages/MyPaymentsPage";
 import PaymentDetails from "./pages/PaymentDetails";
@@ -320,6 +326,54 @@ function AppContent() {
             element={
               <RequireAdmin>
                 <AdminSubscriptions />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/auditoria"
+            element={
+              <RequireAdmin>
+                <AuditTrail />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/gerenciar-colecoes"
+            element={
+              <RequireAdmin>
+                <CollectionManagement />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/ciclos"
+            element={
+              <RequireAdmin>
+                <CycleDashboard />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/entregas"
+            element={
+              <RequireAdmin>
+                <DeliveryManagement />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/capacidade"
+            element={
+              <RequireAdmin>
+                <CapacityManagement />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/pecas-bonus"
+            element={
+              <RequireAdmin>
+                <BonusPieces />
               </RequireAdmin>
             }
           />

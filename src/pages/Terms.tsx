@@ -17,8 +17,8 @@ export default function Terms() {
 
       <div className="container py-12 max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">Termos de Uso</h1>
-          <p className="text-muted-foreground">Última atualização: 03 de Fevereiro de 2026</p>
+          <h1 className="text-2xl font-bold tracking-tight mb-4">Termos de Uso</h1>
+          <p className="text-xs text-muted-foreground">Última atualização: 03 de Fevereiro de 2026</p>
         </div>
 
         <Card>
@@ -27,8 +27,8 @@ export default function Terms() {
               <div className="space-y-6">
                 {/* Seção 1 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">1. Aceitação dos Termos</h2>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <h2 className="text-base font-semibold mb-3">1. Aceitação dos Termos</h2>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Ao acessar e usar a plataforma Ordax, operada pela Tonecos Studios, você
                     concorda em cumprir e estar vinculado aos seguintes termos e condições de uso.
                     Se você não concordar com qualquer parte destes termos, não deverá usar nossos
@@ -38,7 +38,7 @@ export default function Terms() {
 
                 {/* Seção 2 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">2. Descrição do Serviço</h2>
+                  <h2 className="text-base font-semibold mb-3">2. Descrição do Serviço</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     A Ordax é uma plataforma de catálogo e gestão de pedidos de colecionáveis
                     artesanais premium. Oferecemos:
@@ -54,7 +54,7 @@ export default function Terms() {
 
                 {/* Seção 3 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">3. Cadastro e Conta</h2>
+                  <h2 className="text-base font-semibold mb-3">3. Cadastro e Conta</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     Para utilizar determinadas funcionalidades, você deve criar uma conta fornecendo
                     informações precisas e completas. Você é responsável por:
@@ -69,7 +69,7 @@ export default function Terms() {
 
                 {/* Seção 4 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">4. Produtos e Pedidos</h2>
+                  <h2 className="text-base font-semibold mb-3">4. Produtos e Pedidos</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     <strong>4.1 Orçamentos:</strong> Todos os produtos são feitos sob encomenda. Os
                     preços apresentados são estimativas e podem variar conforme especificações do
@@ -87,7 +87,7 @@ export default function Terms() {
 
                 {/* Seção 5 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">5. Assinaturas</h2>
+                  <h2 className="text-base font-semibold mb-3">5. Assinaturas</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     <strong>5.1 Planos:</strong> Oferecemos planos trimestral, semestral e anual com
                     diferentes benefícios.
@@ -108,7 +108,7 @@ export default function Terms() {
 
                 {/* Seção 6 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">6. Propriedade Intelectual</h2>
+                  <h2 className="text-base font-semibold mb-3">6. Propriedade Intelectual</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     Todo o conteúdo da plataforma, incluindo textos, imagens, logos, designs e
                     código, é propriedade da Tonecos Studios ou de seus licenciadores e está
@@ -122,7 +122,7 @@ export default function Terms() {
 
                 {/* Seção 7 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">7. Uso Aceitável</h2>
+                  <h2 className="text-base font-semibold mb-3">7. Uso Aceitável</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     Você concorda em NÃO:
                   </p>
@@ -137,7 +137,7 @@ export default function Terms() {
 
                 {/* Seção 8 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">8. Limitação de Responsabilidade</h2>
+                  <h2 className="text-base font-semibold mb-3">8. Limitação de Responsabilidade</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     A Tonecos Studios não se responsabiliza por:
                   </p>
@@ -151,7 +151,7 @@ export default function Terms() {
 
                 {/* Seção 9 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">9. Modificações dos Termos</h2>
+                  <h2 className="text-base font-semibold mb-3">9. Modificações dos Termos</h2>
                   <p className="text-muted-foreground leading-relaxed">
                     Reservamo-nos o direito de modificar estes termos a qualquer momento. As
                     alterações entrarão em vigor imediatamente após a publicação na plataforma. O
@@ -161,7 +161,7 @@ export default function Terms() {
 
                 {/* Seção 10 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">10. Lei Aplicável</h2>
+                  <h2 className="text-base font-semibold mb-3">10. Lei Aplicável</h2>
                   <p className="text-muted-foreground leading-relaxed">
                     Estes termos são regidos pelas leis da República Federativa do Brasil. Qualquer
                     disputa será resolvida nos tribunais competentes do Brasil.
@@ -170,7 +170,7 @@ export default function Terms() {
 
                 {/* Seção 11 */}
                 <section>
-                  <h2 className="text-2xl font-semibold mb-3">11. Contato</h2>
+                  <h2 className="text-base font-semibold mb-3">11. Contato</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     Para questões sobre estes termos, entre em contato:
                   </p>

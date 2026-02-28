@@ -33,6 +33,9 @@ import {
   MessageSquare as MessageSquareIcon,
   Menu,
   X,
+  History,
+  CalendarClock,
+  FolderKanban,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -100,6 +103,48 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           icon: CreditCard,
           path: "/admin/assinaturas",
         },
+        {
+          id: "audit-trail",
+          label: "Trilha de Auditoria",
+          icon: History,
+          path: "/admin/auditoria",
+        },
+      ],
+    },
+    {
+      id: "production",
+      label: "Produção & Ciclos",
+      items: [
+        {
+          id: "cycle-dashboard",
+          label: "Dashboard de Ciclos",
+          icon: CalendarClock,
+          path: "/admin/ciclos",
+        },
+        {
+          id: "delivery-management",
+          label: "Gerenciar Entregas",
+          icon: Package,
+          path: "/admin/entregas",
+        },
+        {
+          id: "capacity-management",
+          label: "Gerenciar Capacidade",
+          icon: Gauge,
+          path: "/admin/capacidade",
+        },
+        {
+          id: "bonus-pieces",
+          label: "Peças Bônus",
+          icon: Package,
+          path: "/admin/pecas-bonus",
+        },
+        {
+          id: "collection-management",
+          label: "Gerenciar Coleções",
+          icon: FolderKanban,
+          path: "/admin/gerenciar-colecoes",
+        },
       ],
     },
     {
@@ -132,7 +177,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         },
         {
           id: "collections",
-          label: "Coleções",
+          label: "Coleções & Personagens",
           icon: Layers,
           path: "/admin/colecoes",
         },

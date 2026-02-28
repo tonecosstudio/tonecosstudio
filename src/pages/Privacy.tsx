@@ -17,8 +17,8 @@ export default function Privacy() {
 
       <div className="container py-12 max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">Política de Privacidade</h1>
-          <p className="text-muted-foreground">Última atualização: 03 de Fevereiro de 2026</p>
+          <h1 className="text-2xl font-bold tracking-tight mb-4">Política de Privacidade</h1>
+          <p className="text-xs text-muted-foreground">Última atualização: 03 de Fevereiro de 2026</p>
         </div>
 
         <Card>

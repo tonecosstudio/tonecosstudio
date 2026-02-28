@@ -48,17 +48,7 @@ export class FileUploadService {
       throw new Error("Erro ao fazer upload do arquivo");
     }
 
-    // Gerar thumbnail se for imagem
     let thumbnailPath: string | undefined;
-    // TEMPORARIAMENTE DESABILITADO - usar imagem original
-    // if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-    //   try {
-    //     thumbnailPath = await this.generateThumbnail(file, conversationId);
-    //   } catch (error) {
-    //     console.error("Erro ao gerar thumbnail:", error);
-    //     // Continua sem thumbnail
-    //   }
-    // }
 
     // Salvar metadata no banco
     const { data: attachmentData, error: dbError } = await supabase
