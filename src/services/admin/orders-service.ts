@@ -700,12 +700,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       deadline,
       notes,
       created_at,
-      updated_at,
-      profiles (
-        id,
-        full_name,
-        email
-      )
+      updated_at
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
