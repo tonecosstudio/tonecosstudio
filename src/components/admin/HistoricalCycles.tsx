@@ -150,11 +150,6 @@ export function HistoricalCycles() {
     }
   };
 
-  // Navigate to cycle detail (CycleDashboard with specific month/year)
-  const handleViewCycle = (cycle: Cycle) => {
-    navigate(`/admin/cycle-dashboard?month=${cycle.month}&year=${cycle.year}`);
-  };
-
   // Calculate statistics
   const stats = sortedCycles.reduce(
     (acc, cycle) => {
@@ -370,13 +365,9 @@ export function HistoricalCycles() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewCycle(cycle)}
-                          >
-                            Ver Detalhes
-                          </Button>
+                          <span className="text-sm text-muted-foreground">
+                            {cycle.status === 'completed' ? 'Concluído' : 'Em andamento'}
+                          </span>
                         </TableCell>
                       </TableRow>
                     );

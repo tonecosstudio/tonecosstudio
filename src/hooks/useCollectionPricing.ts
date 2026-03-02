@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Interface para preços de coleção
+ * Agora inclui informações de nível de preço quando aplicável
+ * Requisitos: 4.1, 4.2, 4.3, 4.5, 12.3
+ */
 export interface CollectionPricing {
   price_full: number;
   price_pix: number;
@@ -8,8 +13,16 @@ export interface CollectionPricing {
   remaining_full: number;
   remaining_pix: number;
   is_custom: boolean;
+  tier_id?: string | null;
+  tier_name?: string | null;
+  pricing_source: 'custom' | 'tier' | 'default';
 }
 
+/**
+ * Hook para buscar preços de uma coleção
+ * Busca preços de nível, customizado ou padrão automaticamente
+ * Requisitos: 4.1, 4.2, 4.3, 4.5, 12.3
+ */
 export function useCollectionPricing(collectionId: string | undefined) {
   return useQuery({
     queryKey: ["collection-pricing", collectionId],
@@ -28,6 +41,7 @@ export function useCollectionPricing(collectionId: string | undefined) {
       return data?.[0] as CollectionPricing;
     },
     enabled: !!collectionId,
+    staleTime: 2 * 60 * 1000, // 2 minutos - cache para melhor performance
   });
 }
 

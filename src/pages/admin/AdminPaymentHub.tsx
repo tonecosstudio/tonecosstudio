@@ -1,18 +1,22 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, CreditCard, Calculator } from "lucide-react";
+import { Wallet, CreditCard, Calculator, CheckCircle, Key } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import AdminPayments from "./AdminPayments";
 import AdminPaymentMethods from "./AdminPaymentMethods";
+import AdminPaymentKeys from "./AdminPaymentKeys";
 import PaymentCalculator from "./PaymentCalculator";
+import PaymentVerification from "./PaymentVerification";
 
 /**
  * AdminPaymentHub - Página Unificada de Pagamentos
  *
- * Mescla 3 páginas em uma só com tabs:
+ * Consolida 5 páginas em uma só com tabs:
  * - AdminPayments (Pagamentos Manuais)
  * - AdminPaymentMethods (Métodos de Pagamento)
+ * - AdminPaymentKeys (Chaves de API)
  * - PaymentCalculator (Calculadora MP)
+ * - PaymentVerification (Verificação de Pagamentos)
  */
 export default function AdminPaymentHub() {
   const [searchParams] = useSearchParams();
@@ -31,18 +35,26 @@ export default function AdminPaymentHub() {
 
         {/* Tabs Unificadas */}
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="payments">
               <Wallet className="h-4 w-4 mr-2" />
-              Pagamentos Manuais
+              Pagamentos
             </TabsTrigger>
             <TabsTrigger value="methods">
               <CreditCard className="h-4 w-4 mr-2" />
               Métodos
             </TabsTrigger>
+            <TabsTrigger value="keys">
+              <Key className="h-4 w-4 mr-2" />
+              Chaves API
+            </TabsTrigger>
             <TabsTrigger value="calculator">
               <Calculator className="h-4 w-4 mr-2" />
-              Calculadora MP
+              Calculadora
+            </TabsTrigger>
+            <TabsTrigger value="verification">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Verificação
             </TabsTrigger>
           </TabsList>
 
@@ -56,9 +68,19 @@ export default function AdminPaymentHub() {
             <AdminPaymentMethods />
           </TabsContent>
 
+          {/* Chaves de API */}
+          <TabsContent value="keys" className="space-y-4">
+            <AdminPaymentKeys />
+          </TabsContent>
+
           {/* Calculadora MP */}
           <TabsContent value="calculator" className="space-y-4">
             <PaymentCalculator />
+          </TabsContent>
+
+          {/* Verificação de Pagamentos */}
+          <TabsContent value="verification" className="space-y-4">
+            <PaymentVerification />
           </TabsContent>
         </Tabs>
       </div>

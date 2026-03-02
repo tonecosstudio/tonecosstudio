@@ -37,6 +37,9 @@ import { DeactivateCollectionDialog } from '@/components/admin/DeactivateCollect
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CollectionStats } from '@/components/admin/CollectionStats';
+import { useSanitizedInput } from '@/hooks/useSanitizedInput';
+import { ValidationFeedback } from '@/components/ui/validation-feedback';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/security/rate-limiter';
 import {
   Dialog,
   DialogContent,
@@ -63,7 +66,7 @@ export default function CollectionManagement() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQueryRaw, setSearchQueryRaw, searchQuerySanitized] = useSanitizedInput('', 'search');
   const [rotationFilter, setRotationFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
@@ -149,8 +152,8 @@ export default function CollectionManagement() {
   const filteredCollections = collections?.filter((collection) => {
     // Search filter
     const matchesSearch = 
-      collection.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      collection.slug.toLowerCase().includes(searchQuery.toLowerCase());
+      collection.name.toLowerCase().includes(searchQuerySanitized.toLowerCase()) ||
+      collection.slug.toLowerCase().includes(searchQuerySanitized.toLowerCase());
 
     // Rotation type filter
     const matchesRotation = 
@@ -274,10 +277,28 @@ export default function CollectionManagement() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nome ou slug..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchQueryRaw}
+                  onChange={(e) => {
+                    // Check rate limit
+                    const rateLimit = checkRateLimit('search-collections', RATE_LIMITS.search);
+                    if (!rateLimit.allowed) {
+                      toast({
+                        title: 'Limite de busca excedido',
+                        description: `Aguarde ${rateLimit.retryAfter} segundos antes de buscar novamente.`,
+                        variant: 'destructive'
+                      });
+                      return;
+                    }
+                    setSearchQueryRaw(e.target.value);
+                  }}
                   className="pl-10"
                 />
+                {searchQueryRaw !== searchQuerySanitized && searchQueryRaw.length > 0 && (
+                  <ValidationFeedback 
+                    info="Caracteres especiais foram removidos da busca"
+                    className="mt-1"
+                  />
+                )}
               </div>
 
               {/* Rotation Type Filter */}

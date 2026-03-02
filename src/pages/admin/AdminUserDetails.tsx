@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,16 +18,27 @@ import {
   Package,
   Heart,
   Shield,
-  Calendar,
   Mail,
   Phone,
   MessageSquare,
   MapPinned,
+  ExternalLink,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetchOrdersByUserId } from "@/services/admin/orders-service";
+import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
+import { OrderTypeIndicator } from "@/components/admin/orders/OrderTypeIndicator";
+import { UserQuickActions } from "@/components/admin/user/UserQuickActions";
+import { UserOrderFilters } from "@/components/admin/user/UserOrderFilters";
+import { formatCurrency } from "@/lib/utils";
 
 export default function AdminUserDetails() {
   const { userId } = useParams<{ userId: string }>();
+  
+  // Estados para filtros de pedidos
+  const [orderTypeFilter, setOrderTypeFilter] = useState("all");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
 
   // Query para perfil completo (inclui email)
   const profileQuery = useQuery({
@@ -98,19 +110,13 @@ export default function AdminUserDetails() {
     },
   });
 
-  // Query para pedidos
+  // Query para pedidos consolidados (todos os tipos)
   const ordersQuery = useQuery({
     queryKey: ["admin-user-orders", userId],
     enabled: Boolean(userId),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("quotes")
-        .select("id, status, created_at, updated_at")
-        .eq("user_id", userId!)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data || [];
+      if (!userId) return [];
+      return await fetchOrdersByUserId(userId);
     },
   });
 
@@ -141,6 +147,44 @@ export default function AdminUserDetails() {
   const paymentMethods = paymentMethodsQuery.data || [];
   const orders = ordersQuery.data || [];
   const subscriptions = subscriptionsQuery.data || [];
+
+  // Filtrar pedidos
+  const filteredOrders = useMemo(() => {
+    let filtered = orders;
+
+    // Filtro por tipo
+    if (orderTypeFilter !== "all") {
+      filtered = filtered.filter((order) => order.type === orderTypeFilter);
+    }
+
+    // Filtro por status
+    if (orderStatusFilter !== "all") {
+      filtered = filtered.filter((order) => order.status === orderStatusFilter);
+    }
+
+    // Filtro por busca
+    if (orderSearchQuery.trim()) {
+      const query = orderSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(
+        (order) =>
+          order.id.toLowerCase().includes(query) ||
+          (order.trackingCode && order.trackingCode.toLowerCase().includes(query)) ||
+          (order.collection && order.collection.name.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [orders, orderTypeFilter, orderStatusFilter, orderSearchQuery]);
+
+  // Calcular estatísticas de pedidos (usando pedidos filtrados)
+  const totalSpent = filteredOrders.reduce((sum, order) => sum + (order.amount || 0), 0);
+  const pendingOrders = filteredOrders.filter(
+    (order) =>
+      order.status === "pending" ||
+      order.status === "under_review" ||
+      order.status === "requires_info" ||
+      order.status === "reviewing"
+  );
 
   if (isLoading) {
     return (
@@ -182,8 +226,8 @@ export default function AdminUserDetails() {
           </Link>
         </Button>
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex-1 min-w-0">
             <h1 className="text-4xl font-bold tracking-tight mb-2">
               {profile.display_name || profile.full_name || profile.email}
             </h1>
@@ -194,16 +238,23 @@ export default function AdminUserDetails() {
             <p className="text-sm text-muted-foreground mt-1">ID: {profile.id}</p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {roles.length === 0 ? (
-              <Badge variant="secondary">user</Badge>
-            ) : (
-              roles.map((r: any) => (
-                <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
-                  {r.role}
-                </Badge>
-              ))
-            )}
+          <div className="flex flex-col gap-3 items-end">
+            <div className="flex flex-wrap gap-2">
+              {roles.length === 0 ? (
+                <Badge variant="secondary">user</Badge>
+              ) : (
+                roles.map((r: any) => (
+                  <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
+                    {r.role}
+                  </Badge>
+                ))
+              )}
+            </div>
+            <UserQuickActions 
+              userId={profile.id} 
+              userEmail={profile.email || ""} 
+              userName={profile.display_name || profile.full_name || profile.email || "Usuário"}
+            />
           </div>
         </div>
 
@@ -244,9 +295,9 @@ export default function AdminUserDetails() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">
-                  R$ {(profile.total_spent || 0).toFixed(2)}
+                  {formatCurrency(totalSpent)}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Investido</div>
+                <div className="text-xs text-muted-foreground mt-1">Total Gasto</div>
               </div>
             </CardContent>
           </Card>
@@ -590,9 +641,9 @@ export default function AdminUserDetails() {
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold text-primary">
-                      R$ {(profile.total_spent || 0).toFixed(2)}
+                      {formatCurrency(totalSpent)}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">Investido</div>
+                    <div className="text-xs text-muted-foreground mt-1">Total Gasto</div>
                   </div>
                 </div>
               </CardContent>
@@ -636,32 +687,124 @@ export default function AdminUserDetails() {
 
         {/* Tab: Orders */}
         <TabsContent value="orders" className="space-y-6">
+          {/* Estatísticas de Pedidos */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{orders.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Total de Pedidos</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{filteredOrders.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Filtrados</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{formatCurrency(totalSpent)}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Valor Total</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{pendingOrders.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Pendentes</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Lista de Pedidos Consolidados */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Pedidos ({orders.length})
+                Todos os Pedidos ({filteredOrders.length} de {orders.length})
               </CardTitle>
+              <CardDescription>
+                Entregas de assinatura, compras avulsas, pagamentos manuais e orçamentos
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {orders.length === 0 ? (
+              {/* Filtros */}
+              <UserOrderFilters
+                typeFilter={orderTypeFilter}
+                statusFilter={orderStatusFilter}
+                searchQuery={orderSearchQuery}
+                onTypeChange={setOrderTypeFilter}
+                onStatusChange={setOrderStatusFilter}
+                onSearchChange={setOrderSearchQuery}
+              />
+
+              {filteredOrders.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhum pedido realizado
+                  {orders.length === 0 
+                    ? "Nenhum pedido realizado" 
+                    : "Nenhum pedido encontrado com os filtros aplicados"}
                 </p>
               ) : (
-                <div className="space-y-4">
-                  {orders.map((order: any) => (
+                <div className="space-y-3">
+                  {filteredOrders.map((order) => (
                     <div
                       key={order.id}
-                      className="flex items-center justify-between p-4 rounded-lg border"
+                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                     >
-                      <div>
-                        <div className="font-medium">Pedido #{order.id.slice(0, 8)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleString("pt-BR")}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <OrderTypeIndicator type={order.type} />
+                          <span className="font-medium text-sm">
+                            {order.type === "subscription_delivery" && "Entrega de Assinatura"}
+                            {order.type === "standalone_purchase" && "Compra Avulsa"}
+                            {order.type === "manual_payment" && "Pagamento Manual"}
+                            {order.type === "quote" && "Orçamento"}
+                          </span>
                         </div>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+                          <span className="font-mono text-xs">#{order.id.slice(0, 8)}</span>
+                          <span>•</span>
+                          <span>{new Date(order.createdAt).toLocaleDateString("pt-BR")}</span>
+                          {order.collection && (
+                            <>
+                              <span>•</span>
+                              <span>{order.collection.name}</span>
+                            </>
+                          )}
+                          {order.amount > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="font-semibold">{formatCurrency(order.amount)}</span>
+                            </>
+                          )}
+                          {order.type === "quote" && order.quote && (
+                            <>
+                              <span>•</span>
+                              <span>{order.quote.items.length} {order.quote.items.length === 1 ? "item" : "itens"}</span>
+                            </>
+                          )}
+                        </div>
+                        {order.trackingCode && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Rastreio: {order.trackingCode}
+                          </div>
+                        )}
                       </div>
-                      <Badge variant="secondary">{order.status}</Badge>
+                      <div className="flex items-center gap-3">
+                        <OrderStatusBadge status={order.status} />
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/admin/pedidos?id=${order.id}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -669,11 +812,14 @@ export default function AdminUserDetails() {
             </CardContent>
           </Card>
 
-          {/* Subscriptions */}
+          {/* Assinaturas */}
           {subscriptions.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Assinaturas ({subscriptions.length})</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Assinaturas Ativas ({subscriptions.length})
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">

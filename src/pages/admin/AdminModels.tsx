@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
+import { useSanitizedInput } from "@/hooks/useSanitizedInput";
+import { ValidationFeedback } from "@/components/ui/validation-feedback";
+import { checkRateLimit } from "@/lib/security/rate-limiter";
+import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
 import {
   Table,
   TableBody,
@@ -65,18 +68,21 @@ function fmtDate(iso: string) {
 export default function AdminModels() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Sanitized search input
+  const [searchTermRaw, setSearchTermRaw, searchTermSanitized] = useSanitizedInput("", "search");
+  
   const [editingModel, setEditingModel] = useState<ModelRow | null>(null);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    franchise: "",
-    category: "",
-    subcategory: "",
-    tags: "",
-  });
+  
+  // Sanitized edit form inputs
+  const [nameRaw, setNameRaw, nameSanitized] = useSanitizedInput("", "text");
+  const [franchiseRaw, setFranchiseRaw, franchiseSanitized] = useSanitizedInput("", "text");
+  const [categoryRaw, setCategoryRaw, categorySanitized] = useSanitizedInput("", "text");
+  const [subcategoryRaw, setSubcategoryRaw, subcategorySanitized] = useSanitizedInput("", "text");
+  const [tagsRaw, setTagsRaw, tagsSanitized] = useSanitizedInput("", "text");
 
   const modelsQuery = useQuery({
-    queryKey: ["admin-models", searchTerm],
+    queryKey: ["admin-models", searchTermSanitized],
     queryFn: async () => {
       let query = supabase
         .from("models")
@@ -84,8 +90,8 @@ export default function AdminModels() {
         .order("created_at", { ascending: false })
         .limit(100);
 
-      if (searchTerm.trim()) {
-        query = query.ilike("name", `%${searchTerm.trim()}%`);
+      if (searchTermSanitized.trim()) {
+        query = query.ilike("name", `%${searchTermSanitized.trim()}%`);
       }
 
       const { data, error } = await query;
@@ -116,20 +122,32 @@ export default function AdminModels() {
 
   const openEditDialog = (model: ModelRow) => {
     setEditingModel(model);
-    setEditForm({
-      name: model.name,
-      franchise: model.franchise ?? "",
-      category: model.category ?? "",
-      subcategory: model.subcategory ?? "",
-      tags: (model.tags ?? []).join(", "),
-    });
+    setNameRaw(model.name);
+    setFranchiseRaw(model.franchise ?? "");
+    setCategoryRaw(model.category ?? "");
+    setSubcategoryRaw(model.subcategory ?? "");
+    setTagsRaw((model.tags ?? []).join(", "));
   };
 
   const saveEdit = async () => {
     if (!editingModel) return;
 
+    // Check rate limit
+    const rateLimitKey = `admin-product-update:${editingModel.id}`;
+    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminProductUpdate);
+
+    if (!rateLimit.allowed) {
+      toast({
+        title: "Limite excedido",
+        description: `Aguarde ${rateLimit.retryAfter}s antes de tentar novamente`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const tags = editForm.tags
+      // Parse and sanitize tags
+      const tags = tagsSanitized
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean);
@@ -137,10 +155,10 @@ export default function AdminModels() {
       const { error } = await supabase
         .from("models")
         .update({
-          name: editForm.name.trim(),
-          franchise: editForm.franchise.trim() || null,
-          category: editForm.category.trim() || null,
-          subcategory: editForm.subcategory.trim() || null,
+          name: nameSanitized.trim(),
+          franchise: franchiseSanitized.trim() || null,
+          category: categorySanitized.trim() || null,
+          subcategory: subcategorySanitized.trim() || null,
           tags: tags.length > 0 ? tags : null,
         })
         .eq("id", editingModel.id);
@@ -159,7 +177,7 @@ export default function AdminModels() {
   const models = modelsQuery.data ?? [];
 
   return (
-    <AdminLayout>
+    <div className="space-y-6">
       <div className="mb-12">
         <div className="h-px w-20 bg-foreground mb-6" />
         <div className="flex items-center justify-between gap-4 mb-4">
@@ -175,12 +193,20 @@ export default function AdminModels() {
         <CardHeader className="border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <CardTitle className="text-xl font-semibold">Todos os Modelos</CardTitle>
-            <Input
-              placeholder="Buscar por nome..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-xs h-9"
-            />
+            <div className="max-w-xs">
+              <Input
+                placeholder="Buscar por nome..."
+                value={searchTermRaw}
+                onChange={(e) => setSearchTermRaw(e.target.value)}
+                className="h-9"
+              />
+              {searchTermRaw !== searchTermSanitized && (
+                <ValidationFeedback
+                  info="Caracteres especiais foram removidos da busca"
+                  className="mt-1"
+                />
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">
@@ -188,7 +214,7 @@ export default function AdminModels() {
             <div className="text-center py-8 text-muted-foreground">Carregando modelos…</div>
           ) : models.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? "Nenhum modelo encontrado." : "Nenhum modelo cadastrado."}
+              {searchTermSanitized ? "Nenhum modelo encontrado." : "Nenhum modelo cadastrado."}
             </div>
           ) : (
             <div className="rounded-sm border border-border overflow-hidden">
@@ -276,52 +302,67 @@ export default function AdminModels() {
                                     <Label htmlFor="edit-name">Nome</Label>
                                     <Input
                                       id="edit-name"
-                                      value={editForm.name}
-                                      onChange={(e) =>
-                                        setEditForm({ ...editForm, name: e.target.value })
-                                      }
+                                      value={nameRaw}
+                                      onChange={(e) => setNameRaw(e.target.value)}
                                     />
+                                    {nameRaw !== nameSanitized && (
+                                      <ValidationFeedback
+                                        info="Caracteres especiais foram removidos para segurança"
+                                      />
+                                    )}
                                   </div>
                                   <div className="grid gap-2">
                                     <Label htmlFor="edit-franchise">Franquia</Label>
                                     <Input
                                       id="edit-franchise"
-                                      value={editForm.franchise}
-                                      onChange={(e) =>
-                                        setEditForm({ ...editForm, franchise: e.target.value })
-                                      }
+                                      value={franchiseRaw}
+                                      onChange={(e) => setFranchiseRaw(e.target.value)}
                                     />
+                                    {franchiseRaw !== franchiseSanitized && (
+                                      <ValidationFeedback
+                                        info="Caracteres especiais foram removidos para segurança"
+                                      />
+                                    )}
                                   </div>
                                   <div className="grid gap-2">
                                     <Label htmlFor="edit-category">Categoria</Label>
                                     <Input
                                       id="edit-category"
-                                      value={editForm.category}
-                                      onChange={(e) =>
-                                        setEditForm({ ...editForm, category: e.target.value })
-                                      }
+                                      value={categoryRaw}
+                                      onChange={(e) => setCategoryRaw(e.target.value)}
                                     />
+                                    {categoryRaw !== categorySanitized && (
+                                      <ValidationFeedback
+                                        info="Caracteres especiais foram removidos para segurança"
+                                      />
+                                    )}
                                   </div>
                                   <div className="grid gap-2">
                                     <Label htmlFor="edit-subcategory">Subcategoria</Label>
                                     <Input
                                       id="edit-subcategory"
-                                      value={editForm.subcategory}
-                                      onChange={(e) =>
-                                        setEditForm({ ...editForm, subcategory: e.target.value })
-                                      }
+                                      value={subcategoryRaw}
+                                      onChange={(e) => setSubcategoryRaw(e.target.value)}
                                     />
+                                    {subcategoryRaw !== subcategorySanitized && (
+                                      <ValidationFeedback
+                                        info="Caracteres especiais foram removidos para segurança"
+                                      />
+                                    )}
                                   </div>
                                   <div className="grid gap-2">
                                     <Label htmlFor="edit-tags">Tags (separadas por vírgula)</Label>
                                     <Textarea
                                       id="edit-tags"
-                                      value={editForm.tags}
-                                      onChange={(e) =>
-                                        setEditForm({ ...editForm, tags: e.target.value })
-                                      }
+                                      value={tagsRaw}
+                                      onChange={(e) => setTagsRaw(e.target.value)}
                                       rows={3}
                                     />
+                                    {tagsRaw !== tagsSanitized && (
+                                      <ValidationFeedback
+                                        info="Caracteres especiais foram removidos para segurança"
+                                      />
+                                    )}
                                   </div>
                                 </div>
                                 <DialogFooter>
@@ -376,6 +417,6 @@ export default function AdminModels() {
           )}
         </CardContent>
       </Card>
-    </AdminLayout>
+    </div>
   );
 }

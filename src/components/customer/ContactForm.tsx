@@ -14,6 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { conversationService } from "@/lib/services/conversationService";
 import { messageService } from "@/lib/services/messageService";
 import { contactFormSchema } from "@/lib/validations/support";
+import { useSanitizedForm } from "@/hooks/useSanitizedInput";
+import { checkRateLimit } from "@/lib/security/rate-limiter";
+import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
@@ -22,15 +25,43 @@ export function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Setup sanitized form
+  const {
+    formData,
+    setValue,
+    getSanitizedData
+  } = useSanitizedForm<ContactFormData>(
+    {
+      name: '',
+      email: '',
+      message: ''
+    },
+    {
+      name: 'text',
+      email: 'email',
+      message: 'html'
+    }
+  );
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
+    values: formData
   });
 
   const onSubmit = async (data: ContactFormData) => {
+    // Check rate limit (5 requests/hour)
+    const rateLimitKey = 'contact-form-submit';
+    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.contactForm);
+    
+    if (!rateLimit.allowed) {
+      setError(`Limite de requisições excedido. Aguarde ${rateLimit.retryAfter}s antes de tentar novamente.`);
+      return;
+    }
+    
     setIsSubmitting(true);
     setError(null);
 
@@ -51,10 +82,13 @@ export function ContactForm() {
         return;
       }
 
+      // Get sanitized data
+      const sanitizedData = getSanitizedData();
+
       // Create conversation with tag 'duvida'
       const conversation = await conversationService.createConversation({
         user_id: user.id,
-        subject: `Contato: ${data.name}`,
+        subject: `Contato: ${sanitizedData.name}`,
         status: "waiting_admin",
         tags: ["duvida"],
       });
@@ -64,7 +98,7 @@ export function ContactForm() {
         conversation_id: conversation.id,
         sender_id: user.id,
         sender_type: "customer",
-        message: data.message,
+        message: sanitizedData.message,
       });
 
       // Redirect to chat
@@ -101,6 +135,8 @@ export function ContactForm() {
               type="text"
               placeholder="Seu nome completo"
               {...register("name")}
+              value={formData.name}
+              onChange={(e) => setValue('name', e.target.value)}
               disabled={isSubmitting}
             />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
@@ -113,6 +149,8 @@ export function ContactForm() {
               type="email"
               placeholder="seu@email.com"
               {...register("email")}
+              value={formData.email}
+              onChange={(e) => setValue('email', e.target.value)}
               disabled={isSubmitting}
             />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
@@ -125,6 +163,8 @@ export function ContactForm() {
               placeholder="Descreva sua dúvida ou solicitação..."
               rows={6}
               {...register("message")}
+              value={formData.message}
+              onChange={(e) => setValue('message', e.target.value)}
               disabled={isSubmitting}
             />
             {errors.message && <p className="text-sm text-destructive">{errors.message.message}</p>}

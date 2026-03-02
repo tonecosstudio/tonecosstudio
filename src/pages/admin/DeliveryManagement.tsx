@@ -40,6 +40,9 @@ import { BulkUpdateModal } from '@/components/admin/BulkUpdateModal';
 import { getDeliveryDeadlineStatus, formatDeadlineStatus } from '@/lib/shipping-deadline';
 import { ShippingService } from '@/services/shipping-service';
 import { useToast } from '@/hooks/use-toast';
+import { useSanitizedInput } from '@/hooks/useSanitizedInput';
+import { ValidationFeedback } from '@/components/ui/validation-feedback';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 interface Delivery {
   id: string;
@@ -68,7 +71,7 @@ interface Delivery {
 const ITEMS_PER_PAGE = 50;
 
 export default function DeliveryManagement() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQueryRaw, setSearchQueryRaw, searchQuerySanitized] = useSanitizedInput('', 'search');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [cycleFilter, setCycleFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
@@ -162,7 +165,7 @@ export default function DeliveryManagement() {
     const subscriberName = delivery.profile?.full_name?.toLowerCase() || '';
     const subscriberEmail = delivery.profile?.email?.toLowerCase() || '';
     const orderId = delivery.id.toLowerCase();
-    const searchLower = searchQuery.toLowerCase();
+    const searchLower = searchQuerySanitized.toLowerCase();
     
     const matchesSearch = 
       subscriberName.includes(searchLower) ||
@@ -208,7 +211,18 @@ export default function DeliveryManagement() {
 
   // Reset to page 1 when filters change
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
+    // Check rate limit
+    const rateLimit = checkRateLimit('search-delivery-management', RATE_LIMITS.search);
+    if (!rateLimit.allowed) {
+      toast({
+        title: 'Limite de busca excedido',
+        description: `Aguarde ${rateLimit.retryAfter} segundos antes de buscar novamente.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setSearchQueryRaw(value);
     setCurrentPage(1);
   };
 
@@ -233,7 +247,7 @@ export default function DeliveryManagement() {
   };
 
   const clearFilters = () => {
-    setSearchQuery('');
+    setSearchQueryRaw('');
     setStatusFilter('all');
     setCycleFilter('all');
     setDateFrom('');
@@ -589,10 +603,16 @@ export default function DeliveryManagement() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por nome do assinante, email ou ID do pedido..."
-                    value={searchQuery}
+                    value={searchQueryRaw}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-10"
                   />
+                  {searchQueryRaw !== searchQuerySanitized && searchQueryRaw.length > 0 && (
+                    <ValidationFeedback 
+                      info="Caracteres especiais foram removidos da busca"
+                      className="mt-1"
+                    />
+                  )}
                 </div>
 
                 {/* Status Filter */}
@@ -651,7 +671,7 @@ export default function DeliveryManagement() {
                 </div>
 
                 {/* Clear Filters Button */}
-                {(searchQuery || statusFilter !== 'all' || cycleFilter !== 'all' || dateFrom || dateTo) && (
+                {(searchQueryRaw || statusFilter !== 'all' || cycleFilter !== 'all' || dateFrom || dateTo) && (
                   <Button
                     variant="outline"
                     onClick={clearFilters}
@@ -848,7 +868,7 @@ export default function DeliveryManagement() {
               </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                {searchQuery || statusFilter !== 'all' || cycleFilter !== 'all' || dateFrom || dateTo
+                {searchQueryRaw || statusFilter !== 'all' || cycleFilter !== 'all' || dateFrom || dateTo
                   ? 'Nenhuma entrega encontrada com os filtros aplicados.'
                   : 'Nenhuma entrega cadastrada ainda.'}
               </div>

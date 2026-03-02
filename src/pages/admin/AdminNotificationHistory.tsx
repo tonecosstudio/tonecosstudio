@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -133,25 +132,24 @@ export default function AdminNotificationHistory() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Histórico de Notificações</h1>
-            <p className="text-muted-foreground mt-1">
-              Visualize e gerencie todas as notificações do sistema
-            </p>
-          </div>
-          {unreadCount > 0 && (
-            <Button
-              onClick={() => markAllAsReadMutation.mutate()}
-              disabled={markAllAsReadMutation.isPending}
-            >
-              <CheckCheck className="h-4 w-4 mr-2" />
-              Marcar Todas como Lidas
-            </Button>
-          )}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Histórico de Notificações</h2>
+          <p className="text-muted-foreground mt-1">
+            Visualize e gerencie todas as notificações do sistema
+          </p>
         </div>
+        {unreadCount > 0 && (
+          <Button
+            onClick={() => markAllAsReadMutation.mutate()}
+            disabled={markAllAsReadMutation.isPending}
+          >
+            <CheckCheck className="h-4 w-4 mr-2" />
+            Marcar Todas como Lidas
+          </Button>
+        )}
+      </div>
 
         <Card>
           <CardHeader>
@@ -255,7 +253,6 @@ export default function AdminNotificationHistory() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }

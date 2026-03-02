@@ -20,11 +20,11 @@ import { Upload, X, FileText, Image as ImageIcon, CheckCircle2, AlertCircle } fr
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from '@/lib/security/input-sanitizer';
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf'];
+const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, 'application/pdf'] as const;
 const STORAGE_BUCKET = 'payment-vouchers';
 
 export interface PaymentVoucherUploadProps {
@@ -80,35 +80,12 @@ export const PaymentVoucherUpload: React.FC<PaymentVoucherUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /**
-   * Validate file type and size
+   * Validate file type and size using centralized validation
    */
   const validateFile = (file: File): { valid: boolean; error?: string } => {
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      return {
-        valid: false,
-        error: 'Arquivo muito grande. O tamanho máximo é 5MB.',
-      };
-    }
-
-    // Check file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return {
-        valid: false,
-        error: 'Formato inválido. Envie um arquivo JPG, PNG ou PDF.',
-      };
-    }
-
-    // Check file extension
-    const extension = file.name.split('.').pop()?.toLowerCase();
-    if (!extension || !ALLOWED_EXTENSIONS.includes(extension)) {
-      return {
-        valid: false,
-        error: 'Extensão de arquivo inválida. Use JPG, PNG ou PDF.',
-      };
-    }
-
-    return { valid: true };
+    // Use centralized validation from input-sanitizer
+    const validation = validateFileUpload(file, ALLOWED_TYPES, MAX_FILE_SIZE);
+    return validation;
   };
 
   /**
@@ -122,10 +99,16 @@ export const PaymentVoucherUpload: React.FC<PaymentVoucherUploadProps> = ({
   };
 
   /**
-   * Upload file to Supabase Storage
+   * Upload file to Supabase Storage with sanitized filename
    */
   const uploadToStorage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
+    // Sanitize the filename
+    const sanitizedName = sanitizeFilename(file.name);
+    
+    // If sanitization resulted in empty filename, generate a safe one
+    const finalName = sanitizedName || `file-${Date.now()}`;
+    
+    const fileExt = finalName.split('.').pop()?.toLowerCase() || 'bin';
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 9);
     const fileName = userId 

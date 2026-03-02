@@ -45,6 +45,7 @@ import {
 import { Link, useSearchParams } from "react-router-dom";
 import { ManagePublicCollection } from "@/components/collector/ManagePublicCollection";
 import { cn } from "@/lib/utils";
+import { profileNavigationConfig } from "@/config/profile-navigation.config";
 import {
   PersonalDataSection,
   PaymentSection,
@@ -390,149 +391,83 @@ export default function Profile() {
           <aside className="lg:w-64 flex-shrink-0">
             <Card className="sticky top-4">
               <CardContent className="p-4">
-                <nav className="space-y-1">
-                  <button
-                    onClick={() => setActiveSection("info")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "info"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <User className="h-4 w-4" />
-                    Conta
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("personal")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "personal"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <FileText className="h-4 w-4" />
-                    Dados Pessoais
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("collector")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "collector"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <Trophy className="h-4 w-4" />
-                    Perfil Público
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("preferences")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "preferences"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <Heart className="h-4 w-4" />
-                    Preferências
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("address")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "address"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <MapPin className="h-4 w-4" />
-                    Endereço
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("payment")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "payment"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    Pagamento
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("subscriptions")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "subscriptions"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <Package className="h-4 w-4" />
-                    Assinaturas
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("support")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "support"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Suporte
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("orders")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "orders"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <Package className="h-4 w-4" />
-                    Meus Pedidos
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("collection")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "collection"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <Settings className="h-4 w-4" />
-                    Minha Coleção
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSection("notifications")}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      activeSection === "notifications"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <Bell className="h-4 w-4" />
-                    Notificações
-                  </button>
+                <nav className="space-y-4">
+                  {profileNavigationConfig.map((section) => (
+                    <div key={section.id}>
+                      {/* Section Title */}
+                      <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {section.title}
+                      </h3>
+                      
+                      {/* Section Items */}
+                      <div className="space-y-1">
+                        {section.subSections.map((subSection) => {
+                          const Icon = subSection.icon === 'User' ? User :
+                                      subSection.icon === 'Star' ? Trophy :
+                                      subSection.icon === 'Bell' ? Bell :
+                                      subSection.icon === 'Settings' ? Heart :
+                                      subSection.icon === 'Grid' ? Settings :
+                                      subSection.icon === 'MapPin' ? MapPin :
+                                      subSection.icon === 'CreditCard' ? CreditCard :
+                                      subSection.icon === 'ShoppingBag' ? Package :
+                                      subSection.icon === 'RefreshCw' ? Package :
+                                      subSection.icon === 'HelpCircle' ? MessageSquare :
+                                      User;
+                          
+                          // Map new IDs to old section names for compatibility
+                          const sectionMap: Record<string, string> = {
+                            'info': 'info',
+                            'collector': 'collector',
+                            'notifications': 'notifications',
+                            'preferences': 'preferences',
+                            'collection': 'collection',
+                            'address': 'address',
+                            'payment': 'payment',
+                            'orders': 'orders',
+                            'subscriptions': 'subscriptions',
+                            'support': 'support',
+                          };
+                          
+                          const mappedSection = sectionMap[subSection.id] || subSection.id;
+                          const isActive = activeSection === mappedSection;
+                          
+                          return (
+                            <button
+                              key={subSection.id}
+                              onClick={() => setActiveSection(mappedSection as any)}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                isActive
+                                  ? "bg-primary text-primary-foreground"
+                                  : "hover:bg-muted text-muted-foreground"
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                              {subSection.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Dados Pessoais - mantido por compatibilidade */}
+                  <div>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setActiveSection("personal")}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                          activeSection === "personal"
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-muted text-muted-foreground"
+                        )}
+                      >
+                        <FileText className="h-4 w-4" />
+                        Dados Pessoais
+                      </button>
+                    </div>
+                  </div>
                 </nav>
               </CardContent>
             </Card>

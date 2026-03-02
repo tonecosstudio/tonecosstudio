@@ -82,6 +82,9 @@ import {
 } from "./PaymentListItem";
 import { BulkOperationsToolbar } from "./BulkOperationsToolbar";
 import { useAdminDashboardRealtime } from "@/hooks/usePaymentRealtimeDashboard";
+import { useSanitizedInput } from "@/hooks/useSanitizedInput";
+import { ValidationFeedback } from "@/components/ui/validation-feedback";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
 
 interface PaymentDashboardProps {
   onViewPayment?: (paymentId: string) => void;
@@ -93,7 +96,7 @@ type SortDirection = "asc" | "desc";
 export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<PaymentFilters>({});
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInputRaw, setSearchInputRaw, searchInputSanitized] = useSanitizedInput("", "search");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
@@ -139,14 +142,25 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   // Apply search filter with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      // Check rate limit
+      const rateLimit = checkRateLimit('search-payment-dashboard', RATE_LIMITS.search);
+      if (!rateLimit.allowed) {
+        toast({
+          title: 'Limite de busca excedido',
+          description: `Aguarde ${rateLimit.retryAfter} segundos antes de buscar novamente.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+      
       setFilters((prev) => ({
         ...prev,
-        search: searchInput.trim() || undefined,
+        search: searchInputSanitized.trim() || undefined,
       }));
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchInput]);
+  }, [searchInputSanitized]);
 
   // Apply date range filter
   useEffect(() => {
@@ -297,7 +311,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   // Clear all filters
   const clearFilters = () => {
     setFilters({});
-    setSearchInput("");
+    setSearchInputRaw("");
     setDateRange({});
   };
 
@@ -612,10 +626,15 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                 <Input
                   placeholder="Número ou cliente..."
                   className="pl-9 w-full"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
+                  value={searchInputRaw}
+                  onChange={(e) => setSearchInputRaw(e.target.value)}
                 />
               </div>
+              {searchInputRaw !== searchInputSanitized && searchInputRaw.length > 0 && (
+                <ValidationFeedback 
+                  info="Caracteres especiais foram removidos da busca"
+                />
+              )}
             </div>
           </div>
         </CardContent>

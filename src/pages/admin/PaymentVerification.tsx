@@ -49,13 +49,14 @@ import {
   ChevronRight,
   Eye
 } from "lucide-react";
-import SEOHead from "@/components/SEOHead";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { toBahiaTime } from "@/lib/timezone";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSanitizedInput } from "@/hooks/useSanitizedInput";
+import { ValidationFeedback } from "@/components/ui/validation-feedback";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -77,7 +78,7 @@ interface PaymentVerificationItem {
 
 export default function PaymentVerification() {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTermRaw, setSearchTermRaw, searchTermSanitized] = useSanitizedInput("", "search");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
@@ -235,8 +236,14 @@ export default function PaymentVerification() {
 
       // Apply search filter
       let filteredItems = items;
-      if (searchTerm.trim()) {
-        const search = searchTerm.toLowerCase();
+      if (searchTermSanitized.trim()) {
+        // Check rate limit for search
+        const rateLimit = checkRateLimit('search-payment-verification', RATE_LIMITS.search);
+        if (!rateLimit.allowed) {
+          throw new Error(`Rate limit exceeded. Wait ${rateLimit.retryAfter} seconds.`);
+        }
+        
+        const search = searchTermSanitized.toLowerCase();
         filteredItems = items.filter(
           (item) =>
             item.referenceNumber.toLowerCase().includes(search) ||
@@ -466,24 +473,17 @@ export default function PaymentVerification() {
   };
 
   return (
-    <>
-      <SEOHead
-        title="Admin - Verificação de Pagamentos"
-        description="Fila de verificação de comprovantes de pagamento"
-        noindex={true}
-      />
-
-      <AdminLayout>
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <FileText className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight">Verificação de Pagamentos</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Fila de comprovantes de pagamento pendentes de verificação
-          </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <FileText className="h-8 w-8 text-primary" />
+          <h2 className="text-2xl font-bold tracking-tight">Verificação de Pagamentos</h2>
         </div>
+        <p className="text-muted-foreground">
+          Fila de comprovantes de pagamento pendentes de verificação
+        </p>
+      </div>
 
         {/* Filters */}
         <Card className="mb-6">
@@ -506,11 +506,16 @@ export default function PaymentVerification() {
                   <Input
                     id="search"
                     placeholder="Referência, nome ou email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={searchTermRaw}
+                    onChange={(e) => setSearchTermRaw(e.target.value)}
                     className="pl-8"
                   />
                 </div>
+                {searchTermRaw !== searchTermSanitized && searchTermRaw.length > 0 && (
+                  <ValidationFeedback 
+                    info="Caracteres especiais foram removidos da busca"
+                  />
+                )}
               </div>
 
               {/* Type filter */}
@@ -555,7 +560,7 @@ export default function PaymentVerification() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSearchTerm("");
+                  setSearchTermRaw("");
                   setTypeFilter("all");
                   setStatusFilter("all");
                   setStartDate("");
@@ -851,7 +856,6 @@ export default function PaymentVerification() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </AdminLayout>
-    </>
+      </div>
   );
 }

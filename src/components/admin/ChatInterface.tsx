@@ -17,6 +17,9 @@ import { conversationService } from "@/lib/services/conversationService";
 import { messageService } from "@/lib/services/messageService";
 import { fileUploadService } from "@/lib/services/fileUploadService";
 import { supabase } from "@/integrations/supabase/client";
+import { useSanitizedInput } from "@/hooks/useSanitizedInput";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
 import type { Message, Conversation } from "@/types/support";
 
 interface ChatInterfaceProps {
@@ -36,7 +39,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     updateOptimisticAttachment,
   } = useMessages({ conversationId, autoScroll: true });
 
-  const [newMessage, setNewMessage] = useState("");
+  const [newMessageRaw, setNewMessageRaw, newMessageSanitized] = useSanitizedInput("", "text");
   const [isInternal, setIsInternal] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -89,17 +92,38 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   }, [conversationId]);
 
   const handleSend = async () => {
+    // Check rate limit (60 messages/minute for chat)
+    const rateLimit = checkRateLimit(`chat-${conversationId}`, { maxRequests: 60, windowMs: 60000 });
+    if (!rateLimit.allowed) {
+      toast.error(`Limite de mensagens excedido. Aguarde ${rateLimit.retryAfter} segundos.`);
+      return;
+    }
+    
     // Precisa ter mensagem ou anexos
-    if (!newMessage.trim() && !selectedFiles.length) {
+    if (!newMessageSanitized.trim() && !selectedFiles.length) {
       toast.error("Digite uma mensagem ou anexe um arquivo");
       return;
     }
 
     // Validar mensagem se houver texto
-    if (newMessage.trim()) {
-      const validation = validateMessage(newMessage);
+    if (newMessageSanitized.trim()) {
+      const validation = validateMessage(newMessageSanitized);
       if (!validation.valid) {
         toast.error(validation.error);
+        return;
+      }
+      
+      // Sanitize URLs in the message
+      try {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const urls = newMessageSanitized.match(urlRegex);
+        if (urls) {
+          for (const url of urls) {
+            sanitizeURL(url); // This will throw if URL is invalid
+          }
+        }
+      } catch (error) {
+        toast.error("A mensagem contém URLs inválidas");
         return;
       }
     }
@@ -124,7 +148,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       console.log("Usuário autenticado:", user.id);
 
       // Texto da mensagem (se vazio e houver anexos, usar placeholder)
-      const messageText = newMessage.trim() || (selectedFiles.length > 0 ? "(anexo)" : "");
+      const messageText = newMessageSanitized.trim() || (selectedFiles.length > 0 ? "(anexo)" : "");
 
       // Enviar mensagem diretamente via messageService para obter o ID
       const messageData = await messageService.sendMessage({
@@ -138,7 +162,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       console.log("Mensagem criada:", messageData);
 
       // Limpar input imediatamente
-      setNewMessage("");
+      setNewMessageRaw("");
       setIsInternal(false);
       const filesToUpload = [...selectedFiles];
       setSelectedFiles([]);
@@ -261,7 +285,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   };
 
   const handleQuickReplySelect = (message: string) => {
-    setNewMessage(message);
+    setNewMessageRaw(message);
   };
 
   const handleFilesSelected = (files: File[]) => {
@@ -433,10 +457,10 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                     ? "Escreva uma nota interna (visível apenas para admins)..."
                     : "Digite sua mensagem..."
                 }
-                value={newMessage}
+                value={newMessageRaw}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setNewMessage(value);
+                  setNewMessageRaw(value);
 
                   // Start typing indicator if text is not empty and not internal note
                   if (value.trim() && !isInternal) {
@@ -454,7 +478,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               <div className="flex flex-col gap-2">
                 <Button
                   onClick={handleSend}
-                  disabled={isSending || (!newMessage.trim() && !selectedFiles.length)}
+                  disabled={isSending || (!newMessageSanitized.trim() && !selectedFiles.length)}
                   size="icon"
                 >
                   <Send className="h-4 w-4" />
@@ -465,7 +489,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
             {/* Character count and status */}
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>
-                {newMessage.length}/2000 caracteres
+                {newMessageRaw.length}/2000 caracteres
                 {isInternal && " • Nota interna"}
                 {selectedFiles.length > 0 && ` • ${selectedFiles.length} arquivo(s)`}
               </span>

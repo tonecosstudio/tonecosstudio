@@ -13,8 +13,21 @@
  */
 
 import DOMPurify from 'dompurify';
-import { ValidationError, ErrorCategory } from '@/lib/error-tracking';
+import { ValidationError, ErrorCategory, errorTracking, ErrorSeverity } from '@/lib/error-tracking';
 
+/**
+ * Result of sanitization operation
+ */
+export interface SanitizationResult {
+  /** Sanitized value */
+  value: string;
+  /** Whether sanitization modified the input */
+  wasModified: boolean;
+  /** What was removed or changed during sanitization */
+  modifications?: string[];
+  /** Validation errors */
+  errors?: string[];
+}
 /**
  * Allowed file types for uploads
  */
@@ -46,8 +59,24 @@ export const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024; // 20MB
  * @returns Sanitized HTML string
  */
 export function sanitizeHTML(html: string, allowedTags?: string[]): string {
+  const result = sanitizeHTMLWithResult(html, allowedTags);
+  return result.value;
+}
+
+/**
+ * Sanitize HTML content with detailed result
+ * 
+ * @param html - Raw HTML string
+ * @param allowedTags - Optional array of allowed HTML tags
+ * @returns SanitizationResult with sanitized value and modifications
+ */
+export function sanitizeHTMLWithResult(html: string, allowedTags?: string[]): SanitizationResult {
   if (!html || typeof html !== 'string') {
-    return '';
+    return {
+      value: '',
+      wasModified: html !== '',
+      modifications: html ? ['Empty or invalid input'] : undefined
+    };
   }
 
   const config: DOMPurify.Config = {
@@ -60,32 +89,136 @@ export function sanitizeHTML(html: string, allowedTags?: string[]): string {
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
   };
 
-  return DOMPurify.sanitize(html, config);
+  const sanitized = DOMPurify.sanitize(html, config);
+  const modifications: string[] = [];
+  
+  // Check if content was modified
+  if (html !== sanitized) {
+    // Detect removed tags
+    const originalTags = html.match(/<[^>]+>/g) || [];
+    const sanitizedTags = sanitized.match(/<[^>]+>/g) || [];
+    
+    if (originalTags.length > sanitizedTags.length) {
+      const removed = originalTags.length - sanitizedTags.length;
+      modifications.push(`Removed ${removed} disallowed HTML tag(s)`);
+    }
+    
+    // Detect removed attributes
+    const originalAttrs = html.match(/\s+\w+=/g) || [];
+    const sanitizedAttrs = sanitized.match(/\s+\w+=/g) || [];
+    
+    if (originalAttrs.length > sanitizedAttrs.length) {
+      const removed = originalAttrs.length - sanitizedAttrs.length;
+      modifications.push(`Removed ${removed} disallowed attribute(s)`);
+    }
+    
+    // Check for script tags specifically
+    if (/<script/i.test(html)) {
+      modifications.push('Removed script tag(s)');
+    }
+    
+    // Check for event handlers
+    if (/on\w+\s*=/i.test(html)) {
+      modifications.push('Removed event handler(s)');
+    }
+    
+    // Check for javascript: URLs
+    if (/javascript:/i.test(html)) {
+      modifications.push('Removed javascript: URL(s)');
+    }
+  }
+  
+  return {
+    value: sanitized,
+    wasModified: modifications.length > 0,
+    modifications: modifications.length > 0 ? modifications : undefined
+  };
 }
 
 /**
  * Sanitize plain text to prevent XSS
  * Removes all HTML tags and encodes special characters
+ * Idempotent: sanitizeText(sanitizeText(x)) === sanitizeText(x)
  * 
  * @param text - Raw text string
  * @returns Sanitized text string
  */
 export function sanitizeText(text: string): string {
+  const result = sanitizeTextWithResult(text);
+  return result.value;
+}
+
+/**
+ * Sanitize plain text with detailed result
+ * Removes all HTML tags and encodes special characters
+ * 
+ * @param text - Raw text string
+ * @returns SanitizationResult with sanitized value and modifications
+ */
+export function sanitizeTextWithResult(text: string): SanitizationResult {
   if (!text || typeof text !== 'string') {
-    return '';
+    return {
+      value: '',
+      wasModified: text !== '',
+      modifications: text ? ['Empty or invalid input'] : undefined
+    };
   }
 
+  const modifications: string[] = [];
+  
   // Remove all HTML tags
-  const withoutTags = text.replace(/<[^>]*>/g, '');
+  const htmlTagRegex = /<[^>]*>/g;
+  const htmlTags = text.match(htmlTagRegex);
+  const withoutTags = text.replace(htmlTagRegex, '');
+  
+  if (htmlTags && htmlTags.length > 0) {
+    modifications.push(`Removed ${htmlTags.length} HTML tag(s): ${htmlTags.slice(0, 3).join(', ')}${htmlTags.length > 3 ? '...' : ''}`);
+  }
+  
+  // Only encode if not already encoded (check for existing entities)
+  // This ensures idempotence
+  const needsEncoding = !withoutTags.includes('&amp;') && 
+                        !withoutTags.includes('&lt;') && 
+                        !withoutTags.includes('&gt;') &&
+                        !withoutTags.includes('&quot;') &&
+                        !withoutTags.includes('&#x27;') &&
+                        !withoutTags.includes('&#x2F;');
+  
+  if (!needsEncoding) {
+    return {
+      value: withoutTags,
+      wasModified: modifications.length > 0,
+      modifications: modifications.length > 0 ? modifications : undefined
+    };
+  }
+  
+  // Track special characters that need encoding
+  const specialChars: string[] = [];
+  if (withoutTags.includes('&')) specialChars.push('&');
+  if (withoutTags.includes('<')) specialChars.push('<');
+  if (withoutTags.includes('>')) specialChars.push('>');
+  if (withoutTags.includes('"')) specialChars.push('"');
+  if (withoutTags.includes("'")) specialChars.push("'");
+  if (withoutTags.includes('/')) specialChars.push('/');
+  
+  if (specialChars.length > 0) {
+    modifications.push(`Encoded special characters: ${specialChars.join(', ')}`);
+  }
   
   // Encode special characters
-  return withoutTags
+  const encoded = withoutTags
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;');
+  
+  return {
+    value: encoded,
+    wasModified: modifications.length > 0,
+    modifications: modifications.length > 0 ? modifications : undefined
+  };
 }
 
 /**
@@ -95,31 +228,67 @@ export function sanitizeText(text: string): string {
  * @returns Sanitized email or throws ValidationError
  */
 export function sanitizeEmail(email: string): string {
-  if (!email || typeof email !== 'string') {
+  const result = sanitizeEmailWithResult(email);
+  if (result.errors && result.errors.length > 0) {
     throw new ValidationError(
-      'Email must be a non-empty string',
+      result.errors[0],
       ErrorCategory.VALIDATION,
       { email },
-      'Email inválido.'
+      result.errors[0]
     );
   }
+  return result.value;
+}
 
-  // Remove whitespace
+/**
+ * Validate and sanitize email address with detailed result
+ * 
+ * @param email - Email address to validate
+ * @returns SanitizationResult with sanitized value, modifications, and errors
+ */
+export function sanitizeEmailWithResult(email: string): SanitizationResult {
+  if (!email || typeof email !== 'string') {
+    return {
+      value: '',
+      wasModified: false,
+      errors: ['Email must be a non-empty string']
+    };
+  }
+
+  const modifications: string[] = [];
+  const errors: string[] = [];
+  
+  // Remove whitespace and convert to lowercase
+  const original = email;
   const trimmed = email.trim().toLowerCase();
+  
+  if (original !== trimmed) {
+    if (original.trim() !== original) {
+      modifications.push('Removed whitespace');
+    }
+    if (original.toLowerCase() !== original) {
+      modifications.push('Converted to lowercase');
+    }
+  }
 
   // Validate email format
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   
   if (!emailRegex.test(trimmed)) {
-    throw new ValidationError(
-      'Invalid email format',
-      ErrorCategory.VALIDATION,
-      { email: trimmed },
-      'Formato de email inválido.'
-    );
+    errors.push('Invalid email format');
+    return {
+      value: trimmed,
+      wasModified: modifications.length > 0,
+      modifications: modifications.length > 0 ? modifications : undefined,
+      errors
+    };
   }
 
-  return trimmed;
+  return {
+    value: trimmed,
+    wasModified: modifications.length > 0,
+    modifications: modifications.length > 0 ? modifications : undefined
+  };
 }
 
 /**
@@ -133,14 +302,39 @@ export function sanitizeURL(
   url: string,
   allowedProtocols: string[] = ['http', 'https']
 ): string {
-  if (!url || typeof url !== 'string') {
+  const result = sanitizeURLWithResult(url, allowedProtocols);
+  if (result.errors && result.errors.length > 0) {
     throw new ValidationError(
-      'URL must be a non-empty string',
+      result.errors[0],
       ErrorCategory.VALIDATION,
-      { url },
-      'URL inválida.'
+      { url, allowedProtocols },
+      result.errors[0]
     );
   }
+  return result.value;
+}
+
+/**
+ * Validate and sanitize URL with detailed result
+ * 
+ * @param url - URL to validate
+ * @param allowedProtocols - Allowed protocols (default: http, https)
+ * @returns SanitizationResult with sanitized value, modifications, and errors
+ */
+export function sanitizeURLWithResult(
+  url: string,
+  allowedProtocols: string[] = ['http', 'https']
+): SanitizationResult {
+  if (!url || typeof url !== 'string') {
+    return {
+      value: '',
+      wasModified: false,
+      errors: ['URL must be a non-empty string']
+    };
+  }
+
+  const modifications: string[] = [];
+  const errors: string[] = [];
 
   try {
     const parsed = new URL(url);
@@ -148,65 +342,106 @@ export function sanitizeURL(
     // Check protocol
     const protocol = parsed.protocol.replace(':', '');
     if (!allowedProtocols.includes(protocol)) {
-      throw new ValidationError(
-        `Protocol ${protocol} not allowed`,
-        ErrorCategory.VALIDATION,
-        { url, allowedProtocols },
-        'Protocolo de URL não permitido.'
-      );
+      errors.push(`Protocol ${protocol} not allowed. Allowed: ${allowedProtocols.join(', ')}`);
+      return {
+        value: url,
+        wasModified: false,
+        errors
+      };
     }
 
-    return parsed.toString();
+    const sanitized = parsed.toString();
+    
+    // Check if URL was normalized
+    if (url !== sanitized) {
+      modifications.push('URL normalized');
+    }
+    
+    return {
+      value: sanitized,
+      wasModified: modifications.length > 0,
+      modifications: modifications.length > 0 ? modifications : undefined
+    };
   } catch (error) {
-    throw new ValidationError(
-      'Invalid URL format',
-      ErrorCategory.VALIDATION,
-      { url, error },
-      'Formato de URL inválido.'
-    );
+    errors.push('Invalid URL format');
+    return {
+      value: url,
+      wasModified: false,
+      errors
+    };
   }
 }
 
 /**
  * Prevent path traversal attacks
+ * Idempotent: sanitizePath(sanitizePath(x)) === sanitizePath(x)
  * 
  * @param path - File path to validate
- * @returns Sanitized path or throws ValidationError
+ * @returns Sanitized path (empty string if invalid)
  */
 export function sanitizePath(path: string): string {
+  const result = sanitizePathWithResult(path);
+  return result.value;
+}
+
+/**
+ * Prevent path traversal attacks with detailed result
+ * 
+ * @param path - File path to validate
+ * @returns SanitizationResult with sanitized value and modifications
+ */
+export function sanitizePathWithResult(path: string): SanitizationResult {
   if (!path || typeof path !== 'string') {
-    throw new ValidationError(
-      'Path must be a non-empty string',
-      ErrorCategory.VALIDATION,
-      { path },
-      'Caminho inválido.'
-    );
+    return {
+      value: '',
+      wasModified: path !== '',
+      modifications: path ? ['Empty or invalid input'] : undefined
+    };
   }
 
-  // Check for path traversal attempts
-  if (path.includes('..') || path.includes('~')) {
-    throw new ValidationError(
-      'Path traversal attempt detected',
-      ErrorCategory.VALIDATION,
-      { path },
-      'Caminho inválido detectado.'
-    );
+  const modifications: string[] = [];
+  let sanitized = path;
+
+  // Remove path traversal attempts
+  const beforeTraversal = sanitized;
+  sanitized = sanitized.replace(/\.\./g, '').replace(/~/g, '');
+  if (beforeTraversal !== sanitized) {
+    modifications.push('Removed path traversal sequences (.., ~)');
   }
 
   // Remove leading slashes
-  const sanitized = path.replace(/^\/+/, '');
-
-  // Validate characters (alphanumeric, dash, underscore, dot, slash)
-  if (!/^[a-zA-Z0-9\-_./]+$/.test(sanitized)) {
-    throw new ValidationError(
-      'Invalid characters in path',
-      ErrorCategory.VALIDATION,
-      { path: sanitized },
-      'Caracteres inválidos no caminho.'
-    );
+  const beforeLeadingSlash = sanitized;
+  sanitized = sanitized.replace(/^\/+/, '');
+  if (beforeLeadingSlash !== sanitized) {
+    modifications.push('Removed leading slashes');
   }
 
-  return sanitized;
+  // Remove invalid characters (keep only alphanumeric, dash, underscore, dot, slash)
+  const beforeInvalidChars = sanitized;
+  sanitized = sanitized.replace(/[^a-zA-Z0-9\-_./]/g, '');
+  if (beforeInvalidChars !== sanitized) {
+    modifications.push('Removed invalid characters');
+  }
+
+  // Remove consecutive slashes
+  const beforeConsecutive = sanitized;
+  sanitized = sanitized.replace(/\/+/g, '/');
+  if (beforeConsecutive !== sanitized) {
+    modifications.push('Removed consecutive slashes');
+  }
+
+  // Remove leading/trailing slashes
+  const beforeTrim = sanitized;
+  sanitized = sanitized.replace(/^\/|\/$/g, '');
+  if (beforeTrim !== sanitized) {
+    modifications.push('Removed trailing slashes');
+  }
+
+  return {
+    value: sanitized,
+    wasModified: modifications.length > 0,
+    modifications: modifications.length > 0 ? modifications : undefined
+  };
 }
 
 /**
@@ -272,39 +507,89 @@ export function validateFileUpload(
 
 /**
  * Sanitize filename for safe storage
+ * Idempotent: sanitizeFilename(sanitizeFilename(x)) === sanitizeFilename(x)
  * 
  * @param filename - Original filename
- * @returns Sanitized filename
+ * @returns Sanitized filename (empty string if invalid)
  */
 export function sanitizeFilename(filename: string): string {
+  const result = sanitizeFilenameWithResult(filename);
+  return result.value;
+}
+
+/**
+ * Sanitize filename with detailed result
+ * 
+ * @param filename - Original filename
+ * @returns SanitizationResult with sanitized value and modifications
+ */
+export function sanitizeFilenameWithResult(filename: string): SanitizationResult {
   if (!filename || typeof filename !== 'string') {
-    throw new ValidationError(
-      'Filename must be a non-empty string',
-      ErrorCategory.VALIDATION,
-      { filename },
-      'Nome de arquivo inválido.'
-    );
+    return {
+      value: '',
+      wasModified: filename !== '',
+      modifications: filename ? ['Empty or invalid input'] : undefined
+    };
   }
 
-  // Remove path components
-  const basename = filename.split('/').pop() || filename;
+  const modifications: string[] = [];
+  
+  // Remove path components (handle both / and \ separators)
+  const basename = filename.split(/[/\\]/).pop() || filename;
+  if (basename !== filename) {
+    modifications.push('Removed path components');
+  }
 
-  // Replace spaces with underscores
+  // Replace multiple spaces with single underscore
   let sanitized = basename.replace(/\s+/g, '_');
+  if (sanitized !== basename) {
+    modifications.push('Replaced spaces with underscores');
+  }
 
   // Remove special characters except dots, dashes, and underscores
+  const beforeSpecialChars = sanitized;
   sanitized = sanitized.replace(/[^a-zA-Z0-9._-]/g, '');
+  if (sanitized !== beforeSpecialChars) {
+    modifications.push('Removed special characters');
+  }
+
+  // Remove leading dots (hidden files) and ensure not just dots
+  const beforeDots = sanitized;
+  sanitized = sanitized.replace(/^\.+/, '');
+  if (sanitized !== beforeDots) {
+    modifications.push('Removed leading dots');
+  }
+
+  // Ensure there's at least one character
+  if (sanitized === '' || sanitized === '.') {
+    return {
+      value: '',
+      wasModified: true,
+      modifications: ['Invalid filename after sanitization'],
+      errors: ['Filename is invalid']
+    };
+  }
 
   // Limit length
   const maxLength = 255;
   if (sanitized.length > maxLength) {
-    const extension = sanitized.split('.').pop();
-    const nameWithoutExt = sanitized.substring(0, sanitized.lastIndexOf('.'));
-    const truncated = nameWithoutExt.substring(0, maxLength - extension!.length - 1);
-    sanitized = `${truncated}.${extension}`;
+    const lastDotIndex = sanitized.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+      const extension = sanitized.substring(lastDotIndex);
+      const nameWithoutExt = sanitized.substring(0, lastDotIndex);
+      const truncated = nameWithoutExt.substring(0, maxLength - extension.length);
+      sanitized = `${truncated}${extension}`;
+    } else {
+      sanitized = sanitized.substring(0, maxLength);
+    }
+    modifications.push(`Truncated to ${maxLength} characters`);
   }
 
-  return sanitized;
+  return {
+    value: sanitized,
+    wasModified: modifications.length > 0,
+    modifications: modifications.length > 0 ? modifications : undefined
+  };
 }
 
 /**
@@ -333,31 +618,79 @@ export function detectSQLInjection(input: string): boolean {
 }
 
 /**
- * Sanitize search query
+ * Sanitize search query with SQL injection pattern detection
+ * Idempotent: sanitizeSearchQuery(sanitizeSearchQuery(x)) === sanitizeSearchQuery(x)
  * 
  * @param query - Search query string
- * @returns Sanitized query
+ * @returns Sanitized query (empty string if contains SQL injection patterns)
  */
 export function sanitizeSearchQuery(query: string): string {
+  const result = sanitizeSearchQueryWithResult(query);
+  return result.value;
+}
+
+/**
+ * Sanitize search query with detailed result
+ * 
+ * @param query - Search query string
+ * @returns SanitizationResult with sanitized value, modifications, and errors
+ */
+export function sanitizeSearchQueryWithResult(query: string): SanitizationResult {
   if (!query || typeof query !== 'string') {
-    return '';
+    return {
+      value: '',
+      wasModified: query !== '',
+      modifications: query ? ['Empty or invalid input'] : undefined
+    };
   }
 
-  // Check for SQL injection
-  if (detectSQLInjection(query)) {
-    throw new ValidationError(
-      'Potentially malicious query detected',
-      ErrorCategory.VALIDATION,
-      { query },
-      'Consulta inválida detectada.'
-    );
+  const modifications: string[] = [];
+  const errors: string[] = [];
+
+  // Trim and limit length first
+  const original = query;
+  let sanitized = query.trim().substring(0, 200);
+  
+  if (original !== sanitized) {
+    if (original.trim() !== original) {
+      modifications.push('Trimmed whitespace');
+    }
+    if (original.length > 200) {
+      modifications.push('Truncated to 200 characters');
+    }
   }
 
-  // Remove special characters but keep spaces and basic punctuation
-  return query
-    .trim()
-    .replace(/[<>{}[\]\\]/g, '')
-    .substring(0, 200); // Limit length
+  // Check for SQL injection patterns and return empty if detected
+  if (detectSQLInjection(sanitized)) {
+    errors.push('Query contains SQL injection patterns');
+    return {
+      value: '',
+      wasModified: true,
+      modifications: ['Rejected due to SQL injection patterns'],
+      errors
+    };
+  }
+
+  // Remove dangerous special characters but keep spaces, quotes for search, and basic punctuation
+  const beforeDangerous = sanitized;
+  sanitized = sanitized.replace(/[<>{}[\]\\;]/g, '');
+  if (beforeDangerous !== sanitized) {
+    modifications.push('Removed dangerous special characters');
+  }
+
+  // Remove multiple spaces
+  const beforeSpaces = sanitized;
+  sanitized = sanitized.replace(/\s+/g, ' ').trim();
+  if (beforeSpaces !== sanitized) {
+    modifications.push('Normalized whitespace');
+  }
+
+  return {
+    value: sanitized,
+    wasModified: modifications.length > 0,
+    modifications: modifications.length > 0 ? modifications : undefined,
+    errors: errors.length > 0 ? errors : undefined
+  };
 }
 
 /**
@@ -379,27 +712,113 @@ export function generateSecureToken(length: number = 32): string {
  * @returns Sanitized phone number
  */
 export function sanitizePhoneNumber(phone: string): string {
-  if (!phone || typeof phone !== 'string') {
+  const result = sanitizePhoneNumberWithResult(phone);
+  if (result.errors && result.errors.length > 0) {
     throw new ValidationError(
-      'Phone number must be a non-empty string',
+      result.errors[0],
       ErrorCategory.VALIDATION,
       { phone },
-      'Número de telefone inválido.'
+      result.errors[0]
     );
   }
+  return result.value;
+}
+
+/**
+ * Validate and sanitize phone number with detailed result
+ * 
+ * @param phone - Phone number to validate
+ * @returns SanitizationResult with sanitized value, modifications, and errors
+ */
+export function sanitizePhoneNumberWithResult(phone: string): SanitizationResult {
+  if (!phone || typeof phone !== 'string') {
+    return {
+      value: '',
+      wasModified: false,
+      errors: ['Phone number must be a non-empty string']
+    };
+  }
+
+  const modifications: string[] = [];
+  const errors: string[] = [];
 
   // Remove all non-numeric characters
+  const original = phone;
   const numbers = phone.replace(/\D/g, '');
+  
+  if (original !== numbers) {
+    modifications.push('Removed non-numeric characters');
+  }
 
   // Validate Brazilian phone number (10 or 11 digits)
   if (numbers.length < 10 || numbers.length > 11) {
-    throw new ValidationError(
-      'Invalid phone number length',
-      ErrorCategory.VALIDATION,
-      { phone: numbers },
-      'Número de telefone deve ter 10 ou 11 dígitos.'
-    );
+    errors.push('Phone number must have 10 or 11 digits');
+    return {
+      value: numbers,
+      wasModified: modifications.length > 0,
+      modifications: modifications.length > 0 ? modifications : undefined,
+      errors
+    };
   }
 
-  return numbers;
+  return {
+    value: numbers,
+    wasModified: modifications.length > 0,
+    modifications: modifications.length > 0 ? modifications : undefined
+  };
+}
+
+/**
+ * Log sanitization event for security monitoring
+ * 
+ * This function logs when sanitization modifies user input, which helps
+ * detect potential attack attempts and monitor security events.
+ * 
+ * @param fieldName - Name of the field being sanitized
+ * @param sanitizationType - Type of sanitization applied (text, html, email, etc.)
+ * @param result - Result of the sanitization operation
+ * @param context - Additional context (e.g., form name, user ID)
+ */
+export function logSanitizationEvent(
+  fieldName: string,
+  sanitizationType: string,
+  result: SanitizationResult,
+  context?: Record<string, unknown>
+): void {
+  // Only log if sanitization actually modified the input
+  if (!result.wasModified) {
+    return;
+  }
+
+  // Determine severity based on modifications
+  const severity = result.errors && result.errors.length > 0 
+    ? ErrorSeverity.WARNING 
+    : ErrorSeverity.INFO;
+
+  // Build log message
+  const message = `Sanitization modified input in field "${fieldName}"`;
+
+  // Build context object
+  const logContext = {
+    fieldName,
+    sanitizationType,
+    wasModified: result.wasModified,
+    modifications: result.modifications,
+    errors: result.errors,
+    ...context
+  };
+
+  // Log the event
+  errorTracking.log(message, severity, logContext);
+
+  // Add breadcrumb for debugging
+  errorTracking.addBreadcrumb(
+    `Sanitization: ${fieldName}`,
+    'sanitization',
+    {
+      type: sanitizationType,
+      modified: result.wasModified,
+      modifications: result.modifications?.join(', ')
+    }
+  );
 }

@@ -124,11 +124,11 @@ export function CollectionDetailModal({
           </div>
 
           {/* Price (if applicable) */}
-          {collection.price && (
+          {collection.price_full && (
             <div className="flex items-center justify-between p-4 rounded-lg border">
               <span className="font-medium">Preço</span>
               <span className="text-2xl font-bold">
-                R$ {collection.price.toFixed(2)}
+                R$ {collection.price_full.toFixed(2)}
               </span>
             </div>
           )}

@@ -1,6 +1,3 @@
-import AppShell from "@/components/AppShell";
-import RequireAdmin from "@/components/RequireAdmin";
-import SEOHead from "@/components/SEOHead";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +6,6 @@ import { Separator } from "@/components/ui/separator";
 import { Copy, Check, MessageSquare, AlertCircle, Shield } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 
 const templates = {
   oficial: {
@@ -122,15 +118,11 @@ export default function CommunicationTemplates() {
   };
 
   return (
-    <>
-      <SEOHead
-        title="Templates de Comunicação - Admin"
-        description="Gerenciar templates de comunicação para clientes"
-      />
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Templates de Comunicação</h1>
-        <p className="text-muted-foreground text-lg">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight mb-2">Templates de Comunicação</h2>
+        <p className="text-muted-foreground">
           Textos prontos para comunicação com clientes e alimentação de IA
         </p>
       </div>
@@ -597,6 +589,6 @@ export default function CommunicationTemplates() {
           </div>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 }

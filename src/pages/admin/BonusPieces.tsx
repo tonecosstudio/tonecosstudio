@@ -46,6 +46,10 @@ import { useToast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useSanitizedForm, useSanitizedInput } from '@/hooks/useSanitizedInput';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { FORM_RATE_LIMITS } from '@/lib/security/sanitization-config';
+import { ValidationFeedback } from '@/components/ui/validation-feedback';
 
 interface BonusPiece {
   id: string;
@@ -76,19 +80,40 @@ interface BonusPieceCatalogItem {
 export default function BonusPieces() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQueryRaw, setSearchQueryRaw, searchQuerySanitized] = useSanitizedInput('', 'search');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<BonusPieceCatalogItem | null>(null);
 
-  // Form state
-  const [formName, setFormName] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formImageUrl, setFormImageUrl] = useState('');
-  const [formQuantity, setFormQuantity] = useState(0);
-  const [formLowStockThreshold, setFormLowStockThreshold] = useState(10);
+  // Setup sanitized form for create/edit
+  const {
+    formData,
+    setValue,
+    getSanitizedData,
+    reset: resetForm,
+    setFormData
+  } = useSanitizedForm<{
+    name: string;
+    description: string;
+    image_url: string;
+    quantity_available: number;
+    low_stock_threshold: number;
+  }>(
+    {
+      name: '',
+      description: '',
+      image_url: '',
+      quantity_available: 0,
+      low_stock_threshold: 10
+    },
+    {
+      name: 'text',
+      description: 'html',
+      image_url: 'text'
+    }
+  );
 
   // Fetch all bonus piece catalog items
   const { data: catalogItems, isLoading } = useQuery({
@@ -113,6 +138,14 @@ export default function BonusPieces() {
       quantity_available: number;
       low_stock_threshold: number;
     }) => {
+      // Check rate limit
+      const rateLimitKey = 'admin-bonus-pieces-create';
+      const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminProductUpdate);
+      
+      if (!rateLimit.allowed) {
+        throw new Error(`Limite de requisições excedido. Aguarde ${rateLimit.retryAfter}s.`);
+      }
+      
       const { data, error } = await supabase
         .from('bonus_piece_catalog' as any)
         .insert({
@@ -158,6 +191,14 @@ export default function BonusPieces() {
       quantity_available: number;
       low_stock_threshold: number;
     }) => {
+      // Check rate limit
+      const rateLimitKey = 'admin-bonus-pieces-update';
+      const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminProductUpdate);
+      
+      if (!rateLimit.allowed) {
+        throw new Error(`Limite de requisições excedido. Aguarde ${rateLimit.retryAfter}s.`);
+      }
+      
       const { data, error } = await supabase
         .from('bonus_piece_catalog' as any)
         .update({
@@ -220,15 +261,6 @@ export default function BonusPieces() {
     },
   });
 
-  const resetForm = () => {
-    setFormName('');
-    setFormDescription('');
-    setFormImageUrl('');
-    setFormQuantity(0);
-    setFormLowStockThreshold(10);
-    setSelectedItem(null);
-  };
-
   const handleCreateClick = () => {
     resetForm();
     setCreateDialogOpen(true);
@@ -236,11 +268,13 @@ export default function BonusPieces() {
 
   const handleEditClick = (item: BonusPieceCatalogItem) => {
     setSelectedItem(item);
-    setFormName(item.name);
-    setFormDescription(item.description);
-    setFormImageUrl(item.image_url || '');
-    setFormQuantity(item.quantity_available);
-    setFormLowStockThreshold(item.low_stock_threshold);
+    setFormData({
+      name: item.name,
+      description: item.description,
+      image_url: item.image_url || '',
+      quantity_available: item.quantity_available,
+      low_stock_threshold: item.low_stock_threshold
+    });
     setEditDialogOpen(true);
   };
 
@@ -251,12 +285,13 @@ export default function BonusPieces() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const sanitizedData = getSanitizedData();
     createMutation.mutate({
-      name: formName,
-      description: formDescription,
-      image_url: formImageUrl || null,
-      quantity_available: formQuantity,
-      low_stock_threshold: formLowStockThreshold,
+      name: sanitizedData.name,
+      description: sanitizedData.description,
+      image_url: sanitizedData.image_url || null,
+      quantity_available: sanitizedData.quantity_available,
+      low_stock_threshold: sanitizedData.low_stock_threshold,
     });
   };
 
@@ -264,13 +299,14 @@ export default function BonusPieces() {
     e.preventDefault();
     if (!selectedItem) return;
 
+    const sanitizedData = getSanitizedData();
     updateMutation.mutate({
       id: selectedItem.id,
-      name: formName,
-      description: formDescription,
-      image_url: formImageUrl || null,
-      quantity_available: formQuantity,
-      low_stock_threshold: formLowStockThreshold,
+      name: sanitizedData.name,
+      description: sanitizedData.description,
+      image_url: sanitizedData.image_url || null,
+      quantity_available: sanitizedData.quantity_available,
+      low_stock_threshold: sanitizedData.low_stock_threshold,
     });
   };
 
@@ -283,8 +319,8 @@ export default function BonusPieces() {
   const filteredItems = catalogItems?.filter((item) => {
     // Search filter
     const matchesSearch = 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      item.name.toLowerCase().includes(searchQuerySanitized.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuerySanitized.toLowerCase());
 
     // Status filter - check if low stock
     const isLowStock = (item.quantity_available - item.quantity_reserved) <= item.low_stock_threshold;
@@ -311,6 +347,19 @@ export default function BonusPieces() {
       return <Badge variant="outline" className="bg-yellow-500/10 border-yellow-500/20 text-yellow-600">Estoque Baixo</Badge>;
     } else {
       return <Badge variant="outline" className="bg-green-500/10 border-green-500/20 text-green-600">Em Estoque</Badge>;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="outline" className="bg-yellow-500/10 border-yellow-500/20 text-yellow-600">Pendente</Badge>;
+      case 'prepared':
+        return <Badge variant="outline" className="bg-blue-500/10 border-blue-500/20 text-blue-600">Preparada</Badge>;
+      case 'shipped':
+        return <Badge variant="outline" className="bg-green-500/10 border-green-500/20 text-green-600">Enviada</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -398,10 +447,28 @@ export default function BonusPieces() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por descrição..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchQueryRaw}
+                  onChange={(e) => {
+                    // Check rate limit
+                    const rateLimit = checkRateLimit('search-bonus-pieces', RATE_LIMITS.search);
+                    if (!rateLimit.allowed) {
+                      toast({
+                        title: 'Limite de busca excedido',
+                        description: `Aguarde ${rateLimit.retryAfter} segundos antes de buscar novamente.`,
+                        variant: 'destructive'
+                      });
+                      return;
+                    }
+                    setSearchQueryRaw(e.target.value);
+                  }}
                   className="pl-10"
                 />
+                {searchQueryRaw !== searchQuerySanitized && searchQueryRaw.length > 0 && (
+                  <ValidationFeedback 
+                    info="Caracteres especiais foram removidos da busca"
+                    className="mt-1"
+                  />
+                )}
               </div>
 
               {/* Status Filter */}
@@ -522,12 +589,23 @@ export default function BonusPieces() {
             <form onSubmit={handleCreateSubmit}>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
+                  <Label htmlFor="name">Nome *</Label>
+                  <Input
+                    id="name"
+                    placeholder="Nome da peça bônus..."
+                    value={formData.name}
+                    onChange={(e) => setValue('name', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="description">Descrição *</Label>
                   <Textarea
                     id="description"
                     placeholder="Descreva a peça bônus..."
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
+                    value={formData.description}
+                    onChange={(e) => setValue('description', e.target.value)}
                     required
                     rows={4}
                   />
@@ -537,12 +615,36 @@ export default function BonusPieces() {
                   <ImageUpload
                     label="Imagem da Peça Bônus"
                     description="Imagem da peça bônus (PNG, JPG, WEBP - máx. 5MB)"
-                    currentImageUrl={formImageUrl}
+                    currentImageUrl={formData.image_url}
                     bucket="images"
                     folder="bonus-pieces"
-                    onUploadComplete={setFormImageUrl}
+                    onUploadComplete={(url) => setValue('image_url', url)}
                     maxSizeMB={5}
                     acceptedFormats={["image/png", "image/jpeg", "image/jpg", "image/webp"]}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantidade Disponível *</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="0"
+                    value={formData.quantity_available}
+                    onChange={(e) => setValue('quantity_available', parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="threshold">Limite de Estoque Baixo *</Label>
+                  <Input
+                    id="threshold"
+                    type="number"
+                    min="0"
+                    value={formData.low_stock_threshold}
+                    onChange={(e) => setValue('low_stock_threshold', parseInt(e.target.value) || 10)}
+                    required
                   />
                 </div>
               </div>
@@ -575,12 +677,23 @@ export default function BonusPieces() {
             <form onSubmit={handleEditSubmit}>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nome *</Label>
+                  <Input
+                    id="edit-name"
+                    placeholder="Nome da peça bônus..."
+                    value={formData.name}
+                    onChange={(e) => setValue('name', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="edit-description">Descrição *</Label>
                   <Textarea
                     id="edit-description"
                     placeholder="Descreva a peça bônus..."
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
+                    value={formData.description}
+                    onChange={(e) => setValue('description', e.target.value)}
                     required
                     rows={4}
                   />
@@ -590,12 +703,36 @@ export default function BonusPieces() {
                   <ImageUpload
                     label="Imagem da Peça Bônus"
                     description="Imagem da peça bônus (PNG, JPG, WEBP - máx. 5MB)"
-                    currentImageUrl={formImageUrl}
+                    currentImageUrl={formData.image_url}
                     bucket="images"
                     folder="bonus-pieces"
-                    onUploadComplete={setFormImageUrl}
+                    onUploadComplete={(url) => setValue('image_url', url)}
                     maxSizeMB={5}
                     acceptedFormats={["image/png", "image/jpeg", "image/jpg", "image/webp"]}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-quantity">Quantidade Disponível *</Label>
+                  <Input
+                    id="edit-quantity"
+                    type="number"
+                    min="0"
+                    value={formData.quantity_available}
+                    onChange={(e) => setValue('quantity_available', parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-threshold">Limite de Estoque Baixo *</Label>
+                  <Input
+                    id="edit-threshold"
+                    type="number"
+                    min="0"
+                    value={formData.low_stock_threshold}
+                    onChange={(e) => setValue('low_stock_threshold', parseInt(e.target.value) || 10)}
+                    required
                   />
                 </div>
               </div>

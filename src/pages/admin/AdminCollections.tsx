@@ -36,8 +36,6 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import SEOHead from "@/components/SEOHead";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
 
 const COLLECTION_SIZES = [
@@ -122,24 +120,17 @@ export default function AdminCollectionsV2() {
   const selectedCollectionData = collections.find((c: any) => c.id === selectedCollection);
 
   return (
-    <>
-      <SEOHead
-        title="Admin - Coleções Premium"
-        description="Gerenciar coleções temáticas com sistema avançado"
-        noindex={true}
-      />
-
-      <AdminLayout>
-        {/* Header Premium */}
-        <div className="mb-12">
-          <div className="h-px w-20 bg-foreground mb-6" />
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-5xl font-bold tracking-tight mb-2">Coleções Premium</h1>
-              <p className="text-lg text-muted-foreground">
-                Sistema completo de gerenciamento de coleções temáticas
-              </p>
-            </div>
+    <div className="space-y-6">
+      {/* Header Premium */}
+      <div>
+        <div className="h-px w-20 bg-foreground mb-6" />
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight mb-2">Coleções Premium</h2>
+            <p className="text-lg text-muted-foreground">
+              Sistema completo de gerenciamento de coleções temáticas
+            </p>
+          </div>
             <CreateCollectionDialog
               isOpen={isCreateOpen}
               onOpenChange={setIsCreateOpen}
@@ -410,8 +401,7 @@ export default function AdminCollectionsV2() {
             }}
           />
         )}
-      </AdminLayout>
-    </>
+      </div>
   );
 }
 

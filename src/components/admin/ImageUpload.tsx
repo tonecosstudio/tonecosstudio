@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/security/input-sanitizer";
 
 interface ImageUploadProps {
   label: string;
@@ -36,15 +37,12 @@ export default function ImageUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
-    // Validar tipo
-    if (!acceptedFormats.includes(file.type)) {
-      return `Formato não suportado. Use: ${acceptedFormats.map(f => f.split('/')[1]).join(', ')}`;
-    }
-
-    // Validar tamanho
-    const sizeMB = file.size / (1024 * 1024);
-    if (sizeMB > maxSizeMB) {
-      return `Arquivo muito grande. Máximo: ${maxSizeMB}MB`;
+    // Use centralized validation
+    const maxSize = maxSizeMB * 1024 * 1024;
+    const validation = validateFileUpload(file, acceptedFormats as readonly string[], maxSize);
+    
+    if (!validation.valid) {
+      return validation.error || 'Arquivo inválido';
     }
 
     return null;
@@ -65,8 +63,9 @@ export default function ImageUpload({
         return;
       }
 
-      // Gerar nome único para o arquivo
-      const fileExt = file.name.split(".").pop();
+      // Gerar nome único para o arquivo com sanitização
+      const sanitizedName = sanitizeFilename(file.name);
+      const fileExt = sanitizedName.split(".").pop() || 'jpg';
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       // Upload para o Supabase Storage

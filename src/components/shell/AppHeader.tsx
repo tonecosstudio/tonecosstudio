@@ -47,6 +47,22 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
           </NavLink>
 
           <NavLink
+            to="/pre-lancamento"
+            className="rounded-md px-3 py-2 text-xs font-black text-amber-400 transition-colors hover:text-amber-300 hover:bg-amber-500/10 animate-pulse"
+            activeClassName="text-amber-300 bg-amber-500/15"
+          >
+            🔥 Voucher R$ 100
+          </NavLink>
+
+          <NavLink
+            to="/landing"
+            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+            activeClassName="text-background bg-background/15"
+          >
+            Landing
+          </NavLink>
+
+          <NavLink
             to="/catalogo"
             className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
@@ -154,6 +170,30 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
             <div className="flex flex-col gap-6 mt-8">
               <NavLink
                 to="/"
+                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
+                activeClassName="underline"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </NavLink>
+              <NavLink
+                to="/pre-lancamento"
+                className="text-lg font-black text-amber-400 hover:text-amber-300 transition-colors"
+                activeClassName="underline"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                🔥 Voucher R$ 100
+              </NavLink>
+              <NavLink
+                to="/landing"
+                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
+                activeClassName="underline"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Landing
+              </NavLink>
+              <NavLink
+                to="/catalogo"
                 className="text-lg font-medium text-background hover:text-background/80 transition-colors"
                 activeClassName="underline"
                 onClick={() => setMobileMenuOpen(false)}

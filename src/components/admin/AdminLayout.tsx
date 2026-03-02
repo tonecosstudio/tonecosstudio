@@ -12,262 +12,67 @@ import {
   FileText,
   Upload,
   Workflow,
-  MessageSquare,
   Settings,
   CreditCard,
-  Gift,
   Building2,
   Layers,
   DollarSign,
   Ticket,
   Clock,
-  ShoppingCart,
   TrendingUp,
   BarChart3,
-  Megaphone,
   HeadphonesIcon,
-  Calculator,
   Gauge,
   Wallet,
-  UsersRound,
-  MessageSquare as MessageSquareIcon,
   Menu,
   X,
   History,
   CalendarClock,
   FolderKanban,
+  MessageSquare,
+  ShoppingCart,
+  RefreshCw,
+  Truck,
+  FileSearch,
+  Box,
+  Grid,
+  Tag,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
+import { adminNavigationConfig } from "@/config/admin-navigation.config";
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
-interface MenuItem {
-  id: string;
-  label: string;
-  icon: any;
-  path: string;
-}
-
-interface MenuSection {
-  id: string;
-  label: string;
-  items: MenuItem[];
-}
+// Mapeamento de nomes de ícones para componentes
+const iconMap: Record<string, any> = {
+  LayoutDashboard,
+  FileText,
+  ShoppingCart,
+  RefreshCw,
+  Calendar: CalendarClock,
+  Truck,
+  Package,
+  FileSearch,
+  Upload,
+  Layers,
+  Box,
+  Grid,
+  DollarSign,
+  CreditCard,
+  TrendingUp,
+  Tag,
+  Users,
+  MessageSquare,
+  Settings,
+};
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const menuSections: MenuSection[] = [
-    {
-      id: "overview",
-      label: "Visão Geral",
-      items: [
-        {
-          id: "home",
-          label: "Dashboard",
-          icon: LayoutDashboard,
-          path: "/admin",
-        },
-        {
-          id: "analytics",
-          label: "Analytics",
-          icon: BarChart3,
-          path: "/admin/analytics",
-        },
-      ],
-    },
-    {
-      id: "sales",
-      label: "Vendas & Pagamentos",
-      items: [
-        {
-          id: "quotes",
-          label: "Orçamentos",
-          icon: FileText,
-          path: "/admin/orcamentos",
-        },
-        {
-          id: "preorders",
-          label: "Pré-vendas",
-          icon: Clock,
-          path: "/admin/pre-vendas",
-        },
-        {
-          id: "subscriptions",
-          label: "Assinaturas",
-          icon: CreditCard,
-          path: "/admin/assinaturas",
-        },
-        {
-          id: "audit-trail",
-          label: "Trilha de Auditoria",
-          icon: History,
-          path: "/admin/auditoria",
-        },
-      ],
-    },
-    {
-      id: "production",
-      label: "Produção & Ciclos",
-      items: [
-        {
-          id: "cycle-dashboard",
-          label: "Dashboard de Ciclos",
-          icon: CalendarClock,
-          path: "/admin/ciclos",
-        },
-        {
-          id: "delivery-management",
-          label: "Gerenciar Entregas",
-          icon: Package,
-          path: "/admin/entregas",
-        },
-        {
-          id: "capacity-management",
-          label: "Gerenciar Capacidade",
-          icon: Gauge,
-          path: "/admin/capacidade",
-        },
-        {
-          id: "bonus-pieces",
-          label: "Peças Bônus",
-          icon: Package,
-          path: "/admin/pecas-bonus",
-        },
-        {
-          id: "collection-management",
-          label: "Gerenciar Coleções",
-          icon: FolderKanban,
-          path: "/admin/gerenciar-colecoes",
-        },
-      ],
-    },
-    {
-      id: "products",
-      label: "Produtos & Catálogo",
-      items: [
-        {
-          id: "upload",
-          label: "Upload Massivo",
-          icon: Upload,
-          path: "/admin/upload",
-        },
-        {
-          id: "conveyor",
-          label: "Modo Esteira",
-          icon: Workflow,
-          path: "/admin/esteira",
-        },
-        {
-          id: "models",
-          label: "Modelos",
-          icon: Package,
-          path: "/admin/modelos",
-        },
-        {
-          id: "franchises",
-          label: "Franquias",
-          icon: Building2,
-          path: "/admin/franquias",
-        },
-        {
-          id: "collections",
-          label: "Coleções & Personagens",
-          icon: Layers,
-          path: "/admin/colecoes",
-        },
-        {
-          id: "packaging",
-          label: "Embalagem",
-          icon: Package,
-          path: "/admin/embalagem",
-        },
-      ],
-    },
-    {
-      id: "marketing",
-      label: "Marketing & Planos",
-      items: [
-        {
-          id: "plans",
-          label: "Planos",
-          icon: DollarSign,
-          path: "/admin/planos",
-        },
-        {
-          id: "coupons",
-          label: "Cupons",
-          icon: Ticket,
-          path: "/admin/cupons",
-        },
-      ],
-    },
-    {
-      id: "financial",
-      label: "Financeiro",
-      items: [
-        {
-          id: "pricing",
-          label: "Preços",
-          icon: DollarSign,
-          path: "/admin/precos",
-        },
-        {
-          id: "financials",
-          label: "Análise Financeira",
-          icon: TrendingUp,
-          path: "/admin/financeiro",
-        },
-        {
-          id: "payments",
-          label: "Hub de Pagamentos",
-          icon: Wallet,
-          path: "/admin/pagamentos",
-        },
-      ],
-    },
-    {
-      id: "communication",
-      label: "Comunicação & Suporte",
-      items: [
-        {
-          id: "communication",
-          label: "Comunicação",
-          icon: HeadphonesIcon,
-          path: "/admin/comunicacao",
-        },
-      ],
-    },
-    {
-      id: "users",
-      label: "Usuários",
-      items: [
-        {
-          id: "users",
-          label: "Lista de Usuários",
-          icon: Users,
-          path: "/admin/users",
-        },
-      ],
-    },
-    {
-      id: "settings",
-      label: "Configurações",
-      items: [
-        {
-          id: "settings",
-          label: "Configurações",
-          icon: Settings,
-          path: "/admin/configuracoes",
-        },
-      ],
-    },
-  ];
 
   const isActive = (path: string) => {
     if (path === "/admin") {
@@ -284,17 +89,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   // Componente de navegação reutilizável
   const SidebarNav = () => (
     <nav className="space-y-6">
-      {menuSections.map((section) => (
+      {adminNavigationConfig.map((section) => (
         <div key={section.id}>
           {/* Section Label */}
           <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {section.label}
+            {section.title}
           </h3>
 
           {/* Section Items */}
           <div className="space-y-1">
             {section.items.map((item) => {
-              const Icon = item.icon;
+              const Icon = iconMap[item.icon || 'Settings'];
               const active = isActive(item.path);
 
               return (
@@ -310,6 +115,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate">{item.label}</span>
+                  {item.badge && (
+                    <span className="ml-auto text-xs bg-muted px-2 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

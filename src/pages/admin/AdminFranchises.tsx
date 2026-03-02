@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import {
   Table,
   TableBody,
@@ -250,7 +249,7 @@ export default function AdminFranchises() {
   const rules = rulesQuery.data ?? [];
 
   return (
-    <AdminLayout>
+    <div className="space-y-6">
       <div className="mb-12">
         <div className="h-px w-20 bg-foreground mb-6" />
         <h1 className="text-5xl font-bold tracking-tight mb-4">Gerenciar Franquias</h1>
@@ -545,6 +544,6 @@ export default function AdminFranchises() {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 }

@@ -47,6 +47,10 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
+import { useSanitizedInput } from "@/hooks/useSanitizedInput";
+import { ValidationFeedback } from "@/components/ui/validation-feedback";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
+import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
 
 type UserRow = {
   id: string;
@@ -85,9 +89,16 @@ function fmtDate(iso: string | null) {
 export default function AdminUsers() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [email, setEmail] = useState("");
+  
+  // Sanitized input for email field
+  const [emailRaw, setEmailRaw, emailSanitized] = useSanitizedInput("", "email");
+  const [emailError, setEmailError] = useState<string>("");
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Sanitized input for search field
+  const [searchTermRaw, setSearchTermRaw, searchTermSanitized] = useSanitizedInput("", "search");
+  
   const [activeTab, setActiveTab] = useState("all");
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [dateFilter, setDateFilter] = useState<string>("all");
@@ -269,8 +280,8 @@ export default function AdminUsers() {
     }
 
     // Filtrar por busca
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
+    if (searchTermSanitized.trim()) {
+      const term = searchTermSanitized.toLowerCase();
       filtered = filtered.filter(
         (u) =>
           (u.email ?? "").toLowerCase().includes(term) ||
@@ -324,16 +335,49 @@ export default function AdminUsers() {
     return roles.includes("admin") && adminCount === 1;
   };
 
+  // Validate email format
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const promote = async () => {
+    // Validate email
+    if (!emailSanitized.trim()) {
+      setEmailError("Email é obrigatório");
+      return;
+    }
+
+    if (!validateEmail(emailSanitized)) {
+      setEmailError("Formato de email inválido");
+      return;
+    }
+
+    // Check rate limit
+    const rateLimitKey = `admin-user-promote:${emailSanitized}`;
+    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminUserUpdate);
+    
+    if (!rateLimit.allowed) {
+      toast({
+        title: "Limite excedido",
+        description: `Aguarde ${rateLimit.retryAfter}s antes de tentar novamente`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
+    setEmailError("");
+    
     try {
       const { data, error } = await supabase.functions.invoke("admin-promote", {
-        body: { email: email.trim().toLowerCase(), role: "admin" },
+        body: { email: emailSanitized.trim().toLowerCase(), role: "admin" },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error ?? "Falha ao promover");
       toast({ title: "Sucesso", description: "Usuário promovido a administrador." });
-      setEmail("");
+      setEmailRaw("");
+      setEmailError("");
       qc.invalidateQueries({ queryKey: ["admin-user-roles"] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
@@ -450,17 +494,24 @@ export default function AdminUsers() {
               <Input
                 id="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={emailRaw}
+                onChange={(e) => {
+                  setEmailRaw(e.target.value);
+                  setEmailError("");
+                }}
                 placeholder="cliente@empresa.com"
                 className="h-11 border-border"
+              />
+              <ValidationFeedback 
+                error={emailError}
+                info={emailRaw !== emailSanitized && emailRaw.length > 0 ? "Email foi sanitizado para segurança" : undefined}
               />
             </div>
 
             <Button
               className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium"
               onClick={promote}
-              disabled={!email.trim() || isLoading}
+              disabled={!emailSanitized.trim() || isLoading}
             >
               {isLoading ? "Promovendo…" : "Promover a Admin"}
             </Button>
@@ -515,13 +566,19 @@ export default function AdminUsers() {
               <div className="flex-1">
                 <Input
                   placeholder="Buscar por nome, email, telefone ou CPF..."
-                  value={searchTerm}
+                  value={searchTermRaw}
                   onChange={(e) => {
-                    setSearchTerm(e.target.value);
+                    setSearchTermRaw(e.target.value);
                     handleFilterChange();
                   }}
                   className="h-9"
                 />
+                {searchTermRaw !== searchTermSanitized && searchTermRaw.length > 0 && (
+                  <ValidationFeedback 
+                    info="Caracteres especiais foram removidos da busca"
+                    className="mt-1"
+                  />
+                )}
               </div>
               <Select
                 value={dateFilter}
@@ -619,7 +676,7 @@ export default function AdminUsers() {
               <div className="text-center py-8 text-muted-foreground">Carregando usuários…</div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {searchTerm || dateFilter !== "all" || profileFilter !== "all"
+                {searchTermSanitized || dateFilter !== "all" || profileFilter !== "all"
                   ? "Nenhum usuário encontrado com os filtros aplicados."
                   : "Nenhum usuário cadastrado."}
               </div>

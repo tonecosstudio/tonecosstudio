@@ -6,8 +6,6 @@
  */
 
 import { useState } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import SEOHead from "@/components/SEOHead";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -40,39 +38,32 @@ export default function AdminPaymentMethods() {
   };
 
   return (
-    <>
-      <SEOHead
-        title="Métodos de Pagamento - Admin"
-        description="Gerenciar métodos de pagamento disponíveis"
-      />
-
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Métodos de Pagamento</h1>
-            <p className="text-muted-foreground mt-2">
-              Configure os métodos de pagamento disponíveis para os clientes
-            </p>
-          </div>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Método
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Métodos de Pagamento</h2>
+          <p className="text-muted-foreground mt-2">
+            Configure os métodos de pagamento disponíveis para os clientes
+          </p>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Métodos Cadastrados</CardTitle>
-            <CardDescription>
-              Gerencie os métodos de pagamento, configure chaves PIX, instruções e prioridade de
-              exibição
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PaymentMethodList onEdit={handleEdit} onDelete={handleDelete} />
-          </CardContent>
-        </Card>
+        <Button onClick={() => setIsFormOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Método
+        </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Métodos Cadastrados</CardTitle>
+          <CardDescription>
+            Gerencie os métodos de pagamento, configure chaves PIX, instruções e prioridade de
+            exibição
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PaymentMethodList onEdit={handleEdit} onDelete={handleDelete} />
+        </CardContent>
+      </Card>
 
       <PaymentMethodForm
         method={selectedMethod}
@@ -80,6 +71,6 @@ export default function AdminPaymentMethods() {
         onOpenChange={handleFormClose}
         onSuccess={handleFormSuccess}
       />
-    </>
+    </div>
   );
 }

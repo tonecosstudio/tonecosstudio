@@ -112,9 +112,9 @@ CREATE POLICY "Allow public read access to holidays" ON holidays
 CREATE POLICY "Allow admin write access to holidays" ON holidays
   USING (
     EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role IN ('admin', 'super_admin')
+      SELECT 1 FROM user_roles 
+      WHERE user_roles.user_id = auth.uid() 
+      AND user_roles.role = 'admin'
     )
   );
 

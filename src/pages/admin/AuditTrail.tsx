@@ -27,11 +27,16 @@ import { ptBR } from "date-fns/locale";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { getAllCollectionChanges, searchCollectionChangesBySubscriber } from "@/services/audit-trail-service";
 import { toBahiaTime } from "@/lib/timezone";
+import { useSanitizedInput } from "@/hooks/useSanitizedInput";
+import { ValidationFeedback } from "@/components/ui/validation-feedback";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
+import { useToast } from "@/hooks/use-toast";
 
 const ITEMS_PER_PAGE = 50;
 
 export default function AuditTrail() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
+  const [searchTermRaw, setSearchTermRaw, searchTermSanitized] = useSanitizedInput("", "search");
   const [changeReasonFilter, setChangeReasonFilter] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -67,15 +72,26 @@ export default function AuditTrail() {
 
   // Search by subscriber name
   const searchQuery = useQuery({
-    queryKey: ["audit-trail-search", searchTerm],
-    enabled: searchTerm.length >= 3,
+    queryKey: ["audit-trail-search", searchTermSanitized],
+    enabled: searchTermSanitized.length >= 3,
     queryFn: async () => {
-      return searchCollectionChangesBySubscriber(searchTerm, ITEMS_PER_PAGE);
+      // Check rate limit
+      const rateLimit = checkRateLimit('search-audit-trail', RATE_LIMITS.search);
+      if (!rateLimit.allowed) {
+        toast({
+          title: 'Limite de busca excedido',
+          description: `Aguarde ${rateLimit.retryAfter} segundos antes de buscar novamente.`,
+          variant: 'destructive'
+        });
+        throw new Error('Rate limit exceeded');
+      }
+      
+      return searchCollectionChangesBySubscriber(searchTermSanitized, ITEMS_PER_PAGE);
     },
   });
 
   // Use search results if searching, otherwise use filtered results
-  const displayData = searchTerm.length >= 3 
+  const displayData = searchTermSanitized.length >= 3 
     ? { data: searchQuery.data || [], count: searchQuery.data?.length || 0 }
     : auditQuery.data || { data: [], count: 0 };
 
@@ -152,15 +168,20 @@ export default function AuditTrail() {
                   <Input
                     id="search"
                     placeholder="Nome ou email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={searchTermRaw}
+                    onChange={(e) => setSearchTermRaw(e.target.value)}
                     className="pl-8"
                   />
                 </div>
-                {searchTerm.length > 0 && searchTerm.length < 3 && (
+                {searchTermRaw.length > 0 && searchTermRaw.length < 3 && (
                   <p className="text-xs text-muted-foreground">
                     Digite pelo menos 3 caracteres
                   </p>
+                )}
+                {searchTermRaw !== searchTermSanitized && searchTermRaw.length > 0 && (
+                  <ValidationFeedback 
+                    info="Caracteres especiais foram removidos da busca"
+                  />
                 )}
               </div>
 
@@ -207,7 +228,7 @@ export default function AuditTrail() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSearchTerm("");
+                  setSearchTermRaw("");
                   setChangeReasonFilter("all");
                   setStartDate("");
                   setEndDate("");

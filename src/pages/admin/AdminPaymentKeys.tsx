@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Key, CreditCard, Loader2 } from "lucide-react";
+import { useSanitizedForm } from "@/hooks/useSanitizedInput";
+import { checkRateLimit } from "@/lib/security/rate-limiter";
+import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
 
 interface PaymentKey {
   key: string;
@@ -39,6 +40,27 @@ export default function AdminPaymentKeys() {
     },
   });
 
+  // Initialize form data from payment keys
+  const initialFormData = paymentKeys.reduce((acc, key) => {
+    acc[key.key] = key.value;
+    return acc;
+  }, {} as Record<string, string>);
+
+  // Setup sanitization for all fields (text type for PIX keys and API keys)
+  const sanitizationMap = paymentKeys.reduce((acc, key) => {
+    acc[key.key] = 'text';
+    return acc;
+  }, {} as Record<string, 'text'>);
+
+  const {
+    formData,
+    setValue,
+    getSanitizedData
+  } = useSanitizedForm(
+    initialFormData,
+    sanitizationMap
+  );
+
   // Mutation para atualizar chaves
   const updateKeyMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
@@ -57,14 +79,29 @@ export default function AdminPaymentKeys() {
   // Salvar todas as chaves
   const handleSaveAll = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Check rate limit
+    const rateLimitKey = 'admin-payment-keys-update';
+    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminUserUpdate);
+    
+    if (!rateLimit.allowed) {
+      toast({
+        title: 'Limite de requisições excedido',
+        description: `Aguarde ${rateLimit.retryAfter}s antes de tentar novamente.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     setIsSaving(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
+      // Get sanitized data
+      const sanitizedData = getSanitizedData();
       const updates: Promise<any>[] = [];
 
       paymentKeys.forEach((key) => {
-        const newValue = formData.get(key.key) as string;
+        const newValue = sanitizedData[key.key];
         if (newValue !== key.value) {
           updates.push(
             updateKeyMutation.mutateAsync({ key: key.key, value: newValue })
@@ -111,27 +148,21 @@ export default function AdminPaymentKeys() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
-        <SEOHead title="Chaves de Pagamento" />
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <SEOHead title="Chaves de Pagamento" description="Gerenciar chaves PIX e links de pagamento" />
-
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Chaves de Pagamento</h1>
-          <p className="text-muted-foreground mt-2">
-            Configure chaves PIX e links de pagamento específicos para cada tipo de transação
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold">Chaves de Pagamento</h2>
+        <p className="text-muted-foreground mt-2">
+          Configure chaves PIX e links de pagamento específicos para cada tipo de transação
+        </p>
+      </div>
 
         <form onSubmit={handleSaveAll}>
           <Tabs defaultValue="pix" className="space-y-6">
@@ -163,7 +194,8 @@ export default function AdminPaymentKeys() {
                       <Input
                         id={key.key}
                         name={key.key}
-                        defaultValue={key.value}
+                        value={formData[key.key] || key.value}
+                        onChange={(e) => setValue(key.key, e.target.value)}
                         placeholder="Digite a chave PIX (CPF, CNPJ, email, telefone ou chave aleatória)"
                         className="font-mono"
                       />
@@ -191,7 +223,8 @@ export default function AdminPaymentKeys() {
                       <Input
                         id={key.key}
                         name={key.key}
-                        defaultValue={key.value}
+                        value={formData[key.key] || key.value}
+                        onChange={(e) => setValue(key.key, e.target.value)}
                         placeholder="https://..."
                         type="url"
                       />
@@ -244,7 +277,6 @@ export default function AdminPaymentKeys() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }

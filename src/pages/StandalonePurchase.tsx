@@ -86,7 +86,7 @@ export default function StandalonePurchase() {
   });
 
   // Calculate balance amount
-  const balanceAmount = collection ? collection.price - DEPOSIT_AMOUNT : 0;
+  const balanceAmount = collection ? collection.price_full - DEPOSIT_AMOUNT : 0;
 
   // Handle voucher upload success
   const handleVoucherUploadSuccess = (url: string) => {
@@ -244,7 +244,7 @@ export default function StandalonePurchase() {
                     <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Preço Total</span>
-                        <span className="text-lg font-bold">R$ {collection.price.toFixed(2)}</span>
+                        <span className="text-lg font-bold">R$ {collection.price_full.toFixed(2)}</span>
                       </div>
                       <div className="border-t border-slate-200 dark:border-slate-700 pt-3 space-y-2">
                         <div className="flex justify-between items-center">

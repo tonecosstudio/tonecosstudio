@@ -5,8 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import SEOHead from "@/components/SEOHead";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import {
   Clock,
   CheckCircle2,
@@ -206,15 +204,12 @@ export default function AdminPreorders() {
   });
 
   return (
-    <>
-      <SEOHead title="Admin - Pré-vendas" description="Gerenciar pré-vendas" noindex={true} />
-
-      <AdminLayout>
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Pré-vendas</h1>
-          <p className="text-muted-foreground">Gerencie pedidos com pagamento de sinal</p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight mb-2">Pré-vendas</h2>
+        <p className="text-muted-foreground">Gerencie pedidos com pagamento de sinal</p>
+      </div>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4 mb-8">
@@ -494,7 +489,6 @@ export default function AdminPreorders() {
             )}
           </CardContent>
         </Card>
-      </AdminLayout>
-    </>
+      </div>
   );
 }

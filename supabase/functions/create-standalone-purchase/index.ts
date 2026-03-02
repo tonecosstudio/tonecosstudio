@@ -127,7 +127,7 @@ serve(async (req) => {
     // 3. Get collection details
     const { data: collection, error: collectionError } = await supabaseClient
       .from('collections')
-      .select('price, name, is_active')
+      .select('price_full, name, is_active')
       .eq('id', collectionId)
       .single();
 
@@ -183,8 +183,8 @@ serve(async (req) => {
 
     // 5. Calculate amounts (Requirement 4.1, 4.3)
     const depositAmount = 100.00; // Fixed deposit amount
-    const balanceAmount = collection.price - depositAmount;
-    const totalAmount = collection.price;
+    const balanceAmount = collection.price_full - depositAmount;
+    const totalAmount = collection.price_full;
 
     // 6. Create standalone purchase record
     const { data: purchase, error: createError } = await supabaseClient

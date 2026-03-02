@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useSanitizedInput } from "@/hooks/useSanitizedInput";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { useSanitizedForm } from "@/hooks/useSanitizedInput";
+import { Mail, Lock, ArrowRight, User, Phone } from "lucide-react";
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -40,28 +40,56 @@ export default function Login() {
   const next = useMemo(() => params.get("next") || "/", [params]);
 
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail, sanitizedEmail] = useSanitizedInput("", "email");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Setup sanitized form for name and email
+  const {
+    formData,
+    setValue,
+    getSanitizedData
+  } = useSanitizedForm<{
+    name: string;
+    email: string;
+    phone: string;
+  }>(
+    {
+      name: '',
+      email: '',
+      phone: ''
+    },
+    {
+      name: 'text',
+      email: 'email',
+      phone: 'phone'
+    }
+  );
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      const sanitizedData = getSanitizedData();
+      
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email: sanitizedEmail, password });
+        const { error } = await supabase.auth.signInWithPassword({ 
+          email: sanitizedData.email, 
+          password 
+        });
         if (error) throw error;
         toast({ title: "Bem-vindo de volta!", description: "Login realizado com sucesso." });
         navigate(next);
       } else {
         const { error } = await supabase.auth.signUp({
-          email: sanitizedEmail,
+          email: sanitizedData.email,
           password,
           options: {
             emailRedirectTo: window.location.origin,
             data: {
               email_confirm: false, // Desabilita confirmação por email para evitar rate limit
+              full_name: sanitizedData.name,
+              phone: sanitizedData.phone
             },
           },
         });
@@ -168,6 +196,27 @@ export default function Login() {
               </div>
 
               <form onSubmit={submit} className="space-y-6">
+                {/* Name (only for signup) */}
+                {mode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Nome Completo
+                    </Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setValue('name', e.target.value)}
+                      autoComplete="name"
+                      className="h-12 text-base"
+                      placeholder="Seu nome completo"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                )}
+
                 {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
@@ -177,8 +226,8 @@ export default function Login() {
                   <Input
                     id="email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={(e) => setValue('email', e.target.value)}
                     autoComplete="email"
                     className="h-12 text-base"
                     placeholder="seu@email.com"
@@ -186,6 +235,26 @@ export default function Login() {
                     disabled={isLoading}
                   />
                 </div>
+
+                {/* Phone (only for signup) */}
+                {mode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Telefone (opcional)
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setValue('phone', e.target.value)}
+                      autoComplete="tel"
+                      className="h-12 text-base"
+                      placeholder="(00) 00000-0000"
+                      disabled={isLoading}
+                    />
+                  </div>
+                )}
 
                 {/* Senha */}
                 <div className="space-y-2">
@@ -215,7 +284,7 @@ export default function Login() {
                   type="submit"
                   className="w-full h-12 text-base bg-foreground text-background hover:bg-foreground/90 font-medium"
                   disabled={
-                    isLoading || !email || !password || (mode === "signup" && password.length < 6)
+                    isLoading || !formData.email || !password || (mode === "signup" && password.length < 6)
                   }
                 >
                   {isLoading ? (

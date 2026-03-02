@@ -46,6 +46,10 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useSanitizedInput } from '@/hooks/useSanitizedInput';
+import { ValidationFeedback } from '@/components/ui/validation-feedback';
+import { checkRateLimit } from '@/lib/security/rate-limiter';
+import { FORM_RATE_LIMITS } from '@/lib/security/sanitization-config';
 
 interface DeliveryDetailModalProps {
   deliveryId: string | null;
@@ -122,7 +126,10 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
   // Estado local para controles de atualização
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [trackingCode, setTrackingCode] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
+  
+  // Sanitized input for notes field (html type for rich text)
+  const [notesRaw, setNotesRaw, notesSanitized] = useSanitizedInput('', 'html');
+  
   const [isEditing, setIsEditing] = useState(false);
 
   // Validar formato do código de rastreamento
@@ -289,7 +296,7 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
       queryClient.invalidateQueries({ queryKey: ['delivery-detail', deliveryId] });
       queryClient.invalidateQueries({ queryKey: ['deliveries'] });
       setIsEditing(false);
-      setNotes('');
+      setNotesRaw('');
     },
     onError: (error: Error) => {
       toast({
@@ -303,11 +310,24 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
   const handleUpdateStatus = () => {
     if (!deliveryId || !selectedStatus) return;
     
+    // Check rate limit before submission
+    const rateLimitKey = `admin-delivery-update:${deliveryId}`;
+    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminDeliveryUpdate);
+    
+    if (!rateLimit.allowed) {
+      toast({
+        title: 'Limite excedido',
+        description: `Aguarde ${rateLimit.retryAfter}s antes de tentar novamente`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     updateStatusMutation.mutate({
       deliveryId,
       newStatus: selectedStatus,
       trackingCode: trackingCode || undefined,
-      notes: notes || undefined,
+      notes: notesSanitized || undefined,
     });
   };
 
@@ -503,11 +523,16 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
                     <Label htmlFor="notes">Observações (opcional)</Label>
                     <Textarea
                       id="notes"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
+                      value={notesRaw}
+                      onChange={(e) => setNotesRaw(e.target.value)}
                       placeholder="Adicione observações sobre esta atualização..."
                       rows={3}
                     />
+                    {notesRaw !== notesSanitized && (
+                      <ValidationFeedback
+                        info="Conteúdo HTML foi sanitizado para segurança"
+                      />
+                    )}
                   </div>
 
                   <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm">
@@ -529,7 +554,7 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
                         setIsEditing(false);
                         setSelectedStatus(delivery.status);
                         setTrackingCode(delivery.tracking_code || '');
-                        setNotes('');
+                        setNotesRaw('');
                       }}
                       disabled={updateStatusMutation.isPending}
                     >

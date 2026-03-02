@@ -73,7 +73,7 @@ export async function createWithDeposit(
   // 3. Get collection details to calculate amounts
   const { data: collection, error: collectionError } = await supabase
     .from('collections')
-    .select('price, name')
+    .select('price_full, name')
     .eq('id', collectionId)
     .single();
 
@@ -98,8 +98,8 @@ export async function createWithDeposit(
 
   // 5. Calculate amounts (Requirement 4.1, 4.3)
   const depositAmount = 100.00; // Fixed deposit amount
-  const balanceAmount = collection.price - depositAmount;
-  const totalAmount = collection.price;
+  const balanceAmount = collection.price_full - depositAmount;
+  const totalAmount = collection.price_full;
 
   // 6. Create standalone purchase record
   const { data: purchase, error: createError } = await supabase
@@ -655,9 +655,9 @@ export async function getAllStandalonePurchases(filters?: {
     .from('standalone_purchases')
     .select(`
       *,
-      user:profiles!standalone_purchases_user_id_fkey(id, full_name, email),
-      collection:collections!standalone_purchases_collection_id_fkey(id, name, price),
-      cycle:cycles!standalone_purchases_cycle_id_fkey(id, cycle_number, month, year)
+      user:profiles(id, full_name, email),
+      collection:collections(id, name, price_full),
+      cycle:cycles(id, cycle_number, month, year)
     `, { count: 'exact' });
 
   // Apply status filter
@@ -741,9 +741,9 @@ export async function searchStandalonePurchasesByCustomer(
     .from('standalone_purchases')
     .select(`
       *,
-      user:profiles!standalone_purchases_user_id_fkey(id, full_name, email),
-      collection:collections!standalone_purchases_collection_id_fkey(id, name, price),
-      cycle:cycles!standalone_purchases_cycle_id_fkey(id, cycle_number, month, year)
+      user:profiles(id, full_name, email),
+      collection:collections(id, name, price_full),
+      cycle:cycles(id, cycle_number, month, year)
     `)
     .in('user_id', userIds)
     .order('created_at', { ascending: false })

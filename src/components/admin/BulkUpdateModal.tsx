@@ -11,6 +11,11 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSanitizedInput } from '@/hooks/useSanitizedInput';
+import { ValidationFeedback } from '@/components/ui/validation-feedback';
+import { checkRateLimit } from '@/lib/security/rate-limiter';
+import { FORM_RATE_LIMITS } from '@/lib/security/sanitization-config';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -68,9 +73,13 @@ export function BulkUpdateModal({
   onSuccess,
 }: BulkUpdateModalProps) {
   const [newStatus, setNewStatus] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
+  
+  // Sanitized input for notes field (html type for rich text)
+  const [notesRaw, setNotesRaw, notesSanitized] = useSanitizedInput('', 'html');
+  
   const [result, setResult] = useState<BulkUpdateResult | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const bulkUpdateMutation = useMutation({
     mutationFn: async () => {
@@ -88,7 +97,7 @@ export function BulkUpdateModal({
           body: JSON.stringify({
             deliveryIds: selectedDeliveryIds,
             newStatus,
-            notes: notes || undefined,
+            notes: notesSanitized || undefined,
           }),
         }
       );
@@ -114,13 +123,27 @@ export function BulkUpdateModal({
     if (!newStatus) {
       return;
     }
+    
+    // Check rate limit before submission
+    const rateLimitKey = `admin-bulk-delivery-update:${selectedDeliveryIds.join(',')}`;
+    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminDeliveryUpdate);
+    
+    if (!rateLimit.allowed) {
+      toast({
+        title: 'Limite excedido',
+        description: `Aguarde ${rateLimit.retryAfter}s antes de tentar novamente`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setResult(null);
     bulkUpdateMutation.mutate();
   };
 
   const handleClose = () => {
     setNewStatus('');
-    setNotes('');
+    setNotesRaw('');
     setResult(null);
     onOpenChange(false);
   };
@@ -163,10 +186,15 @@ export function BulkUpdateModal({
               <Textarea
                 id="notes"
                 placeholder="Adicione observações sobre esta atualização..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                value={notesRaw}
+                onChange={(e) => setNotesRaw(e.target.value)}
                 rows={3}
               />
+              {notesRaw !== notesSanitized && (
+                <ValidationFeedback
+                  info="Conteúdo HTML foi sanitizado para segurança"
+                />
+              )}
             </div>
 
             {/* Error Display */}

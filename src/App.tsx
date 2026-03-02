@@ -15,8 +15,6 @@ import UploadQueue from "./pages/admin/UploadQueue";
 import Conveyor from "./pages/admin/Conveyor";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetails from "./pages/admin/AdminUserDetails";
-import AdminModels from "./pages/admin/AdminModels";
-import AdminFranchises from "./pages/admin/AdminFranchises";
 import Quote from "./pages/Quote";
 import QuoteCart from "./pages/QuoteCart";
 import AdminQuotes from "./pages/admin/AdminQuotes";
@@ -29,15 +27,10 @@ import ModelDetails from "./pages/catalog/ModelDetails";
 import Collections from "./pages/Collections";
 import CollectionDetails from "./pages/CollectionDetails";
 import BuyCharacter from "./pages/BuyCharacter";
-import AdminCollections from "./pages/admin/AdminCollections";
-import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
-import AdminPlans from "./pages/admin/AdminPlans";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AuditTrail from "./pages/admin/AuditTrail";
 import CollectionManagement from "./pages/admin/CollectionManagement";
 import BonusPieces from "./pages/admin/BonusPieces";
-import CycleDashboard from "./pages/admin/CycleDashboard";
-import DeliveryManagement from "./pages/admin/DeliveryManagement";
 import CapacityManagement from "./pages/admin/CapacityManagement";
 import MySubscriptions from "./pages/MySubscriptions";
 import MyPaymentsPage from "./pages/MyPaymentsPage";
@@ -51,25 +44,26 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import PreorderCheckout from "./pages/PreorderCheckout";
 import PreorderTracking from "./pages/PreorderTracking";
 import PaymentPage from "./pages/PaymentPage";
-import AdminPreorders from "./pages/admin/AdminPreorders";
 import AdminPackaging from "./pages/admin/AdminPackaging";
 import AdminSettings from "./pages/admin/AdminSettings";
-import AdminNotificationSettings from "./pages/admin/AdminNotificationSettings";
-import AdminNotificationHistory from "./pages/admin/AdminNotificationHistory";
 import AdminPaymentHub from "./pages/admin/AdminPaymentHub";
 import AdminCommunication from "./pages/admin/AdminCommunication";
-import AdminCollectionFinancials from "./pages/admin/AdminCollectionFinancials";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminPaymentMethods from "./pages/admin/AdminPaymentMethods";
-import AdminPaymentKeys from "./pages/admin/AdminPaymentKeys";
-import AdminPricing from "./pages/admin/AdminPricing";
+import AdminCollectionsHub from "./pages/admin/AdminCollectionsHub";
+import AdminFinancialHub from "./pages/admin/AdminFinancialHub";
+import AdminPricingManagement from "./pages/admin/AdminPricingManagement";
 import AdminQuickReplies from "./pages/admin/AdminQuickReplies";
 import AdminGroupsPage from "./pages/admin/AdminGroupsPage";
 import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
+import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
+import OrdersPage from "./pages/admin/OrdersPage";
+
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
 import Contact from "./pages/Contact";
 import NotificationHistory from "./pages/NotificationHistory";
+import LandingPage from "./pages/LandingPage";
+import PreLaunch from "./pages/PreLaunch";
+import MigratePedido from "./pages/MigratePedido";
 import { ChatButton } from "@/components/customer/ChatButton";
 
 const queryClient = new QueryClient();
@@ -89,7 +83,11 @@ function AppContent() {
         }}
       >
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/home-antiga" element={<Home />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/pre-lancamento" element={<PreLaunch />} />
+          <Route path="/migrar-pedido" element={<MigratePedido />} />
           <Route path="/catalogo" element={<Catalog />} />
           <Route path="/catalogo/:id" element={<ModelDetails />} />
           <Route path="/sobre" element={<About />} />
@@ -290,74 +288,102 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/modelos"
+            path="/admin/colecoes"
+            element={<Navigate to="/admin/catalogo?tab=collections" replace />}
+          />
+          <Route
+            path="/admin/catalogo"
             element={
               <RequireAdmin>
-                <AdminModels />
+                <AdminCollectionsHub />
               </RequireAdmin>
             }
+          />
+          <Route
+            path="/admin/modelos"
+            element={<Navigate to="/admin/catalogo?tab=models" replace />}
           />
           <Route
             path="/admin/franquias"
-            element={
-              <RequireAdmin>
-                <AdminFranchises />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/catalogo?tab=models" replace />}
           />
           <Route
-            path="/admin/colecoes"
-            element={
-              <RequireAdmin>
-                <AdminCollections />
-              </RequireAdmin>
-            }
+            path="/admin/modelos-franquias"
+            element={<Navigate to="/admin/catalogo?tab=models" replace />}
+          />
+          <Route
+            path="/admin/financeiro"
+            element={<Navigate to="/admin/financeiro-hub?tab=collections" replace />}
+          />
+          <Route
+            path="/admin/pre-vendas"
+            element={<Navigate to="/admin/catalogo?tab=preorders" replace />}
+          />
+          <Route
+            path="/admin/gerenciar-colecoes"
+            element={<Navigate to="/admin/catalogo?tab=collections" replace />}
+          />
+          {/* Redirects de Preços para Catálogo */}
+          <Route
+            path="/admin/precos"
+            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
           />
           <Route
             path="/admin/planos"
+            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+          />
+          <Route
+            path="/admin/niveis-preco"
+            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+          />
+          <Route
+            path="/admin/precos-planos"
+            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+          />
+          <Route
+            path="/admin/precos-gerenciar"
+            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+          />
+          {/* Hub Financeiro */}
+          <Route
+            path="/admin/financeiro-hub"
             element={
               <RequireAdmin>
-                <AdminPlans />
+                <AdminFinancialHub />
               </RequireAdmin>
             }
           />
+          {/* Redirect Cupons para Financeiro */}
           <Route
-            path="/admin/assinaturas"
+            path="/admin/cupons"
+            element={<Navigate to="/admin/financeiro-hub?tab=coupons" replace />}
+          />
+          <Route
+            path="/admin/pedidos"
             element={
               <RequireAdmin>
-                <AdminSubscriptions />
+                <OrdersPage />
               </RequireAdmin>
             }
+          />
+          {/* Redirects das páginas antigas para a nova página consolidada */}
+          <Route
+            path="/admin/assinaturas"
+            element={<Navigate to="/admin/pedidos?type=subscription" replace />}
+          />
+          <Route
+            path="/admin/entregas"
+            element={<Navigate to="/admin/pedidos?type=subscription" replace />}
+          />
+          <Route
+            path="/admin/compras-avulsas"
+            element={<Navigate to="/admin/pedidos?type=standalone" replace />}
           />
           <Route
             path="/admin/auditoria"
             element={
               <RequireAdmin>
                 <AuditTrail />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/gerenciar-colecoes"
-            element={
-              <RequireAdmin>
-                <CollectionManagement />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/ciclos"
-            element={
-              <RequireAdmin>
-                <CycleDashboard />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/entregas"
-            element={
-              <RequireAdmin>
-                <DeliveryManagement />
               </RequireAdmin>
             }
           />
@@ -387,25 +413,13 @@ function AppContent() {
           />
           <Route
             path="/admin/cupons"
-            element={
-              <RequireAdmin>
-                <AdminCoupons />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/financeiro-hub?tab=coupons" replace />}
           />
           <Route
             path="/admin/analytics"
             element={
               <RequireAdmin>
                 <AdminAnalytics />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/pre-vendas"
-            element={
-              <RequireAdmin>
-                <AdminPreorders />
               </RequireAdmin>
             }
           />
@@ -418,28 +432,25 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/chaves-pagamento"
+            path="/admin/feriados"
             element={
               <RequireAdmin>
-                <AdminPaymentKeys />
+                <AdminHolidayManager />
               </RequireAdmin>
             }
           />
           <Route
+            path="/admin/chaves-pagamento"
+            element={<Navigate to="/admin/pagamentos?tab=keys" replace />}
+          />
+          {/* Redirects para compatibilidade com URLs antigas - Comunicação */}
+          <Route
             path="/admin/notificacoes"
-            element={
-              <RequireAdmin>
-                <AdminNotificationSettings />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/comunicacao?tab=notifications" replace />}
           />
           <Route
             path="/admin/notificacoes/historico"
-            element={
-              <RequireAdmin>
-                <AdminNotificationHistory />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/comunicacao?tab=history" replace />}
           />
           {/* Redirects para compatibilidade com URLs antigas - Configurações */}
           <Route
@@ -449,14 +460,6 @@ function AppContent() {
           <Route
             path="/admin/configuracoes-conteudo"
             element={<Navigate to="/admin/configuracoes?tab=content" replace />}
-          />
-          <Route
-            path="/admin/precos"
-            element={
-              <RequireAdmin>
-                <AdminPricing />
-              </RequireAdmin>
-            }
           />
           <Route
             path="/admin/limite-producao"
@@ -469,14 +472,6 @@ function AppContent() {
           <Route
             path="/admin/calculadora"
             element={<Navigate to="/admin/pagamentos?tab=calculator" replace />}
-          />
-          <Route
-            path="/admin/financeiro"
-            element={
-              <RequireAdmin>
-                <AdminCollectionFinancials />
-              </RequireAdmin>
-            }
           />
           <Route
             path="/admin/pagamentos"

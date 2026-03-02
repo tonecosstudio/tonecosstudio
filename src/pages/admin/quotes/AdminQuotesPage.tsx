@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { FileText } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,17 +130,23 @@ export default function AdminQuotesPage() {
     <AdminLayout>
       <SEOHead title="Orçamentos - Admin" description="Gerenciar orçamentos de clientes" />
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12">
+        <div className="mb-8">
           <div className="h-px w-20 bg-foreground mb-6" />
+          <h1 className="text-5xl font-bold tracking-tight mb-4">Orçamentos</h1>
+          <p className="text-lg text-muted-foreground">
+            Gerencie orçamentos de clientes do sistema
+          </p>
+        </div>
+
+        <div className="mb-8">
           <div className="flex items-center justify-between gap-4 mb-4">
-            <h1 className="text-5xl font-bold tracking-tight">Orçamentos</h1>
+            <h2 className="text-2xl font-bold">Pedidos de Orçamento</h2>
             <Badge variant="secondary" className="border border-border px-4 py-2 text-base">
               {rows.length} {rows.length === 1 ? "pedido" : "pedidos"}
             </Badge>
           </div>
-          <p className="text-lg text-muted-foreground">
-            Pedidos registrados no sistema Ordax. A avaliação e produção são conduzidas pela Tonecos
-            Studios.
+          <p className="text-muted-foreground">
+            Pedidos registrados no sistema Ordax. A avaliação e produção são conduzidas pela Tonecos Studios.
           </p>
         </div>
 

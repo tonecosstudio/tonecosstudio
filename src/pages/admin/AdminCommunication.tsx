@@ -1,24 +1,37 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HeadphonesIcon, Megaphone, MessageSquare, FileText } from "lucide-react";
+import { HeadphonesIcon, Megaphone, MessageSquare, FileText, Bell, History } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import AdminSupport from "./AdminSupport";
 import { GroupsContent } from "@/components/groups/GroupsContent";
 import AdminQuickReplies from "./AdminQuickReplies";
 import CommunicationTemplates from "./CommunicationTemplates";
+import AdminNotificationSettings from "./AdminNotificationSettings";
+import AdminNotificationHistory from "./AdminNotificationHistory";
 
 /**
- * AdminCommunication - Página Unificada de Comunicação
+ * AdminCommunication - Hub Consolidado de Comunicação
  *
- * Mescla 4 páginas em uma só com tabs:
+ * Consolida 6 páginas em uma só com tabs:
  * - AdminSupport (Tickets de Suporte)
- * - AdminGroupsPage (Grupos de Broadcast)
+ * - GroupsContent (Grupos de Broadcast)
  * - AdminQuickReplies (Respostas Rápidas)
  * - CommunicationTemplates (Templates)
+ * - AdminNotificationSettings (Configurações de Notificações)
+ * - AdminNotificationHistory (Histórico de Notificações)
+ *
+ * Redução: 6 páginas → 1 hub (83%)
  */
 export default function AdminCommunication() {
-  const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get("tab") || "support";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<string>(tabParam || "support");
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
 
   return (
     <AdminLayout>
@@ -27,13 +40,13 @@ export default function AdminCommunication() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight mb-2">Central de Comunicação</h1>
           <p className="text-muted-foreground">
-            Gerencie suporte, grupos, respostas rápidas e templates em um só lugar
+            Gerencie suporte, grupos, respostas rápidas, templates e notificações em um só lugar
           </p>
         </div>
 
         {/* Tabs Unificadas */}
-        <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="support">
               <HeadphonesIcon className="h-4 w-4 mr-2" />
               Suporte
@@ -49,6 +62,14 @@ export default function AdminCommunication() {
             <TabsTrigger value="templates">
               <FileText className="h-4 w-4 mr-2" />
               Templates
+            </TabsTrigger>
+            <TabsTrigger value="notifications">
+              <Bell className="h-4 w-4 mr-2" />
+              Notificações
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="h-4 w-4 mr-2" />
+              Histórico
             </TabsTrigger>
           </TabsList>
 
@@ -70,6 +91,16 @@ export default function AdminCommunication() {
           {/* Templates */}
           <TabsContent value="templates" className="space-y-4">
             <CommunicationTemplates />
+          </TabsContent>
+
+          {/* Configurações de Notificações */}
+          <TabsContent value="notifications" className="space-y-4">
+            <AdminNotificationSettings />
+          </TabsContent>
+
+          {/* Histórico de Notificações */}
+          <TabsContent value="history" className="space-y-4">
+            <AdminNotificationHistory />
           </TabsContent>
         </Tabs>
       </div>

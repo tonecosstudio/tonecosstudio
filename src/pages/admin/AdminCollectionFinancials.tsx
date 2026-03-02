@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,16 +41,15 @@ export default function AdminCollectionFinancials() {
   });
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2 flex items-center gap-3">
-            <BarChart3 className="h-10 w-10" />
-            Análise Financeira das Coleções
-          </h1>
-          <p className="text-muted-foreground">Custos, lucros, margens e ROI por coleção</p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight mb-2 flex items-center gap-3">
+          <BarChart3 className="h-8 w-8" />
+          Análise Financeira das Coleções
+        </h2>
+        <p className="text-muted-foreground">Custos, lucros, margens e ROI por coleção</p>
+      </div>
 
         {/* Resumo Geral */}
         {collections && collections.length > 0 && (
@@ -287,7 +285,6 @@ export default function AdminCollectionFinancials() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </AdminLayout>
+    </div>
   );
 }

@@ -43,6 +43,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import ImageUpload from "./ImageUpload";
+import { CollectionTierAssignment } from "./pricing-tiers/CollectionTierAssignment";
 import type { Collection } from "@/services/collection-service";
 
 // Zod validation schema
@@ -504,6 +505,17 @@ export function CollectionForm({
               </p>
             </div>
           </div>
+
+          {/* Pricing Tier Assignment - Only show when editing */}
+          {isEditing && collection && (
+            <>
+              <Separator />
+              <CollectionTierAssignment
+                collectionId={collection.id}
+                isCustomPricing={collection.is_price_custom || false}
+              />
+            </>
+          )}
 
           <DialogFooter>
             <Button

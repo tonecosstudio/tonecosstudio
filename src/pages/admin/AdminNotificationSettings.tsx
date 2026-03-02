@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -109,29 +108,26 @@ export default function AdminNotificationSettings() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Configurações de Notificações</h1>
-            <p className="text-muted-foreground">
-              Gerencie como você recebe notificações do sistema
-            </p>
-          </div>
-          <Button variant="outline" onClick={() => navigate("/admin/notificacoes/historico")}>
-            <History className="h-4 w-4 mr-2" />
-            Ver Histórico
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Configurações de Notificações</h2>
+          <p className="text-muted-foreground">
+            Gerencie como você recebe notificações do sistema
+          </p>
         </div>
+        <Button variant="outline" onClick={() => navigate("/admin/comunicacao?tab=history")}>
+          <History className="h-4 w-4 mr-2" />
+          Ver Histórico
+        </Button>
+      </div>
 
         {/* Tipos de Notificação */}
         <Card>
@@ -440,7 +436,6 @@ export default function AdminNotificationSettings() {
             </Button>
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
