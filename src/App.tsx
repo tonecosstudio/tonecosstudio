@@ -56,6 +56,7 @@ import AdminGroupsPage from "./pages/admin/AdminGroupsPage";
 import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
 import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
+import ProductionDashboardPage from "./pages/admin/ProductionDashboardPage";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -363,6 +364,14 @@ function AppContent() {
             element={
               <RequireAdmin>
                 <OrdersPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/producao"
+            element={
+              <RequireAdmin>
+                <ProductionDashboardPage />
               </RequireAdmin>
             }
           />

@@ -1,11 +1,11 @@
 /**
  * Transformadores de Dados para Pedidos Unificados
- * 
+ *
  * Este módulo contém funções para transformar dados brutos do Supabase
  * em objetos UnifiedOrder padronizados.
  */
 
-import type { UnifiedOrder } from '@/types/admin/orders';
+import type { UnifiedOrder } from "@/types/admin/orders";
 
 // ============================================================================
 // Tipos para Dados Brutos do Supabase
@@ -88,10 +88,10 @@ interface RawStandalonePurchase {
 
 /**
  * Transforma entregas de assinatura brutas em UnifiedOrder
- * 
+ *
  * Os dados de profile e collection são buscados separadamente e passados via maps
  * para evitar joins aninhados que o Supabase PostgREST não suporta.
- * 
+ *
  * @param deliveries - Array de entregas brutas do Supabase
  * @param profilesMap - Map de profiles por ID
  * @param collectionsMap - Map de collections por ID
@@ -103,18 +103,20 @@ export function transformDeliveries(
   collectionsMap: Map<string, any>
 ): UnifiedOrder[] {
   return deliveries
-    .filter(delivery => delivery.subscriptions !== null) // Filtrar entregas sem subscription
-    .map(delivery => {
+    .filter((delivery) => delivery.subscriptions !== null) // Filtrar entregas sem subscription
+    .map((delivery) => {
       const subscription = delivery.subscriptions!; // Garantido pelo filter acima
-      
+
       // Buscar profile e collection dos maps
       const profile = profilesMap.get(subscription.user_id);
-      const collection = subscription.collection_id ? collectionsMap.get(subscription.collection_id) : null;
+      const collection = subscription.collection_id
+        ? collectionsMap.get(subscription.collection_id)
+        : null;
 
       // Construir objeto UnifiedOrder
       const unifiedOrder: UnifiedOrder = {
         id: delivery.id,
-        type: 'subscription_delivery',
+        type: "subscription_delivery",
         status: delivery.status as any,
         createdAt: delivery.created_at || new Date().toISOString(),
         updatedAt: delivery.updated_at || new Date().toISOString(),
@@ -122,15 +124,15 @@ export function transformDeliveries(
         // Dados do cliente
         customer: {
           id: subscription.user_id,
-          name: profile?.full_name || 'Nome não disponível',
-          email: profile?.email || 'Email não disponível'
+          name: profile?.full_name || "Nome não disponível",
+          email: profile?.email || "Email não disponível",
         },
 
         // Dados da coleção
         collection: {
-          id: subscription.collection_id || '',
-          name: collection?.name || 'Coleção não disponível',
-          slug: collection?.slug || ''
+          id: subscription.collection_id || "",
+          name: collection?.name || "Coleção não disponível",
+          slug: collection?.slug || "",
         },
 
         // Dados financeiros (para entregas de assinatura, o valor vem do plano)
@@ -154,15 +156,17 @@ export function transformDeliveries(
             planType: subscription.plan_type,
             deliveriesCompleted: subscription.deliveries_completed,
             deliveriesTotal: subscription.deliveries_total,
-            status: subscription.status
+            status: subscription.status,
           },
 
-          character: delivery.collection_characters ? {
-            id: delivery.collection_characters.id,
-            name: delivery.collection_characters.name,
-            imageUrl: delivery.collection_characters.image_url
-          } : undefined
-        }
+          character: delivery.collection_characters
+            ? {
+                id: delivery.collection_characters.id,
+                name: delivery.collection_characters.name,
+                imageUrl: delivery.collection_characters.image_url,
+              }
+            : undefined,
+        },
       };
 
       return unifiedOrder;
@@ -175,24 +179,22 @@ export function transformDeliveries(
 
 /**
  * Transforma compras avulsas brutas em UnifiedOrder
- * 
+ *
  * Os dados de profile agora vêm diretamente da query via join,
  * eliminando a necessidade de um array separado de profiles.
- * 
+ *
  * @param purchases - Array de compras brutas do Supabase (com profiles aninhados)
  * @returns Array de UnifiedOrder
  */
-export function transformPurchases(
-  purchases: RawStandalonePurchase[]
-): UnifiedOrder[] {
-  return purchases.map(purchase => {
+export function transformPurchases(purchases: RawStandalonePurchase[]): UnifiedOrder[] {
+  return purchases.map((purchase) => {
     // Profile agora vem diretamente do join
     const profile = purchase.profiles;
 
     // Construir objeto UnifiedOrder
     const unifiedOrder: UnifiedOrder = {
       id: purchase.id,
-      type: 'standalone_purchase',
+      type: "standalone_purchase",
       status: purchase.status as any,
       createdAt: purchase.created_at || new Date().toISOString(),
       updatedAt: purchase.updated_at || new Date().toISOString(),
@@ -200,15 +202,15 @@ export function transformPurchases(
       // Dados do cliente (agora do join)
       customer: {
         id: purchase.user_id,
-        name: profile?.full_name || 'Nome não disponível',
-        email: profile?.email || 'Email não disponível'
+        name: profile?.full_name || "Nome não disponível",
+        email: profile?.email || "Email não disponível",
       },
 
       // Dados da coleção
       collection: {
         id: purchase.collection_id,
         name: purchase.collections.name,
-        slug: purchase.collections.slug
+        slug: purchase.collections.slug,
       },
 
       // Dados financeiros
@@ -232,19 +234,23 @@ export function transformPurchases(
         depositVoucherUrl: purchase.deposit_voucher_url,
         balanceVoucherUrl: purchase.balance_voucher_url,
 
-        cycle: purchase.cycles ? {
-          id: purchase.cycles.id,
-          cycleNumber: purchase.cycles.cycle_number,
-          month: purchase.cycles.month,
-          year: purchase.cycles.year
-        } : undefined,
+        cycle: purchase.cycles
+          ? {
+              id: purchase.cycles.id,
+              cycleNumber: purchase.cycles.cycle_number,
+              month: purchase.cycles.month,
+              year: purchase.cycles.year,
+            }
+          : undefined,
 
-        character: purchase.collection_characters ? {
-          id: purchase.collection_characters.id,
-          name: purchase.collection_characters.name,
-          imageUrl: purchase.collection_characters.image_url
-        } : undefined
-      }
+        character: purchase.collection_characters
+          ? {
+              id: purchase.collection_characters.id,
+              name: purchase.collection_characters.name,
+              imageUrl: purchase.collection_characters.image_url,
+            }
+          : undefined,
+      },
     };
 
     return unifiedOrder;
@@ -257,7 +263,7 @@ export function transformPurchases(
 
 /**
  * Calcula o valor de uma entrega de assinatura baseado no tipo de plano
- * 
+ *
  * Nota: Esta é uma implementação simplificada. Em produção, você deve
  * buscar o valor real do plano da tabela de preços.
  */
@@ -265,10 +271,10 @@ function calculateSubscriptionDeliveryAmount(planType: string): number {
   // Mapeamento básico de planos para valores
   // TODO: Buscar valores reais da tabela de preços
   const planPrices: Record<string, number> = {
-    'monthly': 99.90,
-    'quarterly': 89.90,
-    'semiannual': 79.90,
-    'annual': 69.90
+    monthly: 99.9,
+    quarterly: 89.9,
+    semiannual: 79.9,
+    annual: 69.9,
   };
 
   return planPrices[planType] || 0;
@@ -276,18 +282,18 @@ function calculateSubscriptionDeliveryAmount(planType: string): number {
 
 /**
  * Valida se os dados brutos estão completos
- * 
+ *
  * Útil para debugging e garantir integridade dos dados
  */
 export function validateRawDelivery(delivery: any): delivery is RawSubscriptionDelivery {
   return (
     delivery &&
-    typeof delivery.id === 'string' &&
-    typeof delivery.status === 'string' &&
-    typeof delivery.delivery_number === 'number' &&
+    typeof delivery.id === "string" &&
+    typeof delivery.status === "string" &&
+    typeof delivery.delivery_number === "number" &&
     delivery.subscriptions &&
-    typeof delivery.subscriptions.user_id === 'string' &&
-    typeof delivery.subscriptions.collection_id === 'string'
+    typeof delivery.subscriptions.user_id === "string" &&
+    typeof delivery.subscriptions.collection_id === "string"
   );
 }
 
@@ -297,21 +303,21 @@ export function validateRawDelivery(delivery: any): delivery is RawSubscriptionD
 export function validateRawPurchase(purchase: any): purchase is RawStandalonePurchase {
   return (
     purchase &&
-    typeof purchase.id === 'string' &&
-    typeof purchase.status === 'string' &&
-    typeof purchase.user_id === 'string' &&
-    typeof purchase.collection_id === 'string' &&
-    typeof purchase.price_full === 'number' &&
+    typeof purchase.id === "string" &&
+    typeof purchase.status === "string" &&
+    typeof purchase.user_id === "string" &&
+    typeof purchase.collection_id === "string" &&
+    typeof purchase.price_full === "number" &&
     purchase.profiles &&
-    typeof purchase.profiles.id === 'string' &&
+    typeof purchase.profiles.id === "string" &&
     purchase.collections &&
-    typeof purchase.collections.name === 'string'
+    typeof purchase.collections.name === "string"
   );
 }
 
 /**
  * Filtra dados inválidos antes de transformar
- * 
+ *
  * Remove registros com dados incompletos ou corrompidos
  */
 export function filterValidDeliveries(deliveries: any[]): RawSubscriptionDelivery[] {
@@ -327,7 +333,7 @@ export function filterValidPurchases(purchases: any[]): RawStandalonePurchase[] 
 
 /**
  * Transforma com tratamento de erros
- * 
+ *
  * Versão segura que não falha se houver dados inválidos
  */
 export function safeTransformDeliveries(
@@ -339,7 +345,7 @@ export function safeTransformDeliveries(
     const validDeliveries = filterValidDeliveries(deliveries);
     return transformDeliveries(validDeliveries, profilesMap, collectionsMap);
   } catch (error) {
-    console.error('Erro ao transformar entregas:', error);
+    console.error("Erro ao transformar entregas:", error);
     return [];
   }
 }
@@ -347,18 +353,15 @@ export function safeTransformDeliveries(
 /**
  * Transforma compras com tratamento de erros
  */
-export function safeTransformPurchases(
-  purchases: any[]
-): UnifiedOrder[] {
+export function safeTransformPurchases(purchases: any[]): UnifiedOrder[] {
   try {
     const validPurchases = filterValidPurchases(purchases);
     return transformPurchases(validPurchases);
   } catch (error) {
-    console.error('Erro ao transformar compras:', error);
+    console.error("Erro ao transformar compras:", error);
     return [];
   }
 }
-
 
 // ============================================================================
 // Função: Transformar Pagamentos Manuais
@@ -366,36 +369,74 @@ export function safeTransformPurchases(
 
 /**
  * Transforma pagamentos manuais brutos em UnifiedOrder
- * 
+ *
  * @param payments - Array de pagamentos brutos do Supabase
  * @param filesMap - Map opcional de arquivos por payment_id (para incluir comprovantes)
  * @returns Array de UnifiedOrder
  */
 export function transformManualPayments(
   payments: any[],
-  filesMap?: Map<string, Array<{
-    id: string;
-    fileName: string;
-    filePath: string;
-    fileSize: number;
-    fileType: string;
-    thumbnailPath: string | null;
-    uploadedBy: string;
-    createdAt: string;
-  }>>
+  filesMap?: Map<
+    string,
+    Array<{
+      id: string;
+      fileName: string;
+      filePath: string;
+      fileSize: number;
+      fileType: string;
+      thumbnailPath: string | null;
+      uploadedBy: string;
+      createdAt: string;
+    }>
+  >
 ): UnifiedOrder[] {
-  return payments.map(payment => {
+  return payments.map((payment) => {
     // Profile vem diretamente do join
     const profile = payment.profiles;
     const paymentMethod = payment.admin_payment_methods;
+    const subscription = payment.subscriptions;
+    const quote = payment.quotes;
 
     // Buscar arquivos do map (se fornecido)
     const files = filesMap?.get(payment.id) || [];
 
+    // Determinar o que foi comprado
+    let linkedTo: { type: "quote" | "subscription"; id: string; details?: any } | null = null;
+
+    if (quote) {
+      linkedTo = {
+        type: "quote",
+        id: quote.id,
+        details: {
+          status: quote.status,
+          totalPrice: quote.total_price,
+          adminResponse: quote.admin_response,
+        },
+      };
+    } else if (subscription) {
+      linkedTo = {
+        type: "subscription",
+        id: subscription.id,
+        details: {
+          status: subscription.status,
+          startDate: subscription.start_date,
+          endDate: subscription.end_date,
+          plan: subscription.subscription_plans
+            ? {
+                id: subscription.subscription_plans.id,
+                name: subscription.subscription_plans.name,
+                price: subscription.subscription_plans.price,
+                billingCycle: subscription.subscription_plans.billing_cycle,
+              }
+            : null,
+        },
+      };
+    }
+
     // Construir objeto UnifiedOrder
     const unifiedOrder: UnifiedOrder = {
       id: payment.id,
-      type: 'manual_payment',
+      type: "manual_payment",
       status: payment.status as any,
       createdAt: payment.created_at || new Date().toISOString(),
       updatedAt: payment.updated_at || new Date().toISOString(),
@@ -403,8 +444,8 @@ export function transformManualPayments(
       // Dados do cliente
       customer: {
         id: payment.user_id,
-        name: profile?.full_name || 'Nome não disponível',
-        email: profile?.email || 'Email não disponível'
+        name: profile?.full_name || "Nome não disponível",
+        email: profile?.email || "Email não disponível",
       },
 
       // Pagamentos manuais não têm coleção diretamente
@@ -423,36 +464,31 @@ export function transformManualPayments(
         paymentId: payment.id,
         referenceNumber: payment.reference_number,
         paymentMethodId: payment.payment_method_id,
-        paymentMethodName: paymentMethod?.name || 'Método não disponível',
+        paymentMethodName: paymentMethod?.name || "Método não disponível",
         paymentType: payment.payment_type,
-        currency: payment.currency || 'BRL',
-        linkedTo: payment.quote_id ? {
-          type: 'quote',
-          id: payment.quote_id
-        } : payment.subscription_id ? {
-          type: 'subscription',
-          id: payment.subscription_id
-        } : null,
+        currency: payment.currency || "BRL",
+        linkedTo: linkedTo,
         rejectionReason: payment.rejection_reason,
         approvedAt: payment.approved_at,
         approvedBy: payment.approved_by,
         approvedByName: null, // Será carregado separadamente se necessário
         files: files, // Arquivos de comprovante
-        paymentMethod: paymentMethod ? {
-          id: paymentMethod.id,
-          name: paymentMethod.name,
-          type: paymentMethod.type,
-          instructions: paymentMethod.instructions,
-          pixKey: paymentMethod.pix_key,
-          paymentLink: paymentMethod.payment_link
-        } : undefined
-      }
+        paymentMethod: paymentMethod
+          ? {
+              id: paymentMethod.id,
+              name: paymentMethod.name,
+              type: paymentMethod.type,
+              instructions: paymentMethod.instructions,
+              pixKey: paymentMethod.pix_key,
+              paymentLink: paymentMethod.payment_link,
+            }
+          : undefined,
+      },
     };
 
     return unifiedOrder;
   });
 }
-
 
 // ============================================================================
 // Função: Transformar Orçamentos
@@ -460,22 +496,19 @@ export function transformManualPayments(
 
 /**
  * Transforma orçamentos brutos em UnifiedOrder
- * 
+ *
  * @param quotes - Array de orçamentos brutos do Supabase
  * @param itemsMap - Map de itens por quote_id
  * @returns Array de UnifiedOrder
  */
-export function transformQuotes(
-  quotes: any[],
-  itemsMap: Map<string, any[]>
-): UnifiedOrder[] {
-  return quotes.map(quote => {
+export function transformQuotes(quotes: any[], itemsMap: Map<string, any[]>): UnifiedOrder[] {
+  return quotes.map((quote) => {
     const profile = quote.profiles;
     const items = itemsMap.get(quote.id) || [];
 
     const unifiedOrder: UnifiedOrder = {
       id: quote.id,
-      type: 'quote',
+      type: "quote",
       status: quote.status as any,
       createdAt: quote.created_at || new Date().toISOString(),
       updatedAt: quote.updated_at || new Date().toISOString(),
@@ -483,8 +516,8 @@ export function transformQuotes(
       // Dados do cliente
       customer: {
         id: quote.user_id,
-        name: profile?.full_name || 'Nome não disponível',
-        email: profile?.email || 'Email não disponível'
+        name: profile?.full_name || "Nome não disponível",
+        email: profile?.email || "Email não disponível",
       },
 
       // Orçamentos não têm coleção específica
@@ -501,17 +534,17 @@ export function transformQuotes(
       // Dados específicos de orçamento
       quote: {
         quoteId: quote.id,
-        items: items.map(item => ({
+        items: items.map((item) => ({
           id: item.id,
           modelId: item.model_id,
-          modelName: item.models?.name || 'Modelo não disponível',
+          modelName: item.models?.name || "Modelo não disponível",
           franchise: item.models?.franchise || null,
           quantity: item.quantity,
-          scale: item.scale
+          scale: item.scale,
         })),
         deadline: quote.deadline,
-        notes: quote.notes
-      }
+        notes: quote.notes,
+      },
     };
 
     return unifiedOrder;
