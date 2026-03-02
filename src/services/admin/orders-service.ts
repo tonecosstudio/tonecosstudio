@@ -1175,35 +1175,230 @@ export async function fetchQuoteItems(quoteIds: string[]): Promise<Array<{
 /**
  * Solicita mais informações sobre um pagamento manual
  * 
- * Esta função envia uma notificação ao usuário solicitando informações adicionais
- * sobre o pagamento manual (ex: comprovante, dados bancários, etc.)
+ * Esta função implementa um sistema completo de solicitação de informações:
+ * 1. Busca o pagamento manual e valida sua existência
+ * 2. Obtém o user_id do pagamento para notificar o cliente correto
+ * 3. Obtém informações do admin que está fazendo a solicitação
+ * 4. Cria um registro na tabela payment_info_requests
+ * 5. Cria uma notificação para o usuário na tabela user_notifications
+ * 6. Atualiza o status do pagamento para 'requires_info'
  * 
  * @param paymentId - ID do pagamento manual
  * @param message - Mensagem com as informações solicitadas
+ * @throws Error se o pagamento não for encontrado ou se houver erro ao criar a solicitação
  */
 export async function requestManualPaymentInfo(
   paymentId: string,
   message: string
 ): Promise<void> {
-  // TODO: Implementar lógica de notificação ao usuário
-  // Por enquanto, apenas registra no console
-  console.log(`Solicitando informações para pagamento ${paymentId}:`, message);
+  // 1. Buscar o pagamento manual para obter o user_id
+  const { data: payment, error: paymentError } = await supabase
+    .from('manual_payments')
+    .select('id, user_id, reference_number')
+    .eq('id', paymentId)
+    .single();
+
+  if (paymentError || !payment) {
+    throw new Error(`Pagamento não encontrado: ${paymentError?.message || 'ID inválido'}`);
+  }
+
+  // 2. Obter informações do admin atual
+  const { data: { user: admin } } = await supabase.auth.getUser();
   
-  // Aqui você pode:
-  // 1. Criar uma notificação no banco de dados
-  // 2. Enviar um email ao usuário
-  // 3. Criar um registro de histórico
+  if (!admin) {
+    throw new Error('Admin não autenticado');
+  }
+
+  // 3. Criar registro de solicitação de informações
+  const { error: requestError } = await (supabase as any)
+    .from('payment_info_requests')
+    .insert({
+      payment_id: paymentId,
+      requested_by_admin_id: admin.id,
+      requested_by_admin_name: admin.email || 'Admin',
+      message: message,
+      status: 'pending'
+    });
+
+  if (requestError) {
+    throw new Error(`Erro ao criar solicitação: ${requestError.message}`);
+  }
+
+  // 4. Criar notificação para o usuário
+  const { error: notificationError } = await (supabase as any)
+    .from('user_notifications')
+    .insert({
+      user_id: payment.user_id,
+      type: 'payment_info_request',
+      title: 'Informações Adicionais Necessárias',
+      message: `Precisamos de mais informações sobre seu pagamento (Ref: ${payment.reference_number}). ${message}`,
+      related_id: paymentId,
+      related_type: 'manual_payment',
+      read: false
+    });
+
+  if (notificationError) {
+    console.error('Erro ao criar notificação:', notificationError);
+    // Não falhar a operação se a notificação não puder ser criada
+    // A solicitação já foi registrada com sucesso
+  }
+
+  // 5. Atualizar status do pagamento para 'requires_info'
+  const { error: updateError } = await supabase
+    .from('manual_payments')
+    .update({ 
+      status: 'requires_info',
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', paymentId);
+
+  if (updateError) {
+    console.error('Erro ao atualizar status do pagamento:', updateError);
+    // Não falhar a operação - a solicitação e notificação já foram criadas
+  }
+}
+
+
+/**
+ * Aprova um pagamento manual
+ * 
+ * Esta função:
+ * 1. Valida que o pagamento existe e está em status apropriado
+ * 2. Atualiza o status para 'approved'
+ * 3. Registra o admin que aprovou e o timestamp
+ * 4. Cria notificação para o usuário
+ * 
+ * @param paymentId - ID do pagamento manual
+ * @throws Error se o pagamento não for encontrado ou já estiver aprovado/rejeitado
+ */
+export async function approveManualPayment(paymentId: string): Promise<void> {
+  // 1. Buscar o pagamento para validar
+  const { data: payment, error: paymentError } = await supabase
+    .from('manual_payments')
+    .select('id, user_id, reference_number, status')
+    .eq('id', paymentId)
+    .single();
+
+  if (paymentError || !payment) {
+    throw new Error(`Pagamento não encontrado: ${paymentError?.message || 'ID inválido'}`);
+  }
+
+  // Validar que o pagamento pode ser aprovado
+  if (payment.status === 'approved') {
+    throw new Error('Este pagamento já foi aprovado');
+  }
+
+  if (payment.status === 'rejected') {
+    throw new Error('Este pagamento foi rejeitado e não pode ser aprovado');
+  }
+
+  // 2. Obter informações do admin atual
+  const { data: { user: admin } } = await supabase.auth.getUser();
   
-  // Exemplo de implementação futura:
-  // await supabase.from('notifications').insert({
-  //   user_id: userId,
-  //   type: 'payment_info_request',
-  //   title: 'Informações Adicionais Necessárias',
-  //   message: message,
-  //   related_id: paymentId,
-  //   related_type: 'manual_payment'
-  // });
-  
-  // Simular delay de rede
-  await new Promise(resolve => setTimeout(resolve, 500));
+  if (!admin) {
+    throw new Error('Admin não autenticado');
+  }
+
+  // 3. Atualizar status do pagamento
+  const { error: updateError } = await supabase
+    .from('manual_payments')
+    .update({
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+      approved_by: admin.id,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', paymentId);
+
+  if (updateError) {
+    throw new Error(`Erro ao aprovar pagamento: ${updateError.message}`);
+  }
+
+  // 4. Criar notificação para o usuário
+  const { error: notificationError } = await (supabase as any)
+    .from('user_notifications')
+    .insert({
+      user_id: payment.user_id,
+      type: 'payment_approved',
+      title: 'Pagamento Aprovado',
+      message: `Seu pagamento (Ref: ${payment.reference_number}) foi aprovado com sucesso!`,
+      related_id: paymentId,
+      related_type: 'manual_payment',
+      read: false
+    });
+
+  if (notificationError) {
+    console.error('Erro ao criar notificação:', notificationError);
+    // Não falhar a operação - o pagamento já foi aprovado
+  }
+}
+
+/**
+ * Rejeita um pagamento manual
+ * 
+ * Esta função:
+ * 1. Valida que o pagamento existe e está em status apropriado
+ * 2. Atualiza o status para 'rejected'
+ * 3. Registra o motivo da rejeição
+ * 4. Cria notificação para o usuário com o motivo
+ * 
+ * @param paymentId - ID do pagamento manual
+ * @param reason - Motivo da rejeição
+ * @throws Error se o pagamento não for encontrado ou já estiver aprovado/rejeitado
+ */
+export async function rejectManualPayment(
+  paymentId: string,
+  reason: string
+): Promise<void> {
+  // 1. Buscar o pagamento para validar
+  const { data: payment, error: paymentError } = await supabase
+    .from('manual_payments')
+    .select('id, user_id, reference_number, status')
+    .eq('id', paymentId)
+    .single();
+
+  if (paymentError || !payment) {
+    throw new Error(`Pagamento não encontrado: ${paymentError?.message || 'ID inválido'}`);
+  }
+
+  // Validar que o pagamento pode ser rejeitado
+  if (payment.status === 'approved') {
+    throw new Error('Este pagamento já foi aprovado e não pode ser rejeitado');
+  }
+
+  if (payment.status === 'rejected') {
+    throw new Error('Este pagamento já foi rejeitado');
+  }
+
+  // 2. Atualizar status do pagamento
+  const { error: updateError } = await supabase
+    .from('manual_payments')
+    .update({
+      status: 'rejected',
+      rejection_reason: reason,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', paymentId);
+
+  if (updateError) {
+    throw new Error(`Erro ao rejeitar pagamento: ${updateError.message}`);
+  }
+
+  // 3. Criar notificação para o usuário
+  const { error: notificationError } = await (supabase as any)
+    .from('user_notifications')
+    .insert({
+      user_id: payment.user_id,
+      type: 'payment_rejected',
+      title: 'Pagamento Rejeitado',
+      message: `Seu pagamento (Ref: ${payment.reference_number}) foi rejeitado. Motivo: ${reason}`,
+      related_id: paymentId,
+      related_type: 'manual_payment',
+      read: false
+    });
+
+  if (notificationError) {
+    console.error('Erro ao criar notificação:', notificationError);
+    // Não falhar a operação - o pagamento já foi rejeitado
+  }
 }
