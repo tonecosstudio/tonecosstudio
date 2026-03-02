@@ -1167,3 +1167,43 @@ export async function fetchQuoteItems(quoteIds: string[]): Promise<Array<{
 
   return data || [];
 }
+
+// ============================================================================
+// Funções para Pagamentos Manuais
+// ============================================================================
+
+/**
+ * Solicita mais informações sobre um pagamento manual
+ * 
+ * Esta função envia uma notificação ao usuário solicitando informações adicionais
+ * sobre o pagamento manual (ex: comprovante, dados bancários, etc.)
+ * 
+ * @param paymentId - ID do pagamento manual
+ * @param message - Mensagem com as informações solicitadas
+ */
+export async function requestManualPaymentInfo(
+  paymentId: string,
+  message: string
+): Promise<void> {
+  // TODO: Implementar lógica de notificação ao usuário
+  // Por enquanto, apenas registra no console
+  console.log(`Solicitando informações para pagamento ${paymentId}:`, message);
+  
+  // Aqui você pode:
+  // 1. Criar uma notificação no banco de dados
+  // 2. Enviar um email ao usuário
+  // 3. Criar um registro de histórico
+  
+  // Exemplo de implementação futura:
+  // await supabase.from('notifications').insert({
+  //   user_id: userId,
+  //   type: 'payment_info_request',
+  //   title: 'Informações Adicionais Necessárias',
+  //   message: message,
+  //   related_id: paymentId,
+  //   related_type: 'manual_payment'
+  // });
+  
+  // Simular delay de rede
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
