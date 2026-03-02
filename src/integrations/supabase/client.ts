@@ -5,6 +5,19 @@ import type { Database } from "./types";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Validate environment variables before client creation
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push("VITE_SUPABASE_URL");
+  if (!SUPABASE_PUBLISHABLE_KEY) missing.push("VITE_SUPABASE_PUBLISHABLE_KEY");
+
+  throw new Error(
+    `Missing required environment variables: ${missing.join(", ")}. ` +
+      `Please ensure these are defined in your .env.local or .env file. ` +
+      `Check .env.example for the required format.`
+  );
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
