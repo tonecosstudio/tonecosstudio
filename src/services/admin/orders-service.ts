@@ -1234,7 +1234,7 @@ export async function requestManualPaymentInfo(
       message: `Precisamos de mais informações sobre seu pagamento (Ref: ${payment.reference_number}). ${message}`,
       related_id: paymentId,
       related_type: 'manual_payment',
-      read: false
+      is_read: false
     });
 
   if (notificationError) {
@@ -1324,7 +1324,7 @@ export async function approveManualPayment(paymentId: string): Promise<void> {
       message: `Seu pagamento (Ref: ${payment.reference_number}) foi aprovado com sucesso!`,
       related_id: paymentId,
       related_type: 'manual_payment',
-      read: false
+      is_read: false
     });
 
   if (notificationError) {
@@ -1394,7 +1394,7 @@ export async function rejectManualPayment(
       message: `Seu pagamento (Ref: ${payment.reference_number}) foi rejeitado. Motivo: ${reason}`,
       related_id: paymentId,
       related_type: 'manual_payment',
-      read: false
+      is_read: false
     });
 
   if (notificationError) {

@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS user_notifications (
   message TEXT NOT NULL,
   related_id UUID,
   related_type TEXT,
-  "read" BOOLEAN DEFAULT false,
+  is_read BOOLEAN DEFAULT false,
   read_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS user_notifications (
 -- =====================================================
 
 CREATE INDEX IF NOT EXISTS idx_user_notifications_user ON user_notifications(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_user_notifications_unread ON user_notifications(user_id, "read") WHERE "read" = false;
+CREATE INDEX IF NOT EXISTS idx_user_notifications_unread ON user_notifications(user_id, is_read) WHERE is_read = false;
 CREATE INDEX IF NOT EXISTS idx_user_notifications_related ON user_notifications(related_id, related_type);
 
 -- =====================================================
