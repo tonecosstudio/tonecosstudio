@@ -65,7 +65,7 @@ COMMENT ON COLUMN order_status_history.changed_by_admin_name IS 'Name of the adm
 
 -- Function to log subscription_deliveries status changes
 CREATE OR REPLACE FUNCTION log_subscription_delivery_status_change()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 DECLARE
   admin_name TEXT;
 BEGIN
@@ -98,11 +98,11 @@ BEGIN
   
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to log standalone_purchases status changes
 CREATE OR REPLACE FUNCTION log_standalone_purchase_status_change()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 DECLARE
   admin_name TEXT;
 BEGIN
@@ -135,7 +135,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =====================================================
 -- 5. CREATE TRIGGERS
@@ -240,7 +240,7 @@ WHERE NOT EXISTS (
 -- 9. VALIDATE MIGRATION
 -- =====================================================
 
-DO $
+DO $$
 BEGIN
   -- Check if table was created
   IF NOT EXISTS (
@@ -276,7 +276,7 @@ BEGIN
   END IF;
   
   RAISE NOTICE 'Migration 20260424000000_create_order_status_history.sql completed successfully';
-END $;
+END $$;
 
 -- =====================================================
 -- 10. MIGRATION SUMMARY
