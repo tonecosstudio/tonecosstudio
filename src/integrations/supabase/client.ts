@@ -11,10 +11,26 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   if (!SUPABASE_URL) missing.push("VITE_SUPABASE_URL");
   if (!SUPABASE_PUBLISHABLE_KEY) missing.push("VITE_SUPABASE_PUBLISHABLE_KEY");
 
+  console.error("Environment variables:", {
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY: SUPABASE_PUBLISHABLE_KEY ? "***" : undefined,
+    allEnvVars: import.meta.env,
+  });
+
   throw new Error(
     `Missing required environment variables: ${missing.join(", ")}. ` +
       `Please ensure these are defined in your .env.local or .env file. ` +
       `Check .env.example for the required format.`
+  );
+}
+
+// Validate URL format
+const urlPattern = /^https?:\/\/.+/;
+if (!urlPattern.test(SUPABASE_URL)) {
+  console.error("Invalid SUPABASE_URL format:", SUPABASE_URL);
+  throw new Error(
+    `Invalid VITE_SUPABASE_URL format: "${SUPABASE_URL}". ` +
+      `Must be a valid HTTP or HTTPS URL (e.g., https://your-project.supabase.co)`
   );
 }
 
