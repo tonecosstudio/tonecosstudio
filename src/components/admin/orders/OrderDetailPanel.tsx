@@ -4,7 +4,7 @@
  * Painel lateral deslizante que exibe informações detalhadas de um pedido
  */
 
-import { X, Package, User, Calendar, DollarSign, Truck, ExternalLink, AlertTriangle, Tag } from 'lucide-react';
+import { X, Package, User, Calendar, DollarSign, Truck, ExternalLink, AlertTriangle, Tag, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -387,10 +387,30 @@ export function OrderDetailPanel({
                   Cliente
                 </h3>
               </div>
+              
+              {/* Aviso de perfil incompleto */}
+              {order.customer.name === 'Nome não disponível' && (
+                <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                        Perfil Incompleto
+                      </p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        O cliente não preencheu o nome completo. Solicite a atualização dos dados cadastrais antes de processar o pedido.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Nome</span>
-                  <span className="text-sm font-medium">{order.customer.name}</span>
+                  <span className={`text-sm font-medium ${order.customer.name === 'Nome não disponível' ? 'text-amber-600 dark:text-amber-500' : ''}`}>
+                    {order.customer.name}
+                  </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
