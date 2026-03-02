@@ -1106,12 +1106,7 @@ async function fetchQuotes(filters: OrderFilters) {
       deadline,
       notes,
       created_at,
-      updated_at,
-      profiles (
-        id,
-        full_name,
-        email
-      )
+      updated_at
     `, { count: 'exact' });
 
   // Aplicar filtros de status
