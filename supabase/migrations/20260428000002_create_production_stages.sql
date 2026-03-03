@@ -456,3 +456,4 @@ SELECT
   (SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'production_stages') AS indexes_created,
   (SELECT COUNT(*) FROM pg_trigger WHERE tgname LIKE '%production_stages%') AS triggers_created,
   (SELECT COUNT(*) FROM pg_policies WHERE tablename = 'production_stages') AS policies_created;
+

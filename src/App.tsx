@@ -57,6 +57,7 @@ import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
 import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
 import ProductionDashboardPage from "./pages/admin/ProductionDashboardPage";
+import CharacterChoiceManagerPage from "./pages/admin/CharacterChoiceManagerPage";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -372,6 +373,14 @@ function AppContent() {
             element={
               <RequireAdmin>
                 <ProductionDashboardPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/escolhas-personagens"
+            element={
+              <RequireAdmin>
+                <CharacterChoiceManagerPage />
               </RequireAdmin>
             }
           />

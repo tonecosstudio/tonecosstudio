@@ -1,0 +1,204 @@
+/**
+ * Custom styles for ProductionCalendarView
+ * Overrides react-big-calendar default styles to match our design system
+ */
+
+.production-calendar-container {
+  /* Calendar container */
+  .rbc-calendar {
+    font-family: inherit;
+  }
+
+  /* Header styles */
+  .rbc-header {
+    padding: 12px 4px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--muted));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  /* Month view */
+  .rbc-month-view {
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .rbc-month-row {
+    border-top: 1px solid hsl(var(--border));
+  }
+
+  .rbc-day-bg {
+    border-left: 1px solid hsl(var(--border));
+  }
+
+  .rbc-off-range-bg {
+    background-color: hsl(var(--muted) / 0.3);
+  }
+
+  .rbc-today {
+    background-color: hsl(var(--primary) / 0.1);
+  }
+
+  /* Date cell */
+  .rbc-date-cell {
+    padding: 4px 8px;
+    text-align: right;
+  }
+
+  .rbc-date-cell > a {
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .rbc-off-range .rbc-date-cell > a {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .rbc-now .rbc-date-cell > a {
+    color: hsl(var(--primary));
+    font-weight: 700;
+  }
+
+  /* Events */
+  .rbc-event {
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .rbc-event:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  .rbc-event-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .rbc-event-content {
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Show more link */
+  .rbc-show-more {
+    color: hsl(var(--primary));
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 4px;
+    margin: 2px 0;
+    background-color: hsl(var(--muted));
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .rbc-show-more:hover {
+    background-color: hsl(var(--muted) / 0.8);
+  }
+
+  /* Week view */
+  .rbc-time-view {
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .rbc-time-header {
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .rbc-time-content {
+    border-top: 1px solid hsl(var(--border));
+  }
+
+  .rbc-time-slot {
+    border-top: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .rbc-current-time-indicator {
+    background-color: hsl(var(--primary));
+    height: 2px;
+  }
+
+  /* Day view */
+  .rbc-day-slot .rbc-time-slot {
+    border-top: 1px solid hsl(var(--border) / 0.3);
+  }
+
+  /* Agenda view */
+  .rbc-agenda-view {
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .rbc-agenda-table {
+    border-spacing: 0;
+  }
+
+  .rbc-agenda-date-cell,
+  .rbc-agenda-time-cell {
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .rbc-agenda-event-cell {
+    padding: 8px 12px;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  /* Selected event */
+  .rbc-selected {
+    background-color: hsl(var(--primary));
+  }
+
+  /* Overlay (for show more popup) */
+  .rbc-overlay {
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    padding: 8px;
+    z-index: 50;
+  }
+
+  .rbc-overlay-header {
+    padding: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    border-bottom: 1px solid hsl(var(--border));
+    margin-bottom: 8px;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .rbc-toolbar {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rbc-toolbar-label {
+      text-align: center;
+      width: 100%;
+    }
+
+    .rbc-header {
+      font-size: 0.75rem;
+      padding: 8px 2px;
+    }
+
+    .rbc-event-content {
+      font-size: 0.75rem;
+    }
+  }
+}

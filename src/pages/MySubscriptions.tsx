@@ -65,12 +65,28 @@ export default function MySubscriptions() {
         .from("subscriptions")
         .select(
           `
-          *,
-          collections (
-            id,
-            name,
-            slug,
-            description
+          id,
+          user_id,
+          collection_id,
+          plan_type,
+          status,
+          total_paid,
+          payment_method,
+          payment_id,
+          deliveries_total,
+          deliveries_completed,
+          next_delivery_date,
+          next_production_start,
+          pause_count,
+          created_at,
+          updated_at,
+          subscription_collections (
+            collections (
+              id,
+              name,
+              slug,
+              description
+            )
           )
         `
         )
@@ -350,7 +366,11 @@ function SubscriptionCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-xl font-semibold">
-                  {subscription.collections?.name || "Coleção"}
+                  {subscriptionCollections.length > 0
+                    ? subscriptionCollections.length === 1
+                      ? subscriptionCollections[0]?.name
+                      : `${subscriptionCollections.length} Coleções`
+                    : subscription.collections?.name || "Coleção"}
                 </h3>
                 {getStatusBadge(subscription.status)}
               </div>

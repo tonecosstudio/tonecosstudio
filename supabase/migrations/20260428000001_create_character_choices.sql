@@ -504,3 +504,4 @@ SELECT
   (SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'character_choices') AS indexes_created,
   (SELECT COUNT(*) FROM pg_trigger WHERE tgname LIKE '%character_choices%') AS triggers_created,
   (SELECT COUNT(*) FROM pg_policies WHERE tablename = 'character_choices') AS policies_created;
+

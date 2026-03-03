@@ -108,7 +108,7 @@ CREATE TABLE production_queue (
 -- Instead, we use a trigger to validate the foreign key relationship.
 
 CREATE OR REPLACE FUNCTION validate_production_queue_order_reference()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 DECLARE
   order_exists BOOLEAN;
 BEGIN
@@ -135,7 +135,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trigger_validate_production_queue_order_reference
   BEFORE INSERT OR UPDATE OF order_id, order_type
@@ -487,3 +487,4 @@ SELECT
   (SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'production_queue') AS indexes_created,
   (SELECT COUNT(*) FROM pg_trigger WHERE tgname LIKE '%production_queue%') AS triggers_created,
   (SELECT COUNT(*) FROM pg_policies WHERE tablename = 'production_queue') AS policies_created;
+

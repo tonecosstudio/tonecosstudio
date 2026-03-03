@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { listPaymentsByUser } from "@/lib/payment-service";
+import { supabase } from "@/integrations/supabase/client";
 import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
 
 export function MyPaymentsPage() {
@@ -97,6 +98,43 @@ export function MyPaymentsPage() {
     },
     enabled: !!user?.id,
   });
+
+  // Realtime subscription para atualizar quando pagamentos mudarem
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('user-payments-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'manual_payments',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Pagamento atualizado:', payload);
+          
+          // Mostrar toast quando pagamento for aprovado
+          if (payload.new && (payload.new as any).status === 'approved') {
+            toast({
+              title: "✓ Pagamento Aprovado",
+              description: `Seu pagamento foi aprovado com sucesso!`,
+              variant: "default",
+            });
+          }
+          
+          // Refetch para atualizar a lista
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetch, toast]);
 
   // Get status icon
   const getStatusIcon = (status: PaymentStatus) => {

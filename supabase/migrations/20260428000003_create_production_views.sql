@@ -58,7 +58,6 @@ SELECT
   cc.name AS character_display_name,
   cc.description AS character_description,
   cc.image_url AS character_image_url,
-  cc.is_available AS character_is_available,
   
   -- Calculated fields
   CASE 
@@ -448,11 +447,11 @@ COMMENT ON MATERIALIZED VIEW production_dashboard_summary IS
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION refresh_production_dashboard_summary()
-RETURNS void AS $
+RETURNS void AS $$
 BEGIN
   REFRESH MATERIALIZED VIEW CONCURRENTLY production_dashboard_summary;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION refresh_production_dashboard_summary IS 
   'Refreshes the production_dashboard_summary materialized view concurrently';
@@ -479,7 +478,7 @@ GRANT ALL ON production_dashboard_summary TO service_role;
 -- 9. VALIDATE MIGRATION
 -- =====================================================
 
-DO $
+DO $$
 BEGIN
   -- Check if views were created
   IF NOT EXISTS (
@@ -524,7 +523,7 @@ BEGIN
   END IF;
   
   RAISE NOTICE 'Migration 20260428000003_create_production_views.sql completed successfully';
-END $;
+END $$;
 
 -- =====================================================
 -- 10. MIGRATION SUMMARY

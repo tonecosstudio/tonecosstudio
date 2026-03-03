@@ -78,112 +78,112 @@
   - [x] Add filter sidebar
   - [x] Implement responsive design
 
-- [ ] 2.1.2 Create ProductionMetricsBar component
-  - [ ] Display count per stage with icons
-  - [ ] Display average time per stage
-  - [ ] Display today's scheduled count
-  - [ ] Display this week's scheduled count
-  - [ ] Add real-time updates with Supabase Realtime
+- [x] 2.1.2 Create ProductionMetricsBar component
+  - [x] Display count per stage with icons
+  - [x] Display average time per stage
+  - [x] Display today's scheduled count
+  - [x] Display this week's scheduled count
+  - [x] Add real-time updates with Supabase Realtime
 
-- [ ] 2.1.3 Create ProductionFilters component
-  - [ ] Collection multi-select filter
-  - [ ] Priority filter (Critical / High / Normal / Low)
-  - [ ] Stage filter (multi-select)
-  - [ ] Date range picker
-  - [ ] Assigned team member filter
-  - [ ] "Clear all filters" button
+- [x] 2.1.3 Create ProductionFilters component
+  - [x] Collection multi-select filter
+  - [x] Priority filter (Critical / High / Normal / Low)
+  - [x] Stage filter (multi-select)
+  - [x] Date range picker
+  - [x] Assigned team member filter
+  - [x] "Clear all filters" button
 
 ### 2.2 Kanban View
 
-- [ ] 2.2.1 Create ProductionKanbanBoard component
-  - [ ] Create column for each stage
-  - [ ] Display item count per column
-  - [ ] Implement drag-and-drop with @dnd-kit
-  - [ ] Add column collapse/expand
-  - [ ] Add "Add to stage" button per column
+- [x] 2.2.1 Create ProductionKanbanBoard component
+  - [x] Create column for each stage
+  - [x] Display item count per column
+  - [x] Implement drag-and-drop with @dnd-kit
+  - [x] Add column collapse/expand
+  - [x] Add "Add to stage" button per column
 
-- [ ] 2.2.2 Create ProductionKanbanCard component
-  - [ ] Display customer name and order number
-  - [ ] Display collection name with icon
-  - [ ] Display priority badge
-  - [ ] Display deadline countdown (if applicable)
-  - [ ] Display assigned team member avatar
-  - [ ] Add quick actions menu (assign, block, view details)
+- [x] 2.2.2 Create ProductionKanbanCard component
+  - [x] Display customer name and order number
+  - [x] Display collection name with icon
+  - [x] Display priority badge
+  - [x] Display deadline countdown (if applicable)
+  - [x] Display assigned team member avatar
+  - [x] Add quick actions menu (assign, block, view details)
 
-- [ ] 2.2.3 Implement drag-and-drop logic
-  - [ ] Validate stage transitions before drop
-  - [ ] Show error message for invalid transitions
-  - [ ] Optimistic UI update
-  - [ ] Rollback on API error
-  - [ ] Trigger notification on successful move
+- [x] 2.2.3 Implement drag-and-drop logic
+  - [x] Validate stage transitions before drop
+  - [x] Show error message for invalid transitions
+  - [x] Optimistic UI update
+  - [x] Rollback on API error
+  - [x] Trigger notification on successful move
 
 ### 2.3 List View
 
-- [ ] 2.3.1 Create ProductionListView component
-  - [ ] Reuse OrdersTable component structure
-  - [ ] Add columns: Customer, Collection, Character, Stage, Priority, Deadline, Assigned To
-  - [ ] Implement sorting by any column
-  - [ ] Add row selection for bulk actions
-  - [ ] Add row click to open detail panel
+- [x] 2.3.1 Create ProductionListView component
+  - [x] Reuse OrdersTable component structure
+  - [x] Add columns: Customer, Collection, Character, Stage, Priority, Deadline, Assigned To
+  - [x] Implement sorting by any column
+  - [x] Add row selection for bulk actions
+  - [x] Add row click to open detail panel
 
-- [ ] 2.3.2 Implement bulk actions
-  - [ ] Bulk assign to team member
-  - [ ] Bulk update stage (with validation)
-  - [ ] Bulk export to CSV
-  - [ ] Show progress modal during bulk operations
+- [x] 2.3.2 Implement bulk actions
+  - [x] Bulk assign to team member
+  - [x] Bulk update stage (with validation)
+  - [x] Bulk export to CSV
+  - [x] Show progress modal during bulk operations
 
 ### 2.4 Calendar View
 
-- [ ] 2.4.1 Create ProductionCalendarView component
-  - [ ] Display month calendar with react-big-calendar
-  - [ ] Show items on scheduled production date
-  - [ ] Color-code by priority
-  - [ ] Add day/week/month view switcher
-  - [ ] Add "Today" button
+- [x] 2.4.1 Create ProductionCalendarView component
+  - [x] Display month calendar with react-big-calendar
+  - [x] Show items on scheduled production date
+  - [x] Color-code by priority
+  - [x] Add day/week/month view switcher
+  - [x] Add "Today" button
 
-- [ ] 2.4.2 Implement calendar interactions
-  - [ ] Click day to see items scheduled for that day
-  - [ ] Drag item to reschedule
-  - [ ] Add item to calendar from sidebar
-  - [ ] Show tooltip on hover with item details
+- [x] 2.4.2 Implement calendar interactions
+  - [x] Click day to see items scheduled for that day
+  - [x] Drag item to reschedule
+  - [x] Add item to calendar from sidebar
+  - [x] Show tooltip on hover with item details
 
 ### 2.5 Urgent Alerts
 
-- [ ] 2.5.1 Create UrgentAlertsBar component
-  - [ ] Alert: Items with deadline < 24h (red badge)
-  - [ ] Alert: Pending choices approaching deadline (yellow badge)
-  - [ ] Alert: Blocked items (blue badge)
-  - [ ] Alert: Items exceeding average stage time (orange badge)
-  - [ ] Click alert to filter dashboard
+- [x] 2.5.1 Create UrgentAlertsBar component
+  - [x] Alert: Items with deadline < 24h (red badge)
+  - [x] Alert: Pending choices approaching deadline (yellow badge)
+  - [x] Alert: Blocked items (blue badge)
+  - [x] Alert: Items exceeding average stage time (orange badge)
+  - [x] Click alert to filter dashboard
 
-- [ ] 2.5.2 Implement alert notifications
-  - [ ] Browser notification for new critical items
-  - [ ] Sound notification (optional, user preference)
-  - [ ] Email digest of daily alerts to admins
+- [x] 2.5.2 Implement alert notifications
+  - [x] Browser notification for new critical items
+  - [x] Sound notification (optional, user preference)
+  - [x] Email digest of daily alerts to admins
 
 ## Phase 3: Character Choice Management (Week 3-4)
 
 ### 3.1 Admin Choice Management Interface
 
-- [ ] 3.1.1 Create CharacterChoiceManagerPage component
-  - [ ] Display table of all choices with status
-  - [ ] Add filters: Status, Collection, Deadline range
-  - [ ] Add search by customer name/email
-  - [ ] Show deadline countdown with color coding
+- [x] 3.1.1 Create CharacterChoiceManagerPage component
+  - [x] Display table of all choices with status
+  - [x] Add filters: Status, Collection, Deadline range
+  - [x] Add search by customer name/email
+  - [x] Show deadline countdown with color coding
 
-- [ ] 3.1.2 Create ChoiceApprovalModal component
-  - [ ] Display customer name and order details
-  - [ ] Show chosen character with image
-  - [ ] Add "Approve" and "Reject" buttons
-  - [ ] Add rejection reason textarea
-  - [ ] Show character stock level
-  - [ ] Add "Suggest alternative" feature if out of stock
+- [x] 3.1.2 Create ChoiceApprovalModal component
+  - [x] Display customer name and order details
+  - [x] Show chosen character with image
+  - [x] Add "Approve" and "Reject" buttons
+  - [x] Add rejection reason textarea
+  - [x] Show character stock level
+  - [x] Add "Suggest alternative" feature if out of stock
 
-- [ ] 3.1.3 Create ChoiceHistoryPanel component
-  - [ ] Display all choice changes for an order
-  - [ ] Show timestamps and reasons for changes
-  - [ ] Show who approved/rejected
-  - [ ] Add timeline visualization
+- [x] 3.1.3 Create ChoiceHistoryPanel component
+  - [x] Display all choice changes for an order
+  - [x] Show timestamps and reasons for changes
+  - [x] Show who approved/rejected
+  - [x] Add timeline visualization
 
 - [ ] 3.1.4 Implement deadline management
   - [ ] Add "Extend deadline" button

@@ -138,8 +138,15 @@ export async function fetchProductionQueue(
   const { page, pageSize } = pagination;
   const offset = (page - 1) * pageSize;
 
-  // Iniciar query na view otimizada
-  let query = supabase.from("production_queue_with_details").select("*", { count: "exact" });
+  // Try to use the optimized view first, fallback to direct table query
+  let query = supabase
+    .from("production_queue")
+    .select(`
+      *,
+      profiles:customer_id(full_name, email),
+      collections:collection_id(name),
+      collection_characters:character_id(name)
+    `, { count: "exact" });
 
   // Aplicar filtros de coleção
   if (filters.collections && filters.collections.length > 0) {
@@ -190,11 +197,12 @@ export async function fetchProductionQueue(
   const { data, error, count } = await query;
 
   if (error) {
+    console.error("Erro ao buscar fila de produção:", error);
     throw new Error(`Erro ao buscar fila de produção: ${error.message}`);
   }
 
-  // Transformar dados do banco para o formato da interface
-  const items: ProductionQueueItem[] = (data || []).map(transformProductionQueueItem);
+  // Transform data - handle both view format and joined table format
+  const items: ProductionQueueItem[] = (data || []).map((item) => transformProductionQueueItem(item));
 
   return {
     data: items,
@@ -218,40 +226,185 @@ export async function fetchProductionQueue(
  * @returns Métricas de produção
  */
 export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
-  const { data, error } = await supabase.rpc("get_production_metrics");
+  try {
+    // Try to use the RPC function first
+    const { data: rpcData, error: rpcError } = await supabase.rpc("get_production_metrics");
 
-  if (error) {
-    throw new Error(`Erro ao buscar métricas de produção: ${error.message}`);
+    if (!rpcError && rpcData) {
+      // Parse RPC response
+      const metrics = typeof rpcData === "string" ? JSON.parse(rpcData) : rpcData;
+
+      return {
+        stages: metrics.stages || {},
+        statuses: metrics.statuses || {},
+        priorities: metrics.priorities || {},
+        choices: metrics.choices || {},
+        urgent: {
+          deadlineCritical: metrics.urgent?.deadline_critical || 0,
+          deadlineUrgent: metrics.urgent?.deadline_urgent || 0,
+          blocked: metrics.urgent?.blocked || 0,
+          overdue: metrics.urgent?.overdue || 0,
+        },
+        scheduled: {
+          today: metrics.scheduled?.today || 0,
+          thisWeek: metrics.scheduled?.this_week || 0,
+          thisMonth: metrics.scheduled?.this_month || 0,
+        },
+        avgStageDurations: metrics.avg_stage_durations || {},
+        overall: {
+          totalItems: metrics.overall?.total_items || 0,
+          avgProductionTimeHours: metrics.overall?.avg_production_time_hours || 0,
+          completionRate: metrics.overall?.completion_rate || 0,
+          avgPriorityScore: metrics.overall?.avg_priority_score || 0,
+        },
+        generatedAt: metrics.generated_at || new Date().toISOString(),
+      };
+    }
+
+    // Fallback: Calculate metrics manually from production_queue
+    console.warn("RPC function not available, calculating metrics manually");
+
+    const { data: queueData, error: queueError } = await supabase
+      .from("production_queue")
+      .select("*");
+
+    if (queueError) {
+      throw new Error(`Erro ao buscar dados da fila: ${queueError.message}`);
+    }
+
+    const items = queueData || [];
+
+    // Calculate metrics manually
+    const stages: Record<ProductionStage, number> = {
+      awaiting_choice: 0,
+      design: 0,
+      production: 0,
+      quality_check: 0,
+      packaging: 0,
+      shipped: 0,
+    };
+
+    const statuses: Record<ProductionStatus, number> = {
+      awaiting_choice: 0,
+      ready_for_production: 0,
+      in_production: 0,
+      completed: 0,
+      on_hold: 0,
+      cancelled: 0,
+    };
+
+    const priorities: Record<Priority, number> = {
+      critical: 0,
+      high: 0,
+      normal: 0,
+      low: 0,
+    };
+
+    const choices: Record<ChoiceStatus, number> = {
+      pending: 0,
+      submitted: 0,
+      approved: 0,
+      rejected: 0,
+      locked: 0,
+    };
+
+    let deadlineCritical = 0;
+    let deadlineUrgent = 0;
+    let blocked = 0;
+    let overdue = 0;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    const monthFromNow = new Date(today);
+    monthFromNow.setMonth(monthFromNow.getMonth() + 1);
+
+    let scheduledToday = 0;
+    let scheduledThisWeek = 0;
+    let scheduledThisMonth = 0;
+
+    items.forEach((item) => {
+      // Count by stage
+      if (item.current_stage && stages.hasOwnProperty(item.current_stage)) {
+        stages[item.current_stage as ProductionStage]++;
+      }
+
+      // Count by status
+      if (item.production_status && statuses.hasOwnProperty(item.production_status)) {
+        statuses[item.production_status as ProductionStatus]++;
+      }
+
+      // Count by priority
+      if (item.priority && priorities.hasOwnProperty(item.priority)) {
+        priorities[item.priority as Priority]++;
+      }
+
+      // Count by choice status
+      if (item.choice_status && choices.hasOwnProperty(item.choice_status)) {
+        choices[item.choice_status as ChoiceStatus]++;
+      }
+
+      // Check urgent alerts
+      if (item.choice_deadline) {
+        const deadline = new Date(item.choice_deadline);
+        const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+        if (hoursUntilDeadline < 24 && hoursUntilDeadline > 0) {
+          deadlineCritical++;
+        } else if (item.choice_status === "pending" && hoursUntilDeadline < 72) {
+          deadlineUrgent++;
+        }
+      }
+
+      if (item.production_status === "on_hold") {
+        blocked++;
+      }
+
+      // Check scheduled dates
+      if (item.scheduled_production_date) {
+        const scheduledDate = new Date(item.scheduled_production_date);
+        if (scheduledDate >= today && scheduledDate < new Date(today.getTime() + 24 * 60 * 60 * 1000)) {
+          scheduledToday++;
+        }
+        if (scheduledDate >= today && scheduledDate < weekFromNow) {
+          scheduledThisWeek++;
+        }
+        if (scheduledDate >= today && scheduledDate < monthFromNow) {
+          scheduledThisMonth++;
+        }
+      }
+    });
+
+    return {
+      stages,
+      statuses,
+      priorities,
+      choices,
+      urgent: {
+        deadlineCritical,
+        deadlineUrgent,
+        blocked,
+        overdue,
+      },
+      scheduled: {
+        today: scheduledToday,
+        thisWeek: scheduledThisWeek,
+        thisMonth: scheduledThisMonth,
+      },
+      avgStageDurations: {},
+      overall: {
+        totalItems: items.length,
+        avgProductionTimeHours: 0,
+        completionRate: items.length > 0 ? statuses.completed / items.length : 0,
+        avgPriorityScore: 0,
+      },
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("Erro ao buscar métricas de produção:", error);
+    throw new Error(`Erro ao buscar métricas de produção: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
   }
-
-  // A função retorna JSON, então precisamos fazer parse se necessário
-  const metrics = typeof data === "string" ? JSON.parse(data) : data;
-
-  return {
-    stages: metrics.stages || {},
-    statuses: metrics.statuses || {},
-    priorities: metrics.priorities || {},
-    choices: metrics.choices || {},
-    urgent: {
-      deadlineCritical: metrics.urgent?.deadline_critical || 0,
-      deadlineUrgent: metrics.urgent?.deadline_urgent || 0,
-      blocked: metrics.urgent?.blocked || 0,
-      overdue: metrics.urgent?.overdue || 0,
-    },
-    scheduled: {
-      today: metrics.scheduled?.today || 0,
-      thisWeek: metrics.scheduled?.this_week || 0,
-      thisMonth: metrics.scheduled?.this_month || 0,
-    },
-    avgStageDurations: metrics.avg_stage_durations || {},
-    overall: {
-      totalItems: metrics.overall?.total_items || 0,
-      avgProductionTimeHours: metrics.overall?.avg_production_time_hours || 0,
-      completionRate: metrics.overall?.completion_rate || 0,
-      avgPriorityScore: metrics.overall?.avg_priority_score || 0,
-    },
-    generatedAt: metrics.generated_at || new Date().toISOString(),
-  };
 }
 
 // ============================================================================
@@ -450,24 +603,72 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
 }
 
 // ============================================================================
+// Função: Atualizar Data de Produção Agendada
+// ============================================================================
+
+/**
+ * Atualiza a data de produção agendada de um item
+ *
+ * @param id - ID do item na fila de produção
+ * @param newDate - Nova data de produção (formato: YYYY-MM-DD)
+ * @returns Item atualizado
+ */
+export async function updateProductionSchedule(
+  id: string,
+  newDate: string
+): Promise<ProductionQueueItem> {
+  // Validar formato da data
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(newDate)) {
+    throw new Error("Formato de data inválido. Use YYYY-MM-DD");
+  }
+
+  // Atualizar item
+  const { data: updatedItem, error: updateError } = await supabase
+    .from("production_queue")
+    .update({
+      scheduled_production_date: newDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (updateError || !updatedItem) {
+    throw new Error(
+      `Erro ao atualizar data de produção: ${updateError?.message || "Falha na atualização"}`
+    );
+  }
+
+  return transformProductionQueueItem(updatedItem);
+}
+
+// ============================================================================
 // Funções Auxiliares
 // ============================================================================
 
 /**
  * Transforma dados do banco para o formato da interface ProductionQueueItem
+ * Suporta tanto o formato da view quanto o formato de tabela com joins
  */
 function transformProductionQueueItem(data: any): ProductionQueueItem {
+  // Handle both view format (snake_case) and joined table format (nested objects)
+  const customerName = data.customer_name || data.profiles?.full_name || "Cliente Desconhecido";
+  const customerEmail = data.customer_email || data.profiles?.email || "";
+  const collectionName = data.collection_name || data.collections?.name || "Coleção Desconhecida";
+  const characterName = data.character_name || data.collection_characters?.name || null;
+
   return {
     id: data.id,
     orderId: data.order_id,
     orderType: data.order_type,
     customerId: data.customer_id,
-    customerName: data.customer_name,
-    customerEmail: data.customer_email,
+    customerName,
+    customerEmail,
     collectionId: data.collection_id,
-    collectionName: data.collection_name,
+    collectionName,
     characterId: data.character_id,
-    characterName: data.character_name,
+    characterName,
     productionStatus: data.production_status,
     currentStage: data.current_stage,
     choiceStatus: data.choice_status,

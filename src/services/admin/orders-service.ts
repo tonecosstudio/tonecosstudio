@@ -673,11 +673,6 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       updated_at,
       approved_at,
       approved_by,
-      profiles!manual_payments_user_id_fkey (
-        id,
-        full_name,
-        email
-      ),
       admin_payment_methods (
         id,
         name,
@@ -693,6 +688,21 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
 
   if (paymentsError) {
     console.error("Error fetching user payments:", paymentsError);
+  }
+  
+  // Fetch profile for manual payments
+  if (paymentsData && paymentsData.length > 0) {
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", userId)
+      .single();
+    
+    if (userProfile) {
+      paymentsData.forEach((payment: any) => {
+        payment.profiles = userProfile;
+      });
+    }
   }
 
   // Buscar orçamentos do usuário
@@ -1058,11 +1068,6 @@ async function fetchManualPayments(filters: OrderFilters) {
       updated_at,
       approved_at,
       approved_by,
-      profiles!manual_payments_user_id_fkey (
-        id,
-        full_name,
-        email
-      ),
       admin_payment_methods (
         id,
         name,
@@ -1070,24 +1075,6 @@ async function fetchManualPayments(filters: OrderFilters) {
         instructions,
         pix_key,
         payment_link
-      ),
-      subscriptions (
-        id,
-        status,
-        start_date,
-        end_date,
-        subscription_plans (
-          id,
-          name,
-          price,
-          billing_cycle
-        )
-      ),
-      quotes (
-        id,
-        status,
-        total_price,
-        admin_response
       )
     `,
     { count: "exact" }
@@ -1106,7 +1093,82 @@ async function fetchManualPayments(filters: OrderFilters) {
     query = query.lte("created_at", filters.dateTo);
   }
 
-  return await query;
+  const result = await query;
+  
+  // Fetch related data separately
+  if (result.data && result.data.length > 0) {
+    const userIds = [...new Set(result.data.map((p: any) => p.user_id))];
+    const subscriptionIds = result.data.filter((p: any) => p.subscription_id).map((p: any) => p.subscription_id);
+    const quoteIds = result.data.filter((p: any) => p.quote_id).map((p: any) => p.quote_id);
+    
+    // Fetch profiles
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+    
+    // Fetch subscriptions with plans
+    let subscriptions: any[] = [];
+    if (subscriptionIds.length > 0) {
+      const { data: subsData } = await supabase
+        .from("subscriptions")
+        .select("id, status, plan_type, created_at, updated_at")
+        .in("id", subscriptionIds);
+      
+      if (subsData && subsData.length > 0) {
+        // Fetch subscription plans separately
+        const planTypes = [...new Set(subsData.map((s: any) => s.plan_type))];
+        const { data: plansData } = await supabase
+          .from("subscription_plans")
+          .select("id, name, plan_type, price_full, price_pix")
+          .in("plan_type", planTypes);
+        
+        const plansMap = new Map(plansData?.map((p: any) => [p.plan_type, p]) || []);
+        
+        // Merge plans into subscriptions and map to expected format
+        subscriptions = subsData.map((sub: any) => {
+          const plan = plansMap.get(sub.plan_type);
+          return {
+            id: sub.id,
+            status: sub.status,
+            start_date: sub.created_at, // Use created_at as start_date
+            end_date: null, // subscriptions table doesn't have end_date
+            subscription_plans: plan ? {
+              id: plan.id,
+              name: plan.name,
+              price: plan.price_pix, // Use PIX price as default
+              billing_cycle: plan.plan_type, // Use plan_type as billing_cycle
+            } : null,
+          };
+        });
+      }
+    }
+    
+    // Fetch quotes
+    let quotes: any[] = [];
+    if (quoteIds.length > 0) {
+      const { data: quotesData } = await supabase
+        .from("quotes")
+        .select("id, status, total_price, admin_response")
+        .in("id", quoteIds);
+      quotes = quotesData || [];
+    }
+    
+    // Create maps for easy lookup
+    const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
+    const subscriptionsMap = new Map(subscriptions.map((s: any) => [s.id, s]));
+    const quotesMap = new Map(quotes.map((q: any) => [q.id, q]));
+    
+    // Merge data
+    result.data = result.data.map((payment: any) => ({
+      ...payment,
+      profiles: profilesMap.get(payment.user_id) || null,
+      subscriptions: payment.subscription_id ? subscriptionsMap.get(payment.subscription_id) || null : null,
+      quotes: payment.quote_id ? quotesMap.get(payment.quote_id) || null : null,
+    }));
+  }
+  
+  return result;
 }
 
 // ============================================================================

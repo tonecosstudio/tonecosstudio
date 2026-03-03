@@ -12,7 +12,7 @@
 -- Used by the dashboard to display real-time statistics
 
 CREATE OR REPLACE FUNCTION get_production_metrics()
-RETURNS JSON AS $
+RETURNS JSON AS $$
 DECLARE
   result JSON;
 BEGIN
@@ -136,7 +136,7 @@ BEGIN
   
   RETURN result;
 END;
-$ LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 COMMENT ON FUNCTION get_production_metrics IS 
   'Returns comprehensive production metrics as JSON including counts per stage, status, priority, and performance statistics';
@@ -150,7 +150,7 @@ COMMENT ON FUNCTION get_production_metrics IS
 CREATE OR REPLACE FUNCTION check_character_availability(
   p_character_id UUID
 )
-RETURNS BOOLEAN AS $
+RETURNS BOOLEAN AS $$
 DECLARE
   v_is_available BOOLEAN;
   v_character_exists BOOLEAN;
@@ -178,7 +178,7 @@ BEGIN
   
   RETURN v_is_available;
 END;
-$ LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 COMMENT ON FUNCTION check_character_availability IS 
   'Checks if a character is available for selection. Returns true if available, false otherwise.';
@@ -190,7 +190,7 @@ COMMENT ON FUNCTION check_character_availability IS
 -- when an order is approved (subscription_delivery or standalone_purchase)
 
 CREATE OR REPLACE FUNCTION auto_populate_production_queue()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 DECLARE
   v_customer_name TEXT;
   v_customer_email TEXT;
@@ -333,7 +333,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION auto_populate_production_queue IS 
   'Trigger function that automatically creates production_queue and character_choices records when orders are approved';
@@ -377,7 +377,7 @@ GRANT EXECUTE ON FUNCTION auto_populate_production_queue() TO service_role;
 -- 6. VALIDATE MIGRATION
 -- =====================================================
 
-DO $
+DO $$
 BEGIN
   -- Check if functions were created
   IF NOT EXISTS (
@@ -417,7 +417,7 @@ BEGIN
   END IF;
   
   RAISE NOTICE 'Migration 20260428000004_create_production_functions.sql completed successfully';
-END $;
+END $$;
 
 -- =====================================================
 -- 7. TEST FUNCTIONS (Optional - for development)

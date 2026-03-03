@@ -388,11 +388,16 @@ export function SubscriptionSection({ userId }: { userId: string }) {
           deliveries_completed,
           next_delivery_date,
           next_production_start,
-          entry_cycle_id,
           pause_count,
           created_at,
           updated_at,
-          collections (id, name, slug)
+          subscription_collections (
+            collections (
+              id,
+              name,
+              slug
+            )
+          )
         `
         )
         .eq("user_id", userId)
@@ -472,10 +477,16 @@ export function SubscriptionSection({ userId }: { userId: string }) {
         </div>
 
         {/* Coleção */}
-        {sub.collections && (
+        {sub.subscription_collections && sub.subscription_collections.length > 0 && (
           <div>
-            <span className="text-xs text-muted-foreground">Coleção</span>
-            <p className="text-sm font-medium mt-1">{sub.collections.name}</p>
+            <span className="text-xs text-muted-foreground">
+              {sub.subscription_collections.length === 1 ? "Coleção" : "Coleções"}
+            </span>
+            <p className="text-sm font-medium mt-1">
+              {sub.subscription_collections.length === 1
+                ? sub.subscription_collections[0]?.collections?.name
+                : `${sub.subscription_collections.length} coleções`}
+            </p>
           </div>
         )}
 

@@ -6,14 +6,261 @@
  */
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, List, Calendar } from "lucide-react";
+import { ProductionMetricsBar } from "@/components/production/ProductionMetricsBar";
+import { UrgentAlertsBar, type AlertType } from "@/components/production/UrgentAlertsBar";
+import { ProductionFilters } from "@/components/production/ProductionFilters";
+import { ProductionKanbanBoard } from "@/components/production/ProductionKanbanBoard";
+import { ProductionListView } from "@/components/production/ProductionListView";
+import { ProductionCalendarView } from "@/components/production/ProductionCalendarView";
+import { BulkActionsToolbar } from "@/components/production/BulkActionsToolbar";
+import { BulkAssignModal } from "@/components/production/BulkAssignModal";
+import { BulkStageUpdateModal } from "@/components/production/BulkStageUpdateModal";
+import { BulkProgressModal } from "@/components/production/BulkProgressModal";
+import type { ProductionFilters as ProductionFiltersType, ProductionStage } from "@/services/admin/production-service";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchProductionQueue } from "@/services/admin/production-service";
+import { bulkAssignProduction, bulkUpdateStage } from "@/services/admin/bulk-operations-service";
+import { exportProductionItemsToCSV } from "@/lib/utils/csvExport";
+import { useToast } from "@/hooks/use-toast";
 
 // Tipos
 type ViewMode = "kanban" | "list" | "calendar";
 
 export default function ProductionDashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
+  const [filters, setFilters] = useState<ProductionFiltersType>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  // Bulk action modals state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showStageModal, setShowStageModal] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressState, setProgressState] = useState({
+    title: '',
+    total: 0,
+    processed: 0,
+    successful: 0,
+    failed: 0,
+    isComplete: false,
+    errors: [] as string[],
+  });
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Fetch production queue for list view
+  const { data: queueData, isLoading } = useQuery({
+    queryKey: ["production-queue", filters],
+    queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
+    enabled: viewMode === "list" || viewMode === "calendar",
+  });
+
+  const handleResetFilters = () => {
+    setFilters({});
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && queueData?.data) {
+      setSelectedIds(new Set(queueData.data.map(item => item.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectItem = (itemId: string, checked: boolean) => {
+    const newSelectedIds = new Set(selectedIds);
+    if (checked) {
+      newSelectedIds.add(itemId);
+    } else {
+      newSelectedIds.delete(itemId);
+    }
+    setSelectedIds(newSelectedIds);
+  };
+
+  const handleItemClick = (item: any) => {
+    console.log("Item clicked:", item);
+    // TODO: Open detail panel
+  };
+
+  const isAllSelected = queueData?.data ? selectedIds.size === queueData.data.length && queueData.data.length > 0 : false;
+
+  // Bulk action handlers
+  const handleBulkAssign = async (userId: string) => {
+    const itemIds = Array.from(selectedIds);
+    
+    setProgressState({
+      title: 'Atribuindo Itens',
+      total: itemIds.length,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      isComplete: false,
+      errors: [],
+    });
+    setShowProgressModal(true);
+
+    try {
+      const result = await bulkAssignProduction(itemIds, userId);
+      
+      setProgressState({
+        title: 'Atribuindo Itens',
+        total: itemIds.length,
+        processed: itemIds.length,
+        successful: result.successful,
+        failed: result.failed,
+        isComplete: true,
+        errors: result.errors,
+      });
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['production-queue'] });
+      
+      // Clear selection
+      setSelectedIds(new Set());
+
+      // Show toast
+      if (result.failed === 0) {
+        toast({
+          title: 'Sucesso',
+          description: `${result.successful} ${result.successful === 1 ? 'item atribuído' : 'itens atribuídos'} com sucesso.`,
+        });
+      } else {
+        toast({
+          title: 'Concluído com erros',
+          description: `${result.successful} sucesso, ${result.failed} falhas.`,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erro na atribuição em massa:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao atribuir os itens.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkStageUpdate = async (newStage: ProductionStage) => {
+    const itemIds = Array.from(selectedIds);
+    
+    setProgressState({
+      title: 'Atualizando Estágios',
+      total: itemIds.length,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      isComplete: false,
+      errors: [],
+    });
+    setShowProgressModal(true);
+
+    try {
+      const result = await bulkUpdateStage(itemIds, newStage);
+      
+      setProgressState({
+        title: 'Atualizando Estágios',
+        total: itemIds.length,
+        processed: itemIds.length,
+        successful: result.successful,
+        failed: result.failed,
+        isComplete: true,
+        errors: result.errors,
+      });
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['production-queue'] });
+      
+      // Clear selection
+      setSelectedIds(new Set());
+
+      // Show toast
+      if (result.failed === 0) {
+        toast({
+          title: 'Sucesso',
+          description: `${result.successful} ${result.successful === 1 ? 'item atualizado' : 'itens atualizados'} com sucesso.`,
+        });
+      } else {
+        toast({
+          title: 'Concluído com erros',
+          description: `${result.successful} sucesso, ${result.failed} falhas.`,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erro na atualização em massa:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao atualizar os estágios.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (!queueData?.data) return;
+
+    try {
+      const selectedItems = queueData.data.filter(item => selectedIds.has(item.id));
+      const filename = `producao_${new Date().toISOString().split('T')[0]}.csv`;
+      
+      exportProductionItemsToCSV(selectedItems, filename);
+      
+      toast({
+        title: 'Exportado com sucesso',
+        description: `${selectedItems.length} ${selectedItems.length === 1 ? 'item exportado' : 'itens exportados'} para CSV.`,
+      });
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao exportar os dados.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleAlertClick = (alertType: AlertType) => {
+    // Apply filters based on alert type
+    switch (alertType) {
+      case "deadline_critical":
+        // Filter items with deadline < 24h
+        setFilters({
+          ...filters,
+          priorities: ["critical"],
+        });
+        break;
+      case "deadline_urgent":
+        // Filter items with pending choices approaching deadline
+        setFilters({
+          ...filters,
+          stages: ["awaiting_choice"],
+        });
+        break;
+      case "blocked":
+        // Filter blocked items
+        setFilters({
+          ...filters,
+          statuses: ["on_hold"],
+        });
+        break;
+      case "overdue":
+        // Filter items exceeding average stage time
+        // This would require additional filtering logic in the backend
+        // For now, we'll just show all in_production items
+        setFilters({
+          ...filters,
+          statuses: ["in_production"],
+        });
+        break;
+    }
+  };
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
@@ -47,48 +294,90 @@ export default function ProductionDashboardPage() {
         </div>
       </header>
 
-      {/* Metrics Bar - TODO: Implementar em 2.1.2 */}
+      {/* Urgent Alerts Bar */}
       <div className="border-b bg-white px-6 py-3">
-        <div className="text-sm text-gray-500">Métricas serão exibidas aqui (Task 2.1.2)</div>
+        <UrgentAlertsBar onAlertClick={handleAlertClick} />
+      </div>
+
+      {/* Metrics Bar */}
+      <div className="border-b bg-white px-6 py-3">
+        <ProductionMetricsBar />
       </div>
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Filters Sidebar - TODO: Implementar em 2.1.3 */}
-        <aside className="w-64 border-r bg-white p-4">
-          <h3 className="mb-4 font-semibold text-gray-900">Filtros</h3>
-          <div className="text-sm text-gray-500">Filtros serão exibidos aqui (Task 2.1.3)</div>
+        {/* Filters Sidebar */}
+        <aside className="w-80 border-r bg-white overflow-y-auto">
+          <ProductionFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            onReset={handleResetFilters}
+          />
         </aside>
 
         {/* Content Area */}
         <main className="flex-1 overflow-auto p-6">
           {viewMode === "kanban" && (
-            <div className="rounded-lg border bg-white p-8 text-center">
-              <LayoutGrid className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Visualização Kanban</h3>
-              <p className="text-sm text-gray-500">Será implementado na Task 2.2.1</p>
-            </div>
+            <ProductionKanbanBoard filters={filters} />
           )}
 
           {viewMode === "list" && (
-            <div className="rounded-lg border bg-white p-8 text-center">
-              <List className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Visualização em Lista</h3>
-              <p className="text-sm text-gray-500">Será implementado na Task 2.3.1</p>
-            </div>
+            <>
+              <BulkActionsToolbar
+                selectedCount={selectedIds.size}
+                onAssign={() => setShowAssignModal(true)}
+                onUpdateStage={() => setShowStageModal(true)}
+                onExportCSV={handleBulkExport}
+                onClearSelection={handleClearSelection}
+              />
+              <ProductionListView
+                items={queueData?.data || []}
+                isLoading={isLoading}
+                selectedIds={selectedIds}
+                onSelectAll={handleSelectAll}
+                onSelectItem={handleSelectItem}
+                onItemClick={handleItemClick}
+                isAllSelected={isAllSelected}
+              />
+            </>
           )}
 
           {viewMode === "calendar" && (
-            <div className="rounded-lg border bg-white p-8 text-center">
-              <Calendar className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                Visualização em Calendário
-              </h3>
-              <p className="text-sm text-gray-500">Será implementado na Task 2.4.1</p>
-            </div>
+            <ProductionCalendarView
+              items={queueData?.data || []}
+              isLoading={isLoading}
+              onItemClick={handleItemClick}
+            />
           )}
         </main>
       </div>
+
+      {/* Bulk Action Modals */}
+      <BulkAssignModal
+        open={showAssignModal}
+        onOpenChange={setShowAssignModal}
+        selectedCount={selectedIds.size}
+        onConfirm={handleBulkAssign}
+      />
+
+      <BulkStageUpdateModal
+        open={showStageModal}
+        onOpenChange={setShowStageModal}
+        selectedCount={selectedIds.size}
+        onConfirm={handleBulkStageUpdate}
+      />
+
+      <BulkProgressModal
+        open={showProgressModal}
+        onOpenChange={setShowProgressModal}
+        title={progressState.title}
+        total={progressState.total}
+        processed={progressState.processed}
+        successful={progressState.successful}
+        failed={progressState.failed}
+        isComplete={progressState.isComplete}
+        errors={progressState.errors}
+      />
     </div>
   );
 }

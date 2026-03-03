@@ -130,7 +130,12 @@ export default function AdminUserDetails() {
         .select(
           `
           *,
-          collection:collections(name, slug)
+          subscription_collections (
+            collections (
+              name,
+              slug
+            )
+          )
         `
         )
         .eq("user_id", userId!)

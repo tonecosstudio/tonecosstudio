@@ -102,6 +102,25 @@ export const adminNavigationConfig: NavigationSection[] = [
     ],
   },
   {
+    id: 'production',
+    title: 'Produção',
+    items: [
+      {
+        id: 'production-dashboard',
+        label: 'Dashboard de Produção',
+        path: '/admin/producao',
+        icon: 'Grid',
+        badge: 'Novo',
+      },
+      {
+        id: 'character-choices',
+        label: 'Escolhas de Personagens',
+        path: '/admin/escolhas-personagens',
+        icon: 'Tag',
+      },
+    ],
+  },
+  {
     id: 'financial',
     title: 'Financeiro',
     items: [
