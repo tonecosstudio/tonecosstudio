@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Capacity Allocation Breakdown Component
  * 

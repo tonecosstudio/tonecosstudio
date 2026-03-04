@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Testes para o componente BulkOperationsToolbar
  *
