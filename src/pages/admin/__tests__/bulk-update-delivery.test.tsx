@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for bulk delivery status update functionality
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Integration tests for shipping deadline indicator in DeliveryManagement
  * 

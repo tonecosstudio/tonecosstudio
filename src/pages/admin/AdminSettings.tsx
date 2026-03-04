@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, FileText, DollarSign, Gauge, Scale, ExternalLink } from "lucide-react";

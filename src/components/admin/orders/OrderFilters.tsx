@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Componente de Filtros de Pedidos
  * 

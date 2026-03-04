@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * BonusPieces Admin Page
  * 

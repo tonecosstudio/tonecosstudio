@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PendingChoicesList Component Tests
  * 

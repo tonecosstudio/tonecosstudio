@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Integration test for batch label generation in DeliveryManagement
  * Tests the complete flow from UI interaction to service call

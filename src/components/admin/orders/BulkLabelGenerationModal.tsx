@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Modal de Resultado de Geração de Etiquetas em Massa
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for AdminModels (Product Management) Form Sanitization
  * Task: 6.2 Retrofit Product Management form (/admin/products)

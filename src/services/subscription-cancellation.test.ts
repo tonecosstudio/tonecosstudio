@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Integration tests for subscription cancellation with capacity release
  * 

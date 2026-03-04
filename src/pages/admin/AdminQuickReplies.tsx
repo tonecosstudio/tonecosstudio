@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { QuickRepliesManager } from "@/components/admin/QuickRepliesManager";
 

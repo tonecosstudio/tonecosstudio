@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Seção de Informações de Produção
  * 

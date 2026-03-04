@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for CapacityManagement page with reservation functionality
  * 

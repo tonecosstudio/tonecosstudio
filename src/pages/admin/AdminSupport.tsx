@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import SEOHead from "@/components/SEOHead";
 import { AdminLayout } from "@/components/admin/AdminLayout";

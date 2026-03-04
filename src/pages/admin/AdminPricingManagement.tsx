@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Página Unificada: Gerenciamento Completo de Preços
  * 

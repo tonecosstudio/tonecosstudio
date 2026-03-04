@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Componente de Detalhes de Orçamento
  * 

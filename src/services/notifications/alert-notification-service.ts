@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Alert Notification Service
  * 

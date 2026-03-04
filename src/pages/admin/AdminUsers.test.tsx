@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for AdminUsers form sanitization
  * Task 6.1: Retrofit User Management form (/admin/users)

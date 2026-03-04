@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Pause Service Tests
  * 

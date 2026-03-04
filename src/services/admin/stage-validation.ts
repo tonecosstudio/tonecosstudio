@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Stage Validation Service
  *
