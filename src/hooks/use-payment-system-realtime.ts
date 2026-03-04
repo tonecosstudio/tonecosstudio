@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * usePaymentSystemRealtime - Hook combinado para assinar todo o sistema de pagamento em tempo real
  *

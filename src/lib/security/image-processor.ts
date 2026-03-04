@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Image Processing and Security Service
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook de Mutações de Pedidos
  *

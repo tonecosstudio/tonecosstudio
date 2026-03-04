@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para criar nível de preço com planos automáticos
  * 

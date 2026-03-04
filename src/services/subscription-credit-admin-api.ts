@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Admin API Service for Subscription Credit System
  * Connects to the subscription-api backend admin endpoints

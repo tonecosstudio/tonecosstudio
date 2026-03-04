@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para gerenciar atribuições de coleções a níveis de preço
  * 

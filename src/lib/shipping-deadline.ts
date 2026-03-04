@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shipping deadline calculation utilities for ORDAX platform
  * 

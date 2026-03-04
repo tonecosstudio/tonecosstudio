@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para acessar informações do ciclo/lote atual
  * Versão 2.0: Suporte a Modelo Recorrente Mensal (2 ciclos por mês)

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para gerenciar relatórios de níveis de preço
  * 

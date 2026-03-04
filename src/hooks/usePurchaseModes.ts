@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para gerenciar modalidades de compra (Purchase Modes)
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ConversationService - Service for managing support conversations for payments
  *

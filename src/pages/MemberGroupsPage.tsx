@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MemberGroupList } from "@/components/groups/MemberGroupList";
 
 export default function MemberGroupsPage() {

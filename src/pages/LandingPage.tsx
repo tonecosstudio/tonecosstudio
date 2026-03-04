@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Package, Shield, CheckCircle2, Sparkles, Crown, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';

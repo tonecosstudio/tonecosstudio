@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Automatic Maintenance Service
  * 

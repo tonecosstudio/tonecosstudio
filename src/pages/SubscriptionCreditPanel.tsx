@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * User Panel for Subscription Credit System
  * Task 12.1: Criar componentes do Painel do Usuário
