@@ -2,12 +2,12 @@
 -- RECRIAR TABELA chat_group_messages DO ZERO
 -- =====================================================
 -- Problema: Erro 406 persiste mesmo com RLS desabilitado
--- Solução: Recriar a tabela com estrutura correta
+-- SoluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: Recriar a tabela com estrutura correta
 -- =====================================================
 
 -- 1. Fazer backup dos dados existentes (se houver)
 DROP TABLE IF EXISTS chat_group_messages_backup;
-CREATE TABLE chat_group_messages_backup AS 
+CREATE TABLE IF NOT EXISTS chat_group_messages_backup AS 
 SELECT * FROM chat_group_messages;
 
 -- 2. Verificar backup
@@ -15,11 +15,11 @@ SELECT
   'Backup criado com ' || COUNT(*) || ' registros' as status
 FROM chat_group_messages_backup;
 
--- 3. Remover a tabela atual (isso remove todas as políticas RLS automaticamente)
+-- 3. Remover a tabela atual (isso remove todas as polÃƒÆ’Ã‚Â­ticas RLS automaticamente)
 DROP TABLE IF EXISTS chat_group_messages CASCADE;
 
 -- 4. Recriar a tabela com estrutura CORRETA
-CREATE TABLE chat_group_messages (
+CREATE TABLE IF NOT EXISTS chat_group_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID NOT NULL REFERENCES chat_groups(id) ON DELETE CASCADE,
   sender_id UUID NOT NULL REFERENCES auth.users(id),
@@ -28,15 +28,15 @@ CREATE TABLE chat_group_messages (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 5. Criar índices para performance
-CREATE INDEX idx_chat_group_messages_group_id ON chat_group_messages(group_id);
-CREATE INDEX idx_chat_group_messages_created_at ON chat_group_messages(created_at DESC);
-CREATE INDEX idx_chat_group_messages_sender_id ON chat_group_messages(sender_id);
+-- 5. Criar ÃƒÆ’Ã‚Â­ndices para performance
+CREATE INDEX IF NOT EXISTS idx_chat_group_messages_group_id ON chat_group_messages(group_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_messages_created_at ON chat_group_messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_group_messages_sender_id ON chat_group_messages(sender_id);
 
 -- 6. Habilitar RLS
 ALTER TABLE chat_group_messages ENABLE ROW LEVEL SECURITY;
 
--- 7. Criar política simples: qualquer usuário autenticado pode ler
+-- 7. Criar polÃƒÆ’Ã‚Â­tica simples: qualquer usuÃƒÆ’Ã‚Â¡rio autenticado pode ler
 CREATE POLICY "auth_users_can_read" ON chat_group_messages
   FOR SELECT
   TO authenticated
@@ -80,16 +80,16 @@ CREATE POLICY "admins_can_delete" ON chat_group_messages
 
 -- 11. Verificar estrutura criada
 SELECT 
-  '✅ TABELA RECRIADA' as status,
+  'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ TABELA RECRIADA' as status,
   column_name,
   data_type
 FROM information_schema.columns
 WHERE table_name = 'chat_group_messages'
 ORDER BY ordinal_position;
 
--- 12. Verificar políticas
+-- 12. Verificar polÃƒÆ’Ã‚Â­ticas
 SELECT 
-  '✅ POLÍTICAS CRIADAS' as status,
+  'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ POLÃƒÆ’Ã‚ÂTICAS CRIADAS' as status,
   policyname,
   cmd
 FROM pg_policies
@@ -97,12 +97,12 @@ WHERE tablename = 'chat_group_messages';
 
 -- 13. Testar query
 SELECT 
-  '✅ TESTE DA QUERY' as status,
+  'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ TESTE DA QUERY' as status,
   'A query deve funcionar agora' as info;
 
--- Instruções finais
+-- InstruÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes finais
 SELECT 
-  '🎯 PRÓXIMOS PASSOS' as titulo,
-  '1. Recarregue a página (F5)' as passo_1,
+  'ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ PRÃƒÆ’Ã¢â‚¬Å“XIMOS PASSOS' as titulo,
+  '1. Recarregue a pÃƒÆ’Ã‚Â¡gina (F5)' as passo_1,
   '2. O erro 406 deve desaparecer' as passo_2,
   '3. Teste criar e visualizar mensagens' as passo_3;

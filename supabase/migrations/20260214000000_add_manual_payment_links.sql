@@ -100,8 +100,8 @@ BEGIN
   )
   SELECT 
     quotes.user_id,
-    'Link de Pagamento Disponível',
-    'Seu link de pagamento está pronto! Valor: R$ ' || NEW.amount::TEXT,
+    'Link de Pagamento DisponÃƒÂ­vel',
+    'Seu link de pagamento estÃƒÂ¡ pronto! Valor: R$ ' || NEW.amount::TEXT,
     'payment',
     '/orcamento/acompanhar/' || NEW.quote_id
   FROM quotes
@@ -121,5 +121,5 @@ CREATE TRIGGER trigger_notify_payment_link_sent
 -- Comments
 COMMENT ON TABLE payment_links IS 'Manual payment links sent by admin to customers';
 COMMENT ON COLUMN payment_links.payment_type IS 'Type of payment: voucher (R$100), deposit (sinal), final (restante), full (completo)';
-COMMENT ON COLUMN payment_links.customer_confirmed_at IS 'When customer clicked "Já Paguei"';
+COMMENT ON COLUMN payment_links.customer_confirmed_at IS 'When customer clicked "JÃƒÂ¡ Paguei"';
 COMMENT ON COLUMN payment_links.admin_confirmed_at IS 'When admin confirmed payment received';

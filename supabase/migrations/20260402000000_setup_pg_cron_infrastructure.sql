@@ -2,7 +2,7 @@
 -- Feature: ORDAX Complete System
 -- Task: 12.1 Set up pg_cron extension
 -- Requirements: 10.1, 34.1
--- Description: Configura infraestrutura de cron jobs para automação
+-- Description: Configura infraestrutura de cron jobs para automaÃƒÂ§ÃƒÂ£o
 
 -- =====================================================
 -- ORDAX COMPLETE SYSTEM - pg_cron Infrastructure
@@ -35,19 +35,24 @@ COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler for PostgreSQL - ORDAX
 -- STEP 2: Configure Timezone for Cron Jobs
 -- =====================================================
 
--- Set timezone to America/Bahia for all cron job executions
--- This ensures all scheduled jobs run according to Salvador/BA local time
--- Note: This affects the cron.schedule() function timing
-ALTER DATABASE postgres SET cron.timezone = 'America/Bahia';
+-- Note: The cron.timezone configuration must be set at the database level
+-- In Supabase, this is typically configured through the dashboard or requires
+-- a database restart. For now, we'll document this requirement.
+--
+-- To configure manually (requires superuser):
+-- ALTER DATABASE postgres SET cron.timezone = 'America/Bahia';
+--
+-- All cron jobs should explicitly use 'America/Bahia' timezone in their
+-- schedule expressions or use AT TIME ZONE in their SQL queries.
 
 -- Add comment explaining timezone configuration
-COMMENT ON DATABASE postgres IS 'ORDAX Platform Database - Cron jobs execute in America/Bahia timezone (UTC-3)';
+COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - Jobs should use America/Bahia timezone (UTC-3)';
 
 -- =====================================================
 -- STEP 3: Create Cron Job Logs Table
 -- =====================================================
 
--- Create table to track all cron job executions
+-- CREATE TABLE IF NOT EXISTS to track all cron job executions
 -- This provides audit trail and debugging capability
 CREATE TABLE IF NOT EXISTS cron_job_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -219,3 +224,4 @@ GRANT ALL ON cron_job_logs TO service_role;
 -- - Task 12.5: Cycle status transitions (hourly)
 --
 -- =====================================================
+

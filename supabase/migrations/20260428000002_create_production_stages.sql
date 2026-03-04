@@ -9,7 +9,7 @@
 -- 1. CREATE PRODUCTION_STAGES TABLE
 -- =====================================================
 
-CREATE TABLE production_stages (
+CREATE TABLE IF NOT EXISTS production_stages (
   -- Primary key
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -79,29 +79,70 @@ CREATE TABLE production_stages (
   CONSTRAINT unique_stage_per_queue UNIQUE (production_queue_id, stage_order)
 );
 
+-- Add missing columns if table already exists
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'stage_name') THEN
+    ALTER TABLE production_stages ADD COLUMN stage_name TEXT NOT NULL DEFAULT 'design';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'stage_order') THEN
+    ALTER TABLE production_stages ADD COLUMN stage_order INTEGER NOT NULL DEFAULT 1;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'estimated_duration') THEN
+    ALTER TABLE production_stages ADD COLUMN estimated_duration INTEGER NOT NULL DEFAULT 24;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'actual_duration') THEN
+    ALTER TABLE production_stages ADD COLUMN actual_duration INTEGER;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'assigned_to_name') THEN
+    ALTER TABLE production_stages ADD COLUMN assigned_to_name TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'assigned_at') THEN
+    ALTER TABLE production_stages ADD COLUMN assigned_at TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'notes') THEN
+    ALTER TABLE production_stages ADD COLUMN notes TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'photos') THEN
+    ALTER TABLE production_stages ADD COLUMN photos TEXT[] DEFAULT '{}';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'is_blocked') THEN
+    ALTER TABLE production_stages ADD COLUMN is_blocked BOOLEAN NOT NULL DEFAULT false;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'block_reason') THEN
+    ALTER TABLE production_stages ADD COLUMN block_reason TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'blocked_at') THEN
+    ALTER TABLE production_stages ADD COLUMN blocked_at TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_stages' AND column_name = 'unblocked_at') THEN
+    ALTER TABLE production_stages ADD COLUMN unblocked_at TIMESTAMPTZ;
+  END IF;
+END $$;
+
 -- =====================================================
 -- 2. CREATE INDEXES FOR PERFORMANCE
 -- =====================================================
 
 -- Index for production queue lookups (most common query)
-CREATE INDEX idx_production_stages_queue ON production_stages(production_queue_id);
+CREATE INDEX IF NOT EXISTS idx_production_stages_queue ON production_stages(production_queue_id);
 
 -- Index for status filtering
-CREATE INDEX idx_production_stages_status ON production_stages(status);
+CREATE INDEX IF NOT EXISTS idx_production_stages_status ON production_stages(status);
 
 -- Index for blocked items queries
-CREATE INDEX idx_production_stages_blocked ON production_stages(is_blocked, blocked_at) 
+CREATE INDEX IF NOT EXISTS idx_production_stages_blocked ON production_stages(is_blocked, blocked_at) 
   WHERE is_blocked = true;
 
 -- Index for assignment queries
-CREATE INDEX idx_production_stages_assigned ON production_stages(assigned_to) 
+CREATE INDEX IF NOT EXISTS idx_production_stages_assigned ON production_stages(assigned_to) 
   WHERE assigned_to IS NOT NULL;
 
 -- Composite index for queue and stage order (for sequential stage queries)
-CREATE INDEX idx_production_stages_queue_order ON production_stages(production_queue_id, stage_order);
+CREATE INDEX IF NOT EXISTS idx_production_stages_queue_order ON production_stages(production_queue_id, stage_order);
 
 -- Index for in-progress stages
-CREATE INDEX idx_production_stages_in_progress ON production_stages(started_at) 
+CREATE INDEX IF NOT EXISTS idx_production_stages_in_progress ON production_stages(started_at) 
   WHERE status = 'in_progress' AND completed_at IS NULL;
 
 -- =====================================================

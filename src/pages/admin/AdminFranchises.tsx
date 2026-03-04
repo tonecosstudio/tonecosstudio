@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import {
   Table,
   TableBody,
@@ -66,7 +67,8 @@ function fmtDate(iso: string) {
   }
 }
 
-export default function AdminFranchises() {
+// Componente interno sem layout (para uso em AdminModelsAndFranchises)
+export function AdminFranchisesContent() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -545,5 +547,14 @@ export default function AdminFranchises() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Componente padrão com layout (para uso standalone)
+export default function AdminFranchises() {
+  return (
+    <AdminLayout>
+      <AdminFranchisesContent />
+    </AdminLayout>
   );
 }

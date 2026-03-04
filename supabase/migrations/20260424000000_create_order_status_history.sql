@@ -9,7 +9,7 @@
 -- 1. CREATE ORDER_STATUS_HISTORY TABLE
 -- =====================================================
 
-CREATE TABLE order_status_history (
+CREATE TABLE IF NOT EXISTS order_status_history (
   -- Primary key
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -38,13 +38,13 @@ CREATE TABLE order_status_history (
 -- =====================================================
 
 -- Index for order lookups (most common query)
-CREATE INDEX idx_order_status_history_order ON order_status_history(order_id, order_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_order ON order_status_history(order_id, order_type, created_at DESC);
 
 -- Index for admin lookups
-CREATE INDEX idx_order_status_history_admin ON order_status_history(changed_by_admin_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_admin ON order_status_history(changed_by_admin_id);
 
 -- Index for date range queries
-CREATE INDEX idx_order_status_history_created ON order_status_history(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_created ON order_status_history(created_at DESC);
 
 -- =====================================================
 -- 3. ADD COMMENTS FOR DOCUMENTATION

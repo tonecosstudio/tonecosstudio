@@ -15,23 +15,22 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS Policy: Allow authenticated users to upload files
-CREATE POLICY IF NOT EXISTS "Allow authenticated users to upload payment vouchers"
+DROP POLICY IF EXISTS "Allow authenticated users to upload payment vouchers" ON storage.objects;
+CREATE POLICY "Allow authenticated users to upload payment vouchers"
 ON storage.objects FOR INSERT
 TO authenticated
-WITH CHECK (
-  bucket_id = 'payment-vouchers' AND
-  -- Ensure file size is within limit (5MB)
-  (octet_length(decode(encode(storage.foldername(name), 'escape'), 'base64')) <= 5242880)
-);
+WITH CHECK (bucket_id = 'payment-vouchers');
 
 -- RLS Policy: Allow public read access to payment vouchers
-CREATE POLICY IF NOT EXISTS "Allow public read access to payment vouchers"
+DROP POLICY IF EXISTS "Allow public read access to payment vouchers" ON storage.objects;
+CREATE POLICY "Allow public read access to payment vouchers"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'payment-vouchers');
 
 -- RLS Policy: Allow users to update their own files
-CREATE POLICY IF NOT EXISTS "Allow users to update their own payment vouchers"
+DROP POLICY IF EXISTS "Allow users to update their own payment vouchers" ON storage.objects;
+CREATE POLICY "Allow users to update their own payment vouchers"
 ON storage.objects FOR UPDATE
 TO authenticated
 USING (
@@ -40,7 +39,8 @@ USING (
 );
 
 -- RLS Policy: Allow users to delete their own files
-CREATE POLICY IF NOT EXISTS "Allow users to delete their own payment vouchers"
+DROP POLICY IF EXISTS "Allow users to delete their own payment vouchers" ON storage.objects;
+CREATE POLICY "Allow users to delete their own payment vouchers"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (
@@ -49,22 +49,12 @@ USING (
 );
 
 -- RLS Policy: Allow admins to manage all files
-CREATE POLICY IF NOT EXISTS "Allow admins to manage all payment vouchers"
+DROP POLICY IF EXISTS "Allow admins to manage all payment vouchers" ON storage.objects;
+CREATE POLICY "Allow admins to manage all payment vouchers"
 ON storage.objects FOR ALL
 TO authenticated
 USING (
   bucket_id = 'payment-vouchers' AND
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role = 'admin'
-  )
+  has_role(auth.uid(), 'admin'::app_role)
 );
 
--- Add comment to bucket
-COMMENT ON TABLE storage.buckets IS 'Storage buckets for file uploads';
-
--- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_storage_objects_payment_vouchers
-ON storage.objects (bucket_id, name)
-WHERE bucket_id = 'payment-vouchers';

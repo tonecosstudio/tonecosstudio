@@ -1,11 +1,11 @@
 -- ============================================
--- Migration: Sistema de Preços Configurável por Coleção
+-- Migration: Sistema de PreÃƒÂ§os ConfigurÃƒÂ¡vel por ColeÃƒÂ§ÃƒÂ£o
 -- Data: 2026-02-15 14:00
--- Descrição: Adicionar campos de preço nas coleções e configuração de entrada
+-- DescriÃƒÂ§ÃƒÂ£o: Adicionar campos de preÃƒÂ§o nas coleÃƒÂ§ÃƒÂµes e configuraÃƒÂ§ÃƒÂ£o de entrada
 -- ============================================
 
 -- =====================================================
--- 1. ADICIONAR CAMPOS DE PREÇO NAS COLEÇÕES
+-- 1. ADICIONAR CAMPOS DE PREÃƒâ€¡O NAS COLEÃƒâ€¡Ãƒâ€¢ES
 -- =====================================================
 
 ALTER TABLE collections
@@ -14,29 +14,29 @@ ADD COLUMN IF NOT EXISTS price_pix NUMERIC(10,2) DEFAULT 475.00,
 ADD COLUMN IF NOT EXISTS deposit_amount NUMERIC(10,2) DEFAULT 100.00,
 ADD COLUMN IF NOT EXISTS is_price_custom BOOLEAN DEFAULT false;
 
--- Comentários
-COMMENT ON COLUMN collections.price_full IS 'Preço cheio da peça avulsa (sem desconto)';
-COMMENT ON COLUMN collections.price_pix IS 'Preço com desconto PIX (5% OFF padrão)';
+-- ComentÃƒÂ¡rios
+COMMENT ON COLUMN collections.price_full IS 'PreÃƒÂ§o cheio da peÃƒÂ§a avulsa (sem desconto)';
+COMMENT ON COLUMN collections.price_pix IS 'PreÃƒÂ§o com desconto PIX (5% OFF padrÃƒÂ£o)';
 COMMENT ON COLUMN collections.deposit_amount IS 'Valor da entrada para compra avulsa';
-COMMENT ON COLUMN collections.is_price_custom IS 'Se true, usa preço customizado. Se false, usa preço padrão do sistema';
+COMMENT ON COLUMN collections.is_price_custom IS 'Se true, usa preÃƒÂ§o customizado. Se false, usa preÃƒÂ§o padrÃƒÂ£o do sistema';
 
 -- =====================================================
--- 2. ATUALIZAR CONFIGURAÇÕES GLOBAIS
+-- 2. ATUALIZAR CONFIGURAÃƒâ€¡Ãƒâ€¢ES GLOBAIS
 -- =====================================================
 
--- Adicionar configurações de preço padrão
+-- Adicionar configuraÃƒÂ§ÃƒÂµes de preÃƒÂ§o padrÃƒÂ£o
 INSERT INTO system_settings (key, value, description)
 VALUES 
-  ('default_price_full', '500.00', 'Preço padrão cheio para peças avulsas'),
-  ('default_price_pix', '475.00', 'Preço padrão PIX (5% OFF)'),
-  ('default_deposit_amount', '100.00', 'Valor padrão da entrada'),
+  ('default_price_full', '500.00', 'PreÃƒÂ§o padrÃƒÂ£o cheio para peÃƒÂ§as avulsas'),
+  ('default_price_pix', '475.00', 'PreÃƒÂ§o padrÃƒÂ£o PIX (5% OFF)'),
+  ('default_deposit_amount', '100.00', 'Valor padrÃƒÂ£o da entrada'),
   ('pix_discount_percentage', '5.00', 'Percentual de desconto PIX')
 ON CONFLICT (key) DO UPDATE SET
   value = EXCLUDED.value,
   description = EXCLUDED.description;
 
 -- =====================================================
--- 3. FUNÇÃO: Calcular Preço PIX Automaticamente
+-- 3. FUNÃƒâ€¡ÃƒÆ’O: Calcular PreÃƒÂ§o PIX Automaticamente
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION calculate_pix_price(
@@ -49,10 +49,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-COMMENT ON FUNCTION calculate_pix_price IS 'Calcula preço PIX com desconto percentual';
+COMMENT ON FUNCTION calculate_pix_price IS 'Calcula preÃƒÂ§o PIX com desconto percentual';
 
 -- =====================================================
--- 4. FUNÇÃO: Obter Preços de uma Coleção
+-- 4. FUNÃƒâ€¡ÃƒÆ’O: Obter PreÃƒÂ§os de uma ColeÃƒÂ§ÃƒÂ£o
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION get_collection_pricing(p_collection_id UUID)
@@ -70,7 +70,7 @@ DECLARE
   v_default_price_pix NUMERIC;
   v_default_deposit NUMERIC;
 BEGIN
-  -- Buscar configurações da coleção
+  -- Buscar configuraÃƒÂ§ÃƒÂµes da coleÃƒÂ§ÃƒÂ£o
   SELECT 
     c.price_full,
     c.price_pix,
@@ -80,7 +80,7 @@ BEGIN
   FROM collections c
   WHERE c.id = p_collection_id;
   
-  -- Se não encontrou a coleção, retornar valores padrão
+  -- Se nÃƒÂ£o encontrou a coleÃƒÂ§ÃƒÂ£o, retornar valores padrÃƒÂ£o
   IF NOT FOUND THEN
     SELECT value::NUMERIC INTO v_default_price_full FROM system_settings WHERE key = 'default_price_full';
     SELECT value::NUMERIC INTO v_default_price_pix FROM system_settings WHERE key = 'default_price_pix';
@@ -96,7 +96,7 @@ BEGIN
     RETURN;
   END IF;
   
-  -- Se usa preço customizado, retornar valores da coleção
+  -- Se usa preÃƒÂ§o customizado, retornar valores da coleÃƒÂ§ÃƒÂ£o
   IF v_collection.is_price_custom THEN
     RETURN QUERY SELECT 
       v_collection.price_full,
@@ -106,7 +106,7 @@ BEGIN
       v_collection.price_pix - v_collection.deposit_amount,
       true;
   ELSE
-    -- Usar valores padrão do sistema
+    -- Usar valores padrÃƒÂ£o do sistema
     SELECT value::NUMERIC INTO v_default_price_full FROM system_settings WHERE key = 'default_price_full';
     SELECT value::NUMERIC INTO v_default_price_pix FROM system_settings WHERE key = 'default_price_pix';
     SELECT value::NUMERIC INTO v_default_deposit FROM system_settings WHERE key = 'default_deposit_amount';
@@ -122,10 +122,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION get_collection_pricing IS 'Retorna preços de uma coleção (customizado ou padrão)';
+COMMENT ON FUNCTION get_collection_pricing IS 'Retorna preÃƒÂ§os de uma coleÃƒÂ§ÃƒÂ£o (customizado ou padrÃƒÂ£o)';
 
 -- =====================================================
--- 5. TRIGGER: Atualizar Preço PIX Automaticamente
+-- 5. TRIGGER: Atualizar PreÃƒÂ§o PIX Automaticamente
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION update_collection_pix_price()
@@ -138,7 +138,7 @@ BEGIN
   FROM system_settings 
   WHERE key = 'pix_discount_percentage';
   
-  -- Se price_full mudou e is_price_custom é true, recalcular price_pix
+  -- Se price_full mudou e is_price_custom ÃƒÂ© true, recalcular price_pix
   IF NEW.is_price_custom AND (NEW.price_full IS DISTINCT FROM OLD.price_full) THEN
     NEW.price_pix := calculate_pix_price(NEW.price_full, v_discount_percentage);
   END IF;
@@ -154,7 +154,7 @@ CREATE TRIGGER trigger_update_collection_pix_price
   EXECUTE FUNCTION update_collection_pix_price();
 
 -- =====================================================
--- 6. VIEW: Preços de Todas as Coleções
+-- 6. VIEW: PreÃƒÂ§os de Todas as ColeÃƒÂ§ÃƒÂµes
 -- =====================================================
 
 CREATE OR REPLACE VIEW collection_pricing_view AS
@@ -178,20 +178,20 @@ SELECT
   c.is_active
 FROM collections c;
 
-COMMENT ON VIEW collection_pricing_view IS 'View com preços efetivos de cada coleção';
+COMMENT ON VIEW collection_pricing_view IS 'View com preÃƒÂ§os efetivos de cada coleÃƒÂ§ÃƒÂ£o';
 
 -- =====================================================
 -- 7. RLS POLICIES
 -- =====================================================
 
--- Permitir leitura pública da view
+-- Permitir leitura pÃƒÂºblica da view
 GRANT SELECT ON collection_pricing_view TO authenticated, anon;
 
 -- =====================================================
 -- 8. DADOS INICIAIS
 -- =====================================================
 
--- Atualizar coleções existentes com valores padrão
+-- Atualizar coleÃƒÂ§ÃƒÂµes existentes com valores padrÃƒÂ£o
 UPDATE collections
 SET 
   price_full = 500.00,
@@ -201,7 +201,7 @@ SET
 WHERE price_full IS NULL;
 
 -- =====================================================
--- 9. ÍNDICES
+-- 9. ÃƒÂNDICES
 -- =====================================================
 
 CREATE INDEX IF NOT EXISTS idx_collections_pricing ON collections(is_price_custom, price_full);

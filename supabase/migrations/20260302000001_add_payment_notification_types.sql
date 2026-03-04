@@ -1,7 +1,7 @@
 -- =====================================================
 -- MIGRATION: Add payment notification types to enum
 -- Date: 2026-03-02
--- Description: Adicionar tipos de notificação para pagamentos manuais
+-- Description: Adicionar tipos de notificaÃƒÂ§ÃƒÂ£o para pagamentos manuais
 -- =====================================================
 
 -- Adicionar novos valores ao ENUM user_notification_type

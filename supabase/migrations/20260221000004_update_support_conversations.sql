@@ -30,7 +30,7 @@ ON support_conversations USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_support_conversations_risk_flags 
 ON support_conversations USING GIN(risk_flags);
 
--- Create index for promised_date (partial index for non-null values)
+-- CREATE INDEX IF NOT EXISTS for promised_date (partial index for non-null values)
 CREATE INDEX IF NOT EXISTS idx_support_conversations_promised_date 
 ON support_conversations(promised_date) 
 WHERE promised_date IS NOT NULL;
@@ -43,8 +43,8 @@ CREATE INDEX IF NOT EXISTS idx_support_conversations_subscription
 ON support_conversations(subscription_id);
 
 -- Add comments
-COMMENT ON COLUMN support_conversations.tags IS 'Array de tags para categorização múltipla (pedido, orcamento, duvida, reclamacao, assinatura, urgente)';
+COMMENT ON COLUMN support_conversations.tags IS 'Array de tags para categorizaÃƒÂ§ÃƒÂ£o mÃƒÂºltipla (pedido, orcamento, duvida, reclamacao, assinatura, urgente)';
 COMMENT ON COLUMN support_conversations.risk_flags IS 'Array de flags de risco (cliente_conflito, atraso_critico, pagamento_problema)';
-COMMENT ON COLUMN support_conversations.promised_date IS 'Data prometida ao cliente para resolução ou entrega';
-COMMENT ON COLUMN support_conversations.quote_id IS 'Vincula conversa a um orçamento';
+COMMENT ON COLUMN support_conversations.promised_date IS 'Data prometida ao cliente para resoluÃƒÂ§ÃƒÂ£o ou entrega';
+COMMENT ON COLUMN support_conversations.quote_id IS 'Vincula conversa a um orÃƒÂ§amento';
 COMMENT ON COLUMN support_conversations.subscription_id IS 'Vincula conversa a uma assinatura';

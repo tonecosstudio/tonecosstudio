@@ -2,33 +2,33 @@
 -- Migration: Fix 406 - Expor Tabela no PostgREST
 -- Date: 2026-02-27
 -- Problem: Erro 406 persiste mesmo com RLS desabilitado
--- Solution: Garantir que tabela está no schema correto e exposta
+-- Solution: Garantir que tabela estÃƒÂ¡ no schema correto e exposta
 -- =====================================================
 
 -- =====================================================
 -- STEP 1: Verificar e corrigir schema da tabela
 -- =====================================================
 
--- Garantir que a tabela está no schema public
--- (já deveria estar, mas vamos confirmar)
+-- Garantir que a tabela estÃƒÂ¡ no schema public
+-- (jÃƒÂ¡ deveria estar, mas vamos confirmar)
 
 -- =====================================================
--- STEP 2: Garantir que a tabela está acessível via API
+-- STEP 2: Garantir que a tabela estÃƒÂ¡ acessÃƒÂ­vel via API
 -- =====================================================
 
--- Revogar permissões antigas
+-- Revogar permissÃƒÂµes antigas
 REVOKE ALL ON chat_group_members FROM anon;
 REVOKE ALL ON chat_group_members FROM authenticated;
 
--- Conceder permissões explícitas
+-- Conceder permissÃƒÂµes explÃƒÂ­citas
 GRANT SELECT, INSERT, UPDATE, DELETE ON chat_group_members TO authenticated;
 GRANT USAGE ON SCHEMA public TO authenticated;
 
 -- =====================================================
--- STEP 3: Recriar a tabela se necessário
+-- STEP 3: Recriar a tabela se necessÃƒÂ¡rio
 -- =====================================================
 
--- Verificar se há problemas com a estrutura
+-- Verificar se hÃƒÂ¡ problemas com a estrutura
 DO $$
 DECLARE
   table_exists BOOLEAN;
@@ -40,9 +40,9 @@ BEGIN
   ) INTO table_exists;
   
   IF table_exists THEN
-    RAISE NOTICE '✅ Tabela chat_group_members existe no schema public';
+    RAISE NOTICE 'Ã¢Å“â€¦ Tabela chat_group_members existe no schema public';
   ELSE
-    RAISE WARNING '❌ Tabela chat_group_members NÃO existe!';
+    RAISE WARNING 'Ã¢ÂÅ’ Tabela chat_group_members NÃƒÆ’O existe!';
   END IF;
 END $$;
 
@@ -54,10 +54,10 @@ NOTIFY pgrst, 'reload schema';
 NOTIFY pgrst, 'reload config';
 
 -- =====================================================
--- STEP 5: Verificação completa
+-- STEP 5: VerificaÃƒÂ§ÃƒÂ£o completa
 -- =====================================================
 
--- Verificar permissões
+-- Verificar permissÃƒÂµes
 SELECT 
   grantee,
   privilege_type

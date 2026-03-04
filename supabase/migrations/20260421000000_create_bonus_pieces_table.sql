@@ -77,30 +77,22 @@ CREATE POLICY "Admins delete bonus pieces"
       AND auth.users.role = 'admin'
     )
   );
+-- Ensure image_url column exists
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'bonus_pieces' AND column_name = 'image_url') THEN
+    ALTER TABLE bonus_pieces ADD COLUMN image_url TEXT;
+  END IF;
+END $$;
 
--- Comment on table for documentation
-COMMENT ON TABLE bonus_pieces IS 'Exclusive collectible pieces included with the 6th delivery of Semestral subscriptions. Tracks bonus pieces, their status, and association with subscriptions and deliveries.';
-
--- Comment on columns
-COMMENT ON COLUMN bonus_pieces.id IS 'Primary key';
-COMMENT ON COLUMN bonus_pieces.subscription_id IS 'Reference to the Semestral subscription receiving this bonus piece';
-COMMENT ON COLUMN bonus_pieces.delivery_id IS 'Reference to the 6th delivery that includes this bonus piece (NULL until assigned)';
-COMMENT ON COLUMN bonus_pieces.description IS 'Description of the bonus piece';
-COMMENT ON COLUMN bonus_pieces.image_url IS 'URL to the bonus piece image';
-COMMENT ON COLUMN bonus_pieces.status IS 'Current status: pending (not yet prepared), prepared (ready to ship), shipped (sent to customer)';
-COMMENT ON COLUMN bonus_pieces.prepared_at IS 'Timestamp when the bonus piece was prepared (UTC)';
-COMMENT ON COLUMN bonus_pieces.shipped_at IS 'Timestamp when the bonus piece was shipped (UTC)';
-COMMENT ON COLUMN bonus_pieces.created_at IS 'Timestamp when the record was created (UTC)';
-COMMENT ON COLUMN bonus_pieces.updated_at IS 'Timestamp when the record was last updated (UTC)';
-
+-- Comments removed to avoid errors if columns don't exist
 -- Create trigger to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_bonus_pieces_updated_at()
-RETURNS TRIGGER AS $
-BEGIN
+RETURNS TRIGGER AS $$BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trigger_update_bonus_pieces_updated_at
   BEFORE UPDATE ON bonus_pieces

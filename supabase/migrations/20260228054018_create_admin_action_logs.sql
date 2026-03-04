@@ -24,10 +24,10 @@ CREATE TABLE IF NOT EXISTS admin_action_logs (
 );
 
 -- Indexes for efficient querying
-CREATE INDEX idx_admin_action_logs_delivery ON admin_action_logs(delivery_id);
-CREATE INDEX idx_admin_action_logs_admin ON admin_action_logs(admin_user_id);
-CREATE INDEX idx_admin_action_logs_created ON admin_action_logs(created_at DESC);
-CREATE INDEX idx_admin_action_logs_action_type ON admin_action_logs(action_type);
+CREATE INDEX IF NOT EXISTS idx_admin_action_logs_delivery ON admin_action_logs(delivery_id);
+CREATE INDEX IF NOT EXISTS idx_admin_action_logs_admin ON admin_action_logs(admin_user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_action_logs_created ON admin_action_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_action_logs_action_type ON admin_action_logs(action_type);
 
 -- Enable RLS
 ALTER TABLE admin_action_logs ENABLE ROW LEVEL SECURITY;
@@ -39,9 +39,9 @@ CREATE POLICY "Admins can view all action logs"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 

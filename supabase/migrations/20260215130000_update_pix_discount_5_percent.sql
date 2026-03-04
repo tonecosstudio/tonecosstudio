@@ -1,11 +1,11 @@
 -- ============================================
 -- Migration: Atualizar Desconto PIX para 5%
 -- Data: 2026-02-15 13:00
--- Descrição: Corrigir desconto PIX de 10% para 5% em todos os planos
+-- DescriÃƒÂ§ÃƒÂ£o: Corrigir desconto PIX de 10% para 5% em todos os planos
 -- ============================================
 
 -- ATUALIZAR PLANO TRIMESTRAL
--- Preço Full: R$ 1.350,00
+-- PreÃƒÂ§o Full: R$ 1.350,00
 -- Desconto PIX 5%: R$ 1.350,00 * 0,95 = R$ 1.282,50
 UPDATE subscription_plans
 SET 
@@ -14,7 +14,7 @@ SET
 WHERE plan_type = 'trimestral';
 
 -- ATUALIZAR PLANO SEMESTRAL
--- Preço Full: R$ 2.700,00
+-- PreÃƒÂ§o Full: R$ 2.700,00
 -- Desconto PIX 5%: R$ 2.700,00 * 0,95 = R$ 2.565,00
 UPDATE subscription_plans
 SET 
@@ -36,12 +36,12 @@ WHERE is_active = true
 ORDER BY display_order;
 
 -- ============================================
--- COMENTÁRIOS
+-- COMENTÃƒÂRIOS
 -- ============================================
-COMMENT ON COLUMN subscription_plans.price_pix IS 'Preço com 5% de desconto para pagamento via PIX';
+COMMENT ON COLUMN subscription_plans.price_pix IS 'PreÃƒÂ§o com 5% de desconto para pagamento via PIX';
 
 -- ============================================
--- VALIDAÇÃO
+-- VALIDAÃƒâ€¡ÃƒÆ’O
 -- ============================================
 -- Deve retornar:
 -- Trimestral: price_pix = 1282.50 (5% de desconto)

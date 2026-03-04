@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPendingChoices, type ChoiceFilters, type CharacterChoice } from "@/services/admin/choice-service";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,27 +156,24 @@ export default function CharacterChoiceManagerPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Gerenciamento de Escolhas de Personagens
-            </h1>
-            <p className="text-sm text-gray-500">
-              Gerencie as escolhas de personagens dos clientes com prazos e aprovações
-            </p>
-          </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">
+            Gerenciamento de Escolhas de Personagens
+          </h1>
+          <p className="text-muted-foreground">
+            Gerencie as escolhas de personagens dos clientes com prazos e aprovações
+          </p>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Filters Sidebar */}
-        <aside className="w-80 border-r bg-white overflow-y-auto">
-          <Card className="border-0 rounded-none shadow-none">
-            <CardContent className="p-6 space-y-6">
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Filters Sidebar */}
+          <aside className="lg:col-span-1">
+            <Card>
+              <CardContent className="p-6 space-y-6">
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -281,19 +279,23 @@ export default function CharacterChoiceManagerPage() {
                   placeholder="Selecione o período"
                 />
               </div>
-            </CardContent>
-          </Card>
-        </aside>
+              </CardContent>
+            </Card>
+          </aside>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-auto p-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground">Carregando escolhas...</p>
-            </div>
-          ) : choices && choices.length > 0 ? (
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-              <table className="w-full">
+          {/* Content Area */}
+          <main className="lg:col-span-3">
+            {isLoading ? (
+              <Card>
+                <CardContent className="flex items-center justify-center h-64 p-6">
+                  <p className="text-muted-foreground">Carregando escolhas...</p>
+                </CardContent>
+              </Card>
+            ) : choices && choices.length > 0 ? (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -381,28 +383,33 @@ export default function CharacterChoiceManagerPage() {
                     );
                   })}
                 </tbody>
-              </table>
-            </div>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
           ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <Package className="h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-lg font-medium text-gray-900">
-                Nenhuma escolha encontrada
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Tente ajustar os filtros ou a busca
-              </p>
-            </div>
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center h-64 text-center p-6">
+                <Package className="h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-gray-900">
+                  Nenhuma escolha encontrada
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Tente ajustar os filtros ou a busca
+                </p>
+              </CardContent>
+            </Card>
           )}
-        </main>
-      </div>
+          </main>
+        </div>
 
-      {/* Choice Approval Modal */}
-      <ChoiceApprovalModal
-        choice={selectedChoice}
-        open={isModalOpen}
-        onOpenChange={handleCloseModal}
-      />
-    </div>
+        {/* Choice Approval Modal */}
+        <ChoiceApprovalModal
+          choice={selectedChoice}
+          open={isModalOpen}
+          onOpenChange={handleCloseModal}
+        />
+      </div>
+    </AdminLayout>
   );
 }

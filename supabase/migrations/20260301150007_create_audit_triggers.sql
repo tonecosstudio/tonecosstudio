@@ -1,9 +1,9 @@
--- Migration: Criar triggers para auditoria automática
+-- Migration: Criar triggers para auditoria automÃƒÂ¡tica
 -- Feature: pricing-system-restructure
 -- Requisitos: 9.2, 9.3
--- Descrição: Cria triggers para registrar mudanças automaticamente
+-- DescriÃƒÂ§ÃƒÂ£o: Cria triggers para registrar mudanÃƒÂ§as automaticamente
 
--- Função trigger para atualizar updated_at automaticamente
+-- FunÃƒÂ§ÃƒÂ£o trigger para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -19,11 +19,11 @@ CREATE TRIGGER update_purchase_modes_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Função trigger para auditoria de mudanças em purchase_modes
+-- FunÃƒÂ§ÃƒÂ£o trigger para auditoria de mudanÃƒÂ§as em purchase_modes
 CREATE OR REPLACE FUNCTION audit_purchase_mode_changes()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Registrar mudança de price_multiplier
+  -- Registrar mudanÃƒÂ§a de price_multiplier
   IF OLD.price_multiplier IS DISTINCT FROM NEW.price_multiplier THEN
     INSERT INTO purchase_mode_history (
       mode_key, field_name, old_value, new_value, changed_by, changed_at
@@ -34,7 +34,7 @@ BEGIN
     );
   END IF;
   
-  -- Registrar mudança de collections_count
+  -- Registrar mudanÃƒÂ§a de collections_count
   IF OLD.collections_count IS DISTINCT FROM NEW.collections_count THEN
     INSERT INTO purchase_mode_history (
       mode_key, field_name, old_value, new_value, changed_by, changed_at
@@ -45,7 +45,7 @@ BEGIN
     );
   END IF;
   
-  -- Registrar mudança de deliveries_total
+  -- Registrar mudanÃƒÂ§a de deliveries_total
   IF OLD.deliveries_total IS DISTINCT FROM NEW.deliveries_total THEN
     INSERT INTO purchase_mode_history (
       mode_key, field_name, old_value, new_value, changed_by, changed_at
@@ -56,7 +56,7 @@ BEGIN
     );
   END IF;
   
-  -- Registrar mudança de includes_bonus
+  -- Registrar mudanÃƒÂ§a de includes_bonus
   IF OLD.includes_bonus IS DISTINCT FROM NEW.includes_bonus THEN
     INSERT INTO purchase_mode_history (
       mode_key, field_name, old_value, new_value, changed_by, changed_at
@@ -67,7 +67,7 @@ BEGIN
     );
   END IF;
   
-  -- Registrar mudança de is_active
+  -- Registrar mudanÃƒÂ§a de is_active
   IF OLD.is_active IS DISTINCT FROM NEW.is_active THEN
     INSERT INTO purchase_mode_history (
       mode_key, field_name, old_value, new_value, changed_by, changed_at
@@ -89,6 +89,6 @@ CREATE TRIGGER audit_purchase_mode_changes_trigger
   FOR EACH ROW
   EXECUTE FUNCTION audit_purchase_mode_changes();
 
--- Comentários
+-- ComentÃƒÂ¡rios
 COMMENT ON FUNCTION update_updated_at_column IS 'Atualiza automaticamente a coluna updated_at';
-COMMENT ON FUNCTION audit_purchase_mode_changes IS 'Registra automaticamente mudanças em purchase_modes no histórico';
+COMMENT ON FUNCTION audit_purchase_mode_changes IS 'Registra automaticamente mudanÃƒÂ§as em purchase_modes no histÃƒÂ³rico';

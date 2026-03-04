@@ -1,4 +1,4 @@
--- Criar tabela de pedidos (preorders) para templates dinâmicos
+-- Criar tabela de pedidos (preorders) para templates dinÃƒÂ¢micos
 
 CREATE TABLE IF NOT EXISTS preorders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS preorders (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX IF NOT EXISTS idx_preorders_user_id ON preorders(user_id);
 CREATE INDEX IF NOT EXISTS idx_preorders_status ON preorders(status);
 CREATE INDEX IF NOT EXISTS idx_preorders_created_at ON preorders(created_at DESC);
@@ -41,6 +41,6 @@ CREATE TRIGGER update_preorders_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Comentário
-COMMENT ON TABLE preorders IS 'Tabela de pedidos/pré-vendas dos clientes';
+-- ComentÃƒÂ¡rio
+COMMENT ON TABLE preorders IS 'Tabela de pedidos/prÃƒÂ©-vendas dos clientes';
 COMMENT ON COLUMN preorders.status IS 'Status do pedido: pending, confirmed, in_production, ready, shipped, delivered, cancelled';

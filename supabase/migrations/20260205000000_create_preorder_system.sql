@@ -1,4 +1,4 @@
--- Migration: Sistema de Pré-venda com Sinal
+-- Migration: Sistema de PrÃƒÂ©-venda com Sinal
 -- Purpose: Permitir que clientes paguem sinal e depois o restante
 -- Date: 2026-02-05
 
@@ -19,13 +19,13 @@ ADD COLUMN IF NOT EXISTS is_preorder BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS ready_for_final_payment BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS final_payment_notified_at TIMESTAMPTZ;
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX IF NOT EXISTS idx_quotes_payment_status ON quotes(payment_status);
 CREATE INDEX IF NOT EXISTS idx_quotes_is_preorder ON quotes(is_preorder);
 CREATE INDEX IF NOT EXISTS idx_quotes_ready_for_final_payment ON quotes(ready_for_final_payment);
 
 -- ============================================
--- PARTE 2: Tabela de Transações
+-- PARTE 2: Tabela de TransaÃƒÂ§ÃƒÂµes
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS quote_payments (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS quote_payments (
   -- Status
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'refunded')),
   
-  -- Método
+  -- MÃƒÂ©todo
   payment_method TEXT CHECK (payment_method IN ('pix', 'credit_card', 'debit_card', 'bank_transfer')),
   
   -- Dados do Pagamento
@@ -58,19 +58,19 @@ CREATE TABLE IF NOT EXISTS quote_payments (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX IF NOT EXISTS idx_payments_quote ON quote_payments(quote_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON quote_payments(status);
 CREATE INDEX IF NOT EXISTS idx_payments_type ON quote_payments(payment_type);
 
 -- ============================================
--- PARTE 3: Tabela de Configurações de Pré-venda
+-- PARTE 3: Tabela de ConfiguraÃƒÂ§ÃƒÂµes de PrÃƒÂ©-venda
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS preorder_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
-  -- Configurações Globais
+  -- ConfiguraÃƒÂ§ÃƒÂµes Globais
   is_enabled BOOLEAN DEFAULT true,
   default_deposit_percentage NUMERIC(5,2) DEFAULT 25.00, -- 25%
   default_deposit_fixed NUMERIC(10,2) DEFAULT 100.00, -- R$ 100
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS preorder_settings (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Inserir configuração padrão
+-- Inserir configuraÃƒÂ§ÃƒÂ£o padrÃƒÂ£o
 INSERT INTO preorder_settings (
   is_enabled,
   default_deposit_percentage,
@@ -102,15 +102,15 @@ INSERT INTO preorder_settings (
   25.00,
   100.00,
   'fixed',
-  'Seu pedido foi confirmado! Pague o sinal de {deposit_amount} para iniciar a produção.',
-  'Seu pedido está pronto! Pague o restante de {remaining_amount} para liberarmos o envio.'
+  'Seu pedido foi confirmado! Pague o sinal de {deposit_amount} para iniciar a produÃƒÂ§ÃƒÂ£o.',
+  'Seu pedido estÃƒÂ¡ pronto! Pague o restante de {remaining_amount} para liberarmos o envio.'
 ) ON CONFLICT DO NOTHING;
 
 -- ============================================
 -- PARTE 4: RLS Policies
 -- ============================================
 
--- Pagamentos: Usuários veem apenas seus próprios
+-- Pagamentos: UsuÃƒÂ¡rios veem apenas seus prÃƒÂ³prios
 ALTER TABLE quote_payments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own payments"
@@ -146,7 +146,7 @@ CREATE POLICY "Admins can manage all payments"
     )
   );
 
--- Configurações: Apenas admins
+-- ConfiguraÃƒÂ§ÃƒÂµes: Apenas admins
 ALTER TABLE preorder_settings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Anyone can view preorder settings"
@@ -166,10 +166,10 @@ CREATE POLICY "Only admins can manage preorder settings"
   );
 
 -- ============================================
--- PARTE 5: Funções Auxiliares
+-- PARTE 5: FunÃƒÂ§ÃƒÂµes Auxiliares
 -- ============================================
 
--- Função: Calcular valores de pré-venda
+-- FunÃƒÂ§ÃƒÂ£o: Calcular valores de prÃƒÂ©-venda
 CREATE OR REPLACE FUNCTION calculate_preorder_amounts(
   p_total_amount NUMERIC,
   p_deposit_type TEXT DEFAULT 'fixed',
@@ -192,7 +192,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Função: Atualizar status de pagamento
+-- FunÃƒÂ§ÃƒÂ£o: Atualizar status de pagamento
 CREATE OR REPLACE FUNCTION update_quote_payment_status()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -236,11 +236,11 @@ CREATE TRIGGER trigger_update_quote_payment_status
   EXECUTE FUNCTION update_quote_payment_status();
 
 -- ============================================
--- PARTE 6: Comentários
+-- PARTE 6: ComentÃƒÂ¡rios
 -- ============================================
 
-COMMENT ON TABLE quote_payments IS 'Transações de pagamento dos orçamentos';
-COMMENT ON TABLE preorder_settings IS 'Configurações do sistema de pré-venda';
+COMMENT ON TABLE quote_payments IS 'TransaÃƒÂ§ÃƒÂµes de pagamento dos orÃƒÂ§amentos';
+COMMENT ON TABLE preorder_settings IS 'ConfiguraÃƒÂ§ÃƒÂµes do sistema de prÃƒÂ©-venda';
 COMMENT ON COLUMN quotes.is_preorder IS 'Se true, requer pagamento de sinal';
 COMMENT ON COLUMN quotes.payment_status IS 'Status: pending, deposit_paid, fully_paid, cancelled';
 COMMENT ON COLUMN quotes.ready_for_final_payment IS 'Se true, cliente pode pagar o restante';

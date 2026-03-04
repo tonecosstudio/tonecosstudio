@@ -1,7 +1,7 @@
--- Migration: Implementar função create_tier_with_plans
+-- Migration: Implementar funÃƒÂ§ÃƒÂ£o create_tier_with_plans
 -- Feature: pricing-system-restructure
 -- Requisitos: 1.1, 1.2, 8.1, 8.5
--- Descrição: Cria função que cria nível e automaticamente cria planos para todas as modalidades ativas
+-- DescriÃƒÂ§ÃƒÂ£o: Cria funÃƒÂ§ÃƒÂ£o que cria nÃƒÂ­vel e automaticamente cria planos para todas as modalidades ativas
 
 CREATE OR REPLACE FUNCTION create_tier_with_plans(
   p_name TEXT,
@@ -25,9 +25,9 @@ DECLARE
   v_plan_price_pix NUMERIC;
   v_plans_created INTEGER := 0;
 BEGIN
-  -- Validações
+  -- ValidaÃƒÂ§ÃƒÂµes
   IF p_price_full <= 0 THEN
-    RAISE EXCEPTION 'Preço cheio deve ser maior que zero';
+    RAISE EXCEPTION 'PreÃƒÂ§o cheio deve ser maior que zero';
   END IF;
   
   IF p_deposit_amount <= 0 THEN
@@ -35,13 +35,13 @@ BEGIN
   END IF;
   
   IF p_deposit_amount >= p_price_full THEN
-    RAISE EXCEPTION 'Valor da entrada deve ser menor que o preço cheio';
+    RAISE EXCEPTION 'Valor da entrada deve ser menor que o preÃƒÂ§o cheio';
   END IF;
   
-  -- Calcular preço PIX do nível
+  -- Calcular preÃƒÂ§o PIX do nÃƒÂ­vel
   v_price_pix := ROUND(p_price_full * (1 - p_pix_discount_percentage / 100), 2);
   
-  -- Criar nível usando função existente (se existir) ou criar diretamente
+  -- Criar nÃƒÂ­vel usando funÃƒÂ§ÃƒÂ£o existente (se existir) ou criar diretamente
   BEGIN
     v_tier_id := create_pricing_tier(
       p_name, p_description, p_price_full, p_deposit_amount,
@@ -49,7 +49,7 @@ BEGIN
     );
   EXCEPTION
     WHEN undefined_function THEN
-      -- Se função create_pricing_tier não existe, criar nível diretamente
+      -- Se funÃƒÂ§ÃƒÂ£o create_pricing_tier nÃƒÂ£o existe, criar nÃƒÂ­vel diretamente
       INSERT INTO pricing_tiers (
         name, description, price_full, price_pix, deposit_amount,
         pix_discount_percentage, is_default, display_order, created_at, updated_at
@@ -63,7 +63,7 @@ BEGIN
   FOR v_mode IN
     SELECT * FROM purchase_modes WHERE is_active = true ORDER BY display_order
   LOOP
-    -- Calcular preços do plano
+    -- Calcular preÃƒÂ§os do plano
     v_plan_price_full := ROUND(p_price_full * v_mode.price_multiplier, 2);
     v_plan_price_pix := ROUND(v_plan_price_full * (1 - p_pix_discount_percentage / 100), 2);
     
@@ -104,7 +104,7 @@ BEGIN
     
     v_plans_created := v_plans_created + 1;
     
-    -- Registrar no histórico (se tabela pricing_history existir)
+    -- Registrar no histÃƒÂ³rico (se tabela pricing_history existir)
     BEGIN
       INSERT INTO pricing_history (
         tier_id, change_type, new_price_full, new_price_pix,
@@ -121,7 +121,7 @@ BEGIN
       );
     EXCEPTION
       WHEN undefined_table THEN
-        -- Ignorar se tabela pricing_history não existe
+        -- Ignorar se tabela pricing_history nÃƒÂ£o existe
         NULL;
     END;
   END LOOP;
@@ -130,4 +130,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION create_tier_with_plans IS 'Cria nível de preço e automaticamente cria planos para todas as modalidades ativas';
+COMMENT ON FUNCTION create_tier_with_plans IS 'Cria nÃƒÂ­vel de preÃƒÂ§o e automaticamente cria planos para todas as modalidades ativas';

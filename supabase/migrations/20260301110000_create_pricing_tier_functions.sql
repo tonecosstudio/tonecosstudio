@@ -1,11 +1,11 @@
 -- ============================================
--- Migration: Funções para Sistema de Níveis de Preço
+-- Migration: FunÃƒÂ§ÃƒÂµes para Sistema de NÃƒÂ­veis de PreÃƒÂ§o
 -- Data: 2026-03-01 11:00
--- Descrição: Criar funções SQL para gerenciar níveis de preço
+-- DescriÃƒÂ§ÃƒÂ£o: Criar funÃƒÂ§ÃƒÂµes SQL para gerenciar nÃƒÂ­veis de preÃƒÂ§o
 -- ============================================
 
 -- =====================================================
--- 1. FUNÇÃO: create_pricing_tier
+-- 1. FUNÃƒâ€¡ÃƒÆ’O: create_pricing_tier
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION create_pricing_tier(
@@ -23,9 +23,9 @@ DECLARE
   v_tier_id UUID;
   v_price_pix NUMERIC;
 BEGIN
-  -- Validações
+  -- ValidaÃƒÂ§ÃƒÂµes
   IF p_price_full <= 0 THEN
-    RAISE EXCEPTION 'Preço cheio deve ser maior que zero';
+    RAISE EXCEPTION 'PreÃƒÂ§o cheio deve ser maior que zero';
   END IF;
   
   IF p_deposit_amount <= 0 THEN
@@ -33,22 +33,22 @@ BEGIN
   END IF;
   
   IF p_deposit_amount >= p_price_full THEN
-    RAISE EXCEPTION 'Valor da entrada deve ser menor que o preço cheio';
+    RAISE EXCEPTION 'Valor da entrada deve ser menor que o preÃƒÂ§o cheio';
   END IF;
   
   IF p_pix_discount_percentage < 0 OR p_pix_discount_percentage > 100 THEN
     RAISE EXCEPTION 'Desconto PIX deve estar entre 0 e 100';
   END IF;
   
-  -- Se é padrão, remover flag de outros níveis
+  -- Se ÃƒÂ© padrÃƒÂ£o, remover flag de outros nÃƒÂ­veis
   IF p_is_default THEN
     UPDATE pricing_tiers SET is_default = false WHERE is_default = true;
   END IF;
   
-  -- Calcular preço PIX
+  -- Calcular preÃƒÂ§o PIX
   v_price_pix := ROUND(p_price_full * (1 - p_pix_discount_percentage / 100), 2);
   
-  -- Inserir nível
+  -- Inserir nÃƒÂ­vel
   INSERT INTO pricing_tiers (
     name, description, price_full, deposit_amount, 
     pix_discount_percentage, is_default, display_order, created_by
@@ -59,7 +59,7 @@ BEGIN
   )
   RETURNING id INTO v_tier_id;
   
-  -- Registrar no histórico
+  -- Registrar no histÃƒÂ³rico
   INSERT INTO pricing_history (
     tier_id, change_type, new_price_full, new_price_pix, 
     new_deposit_amount, changed_by, metadata
@@ -74,10 +74,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION create_pricing_tier IS 'Cria um novo nível de preço com validações';
+COMMENT ON FUNCTION create_pricing_tier IS 'Cria um novo nÃƒÂ­vel de preÃƒÂ§o com validaÃƒÂ§ÃƒÂµes';
 
 -- =====================================================
--- 2. FUNÇÃO: update_pricing_tier
+-- 2. FUNÃƒâ€¡ÃƒÆ’O: update_pricing_tier
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION update_pricing_tier(
@@ -102,12 +102,12 @@ BEGIN
   SELECT * INTO v_old_tier FROM pricing_tiers WHERE id = p_tier_id;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Nível de preço não encontrado';
+    RAISE EXCEPTION 'NÃƒÂ­vel de preÃƒÂ§o nÃƒÂ£o encontrado';
   END IF;
   
-  -- Validações
+  -- ValidaÃƒÂ§ÃƒÂµes
   IF p_price_full IS NOT NULL AND p_price_full <= 0 THEN
-    RAISE EXCEPTION 'Preço cheio deve ser maior que zero';
+    RAISE EXCEPTION 'PreÃƒÂ§o cheio deve ser maior que zero';
   END IF;
   
   IF p_deposit_amount IS NOT NULL AND p_deposit_amount <= 0 THEN
@@ -116,15 +116,15 @@ BEGIN
   
   IF p_price_full IS NOT NULL AND p_deposit_amount IS NOT NULL THEN
     IF p_deposit_amount >= p_price_full THEN
-      RAISE EXCEPTION 'Valor da entrada deve ser menor que o preço cheio';
+      RAISE EXCEPTION 'Valor da entrada deve ser menor que o preÃƒÂ§o cheio';
     END IF;
   ELSIF p_price_full IS NOT NULL AND p_deposit_amount IS NULL THEN
     IF v_old_tier.deposit_amount >= p_price_full THEN
-      RAISE EXCEPTION 'Valor da entrada deve ser menor que o preço cheio';
+      RAISE EXCEPTION 'Valor da entrada deve ser menor que o preÃƒÂ§o cheio';
     END IF;
   ELSIF p_deposit_amount IS NOT NULL AND p_price_full IS NULL THEN
     IF p_deposit_amount >= v_old_tier.price_full THEN
-      RAISE EXCEPTION 'Valor da entrada deve ser menor que o preço cheio';
+      RAISE EXCEPTION 'Valor da entrada deve ser menor que o preÃƒÂ§o cheio';
     END IF;
   END IF;
   
@@ -134,12 +134,12 @@ BEGIN
     END IF;
   END IF;
   
-  -- Se é padrão, remover flag de outros níveis
+  -- Se ÃƒÂ© padrÃƒÂ£o, remover flag de outros nÃƒÂ­veis
   IF p_is_default = true THEN
     UPDATE pricing_tiers SET is_default = false WHERE is_default = true AND id != p_tier_id;
   END IF;
   
-  -- Verificar se preços mudaram
+  -- Verificar se preÃƒÂ§os mudaram
   IF p_price_full IS NOT NULL AND p_price_full != v_old_tier.price_full THEN
     v_price_changed := true;
   END IF;
@@ -152,7 +152,7 @@ BEGIN
     v_price_changed := true;
   END IF;
   
-  -- Atualizar nível
+  -- Atualizar nÃƒÂ­vel
   UPDATE pricing_tiers
   SET
     name = COALESCE(p_name, name),
@@ -167,7 +167,7 @@ BEGIN
     updated_by = p_updated_by
   WHERE id = p_tier_id;
   
-  -- Registrar no histórico
+  -- Registrar no histÃƒÂ³rico
   INSERT INTO pricing_history (
     tier_id, change_type, 
     old_price_full, new_price_full,
@@ -186,7 +186,7 @@ BEGIN
       'price_changed', v_price_changed
     );
   
-  -- Se preços mudaram, propagar para coleções
+  -- Se preÃƒÂ§os mudaram, propagar para coleÃƒÂ§ÃƒÂµes
   IF v_price_changed THEN
     PERFORM propagate_tier_prices(p_tier_id, p_updated_by);
   END IF;
@@ -195,10 +195,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION update_pricing_tier IS 'Atualiza nível de preço e propaga mudanças';
+COMMENT ON FUNCTION update_pricing_tier IS 'Atualiza nÃƒÂ­vel de preÃƒÂ§o e propaga mudanÃƒÂ§as';
 
 -- =====================================================
--- 3. FUNÇÃO: propagate_tier_prices
+-- 3. FUNÃƒâ€¡ÃƒÆ’O: propagate_tier_prices
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION propagate_tier_prices(
@@ -218,14 +218,14 @@ DECLARE
   v_updated_count INTEGER := 0;
   v_failed_count INTEGER := 0;
 BEGIN
-  -- Buscar dados do nível
+  -- Buscar dados do nÃƒÂ­vel
   SELECT * INTO v_tier FROM pricing_tiers WHERE id = p_tier_id;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Nível de preço não encontrado';
+    RAISE EXCEPTION 'NÃƒÂ­vel de preÃƒÂ§o nÃƒÂ£o encontrado';
   END IF;
   
-  -- Iterar sobre coleções atribuídas
+  -- Iterar sobre coleÃƒÂ§ÃƒÂµes atribuÃƒÂ­das
   FOR v_collection IN
     SELECT c.id, c.price_full, c.price_pix, c.deposit_amount
     FROM collections c
@@ -233,7 +233,7 @@ BEGIN
     WHERE cta.tier_id = p_tier_id AND c.uses_tier_pricing = true
   LOOP
     BEGIN
-      -- Atualizar preços da coleção
+      -- Atualizar preÃƒÂ§os da coleÃƒÂ§ÃƒÂ£o
       UPDATE collections
       SET
         price_full = v_tier.price_full,
@@ -242,7 +242,7 @@ BEGIN
         updated_at = NOW()
       WHERE id = v_collection.id;
       
-      -- Registrar no histórico
+      -- Registrar no histÃƒÂ³rico
       INSERT INTO pricing_history (
         collection_id, tier_id, change_type,
         old_price_full, new_price_full,
@@ -280,14 +280,14 @@ BEGIN
     END;
   END LOOP;
   
-  -- Log de conclusão
-  RAISE NOTICE 'Propagação concluída: % atualizadas, % falharam', v_updated_count, v_failed_count;
+  -- Log de conclusÃƒÂ£o
+  RAISE NOTICE 'PropagaÃƒÂ§ÃƒÂ£o concluÃƒÂ­da: % atualizadas, % falharam', v_updated_count, v_failed_count;
   
   RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION propagate_tier_prices IS 'Propaga preços do nível para coleções atribuídas';
+COMMENT ON FUNCTION propagate_tier_prices IS 'Propaga preÃƒÂ§os do nÃƒÂ­vel para coleÃƒÂ§ÃƒÂµes atribuÃƒÂ­das';
 
 -- =====================================================
 -- FIM DA MIGRATION

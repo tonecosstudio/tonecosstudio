@@ -1,4 +1,4 @@
--- Tabela para histórico de trocas de coleção
+-- Tabela para histÃƒÆ’Ã‚Â³rico de trocas de coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
 CREATE TABLE IF NOT EXISTS subscription_collection_changes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS subscription_collection_changes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Índices
-CREATE INDEX idx_collection_changes_subscription ON subscription_collection_changes(subscription_id);
-CREATE INDEX idx_collection_changes_date ON subscription_collection_changes(changed_at DESC);
+-- ÃƒÆ’Ã‚Ândices
+CREATE INDEX IF NOT EXISTS idx_collection_changes_subscription ON subscription_collection_changes(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_collection_changes_date ON subscription_collection_changes(changed_at DESC);
 
 -- RLS
 ALTER TABLE subscription_collection_changes ENABLE ROW LEVEL SECURITY;
 
--- Políticas RLS
+-- PolÃƒÆ’Ã‚Â­ticas RLS
 CREATE POLICY "Users can view their own collection changes"
   ON subscription_collection_changes
   FOR SELECT
@@ -44,9 +44,9 @@ CREATE POLICY "Admins can view all collection changes"
     )
   );
 
--- Comentários
-COMMENT ON TABLE subscription_collection_changes IS 'Histórico de trocas de coleção nas assinaturas';
+-- ComentÃƒÆ’Ã‚Â¡rios
+COMMENT ON TABLE subscription_collection_changes IS 'HistÃƒÆ’Ã‚Â³rico de trocas de coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nas assinaturas';
 COMMENT ON COLUMN subscription_collection_changes.subscription_id IS 'ID da assinatura';
-COMMENT ON COLUMN subscription_collection_changes.old_collection_id IS 'Coleção anterior';
-COMMENT ON COLUMN subscription_collection_changes.new_collection_id IS 'Nova coleção escolhida';
+COMMENT ON COLUMN subscription_collection_changes.old_collection_id IS 'ColeÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o anterior';
+COMMENT ON COLUMN subscription_collection_changes.new_collection_id IS 'Nova coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o escolhida';
 COMMENT ON COLUMN subscription_collection_changes.changed_at IS 'Data/hora da troca';

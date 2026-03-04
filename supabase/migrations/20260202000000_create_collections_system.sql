@@ -1,7 +1,7 @@
--- Sistema de Coleções Temáticas
--- Permite criar coleções organizadas de modelos
+-- Sistema de ColeÃƒÂ§ÃƒÂµes TemÃƒÂ¡ticas
+-- Permite criar coleÃƒÂ§ÃƒÂµes organizadas de modelos
 
--- Criar tabela de coleções
+-- Criar tabela de coleÃƒÂ§ÃƒÂµes
 CREATE TABLE IF NOT EXISTS collections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS collections (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Criar tabela de itens das coleções
+-- Criar tabela de itens das coleÃƒÂ§ÃƒÂµes
 CREATE TABLE IF NOT EXISTS collection_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   collection_id UUID NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
@@ -24,21 +24,21 @@ CREATE TABLE IF NOT EXISTS collection_items (
   UNIQUE(collection_id, model_id)
 );
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
 CREATE INDEX IF NOT EXISTS idx_collections_active ON collections(is_active);
 CREATE INDEX IF NOT EXISTS idx_collection_items_collection_id ON collection_items(collection_id);
 CREATE INDEX IF NOT EXISTS idx_collection_items_model_id ON collection_items(model_id);
 
--- RLS para collections (público para leitura)
+-- RLS para collections (pÃƒÂºblico para leitura)
 ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Coleções ativas são públicas"
+CREATE POLICY "ColeÃƒÂ§ÃƒÂµes ativas sÃƒÂ£o pÃƒÂºblicas"
   ON collections FOR SELECT
   TO authenticated
   USING (is_active = true);
 
-CREATE POLICY "Admins podem ver todas as coleções"
+CREATE POLICY "Admins podem ver todas as coleÃƒÂ§ÃƒÂµes"
   ON collections FOR SELECT
   TO authenticated
   USING (
@@ -49,7 +49,7 @@ CREATE POLICY "Admins podem ver todas as coleções"
     )
   );
 
-CREATE POLICY "Apenas admins podem gerenciar coleções"
+CREATE POLICY "Apenas admins podem gerenciar coleÃƒÂ§ÃƒÂµes"
   ON collections FOR ALL
   TO authenticated
   USING (
@@ -70,7 +70,7 @@ CREATE POLICY "Apenas admins podem gerenciar coleções"
 -- RLS para collection_items
 ALTER TABLE collection_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Itens de coleções ativas são públicos"
+CREATE POLICY "Itens de coleÃƒÂ§ÃƒÂµes ativas sÃƒÂ£o pÃƒÂºblicos"
   ON collection_items FOR SELECT
   TO authenticated
   USING (

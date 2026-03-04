@@ -473,7 +473,8 @@ export default function PaymentVerification() {
   };
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-2">
@@ -857,5 +858,6 @@ export default function PaymentVerification() {
           </DialogContent>
         </Dialog>
       </div>
+    </AdminLayout>
   );
 }

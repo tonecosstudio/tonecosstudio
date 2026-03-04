@@ -11,7 +11,7 @@ ALTER TABLE subscriptions
 COMMENT ON COLUMN subscriptions.payment_voucher_url IS 
   'URL of payment voucher (proof of payment) uploaded by customer for manual verification';
 
--- Create index for faster lookups when filtering by voucher status
+-- CREATE INDEX IF NOT EXISTS for faster lookups when filtering by voucher status
 CREATE INDEX IF NOT EXISTS idx_subscriptions_payment_voucher 
   ON subscriptions(payment_voucher_url) 
   WHERE payment_voucher_url IS NOT NULL;

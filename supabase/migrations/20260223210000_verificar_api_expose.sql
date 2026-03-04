@@ -1,10 +1,10 @@
 -- =====================================================
--- VERIFICAR SE A TABELA ESTÁ EXPOSTA NA API
+-- VERIFICAR SE A TABELA ESTÃƒÂ EXPOSTA NA API
 -- =====================================================
 
--- 1. Verificar se a tabela está no schema public
+-- 1. Verificar se a tabela estÃƒÂ¡ no schema public
 SELECT 
-  '1️⃣ SCHEMA' as check,
+  '1Ã¯Â¸ÂÃ¢Æ’Â£ SCHEMA' as check,
   table_schema,
   table_name,
   table_type
@@ -13,13 +13,13 @@ WHERE table_name = 'chat_group_messages';
 
 -- 2. Verificar se a tabela tem dados
 SELECT 
-  '2️⃣ DADOS' as check,
+  '2Ã¯Â¸ÂÃ¢Æ’Â£ DADOS' as check,
   COUNT(*) as total_rows
 FROM chat_group_messages;
 
 -- 3. Verificar a estrutura da tabela
 SELECT 
-  '3️⃣ ESTRUTURA' as check,
+  '3Ã¯Â¸ÂÃ¢Æ’Â£ ESTRUTURA' as check,
   column_name,
   data_type,
   is_nullable
@@ -29,16 +29,16 @@ ORDER BY ordinal_position;
 
 -- 4. Verificar se a tabela tem primary key
 SELECT 
-  '4️⃣ PRIMARY KEY' as check,
+  '4Ã¯Â¸ÂÃ¢Æ’Â£ PRIMARY KEY' as check,
   a.attname as column_name
 FROM pg_index i
 JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
 WHERE i.indrelid = 'chat_group_messages'::regclass
 AND i.indisprimary;
 
--- 5. Verificar políticas
+-- 5. Verificar polÃƒÂ­ticas
 SELECT 
-  '5️⃣ POLÍTICAS' as check,
+  '5Ã¯Â¸ÂÃ¢Æ’Â£ POLÃƒÂTICAS' as check,
   policyname,
   cmd,
   permissive,
@@ -48,7 +48,7 @@ WHERE tablename = 'chat_group_messages';
 
 -- 6. Verificar grants
 SELECT 
-  '6️⃣ GRANTS' as check,
+  '6Ã¯Â¸ÂÃ¢Æ’Â£ GRANTS' as check,
   grantee,
   privilege_type
 FROM information_schema.table_privileges
@@ -56,7 +56,7 @@ WHERE table_name = 'chat_group_messages';
 
 -- 7. Teste: fazer uma query direta
 SELECT 
-  '7️⃣ TESTE DIRETO' as check,
+  '7Ã¯Â¸ÂÃ¢Æ’Â£ TESTE DIRETO' as check,
   'Tentando query direta...' as status;
 
 SELECT 
@@ -68,7 +68,7 @@ LIMIT 1;
 
 -- 8. Verificar todas as tabelas expostas
 SELECT 
-  '8️⃣ TODAS AS TABELAS' as check,
+  '8Ã¯Â¸ÂÃ¢Æ’Â£ TODAS AS TABELAS' as check,
   tablename
 FROM pg_tables
 WHERE schemaname = 'public'
@@ -76,7 +76,7 @@ ORDER BY tablename;
 
 -- 9. Verificar RLS status
 SELECT 
-  '9️⃣ RLS STATUS' as check,
+  '9Ã¯Â¸ÂÃ¢Æ’Â£ RLS STATUS' as check,
   relname,
   relrowsecurity as rls_enabled
 FROM pg_class
@@ -84,9 +84,9 @@ WHERE relname = 'chat_group_messages';
 
 -- 10. Resumo
 SELECT 
-  '📊 INSTRUÇÕES' as titulo,
+  'Ã°Å¸â€œÅ  INSTRUÃƒâ€¡Ãƒâ€¢ES' as titulo,
   'Se a query direta (passo 7) funcionou mas a API retorna 406,' as info_1,
-  'o problema está na configuração do PostgREST.' as info_2,
+  'o problema estÃƒÂ¡ na configuraÃƒÂ§ÃƒÂ£o do PostgREST.' as info_2,
   '' as espaco,
   'Verifique no Dashboard do Supabase:' as info_3,
   '- API Settings > Exposed Tables' as info_4,

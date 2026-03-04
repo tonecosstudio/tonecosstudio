@@ -2,19 +2,19 @@
 -- ORDER STATUS NOTIFICATION TRIGGER
 -- =====================================================
 -- Criado em: 21 de Fevereiro de 2026
--- Descrição: Trigger para notificação automática de mudança de status de pedidos
+-- DescriÃƒÂ§ÃƒÂ£o: Trigger para notificaÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica de mudanÃƒÂ§a de status de pedidos
 -- Requisitos: 6.1, 6.2, 6.3, 6.5, 6.6
 -- =====================================================
 
 -- =====================================================
--- 1. ADICIONAR CAMPOS ÀS TABELAS
+-- 1. ADICIONAR CAMPOS Ãƒâ‚¬S TABELAS
 -- =====================================================
 
--- Adicionar campo tracking_code à manual_payments
+-- Adicionar campo tracking_code ÃƒÂ  manual_payments
 ALTER TABLE manual_payments 
 ADD COLUMN IF NOT EXISTS tracking_code TEXT;
 
--- Adicionar campo sender_type à support_messages
+-- Adicionar campo sender_type ÃƒÂ  support_messages
 -- Valores: 'admin', 'customer', 'system'
 ALTER TABLE support_messages 
 ADD COLUMN IF NOT EXISTS sender_type TEXT NOT NULL DEFAULT 'customer' 
@@ -24,16 +24,16 @@ CHECK (sender_type IN ('admin', 'customer', 'system'));
 ALTER TABLE support_conversations 
 ADD COLUMN IF NOT EXISTS order_id UUID REFERENCES manual_payments(id) ON DELETE SET NULL;
 
--- Adicionar campo tag (singular) para categorização simples
--- Nota: A tabela já tem tags (array), mas para MVP inicial usamos tag singular
+-- Adicionar campo tag (singular) para categorizaÃƒÂ§ÃƒÂ£o simples
+-- Nota: A tabela jÃƒÂ¡ tem tags (array), mas para MVP inicial usamos tag singular
 ALTER TABLE support_conversations 
 ADD COLUMN IF NOT EXISTS tag TEXT CHECK (tag IN ('pedido', 'orcamento', 'duvida', 'reclamacao', 'assinatura', 'urgente'));
 
--- Criar índice para order_id
+-- Criar ÃƒÂ­ndice para order_id
 CREATE INDEX IF NOT EXISTS idx_support_conversations_order ON support_conversations(order_id);
 
 -- =====================================================
--- 2. FUNÇÃO DE NOTIFICAÇÃO DE MUDANÇA DE STATUS
+-- 2. FUNÃƒâ€¡ÃƒÆ’O DE NOTIFICAÃƒâ€¡ÃƒÆ’O DE MUDANÃƒâ€¡A DE STATUS
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION notify_order_status_change()
@@ -65,13 +65,13 @@ BEGIN
   WHERE status = NEW.status AND is_active = true;
   
   IF v_template IS NOT NULL THEN
-    -- Substitui variáveis no template
+    -- Substitui variÃƒÂ¡veis no template
     v_message := replace(v_template, '{order_number}', NEW.reference_number);
     v_message := replace(v_message, '{amount}', NEW.amount::TEXT);
     v_message := replace(v_message, '{tracking_code}', COALESCE(NEW.tracking_code, 'Em breve'));
     
-    -- Insere mensagem automática
-    -- Nota: sender_id é o user_id do pedido, sender_type é 'system'
+    -- Insere mensagem automÃƒÂ¡tica
+    -- Nota: sender_id ÃƒÂ© o user_id do pedido, sender_type ÃƒÂ© 'system'
     INSERT INTO support_messages (conversation_id, sender_id, sender_type, message)
     VALUES (v_conversation_id, NEW.user_id, 'system', v_message);
   END IF;
@@ -90,15 +90,15 @@ CREATE TRIGGER trigger_notify_order_status_change
   EXECUTE FUNCTION notify_order_status_change();
 
 -- =====================================================
--- 4. COMENTÁRIOS
+-- 4. COMENTÃƒÂRIOS
 -- =====================================================
 
-COMMENT ON FUNCTION notify_order_status_change() IS 'Função que cria mensagem automática na conversa quando status do pedido muda';
-COMMENT ON COLUMN manual_payments.tracking_code IS 'Código de rastreamento do pedido (para status enviado/entregue)';
-COMMENT ON COLUMN support_messages.sender_type IS 'Tipo do remetente: admin | customer | system (mensagens automáticas)';
+COMMENT ON FUNCTION notify_order_status_change() IS 'FunÃƒÂ§ÃƒÂ£o que cria mensagem automÃƒÂ¡tica na conversa quando status do pedido muda';
+COMMENT ON COLUMN manual_payments.tracking_code IS 'CÃƒÂ³digo de rastreamento do pedido (para status enviado/entregue)';
+COMMENT ON COLUMN support_messages.sender_type IS 'Tipo do remetente: admin | customer | system (mensagens automÃƒÂ¡ticas)';
 COMMENT ON COLUMN support_conversations.order_id IS 'Vincula conversa a um pedido (manual_payment)';
-COMMENT ON COLUMN support_conversations.tag IS 'Tag singular para categorização simples (pedido, orcamento, duvida, reclamacao, assinatura, urgente)';
+COMMENT ON COLUMN support_conversations.tag IS 'Tag singular para categorizaÃƒÂ§ÃƒÂ£o simples (pedido, orcamento, duvida, reclamacao, assinatura, urgente)';
 
 -- =====================================================
--- FIM DA MIGRAÇÃO
+-- FIM DA MIGRAÃƒâ€¡ÃƒÆ’O
 -- =====================================================

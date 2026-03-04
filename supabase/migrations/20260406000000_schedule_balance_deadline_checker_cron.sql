@@ -25,7 +25,7 @@
 
 -- Remove any existing schedule for this job
 -- This ensures clean re-deployment of the migration
-DO $
+DO $$
 BEGIN
   PERFORM cron.unschedule('check-balance-deadlines');
   RAISE NOTICE 'Unscheduled existing check-balance-deadlines job (if any)';
@@ -35,7 +35,7 @@ EXCEPTION
   WHEN OTHERS THEN
     -- Job doesn't exist, that's fine
     RAISE NOTICE 'No existing job to unschedule';
-END $;
+END $$;
 
 -- =====================================================
 -- STEP 2: Schedule the balance deadline checker cron job
@@ -46,19 +46,19 @@ END $;
 -- Since cron.timezone is set to 'America/Bahia', this runs at 10:00 Bahia time
 -- which is 13:00 UTC (Bahia is UTC-3)
 
-DO $
+DO $$
 BEGIN
   PERFORM cron.schedule(
     'check-balance-deadlines',            -- Job name
     '0 10 * * *',                         -- Cron expression: 10:00 daily (Bahia time)
-    $
+    $body$
     SELECT
       net.http_post(
         url:='https://pabxpvqwtvbjaunjejud.supabase.co/functions/v1/cron-check-balance-deadlines',
         headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYnhwdnF3dHZiamF1bmplanVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTU4NTYsImV4cCI6MjA4NTM5MTg1Nn0.W3n9h6zoLJumHNrFwG_aBB_AI6CjBt4LAP5a9alXZm4"}'::jsonb,
         body:='{}'::jsonb
       ) as request_id;
-    $
+    $body$
   );
   
   RAISE NOTICE 'Successfully scheduled check-balance-deadlines cron job at 10:00 Bahia time';
@@ -67,7 +67,7 @@ EXCEPTION
     RAISE NOTICE 'pg_cron not available. Please schedule manually or use Edge Function with cron trigger';
   WHEN OTHERS THEN
     RAISE NOTICE 'Error scheduling job: %', SQLERRM;
-END $;
+END $$;
 
 -- Add comment for documentation
 COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - includes check-balance-deadlines job at 10:00 Bahia time';
@@ -120,7 +120,7 @@ COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - includes check-balan
 -- - The function checks for standalone purchases with status 'awaiting_balance'
 -- - For purchases where balance_due_date has passed, it:
 --   1. Cancels the order
---   2. Retains the deposit as Arras Confirmatórias
+--   2. Retains the deposit as Arras ConfirmatÃƒÂ³rias
 --   3. Releases production capacity
 --   4. Sends cancellation notification to customer
 -- - For purchases approaching deadline (1 day remaining), it sends urgent reminders
@@ -135,7 +135,7 @@ COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - includes check-balan
 -- - Check cron.job_run_details for pg_cron execution history
 --
 -- Business Logic:
--- - Deposit (R$100) is retained as Arras Confirmatórias (non-refundable deposit)
+-- - Deposit (R$100) is retained as Arras ConfirmatÃƒÂ³rias (non-refundable deposit)
 -- - Balance payment deadline is 5 business days after production completion
 -- - Urgent reminders sent 1 day before deadline
 -- - Automatic cancellation on deadline expiration

@@ -1,6 +1,6 @@
 -- Migration: Add message_templates table
 -- Created: 2026-02-25
--- Description: Tabela para armazenar templates de mensagens reutilizáveis
+-- Description: Tabela para armazenar templates de mensagens reutilizÃƒÂ¡veis
 
 -- Create message_templates table
 CREATE TABLE IF NOT EXISTS message_templates (
@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS message_templates (
 );
 
 -- Add indexes
-CREATE INDEX idx_message_templates_created_by ON message_templates(created_by);
-CREATE INDEX idx_message_templates_created_at ON message_templates(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_message_templates_created_by ON message_templates(created_by);
+CREATE INDEX IF NOT EXISTS idx_message_templates_created_at ON message_templates(created_at DESC);
 
 -- Enable RLS
 ALTER TABLE message_templates ENABLE ROW LEVEL SECURITY;
@@ -41,10 +41,11 @@ CREATE POLICY "Users can delete their own templates"
   USING (auth.uid() = created_by);
 
 -- Add trigger for updated_at
+DROP TRIGGER IF EXISTS update_message_templates_updated_at ON message_templates;
 CREATE TRIGGER update_message_templates_updated_at
   BEFORE UPDATE ON message_templates
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 -- Add comment
-COMMENT ON TABLE message_templates IS 'Templates de mensagens reutilizáveis para grupos de broadcast';
+COMMENT ON TABLE message_templates IS 'Templates de mensagens reutilizÃƒÂ¡veis para grupos de broadcast';

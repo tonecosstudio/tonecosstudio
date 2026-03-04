@@ -1,0 +1,22 @@
+-- ============================================================================
+-- UAT Test Data Setup Script
+-- Production Management System
+-- ============================================================================
+-- 
+-- Purpose: Create test data for User Acceptance Testing
+-- 
+-- This script creates:
+-- - 5 admin test users
+-- - 10 customer test users
+-- - 50 production queue items in various stages
+-- - 20 pending character choices with various deadline states
+-- - 10 blocked production items
+-- - Test collections and characters
+-- - Test orders (subscription deliveries and standalone purchases)
+--
+-- Usage:
+--   1. Run this script against your UAT/staging database
+--   2. DO NOT run against production database
+--   3. Script is idempotent - can be run multiple times
+--
+-- ======================

@@ -1,7 +1,7 @@
 -- ============================================
--- Migration: Views e Triggers para Sistema de Níveis de Preço
+-- Migration: Views e Triggers para Sistema de NÃƒÂ­veis de PreÃƒÂ§o
 -- Data: 2026-03-01 13:00
--- Descrição: Criar views otimizadas e triggers automáticos
+-- DescriÃƒÂ§ÃƒÂ£o: Criar views otimizadas e triggers automÃƒÂ¡ticos
 -- ============================================
 
 -- =====================================================
@@ -31,7 +31,7 @@ GROUP BY pt.id, pt.name, pt.description, pt.price_full, pt.price_pix,
          pt.deposit_amount, pt.pix_discount_percentage, pt.is_active, 
          pt.is_default, pt.display_order, pt.created_at, pt.updated_at;
 
-COMMENT ON VIEW pricing_tier_stats IS 'Estatísticas de uso de cada nível de preço';
+COMMENT ON VIEW pricing_tier_stats IS 'EstatÃƒÂ­sticas de uso de cada nÃƒÂ­vel de preÃƒÂ§o';
 
 -- Permitir leitura da view
 GRANT SELECT ON pricing_tier_stats TO authenticated, anon;
@@ -59,7 +59,7 @@ FROM collections c
 LEFT JOIN collection_tier_assignments cta ON c.id = cta.collection_id
 LEFT JOIN pricing_tiers pt ON cta.tier_id = pt.id;
 
-COMMENT ON VIEW collections_with_tier_info IS 'Coleções com informações de nível atribuído';
+COMMENT ON VIEW collections_with_tier_info IS 'ColeÃƒÂ§ÃƒÂµes com informaÃƒÂ§ÃƒÂµes de nÃƒÂ­vel atribuÃƒÂ­do';
 
 -- Permitir leitura da view
 GRANT SELECT ON collections_with_tier_info TO authenticated, anon;
@@ -100,20 +100,20 @@ FROM collections c
 LEFT JOIN collection_tier_assignments cta ON c.id = cta.collection_id
 LEFT JOIN pricing_tiers pt ON cta.tier_id = pt.id;
 
-COMMENT ON VIEW collection_effective_pricing IS 'Preços efetivos de cada coleção (tier, custom ou default)';
+COMMENT ON VIEW collection_effective_pricing IS 'PreÃƒÂ§os efetivos de cada coleÃƒÂ§ÃƒÂ£o (tier, custom ou default)';
 
 -- Permitir leitura da view
 GRANT SELECT ON collection_effective_pricing TO authenticated, anon;
 
 -- =====================================================
--- 4. TRIGGER: Garantir apenas um nível padrão
+-- 4. TRIGGER: Garantir apenas um nÃƒÂ­vel padrÃƒÂ£o
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION validate_single_default_tier()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.is_default = true THEN
-    -- Remover flag de outros níveis
+    -- Remover flag de outros nÃƒÂ­veis
     UPDATE pricing_tiers 
     SET is_default = false 
     WHERE is_default = true AND id != NEW.id;
@@ -129,10 +129,10 @@ CREATE TRIGGER trigger_validate_single_default_tier
   FOR EACH ROW
   EXECUTE FUNCTION validate_single_default_tier();
 
-COMMENT ON FUNCTION validate_single_default_tier IS 'Garante que apenas um nível seja padrão';
+COMMENT ON FUNCTION validate_single_default_tier IS 'Garante que apenas um nÃƒÂ­vel seja padrÃƒÂ£o';
 
 -- =====================================================
--- 5. TRIGGER: Atribuir nível padrão a novas coleções
+-- 5. TRIGGER: Atribuir nÃƒÂ­vel padrÃƒÂ£o a novas coleÃƒÂ§ÃƒÂµes
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION apply_default_tier_to_new_collection()
@@ -141,21 +141,21 @@ DECLARE
   v_default_tier_id UUID;
   v_default_tier RECORD;
 BEGIN
-  -- Buscar nível padrão
+  -- Buscar nÃƒÂ­vel padrÃƒÂ£o
   SELECT id INTO v_default_tier_id
   FROM pricing_tiers
   WHERE is_default = true AND is_active = true
   LIMIT 1;
   
-  -- Se existe nível padrão, atribuir
+  -- Se existe nÃƒÂ­vel padrÃƒÂ£o, atribuir
   IF v_default_tier_id IS NOT NULL THEN
     SELECT * INTO v_default_tier FROM pricing_tiers WHERE id = v_default_tier_id;
     
-    -- Criar atribuição
+    -- Criar atribuiÃƒÂ§ÃƒÂ£o
     INSERT INTO collection_tier_assignments (collection_id, tier_id)
     VALUES (NEW.id, v_default_tier_id);
     
-    -- Atualizar preços da coleção
+    -- Atualizar preÃƒÂ§os da coleÃƒÂ§ÃƒÂ£o
     NEW.uses_tier_pricing := true;
     NEW.is_price_custom := false;
     NEW.price_full := v_default_tier.price_full;
@@ -173,17 +173,17 @@ CREATE TRIGGER trigger_apply_default_tier_to_new_collection
   FOR EACH ROW
   EXECUTE FUNCTION apply_default_tier_to_new_collection();
 
-COMMENT ON FUNCTION apply_default_tier_to_new_collection IS 'Atribui nível padrão a novas coleções automaticamente';
+COMMENT ON FUNCTION apply_default_tier_to_new_collection IS 'Atribui nÃƒÂ­vel padrÃƒÂ£o a novas coleÃƒÂ§ÃƒÂµes automaticamente';
 
 -- =====================================================
--- 6. TRIGGER: Prevenir desativação de nível padrão
+-- 6. TRIGGER: Prevenir desativaÃƒÂ§ÃƒÂ£o de nÃƒÂ­vel padrÃƒÂ£o
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION prevent_default_tier_deactivation()
 RETURNS TRIGGER AS $$
 BEGIN
   IF OLD.is_default = true AND NEW.is_active = false THEN
-    RAISE EXCEPTION 'Não é possível desativar o nível padrão. Defina outro nível como padrão primeiro.';
+    RAISE EXCEPTION 'NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel desativar o nÃƒÂ­vel padrÃƒÂ£o. Defina outro nÃƒÂ­vel como padrÃƒÂ£o primeiro.';
   END IF;
   
   RETURN NEW;
@@ -196,7 +196,7 @@ CREATE TRIGGER trigger_prevent_default_tier_deactivation
   FOR EACH ROW
   EXECUTE FUNCTION prevent_default_tier_deactivation();
 
-COMMENT ON FUNCTION prevent_default_tier_deactivation IS 'Previne desativação do nível padrão';
+COMMENT ON FUNCTION prevent_default_tier_deactivation IS 'Previne desativaÃƒÂ§ÃƒÂ£o do nÃƒÂ­vel padrÃƒÂ£o';
 
 -- =====================================================
 -- 7. TRIGGER: Remover tier_id quando is_price_custom = true
@@ -205,12 +205,12 @@ COMMENT ON FUNCTION prevent_default_tier_deactivation IS 'Previne desativação 
 CREATE OR REPLACE FUNCTION remove_tier_on_custom_pricing()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Se está habilitando preço customizado, remover atribuição de nível
+  -- Se estÃƒÂ¡ habilitando preÃƒÂ§o customizado, remover atribuiÃƒÂ§ÃƒÂ£o de nÃƒÂ­vel
   IF NEW.is_price_custom = true AND (OLD.is_price_custom IS NULL OR OLD.is_price_custom = false) THEN
-    -- Remover atribuição
+    -- Remover atribuiÃƒÂ§ÃƒÂ£o
     DELETE FROM collection_tier_assignments WHERE collection_id = NEW.id;
     
-    -- Marcar que não usa tier pricing
+    -- Marcar que nÃƒÂ£o usa tier pricing
     NEW.uses_tier_pricing := false;
   END IF;
   
@@ -224,7 +224,7 @@ CREATE TRIGGER trigger_remove_tier_on_custom_pricing
   FOR EACH ROW
   EXECUTE FUNCTION remove_tier_on_custom_pricing();
 
-COMMENT ON FUNCTION remove_tier_on_custom_pricing IS 'Remove atribuição de nível quando preço customizado é habilitado';
+COMMENT ON FUNCTION remove_tier_on_custom_pricing IS 'Remove atribuiÃƒÂ§ÃƒÂ£o de nÃƒÂ­vel quando preÃƒÂ§o customizado ÃƒÂ© habilitado';
 
 -- =====================================================
 -- 8. TRIGGER: Atualizar timestamp de updated_at

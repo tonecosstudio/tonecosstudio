@@ -3,10 +3,10 @@
 -- Cria grupos automaticamente e sincroniza membros baseado em eventos
 
 -- =====================================================
--- 1. CRIAR GRUPOS PADRÃO DO SISTEMA
+-- 1. CRIAR GRUPOS PADRÃƒÆ’O DO SISTEMA
 -- =====================================================
 
--- Função para criar grupos padrão se não existirem
+-- FunÃƒÂ§ÃƒÂ£o para criar grupos padrÃƒÂ£o se nÃƒÂ£o existirem
 CREATE OR REPLACE FUNCTION create_default_groups()
 RETURNS void AS $$
 DECLARE
@@ -18,7 +18,7 @@ BEGIN
   WHERE raw_user_meta_data->>'role' = 'admin'
   LIMIT 1;
 
-  -- Se não houver admin, usar o primeiro usuário
+  -- Se nÃƒÂ£o houver admin, usar o primeiro usuÃƒÂ¡rio
   IF admin_user_id IS NULL THEN
     SELECT id INTO admin_user_id
     FROM auth.users
@@ -26,16 +26,16 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- Se ainda não houver usuário, não criar grupos (será criado quando houver usuários)
+  -- Se ainda nÃƒÂ£o houver usuÃƒÂ¡rio, nÃƒÂ£o criar grupos (serÃƒÂ¡ criado quando houver usuÃƒÂ¡rios)
   IF admin_user_id IS NULL THEN
-    RAISE NOTICE 'Nenhum usuário encontrado. Grupos serão criados quando houver usuários.';
+    RAISE NOTICE 'Nenhum usuÃƒÂ¡rio encontrado. Grupos serÃƒÂ£o criados quando houver usuÃƒÂ¡rios.';
     RETURN;
   END IF;
 
-  -- Grupo: Novos Membros (todos os usuários cadastrados)
+  -- Grupo: Novos Membros (todos os usuÃƒÂ¡rios cadastrados)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '🎉 Novos Membros',
+    'Ã°Å¸Å½â€° Novos Membros',
     'manual',
     NULL,
     admin_user_id
@@ -45,22 +45,22 @@ BEGIN
   -- Grupo: Assinantes Geral (todos com assinatura ativa)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '⭐ Assinantes',
+    'Ã¢Â­Â Assinantes',
     'assinantes',
     '{"type": "assinantes", "subscriptionStatus": "active"}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  RAISE NOTICE 'Grupos padrão criados com sucesso';
+  RAISE NOTICE 'Grupos padrÃƒÂ£o criados com sucesso';
 END;
 $$ LANGUAGE plpgsql;
 
--- Executar a função para criar grupos padrão
+-- Executar a funÃƒÂ§ÃƒÂ£o para criar grupos padrÃƒÂ£o
 SELECT create_default_groups();
 
 -- =====================================================
--- 2. TRIGGER: Adicionar novo usuário ao grupo "Novos Membros"
+-- 2. TRIGGER: Adicionar novo usuÃƒÂ¡rio ao grupo "Novos Membros"
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION add_new_user_to_welcome_group()
@@ -71,24 +71,24 @@ BEGIN
   -- Buscar o grupo "Novos Membros"
   SELECT id INTO welcome_group_id
   FROM chat_groups
-  WHERE name = '🎉 Novos Membros'
+  WHERE name = 'Ã°Å¸Å½â€° Novos Membros'
   AND deleted_at IS NULL
   LIMIT 1;
 
-  -- Se o grupo existir, adicionar o usuário
+  -- Se o grupo existir, adicionar o usuÃƒÂ¡rio
   IF welcome_group_id IS NOT NULL THEN
     INSERT INTO chat_group_members (group_id, user_id, joined_at)
     VALUES (welcome_group_id, NEW.id, NOW())
     ON CONFLICT (group_id, user_id) DO NOTHING;
     
-    RAISE NOTICE 'Usuário % adicionado ao grupo Novos Membros', NEW.id;
+    RAISE NOTICE 'UsuÃƒÂ¡rio % adicionado ao grupo Novos Membros', NEW.id;
   END IF;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Criar trigger para novos usuários
+-- Criar trigger para novos usuÃƒÂ¡rios
 DROP TRIGGER IF EXISTS trigger_add_new_user_to_welcome_group ON auth.users;
 CREATE TRIGGER trigger_add_new_user_to_welcome_group
   AFTER INSERT ON auth.users
@@ -96,7 +96,7 @@ CREATE TRIGGER trigger_add_new_user_to_welcome_group
   EXECUTE FUNCTION add_new_user_to_welcome_group();
 
 -- =====================================================
--- 3. TRIGGER: Criar grupo automaticamente para nova coleção
+-- 3. TRIGGER: Criar grupo automaticamente para nova coleÃƒÂ§ÃƒÂ£o
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION create_group_for_new_collection()
@@ -105,13 +105,13 @@ DECLARE
   admin_user_id UUID;
   group_name TEXT;
 BEGIN
-  -- Pegar o criador da coleção ou primeiro admin
+  -- Pegar o criador da coleÃƒÂ§ÃƒÂ£o ou primeiro admin
   SELECT id INTO admin_user_id
   FROM auth.users
   WHERE raw_user_meta_data->>'role' = 'admin'
   LIMIT 1;
 
-  -- Se não houver admin, usar o primeiro usuário
+  -- Se nÃƒÂ£o houver admin, usar o primeiro usuÃƒÂ¡rio
   IF admin_user_id IS NULL THEN
     SELECT id INTO admin_user_id
     FROM auth.users
@@ -119,16 +119,16 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- Se não houver usuário, não criar grupo
+  -- Se nÃƒÂ£o houver usuÃƒÂ¡rio, nÃƒÂ£o criar grupo
   IF admin_user_id IS NULL THEN
-    RAISE NOTICE 'Nenhum usuário encontrado. Grupo não será criado para coleção %', NEW.name;
+    RAISE NOTICE 'Nenhum usuÃƒÂ¡rio encontrado. Grupo nÃƒÂ£o serÃƒÂ¡ criado para coleÃƒÂ§ÃƒÂ£o %', NEW.name;
     RETURN NEW;
   END IF;
 
-  -- Nome do grupo baseado no nome da coleção
-  group_name := '📦 ' || NEW.name;
+  -- Nome do grupo baseado no nome da coleÃƒÂ§ÃƒÂ£o
+  group_name := 'Ã°Å¸â€œÂ¦ ' || NEW.name;
 
-  -- Criar grupo para a coleção
+  -- Criar grupo para a coleÃƒÂ§ÃƒÂ£o
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
     group_name,
@@ -141,13 +141,13 @@ BEGIN
   )
   ON CONFLICT DO NOTHING;
 
-  RAISE NOTICE 'Grupo criado para coleção: %', NEW.name;
+  RAISE NOTICE 'Grupo criado para coleÃƒÂ§ÃƒÂ£o: %', NEW.name;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Criar trigger para novas coleções
+-- Criar trigger para novas coleÃƒÂ§ÃƒÂµes
 DROP TRIGGER IF EXISTS trigger_create_group_for_collection ON collections;
 CREATE TRIGGER trigger_create_group_for_collection
   AFTER INSERT ON collections
@@ -155,7 +155,7 @@ CREATE TRIGGER trigger_create_group_for_collection
   EXECUTE FUNCTION create_group_for_new_collection();
 
 -- =====================================================
--- 4. FUNÇÃO: Sincronizar membros de grupos automáticos
+-- 4. FUNÃƒâ€¡ÃƒÆ’O: Sincronizar membros de grupos automÃƒÂ¡ticos
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION sync_automatic_group_members(p_group_id UUID)
@@ -165,14 +165,14 @@ DECLARE
   v_criteria JSONB;
   v_collection_id TEXT;
 BEGIN
-  -- Buscar informações do grupo
+  -- Buscar informaÃƒÂ§ÃƒÂµes do grupo
   SELECT * INTO v_group
   FROM chat_groups
   WHERE id = p_group_id
   AND deleted_at IS NULL;
 
   IF NOT FOUND THEN
-    RAISE NOTICE 'Grupo não encontrado ou deletado';
+    RAISE NOTICE 'Grupo nÃƒÂ£o encontrado ou deletado';
     RETURN;
   END IF;
 
@@ -183,7 +183,7 @@ BEGIN
     
     -- Grupo de Assinantes Geral
     WHEN 'assinantes' THEN
-      -- Adicionar todos os usuários com assinatura ativa
+      -- Adicionar todos os usuÃƒÂ¡rios com assinatura ativa
       INSERT INTO chat_group_members (group_id, user_id, joined_at)
       SELECT DISTINCT p_group_id, s.user_id, NOW()
       FROM subscriptions s
@@ -191,19 +191,19 @@ BEGIN
       AND s.user_id IS NOT NULL
       ON CONFLICT (group_id, user_id) DO NOTHING;
 
-      -- Remover usuários sem assinatura ativa
+      -- Remover usuÃƒÂ¡rios sem assinatura ativa
       DELETE FROM chat_group_members
       WHERE group_id = p_group_id
       AND user_id NOT IN (
         SELECT user_id FROM subscriptions WHERE status = 'active'
       );
 
-    -- Grupo de Coleção Específica
+    -- Grupo de ColeÃƒÂ§ÃƒÂ£o EspecÃƒÂ­fica
     WHEN 'colecao' THEN
       v_collection_id := v_criteria->>'collectionId';
       
       IF v_collection_id IS NOT NULL THEN
-        -- Adicionar assinantes da coleção
+        -- Adicionar assinantes da coleÃƒÂ§ÃƒÂ£o
         INSERT INTO chat_group_members (group_id, user_id, joined_at)
         SELECT DISTINCT p_group_id, s.user_id, NOW()
         FROM subscriptions s
@@ -212,7 +212,7 @@ BEGIN
         AND s.user_id IS NOT NULL
         ON CONFLICT (group_id, user_id) DO NOTHING;
 
-        -- Remover usuários que não são mais assinantes
+        -- Remover usuÃƒÂ¡rios que nÃƒÂ£o sÃƒÂ£o mais assinantes
         DELETE FROM chat_group_members
         WHERE group_id = p_group_id
         AND user_id NOT IN (
@@ -224,7 +224,7 @@ BEGIN
       END IF;
 
     ELSE
-      RAISE NOTICE 'Tipo de grupo % não requer sincronização automática', v_group.type;
+      RAISE NOTICE 'Tipo de grupo % nÃƒÂ£o requer sincronizaÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica', v_group.type;
   END CASE;
 
   RAISE NOTICE 'Membros sincronizados para grupo %', v_group.name;
@@ -249,7 +249,7 @@ BEGIN
     PERFORM sync_automatic_group_members(v_group.id);
   END LOOP;
 
-  -- Se for assinatura de coleção específica, sincronizar grupo da coleção
+  -- Se for assinatura de coleÃƒÂ§ÃƒÂ£o especÃƒÂ­fica, sincronizar grupo da coleÃƒÂ§ÃƒÂ£o
   IF NEW.collection_id IS NOT NULL THEN
     FOR v_group IN 
       SELECT id FROM chat_groups 
@@ -265,7 +265,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Criar trigger para mudanças em assinaturas
+-- Criar trigger para mudanÃƒÂ§as em assinaturas
 DROP TRIGGER IF EXISTS trigger_sync_groups_on_subscription ON subscriptions;
 CREATE TRIGGER trigger_sync_groups_on_subscription
   AFTER INSERT OR UPDATE OF status ON subscriptions
@@ -273,7 +273,7 @@ CREATE TRIGGER trigger_sync_groups_on_subscription
   EXECUTE FUNCTION sync_groups_on_subscription_change();
 
 -- =====================================================
--- 6. JOB: Sincronização periódica (executar manualmente ou via cron)
+-- 6. JOB: SincronizaÃƒÂ§ÃƒÂ£o periÃƒÂ³dica (executar manualmente ou via cron)
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION sync_all_automatic_groups()
@@ -297,17 +297,17 @@ $$ LANGUAGE plpgsql;
 -- 7. POPULAR GRUPOS EXISTENTES COM MEMBROS
 -- =====================================================
 
--- Sincronizar todos os grupos automáticos existentes
+-- Sincronizar todos os grupos automÃƒÂ¡ticos existentes
 SELECT sync_all_automatic_groups();
 
--- Adicionar todos os usuários existentes ao grupo "Novos Membros"
+-- Adicionar todos os usuÃƒÂ¡rios existentes ao grupo "Novos Membros"
 DO $$
 DECLARE
   welcome_group_id UUID;
 BEGIN
   SELECT id INTO welcome_group_id
   FROM chat_groups
-  WHERE name = '🎉 Novos Membros'
+  WHERE name = 'Ã°Å¸Å½â€° Novos Membros'
   AND deleted_at IS NULL
   LIMIT 1;
 
@@ -317,17 +317,17 @@ BEGIN
     FROM auth.users
     ON CONFLICT (group_id, user_id) DO NOTHING;
     
-    RAISE NOTICE 'Usuários existentes adicionados ao grupo Novos Membros';
+    RAISE NOTICE 'UsuÃƒÂ¡rios existentes adicionados ao grupo Novos Membros';
   END IF;
 END $$;
 
 -- =====================================================
--- COMENTÁRIOS E DOCUMENTAÇÃO
+-- COMENTÃƒÂRIOS E DOCUMENTAÃƒâ€¡ÃƒÆ’O
 -- =====================================================
 
-COMMENT ON FUNCTION create_default_groups() IS 'Cria grupos padrão do sistema (Novos Membros, Assinantes)';
-COMMENT ON FUNCTION add_new_user_to_welcome_group() IS 'Adiciona automaticamente novos usuários ao grupo de boas-vindas';
-COMMENT ON FUNCTION create_group_for_new_collection() IS 'Cria automaticamente um grupo quando uma nova coleção é criada';
-COMMENT ON FUNCTION sync_automatic_group_members(UUID) IS 'Sincroniza membros de um grupo automático baseado em seus critérios';
-COMMENT ON FUNCTION sync_groups_on_subscription_change() IS 'Sincroniza grupos quando uma assinatura é criada ou atualizada';
-COMMENT ON FUNCTION sync_all_automatic_groups() IS 'Sincroniza todos os grupos automáticos do sistema';
+COMMENT ON FUNCTION create_default_groups() IS 'Cria grupos padrÃƒÂ£o do sistema (Novos Membros, Assinantes)';
+COMMENT ON FUNCTION add_new_user_to_welcome_group() IS 'Adiciona automaticamente novos usuÃƒÂ¡rios ao grupo de boas-vindas';
+COMMENT ON FUNCTION create_group_for_new_collection() IS 'Cria automaticamente um grupo quando uma nova coleÃƒÂ§ÃƒÂ£o ÃƒÂ© criada';
+COMMENT ON FUNCTION sync_automatic_group_members(UUID) IS 'Sincroniza membros de um grupo automÃƒÂ¡tico baseado em seus critÃƒÂ©rios';
+COMMENT ON FUNCTION sync_groups_on_subscription_change() IS 'Sincroniza grupos quando uma assinatura ÃƒÂ© criada ou atualizada';
+COMMENT ON FUNCTION sync_all_automatic_groups() IS 'Sincroniza todos os grupos automÃƒÂ¡ticos do sistema';

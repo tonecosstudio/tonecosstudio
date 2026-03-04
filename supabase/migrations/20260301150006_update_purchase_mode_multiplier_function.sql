@@ -1,7 +1,7 @@
--- Migration: Implementar função update_purchase_mode_multiplier
+-- Migration: Implementar funÃƒÂ§ÃƒÂ£o update_purchase_mode_multiplier
 -- Feature: pricing-system-restructure
 -- Requisitos: 3.3, 3.4, 3.7
--- Descrição: Atualiza multiplicador de modalidade e recalcula todos os planos dessa modalidade
+-- DescriÃƒÂ§ÃƒÂ£o: Atualiza multiplicador de modalidade e recalcula todos os planos dessa modalidade
 
 CREATE OR REPLACE FUNCTION update_purchase_mode_multiplier(
   p_mode_key TEXT,
@@ -31,7 +31,7 @@ BEGIN
   WHERE mode_key = p_mode_key;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Modalidade não encontrada';
+    RAISE EXCEPTION 'Modalidade nÃƒÂ£o encontrada';
   END IF;
   
   -- Atualizar modalidade
@@ -41,7 +41,7 @@ BEGIN
     updated_at = NOW()
   WHERE mode_key = p_mode_key;
   
-  -- Registrar mudança no histórico
+  -- Registrar mudanÃƒÂ§a no histÃƒÂ³rico
   INSERT INTO purchase_mode_history (
     mode_key, field_name, old_value, new_value, changed_by, changed_at
   ) VALUES (
@@ -55,7 +55,7 @@ BEGIN
     JOIN pricing_tiers pt ON pt.id = sp.tier_id
     WHERE sp.plan_mode = p_mode_key
   LOOP
-    -- Calcular novos preços
+    -- Calcular novos preÃƒÂ§os
     v_new_price_full := ROUND(v_plan.tier_price_full * p_new_multiplier, 2);
     v_new_price_pix := ROUND(v_new_price_full * (1 - v_plan.pix_discount_percentage / 100), 2);
     
@@ -70,7 +70,7 @@ BEGIN
     
     v_plans_updated := v_plans_updated + 1;
     
-    -- Registrar no histórico (se tabela existir)
+    -- Registrar no histÃƒÂ³rico (se tabela existir)
     BEGIN
       INSERT INTO pricing_history (
         tier_id, change_type,
@@ -97,7 +97,7 @@ BEGIN
     END;
   END LOOP;
   
-  -- Contar níveis afetados
+  -- Contar nÃƒÂ­veis afetados
   SELECT COUNT(DISTINCT tier_id) INTO v_tiers_affected
   FROM subscription_plans
   WHERE plan_mode = p_mode_key;

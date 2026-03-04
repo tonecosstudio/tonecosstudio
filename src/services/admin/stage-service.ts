@@ -77,9 +77,11 @@ export async function getStageHistory(productionQueueId: string): Promise<Produc
  *
  * Esta função:
  * 1. Valida que o estágio está em progresso
- * 2. Marca o estágio como completo com timestamp
- * 3. Salva notas e fotos (se fornecidas)
- * 4. Triggers do banco atualizam automaticamente:
+ * 2. Valida que estágios anteriores foram completados (stage validation)
+ * 3. Marca o estágio como completo com timestamp
+ * 4. Salva notas e fotos (se fornecidas)
+ * 5. Registra a transição no log de auditoria
+ * 6. Triggers do banco atualizam automaticamente:
  *    - production_queue.current_stage
  *    - production_queue.production_status
  *    - Calcula actual_duration
@@ -87,12 +89,16 @@ export async function getStageHistory(productionQueueId: string): Promise<Produc
  * @param stageId - ID do estágio
  * @param notes - Notas sobre a conclusão (opcional)
  * @param photos - URLs de fotos já uploadadas (opcional)
+ * @param isOverride - Se true, permite pular validação (requer admin)
+ * @param justification - Justificativa para override (obrigatória se isOverride = true)
  * @returns Registro do estágio atualizado
  */
 export async function completeStage(
   stageId: string,
   notes?: string,
-  photos?: string[]
+  photos?: string[],
+  isOverride: boolean = false,
+  justification?: string
 ): Promise<ProductionStageRecord> {
   // Buscar estágio atual
   const { data: currentStage, error: fetchError } = await supabase
@@ -112,6 +118,33 @@ export async function completeStage(
 
   if (currentStage.is_blocked) {
     throw new Error("Não é possível completar um estágio bloqueado. Desbloqueie primeiro.");
+  }
+
+  // Validate stage transition (unless override is enabled)
+  if (!isOverride) {
+    const { validateStageTransition } = await import("./stage-validation");
+    const validation = await validateStageTransition(currentStage.production_queue_id, stageId);
+    
+    if (!validation.isValid) {
+      throw new Error(validation.error || "Stage transition validation failed");
+    }
+  } else {
+    // If override is enabled, validate that justification is provided
+    if (!justification || justification.trim() === "") {
+      throw new Error("Justification is required for admin override");
+    }
+
+    // Validate that user has admin permissions
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { canUserOverride } = await import("./stage-validation");
+    const hasPermission = await canUserOverride(user.id);
+    if (!hasPermission) {
+      throw new Error("User does not have permission to override stage validation");
+    }
   }
 
   // Preparar dados de atualização
@@ -147,6 +180,38 @@ export async function completeStage(
 
   if (updateError || !updatedStage) {
     throw new Error(`Erro ao completar estágio: ${updateError?.message || "Falha na atualização"}`);
+  }
+
+  // Log the stage transition
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      // Get user profile for name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      const userName = profile?.full_name || user.email || "Unknown User";
+
+      // Determine previous stage
+      const { getPreviousStage, logStageTransition } = await import("./stage-validation");
+      const previousStage = getPreviousStage(updatedStage.stage_name as StageType);
+
+      await logStageTransition(
+        updatedStage.production_queue_id,
+        previousStage,
+        updatedStage.stage_name as StageType,
+        user.id,
+        userName,
+        isOverride,
+        justification || null
+      );
+    }
+  } catch (logError) {
+    // Log error but don't fail the operation
+    console.error("Failed to log stage transition:", logError);
   }
 
   return transformStageRecord(updatedStage);

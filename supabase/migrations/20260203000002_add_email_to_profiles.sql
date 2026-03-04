@@ -1,7 +1,7 @@
 -- Adicionar campo email na tabela profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email text;
 
--- Criar função para sincronizar email do auth.users para profiles
+-- Criar funÃƒÂ§ÃƒÂ£o para sincronizar email do auth.users para profiles
 CREATE OR REPLACE FUNCTION public.sync_user_email()
 RETURNS TRIGGER
 SECURITY DEFINER
@@ -9,7 +9,7 @@ SET search_path = public
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Atualizar email no profile quando usuário é criado ou atualizado
+  -- Atualizar email no profile quando usuÃƒÂ¡rio ÃƒÂ© criado ou atualizado
   INSERT INTO public.profiles (id, email, created_at, updated_at)
   VALUES (NEW.id, NEW.email, NOW(), NOW())
   ON CONFLICT (id) 

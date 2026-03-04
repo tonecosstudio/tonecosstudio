@@ -1,4 +1,4 @@
--- Limpar thumbnail_path de anexos antigos que não existem mais
+-- Limpar thumbnail_path de anexos antigos que nÃƒÂ£o existem mais
 -- Isso evita erros 404 no console ao carregar imagens
 
 UPDATE support_attachments

@@ -25,7 +25,7 @@
 
 -- Remove any existing schedule for this job
 -- This ensures clean re-deployment of the migration
-DO $
+DO $$
 BEGIN
   PERFORM cron.unschedule('daily-cycle-transition');
   RAISE NOTICE 'Unscheduled existing daily-cycle-transition job (if any)';
@@ -35,7 +35,7 @@ EXCEPTION
   WHEN OTHERS THEN
     -- Job doesn't exist, that's fine
     RAISE NOTICE 'No existing job to unschedule';
-END $;
+END $$;
 
 -- =====================================================
 -- STEP 2: Schedule the cycle transition cron job
@@ -46,19 +46,19 @@ END $;
 -- Since cron.timezone is set to 'America/Bahia', this runs at 00:01 Bahia time
 -- which is 03:01 UTC (Bahia is UTC-3)
 
-DO $
+DO $$
 BEGIN
   PERFORM cron.schedule(
     'daily-cycle-transition',             -- Job name
     '1 0 * * *',                          -- Cron expression: 00:01 daily (Bahia time)
-    $
+    $body$
     SELECT
       net.http_post(
         url:='https://pabxpvqwtvbjaunjejud.supabase.co/functions/v1/cron-transition-cycles',
         headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYnhwdnF3dHZiamF1bmplanVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTU4NTYsImV4cCI6MjA4NTM5MTg1Nn0.W3n9h6zoLJumHNrFwG_aBB_AI6CjBt4LAP5a9alXZm4"}'::jsonb,
         body:='{}'::jsonb
       ) as request_id;
-    $
+    $body$
   );
   
   RAISE NOTICE 'Successfully scheduled daily-cycle-transition cron job at 00:01 Bahia time';
@@ -67,7 +67,7 @@ EXCEPTION
     RAISE NOTICE 'pg_cron not available. Please schedule manually or use Edge Function with cron trigger';
   WHEN OTHERS THEN
     RAISE NOTICE 'Error scheduling job: %', SQLERRM;
-END $;
+END $$;
 
 -- Add comment for documentation
 COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - includes daily-cycle-transition job at 00:01 Bahia time';

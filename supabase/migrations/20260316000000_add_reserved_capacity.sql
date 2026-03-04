@@ -9,8 +9,8 @@ ALTER TABLE cycles
 -- Add comment explaining the field
 COMMENT ON COLUMN cycles.reserved_capacity IS 'Capacity reserved for special orders, subtracted from available capacity';
 
--- Create index for queries that filter by reserved capacity
-CREATE INDEX idx_cycles_reserved_capacity ON cycles(reserved_capacity) WHERE reserved_capacity > 0;
+-- CREATE INDEX IF NOT EXISTS for queries that filter by reserved capacity
+CREATE INDEX IF NOT EXISTS idx_cycles_reserved_capacity ON cycles(reserved_capacity) WHERE reserved_capacity > 0;
 
 -- Update the capacity calculation to account for reserved capacity
 -- Available capacity = capacity_max - capacity_current - reserved_capacity

@@ -23,34 +23,24 @@ ON CONFLICT (subscription_id, collection_id) DO NOTHING;
 -- ============================================
 
 COMMENT ON COLUMN subscriptions.collection_id IS 
-  'DEPRECATED: Legacy field. Use subscription_collections table for N:N relationship. 
-   Kept for backward compatibility only. Will be removed in future version.';
+  'DEPRECATED: Legacy field. Use subscription_collections table for N:N relationship. Kept for backward compatibility only. Will be removed in future version.';
 
 -- ============================================
 -- PART 3: Log migration results
 -- ============================================
 
-DO $
+DO $$
 DECLARE
   v_migrated_count INTEGER;
   v_total_subscriptions INTEGER;
   v_subscriptions_with_collections INTEGER;
 BEGIN
-  -- Count migrated records
-  SELECT COUNT(*) INTO v_migrated_count
-  FROM subscription_collections;
+  SELECT COUNT(*) INTO v_migrated_count FROM subscription_collections;
+  SELECT COUNT(*) INTO v_total_subscriptions FROM subscriptions;
+  SELECT COUNT(*) INTO v_subscriptions_with_collections FROM subscriptions WHERE collection_id IS NOT NULL;
   
-  -- Count total subscriptions
-  SELECT COUNT(*) INTO v_total_subscriptions
-  FROM subscriptions;
-  
-  -- Count subscriptions with collections
-  SELECT COUNT(*) INTO v_subscriptions_with_collections
-  FROM subscriptions
-  WHERE collection_id IS NOT NULL;
-  
-  RAISE NOTICE '✅ Migration completed:';
-  RAISE NOTICE '   - Total subscriptions: %', v_total_subscriptions;
-  RAISE NOTICE '   - Subscriptions with collection_id: %', v_subscriptions_with_collections;
-  RAISE NOTICE '   - Records in subscription_collections: %', v_migrated_count;
-END $;
+  RAISE NOTICE 'Migration completed';
+  RAISE NOTICE 'Total subscriptions: %', v_total_subscriptions;
+  RAISE NOTICE 'Subscriptions with collection_id: %', v_subscriptions_with_collections;
+  RAISE NOTICE 'Records in subscription_collections: %', v_migrated_count;
+END $$;

@@ -1,7 +1,7 @@
--- Função SQL para listar usuários (apenas para admins)
--- Esta é a forma CORRETA e PROFISSIONAL de fazer isso no Supabase
+-- FunÃƒÂ§ÃƒÂ£o SQL para listar usuÃƒÂ¡rios (apenas para admins)
+-- Esta ÃƒÂ© a forma CORRETA e PROFISSIONAL de fazer isso no Supabase
 
--- Criar função que retorna usuários com profiles e roles
+-- Criar funÃƒÂ§ÃƒÂ£o que retorna usuÃƒÂ¡rios com profiles e roles
 CREATE OR REPLACE FUNCTION admin_list_users()
 RETURNS TABLE (
   id uuid,
@@ -26,25 +26,25 @@ DECLARE
   calling_user_id uuid;
   is_admin boolean;
 BEGIN
-  -- Pegar ID do usuário que está chamando
+  -- Pegar ID do usuÃƒÂ¡rio que estÃƒÂ¡ chamando
   calling_user_id := auth.uid();
   
-  -- Verificar se o usuário está autenticado
+  -- Verificar se o usuÃƒÂ¡rio estÃƒÂ¡ autenticado
   IF calling_user_id IS NULL THEN
-    RAISE EXCEPTION 'Não autenticado';
+    RAISE EXCEPTION 'NÃƒÂ£o autenticado';
   END IF;
   
-  -- Verificar se é admin
+  -- Verificar se ÃƒÂ© admin
   SELECT EXISTS (
     SELECT 1 FROM user_roles 
     WHERE user_id = calling_user_id AND role = 'admin'
   ) INTO is_admin;
   
   IF NOT is_admin THEN
-    RAISE EXCEPTION 'Acesso negado. Apenas admins podem listar usuários.';
+    RAISE EXCEPTION 'Acesso negado. Apenas admins podem listar usuÃƒÂ¡rios.';
   END IF;
   
-  -- Retornar usuários com dados combinados
+  -- Retornar usuÃƒÂ¡rios com dados combinados
   RETURN QUERY
   SELECT 
     au.id,
@@ -83,6 +83,6 @@ BEGIN
 END;
 $$;
 
--- Comentário explicativo
+-- ComentÃƒÂ¡rio explicativo
 COMMENT ON FUNCTION admin_list_users() IS 
-'Lista todos os usuários do sistema com profiles e roles. Apenas admins podem executar.';
+'Lista todos os usuÃƒÂ¡rios do sistema com profiles e roles. Apenas admins podem executar.';

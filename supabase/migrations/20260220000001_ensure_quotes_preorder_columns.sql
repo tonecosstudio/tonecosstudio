@@ -14,6 +14,6 @@ ADD COLUMN IF NOT EXISTS payment_method TEXT,
 ADD COLUMN IF NOT EXISTS ready_for_final_payment BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS final_payment_notified_at TIMESTAMPTZ;
 
--- Create index for better query performance
+-- CREATE INDEX IF NOT EXISTS for better query performance
 CREATE INDEX IF NOT EXISTS idx_quotes_is_preorder ON quotes(is_preorder) WHERE is_preorder = true;
 CREATE INDEX IF NOT EXISTS idx_quotes_payment_status ON quotes(payment_status);

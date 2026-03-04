@@ -1,13 +1,13 @@
 -- =====================================================
 -- MIGRATION: Sistema de Ciclos Recorrentes Mensais
 -- Data: 24/02/2026
--- Versão: 2.0
+-- VersÃƒÂ£o: 2.0
 -- =====================================================
 -- 
 -- MODELO OPERACIONAL:
--- - 2 ciclos por mês (Ciclo 1 e Ciclo 2)
+-- - 2 ciclos por mÃƒÂªs (Ciclo 1 e Ciclo 2)
 -- - Ciclo 1: dia 01-15 (primeira quinzena)
--- - Ciclo 2: dia 16-último dia (segunda quinzena)
+-- - Ciclo 2: dia 16-ÃƒÂºltimo dia (segunda quinzena)
 -- 
 -- =====================================================
 
@@ -15,7 +15,7 @@
 -- 1. BACKUP DOS DADOS ANTIGOS
 -- =====================================================
 
--- Criar tabela de backup (se não existir)
+-- Criar tabela de backup (se nÃƒÂ£o existir)
 CREATE TABLE IF NOT EXISTS system_settings_backup (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
@@ -55,31 +55,31 @@ INSERT INTO system_settings (key, value, description) VALUES
 -- CICLO ATUAL
 -- =====================================================
 ('current_cycle_type', 'cycle1', 'Tipo do ciclo atual: cycle1 (primeira quinzena) ou cycle2 (segunda quinzena)'),
-('current_cycle_month', '2', 'Mês do ciclo atual (0-11, onde 0=Janeiro, 2=Março)'),
+('current_cycle_month', '2', 'MÃƒÂªs do ciclo atual (0-11, onde 0=Janeiro, 2=MarÃƒÂ§o)'),
 ('current_cycle_year', '2026', 'Ano do ciclo atual'),
 
 -- =====================================================
--- CICLO 1 (PRIMEIRA QUINZENA) - MARÇO 2026
+-- CICLO 1 (PRIMEIRA QUINZENA) - MARÃƒâ€¡O 2026
 -- =====================================================
-('cycle1_sales_start', '2026-03-01', 'Início das vendas do Ciclo 1 (YYYY-MM-DD)'),
+('cycle1_sales_start', '2026-03-01', 'InÃƒÂ­cio das vendas do Ciclo 1 (YYYY-MM-DD)'),
 ('cycle1_sales_end', '2026-03-15', 'Fim das vendas do Ciclo 1 (YYYY-MM-DD)'),
-('cycle1_production_start', '2026-03-16', 'Início da produção do Ciclo 1 (YYYY-MM-DD)'),
-('cycle1_production_end', '2026-03-31', 'Fim da produção do Ciclo 1 (YYYY-MM-DD)'),
-('cycle1_shipping_deadline', '2026-04-07', 'Prazo de envio do Ciclo 1 (5º dia útil - YYYY-MM-DD)'),
+('cycle1_production_start', '2026-03-16', 'InÃƒÂ­cio da produÃƒÂ§ÃƒÂ£o do Ciclo 1 (YYYY-MM-DD)'),
+('cycle1_production_end', '2026-03-31', 'Fim da produÃƒÂ§ÃƒÂ£o do Ciclo 1 (YYYY-MM-DD)'),
+('cycle1_shipping_deadline', '2026-04-07', 'Prazo de envio do Ciclo 1 (5Ã‚Âº dia ÃƒÂºtil - YYYY-MM-DD)'),
 
 -- =====================================================
--- CICLO 2 (SEGUNDA QUINZENA) - MARÇO 2026
+-- CICLO 2 (SEGUNDA QUINZENA) - MARÃƒâ€¡O 2026
 -- =====================================================
-('cycle2_sales_start', '2026-03-16', 'Início das vendas do Ciclo 2 (YYYY-MM-DD)'),
+('cycle2_sales_start', '2026-03-16', 'InÃƒÂ­cio das vendas do Ciclo 2 (YYYY-MM-DD)'),
 ('cycle2_sales_end', '2026-03-31', 'Fim das vendas do Ciclo 2 (YYYY-MM-DD)'),
-('cycle2_production_start', '2026-04-01', 'Início da produção do Ciclo 2 (YYYY-MM-DD)'),
-('cycle2_production_end', '2026-04-30', 'Fim da produção do Ciclo 2 (YYYY-MM-DD)'),
-('cycle2_shipping_deadline', '2026-05-07', 'Prazo de envio do Ciclo 2 (5º dia útil - YYYY-MM-DD)'),
+('cycle2_production_start', '2026-04-01', 'InÃƒÂ­cio da produÃƒÂ§ÃƒÂ£o do Ciclo 2 (YYYY-MM-DD)'),
+('cycle2_production_end', '2026-04-30', 'Fim da produÃƒÂ§ÃƒÂ£o do Ciclo 2 (YYYY-MM-DD)'),
+('cycle2_shipping_deadline', '2026-05-07', 'Prazo de envio do Ciclo 2 (5Ã‚Âº dia ÃƒÂºtil - YYYY-MM-DD)'),
 
 -- =====================================================
--- CONFIGURAÇÕES GERAIS
+-- CONFIGURAÃƒâ€¡Ãƒâ€¢ES GERAIS
 -- =====================================================
-('shipping_business_days', '5', 'Prazo de envio em dias úteis (padrão: 5)')
+('shipping_business_days', '5', 'Prazo de envio em dias ÃƒÂºteis (padrÃƒÂ£o: 5)')
 
 ON CONFLICT (key) DO NOTHING;
 
@@ -95,12 +95,12 @@ BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS cycle_month INTEGER;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS cycle_year INTEGER;
     
-    -- Criar índice para melhor performance
+    -- Criar ÃƒÂ­ndice para melhor performance
     CREATE INDEX IF NOT EXISTS idx_orders_cycle ON orders(cycle_type, cycle_month, cycle_year);
     
-    RAISE NOTICE 'Campos de ciclo adicionados à tabela orders';
+    RAISE NOTICE 'Campos de ciclo adicionados ÃƒÂ  tabela orders';
   ELSE
-    RAISE NOTICE 'Tabela orders não existe, pulando atualização';
+    RAISE NOTICE 'Tabela orders nÃƒÂ£o existe, pulando atualizaÃƒÂ§ÃƒÂ£o';
   END IF;
 END $$;
 
@@ -108,21 +108,21 @@ END $$;
 -- 4. MIGRAR PEDIDOS EXISTENTES
 -- =====================================================
 
--- Atualizar pedidos de Março 2026 - Ciclo 1 (01-15/03)
+-- Atualizar pedidos de MarÃƒÂ§o 2026 - Ciclo 1 (01-15/03)
 DO $$
 BEGIN
   IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'orders') THEN
     UPDATE orders 
     SET 
       cycle_type = 'cycle1',
-      cycle_month = 2, -- Março (0-indexed: 0=Jan, 1=Fev, 2=Mar)
+      cycle_month = 2, -- MarÃƒÂ§o (0-indexed: 0=Jan, 1=Fev, 2=Mar)
       cycle_year = 2026
     WHERE 
       created_at >= '2026-03-01 00:00:00' 
       AND created_at <= '2026-03-15 23:59:59'
       AND cycle_type IS NULL;
     
-    -- Atualizar pedidos de Março 2026 - Ciclo 2 (16-31/03)
+    -- Atualizar pedidos de MarÃƒÂ§o 2026 - Ciclo 2 (16-31/03)
     UPDATE orders 
     SET 
       cycle_type = 'cycle2',
@@ -135,7 +135,7 @@ BEGIN
     
     RAISE NOTICE 'Pedidos existentes migrados para o novo modelo de ciclos';
   ELSE
-    RAISE NOTICE 'Tabela orders não existe, pulando migração de pedidos';
+    RAISE NOTICE 'Tabela orders nÃƒÂ£o existe, pulando migraÃƒÂ§ÃƒÂ£o de pedidos';
   END IF;
 END $$;
 
@@ -145,11 +145,11 @@ END $$;
 
 -- Atualizar FAQ sobre cronograma
 UPDATE system_settings 
-SET value = 'Operamos com 2 ciclos por mês: Ciclo 1 (dia 01-15) e Ciclo 2 (dia 16-último dia). Cada ciclo tem seu próprio cronograma de produção e envio. Exemplo: Ciclo 1 de Março (01-15/03) → Produção 16-31/03 → Envio até 07/04. Ciclo 2 de Março (16-31/03) → Produção 01-30/04 → Envio até 07/05.'
+SET value = 'Operamos com 2 ciclos por mÃƒÂªs: Ciclo 1 (dia 01-15) e Ciclo 2 (dia 16-ÃƒÂºltimo dia). Cada ciclo tem seu prÃƒÂ³prio cronograma de produÃƒÂ§ÃƒÂ£o e envio. Exemplo: Ciclo 1 de MarÃƒÂ§o (01-15/03) Ã¢â€ â€™ ProduÃƒÂ§ÃƒÂ£o 16-31/03 Ã¢â€ â€™ Envio atÃƒÂ© 07/04. Ciclo 2 de MarÃƒÂ§o (16-31/03) Ã¢â€ â€™ ProduÃƒÂ§ÃƒÂ£o 01-30/04 Ã¢â€ â€™ Envio atÃƒÂ© 07/05.'
 WHERE key = 'faq_first_delivery';
 
 -- =====================================================
--- 6. CRIAR FUNÇÃO PARA DETECTAR CICLO AUTOMATICAMENTE
+-- 6. CRIAR FUNÃƒâ€¡ÃƒÆ’O PARA DETECTAR CICLO AUTOMATICAMENTE
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION get_current_cycle()
@@ -226,28 +226,28 @@ SELECT
   (SELECT value::DATE FROM system_settings WHERE key = 'cycle2_production_end') AS cycle2_production_end,
   (SELECT value::DATE FROM system_settings WHERE key = 'cycle2_shipping_deadline') AS cycle2_shipping_deadline,
   
-  -- Configurações
+  -- ConfiguraÃƒÂ§ÃƒÂµes
   (SELECT value::INTEGER FROM system_settings WHERE key = 'shipping_business_days') AS shipping_business_days;
 
 -- =====================================================
--- 8. COMENTÁRIOS E DOCUMENTAÇÃO
+-- 8. COMENTÃƒÂRIOS E DOCUMENTAÃƒâ€¡ÃƒÆ’O
 -- =====================================================
 
-COMMENT ON TABLE system_settings_backup IS 'Backup dos campos antigos do sistema de lote único (v1)';
-COMMENT ON FUNCTION get_current_cycle IS 'Retorna informações do ciclo atual baseado na data de hoje';
-COMMENT ON VIEW current_cycle_info IS 'View consolidada com todas as informações dos ciclos atuais';
+COMMENT ON TABLE system_settings_backup IS 'Backup dos campos antigos do sistema de lote ÃƒÂºnico (v1)';
+COMMENT ON FUNCTION get_current_cycle IS 'Retorna informaÃƒÂ§ÃƒÂµes do ciclo atual baseado na data de hoje';
+COMMENT ON VIEW current_cycle_info IS 'View consolidada com todas as informaÃƒÂ§ÃƒÂµes dos ciclos atuais';
 
 -- =====================================================
--- 9. GRANTS (PERMISSÕES)
+-- 9. GRANTS (PERMISSÃƒâ€¢ES)
 -- =====================================================
 
--- Permitir que usuários autenticados leiam as configurações
+-- Permitir que usuÃƒÂ¡rios autenticados leiam as configuraÃƒÂ§ÃƒÂµes
 GRANT SELECT ON system_settings TO authenticated;
 GRANT SELECT ON current_cycle_info TO authenticated;
 GRANT EXECUTE ON FUNCTION get_current_cycle TO authenticated;
 
 -- =====================================================
--- 10. VALIDAÇÃO
+-- 10. VALIDAÃƒâ€¡ÃƒÆ’O
 -- =====================================================
 
 -- Verificar se todos os campos foram criados
@@ -280,7 +280,7 @@ BEGIN
     RAISE EXCEPTION 'Migration incompleta! Campos faltando: %', missing_keys;
   END IF;
   
-  RAISE NOTICE 'Migration concluída com sucesso! Todos os campos foram criados.';
+  RAISE NOTICE 'Migration concluÃƒÂ­da com sucesso! Todos os campos foram criados.';
 END $$;
 
 -- =====================================================
@@ -292,5 +292,5 @@ SELECT
   'Migration 20260224000000_add_cycle_system.sql' AS migration,
   'Sistema de Ciclos Recorrentes Mensais' AS description,
   '2.0' AS version,
-  'CONCLUÍDO' AS status,
+  'CONCLUÃƒÂDO' AS status,
   NOW() AS executed_at;

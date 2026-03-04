@@ -1,8 +1,8 @@
 -- Force Fix RLS 406 Error
--- Remover TODAS as políticas e recriar do zero
+-- Remover TODAS as polÃƒÂ­ticas e recriar do zero
 
 -- =====================================================
--- 1. REMOVER TODAS AS POLÍTICAS EXISTENTES
+-- 1. REMOVER TODAS AS POLÃƒÂTICAS EXISTENTES
 -- =====================================================
 
 DO $$ 
@@ -19,7 +19,7 @@ BEGIN
 END $$;
 
 -- =====================================================
--- 2. CRIAR POLÍTICAS PERMISSIVAS
+-- 2. CRIAR POLÃƒÂTICAS PERMISSIVAS
 -- =====================================================
 
 CREATE POLICY "chat_group_members_select"
@@ -44,7 +44,7 @@ CREATE POLICY "chat_group_members_delete"
   USING (true);
 
 -- =====================================================
--- 3. VERIFICAÇÃO
+-- 3. VERIFICAÃƒâ€¡ÃƒÆ’O
 -- =====================================================
 
 SELECT 
@@ -55,4 +55,4 @@ FROM pg_policies
 WHERE tablename = 'chat_group_members'
 ORDER BY policyname;
 
-SELECT '✅ Fix 406 aplicado - políticas permissivas ativas' as resultado;
+SELECT 'Ã¢Å“â€¦ Fix 406 aplicado - polÃƒÂ­ticas permissivas ativas' as resultado;

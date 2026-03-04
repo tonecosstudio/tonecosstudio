@@ -7,8 +7,8 @@
 -- Remove old conflicting policies
 -- ============================================
 
-DROP POLICY IF EXISTS "Coleções ativas são públicas" ON collections;
-DROP POLICY IF EXISTS "Admins podem ver todas as coleções" ON collections;
+DROP POLICY IF EXISTS "ColeÃƒÂ§ÃƒÂµes ativas sÃƒÂ£o pÃƒÂºblicas" ON collections;
+DROP POLICY IF EXISTS "Admins podem ver todas as coleÃƒÂ§ÃƒÂµes" ON collections;
 DROP POLICY IF EXISTS "Users can view active collections" ON collections;
 DROP POLICY IF EXISTS "Users can view collections from their subscriptions" ON collections;
 DROP POLICY IF EXISTS "Admins can view all collections" ON collections;
@@ -24,7 +24,7 @@ CREATE POLICY "collections_select_active"
   USING (is_active = true);
 
 -- Policy 2: Allow users to view collections from their subscriptions
--- Used for: Join subscriptions → subscription_collections → collections
+-- Used for: Join subscriptions Ã¢â€ â€™ subscription_collections Ã¢â€ â€™ collections
 -- This is the KEY policy that fixes the 406 error!
 CREATE POLICY "collections_select_from_subscriptions"
   ON collections FOR SELECT
@@ -68,10 +68,10 @@ COMMENT ON POLICY "collections_select_admin" ON collections IS
 -- ============================================
 
 -- Log the policies that were created
-DO $
+DO $$
 BEGIN
-  RAISE NOTICE '✅ Collections RLS policies updated successfully';
+  RAISE NOTICE 'Ã¢Å“â€¦ Collections RLS policies updated successfully';
   RAISE NOTICE '   - collections_select_active';
   RAISE NOTICE '   - collections_select_from_subscriptions';
   RAISE NOTICE '   - collections_select_admin';
-END $;
+END $$;

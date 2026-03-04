@@ -8,7 +8,7 @@ ADD COLUMN IF NOT EXISTS whatsapp TEXT,
 ADD COLUMN IF NOT EXISTS cpf TEXT,
 ADD COLUMN IF NOT EXISTS birth_date DATE;
 
--- Preferências de Notificação
+-- PreferÃƒÂªncias de NotificaÃƒÂ§ÃƒÂ£o
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT true,
 ADD COLUMN IF NOT EXISTS order_updates BOOLEAN DEFAULT true,
@@ -18,12 +18,12 @@ ADD COLUMN IF NOT EXISTS marketing_emails BOOLEAN DEFAULT false;
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS profile_completion INTEGER DEFAULT 0;
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX IF NOT EXISTS idx_profiles_cpf ON profiles(cpf) WHERE cpf IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_profiles_phone ON profiles(phone) WHERE phone IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_profiles_whatsapp ON profiles(whatsapp) WHERE whatsapp IS NOT NULL;
 
--- Função para calcular completude do perfil
+-- FunÃƒÂ§ÃƒÂ£o para calcular completude do perfil
 CREATE OR REPLACE FUNCTION calculate_profile_completion(profile_id UUID)
 RETURNS INTEGER AS $$
 DECLARE

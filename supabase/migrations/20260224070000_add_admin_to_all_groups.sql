@@ -1,4 +1,4 @@
--- Adicionar o usuário admin a todos os grupos existentes
+-- Adicionar o usuÃƒÂ¡rio admin a todos os grupos existentes
 INSERT INTO chat_group_members (group_id, user_id)
 SELECT 
   g.id,

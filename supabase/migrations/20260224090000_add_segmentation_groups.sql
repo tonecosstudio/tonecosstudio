@@ -1,6 +1,6 @@
--- Migration: Grupos de Segmentação Automática
+-- Migration: Grupos de SegmentaÃƒÂ§ÃƒÂ£o AutomÃƒÂ¡tica
 -- Feature: chat-groups-system
--- Adiciona grupos para segmentação de usuários: Avisos, Expirando, Ex-Assinantes, Free
+-- Adiciona grupos para segmentaÃƒÂ§ÃƒÂ£o de usuÃƒÂ¡rios: Avisos, Expirando, Ex-Assinantes, Free
 
 -- =====================================================
 -- 0. ADICIONAR NOVOS TIPOS AO ENUM
@@ -15,7 +15,7 @@ ADD CONSTRAINT chat_groups_type_enum
 CHECK (type IN ('manual', 'assinantes', 'colecao', 'lancamentos', 'pedidos', 'expirando', 'ex_assinantes', 'free'));
 
 -- =====================================================
--- 1. ATUALIZAR FUNÇÃO create_default_groups
+-- 1. ATUALIZAR FUNÃƒâ€¡ÃƒÆ’O create_default_groups
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION create_default_groups()
@@ -29,7 +29,7 @@ BEGIN
   WHERE raw_user_meta_data->>'role' = 'admin'
   LIMIT 1;
 
-  -- Se não houver admin, usar o primeiro usuário
+  -- Se nÃƒÂ£o houver admin, usar o primeiro usuÃƒÂ¡rio
   IF admin_user_id IS NULL THEN
     SELECT id INTO admin_user_id
     FROM auth.users
@@ -37,16 +37,16 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- Se ainda não houver usuário, não criar grupos (será criado quando houver usuários)
+  -- Se ainda nÃƒÂ£o houver usuÃƒÂ¡rio, nÃƒÂ£o criar grupos (serÃƒÂ¡ criado quando houver usuÃƒÂ¡rios)
   IF admin_user_id IS NULL THEN
-    RAISE NOTICE 'Nenhum usuário encontrado. Grupos serão criados quando houver usuários.';
+    RAISE NOTICE 'Nenhum usuÃƒÂ¡rio encontrado. Grupos serÃƒÂ£o criados quando houver usuÃƒÂ¡rios.';
     RETURN;
   END IF;
 
-  -- Grupo: Novos Membros (todos os usuários cadastrados)
+  -- Grupo: Novos Membros (todos os usuÃƒÂ¡rios cadastrados)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '🎉 Novos Membros',
+    'Ã°Å¸Å½â€° Novos Membros',
     'manual',
     NULL,
     admin_user_id
@@ -56,7 +56,7 @@ BEGIN
   -- Grupo: Assinantes Geral (todos com assinatura ativa)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '⭐ Assinantes',
+    'Ã¢Â­Â Assinantes',
     'assinantes',
     '{"type": "assinantes", "subscriptionStatus": "active"}'::jsonb,
     admin_user_id
@@ -66,52 +66,52 @@ BEGIN
   -- Grupo: Avisos Importantes (manual, admin escolhe quando usar)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '📢 Avisos Importantes',
+    'Ã°Å¸â€œÂ¢ Avisos Importantes',
     'manual',
-    '{"type": "avisos", "description": "Comunicados críticos do sistema"}'::jsonb,
+    '{"type": "avisos", "description": "Comunicados crÃƒÂ­ticos do sistema"}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  -- Grupo: Assinaturas Expirando (assinaturas que vencem em até 7 dias)
+  -- Grupo: Assinaturas Expirando (assinaturas que vencem em atÃƒÂ© 7 dias)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '⏰ Assinaturas Expirando',
+    'Ã¢ÂÂ° Assinaturas Expirando',
     'expirando',
     '{"type": "expirando", "daysUntilExpiration": 7}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  -- Grupo: Ex-Assinantes (usuários que já tiveram assinatura mas não têm mais)
+  -- Grupo: Ex-Assinantes (usuÃƒÂ¡rios que jÃƒÂ¡ tiveram assinatura mas nÃƒÂ£o tÃƒÂªm mais)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '🔄 Ex-Assinantes',
+    'Ã°Å¸â€â€ž Ex-Assinantes',
     'ex_assinantes',
     '{"type": "ex_assinantes", "hadSubscription": true, "currentStatus": "inactive"}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  -- Grupo: Usuários Free (nunca tiveram assinatura)
+  -- Grupo: UsuÃƒÂ¡rios Free (nunca tiveram assinatura)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '🆓 Usuários Free',
+    'Ã°Å¸â€ â€œ UsuÃƒÂ¡rios Free',
     'free',
     '{"type": "free", "neverHadSubscription": true}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  RAISE NOTICE 'Grupos padrão criados com sucesso';
+  RAISE NOTICE 'Grupos padrÃƒÂ£o criados com sucesso';
 END;
 $$ LANGUAGE plpgsql;
 
--- Executar a função para criar os novos grupos
+-- Executar a funÃƒÂ§ÃƒÂ£o para criar os novos grupos
 SELECT create_default_groups();
 
 -- =====================================================
--- 2. ATUALIZAR FUNÇÃO sync_automatic_group_members
+-- 2. ATUALIZAR FUNÃƒâ€¡ÃƒÆ’O sync_automatic_group_members
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION sync_automatic_group_members(p_group_id UUID)
@@ -122,14 +122,14 @@ DECLARE
   v_collection_id TEXT;
   v_days_until_expiration INTEGER;
 BEGIN
-  -- Buscar informações do grupo
+  -- Buscar informaÃƒÂ§ÃƒÂµes do grupo
   SELECT * INTO v_group
   FROM chat_groups
   WHERE id = p_group_id
   AND deleted_at IS NULL;
 
   IF NOT FOUND THEN
-    RAISE NOTICE 'Grupo não encontrado ou deletado';
+    RAISE NOTICE 'Grupo nÃƒÂ£o encontrado ou deletado';
     RETURN;
   END IF;
 
@@ -140,7 +140,7 @@ BEGIN
     
     -- Grupo de Assinantes Geral
     WHEN 'assinantes' THEN
-      -- Adicionar todos os usuários com assinatura ativa
+      -- Adicionar todos os usuÃƒÂ¡rios com assinatura ativa
       INSERT INTO chat_group_members (group_id, user_id, joined_at)
       SELECT DISTINCT p_group_id, s.user_id, NOW()
       FROM subscriptions s
@@ -148,19 +148,19 @@ BEGIN
       AND s.user_id IS NOT NULL
       ON CONFLICT (group_id, user_id) DO NOTHING;
 
-      -- Remover usuários sem assinatura ativa
+      -- Remover usuÃƒÂ¡rios sem assinatura ativa
       DELETE FROM chat_group_members
       WHERE group_id = p_group_id
       AND user_id NOT IN (
         SELECT user_id FROM subscriptions WHERE status = 'active'
       );
 
-    -- Grupo de Coleção Específica
+    -- Grupo de ColeÃƒÂ§ÃƒÂ£o EspecÃƒÂ­fica
     WHEN 'colecao' THEN
       v_collection_id := v_criteria->>'collectionId';
       
       IF v_collection_id IS NOT NULL THEN
-        -- Adicionar assinantes da coleção
+        -- Adicionar assinantes da coleÃƒÂ§ÃƒÂ£o
         INSERT INTO chat_group_members (group_id, user_id, joined_at)
         SELECT DISTINCT p_group_id, s.user_id, NOW()
         FROM subscriptions s
@@ -169,7 +169,7 @@ BEGIN
         AND s.user_id IS NOT NULL
         ON CONFLICT (group_id, user_id) DO NOTHING;
 
-        -- Remover usuários que não são mais assinantes
+        -- Remover usuÃƒÂ¡rios que nÃƒÂ£o sÃƒÂ£o mais assinantes
         DELETE FROM chat_group_members
         WHERE group_id = p_group_id
         AND user_id NOT IN (
@@ -184,19 +184,19 @@ BEGIN
     WHEN 'expirando' THEN
       v_days_until_expiration := COALESCE((v_criteria->>'daysUntilExpiration')::INTEGER, 7);
       
-      -- Adicionar usuários com próxima entrega nos próximos X dias
-      -- (consideramos que a assinatura está "expirando" quando a próxima entrega está próxima)
+      -- Adicionar usuÃƒÂ¡rios com prÃƒÂ³xima entrega nos prÃƒÂ³ximos X dias
+      -- (consideramos que a assinatura estÃƒÂ¡ "expirando" quando a prÃƒÂ³xima entrega estÃƒÂ¡ prÃƒÂ³xima)
       INSERT INTO chat_group_members (group_id, user_id, joined_at)
       SELECT DISTINCT p_group_id, s.user_id, NOW()
       FROM subscriptions s
       WHERE s.status = 'active'
       AND s.next_delivery_date IS NOT NULL
       AND s.next_delivery_date BETWEEN NOW() AND (NOW() + INTERVAL '1 day' * v_days_until_expiration)
-      AND s.deliveries_completed >= (s.deliveries_total - 1) -- Última ou penúltima entrega
+      AND s.deliveries_completed >= (s.deliveries_total - 1) -- ÃƒÅ¡ltima ou penÃƒÂºltima entrega
       AND s.user_id IS NOT NULL
       ON CONFLICT (group_id, user_id) DO NOTHING;
 
-      -- Remover usuários que não estão mais expirando
+      -- Remover usuÃƒÂ¡rios que nÃƒÂ£o estÃƒÂ£o mais expirando
       DELETE FROM chat_group_members
       WHERE group_id = p_group_id
       AND user_id NOT IN (
@@ -208,39 +208,39 @@ BEGIN
         AND deliveries_completed >= (deliveries_total - 1)
       );
 
-    -- Grupo de Ex-Assinantes (tiveram assinatura mas não têm mais ativa)
+    -- Grupo de Ex-Assinantes (tiveram assinatura mas nÃƒÂ£o tÃƒÂªm mais ativa)
     WHEN 'ex_assinantes' THEN
-      -- Adicionar usuários que já tiveram assinatura mas não têm ativa
+      -- Adicionar usuÃƒÂ¡rios que jÃƒÂ¡ tiveram assinatura mas nÃƒÂ£o tÃƒÂªm ativa
       INSERT INTO chat_group_members (group_id, user_id, joined_at)
       SELECT DISTINCT p_group_id, s.user_id, NOW()
       FROM subscriptions s
       WHERE s.user_id IS NOT NULL
       AND s.user_id NOT IN (
-        -- Excluir quem tem assinatura ativa (exclusão mútua)
+        -- Excluir quem tem assinatura ativa (exclusÃƒÂ£o mÃƒÂºtua)
         SELECT user_id FROM subscriptions WHERE status = 'active'
       )
       ON CONFLICT (group_id, user_id) DO NOTHING;
 
-      -- Remover usuários que voltaram a ter assinatura ativa
+      -- Remover usuÃƒÂ¡rios que voltaram a ter assinatura ativa
       DELETE FROM chat_group_members
       WHERE group_id = p_group_id
       AND user_id IN (
         SELECT user_id FROM subscriptions WHERE status = 'active'
       );
 
-    -- Grupo de Usuários Free (nunca tiveram assinatura)
+    -- Grupo de UsuÃƒÂ¡rios Free (nunca tiveram assinatura)
     WHEN 'free' THEN
-      -- Adicionar usuários que nunca tiveram assinatura
+      -- Adicionar usuÃƒÂ¡rios que nunca tiveram assinatura
       INSERT INTO chat_group_members (group_id, user_id, joined_at)
       SELECT DISTINCT p_group_id, u.id, NOW()
       FROM auth.users u
       WHERE u.id NOT IN (
-        -- Excluir quem já teve ou tem assinatura
+        -- Excluir quem jÃƒÂ¡ teve ou tem assinatura
         SELECT DISTINCT user_id FROM subscriptions WHERE user_id IS NOT NULL
       )
       ON CONFLICT (group_id, user_id) DO NOTHING;
 
-      -- Remover usuários que criaram assinatura
+      -- Remover usuÃƒÂ¡rios que criaram assinatura
       DELETE FROM chat_group_members
       WHERE group_id = p_group_id
       AND user_id IN (
@@ -248,7 +248,7 @@ BEGIN
       );
 
     ELSE
-      RAISE NOTICE 'Tipo de grupo % não requer sincronização automática', v_group.type;
+      RAISE NOTICE 'Tipo de grupo % nÃƒÂ£o requer sincronizaÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica', v_group.type;
   END CASE;
 
   RAISE NOTICE 'Membros sincronizados para grupo %', v_group.name;
@@ -256,7 +256,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 3. ATUALIZAR FUNÇÃO sync_all_automatic_groups
+-- 3. ATUALIZAR FUNÃƒâ€¡ÃƒÆ’O sync_all_automatic_groups
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION sync_all_automatic_groups()
@@ -280,17 +280,17 @@ $$ LANGUAGE plpgsql;
 -- 4. POPULAR NOVOS GRUPOS COM MEMBROS
 -- =====================================================
 
--- Sincronizar todos os grupos automáticos
+-- Sincronizar todos os grupos automÃƒÂ¡ticos
 SELECT sync_all_automatic_groups();
 
--- Adicionar todos os usuários ao grupo "Avisos Importantes" (manual, admin decide)
+-- Adicionar todos os usuÃƒÂ¡rios ao grupo "Avisos Importantes" (manual, admin decide)
 DO $$
 DECLARE
   avisos_group_id UUID;
 BEGIN
   SELECT id INTO avisos_group_id
   FROM chat_groups
-  WHERE name = '📢 Avisos Importantes'
+  WHERE name = 'Ã°Å¸â€œÂ¢ Avisos Importantes'
   AND deleted_at IS NULL
   LIMIT 1;
 
@@ -300,15 +300,15 @@ BEGIN
     FROM auth.users
     ON CONFLICT (group_id, user_id) DO NOTHING;
     
-    RAISE NOTICE 'Usuários adicionados ao grupo Avisos Importantes';
+    RAISE NOTICE 'UsuÃƒÂ¡rios adicionados ao grupo Avisos Importantes';
   END IF;
 END $$;
 
 -- =====================================================
--- 5. JOB DIÁRIO: Sincronizar grupos de segmentação
+-- 5. JOB DIÃƒÂRIO: Sincronizar grupos de segmentaÃƒÂ§ÃƒÂ£o
 -- =====================================================
 
--- Esta função deve ser chamada diariamente via cron job ou scheduler
+-- Esta funÃƒÂ§ÃƒÂ£o deve ser chamada diariamente via cron job ou scheduler
 -- Para executar manualmente: SELECT sync_segmentation_groups();
 
 CREATE OR REPLACE FUNCTION sync_segmentation_groups()
@@ -316,7 +316,7 @@ RETURNS void AS $$
 DECLARE
   v_group RECORD;
 BEGIN
-  -- Sincronizar apenas grupos de segmentação
+  -- Sincronizar apenas grupos de segmentaÃƒÂ§ÃƒÂ£o
   FOR v_group IN 
     SELECT id, name 
     FROM chat_groups 
@@ -324,21 +324,21 @@ BEGIN
     AND deleted_at IS NULL
   LOOP
     PERFORM sync_automatic_group_members(v_group.id);
-    RAISE NOTICE 'Grupo de segmentação sincronizado: %', v_group.name;
+    RAISE NOTICE 'Grupo de segmentaÃƒÂ§ÃƒÂ£o sincronizado: %', v_group.name;
   END LOOP;
   
-  RAISE NOTICE 'Sincronização de grupos de segmentação concluída';
+  RAISE NOTICE 'SincronizaÃƒÂ§ÃƒÂ£o de grupos de segmentaÃƒÂ§ÃƒÂ£o concluÃƒÂ­da';
 END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- COMENTÁRIOS E DOCUMENTAÇÃO
+-- COMENTÃƒÂRIOS E DOCUMENTAÃƒâ€¡ÃƒÆ’O
 -- =====================================================
 
-COMMENT ON FUNCTION sync_segmentation_groups() IS 'Sincroniza grupos de segmentação (expirando, ex-assinantes, free). Deve ser executado diariamente.';
+COMMENT ON FUNCTION sync_segmentation_groups() IS 'Sincroniza grupos de segmentaÃƒÂ§ÃƒÂ£o (expirando, ex-assinantes, free). Deve ser executado diariamente.';
 
 -- =====================================================
--- VERIFICAÇÃO: Mostrar estatísticas dos novos grupos
+-- VERIFICAÃƒâ€¡ÃƒÆ’O: Mostrar estatÃƒÂ­sticas dos novos grupos
 -- =====================================================
 
 DO $$
@@ -346,7 +346,7 @@ DECLARE
   v_group RECORD;
   v_count INTEGER;
 BEGIN
-  RAISE NOTICE '=== ESTATÍSTICAS DOS GRUPOS ===';
+  RAISE NOTICE '=== ESTATÃƒÂSTICAS DOS GRUPOS ===';
   
   FOR v_group IN 
     SELECT id, name, type 

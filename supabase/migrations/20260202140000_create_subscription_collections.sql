@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS subscription_collections (
 );
 
 -- Add indexes
-CREATE INDEX idx_subscription_collections_subscription ON subscription_collections(subscription_id);
-CREATE INDEX idx_subscription_collections_collection ON subscription_collections(collection_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_collections_subscription ON subscription_collections(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_collections_collection ON subscription_collections(collection_id);
 
 -- Enable RLS
 ALTER TABLE subscription_collections ENABLE ROW LEVEL SECURITY;

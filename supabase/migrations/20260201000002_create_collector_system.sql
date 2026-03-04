@@ -1,7 +1,7 @@
 -- Sistema de Colecionador
--- Adiciona campos de colecionador à tabela profiles
+-- Adiciona campos de colecionador ÃƒÂ  tabela profiles
 
--- Primeiro, adicionar colunas básicas de perfil público se não existirem
+-- Primeiro, adicionar colunas bÃƒÂ¡sicas de perfil pÃƒÂºblico se nÃƒÂ£o existirem
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
 ADD COLUMN IF NOT EXISTS display_name TEXT,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS collector_badges (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Criar tabela de badges dos usuários
+-- Criar tabela de badges dos usuÃƒÂ¡rios
 CREATE TABLE IF NOT EXISTS user_badges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS user_badges (
   UNIQUE(user_id, badge_id)
 );
 
--- Criar tabela de coleção pública
+-- Criar tabela de coleÃƒÂ§ÃƒÂ£o pÃƒÂºblica
 CREATE TABLE IF NOT EXISTS public_collection (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -48,16 +48,16 @@ CREATE TABLE IF NOT EXISTS public_collection (
   UNIQUE(user_id, model_id)
 );
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX IF NOT EXISTS idx_user_badges_user_id ON user_badges(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_badges_badge_id ON user_badges(badge_id);
 CREATE INDEX IF NOT EXISTS idx_public_collection_user_id ON public_collection(user_id);
 CREATE INDEX IF NOT EXISTS idx_public_collection_model_id ON public_collection(model_id);
 
--- RLS para collector_badges (público para leitura)
+-- RLS para collector_badges (pÃƒÂºblico para leitura)
 ALTER TABLE collector_badges ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Badges são públicos para leitura"
+CREATE POLICY "Badges sÃƒÂ£o pÃƒÂºblicos para leitura"
   ON collector_badges FOR SELECT
   TO authenticated
   USING (true);
@@ -76,12 +76,12 @@ CREATE POLICY "Apenas admins podem gerenciar badges"
 -- RLS para user_badges
 ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Usuários podem ver seus próprios badges"
+CREATE POLICY "UsuÃƒÂ¡rios podem ver seus prÃƒÂ³prios badges"
   ON user_badges FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
-CREATE POLICY "Badges de usuários públicos são visíveis"
+CREATE POLICY "Badges de usuÃƒÂ¡rios pÃƒÂºblicos sÃƒÂ£o visÃƒÂ­veis"
   ON user_badges FOR SELECT
   TO authenticated
   USING (
@@ -106,13 +106,13 @@ CREATE POLICY "Sistema pode inserir badges"
 -- RLS para public_collection
 ALTER TABLE public_collection ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Usuários podem gerenciar sua própria coleção"
+CREATE POLICY "UsuÃƒÂ¡rios podem gerenciar sua prÃƒÂ³pria coleÃƒÂ§ÃƒÂ£o"
   ON public_collection FOR ALL
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "Coleções públicas são visíveis"
+CREATE POLICY "ColeÃƒÂ§ÃƒÂµes pÃƒÂºblicas sÃƒÂ£o visÃƒÂ­veis"
   ON public_collection FOR SELECT
   TO authenticated
   USING (
@@ -126,9 +126,9 @@ CREATE POLICY "Coleções públicas são visíveis"
 -- Inserir alguns badges iniciais
 INSERT INTO collector_badges (name, description, icon, rarity, requirement_type, requirement_value)
 VALUES 
-  ('Primeiro Passo', 'Adicionou sua primeira peça à coleção', '🎯', 'common', 'pieces_owned', 1),
-  ('Colecionador Iniciante', 'Possui 10 peças na coleção', '⭐', 'common', 'pieces_owned', 10),
-  ('Colecionador Dedicado', 'Possui 50 peças na coleção', '🌟', 'rare', 'pieces_owned', 50),
-  ('Colecionador Expert', 'Possui 100 peças na coleção', '💎', 'epic', 'pieces_owned', 100),
-  ('Mestre Colecionador', 'Possui 500 peças na coleção', '👑', 'legendary', 'pieces_owned', 500)
+  ('Primeiro Passo', 'Adicionou sua primeira peÃƒÂ§a ÃƒÂ  coleÃƒÂ§ÃƒÂ£o', 'Ã°Å¸Å½Â¯', 'common', 'pieces_owned', 1),
+  ('Colecionador Iniciante', 'Possui 10 peÃƒÂ§as na coleÃƒÂ§ÃƒÂ£o', 'Ã¢Â­Â', 'common', 'pieces_owned', 10),
+  ('Colecionador Dedicado', 'Possui 50 peÃƒÂ§as na coleÃƒÂ§ÃƒÂ£o', 'Ã°Å¸Å’Å¸', 'rare', 'pieces_owned', 50),
+  ('Colecionador Expert', 'Possui 100 peÃƒÂ§as na coleÃƒÂ§ÃƒÂ£o', 'Ã°Å¸â€™Å½', 'epic', 'pieces_owned', 100),
+  ('Mestre Colecionador', 'Possui 500 peÃƒÂ§as na coleÃƒÂ§ÃƒÂ£o', 'Ã°Å¸â€˜â€˜', 'legendary', 'pieces_owned', 500)
 ON CONFLICT DO NOTHING;

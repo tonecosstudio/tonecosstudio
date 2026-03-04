@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS standalone_purchase_admin_log (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_standalone_admin_log_purchase ON standalone_purchase_admin_log(purchase_id, created_at DESC);
-CREATE INDEX idx_standalone_admin_log_admin ON standalone_purchase_admin_log(admin_user_id);
-CREATE INDEX idx_standalone_admin_log_action ON standalone_purchase_admin_log(action_type);
-CREATE INDEX idx_standalone_admin_log_created ON standalone_purchase_admin_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_standalone_admin_log_purchase ON standalone_purchase_admin_log(purchase_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_standalone_admin_log_admin ON standalone_purchase_admin_log(admin_user_id);
+CREATE INDEX IF NOT EXISTS idx_standalone_admin_log_action ON standalone_purchase_admin_log(action_type);
+CREATE INDEX IF NOT EXISTS idx_standalone_admin_log_created ON standalone_purchase_admin_log(created_at DESC);
 
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS)

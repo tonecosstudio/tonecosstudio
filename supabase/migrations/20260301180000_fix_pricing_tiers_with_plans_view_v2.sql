@@ -1,6 +1,6 @@
 -- Migration: Corrigir view pricing_tiers_with_plans para funcionar com RLS (v2)
 -- Feature: pricing-system-restructure
--- Descrição: Recria a view usando função SECURITY DEFINER para bypassar RLS
+-- DescriÃƒÂ§ÃƒÂ£o: Recria a view usando funÃƒÂ§ÃƒÂ£o SECURITY DEFINER para bypassar RLS
 
 -- =====================================================
 -- 1. REMOVER VIEW ANTIGA
@@ -9,11 +9,11 @@
 DROP VIEW IF EXISTS pricing_tiers_with_plans CASCADE;
 
 -- =====================================================
--- 2. CRIAR FUNÇÃO PARA CONTAR ASSINATURAS ATIVAS
+-- 2. CRIAR FUNÃƒâ€¡ÃƒÆ’O PARA CONTAR ASSINATURAS ATIVAS
 -- =====================================================
 
--- Função auxiliar para contar assinaturas ativas de um plano
--- SECURITY DEFINER permite bypassar RLS para estatísticas agregadas
+-- FunÃƒÂ§ÃƒÂ£o auxiliar para contar assinaturas ativas de um plano
+-- SECURITY DEFINER permite bypassar RLS para estatÃƒÂ­sticas agregadas
 CREATE OR REPLACE FUNCTION get_active_subscriptions_count(p_plan_id UUID)
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -30,15 +30,15 @@ BEGIN
 END;
 $$;
 
--- Adicionar comentário
-COMMENT ON FUNCTION get_active_subscriptions_count IS 'Conta assinaturas ativas de um plano (bypassa RLS para estatísticas)';
+-- Adicionar comentÃƒÂ¡rio
+COMMENT ON FUNCTION get_active_subscriptions_count IS 'Conta assinaturas ativas de um plano (bypassa RLS para estatÃƒÂ­sticas)';
 
 -- =====================================================
--- 3. CRIAR FUNÇÃO PARA CONTAR COLEÇÕES ATRIBUÍDAS
+-- 3. CRIAR FUNÃƒâ€¡ÃƒÆ’O PARA CONTAR COLEÃƒâ€¡Ãƒâ€¢ES ATRIBUÃƒÂDAS
 -- =====================================================
 
--- Função auxiliar para contar coleções atribuídas a um nível
--- SECURITY DEFINER permite bypassar RLS para estatísticas agregadas
+-- FunÃƒÂ§ÃƒÂ£o auxiliar para contar coleÃƒÂ§ÃƒÂµes atribuÃƒÂ­das a um nÃƒÂ­vel
+-- SECURITY DEFINER permite bypassar RLS para estatÃƒÂ­sticas agregadas
 CREATE OR REPLACE FUNCTION get_assigned_collections_count(p_tier_id UUID)
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -54,11 +54,11 @@ BEGIN
 END;
 $$;
 
--- Adicionar comentário
-COMMENT ON FUNCTION get_assigned_collections_count IS 'Conta coleções atribuídas a um nível (bypassa RLS para estatísticas)';
+-- Adicionar comentÃƒÂ¡rio
+COMMENT ON FUNCTION get_assigned_collections_count IS 'Conta coleÃƒÂ§ÃƒÂµes atribuÃƒÂ­das a um nÃƒÂ­vel (bypassa RLS para estatÃƒÂ­sticas)';
 
 -- =====================================================
--- 4. RECRIAR VIEW SEM SUBQUERIES PROBLEMÁTICOS
+-- 4. RECRIAR VIEW SEM SUBQUERIES PROBLEMÃƒÂTICOS
 -- =====================================================
 
 CREATE OR REPLACE VIEW pricing_tiers_with_plans AS
@@ -91,7 +91,7 @@ SELECT
   pm.description as mode_description,
   pm.includes_bonus,
   
-  -- Usar funções SECURITY DEFINER para estatísticas
+  -- Usar funÃƒÂ§ÃƒÂµes SECURITY DEFINER para estatÃƒÂ­sticas
   get_assigned_collections_count(pt.id) as assigned_collections_count,
   COALESCE(get_active_subscriptions_count(sp.id), 0) as active_subscriptions_count
   
@@ -100,17 +100,17 @@ LEFT JOIN subscription_plans sp ON sp.tier_id = pt.id
 LEFT JOIN purchase_modes pm ON pm.mode_key = sp.plan_mode
 ORDER BY pt.display_order, pm.display_order;
 
--- Adicionar comentário
-COMMENT ON VIEW pricing_tiers_with_plans IS 'View consolidada mostrando níveis de preço com todos os seus planos e estatísticas (usa SECURITY DEFINER para bypassar RLS)';
+-- Adicionar comentÃƒÂ¡rio
+COMMENT ON VIEW pricing_tiers_with_plans IS 'View consolidada mostrando nÃƒÂ­veis de preÃƒÂ§o com todos os seus planos e estatÃƒÂ­sticas (usa SECURITY DEFINER para bypassar RLS)';
 
 -- =====================================================
--- 5. CONFIGURAR PERMISSÕES
+-- 5. CONFIGURAR PERMISSÃƒâ€¢ES
 -- =====================================================
 
--- Permitir acesso à view para usuários autenticados e anônimos
+-- Permitir acesso ÃƒÂ  view para usuÃƒÂ¡rios autenticados e anÃƒÂ´nimos
 GRANT SELECT ON pricing_tiers_with_plans TO authenticated, anon;
 
--- Permitir execução das funções auxiliares
+-- Permitir execuÃƒÂ§ÃƒÂ£o das funÃƒÂ§ÃƒÂµes auxiliares
 GRANT EXECUTE ON FUNCTION get_active_subscriptions_count(UUID) TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION get_assigned_collections_count(UUID) TO authenticated, anon;
 

@@ -124,10 +124,16 @@ export default function Login() {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
+      // Build the redirect URL - always use the current origin
+      const origin = window.location.origin;
+      const redirectUrl = `${origin}${next}`;
+      
+      console.log('OAuth redirect URL:', redirectUrl); // Debug log
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}${next}`,
+          redirectTo: redirectUrl,
         },
       });
       if (error) throw error;

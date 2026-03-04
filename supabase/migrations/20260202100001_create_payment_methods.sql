@@ -1,4 +1,4 @@
--- Sistema de Métodos de Pagamento
+-- Sistema de MÃƒÂ©todos de Pagamento
 
 CREATE TABLE IF NOT EXISTS payment_methods (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   
   type TEXT NOT NULL CHECK (type IN ('credit_card', 'debit_card', 'pix', 'boleto')),
   
-  -- Para cartões
+  -- Para cartÃƒÂµes
   card_brand TEXT, -- visa, mastercard, etc
-  card_last4 TEXT, -- últimos 4 dígitos
+  card_last4 TEXT, -- ÃƒÂºltimos 4 dÃƒÂ­gitos
   card_holder_name TEXT,
   card_expiry_month INTEGER,
   card_expiry_year INTEGER,
@@ -26,28 +26,28 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   UNIQUE(user_id, card_last4, card_expiry_month, card_expiry_year)
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX IF NOT EXISTS idx_payment_methods_user_id ON payment_methods(user_id);
 CREATE INDEX IF NOT EXISTS idx_payment_methods_default ON payment_methods(user_id, is_default) WHERE is_default = true;
 
 -- RLS
 ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
 
--- Usuários podem ver apenas seus próprios métodos
+-- UsuÃƒÂ¡rios podem ver apenas seus prÃƒÂ³prios mÃƒÂ©todos
 DROP POLICY IF EXISTS "users_select_own_payment_methods" ON payment_methods;
 CREATE POLICY "users_select_own_payment_methods"
   ON payment_methods FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
--- Usuários podem inserir seus próprios métodos
+-- UsuÃƒÂ¡rios podem inserir seus prÃƒÂ³prios mÃƒÂ©todos
 DROP POLICY IF EXISTS "users_insert_own_payment_methods" ON payment_methods;
 CREATE POLICY "users_insert_own_payment_methods"
   ON payment_methods FOR INSERT
   TO authenticated
   WITH CHECK (user_id = auth.uid());
 
--- Usuários podem atualizar seus próprios métodos
+-- UsuÃƒÂ¡rios podem atualizar seus prÃƒÂ³prios mÃƒÂ©todos
 DROP POLICY IF EXISTS "users_update_own_payment_methods" ON payment_methods;
 CREATE POLICY "users_update_own_payment_methods"
   ON payment_methods FOR UPDATE
@@ -55,7 +55,7 @@ CREATE POLICY "users_update_own_payment_methods"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
--- Usuários podem deletar seus próprios métodos
+-- UsuÃƒÂ¡rios podem deletar seus prÃƒÂ³prios mÃƒÂ©todos
 DROP POLICY IF EXISTS "users_delete_own_payment_methods" ON payment_methods;
 CREATE POLICY "users_delete_own_payment_methods"
   ON payment_methods FOR DELETE
@@ -82,7 +82,7 @@ CREATE TRIGGER trigger_payment_methods_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
--- Função para garantir apenas um método padrão por usuário
+-- FunÃƒÂ§ÃƒÂ£o para garantir apenas um mÃƒÂ©todo padrÃƒÂ£o por usuÃƒÂ¡rio
 CREATE OR REPLACE FUNCTION ensure_single_default_payment()
 RETURNS TRIGGER AS $$
 BEGIN

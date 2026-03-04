@@ -44,6 +44,7 @@ import { StandalonePurchaseDetails } from "./StandalonePurchaseDetails";
 import { ManualPaymentDetails } from "./ManualPaymentDetails";
 import { QuoteDetails } from "./QuoteDetails";
 import { OrderStatusHistory } from "./OrderStatusHistory";
+import { ProductionInfoSection } from "./ProductionInfoSection";
 import type { UnifiedOrder, OrderStatus } from "@/types/admin/orders";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -539,6 +540,9 @@ export function OrderDetailPanel({
             )}
 
             {order.type !== "manual_payment" && <Separator />}
+
+            {/* Informações de Produção */}
+            <ProductionInfoSection order={order} />
 
             {/* Datas */}
             <section>

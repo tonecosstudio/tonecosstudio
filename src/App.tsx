@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useSentry } from "@/hooks/use-sentry";
+import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Home from "./pages/Home";
 import Catalog from "./pages/Catalog";
@@ -58,6 +59,7 @@ import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
 import ProductionDashboardPage from "./pages/admin/ProductionDashboardPage";
 import CharacterChoiceManagerPage from "./pages/admin/CharacterChoiceManagerPage";
+import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -73,6 +75,9 @@ const queryClient = new QueryClient();
 function AppContent() {
   // Integra Sentry com autenticação
   useSentry();
+  
+  // Sincroniza profile após login OAuth
+  useAuthProfileSync();
 
   return (
     <>
@@ -209,6 +214,15 @@ function AppContent() {
             element={
               <RequireAuth>
                 <PreorderTracking />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/pedido/:orderType/:orderId/progresso"
+            element={
+              <RequireAuth>
+                <CustomerOrderProgressPage />
               </RequireAuth>
             }
           />

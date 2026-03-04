@@ -1,6 +1,6 @@
 -- =====================================================
--- MIGRATION TEMPORÁRIA: Popular Dados de Teste do Chat
--- Esta migration será revertida após testes
+-- MIGRATION TEMPORÃƒÂRIA: Popular Dados de Teste do Chat
+-- Esta migration serÃƒÂ¡ revertida apÃƒÂ³s testes
 -- =====================================================
 
 -- 1. Criar conversas de teste
@@ -11,15 +11,15 @@ DECLARE
   v_conv_id UUID;
   v_user_count INT;
 BEGIN
-  -- Verificar se há usuários cadastrados
+  -- Verificar se hÃƒÂ¡ usuÃƒÂ¡rios cadastrados
   SELECT COUNT(*) INTO v_user_count FROM auth.users;
   
   IF v_user_count = 0 THEN
-    RAISE NOTICE 'Nenhum usuário encontrado. Não é possível criar conversas de teste.';
+    RAISE NOTICE 'Nenhum usuÃƒÂ¡rio encontrado. NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel criar conversas de teste.';
     RETURN;
   END IF;
   
-  -- Pegar primeiro usuário (cliente)
+  -- Pegar primeiro usuÃƒÂ¡rio (cliente)
   SELECT id INTO v_user_id FROM auth.users 
   WHERE raw_user_meta_data->>'role' IS NULL 
      OR raw_user_meta_data->>'role' != 'admin'
@@ -31,11 +31,11 @@ BEGIN
   LIMIT 1;
   
   IF v_user_id IS NULL THEN
-    RAISE NOTICE 'Nenhum usuário cliente encontrado. Usando primeiro usuário disponível.';
+    RAISE NOTICE 'Nenhum usuÃƒÂ¡rio cliente encontrado. Usando primeiro usuÃƒÂ¡rio disponÃƒÂ­vel.';
     SELECT id INTO v_user_id FROM auth.users LIMIT 1;
   END IF;
   
-  -- Conversa 1: Dúvida sobre pedido
+  -- Conversa 1: DÃƒÂºvida sobre pedido
   INSERT INTO support_conversations (
     user_id,
     subject,
@@ -46,7 +46,7 @@ BEGIN
     last_message_at
   ) VALUES (
     v_user_id,
-    'Dúvida sobre meu pedido #12345',
+    'DÃƒÂºvida sobre meu pedido #12345',
     'waiting_admin',
     'normal',
     ARRAY['pedido', 'duvida'],
@@ -60,7 +60,7 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Olá! Fiz um pedido há 3 dias e ainda não recebi o código de rastreamento. Pedido #12345',
+    'OlÃƒÂ¡! Fiz um pedido hÃƒÂ¡ 3 dias e ainda nÃƒÂ£o recebi o cÃƒÂ³digo de rastreamento. Pedido #12345',
     NOW() - INTERVAL '2 hours'
   );
   
@@ -70,7 +70,7 @@ BEGIN
       v_conv_id,
       v_admin_id,
       'admin',
-      'Olá! Vou verificar o status do seu pedido. Um momento, por favor.',
+      'OlÃƒÂ¡! Vou verificar o status do seu pedido. Um momento, por favor.',
       NOW() - INTERVAL '1 hour 30 minutes'
     );
     
@@ -80,7 +80,7 @@ BEGIN
       v_conv_id,
       v_admin_id,
       'admin',
-      'Verificar com a produção o status deste pedido. Cliente parece ansioso.',
+      'Verificar com a produÃƒÂ§ÃƒÂ£o o status deste pedido. Cliente parece ansioso.',
       true,
       NOW() - INTERVAL '1 hour 15 minutes'
     );
@@ -95,7 +95,7 @@ BEGIN
     NOW() - INTERVAL '30 minutes'
   );
   
-  -- Conversa 2: Solicitação de orçamento
+  -- Conversa 2: SolicitaÃƒÂ§ÃƒÂ£o de orÃƒÂ§amento
   INSERT INTO support_conversations (
     user_id,
     subject,
@@ -106,7 +106,7 @@ BEGIN
     last_message_at
   ) VALUES (
     v_user_id,
-    'Orçamento para produto personalizado',
+    'OrÃƒÂ§amento para produto personalizado',
     'waiting_admin',
     'high',
     ARRAY['orcamento'],
@@ -119,7 +119,7 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Gostaria de um orçamento para uma miniatura personalizada de 15cm. Tenho fotos de referência.',
+    'Gostaria de um orÃƒÂ§amento para uma miniatura personalizada de 15cm. Tenho fotos de referÃƒÂªncia.',
     NOW() - INTERVAL '1 day'
   );
   
@@ -128,11 +128,11 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Vocês conseguem fazer em quanto tempo?',
+    'VocÃƒÂªs conseguem fazer em quanto tempo?',
     NOW() - INTERVAL '5 hours'
   );
   
-  -- Conversa 3: Reclamação
+  -- Conversa 3: ReclamaÃƒÂ§ÃƒÂ£o
   INSERT INTO support_conversations (
     user_id,
     subject,
@@ -158,7 +158,7 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Recebi meu pedido hoje mas o produto está com a pintura descascando. Estou muito decepcionado!',
+    'Recebi meu pedido hoje mas o produto estÃƒÂ¡ com a pintura descascando. Estou muito decepcionado!',
     NOW() - INTERVAL '3 hours'
   );
   
@@ -167,11 +167,11 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Preciso de uma solução urgente. Paguei caro por isso.',
+    'Preciso de uma soluÃƒÂ§ÃƒÂ£o urgente. Paguei caro por isso.',
     NOW() - INTERVAL '1 hour'
   );
   
-  -- Conversa 4: Dúvida sobre assinatura
+  -- Conversa 4: DÃƒÂºvida sobre assinatura
   INSERT INTO support_conversations (
     user_id,
     subject,
@@ -195,7 +195,7 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Olá! Vi que vocês têm planos de assinatura. Como funciona?',
+    'OlÃƒÂ¡! Vi que vocÃƒÂªs tÃƒÂªm planos de assinatura. Como funciona?',
     NOW() - INTERVAL '6 hours'
   );
   
@@ -205,7 +205,7 @@ BEGIN
       v_conv_id,
       v_admin_id,
       'admin',
-      'Olá! Temos 3 planos de assinatura: Básico, Premium e Colecionador. Cada um oferece diferentes benefícios e descontos. Qual tipo de produto você tem interesse?',
+      'OlÃƒÂ¡! Temos 3 planos de assinatura: BÃƒÂ¡sico, Premium e Colecionador. Cada um oferece diferentes benefÃƒÂ­cios e descontos. Qual tipo de produto vocÃƒÂª tem interesse?',
       NOW() - INTERVAL '4 hours'
     );
   END IF;
@@ -215,7 +215,7 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Tenho interesse em miniaturas de personagens de anime. Qual plano você recomenda?',
+    'Tenho interesse em miniaturas de personagens de anime. Qual plano vocÃƒÂª recomenda?',
     NOW() - INTERVAL '2 hours'
   );
   
@@ -231,7 +231,7 @@ BEGIN
     last_message_at
   ) VALUES (
     v_user_id,
-    'Informação sobre entrega',
+    'InformaÃƒÂ§ÃƒÂ£o sobre entrega',
     'resolved',
     'normal',
     ARRAY['pedido'],
@@ -245,7 +245,7 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Qual o prazo de entrega para São Paulo?',
+    'Qual o prazo de entrega para SÃƒÂ£o Paulo?',
     NOW() - INTERVAL '1 day'
   );
   
@@ -255,7 +255,7 @@ BEGIN
       v_conv_id,
       v_admin_id,
       'admin',
-      'Para São Paulo, o prazo é de 5 a 7 dias úteis após a postagem.',
+      'Para SÃƒÂ£o Paulo, o prazo ÃƒÂ© de 5 a 7 dias ÃƒÂºteis apÃƒÂ³s a postagem.',
       NOW() - INTERVAL '20 hours'
     );
   END IF;
@@ -265,7 +265,7 @@ BEGIN
     v_conv_id,
     v_user_id,
     'customer',
-    'Perfeito! Obrigado pela informação.',
+    'Perfeito! Obrigado pela informaÃƒÂ§ÃƒÂ£o.',
     NOW() - INTERVAL '1 hour'
   );
   

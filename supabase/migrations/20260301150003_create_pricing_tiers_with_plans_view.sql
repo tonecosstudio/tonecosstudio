@@ -1,7 +1,7 @@
 -- Migration: Criar view pricing_tiers_with_plans
 -- Feature: pricing-system-restructure
 -- Requisitos: 11.7
--- Descrição: Cria view consolidada mostrando níveis com todos os seus planos
+-- DescriÃƒÂ§ÃƒÂ£o: Cria view consolidada mostrando nÃƒÂ­veis com todos os seus planos
 
 -- Criar view consolidada
 CREATE OR REPLACE VIEW pricing_tiers_with_plans AS
@@ -42,8 +42,8 @@ LEFT JOIN subscription_plans sp ON sp.tier_id = pt.id
 LEFT JOIN purchase_modes pm ON pm.mode_key = sp.plan_mode
 ORDER BY pt.display_order, pm.display_order;
 
--- Adicionar comentário
-COMMENT ON VIEW pricing_tiers_with_plans IS 'View consolidada mostrando níveis de preço com todos os seus planos e estatísticas';
+-- Adicionar comentÃƒÂ¡rio
+COMMENT ON VIEW pricing_tiers_with_plans IS 'View consolidada mostrando nÃƒÂ­veis de preÃƒÂ§o com todos os seus planos e estatÃƒÂ­sticas';
 
--- Configurar permissões
+-- Configurar permissÃƒÂµes
 GRANT SELECT ON pricing_tiers_with_plans TO authenticated, anon;

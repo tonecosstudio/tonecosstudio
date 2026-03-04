@@ -3,8 +3,8 @@
 -- Date: 2026-05-02
 
 -- Drop existing policies that are too restrictive
-DROP POLICY IF EXISTS "Coleções ativas são públicas" ON collections;
-DROP POLICY IF EXISTS "Admins podem ver todas as coleções" ON collections;
+DROP POLICY IF EXISTS "ColeÃƒÂ§ÃƒÂµes ativas sÃƒÂ£o pÃƒÂºblicas" ON collections;
+DROP POLICY IF EXISTS "Admins podem ver todas as coleÃƒÂ§ÃƒÂµes" ON collections;
 
 -- Create new policies that allow proper joins
 CREATE POLICY "Users can view active collections"
@@ -32,13 +32,13 @@ CREATE POLICY "Admins can view all collections"
   );
 
 -- Keep the admin management policy
--- (Already exists: "Apenas admins podem gerenciar coleções")
+-- (Already exists: "Apenas admins podem gerenciar coleÃƒÂ§ÃƒÂµes")
 
 COMMENT ON POLICY "Users can view active collections" ON collections IS 
-  'Permite que usuários autenticados vejam coleções ativas';
+  'Permite que usuÃƒÂ¡rios autenticados vejam coleÃƒÂ§ÃƒÂµes ativas';
 
 COMMENT ON POLICY "Users can view collections from their subscriptions" ON collections IS 
-  'Permite que usuários vejam coleções referenciadas em suas assinaturas, mesmo que não estejam ativas';
+  'Permite que usuÃƒÂ¡rios vejam coleÃƒÂ§ÃƒÂµes referenciadas em suas assinaturas, mesmo que nÃƒÂ£o estejam ativas';
 
 COMMENT ON POLICY "Admins can view all collections" ON collections IS 
-  'Permite que administradores vejam todas as coleções';
+  'Permite que administradores vejam todas as coleÃƒÂ§ÃƒÂµes';

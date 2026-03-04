@@ -1,5 +1,5 @@
--- Migration: Sistema de Coleções Dinâmico
--- Purpose: Adicionar datas, notificações e automação
+-- Migration: Sistema de ColeÃƒÂ§ÃƒÂµes DinÃƒÂ¢mico
+-- Purpose: Adicionar datas, notificaÃƒÂ§ÃƒÂµes e automaÃƒÂ§ÃƒÂ£o
 -- Date: 2026-02-03
 
 -- ============================================
@@ -18,13 +18,13 @@ ADD COLUMN IF NOT EXISTS release_notification_sent BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS revealed_at TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS released_at TIMESTAMPTZ;
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX IF NOT EXISTS idx_characters_release_date ON collection_characters(release_date);
 CREATE INDEX IF NOT EXISTS idx_characters_reveal_date ON collection_characters(reveal_date);
 CREATE INDEX IF NOT EXISTS idx_characters_status ON collection_characters(status);
 
 -- ============================================
--- PARTE 2: Tabela de Notificações
+-- PARTE 2: Tabela de NotificaÃƒÂ§ÃƒÂµes
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS collection_notifications (
@@ -33,10 +33,10 @@ CREATE TABLE IF NOT EXISTS collection_notifications (
   collection_id UUID REFERENCES collections(id) ON DELETE CASCADE,
   character_id UUID REFERENCES collection_characters(id) ON DELETE CASCADE,
   
-  -- Tipo de Notificação
+  -- Tipo de NotificaÃƒÂ§ÃƒÂ£o
   type TEXT NOT NULL CHECK (type IN ('reveal', 'release', 'countdown', 'reminder')),
   
-  -- Conteúdo
+  -- ConteÃƒÂºdo
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS collection_notifications (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON collection_notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_sent ON collection_notifications(sent);
 CREATE INDEX IF NOT EXISTS idx_notifications_scheduled ON collection_notifications(scheduled_for);
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS collection_events (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX IF NOT EXISTS idx_events_collection ON collection_events(collection_id);
 CREATE INDEX IF NOT EXISTS idx_events_character ON collection_events(character_id);
 CREATE INDEX IF NOT EXISTS idx_events_type ON collection_events(event_type);
@@ -87,7 +87,7 @@ CREATE INDEX IF NOT EXISTS idx_events_created ON collection_events(created_at DE
 -- PARTE 4: RLS Policies
 -- ============================================
 
--- Notificações: Usuários veem apenas suas próprias
+-- NotificaÃƒÂ§ÃƒÂµes: UsuÃƒÂ¡rios veem apenas suas prÃƒÂ³prias
 ALTER TABLE collection_notifications ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view their own notifications" ON collection_notifications;
@@ -115,7 +115,7 @@ CREATE POLICY "Admins can manage all notifications"
     )
   );
 
--- Eventos: Admins podem ver todos, usuários podem ver de suas coleções
+-- Eventos: Admins podem ver todos, usuÃƒÂ¡rios podem ver de suas coleÃƒÂ§ÃƒÂµes
 ALTER TABLE collection_events ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Admins can view all events" ON collection_events;
@@ -144,12 +144,12 @@ CREATE POLICY "Users can view events of their subscribed collections"
   );
 
 -- ============================================
--- PARTE 5: Comentários
+-- PARTE 5: ComentÃƒÂ¡rios
 -- ============================================
 
-COMMENT ON TABLE collection_notifications IS 'Notificações de coleções para usuários';
-COMMENT ON TABLE collection_events IS 'Histórico de eventos das coleções';
-COMMENT ON COLUMN collection_characters.release_date IS 'Data exata de lançamento do personagem';
-COMMENT ON COLUMN collection_characters.reveal_date IS 'Data de revelação do personagem';
+COMMENT ON TABLE collection_notifications IS 'NotificaÃƒÂ§ÃƒÂµes de coleÃƒÂ§ÃƒÂµes para usuÃƒÂ¡rios';
+COMMENT ON TABLE collection_events IS 'HistÃƒÂ³rico de eventos das coleÃƒÂ§ÃƒÂµes';
+COMMENT ON COLUMN collection_characters.release_date IS 'Data exata de lanÃƒÂ§amento do personagem';
+COMMENT ON COLUMN collection_characters.reveal_date IS 'Data de revelaÃƒÂ§ÃƒÂ£o do personagem';
 COMMENT ON COLUMN collection_characters.auto_reveal IS 'Revelar automaticamente na data?';
-COMMENT ON COLUMN collection_characters.auto_release IS 'Lançar automaticamente na data?';
+COMMENT ON COLUMN collection_characters.auto_release IS 'LanÃƒÂ§ar automaticamente na data?';

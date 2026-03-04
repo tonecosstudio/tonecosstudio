@@ -59,10 +59,10 @@ BEGIN
       ('2026-01-01', 'Ano Novo', 'national', true),
       ('2026-04-21', 'Tiradentes', 'national', true),
       ('2026-05-01', 'Dia do Trabalho', 'national', true),
-      ('2026-09-07', 'Independência do Brasil', 'national', true),
+      ('2026-09-07', 'IndependÃƒÂªncia do Brasil', 'national', true),
       ('2026-10-12', 'Nossa Senhora Aparecida', 'national', true),
       ('2026-11-02', 'Finados', 'national', true),
-      ('2026-11-15', 'Proclamação da República', 'national', true),
+      ('2026-11-15', 'ProclamaÃƒÂ§ÃƒÂ£o da RepÃƒÂºblica', 'national', true),
       ('2026-12-25', 'Natal', 'national', true);
 
     -- Variable national holidays for 2026
@@ -77,10 +77,10 @@ BEGIN
       ('2027-01-01', 'Ano Novo', 'national', true),
       ('2027-04-21', 'Tiradentes', 'national', true),
       ('2027-05-01', 'Dia do Trabalho', 'national', true),
-      ('2027-09-07', 'Independência do Brasil', 'national', true),
+      ('2027-09-07', 'IndependÃƒÂªncia do Brasil', 'national', true),
       ('2027-10-12', 'Nossa Senhora Aparecida', 'national', true),
       ('2027-11-02', 'Finados', 'national', true),
-      ('2027-11-15', 'Proclamação da República', 'national', true),
+      ('2027-11-15', 'ProclamaÃƒÂ§ÃƒÂ£o da RepÃƒÂºblica', 'national', true),
       ('2027-12-25', 'Natal', 'national', true);
 
     -- Variable holidays for 2027
@@ -92,8 +92,8 @@ BEGIN
 
     -- Bahia state holidays
     INSERT INTO holidays (holiday_date, name, type, state_code, is_recurring) VALUES
-      ('2026-07-02', 'Independência da Bahia', 'state', 'BA', true),
-      ('2027-07-02', 'Independência da Bahia', 'state', 'BA', true);
+      ('2026-07-02', 'IndependÃƒÂªncia da Bahia', 'state', 'BA', true),
+      ('2027-07-02', 'IndependÃƒÂªncia da Bahia', 'state', 'BA', true);
   END IF;
 END $$;
 

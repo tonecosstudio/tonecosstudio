@@ -35,7 +35,7 @@ BEGIN
   END IF;
   
   -- Create group name
-  group_name := '📦 ' || NEW.name;
+  group_name := 'Ã°Å¸â€œÂ¦ ' || NEW.name;
   
   -- Create chat group
   INSERT INTO chat_groups (

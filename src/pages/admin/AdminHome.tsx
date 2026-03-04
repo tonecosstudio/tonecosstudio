@@ -14,6 +14,9 @@ import { RevenueChart } from "@/components/admin/RevenueChart";
 import { ConversionFunnel } from "@/components/admin/ConversionFunnel";
 import { SubscriptionMetrics } from "@/components/admin/SubscriptionMetrics";
 import { FranchiseAnalytics } from "@/components/admin/FranchiseAnalytics";
+import { usePricingSettings } from "@/hooks/usePricingSettings";
+import { useContentSettings } from "@/hooks/useContentSettings";
+import { fetchUnifiedOrders } from "@/services/admin/orders-service";
 import {
   Package,
   Users,
@@ -57,6 +60,10 @@ import {
 export default function AdminHome() {
   const navigate = useNavigate();
 
+  // SSOT Hooks
+  const { data: pricingSettings } = usePricingSettings();
+  const { data: contentSettings } = useContentSettings();
+
   // Estado do filtro de período
   const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 dias atrás
@@ -76,16 +83,17 @@ export default function AdminHome() {
       const fromDate = dateRange.from.toISOString();
       const toDate = dateRange.to.toISOString();
 
-      // Modelos
+      // Modelos (total geral - não filtrado por período)
       const { count: modelsCount } = await supabase
         .from("models")
         .select("*", { count: "exact", head: true });
 
-      // Usuários (período atual)
+      // Usuários (total geral)
       const { count: usersCount } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true });
 
+      // Usuários criados no período atual
       const { data: currentUsers } = await supabase
         .from("profiles")
         .select("created_at")
@@ -93,23 +101,134 @@ export default function AdminHome() {
         .lte("created_at", toDate);
 
       // Usuários (período anterior)
+      const periodDiff = dateRange.to.getTime() - dateRange.from.getTime();
+      const previousFrom = new Date(dateRange.from.getTime() - periodDiff);
+      const previousTo = dateRange.from;
+
       const { data: previousUsers } = await supabase
         .from("profiles")
         .select("created_at")
         .gte("created_at", previousFrom.toISOString())
         .lte("created_at", previousTo.toISOString());
 
-      // Orçamentos (período atual)
+      // ============================================================================
+      // PEDIDOS UNIFICADOS - Busca correta de todas as tabelas
+      // ============================================================================
+      
+      // Buscar pedidos do período atual (todas as tabelas)
+      const ordersResult = await fetchUnifiedOrders(
+        {
+          type: 'all',
+          status: [],
+          dateFrom: fromDate,
+          dateTo: toDate,
+          searchQuery: ''
+        },
+        {
+          page: 1,
+          pageSize: 10000 // Buscar todos para estatísticas
+        }
+      );
+
+      // Buscar pedidos do período anterior para comparação
+      const previousOrdersResult = await fetchUnifiedOrders(
+        {
+          type: 'all',
+          status: [],
+          dateFrom: previousFrom.toISOString(),
+          dateTo: previousTo.toISOString(),
+          searchQuery: ''
+        },
+        {
+          page: 1,
+          pageSize: 10000
+        }
+      );
+
+      // Calcular estatísticas de pedidos por tipo
+      const ordersByType = {
+        subscriptionDeliveries: ordersResult.data.filter(o => o.type === 'subscription_delivery').length,
+        standalonePurchases: ordersResult.data.filter(o => o.type === 'standalone_purchase').length,
+        manualPayments: ordersResult.data.filter(o => o.type === 'manual_payment').length,
+        quotes: ordersResult.data.filter(o => o.type === 'quote').length,
+      };
+
+      // Calcular estatísticas de pedidos por status
+      const ordersByStatus = {
+        pending: ordersResult.data.filter(o => 
+          o.status === 'pending' || 
+          o.status === 'pending_choice' || 
+          o.status === 'awaiting_deposit'
+        ).length,
+        confirmed: ordersResult.data.filter(o => 
+          o.status === 'confirmed' || 
+          o.status === 'deposit_paid'
+        ).length,
+        inProduction: ordersResult.data.filter(o => o.status === 'in_production').length,
+        shipped: ordersResult.data.filter(o => o.status === 'shipped').length,
+        delivered: ordersResult.data.filter(o => o.status === 'delivered').length,
+        completed: ordersResult.data.filter(o => o.status === 'completed').length,
+      };
+
+      // Calcular receita total dos pedidos
+      const ordersRevenue = ordersResult.data.reduce((acc, order) => {
+        // Somar valores dependendo do tipo
+        if (order.type === 'quote' && order.totalAmount) {
+          return acc + order.totalAmount;
+        }
+        if (order.type === 'standalone_purchase' && order.totalAmount) {
+          return acc + order.totalAmount;
+        }
+        if (order.type === 'manual_payment' && order.amount) {
+          return acc + order.amount;
+        }
+        return acc;
+      }, 0);
+
+      const previousOrdersRevenue = previousOrdersResult.data.reduce((acc, order) => {
+        if (order.type === 'quote' && order.totalAmount) {
+          return acc + order.totalAmount;
+        }
+        if (order.type === 'standalone_purchase' && order.totalAmount) {
+          return acc + order.totalAmount;
+        }
+        if (order.type === 'manual_payment' && order.amount) {
+          return acc + order.amount;
+        }
+        return acc;
+      }, 0);
+
+      // Calcular ticket médio
+      const ordersWithValue = ordersResult.data.filter(o => 
+        (o.type === 'quote' && o.totalAmount) ||
+        (o.type === 'standalone_purchase' && o.totalAmount) ||
+        (o.type === 'manual_payment' && o.amount)
+      );
+      
+      const averageTicket = ordersWithValue.length > 0
+        ? ordersRevenue / ordersWithValue.length
+        : 0;
+
+      const previousOrdersWithValue = previousOrdersResult.data.filter(o => 
+        (o.type === 'quote' && o.totalAmount) ||
+        (o.type === 'standalone_purchase' && o.totalAmount) ||
+        (o.type === 'manual_payment' && o.amount)
+      );
+
+      const previousAverageTicket = previousOrdersWithValue.length > 0
+        ? previousOrdersRevenue / previousOrdersWithValue.length
+        : 0;
+
+      // ============================================================================
+      // ORÇAMENTOS (QUOTES) - Mantido para compatibilidade com gráficos
+      // ============================================================================
+      
+      // Buscar apenas quotes para gráficos específicos de orçamentos
       const { data: quotes } = await supabase
         .from("quotes")
         .select("status, created_at, total_amount")
         .gte("created_at", fromDate)
         .lte("created_at", toDate);
-
-      // Orçamentos (período anterior para comparação)
-      const periodDiff = dateRange.to.getTime() - dateRange.from.getTime();
-      const previousFrom = new Date(dateRange.from.getTime() - periodDiff);
-      const previousTo = dateRange.from;
 
       const { data: previousQuotes } = await supabase
         .from("quotes")
@@ -117,21 +236,55 @@ export default function AdminHome() {
         .gte("created_at", previousFrom.toISOString())
         .lte("created_at", previousTo.toISOString());
 
-      // Pré-vendas
+      // Calcular estatísticas de orçamentos (apenas quotes)
+      const quotesStats = {
+        total: quotes?.length || 0,
+        pending: quotes?.filter((q) => q.status === "pending").length || 0,
+        approved: quotes?.filter((q) => q.status === "approved").length || 0,
+        completed: quotes?.filter((q) => q.status === "completed").length || 0,
+        totalRevenue: quotes?.reduce((acc, q) => acc + (q.total_amount || 0), 0) || 0,
+        averageTicket: quotes?.length
+          ? quotes.reduce((acc, q) => acc + (q.total_amount || 0), 0) / quotes.length
+          : 0,
+        conversionRate: quotes?.length
+          ? (quotes.filter((q) => q.status === "completed").length / quotes.length) * 100
+          : 0,
+      };
+
+      const previousQuotesStats = {
+        total: previousQuotes?.length || 0,
+        totalRevenue: previousQuotes?.reduce((acc, q) => acc + (q.total_amount || 0), 0) || 0,
+        averageTicket: previousQuotes?.length
+          ? previousQuotes.reduce((acc, q) => acc + (q.total_amount || 0), 0) /
+            previousQuotes.length
+          : 0,
+        conversionRate: previousQuotes?.length
+          ? (previousQuotes.filter((q) => q.status === "completed").length /
+              previousQuotes.length) *
+            100
+          : 0,
+      };
+
+      // Pré-vendas no período (mantido para compatibilidade)
       const { data: preorders } = await supabase
         .from("quotes")
-        .select("payment_status, deposit_amount, remaining_amount")
-        .eq("is_preorder", true);
+        .select("payment_status, deposit_amount, remaining_amount, created_at")
+        .eq("is_preorder", true)
+        .gte("created_at", fromDate)
+        .lte("created_at", toDate);
 
-      // Assinaturas (período atual)
+      // Assinaturas ativas no período
       const { count: subscriptionsCount } = await supabase
         .from("subscriptions")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active");
+        .eq("status", "active")
+        .gte("created_at", fromDate)
+        .lte("created_at", toDate);
 
       const { data: currentSubscriptions } = await supabase
         .from("subscriptions")
         .select("created_at, status")
+        .eq("status", "active")
         .gte("created_at", fromDate)
         .lte("created_at", toDate);
 
@@ -159,36 +312,6 @@ export default function AdminHome() {
         .from("collections")
         .select("*", { count: "exact", head: true })
         .eq("is_active", true);
-
-      // Calcular estatísticas do período atual
-      const quotesStats = {
-        total: quotes?.length || 0,
-        pending: quotes?.filter((q) => q.status === "pending").length || 0,
-        approved: quotes?.filter((q) => q.status === "approved").length || 0,
-        completed: quotes?.filter((q) => q.status === "completed").length || 0,
-        totalRevenue: quotes?.reduce((acc, q) => acc + (q.total_amount || 0), 0) || 0,
-        averageTicket: quotes?.length
-          ? quotes.reduce((acc, q) => acc + (q.total_amount || 0), 0) / quotes.length
-          : 0,
-        conversionRate: quotes?.length
-          ? (quotes.filter((q) => q.status === "completed").length / quotes.length) * 100
-          : 0,
-      };
-
-      // Calcular estatísticas do período anterior
-      const previousQuotesStats = {
-        total: previousQuotes?.length || 0,
-        totalRevenue: previousQuotes?.reduce((acc, q) => acc + (q.total_amount || 0), 0) || 0,
-        averageTicket: previousQuotes?.length
-          ? previousQuotes.reduce((acc, q) => acc + (q.total_amount || 0), 0) /
-            previousQuotes.length
-          : 0,
-        conversionRate: previousQuotes?.length
-          ? (previousQuotes.filter((q) => q.status === "completed").length /
-              previousQuotes.length) *
-            100
-          : 0,
-      };
 
       const preordersStats = {
         total: preorders?.length || 0,
@@ -258,7 +381,7 @@ export default function AdminHome() {
       // Dados para SubscriptionMetrics
       const { data: allSubscriptions } = await supabase
         .from("subscription_plans")
-        .select("id, name, price");
+        .select("id, name, price_pix");
 
       const activeSubscriptionsCount = subscriptionsCount || 0;
       const previousActiveCount = Math.floor(activeSubscriptionsCount * 0.9); // Simulação
@@ -268,7 +391,7 @@ export default function AdminHome() {
 
       const averagePrice =
         allSubscriptions && allSubscriptions.length > 0
-          ? allSubscriptions.reduce((acc, s) => acc + (s.price || 0), 0) / allSubscriptions.length
+          ? allSubscriptions.reduce((acc, s) => acc + (s.price_pix || 0), 0) / allSubscriptions.length
           : 0;
 
       const mrr = activeSubscriptionsCount * averagePrice;
@@ -331,6 +454,19 @@ export default function AdminHome() {
           current: currentUsers?.length || 0,
           previous: previousUsers?.length || 0,
         },
+        // Pedidos unificados (TODAS as tabelas)
+        orders: {
+          total: ordersResult.total,
+          current: ordersResult.data.length,
+          previous: previousOrdersResult.data.length,
+          byType: ordersByType,
+          byStatus: ordersByStatus,
+          revenue: ordersRevenue,
+          previousRevenue: previousOrdersRevenue,
+          averageTicket: averageTicket,
+          previousAverageTicket: previousAverageTicket,
+        },
+        // Orçamentos específicos (apenas quotes)
         quotes: quotesStats,
         previousQuotes: previousQuotesStats,
         preorders: preordersStats,
@@ -382,7 +518,7 @@ export default function AdminHome() {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Dados Gerais */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -408,13 +544,13 @@ export default function AdminHome() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Orçamentos</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.quotes.total || 0}</div>
+              <div className="text-2xl font-bold">{stats?.orders.total || 0}</div>
               <p className="text-xs text-muted-foreground">
-                {stats?.quotes.pending || 0} pendentes
+                {stats?.orders.current || 0} no período
               </p>
             </CardContent>
           </Card>
@@ -431,35 +567,184 @@ export default function AdminHome() {
           </Card>
         </div>
 
-        {/* Métricas de Negócio com Comparação */}
+        {/* Cards de Pedidos por Tipo */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Entregas Assinatura</CardTitle>
+              <CreditCard className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats?.orders.byType.subscriptionDeliveries || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">No período</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Compras Avulsas</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {stats?.orders.byType.standalonePurchases || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">No período</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pagamentos Manuais</CardTitle>
+              <DollarSign className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                {stats?.orders.byType.manualPayments || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">No período</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Orçamentos</CardTitle>
+              <FileText className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {stats?.orders.byType.quotes || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats?.quotes.pending || 0} pendentes
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* SSOT Cards - Informações Atualizadas do Sistema */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* Card de Limite de Produção (SSOT) */}
+          <Card className="border-primary/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Limite de Produção (SSOT)</CardTitle>
+              <Badge variant="outline" className="text-xs">Atualizado</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {pricingSettings?.currentMonthSold || 0} / {pricingSettings?.monthlyProductionLimit || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">
+                {pricingSettings?.currentMonthAvailable || 0} vagas disponíveis
+              </p>
+              <div className="space-y-1">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${pricingSettings?.currentMonthPercentage || 0}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {pricingSettings?.currentMonthPercentage?.toFixed(1) || 0}% do limite mensal
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card de Preços (SSOT) */}
+          <Card className="border-primary/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Preços Configurados (SSOT)</CardTitle>
+              <Badge variant="outline" className="text-xs">Atualizado</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Preço Padrão</span>
+                  <span className="font-bold">
+                    R$ {pricingSettings?.defaultPriceFull?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">
+                    PIX ({pricingSettings?.pixDiscountPercentage}% off)
+                  </span>
+                  <span className="font-bold text-green-600">
+                    R$ {pricingSettings?.defaultPricePix?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Entrada</span>
+                  <span className="font-bold">
+                    R$ {pricingSettings?.defaultDepositAmount?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card de Cronograma (SSOT) */}
+          <Card className="border-primary/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Cronograma Atual (SSOT)</CardTitle>
+              <Badge variant="outline" className="text-xs">Atualizado</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Lote Atual</p>
+                  <p className="text-lg font-bold">{contentSettings?.currentBatchName || 'N/A'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Produção</p>
+                    <p className="font-medium">
+                      {contentSettings?.productionDaysMin}-{contentSettings?.productionDaysMax} dias
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Envio</p>
+                    <p className="font-medium">
+                      {contentSettings?.currentBatchShippingMonth}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Métricas de Negócio com Comparação - Baseadas em Pedidos Unificados */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricComparison
-            title="Receita Total"
-            currentValue={stats?.quotes.totalRevenue || 0}
-            previousValue={stats?.previousQuotes.totalRevenue || 0}
+            title="Receita Total (Pedidos)"
+            currentValue={stats?.orders.revenue || 0}
+            previousValue={stats?.orders.previousRevenue || 0}
             format="currency"
             icon={<DollarSign className="h-4 w-4 text-green-500" />}
           />
           <MetricComparison
-            title="Ticket Médio"
-            currentValue={stats?.quotes.averageTicket || 0}
-            previousValue={stats?.previousQuotes.averageTicket || 0}
+            title="Ticket Médio (Pedidos)"
+            currentValue={stats?.orders.averageTicket || 0}
+            previousValue={stats?.orders.previousAverageTicket || 0}
             format="currency"
             icon={<ShoppingCart className="h-4 w-4 text-blue-500" />}
           />
           <MetricComparison
-            title="Taxa de Conversão"
+            title="Total de Pedidos"
+            currentValue={stats?.orders.current || 0}
+            previousValue={stats?.orders.previous || 0}
+            format="number"
+            icon={<Package className="h-4 w-4 text-purple-500" />}
+          />
+          <MetricComparison
+            title="Taxa de Conversão (Orçamentos)"
             currentValue={stats?.quotes.conversionRate || 0}
             previousValue={stats?.previousQuotes.conversionRate || 0}
             format="percentage"
-            icon={<Percent className="h-4 w-4 text-purple-500" />}
-          />
-          <MetricComparison
-            title="Total de Orçamentos"
-            currentValue={stats?.quotes.total || 0}
-            previousValue={stats?.previousQuotes.total || 0}
-            format="number"
-            icon={<FileText className="h-4 w-4 text-orange-500" />}
+            icon={<Percent className="h-4 w-4 text-orange-500" />}
           />
         </div>
 
@@ -794,7 +1079,7 @@ export default function AdminHome() {
                 <div>
                   <p className="font-medium">Assinaturas</p>
                   <p className="text-sm text-muted-foreground">
-                    {stats?.subscriptions || 0} ativas
+                    {stats?.subscriptions.total || 0} ativas
                   </p>
                 </div>
                 <Badge variant="default" className="bg-green-500">

@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { nowInBahia } from "@/lib/timezone";
 import { CutoffCountdown, useIsBeforeCutoff } from "@/components/CutoffCountdown";
+import { CharacterChoiceStatus } from "@/components/customer/CharacterChoiceStatus";
 import {
   Tooltip,
   TooltipContent,
@@ -157,10 +158,13 @@ export default function SubscriberDashboard() {
 
               {/* Next Delivery Section */}
               {nextDelivery && (
-                <NextDeliveryCard 
-                  delivery={nextDelivery}
-                  isBeforeCutoff={isBeforeCutoff}
-                />
+                <>
+                  <NextDeliveryCard 
+                    delivery={nextDelivery}
+                    isBeforeCutoff={isBeforeCutoff}
+                  />
+                  <NextDeliveryCharacterChoice delivery={nextDelivery} />
+                </>
               )}
 
               {/* Past Deliveries Section */}
@@ -375,6 +379,32 @@ function NextDeliveryCard({ delivery, isBeforeCutoff }: any) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Character Choice Status for Next Delivery
+function NextDeliveryCharacterChoice({ delivery }: any) {
+  // Only show character choice for deliveries that need it
+  // Skip if delivery already has a character assigned or is in later stages
+  if (delivery.collection_characters || delivery.status === 'delivered' || delivery.status === 'shipped') {
+    return null;
+  }
+
+  // Get collection info
+  const collectionId = delivery.collection_id || delivery.collections?.id;
+  const collectionName = delivery.collections?.name || "Coleção";
+
+  if (!collectionId) {
+    return null;
+  }
+
+  return (
+    <CharacterChoiceStatus
+      orderId={delivery.id}
+      collectionId={collectionId}
+      collectionName={collectionName}
+      orderType="subscription_delivery"
+    />
   );
 }
 

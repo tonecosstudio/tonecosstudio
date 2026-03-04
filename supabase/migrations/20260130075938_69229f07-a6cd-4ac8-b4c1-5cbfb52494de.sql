@@ -1,11 +1,11 @@
--- Suporte a "pular pro final" sem mudar status: adiciona coluna de ordenação
+-- Suporte a "pular pro final" sem mudar status: adiciona coluna de ordenaÃƒÂ§ÃƒÂ£o
 alter table public.images_queue
 add column if not exists priority_at timestamptz not null default now();
 
 create index if not exists images_queue_status_priority_at_idx
 on public.images_queue (status, priority_at);
 
--- Mantém updated_at consistente também na fila
+-- MantÃƒÂ©m updated_at consistente tambÃƒÂ©m na fila
 do $$
 begin
   if not exists (

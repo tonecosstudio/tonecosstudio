@@ -1,7 +1,7 @@
 -- =====================================================
 -- Migration: Premium Club Fixed-Price Model
 -- Description: Implementa sistema de ciclos quinzenais,
---              entregas consecutivas e peças bônus
+--              entregas consecutivas e peÃƒÂ§as bÃƒÂ´nus
 -- Date: 2026-03-01
 -- =====================================================
 
@@ -25,7 +25,7 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
--- Enum para status de peça bônus
+-- Enum para status de peÃƒÂ§a bÃƒÂ´nus
 DO $$ 
 BEGIN
   CREATE TYPE bonus_status AS ENUM ('pending', 'prepared', 'shipped');
@@ -33,7 +33,7 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
--- Criar enum delivery_status se não existir
+-- Criar enum delivery_status se nÃƒÂ£o existir
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'delivery_status') THEN
@@ -41,7 +41,7 @@ BEGIN
   END IF;
 END $$;
 
--- Adicionar novos valores ao enum de status de entrega (se não existirem)
+-- Adicionar novos valores ao enum de status de entrega (se nÃƒÂ£o existirem)
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type t 
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS cycles (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   
-  -- Identificação
+  -- IdentificaÃƒÂ§ÃƒÂ£o
   cycle_number integer NOT NULL CHECK (cycle_number IN (1, 2)),
   month integer NOT NULL CHECK (month BETWEEN 1 AND 12),
   year integer NOT NULL CHECK (year >= 2026),
@@ -87,11 +87,11 @@ CREATE TABLE IF NOT EXISTS cycles (
   capacity_max integer DEFAULT 100,
   capacity_current integer DEFAULT 0,
   
-  -- Constraint: apenas um ciclo por número/mês/ano
+  -- Constraint: apenas um ciclo por nÃƒÂºmero/mÃƒÂªs/ano
   UNIQUE(cycle_number, month, year)
 );
 
--- Índices para cycles
+-- ÃƒÂndices para cycles
 CREATE INDEX IF NOT EXISTS idx_cycles_status ON cycles(status);
 CREATE INDEX IF NOT EXISTS idx_cycles_month_year ON cycles(month, year);
 CREATE INDEX IF NOT EXISTS idx_cycles_shipping_date ON cycles(shipping_date);
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS holidays (
   -- Data do feriado
   holiday_date date NOT NULL,
   
-  -- Informações
+  -- InformaÃƒÂ§ÃƒÂµes
   name text NOT NULL,
   description text,
   type holiday_type NOT NULL,
@@ -117,18 +117,18 @@ CREATE TABLE IF NOT EXISTS holidays (
     (type = 'state' AND state_code IS NOT NULL)
   ),
   
-  -- Recorrência
+  -- RecorrÃƒÂªncia
   is_recurring boolean DEFAULT false,
   
   UNIQUE(holiday_date, type, state_code)
 );
 
--- Índices para holidays
+-- ÃƒÂndices para holidays
 CREATE INDEX IF NOT EXISTS idx_holidays_date ON holidays(holiday_date);
 CREATE INDEX IF NOT EXISTS idx_holidays_type ON holidays(type);
 CREATE INDEX IF NOT EXISTS idx_holidays_year ON holidays(EXTRACT(YEAR FROM holiday_date));
 
--- Tabela de peças bônus
+-- Tabela de peÃƒÂ§as bÃƒÂ´nus
 CREATE TABLE IF NOT EXISTS bonus_pieces (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at timestamptz DEFAULT now(),
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS bonus_pieces (
   subscription_id uuid NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
   delivery_id uuid REFERENCES subscription_deliveries(id),
   
-  -- Informações
+  -- InformaÃƒÂ§ÃƒÂµes
   description text,
   status bonus_status DEFAULT 'pending',
   
@@ -146,11 +146,11 @@ CREATE TABLE IF NOT EXISTS bonus_pieces (
   prepared_at timestamptz,
   shipped_at timestamptz,
   
-  -- Constraint: apenas um bônus por assinatura
+  -- Constraint: apenas um bÃƒÂ´nus por assinatura
   UNIQUE(subscription_id)
 );
 
--- Índices para bonus_pieces
+-- ÃƒÂndices para bonus_pieces
 CREATE INDEX IF NOT EXISTS idx_bonus_subscription ON bonus_pieces(subscription_id);
 CREATE INDEX IF NOT EXISTS idx_bonus_status ON bonus_pieces(status);
 CREATE INDEX IF NOT EXISTS idx_bonus_delivery ON bonus_pieces(delivery_id);
@@ -203,7 +203,7 @@ CREATE INDEX IF NOT EXISTS idx_deliveries_cycle ON subscription_deliveries(cycle
 -- PART 4: CREATE TRIGGERS
 -- =====================================================
 
--- Função para atualizar updated_at
+-- FunÃƒÂ§ÃƒÂ£o para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -240,7 +240,7 @@ ALTER TABLE cycles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE holidays ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bonus_pieces ENABLE ROW LEVEL SECURITY;
 
--- Políticas para cycles
+-- PolÃƒÂ­ticas para cycles
 DROP POLICY IF EXISTS "Qualquer um pode visualizar ciclos" ON cycles;
 CREATE POLICY "Qualquer um pode visualizar ciclos"
   ON cycles FOR SELECT
@@ -256,7 +256,7 @@ CREATE POLICY "Admins podem gerenciar ciclos"
     )
   );
 
--- Políticas para holidays
+-- PolÃƒÂ­ticas para holidays
 DROP POLICY IF EXISTS "Qualquer um pode visualizar feriados" ON holidays;
 CREATE POLICY "Qualquer um pode visualizar feriados"
   ON holidays FOR SELECT
@@ -272,9 +272,9 @@ CREATE POLICY "Admins podem gerenciar feriados"
     )
   );
 
--- Políticas para bonus_pieces
-DROP POLICY IF EXISTS "Usuários visualizam seus próprios bônus" ON bonus_pieces;
-CREATE POLICY "Usuários visualizam seus próprios bônus"
+-- PolÃƒÂ­ticas para bonus_pieces
+DROP POLICY IF EXISTS "UsuÃƒÂ¡rios visualizam seus prÃƒÂ³prios bÃƒÂ´nus" ON bonus_pieces;
+CREATE POLICY "UsuÃƒÂ¡rios visualizam seus prÃƒÂ³prios bÃƒÂ´nus"
   ON bonus_pieces FOR SELECT
   USING (
     subscription_id IN (
@@ -282,8 +282,8 @@ CREATE POLICY "Usuários visualizam seus próprios bônus"
     )
   );
 
-DROP POLICY IF EXISTS "Admins podem gerenciar bônus" ON bonus_pieces;
-CREATE POLICY "Admins podem gerenciar bônus"
+DROP POLICY IF EXISTS "Admins podem gerenciar bÃƒÂ´nus" ON bonus_pieces;
+CREATE POLICY "Admins podem gerenciar bÃƒÂ´nus"
   ON bonus_pieces FOR ALL
   USING (
     EXISTS (
@@ -302,54 +302,54 @@ INSERT INTO holidays (holiday_date, name, type, is_recurring) VALUES
   ('2026-01-01', 'Ano Novo', 'national', true),
   ('2026-04-21', 'Tiradentes', 'national', true),
   ('2026-05-01', 'Dia do Trabalho', 'national', true),
-  ('2026-09-07', 'Independência do Brasil', 'national', true),
+  ('2026-09-07', 'IndependÃƒÂªncia do Brasil', 'national', true),
   ('2026-10-12', 'Nossa Senhora Aparecida', 'national', true),
   ('2026-11-02', 'Finados', 'national', true),
-  ('2026-11-15', 'Proclamação da República', 'national', true),
+  ('2026-11-15', 'ProclamaÃƒÂ§ÃƒÂ£o da RepÃƒÂºblica', 'national', true),
   ('2026-12-25', 'Natal', 'national', true),
   
   -- 2027
   ('2027-01-01', 'Ano Novo', 'national', true),
   ('2027-04-21', 'Tiradentes', 'national', true),
   ('2027-05-01', 'Dia do Trabalho', 'national', true),
-  ('2027-09-07', 'Independência do Brasil', 'national', true),
+  ('2027-09-07', 'IndependÃƒÂªncia do Brasil', 'national', true),
   ('2027-10-12', 'Nossa Senhora Aparecida', 'national', true),
   ('2027-11-02', 'Finados', 'national', true),
-  ('2027-11-15', 'Proclamação da República', 'national', true),
+  ('2027-11-15', 'ProclamaÃƒÂ§ÃƒÂ£o da RepÃƒÂºblica', 'national', true),
   ('2027-12-25', 'Natal', 'national', true),
   
   -- 2028
   ('2028-01-01', 'Ano Novo', 'national', true),
   ('2028-04-21', 'Tiradentes', 'national', true),
   ('2028-05-01', 'Dia do Trabalho', 'national', true),
-  ('2028-09-07', 'Independência do Brasil', 'national', true),
+  ('2028-09-07', 'IndependÃƒÂªncia do Brasil', 'national', true),
   ('2028-10-12', 'Nossa Senhora Aparecida', 'national', true),
   ('2028-11-02', 'Finados', 'national', true),
-  ('2028-11-15', 'Proclamação da República', 'national', true),
+  ('2028-11-15', 'ProclamaÃƒÂ§ÃƒÂ£o da RepÃƒÂºblica', 'national', true),
   ('2028-12-25', 'Natal', 'national', true),
   
   -- 2029
   ('2029-01-01', 'Ano Novo', 'national', true),
   ('2029-04-21', 'Tiradentes', 'national', true),
   ('2029-05-01', 'Dia do Trabalho', 'national', true),
-  ('2029-09-07', 'Independência do Brasil', 'national', true),
+  ('2029-09-07', 'IndependÃƒÂªncia do Brasil', 'national', true),
   ('2029-10-12', 'Nossa Senhora Aparecida', 'national', true),
   ('2029-11-02', 'Finados', 'national', true),
-  ('2029-11-15', 'Proclamação da República', 'national', true),
+  ('2029-11-15', 'ProclamaÃƒÂ§ÃƒÂ£o da RepÃƒÂºblica', 'national', true),
   ('2029-12-25', 'Natal', 'national', true),
   
   -- 2030
   ('2030-01-01', 'Ano Novo', 'national', true),
   ('2030-04-21', 'Tiradentes', 'national', true),
   ('2030-05-01', 'Dia do Trabalho', 'national', true),
-  ('2030-09-07', 'Independência do Brasil', 'national', true),
+  ('2030-09-07', 'IndependÃƒÂªncia do Brasil', 'national', true),
   ('2030-10-12', 'Nossa Senhora Aparecida', 'national', true),
   ('2030-11-02', 'Finados', 'national', true),
-  ('2030-11-15', 'Proclamação da República', 'national', true),
+  ('2030-11-15', 'ProclamaÃƒÂ§ÃƒÂ£o da RepÃƒÂºblica', 'national', true),
   ('2030-12-25', 'Natal', 'national', true)
 ON CONFLICT (holiday_date, type, state_code) DO NOTHING;
 
--- Inserir feriados variáveis (Carnaval, Sexta-feira Santa, Corpus Christi)
+-- Inserir feriados variÃƒÂ¡veis (Carnaval, Sexta-feira Santa, Corpus Christi)
 INSERT INTO holidays (holiday_date, name, type, is_recurring) VALUES
   -- 2026
   ('2026-02-16', 'Carnaval', 'national', false),
@@ -384,22 +384,22 @@ ON CONFLICT (holiday_date, type, state_code) DO NOTHING;
 
 -- Inserir feriados estaduais da Bahia
 INSERT INTO holidays (holiday_date, name, type, state_code, is_recurring) VALUES
-  ('2026-07-02', 'Independência da Bahia', 'state', 'BA', true),
-  ('2027-07-02', 'Independência da Bahia', 'state', 'BA', true),
-  ('2028-07-02', 'Independência da Bahia', 'state', 'BA', true),
-  ('2029-07-02', 'Independência da Bahia', 'state', 'BA', true),
-  ('2030-07-02', 'Independência da Bahia', 'state', 'BA', true)
+  ('2026-07-02', 'IndependÃƒÂªncia da Bahia', 'state', 'BA', true),
+  ('2027-07-02', 'IndependÃƒÂªncia da Bahia', 'state', 'BA', true),
+  ('2028-07-02', 'IndependÃƒÂªncia da Bahia', 'state', 'BA', true),
+  ('2029-07-02', 'IndependÃƒÂªncia da Bahia', 'state', 'BA', true),
+  ('2030-07-02', 'IndependÃƒÂªncia da Bahia', 'state', 'BA', true)
 ON CONFLICT (holiday_date, type, state_code) DO NOTHING;
 
 -- =====================================================
 -- COMMENTS
 -- =====================================================
 
-COMMENT ON TABLE cycles IS 'Ciclos quinzenais de produção e envio';
-COMMENT ON TABLE holidays IS 'Feriados nacionais e estaduais para cálculo de dias úteis';
-COMMENT ON TABLE bonus_pieces IS 'Peças bônus exclusivas do plano semestral';
+COMMENT ON TABLE cycles IS 'Ciclos quinzenais de produÃƒÂ§ÃƒÂ£o e envio';
+COMMENT ON TABLE holidays IS 'Feriados nacionais e estaduais para cÃƒÂ¡lculo de dias ÃƒÂºteis';
+COMMENT ON TABLE bonus_pieces IS 'PeÃƒÂ§as bÃƒÂ´nus exclusivas do plano semestral';
 
-COMMENT ON COLUMN cycles.cycle_number IS '1 = dias 1-15, 2 = dias 16-fim do mês';
+COMMENT ON COLUMN cycles.cycle_number IS '1 = dias 1-15, 2 = dias 16-fim do mÃƒÂªs';
 COMMENT ON COLUMN cycles.status IS 'open, production, shipping, completed';
 COMMENT ON COLUMN holidays.type IS 'national ou state';
-COMMENT ON COLUMN subscriptions.is_legacy_model IS 'true = modelo antigo de precificação por coleção';
+COMMENT ON COLUMN subscriptions.is_legacy_model IS 'true = modelo antigo de precificaÃƒÂ§ÃƒÂ£o por coleÃƒÂ§ÃƒÂ£o';

@@ -10,7 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { UnifiedOrder } from '@/types/admin/orders';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import { OrderTypeIndicator } from './OrderTypeIndicator';
+import { ProductionStatusBadge } from './ProductionStatusBadge';
 import { highlightText } from '@/lib/highlight-text';
+import { useProductionInfo } from '@/hooks/admin/useProductionInfo';
 
 interface OrderRowProps {
   order: UnifiedOrder;
@@ -27,6 +29,13 @@ export function OrderRow({
   onClick,
   searchQuery = ''
 }: OrderRowProps) {
+  // Buscar informações de produção apenas para pedidos elegíveis
+  const shouldFetchProduction = order.type === 'subscription_delivery' || order.type === 'standalone_purchase';
+  const { data: productionInfo } = useProductionInfo(
+    shouldFetchProduction ? order.id : null,
+    shouldFetchProduction ? order.type : null
+  );
+
   return (
     <TableRow
       className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -66,6 +75,15 @@ export function OrderRow({
       {/* Status */}
       <TableCell>
         <OrderStatusBadge status={order.status} />
+      </TableCell>
+
+      {/* Status de Produção */}
+      <TableCell>
+        {shouldFetchProduction && productionInfo ? (
+          <ProductionStatusBadge stage={productionInfo.currentStage} />
+        ) : (
+          <span className="text-xs text-muted-foreground">N/A</span>
+        )}
       </TableCell>
 
       {/* Data de criação */}

@@ -138,15 +138,11 @@ export async function fetchProductionQueue(
   const { page, pageSize } = pagination;
   const offset = (page - 1) * pageSize;
 
-  // Try to use the optimized view first, fallback to direct table query
+  // Query production_queue without explicit joins
+  // We'll fetch related data separately or use the denormalized fields
   let query = supabase
     .from("production_queue")
-    .select(`
-      *,
-      profiles:customer_id(full_name, email),
-      collections:collection_id(name),
-      collection_characters:character_id(name)
-    `, { count: "exact" });
+    .select("*", { count: "exact" });
 
   // Aplicar filtros de coleção
   if (filters.collections && filters.collections.length > 0) {
@@ -482,17 +478,34 @@ export async function updateProductionStage(
  * @param userId - ID do usuário a ser atribuído
  * @returns Item atualizado
  */
-export async function assignProduction(id: string, userId: string): Promise<ProductionQueueItem> {
-  // Buscar nome do usuário
-  const { data: user } = await supabase
+export async function assignProduction(
+  id: string, 
+  userId: string, 
+  reason?: string
+): Promise<ProductionQueueItem> {
+  // Get current assignment info for logging
+  const { data: currentItem } = await supabase
+    .from("production_queue")
+    .select("assigned_to, assigned_to_name")
+    .eq("id", id)
+    .single();
+
+  const isReassignment = currentItem?.assigned_to && currentItem.assigned_to !== userId;
+
+  // Fetch user information
+  const { data: user, error: userError } = await supabase
     .from("profiles")
     .select("full_name, email")
     .eq("id", userId)
     .single();
 
-  const userName = user?.full_name || user?.email || "Usuário";
+  if (userError || !user) {
+    throw new Error(`Erro ao buscar usuário: ${userError?.message || "Usuário não encontrado"}`);
+  }
 
-  // Atualizar item
+  const userName = user.full_name || user.email || "Usuário";
+
+  // Update production queue item
   const { data: updatedItem, error: updateError } = await supabase
     .from("production_queue")
     .update({
@@ -507,6 +520,37 @@ export async function assignProduction(id: string, userId: string): Promise<Prod
 
   if (updateError || !updatedItem) {
     throw new Error(`Erro ao atribuir produção: ${updateError?.message || "Falha na atualização"}`);
+  }
+
+  // Log the assignment
+  try {
+    await supabase.from("production_assignment_logs").insert({
+      production_queue_id: id,
+      assigned_to: userId,
+      assigned_to_name: userName,
+      assigned_by: (await supabase.auth.getUser()).data.user?.id,
+      is_reassignment: isReassignment,
+      previous_assignee: currentItem?.assigned_to,
+      previous_assignee_name: currentItem?.assigned_to_name,
+      reason: reason || (isReassignment ? "Reatribuição" : "Atribuição inicial"),
+      assigned_at: new Date().toISOString(),
+    });
+  } catch (logError) {
+    console.error("Erro ao registrar log de atribuição:", logError);
+    // Don't fail the assignment if logging fails
+  }
+
+  // Send notification to assigned team member
+  try {
+    // Import notification service dynamically to avoid circular dependencies
+    const { ProductionNotificationService } = await import("@/services/notifications/production-notification-service");
+    const notificationService = new ProductionNotificationService();
+    
+    // Send assignment notification
+    await notificationService.sendAssignmentNotification(id, userId, isReassignment);
+  } catch (notifError) {
+    console.error("Erro ao enviar notificação de atribuição:", notifError);
+    // Don't fail the assignment if notification fails
   }
 
   return transformProductionQueueItem(updatedItem);
@@ -524,7 +568,35 @@ export async function assignProduction(id: string, userId: string): Promise<Prod
  * @returns Item atualizado
  */
 export async function blockProduction(id: string, reason: string): Promise<ProductionQueueItem> {
-  // Atualizar item
+  // 1. Get current production queue item to find current stage
+  const { data: queueItem, error: fetchError } = await supabase
+    .from("production_queue")
+    .select("id, current_stage, customer_id, customer_email, collection_name, order_id, order_type")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !queueItem) {
+    throw new Error(`Erro ao buscar item de produção: ${fetchError?.message || "Item não encontrado"}`);
+  }
+
+  // 2. Update production_stages to mark current stage as blocked
+  const { error: stageError } = await supabase
+    .from("production_stages")
+    .update({
+      is_blocked: true,
+      block_reason: reason,
+      blocked_at: new Date().toISOString(),
+      status: "blocked",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("production_queue_id", id)
+    .eq("stage_name", queueItem.current_stage);
+
+  if (stageError) {
+    throw new Error(`Erro ao bloquear estágio: ${stageError.message}`);
+  }
+
+  // 3. Update production_queue status to on_hold
   const { data: updatedItem, error: updateError } = await supabase
     .from("production_queue")
     .update({
@@ -540,8 +612,35 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
     throw new Error(`Erro ao bloquear produção: ${updateError?.message || "Falha na atualização"}`);
   }
 
-  // TODO: Criar notificação para o cliente sobre o bloqueio
-  // TODO: Atualizar production_stages para marcar estágio atual como bloqueado
+  // 4. Recalculate estimated completion date
+  try {
+    const { calculateEstimatedCompletion } = await import("./stage-service");
+    const newEstimatedDate = await calculateEstimatedCompletion(id);
+    
+    // Update the estimated completion date in production_queue
+    await supabase
+      .from("production_queue")
+      .update({
+        estimated_completion_date: newEstimatedDate.toISOString(),
+      })
+      .eq("id", id);
+  } catch (calcError) {
+    console.error("Erro ao recalcular data estimada:", calcError);
+    // Don't throw - blocking should still succeed even if date calculation fails
+  }
+
+  // 5. Send notification to customer about the delay
+  try {
+    const { ProductionNotificationService } = await import("../notifications/production-notification-service");
+    const notificationService = new ProductionNotificationService();
+    await notificationService.sendDelayNotification(id, reason);
+  } catch (notifError) {
+    console.error("Erro ao enviar notificação de atraso:", notifError);
+    // Don't throw - blocking should still succeed even if notification fails
+  }
+
+  // Note: Adding to urgent alerts is handled automatically by the dashboard
+  // filtering on production_status = 'on_hold'
 
   return transformProductionQueueItem(updatedItem);
 }
@@ -649,26 +748,20 @@ export async function updateProductionSchedule(
 
 /**
  * Transforma dados do banco para o formato da interface ProductionQueueItem
- * Suporta tanto o formato da view quanto o formato de tabela com joins
+ * Usa os campos denormalizados da tabela production_queue
  */
 function transformProductionQueueItem(data: any): ProductionQueueItem {
-  // Handle both view format (snake_case) and joined table format (nested objects)
-  const customerName = data.customer_name || data.profiles?.full_name || "Cliente Desconhecido";
-  const customerEmail = data.customer_email || data.profiles?.email || "";
-  const collectionName = data.collection_name || data.collections?.name || "Coleção Desconhecida";
-  const characterName = data.character_name || data.collection_characters?.name || null;
-
   return {
     id: data.id,
     orderId: data.order_id,
     orderType: data.order_type,
     customerId: data.customer_id,
-    customerName,
-    customerEmail,
+    customerName: data.customer_name || "Cliente Desconhecido",
+    customerEmail: data.customer_email || "",
     collectionId: data.collection_id,
-    collectionName,
+    collectionName: data.collection_name || "Coleção Desconhecida",
     characterId: data.character_id,
-    characterName,
+    characterName: data.character_name,
     productionStatus: data.production_status,
     currentStage: data.current_stage,
     choiceStatus: data.choice_status,

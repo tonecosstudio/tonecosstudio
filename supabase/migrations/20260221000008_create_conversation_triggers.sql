@@ -16,7 +16,7 @@ BEGIN
     status = CASE
       WHEN NEW.sender_type = 'customer' THEN 'waiting_admin'
       WHEN NEW.sender_type = 'admin' THEN 'waiting_customer'
-      ELSE status -- Mantém status atual para mensagens system
+      ELSE status -- MantÃƒÂ©m status atual para mensagens system
     END,
     updated_at = now()
   WHERE id = NEW.conversation_id;
@@ -42,7 +42,7 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_conversation_user_id UUID;
 BEGIN
-  -- Apenas processa se é mensagem de admin (não system)
+  -- Apenas processa se ÃƒÂ© mensagem de admin (nÃƒÂ£o system)
   IF NEW.sender_type != 'admin' THEN
     RETURN NEW;
   END IF;
@@ -52,7 +52,7 @@ BEGIN
   FROM support_conversations
   WHERE id = NEW.conversation_id;
   
-  -- Se é admin e não é o dono da conversa, marca first_response_at
+  -- Se ÃƒÂ© admin e nÃƒÂ£o ÃƒÂ© o dono da conversa, marca first_response_at
   IF NEW.sender_id != v_conversation_user_id THEN
     UPDATE support_conversations
     SET first_response_at = NEW.created_at
@@ -73,5 +73,5 @@ CREATE TRIGGER trigger_mark_first_admin_response
   EXECUTE FUNCTION mark_first_admin_response();
 
 -- Add comments
-COMMENT ON FUNCTION update_conversation_last_message() IS 'Atualiza last_message_at e status da conversa quando nova mensagem é inserida';
+COMMENT ON FUNCTION update_conversation_last_message() IS 'Atualiza last_message_at e status da conversa quando nova mensagem ÃƒÂ© inserida';
 COMMENT ON FUNCTION mark_first_admin_response() IS 'Marca first_response_at quando admin responde pela primeira vez';

@@ -1,11 +1,11 @@
 -- ============================================
--- Migration: Funções de Atribuição de Coleções a Níveis
+-- Migration: FunÃƒÂ§ÃƒÂµes de AtribuiÃƒÂ§ÃƒÂ£o de ColeÃƒÂ§ÃƒÂµes a NÃƒÂ­veis
 -- Data: 2026-03-01 12:00
--- Descrição: Criar funções para atribuir/remover coleções de níveis
+-- DescriÃƒÂ§ÃƒÂ£o: Criar funÃƒÂ§ÃƒÂµes para atribuir/remover coleÃƒÂ§ÃƒÂµes de nÃƒÂ­veis
 -- ============================================
 
 -- =====================================================
--- 1. FUNÇÃO: assign_collection_to_tier
+-- 1. FUNÃƒâ€¡ÃƒÆ’O: assign_collection_to_tier
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION assign_collection_to_tier(
@@ -20,34 +20,34 @@ DECLARE
   v_tier RECORD;
   v_collection RECORD;
 BEGIN
-  -- Validar que o nível existe e está ativo
+  -- Validar que o nÃƒÂ­vel existe e estÃƒÂ¡ ativo
   SELECT * INTO v_tier FROM pricing_tiers WHERE id = p_tier_id;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Nível de preço não encontrado';
+    RAISE EXCEPTION 'NÃƒÂ­vel de preÃƒÂ§o nÃƒÂ£o encontrado';
   END IF;
   
   IF NOT v_tier.is_active THEN
-    RAISE EXCEPTION 'Não é possível atribuir coleções a um nível inativo';
+    RAISE EXCEPTION 'NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel atribuir coleÃƒÂ§ÃƒÂµes a um nÃƒÂ­vel inativo';
   END IF;
   
-  -- Validar que a coleção existe
+  -- Validar que a coleÃƒÂ§ÃƒÂ£o existe
   SELECT * INTO v_collection FROM collections WHERE id = p_collection_id;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Coleção não encontrada';
+    RAISE EXCEPTION 'ColeÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrada';
   END IF;
   
-  -- Buscar atribuição anterior (se existir)
+  -- Buscar atribuiÃƒÂ§ÃƒÂ£o anterior (se existir)
   SELECT tier_id INTO v_previous_tier_id
   FROM collection_tier_assignments
   WHERE collection_id = p_collection_id;
   
-  -- Remover atribuição anterior
+  -- Remover atribuiÃƒÂ§ÃƒÂ£o anterior
   IF v_previous_tier_id IS NOT NULL THEN
     DELETE FROM collection_tier_assignments WHERE collection_id = p_collection_id;
     
-    -- Registrar remoção no histórico
+    -- Registrar remoÃƒÂ§ÃƒÂ£o no histÃƒÂ³rico
     INSERT INTO pricing_history (
       collection_id, tier_id, change_type, changed_by,
       old_price_full, old_price_pix, old_deposit_amount,
@@ -60,7 +60,7 @@ BEGIN
     );
   END IF;
   
-  -- Criar nova atribuição
+  -- Criar nova atribuiÃƒÂ§ÃƒÂ£o
   INSERT INTO collection_tier_assignments (
     collection_id, tier_id, assigned_by, previous_tier_id
   )
@@ -69,7 +69,7 @@ BEGIN
   )
   RETURNING id INTO v_assignment_id;
   
-  -- Atualizar coleção para usar preços do nível
+  -- Atualizar coleÃƒÂ§ÃƒÂ£o para usar preÃƒÂ§os do nÃƒÂ­vel
   UPDATE collections
   SET
     uses_tier_pricing = true,
@@ -80,7 +80,7 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_collection_id;
   
-  -- Registrar atribuição no histórico
+  -- Registrar atribuiÃƒÂ§ÃƒÂ£o no histÃƒÂ³rico
   INSERT INTO pricing_history (
     collection_id, tier_id, change_type, changed_by,
     old_price_full, new_price_full,
@@ -103,10 +103,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION assign_collection_to_tier IS 'Atribui coleção a um nível de preço';
+COMMENT ON FUNCTION assign_collection_to_tier IS 'Atribui coleÃƒÂ§ÃƒÂ£o a um nÃƒÂ­vel de preÃƒÂ§o';
 
 -- =====================================================
--- 2. FUNÇÃO: unassign_collection_from_tier
+-- 2. FUNÃƒâ€¡ÃƒÆ’O: unassign_collection_from_tier
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION unassign_collection_from_tier(
@@ -121,19 +121,19 @@ DECLARE
   v_default_deposit NUMERIC;
   v_collection RECORD;
 BEGIN
-  -- Buscar atribuição atual
+  -- Buscar atribuiÃƒÂ§ÃƒÂ£o atual
   SELECT * INTO v_assignment
   FROM collection_tier_assignments
   WHERE collection_id = p_collection_id;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Coleção não está atribuída a nenhum nível';
+    RAISE EXCEPTION 'ColeÃƒÂ§ÃƒÂ£o nÃƒÂ£o estÃƒÂ¡ atribuÃƒÂ­da a nenhum nÃƒÂ­vel';
   END IF;
   
-  -- Buscar dados atuais da coleção
+  -- Buscar dados atuais da coleÃƒÂ§ÃƒÂ£o
   SELECT * INTO v_collection FROM collections WHERE id = p_collection_id;
   
-  -- Buscar preços padrão do sistema
+  -- Buscar preÃƒÂ§os padrÃƒÂ£o do sistema
   SELECT value::NUMERIC INTO v_default_price_full 
   FROM system_settings WHERE key = 'default_price_full';
   
@@ -143,10 +143,10 @@ BEGIN
   SELECT value::NUMERIC INTO v_default_deposit 
   FROM system_settings WHERE key = 'default_deposit_amount';
   
-  -- Remover atribuição
+  -- Remover atribuiÃƒÂ§ÃƒÂ£o
   DELETE FROM collection_tier_assignments WHERE collection_id = p_collection_id;
   
-  -- Atualizar coleção para usar preços padrão
+  -- Atualizar coleÃƒÂ§ÃƒÂ£o para usar preÃƒÂ§os padrÃƒÂ£o
   UPDATE collections
   SET
     uses_tier_pricing = false,
@@ -157,7 +157,7 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_collection_id;
   
-  -- Registrar no histórico
+  -- Registrar no histÃƒÂ³rico
   INSERT INTO pricing_history (
     collection_id, tier_id, change_type, changed_by,
     old_price_full, new_price_full,
@@ -177,10 +177,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION unassign_collection_from_tier IS 'Remove atribuição de nível e reverte para preços padrão';
+COMMENT ON FUNCTION unassign_collection_from_tier IS 'Remove atribuiÃƒÂ§ÃƒÂ£o de nÃƒÂ­vel e reverte para preÃƒÂ§os padrÃƒÂ£o';
 
 -- =====================================================
--- 3. FUNÇÃO: analyze_pricing_for_migration
+-- 3. FUNÃƒâ€¡ÃƒÆ’O: analyze_pricing_for_migration
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION analyze_pricing_for_migration()
@@ -200,7 +200,7 @@ BEGIN
     c.deposit_amount,
     COUNT(*)::BIGINT as collection_count,
     ARRAY_AGG(c.id) as collection_ids,
-    'Nível ' || ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, c.price_full) as suggested_tier_name
+    'NÃƒÂ­vel ' || ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, c.price_full) as suggested_tier_name
   FROM collections c
   WHERE 
     c.is_active = true
@@ -212,7 +212,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION analyze_pricing_for_migration IS 'Analisa preços e sugere agrupamentos para migração';
+COMMENT ON FUNCTION analyze_pricing_for_migration IS 'Analisa preÃƒÂ§os e sugere agrupamentos para migraÃƒÂ§ÃƒÂ£o';
 
 -- =====================================================
 -- FIM DA MIGRATION

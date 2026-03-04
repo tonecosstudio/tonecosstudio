@@ -2,29 +2,29 @@
 -- MANUAL PAYMENT SYSTEM - Sistema de Pagamento Manual
 -- =====================================================
 -- Criado em: 16 de Fevereiro de 2026
--- Descrição: Sistema de pagamento manual com verificação de comprovantes
+-- DescriÃƒÂ§ÃƒÂ£o: Sistema de pagamento manual com verificaÃƒÂ§ÃƒÂ£o de comprovantes
 -- Requisitos: 1.1-1.10, 2.5-2.8, 3.1-3.12, 4.1-4.3, 7.14-7.15, 8.1-8.10, 11.1-11.6, 14.9-14.10, 15.8-15.15
 -- =====================================================
 
 -- =====================================================
--- 1. ADMIN_PAYMENT_METHODS - Métodos de Pagamento Configurados pelo Admin
+-- 1. ADMIN_PAYMENT_METHODS - MÃƒÂ©todos de Pagamento Configurados pelo Admin
 -- =====================================================
--- Nota: Esta tabela é diferente da tabela payment_methods existente
--- A tabela existente armazena métodos de pagamento dos usuários (cartões, PIX pessoal)
--- Esta nova tabela armazena métodos de pagamento configurados pelo admin (PIX da empresa, PagSeguro, etc)
+-- Nota: Esta tabela ÃƒÂ© diferente da tabela payment_methods existente
+-- A tabela existente armazena mÃƒÂ©todos de pagamento dos usuÃƒÂ¡rios (cartÃƒÂµes, PIX pessoal)
+-- Esta nova tabela armazena mÃƒÂ©todos de pagamento configurados pelo admin (PIX da empresa, PagSeguro, etc)
 
 CREATE TABLE IF NOT EXISTS admin_payment_methods (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
-  -- Informações básicas
+  -- InformaÃƒÂ§ÃƒÂµes bÃƒÂ¡sicas
   name TEXT NOT NULL, -- Ex: "PIX Ordax", "PagSeguro", "PayPal"
   type TEXT NOT NULL CHECK (type IN ('pix', 'pagseguro', 'picpay', 'paypal', 'bank_transfer', 'other')),
-  instructions TEXT NOT NULL, -- Instruções de pagamento para o cliente
+  instructions TEXT NOT NULL, -- InstruÃƒÂ§ÃƒÂµes de pagamento para o cliente
   
   -- Detalhes opcionais
   payment_link TEXT, -- Link para pagamento (ex: link do PagSeguro)
   pix_key TEXT, -- Chave PIX da empresa
-  account_details JSONB, -- Detalhes da conta bancária ou outros dados
+  account_details JSONB, -- Detalhes da conta bancÃƒÂ¡ria ou outros dados
   
   -- Controle
   is_active BOOLEAN NOT NULL DEFAULT true,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS admin_payment_methods (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX idx_admin_payment_methods_active ON admin_payment_methods(is_active);
 CREATE INDEX idx_admin_payment_methods_default ON admin_payment_methods(is_default) WHERE is_default = true;
 CREATE INDEX idx_admin_payment_methods_display_order ON admin_payment_methods(display_order);
@@ -56,11 +56,11 @@ CREATE TABLE IF NOT EXISTS manual_payments (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   payment_method_id UUID NOT NULL REFERENCES admin_payment_methods(id),
   
-  -- Vinculação com pedido ou assinatura (XOR constraint)
+  -- VinculaÃƒÂ§ÃƒÂ£o com pedido ou assinatura (XOR constraint)
   quote_id UUID REFERENCES quotes(id) ON DELETE SET NULL,
   subscription_id UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
   
-  -- Informações do pagamento
+  -- InformaÃƒÂ§ÃƒÂµes do pagamento
   amount DECIMAL(10,2) NOT NULL,
   currency TEXT NOT NULL DEFAULT 'BRL',
   payment_type TEXT NOT NULL CHECK (payment_type IN ('one_time', 'recurring')),
@@ -75,14 +75,14 @@ CREATE TABLE IF NOT EXISTS manual_payments (
   approved_at TIMESTAMPTZ,
   approved_by UUID REFERENCES auth.users(id),
   
-  -- Constraint: deve ter quote_id OU subscription_id, mas não ambos
+  -- Constraint: deve ter quote_id OU subscription_id, mas nÃƒÂ£o ambos
   CONSTRAINT payment_link_check CHECK (
     (quote_id IS NOT NULL AND subscription_id IS NULL) OR
     (quote_id IS NULL AND subscription_id IS NOT NULL)
   )
 );
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX idx_manual_payments_user ON manual_payments(user_id);
 CREATE INDEX idx_manual_payments_status ON manual_payments(status);
 CREATE INDEX idx_manual_payments_reference ON manual_payments(reference_number);
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS payment_files (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   payment_id UUID NOT NULL REFERENCES manual_payments(id) ON DELETE CASCADE,
   
-  -- Informações do arquivo
+  -- InformaÃƒÂ§ÃƒÂµes do arquivo
   file_name TEXT NOT NULL,
   file_path TEXT NOT NULL, -- Caminho no Supabase Storage
   file_size INTEGER NOT NULL, -- Tamanho em bytes
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS payment_files (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX idx_payment_files_payment ON payment_files(payment_id);
 CREATE INDEX idx_payment_files_uploaded_by ON payment_files(uploaded_by);
 CREATE INDEX idx_payment_files_created ON payment_files(created_at DESC);
@@ -130,13 +130,13 @@ CREATE TABLE IF NOT EXISTS payment_audit_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   payment_id UUID NOT NULL REFERENCES manual_payments(id) ON DELETE CASCADE,
   
-  -- Tipo de ação
+  -- Tipo de aÃƒÂ§ÃƒÂ£o
   action_type TEXT NOT NULL CHECK (action_type IN ('created', 'status_changed', 'file_uploaded', 'approved', 'rejected', 'info_requested')),
   
-  -- Quem executou a ação
+  -- Quem executou a aÃƒÂ§ÃƒÂ£o
   admin_id UUID REFERENCES auth.users(id),
   
-  -- Detalhes da mudança
+  -- Detalhes da mudanÃƒÂ§a
   old_status TEXT,
   new_status TEXT,
   notes TEXT,
@@ -144,13 +144,13 @@ CREATE TABLE IF NOT EXISTS payment_audit_log (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Índices para performance
+-- ÃƒÂndices para performance
 CREATE INDEX idx_payment_audit_payment ON payment_audit_log(payment_id, created_at DESC);
 CREATE INDEX idx_payment_audit_admin ON payment_audit_log(admin_id);
 CREATE INDEX idx_payment_audit_action ON payment_audit_log(action_type);
 
 -- =====================================================
--- 5. MODIFICAÇÃO - Adicionar payment_id à support_conversations
+-- 5. MODIFICAÃƒâ€¡ÃƒÆ’O - Adicionar payment_id ÃƒÂ  support_conversations
 -- =====================================================
 
 ALTER TABLE support_conversations 
@@ -159,10 +159,10 @@ ADD COLUMN IF NOT EXISTS payment_id UUID REFERENCES manual_payments(id) ON DELET
 CREATE INDEX IF NOT EXISTS idx_support_conversations_payment ON support_conversations(payment_id);
 
 -- =====================================================
--- 6. FUNÇÕES DO BANCO DE DADOS
+-- 6. FUNÃƒâ€¡Ãƒâ€¢ES DO BANCO DE DADOS
 -- =====================================================
 
--- Função para gerar número de referência único
+-- FunÃƒÂ§ÃƒÂ£o para gerar nÃƒÂºmero de referÃƒÂªncia ÃƒÂºnico
 CREATE OR REPLACE FUNCTION generate_payment_reference()
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -172,12 +172,12 @@ DECLARE
   v_exists BOOLEAN;
 BEGIN
   LOOP
-    -- Gera referência: PAY-YYYYMMDD-XXXX (XXXX = 4 dígitos aleatórios)
+    -- Gera referÃƒÂªncia: PAY-YYYYMMDD-XXXX (XXXX = 4 dÃƒÂ­gitos aleatÃƒÂ³rios)
     v_reference := 'PAY-' || 
                    to_char(now(), 'YYYYMMDD') || '-' || 
                    lpad(floor(random() * 10000)::text, 4, '0');
     
-    -- Verifica se já existe
+    -- Verifica se jÃƒÂ¡ existe
     SELECT EXISTS(
       SELECT 1 FROM manual_payments WHERE reference_number = v_reference
     ) INTO v_exists;
@@ -189,7 +189,7 @@ BEGIN
 END;
 $$;
 
--- Função para garantir apenas um método de pagamento padrão
+-- FunÃƒÂ§ÃƒÂ£o para garantir apenas um mÃƒÂ©todo de pagamento padrÃƒÂ£o
 CREATE OR REPLACE FUNCTION ensure_single_default_admin_payment_method()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -214,13 +214,13 @@ CREATE TRIGGER trigger_ensure_single_default_admin_payment_method
 -- 7. TRIGGERS
 -- =====================================================
 
--- Trigger para mudança de status de pagamento
+-- Trigger para mudanÃƒÂ§a de status de pagamento
 CREATE OR REPLACE FUNCTION trigger_payment_status_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Log de mudança de status
+  -- Log de mudanÃƒÂ§a de status
   IF OLD.status IS DISTINCT FROM NEW.status THEN
     INSERT INTO payment_audit_log (
       payment_id,
@@ -271,7 +271,7 @@ BEGIN
   FROM payment_files
   WHERE payment_id = NEW.payment_id;
   
-  -- Se este é o primeiro arquivo, atualiza status do pagamento
+  -- Se este ÃƒÂ© o primeiro arquivo, atualiza status do pagamento
   IF v_file_count = 1 THEN
     UPDATE manual_payments
     SET status = 'under_review'
@@ -303,25 +303,25 @@ CREATE TRIGGER first_file_upload
 -- 8. RLS POLICIES
 -- =====================================================
 
--- Admin Payment Methods: Qualquer um pode ver métodos ativos
+-- Admin Payment Methods: Qualquer um pode ver mÃƒÂ©todos ativos
 ALTER TABLE admin_payment_methods ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Qualquer um pode ver métodos de pagamento ativos"
+CREATE POLICY "Qualquer um pode ver mÃƒÂ©todos de pagamento ativos"
   ON admin_payment_methods FOR SELECT
   USING (is_active = true);
 
-CREATE POLICY "Admins podem gerenciar métodos de pagamento"
+CREATE POLICY "Admins podem gerenciar mÃƒÂ©todos de pagamento"
   ON admin_payment_methods FOR ALL
   USING (has_role(auth.uid(), 'admin'::app_role));
 
--- Manual Payments: Usuários veem seus próprios pagamentos
+-- Manual Payments: UsuÃƒÂ¡rios veem seus prÃƒÂ³prios pagamentos
 ALTER TABLE manual_payments ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Usuários veem seus próprios pagamentos"
+CREATE POLICY "UsuÃƒÂ¡rios veem seus prÃƒÂ³prios pagamentos"
   ON manual_payments FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Usuários podem criar seus próprios pagamentos"
+CREATE POLICY "UsuÃƒÂ¡rios podem criar seus prÃƒÂ³prios pagamentos"
   ON manual_payments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
@@ -333,10 +333,10 @@ CREATE POLICY "Admins podem atualizar todos os pagamentos"
   ON manual_payments FOR UPDATE
   USING (has_role(auth.uid(), 'admin'::app_role));
 
--- Payment Files: Usuários veem arquivos de seus próprios pagamentos
+-- Payment Files: UsuÃƒÂ¡rios veem arquivos de seus prÃƒÂ³prios pagamentos
 ALTER TABLE payment_files ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Usuários veem arquivos de seus próprios pagamentos"
+CREATE POLICY "UsuÃƒÂ¡rios veem arquivos de seus prÃƒÂ³prios pagamentos"
   ON payment_files FOR SELECT
   USING (
     EXISTS (
@@ -346,7 +346,7 @@ CREATE POLICY "Usuários veem arquivos de seus próprios pagamentos"
     )
   );
 
-CREATE POLICY "Usuários podem fazer upload em seus próprios pagamentos"
+CREATE POLICY "UsuÃƒÂ¡rios podem fazer upload em seus prÃƒÂ³prios pagamentos"
   ON payment_files FOR INSERT
   WITH CHECK (
     auth.uid() = uploaded_by
@@ -373,18 +373,18 @@ CREATE POLICY "Sistema pode inserir logs de auditoria"
   WITH CHECK (true);
 
 -- =====================================================
--- 9. COMENTÁRIOS
+-- 9. COMENTÃƒÂRIOS
 -- =====================================================
 
-COMMENT ON TABLE admin_payment_methods IS 'Métodos de pagamento configurados pelo admin (PIX da empresa, PagSeguro, etc)';
-COMMENT ON TABLE manual_payments IS 'Registros de pagamentos manuais aguardando verificação';
+COMMENT ON TABLE admin_payment_methods IS 'MÃƒÂ©todos de pagamento configurados pelo admin (PIX da empresa, PagSeguro, etc)';
+COMMENT ON TABLE manual_payments IS 'Registros de pagamentos manuais aguardando verificaÃƒÂ§ÃƒÂ£o';
 COMMENT ON TABLE payment_files IS 'Arquivos de comprovante de pagamento enviados pelos clientes';
-COMMENT ON TABLE payment_audit_log IS 'Log de auditoria de todas as ações em pagamentos';
+COMMENT ON TABLE payment_audit_log IS 'Log de auditoria de todas as aÃƒÂ§ÃƒÂµes em pagamentos';
 
-COMMENT ON COLUMN manual_payments.status IS 'pending: aguardando comprovante | under_review: em análise | requires_info: requer mais informações | approved: aprovado | rejected: rejeitado';
-COMMENT ON COLUMN manual_payments.payment_type IS 'one_time: pagamento único (quote) | recurring: pagamento recorrente (subscription)';
-COMMENT ON COLUMN payment_audit_log.action_type IS 'created: pagamento criado | status_changed: status alterado | file_uploaded: arquivo enviado | approved: aprovado | rejected: rejeitado | info_requested: informações solicitadas';
+COMMENT ON COLUMN manual_payments.status IS 'pending: aguardando comprovante | under_review: em anÃƒÂ¡lise | requires_info: requer mais informaÃƒÂ§ÃƒÂµes | approved: aprovado | rejected: rejeitado';
+COMMENT ON COLUMN manual_payments.payment_type IS 'one_time: pagamento ÃƒÂºnico (quote) | recurring: pagamento recorrente (subscription)';
+COMMENT ON COLUMN payment_audit_log.action_type IS 'created: pagamento criado | status_changed: status alterado | file_uploaded: arquivo enviado | approved: aprovado | rejected: rejeitado | info_requested: informaÃƒÂ§ÃƒÂµes solicitadas';
 
 -- =====================================================
--- FIM DA MIGRAÇÃO
+-- FIM DA MIGRAÃƒâ€¡ÃƒÆ’O
 -- =====================================================

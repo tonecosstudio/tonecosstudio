@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS chat_groups (
   -- Examples:
   -- Manual: null
   -- Assinantes: {"subscription_status": "active", "collection_id": "uuid", "plan": "premium"}
-  -- Coleção: {"collection_id": "uuid"}
-  -- Lançamentos: {"criteria": "all_users" | "previous_buyers"}
+  -- ColeÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: {"collection_id": "uuid"}
+  -- LanÃƒÆ’Ã‚Â§amentos: {"criteria": "all_users" | "previous_buyers"}
   -- Pedidos: {"status": ["pending", "processing"], "date_from": "2024-01-01", "date_to": "2024-12-31"}
   
   created_by UUID NOT NULL REFERENCES auth.users(id),
@@ -34,14 +34,14 @@ CREATE TABLE IF NOT EXISTS chat_groups (
 );
 
 -- Create partial unique index for non-deleted groups
-CREATE UNIQUE INDEX idx_chat_groups_name_active 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_groups_name_active 
 ON chat_groups(name) 
 WHERE deleted_at IS NULL;
 
 -- Create indexes for performance
-CREATE INDEX idx_chat_groups_type ON chat_groups(type) WHERE deleted_at IS NULL;
-CREATE INDEX idx_chat_groups_deleted_at ON chat_groups(deleted_at);
-CREATE INDEX idx_chat_groups_created_by ON chat_groups(created_by);
+CREATE INDEX IF NOT EXISTS idx_chat_groups_type ON chat_groups(type) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_chat_groups_deleted_at ON chat_groups(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_chat_groups_created_by ON chat_groups(created_by);
 
 -- Add comment to table
 COMMENT ON TABLE chat_groups IS 'Stores broadcast group definitions and membership criteria for the chat groups system';

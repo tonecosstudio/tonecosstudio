@@ -21,7 +21,8 @@ import {
   Layers,
 } from "lucide-react";
 import AdminCollections from "./AdminCollections";
-import AdminModelsAndFranchises from "./AdminModelsAndFranchises";
+import { AdminModelsContent } from "./AdminModels";
+import { AdminFranchisesContent } from "./AdminFranchises";
 import { PricingHierarchyView } from "@/components/admin/pricing-tiers/PricingHierarchyView";
 
 export default function AdminCollectionsHub() {
@@ -81,7 +82,22 @@ export default function AdminCollectionsHub() {
                 Organize o catálogo por franquias e gerencie modelos individuais (personagens)
               </p>
             </div>
-            <AdminModelsAndFranchises />
+            
+            {/* Sub-tabs para Modelos e Franquias */}
+            <Tabs defaultValue="models" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="models">Modelos</TabsTrigger>
+                <TabsTrigger value="franchises">Franquias</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="models" className="mt-6">
+                <AdminModelsContent />
+              </TabsContent>
+
+              <TabsContent value="franchises" className="mt-6">
+                <AdminFranchisesContent />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Tab 2: Coleções */}

@@ -1,11 +1,11 @@
 -- ============================================
--- Migration: Sistema de Custos e Análise Financeira por Coleção
+-- Migration: Sistema de Custos e AnÃƒÂ¡lise Financeira por ColeÃƒÂ§ÃƒÂ£o
 -- Data: 2026-02-15 15:00
--- Descrição: Adicionar custos de produção e métricas financeiras
+-- DescriÃƒÂ§ÃƒÂ£o: Adicionar custos de produÃƒÂ§ÃƒÂ£o e mÃƒÂ©tricas financeiras
 -- ============================================
 
 -- =====================================================
--- 1. ADICIONAR CAMPOS DE CUSTO NAS COLEÇÕES
+-- 1. ADICIONAR CAMPOS DE CUSTO NAS COLEÃƒâ€¡Ãƒâ€¢ES
 -- =====================================================
 
 ALTER TABLE collections
@@ -16,16 +16,16 @@ ADD COLUMN IF NOT EXISTS cost_shipping NUMERIC(10,2) DEFAULT 40.00,
 ADD COLUMN IF NOT EXISTS cost_other NUMERIC(10,2) DEFAULT 0.00,
 ADD COLUMN IF NOT EXISTS cost_notes TEXT;
 
--- Comentários
-COMMENT ON COLUMN collections.cost_material IS 'Custo de material/resina por peça';
-COMMENT ON COLUMN collections.cost_labor IS 'Custo de mão de obra (pintura, escultura)';
+-- ComentÃƒÂ¡rios
+COMMENT ON COLUMN collections.cost_material IS 'Custo de material/resina por peÃƒÂ§a';
+COMMENT ON COLUMN collections.cost_labor IS 'Custo de mÃƒÂ£o de obra (pintura, escultura)';
 COMMENT ON COLUMN collections.cost_packaging IS 'Custo de embalagem MDF';
-COMMENT ON COLUMN collections.cost_shipping IS 'Custo médio de frete';
+COMMENT ON COLUMN collections.cost_shipping IS 'Custo mÃƒÂ©dio de frete';
 COMMENT ON COLUMN collections.cost_other IS 'Outros custos (marketing, etc)';
-COMMENT ON COLUMN collections.cost_notes IS 'Observações sobre custos';
+COMMENT ON COLUMN collections.cost_notes IS 'ObservaÃƒÂ§ÃƒÂµes sobre custos';
 
 -- =====================================================
--- 2. FUNÇÃO: Calcular Custo Total de Produção
+-- 2. FUNÃƒâ€¡ÃƒÆ’O: Calcular Custo Total de ProduÃƒÂ§ÃƒÂ£o
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION calculate_production_cost(p_collection_id UUID)
@@ -47,15 +47,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION calculate_production_cost IS 'Calcula custo total de produção de uma peça';
+COMMENT ON FUNCTION calculate_production_cost IS 'Calcula custo total de produÃƒÂ§ÃƒÂ£o de uma peÃƒÂ§a';
 
 -- =====================================================
--- 3. FUNÇÃO: Análise Financeira Completa da Coleção
+-- 3. FUNÃƒâ€¡ÃƒÆ’O: AnÃƒÂ¡lise Financeira Completa da ColeÃƒÂ§ÃƒÂ£o
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION get_collection_financial_analysis(p_collection_id UUID)
 RETURNS TABLE (
-  -- Preços
+  -- PreÃƒÂ§os
   price_full NUMERIC,
   price_pix NUMERIC,
   deposit_amount NUMERIC,
@@ -80,13 +80,13 @@ RETURNS TABLE (
   tax_card_10x_store NUMERIC,
   tax_card_10x_client NUMERIC,
   
-  -- Lucro Líquido (com taxas)
+  -- Lucro LÃƒÂ­quido (com taxas)
   net_profit_pix NUMERIC,
   net_profit_card_6x NUMERIC,
   net_profit_card_10x_store NUMERIC,
   net_profit_card_10x_client NUMERIC,
   
-  -- Margens Líquidas
+  -- Margens LÃƒÂ­quidas
   net_margin_pix NUMERIC,
   net_margin_card_6x NUMERIC,
   net_margin_card_10x_store NUMERIC,
@@ -101,7 +101,7 @@ RETURNS TABLE (
   -- Breakeven
   breakeven_units NUMERIC,
   
-  -- Vendas (estatísticas)
+  -- Vendas (estatÃƒÂ­sticas)
   total_sales INTEGER,
   total_revenue NUMERIC,
   total_profit NUMERIC
@@ -120,14 +120,14 @@ DECLARE
   
   v_pix_discount NUMERIC;
 BEGIN
-  -- Buscar dados da coleção
+  -- Buscar dados da coleÃƒÂ§ÃƒÂ£o
   SELECT * INTO v_collection FROM collections WHERE id = p_collection_id;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Coleção não encontrada';
+    RAISE EXCEPTION 'ColeÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrada';
   END IF;
   
-  -- Buscar preços
+  -- Buscar preÃƒÂ§os
   SELECT * INTO v_pricing FROM get_collection_pricing(p_collection_id) LIMIT 1;
   
   -- Calcular custo total
@@ -140,7 +140,7 @@ BEGIN
   
   RETURN QUERY
   SELECT
-    -- Preços
+    -- PreÃƒÂ§os
     v_pricing.price_full,
     v_pricing.price_pix,
     v_pricing.deposit_amount,
@@ -165,13 +165,13 @@ BEGIN
     v_pricing.price_full * (v_tax_card_sale + v_tax_card_10x_store) as tax_card_10x_store,
     v_pricing.price_full * (v_tax_card_sale + v_tax_card_10x_client) as tax_card_10x_client,
     
-    -- Lucro Líquido
+    -- Lucro LÃƒÂ­quido
     v_pricing.price_pix - v_cost_total - (v_pricing.price_pix * v_tax_pix_rate) as net_profit_pix,
     v_pricing.price_full - v_cost_total - (v_pricing.price_full * (v_tax_card_sale + v_tax_card_6x)) as net_profit_card_6x,
     v_pricing.price_full - v_cost_total - (v_pricing.price_full * (v_tax_card_sale + v_tax_card_10x_store)) as net_profit_card_10x_store,
     (v_pricing.price_full * (1 + v_tax_card_10x_client)) - v_cost_total - (v_pricing.price_full * (v_tax_card_sale + v_tax_card_10x_client)) as net_profit_card_10x_client,
     
-    -- Margens Líquidas
+    -- Margens LÃƒÂ­quidas
     ROUND(((v_pricing.price_pix - v_cost_total - (v_pricing.price_pix * v_tax_pix_rate)) / NULLIF(v_pricing.price_pix, 0)) * 100, 2) as net_margin_pix,
     ROUND(((v_pricing.price_full - v_cost_total - (v_pricing.price_full * (v_tax_card_sale + v_tax_card_6x))) / NULLIF(v_pricing.price_full, 0)) * 100, 2) as net_margin_card_6x,
     ROUND(((v_pricing.price_full - v_cost_total - (v_pricing.price_full * (v_tax_card_sale + v_tax_card_10x_store))) / NULLIF(v_pricing.price_full, 0)) * 100, 2) as net_margin_card_10x_store,
@@ -197,10 +197,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION get_collection_financial_analysis IS 'Retorna análise financeira completa de uma coleção';
+COMMENT ON FUNCTION get_collection_financial_analysis IS 'Retorna anÃƒÂ¡lise financeira completa de uma coleÃƒÂ§ÃƒÂ£o';
 
 -- =====================================================
--- 4. VIEW: Resumo Financeiro de Todas as Coleções
+-- 4. VIEW: Resumo Financeiro de Todas as ColeÃƒÂ§ÃƒÂµes
 -- =====================================================
 
 CREATE OR REPLACE VIEW collections_financial_summary AS
@@ -210,7 +210,7 @@ SELECT
   c.slug,
   c.is_active,
   
-  -- Preços
+  -- PreÃƒÂ§os
   CASE 
     WHEN c.is_price_custom THEN c.price_full
     ELSE (SELECT value::NUMERIC FROM system_settings WHERE key = 'default_price_full')
@@ -259,13 +259,13 @@ SELECT
   
 FROM collections c;
 
-COMMENT ON VIEW collections_financial_summary IS 'Resumo financeiro de todas as coleções';
+COMMENT ON VIEW collections_financial_summary IS 'Resumo financeiro de todas as coleÃƒÂ§ÃƒÂµes';
 
 -- =====================================================
 -- 5. DADOS INICIAIS
 -- =====================================================
 
--- Atualizar coleções existentes com custos padrão
+-- Atualizar coleÃƒÂ§ÃƒÂµes existentes com custos padrÃƒÂ£o
 UPDATE collections
 SET 
   cost_material = 50.00,
@@ -283,7 +283,7 @@ WHERE cost_material IS NULL;
 GRANT SELECT ON collections_financial_summary TO authenticated;
 
 -- =====================================================
--- 7. ÍNDICES
+-- 7. ÃƒÂNDICES
 -- =====================================================
 
 CREATE INDEX IF NOT EXISTS idx_collections_costs ON collections(cost_material, cost_labor, cost_packaging);

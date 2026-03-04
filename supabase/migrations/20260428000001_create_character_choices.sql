@@ -9,7 +9,7 @@
 -- 1. CREATE CHARACTER_CHOICES TABLE
 -- =====================================================
 
-CREATE TABLE character_choices (
+CREATE TABLE IF NOT EXISTS character_choices (
   -- Primary key
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -84,36 +84,68 @@ CREATE TABLE character_choices (
   CONSTRAINT unique_active_choice_per_order UNIQUE (order_id, order_type)
 );
 
+-- Add missing columns if table already exists
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'previous_choice_id') THEN
+    ALTER TABLE character_choices ADD COLUMN previous_choice_id UUID REFERENCES character_choices(id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'change_reason') THEN
+    ALTER TABLE character_choices ADD COLUMN change_reason TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'change_count') THEN
+    ALTER TABLE character_choices ADD COLUMN change_count INTEGER NOT NULL DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'character_name') THEN
+    ALTER TABLE character_choices ADD COLUMN character_name TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'character_image_url') THEN
+    ALTER TABLE character_choices ADD COLUMN character_image_url TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'approved_by_name') THEN
+    ALTER TABLE character_choices ADD COLUMN approved_by_name TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'rejection_reason') THEN
+    ALTER TABLE character_choices ADD COLUMN rejection_reason TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'reminders_sent') THEN
+    ALTER TABLE character_choices ADD COLUMN reminders_sent INTEGER NOT NULL DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'character_choices' AND column_name = 'last_reminder_at') THEN
+    ALTER TABLE character_choices ADD COLUMN last_reminder_at TIMESTAMPTZ;
+  END IF;
+END $$;
+
 -- =====================================================
 -- 2. CREATE INDEXES FOR PERFORMANCE
 -- =====================================================
 
 -- Index for order lookups (most common query)
-CREATE INDEX idx_character_choices_order ON character_choices(order_id, order_type);
+CREATE INDEX IF NOT EXISTS idx_character_choices_order ON character_choices(order_id, order_type);
 
 -- Index for user lookups
-CREATE INDEX idx_character_choices_user ON character_choices(user_id);
+CREATE INDEX IF NOT EXISTS idx_character_choices_user ON character_choices(user_id);
 
 -- Index for status filtering
-CREATE INDEX idx_character_choices_status ON character_choices(status);
+CREATE INDEX IF NOT EXISTS idx_character_choices_status ON character_choices(status);
 
 -- Index for deadline queries (critical for reminder jobs)
-CREATE INDEX idx_character_choices_deadline ON character_choices(deadline) 
+CREATE INDEX IF NOT EXISTS idx_character_choices_deadline ON character_choices(deadline) 
   WHERE status = 'pending' AND deadline IS NOT NULL;
 
 -- Index for pending approvals (admin workflow)
-CREATE INDEX idx_character_choices_pending_approval ON character_choices(submitted_at) 
+CREATE INDEX IF NOT EXISTS idx_character_choices_pending_approval ON character_choices(submitted_at) 
   WHERE status = 'submitted';
 
 -- Index for collection lookups
-CREATE INDEX idx_character_choices_collection ON character_choices(collection_id);
+CREATE INDEX IF NOT EXISTS idx_character_choices_collection ON character_choices(collection_id);
 
 -- Index for character lookups
-CREATE INDEX idx_character_choices_character ON character_choices(character_id) 
+CREATE INDEX IF NOT EXISTS idx_character_choices_character ON character_choices(character_id) 
   WHERE character_id IS NOT NULL;
 
 -- Index for change history tracking
-CREATE INDEX idx_character_choices_previous ON character_choices(previous_choice_id) 
+CREATE INDEX IF NOT EXISTS idx_character_choices_previous ON character_choices(previous_choice_id) 
   WHERE previous_choice_id IS NOT NULL;
 
 -- =====================================================

@@ -1,133 +1,133 @@
--- Adicionar templates que usam variáveis SSOT (Single Source of Truth)
--- Todas as informações vêm de system_settings e são sempre atualizadas
+-- Adicionar templates que usam variÃƒÂ¡veis SSOT (Single Source of Truth)
+-- Todas as informaÃƒÂ§ÃƒÂµes vÃƒÂªm de system_settings e sÃƒÂ£o sempre atualizadas
 
 INSERT INTO quick_replies (category, title, message, display_order, is_active) VALUES
 
--- Template com informações de preço (SSOT)
-('duvida', 'Informações de Preço Atualizadas', 
-'Olá {{NOME_CLIENTE}}! 😊
+-- Template com informaÃƒÂ§ÃƒÂµes de preÃƒÂ§o (SSOT)
+('duvida', 'InformaÃƒÂ§ÃƒÂµes de PreÃƒÂ§o Atualizadas', 
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸ËœÅ 
 
-Nossos preços atuais são:
-💰 Preço normal: {{PRECO_PADRAO}}
-💚 Preço no PIX: {{PRECO_PIX}} ({{DESCONTO_PIX}} de desconto = {{DESCONTO_PIX_VALOR}} de economia!)
-📥 Entrada: {{VALOR_ENTRADA}}
+Nossos preÃƒÂ§os atuais sÃƒÂ£o:
+Ã°Å¸â€™Â° PreÃƒÂ§o normal: {{PRECO_PADRAO}}
+Ã°Å¸â€™Å¡ PreÃƒÂ§o no PIX: {{PRECO_PIX}} ({{DESCONTO_PIX}} de desconto = {{DESCONTO_PIX_VALOR}} de economia!)
+Ã°Å¸â€œÂ¥ Entrada: {{VALOR_ENTRADA}}
 
-Pagando no PIX você economiza {{DESCONTO_PIX_VALOR}}! 🎉', 
+Pagando no PIX vocÃƒÂª economiza {{DESCONTO_PIX_VALOR}}! Ã°Å¸Å½â€°', 
 50, true),
 
--- Template com limite de produção (SSOT)
-('duvida', 'Vagas Disponíveis', 
-'Olá {{NOME_CLIENTE}}! 
+-- Template com limite de produÃƒÂ§ÃƒÂ£o (SSOT)
+('duvida', 'Vagas DisponÃƒÂ­veis', 
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! 
 
-📊 Status de Produção do Mês:
-• Limite mensal: {{LIMITE_MENSAL}}
-• Já vendidas: {{VENDAS_MES_ATUAL}}
-• Vagas restantes: {{VAGAS_DISPONIVEIS}}
-• Percentual ocupado: {{PERCENTUAL_VENDIDO}}
+Ã°Å¸â€œÅ  Status de ProduÃƒÂ§ÃƒÂ£o do MÃƒÂªs:
+Ã¢â‚¬Â¢ Limite mensal: {{LIMITE_MENSAL}}
+Ã¢â‚¬Â¢ JÃƒÂ¡ vendidas: {{VENDAS_MES_ATUAL}}
+Ã¢â‚¬Â¢ Vagas restantes: {{VAGAS_DISPONIVEIS}}
+Ã¢â‚¬Â¢ Percentual ocupado: {{PERCENTUAL_VENDIDO}}
 
-As vendas abrem todo {{DIA_ABERTURA_VENDAS}} do mês! 📅
+As vendas abrem todo {{DIA_ABERTURA_VENDAS}} do mÃƒÂªs! Ã°Å¸â€œâ€¦
 
-Garanta sua vaga enquanto há disponibilidade! 🎯', 
+Garanta sua vaga enquanto hÃƒÂ¡ disponibilidade! Ã°Å¸Å½Â¯', 
 51, true),
 
--- Template completo com todas as informações (SSOT + Cliente)
+-- Template completo com todas as informaÃƒÂ§ÃƒÂµes (SSOT + Cliente)
 ('pedido', 'Resumo Completo do Pedido', 
-'Olá {{NOME_CLIENTE}}! 👋
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸â€˜â€¹
 
-📦 INFORMAÇÕES DO SEU PEDIDO:
-• Pedido: {{ULTIMO_PEDIDO_ID}}
-• Status: {{ULTIMO_PEDIDO_STATUS}}
-• Rastreio: {{ULTIMO_PEDIDO_RASTREIO}}
-• Data: {{ULTIMO_PEDIDO_DATA}}
+Ã°Å¸â€œÂ¦ INFORMAÃƒâ€¡Ãƒâ€¢ES DO SEU PEDIDO:
+Ã¢â‚¬Â¢ Pedido: {{ULTIMO_PEDIDO_ID}}
+Ã¢â‚¬Â¢ Status: {{ULTIMO_PEDIDO_STATUS}}
+Ã¢â‚¬Â¢ Rastreio: {{ULTIMO_PEDIDO_RASTREIO}}
+Ã¢â‚¬Â¢ Data: {{ULTIMO_PEDIDO_DATA}}
 
-💰 VALORES ATUAIS:
-• Preço normal: {{PRECO_PADRAO}}
-• Preço PIX: {{PRECO_PIX}} (economize {{DESCONTO_PIX_VALOR}}!)
-• Entrada: {{VALOR_ENTRADA}}
+Ã°Å¸â€™Â° VALORES ATUAIS:
+Ã¢â‚¬Â¢ PreÃƒÂ§o normal: {{PRECO_PADRAO}}
+Ã¢â‚¬Â¢ PreÃƒÂ§o PIX: {{PRECO_PIX}} (economize {{DESCONTO_PIX_VALOR}}!)
+Ã¢â‚¬Â¢ Entrada: {{VALOR_ENTRADA}}
 
-📊 DISPONIBILIDADE:
-• Vagas restantes este mês: {{VAGAS_DISPONIVEIS}}
-• Vendas abrem: {{DIA_ABERTURA_VENDAS}}
+Ã°Å¸â€œÅ  DISPONIBILIDADE:
+Ã¢â‚¬Â¢ Vagas restantes este mÃƒÂªs: {{VAGAS_DISPONIVEIS}}
+Ã¢â‚¬Â¢ Vendas abrem: {{DIA_ABERTURA_VENDAS}}
 
-Alguma dúvida? Estou aqui para ajudar! 😊', 
+Alguma dÃƒÂºvida? Estou aqui para ajudar! Ã°Å¸ËœÅ ', 
 52, true),
 
--- Template de urgência com vagas
-('pedido', 'Últimas Vagas do Mês', 
-'⚠️ ATENÇÃO {{NOME_CLIENTE}}!
+-- Template de urgÃƒÂªncia com vagas
+('pedido', 'ÃƒÅ¡ltimas Vagas do MÃƒÂªs', 
+'Ã¢Å¡Â Ã¯Â¸Â ATENÃƒâ€¡ÃƒÆ’O {{NOME_CLIENTE}}!
 
-Estamos com {{VAGAS_DISPONIVEIS}} disponíveis este mês!
-Já foram vendidas {{VENDAS_MES_ATUAL}} de {{LIMITE_MENSAL}}.
+Estamos com {{VAGAS_DISPONIVEIS}} disponÃƒÂ­veis este mÃƒÂªs!
+JÃƒÂ¡ foram vendidas {{VENDAS_MES_ATUAL}} de {{LIMITE_MENSAL}}.
 
-Isso representa {{PERCENTUAL_VENDIDO}} do limite mensal! 📊
+Isso representa {{PERCENTUAL_VENDIDO}} do limite mensal! Ã°Å¸â€œÅ 
 
-💚 Aproveite o desconto PIX:
+Ã°Å¸â€™Å¡ Aproveite o desconto PIX:
 De {{PRECO_PADRAO}} por apenas {{PRECO_PIX}}
 Economia de {{DESCONTO_PIX_VALOR}}!
 
-Garanta sua vaga agora! As próximas vendas só abrem no {{DIA_ABERTURA_VENDAS}} do próximo mês. 🎯', 
+Garanta sua vaga agora! As prÃƒÂ³ximas vendas sÃƒÂ³ abrem no {{DIA_ABERTURA_VENDAS}} do prÃƒÂ³ximo mÃƒÂªs. Ã°Å¸Å½Â¯', 
 53, true),
 
--- Template de promoção PIX
+-- Template de promoÃƒÂ§ÃƒÂ£o PIX
 ('pagamento', 'Desconto PIX Especial', 
-'Olá {{NOME_CLIENTE}}! 💚
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸â€™Å¡
 
-Temos uma condição especial para pagamento no PIX:
+Temos uma condiÃƒÂ§ÃƒÂ£o especial para pagamento no PIX:
 
-💰 Preço normal: {{PRECO_PADRAO}}
-💚 Preço no PIX: {{PRECO_PIX}}
-🎉 Você economiza: {{DESCONTO_PIX_VALOR}} ({{DESCONTO_PIX}})!
+Ã°Å¸â€™Â° PreÃƒÂ§o normal: {{PRECO_PADRAO}}
+Ã°Å¸â€™Å¡ PreÃƒÂ§o no PIX: {{PRECO_PIX}}
+Ã°Å¸Å½â€° VocÃƒÂª economiza: {{DESCONTO_PIX_VALOR}} ({{DESCONTO_PIX}})!
 
-📥 Entrada de apenas {{VALOR_ENTRADA}}
+Ã°Å¸â€œÂ¥ Entrada de apenas {{VALOR_ENTRADA}}
 
-O desconto PIX é aplicado automaticamente no checkout! 
+O desconto PIX ÃƒÂ© aplicado automaticamente no checkout! 
 
-Quer prosseguir com o pagamento? 😊', 
+Quer prosseguir com o pagamento? Ã°Å¸ËœÅ ', 
 54, true),
 
--- Template de assinatura com preços
+-- Template de assinatura com preÃƒÂ§os
 ('duvida', 'Planos de Assinatura', 
-'Olá {{NOME_CLIENTE}}! 
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! 
 
-📦 ASSINATURA DE COLEÇÕES:
+Ã°Å¸â€œÂ¦ ASSINATURA DE COLEÃƒâ€¡Ãƒâ€¢ES:
 
 Sua assinatura atual: {{ASSINATURA_PLANO}}
 Status: {{ASSINATURA_STATUS}}
 
-💰 VALORES PARA NOVAS ASSINATURAS:
-• Preço por peça: {{PRECO_PADRAO}}
-• No PIX: {{PRECO_PIX}} ({{DESCONTO_PIX}} OFF)
-• Entrada: {{VALOR_ENTRADA}}
+Ã°Å¸â€™Â° VALORES PARA NOVAS ASSINATURAS:
+Ã¢â‚¬Â¢ PreÃƒÂ§o por peÃƒÂ§a: {{PRECO_PADRAO}}
+Ã¢â‚¬Â¢ No PIX: {{PRECO_PIX}} ({{DESCONTO_PIX}} OFF)
+Ã¢â‚¬Â¢ Entrada: {{VALOR_ENTRADA}}
 
-📊 Disponibilidade: {{VAGAS_DISPONIVEIS}} este mês
+Ã°Å¸â€œÅ  Disponibilidade: {{VAGAS_DISPONIVEIS}} este mÃƒÂªs
 
-Quer conhecer nossos planos? 🎯', 
+Quer conhecer nossos planos? Ã°Å¸Å½Â¯', 
 55, true),
 
--- Template de informações gerais
-('duvida', 'Informações Gerais', 
-'Olá {{NOME_CLIENTE}}! 😊
+-- Template de informaÃƒÂ§ÃƒÂµes gerais
+('duvida', 'InformaÃƒÂ§ÃƒÂµes Gerais', 
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸ËœÅ 
 
-📋 INFORMAÇÕES ATUALIZADAS:
+Ã°Å¸â€œâ€¹ INFORMAÃƒâ€¡Ãƒâ€¢ES ATUALIZADAS:
 
-💰 PREÇOS:
-• Normal: {{PRECO_PADRAO}}
-• PIX ({{DESCONTO_PIX}} OFF): {{PRECO_PIX}}
-• Entrada: {{VALOR_ENTRADA}}
+Ã°Å¸â€™Â° PREÃƒâ€¡OS:
+Ã¢â‚¬Â¢ Normal: {{PRECO_PADRAO}}
+Ã¢â‚¬Â¢ PIX ({{DESCONTO_PIX}} OFF): {{PRECO_PIX}}
+Ã¢â‚¬Â¢ Entrada: {{VALOR_ENTRADA}}
 
-📊 PRODUÇÃO:
-• Limite mensal: {{LIMITE_MENSAL}}
-• Vagas disponíveis: {{VAGAS_DISPONIVEIS}}
-• Abertura de vendas: {{DIA_ABERTURA_VENDAS}}
+Ã°Å¸â€œÅ  PRODUÃƒâ€¡ÃƒÆ’O:
+Ã¢â‚¬Â¢ Limite mensal: {{LIMITE_MENSAL}}
+Ã¢â‚¬Â¢ Vagas disponÃƒÂ­veis: {{VAGAS_DISPONIVEIS}}
+Ã¢â‚¬Â¢ Abertura de vendas: {{DIA_ABERTURA_VENDAS}}
 
-📦 SEU ÚLTIMO PEDIDO:
-• ID: {{ULTIMO_PEDIDO_ID}}
-• Status: {{ULTIMO_PEDIDO_STATUS}}
+Ã°Å¸â€œÂ¦ SEU ÃƒÅ¡LTIMO PEDIDO:
+Ã¢â‚¬Â¢ ID: {{ULTIMO_PEDIDO_ID}}
+Ã¢â‚¬Â¢ Status: {{ULTIMO_PEDIDO_STATUS}}
 
-Como posso ajudar? 🎯', 
+Como posso ajudar? Ã°Å¸Å½Â¯', 
 56, true)
 
 ON CONFLICT (id) DO NOTHING;
 
--- Comentário
-COMMENT ON TABLE quick_replies IS 'Templates de respostas rápidas com suporte a variáveis SSOT (Single Source of Truth)';
+-- ComentÃƒÂ¡rio
+COMMENT ON TABLE quick_replies IS 'Templates de respostas rÃƒÂ¡pidas com suporte a variÃƒÂ¡veis SSOT (Single Source of Truth)';

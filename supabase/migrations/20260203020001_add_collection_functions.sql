@@ -1,9 +1,9 @@
--- Migration: Funções Automáticas para Coleções
--- Purpose: Atualização automática de status e notificações
+-- Migration: FunÃƒÂ§ÃƒÂµes AutomÃƒÂ¡ticas para ColeÃƒÂ§ÃƒÂµes
+-- Purpose: AtualizaÃƒÂ§ÃƒÂ£o automÃƒÂ¡tica de status e notificaÃƒÂ§ÃƒÂµes
 -- Date: 2026-02-03
 
 -- ============================================
--- FUNÇÃO 1: Atualizar Status Automaticamente
+-- FUNÃƒâ€¡ÃƒÆ’O 1: Atualizar Status Automaticamente
 -- ============================================
 
 CREATE OR REPLACE FUNCTION auto_update_character_status()
@@ -11,7 +11,7 @@ RETURNS void AS $$
 DECLARE
   char_record RECORD;
 BEGIN
-  -- Atualizar para 'revealed' se passou da data de revelação
+  -- Atualizar para 'revealed' se passou da data de revelaÃƒÂ§ÃƒÂ£o
   FOR char_record IN 
     SELECT * FROM collection_characters
     WHERE status = 'upcoming'
@@ -30,7 +30,7 @@ BEGIN
     INSERT INTO collection_events (collection_id, character_id, event_type, old_status, new_status)
     VALUES (char_record.collection_id, char_record.id, 'reveal', 'upcoming', 'revealed');
     
-    -- Criar notificações para assinantes (se ainda não enviou)
+    -- Criar notificaÃƒÂ§ÃƒÂµes para assinantes (se ainda nÃƒÂ£o enviou)
     IF NOT char_record.reveal_notification_sent THEN
       INSERT INTO collection_notifications (user_id, collection_id, character_id, type, title, message, scheduled_for)
       SELECT 
@@ -38,8 +38,8 @@ BEGIN
         char_record.collection_id,
         char_record.id,
         'reveal',
-        'Novo personagem revelado! 🎉',
-        format('O personagem "%s" da sua coleção foi revelado! Confira agora.', char_record.name),
+        'Novo personagem revelado! Ã°Å¸Å½â€°',
+        format('O personagem "%s" da sua coleÃƒÂ§ÃƒÂ£o foi revelado! Confira agora.', char_record.name),
         now()
       FROM subscriptions s
       WHERE s.collection_id = char_record.collection_id
@@ -52,7 +52,7 @@ BEGIN
     END IF;
   END LOOP;
   
-  -- Atualizar para 'released' se passou da data de lançamento
+  -- Atualizar para 'released' se passou da data de lanÃƒÂ§amento
   FOR char_record IN 
     SELECT * FROM collection_characters
     WHERE status = 'revealed'
@@ -71,7 +71,7 @@ BEGIN
     INSERT INTO collection_events (collection_id, character_id, event_type, old_status, new_status)
     VALUES (char_record.collection_id, char_record.id, 'release', 'revealed', 'released');
     
-    -- Criar notificações para assinantes (se ainda não enviou)
+    -- Criar notificaÃƒÂ§ÃƒÂµes para assinantes (se ainda nÃƒÂ£o enviou)
     IF NOT char_record.release_notification_sent THEN
       INSERT INTO collection_notifications (user_id, collection_id, character_id, type, title, message, scheduled_for)
       SELECT 
@@ -79,8 +79,8 @@ BEGIN
         char_record.collection_id,
         char_record.id,
         'release',
-        'Personagem disponível! 🚀',
-        format('O personagem "%s" está disponível para entrega! Prepare-se para recebê-lo.', char_record.name),
+        'Personagem disponÃƒÂ­vel! Ã°Å¸Å¡â‚¬',
+        format('O personagem "%s" estÃƒÂ¡ disponÃƒÂ­vel para entrega! Prepare-se para recebÃƒÂª-lo.', char_record.name),
         now()
       FROM subscriptions s
       WHERE s.collection_id = char_record.collection_id
@@ -96,7 +96,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- FUNÇÃO 2: Calcular Próximo Lançamento
+-- FUNÃƒâ€¡ÃƒÆ’O 2: Calcular PrÃƒÂ³ximo LanÃƒÂ§amento
 -- ============================================
 
 CREATE OR REPLACE FUNCTION get_next_release(p_collection_id UUID DEFAULT NULL)
@@ -132,7 +132,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- FUNÇÃO 3: Validar Coleção
+-- FUNÃƒâ€¡ÃƒÆ’O 3: Validar ColeÃƒÂ§ÃƒÂ£o
 -- ============================================
 
 CREATE OR REPLACE FUNCTION validate_collection(p_collection_id UUID)
@@ -146,15 +146,15 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM collection_characters WHERE collection_id = p_collection_id) THEN
     RETURN QUERY SELECT 
       'no_characters'::TEXT, 
-      'Coleção sem personagens cadastrados'::TEXT, 
+      'ColeÃƒÂ§ÃƒÂ£o sem personagens cadastrados'::TEXT, 
       'critical'::TEXT;
   END IF;
   
-  -- Verificar personagens sem data de lançamento
+  -- Verificar personagens sem data de lanÃƒÂ§amento
   RETURN QUERY
   SELECT 
     'missing_release_date'::TEXT,
-    format('Personagem "%s" (#%s) sem data de lançamento', name, release_order)::TEXT,
+    format('Personagem "%s" (#%s) sem data de lanÃƒÂ§amento', name, release_order)::TEXT,
     'warning'::TEXT
   FROM collection_characters
   WHERE collection_id = p_collection_id
@@ -175,7 +175,7 @@ BEGIN
   RETURN QUERY
   SELECT 
     'date_conflict'::TEXT,
-    format('Personagens "%s" e "%s" têm a mesma data de lançamento (%s)', c1.name, c2.name, c1.release_date::TEXT)::TEXT,
+    format('Personagens "%s" e "%s" tÃƒÂªm a mesma data de lanÃƒÂ§amento (%s)', c1.name, c2.name, c1.release_date::TEXT)::TEXT,
     'warning'::TEXT
   FROM collection_characters c1
   JOIN collection_characters c2 ON c1.collection_id = c2.collection_id 
@@ -188,7 +188,7 @@ BEGIN
   RETURN QUERY
   SELECT 
     'past_date'::TEXT,
-    format('Personagem "%s" tem data no passado (%s) mas status é "%s"', name, release_date::TEXT, status)::TEXT,
+    format('Personagem "%s" tem data no passado (%s) mas status ÃƒÂ© "%s"', name, release_date::TEXT, status)::TEXT,
     'warning'::TEXT
   FROM collection_characters
   WHERE collection_id = p_collection_id
@@ -198,7 +198,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- FUNÇÃO 4: Obter Estatísticas da Coleção
+-- FUNÃƒâ€¡ÃƒÆ’O 4: Obter EstatÃƒÂ­sticas da ColeÃƒÂ§ÃƒÂ£o
 -- ============================================
 
 CREATE OR REPLACE FUNCTION get_collection_stats(p_collection_id UUID)
@@ -232,7 +232,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- FUNÇÃO 5: Marcar Notificação como Lida
+-- FUNÃƒâ€¡ÃƒÆ’O 5: Marcar NotificaÃƒÂ§ÃƒÂ£o como Lida
 -- ============================================
 
 CREATE OR REPLACE FUNCTION mark_notification_read(p_notification_id UUID)
@@ -248,11 +248,11 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- COMENTÁRIOS
+-- COMENTÃƒÂRIOS
 -- ============================================
 
 COMMENT ON FUNCTION auto_update_character_status() IS 'Atualiza automaticamente o status dos personagens baseado nas datas';
-COMMENT ON FUNCTION get_next_release(UUID) IS 'Retorna o próximo personagem a ser lançado';
-COMMENT ON FUNCTION validate_collection(UUID) IS 'Valida uma coleção e retorna problemas encontrados';
-COMMENT ON FUNCTION get_collection_stats(UUID) IS 'Retorna estatísticas de uma coleção';
-COMMENT ON FUNCTION mark_notification_read(UUID) IS 'Marca uma notificação como lida';
+COMMENT ON FUNCTION get_next_release(UUID) IS 'Retorna o prÃƒÂ³ximo personagem a ser lanÃƒÂ§ado';
+COMMENT ON FUNCTION validate_collection(UUID) IS 'Valida uma coleÃƒÂ§ÃƒÂ£o e retorna problemas encontrados';
+COMMENT ON FUNCTION get_collection_stats(UUID) IS 'Retorna estatÃƒÂ­sticas de uma coleÃƒÂ§ÃƒÂ£o';
+COMMENT ON FUNCTION mark_notification_read(UUID) IS 'Marca uma notificaÃƒÂ§ÃƒÂ£o como lida';

@@ -147,4 +147,4 @@ FROM pg_policies
 WHERE tablename = 'chat_group_messages'
 ORDER BY cmd;
 
-SELECT '✅ Migration applied successfully. PostgREST notified to reload.' as status;
+SELECT 'Ã¢Å“â€¦ Migration applied successfully. PostgREST notified to reload.' as status;

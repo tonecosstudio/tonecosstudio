@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { ValidationFeedback } from "@/components/ui/validation-feedback";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
@@ -65,7 +66,8 @@ function fmtDate(iso: string) {
   }
 }
 
-export default function AdminModels() {
+// Componente interno sem layout (para uso em AdminModelsAndFranchises)
+export function AdminModelsContent() {
   const { toast } = useToast();
   const qc = useQueryClient();
   
@@ -418,5 +420,14 @@ export default function AdminModels() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Componente padrão com layout (para uso standalone)
+export default function AdminModels() {
+  return (
+    <AdminLayout>
+      <AdminModelsContent />
+    </AdminLayout>
   );
 }

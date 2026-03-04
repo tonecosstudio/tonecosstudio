@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_models_category ON public.models(category);
 CREATE INDEX IF NOT EXISTS idx_models_subcategory ON public.models(subcategory);
 CREATE INDEX IF NOT EXISTS idx_models_franchise ON public.models(franchise);
 
--- Dynamic “fixed” franchise map (canonical table)
+-- Dynamic Ã¢â‚¬Å“fixedÃ¢â‚¬Â franchise map (canonical table)
 CREATE TABLE IF NOT EXISTS public.franchises (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at timestamptz NOT NULL DEFAULT now(),

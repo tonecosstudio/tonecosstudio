@@ -2,7 +2,7 @@
 -- CORRIGIR TODAS AS TABELAS DE CHAT
 -- =====================================================
 -- Problema: Erro 406 em chat_groups, chat_group_members, etc.
--- Solução: Aplicar políticas abertas para todas as tabelas
+-- SoluÃƒÂ§ÃƒÂ£o: Aplicar polÃƒÂ­ticas abertas para todas as tabelas
 -- =====================================================
 
 -- =====================================================
@@ -46,10 +46,10 @@ CREATE POLICY "open_access_chat_group_attachments" ON chat_group_attachments
   WITH CHECK (true);
 
 -- =====================================================
--- VERIFICAR TODAS AS POLÍTICAS
+-- VERIFICAR TODAS AS POLÃƒÂTICAS
 -- =====================================================
 SELECT 
-  '✅ POLÍTICAS APLICADAS' as status,
+  'Ã¢Å“â€¦ POLÃƒÂTICAS APLICADAS' as status,
   tablename,
   policyname,
   cmd,
@@ -62,6 +62,6 @@ ORDER BY tablename, cmd;
 -- RESUMO
 -- =====================================================
 SELECT 
-  '🎉 CORREÇÃO APLICADA!' as titulo,
-  'Todas as tabelas de chat agora estão abertas' as info,
-  'Tente acessar a página novamente' as instrucao;
+  'Ã°Å¸Å½â€° CORREÃƒâ€¡ÃƒÆ’O APLICADA!' as titulo,
+  'Todas as tabelas de chat agora estÃƒÂ£o abertas' as info,
+  'Tente acessar a pÃƒÂ¡gina novamente' as instrucao;

@@ -1,5 +1,5 @@
 -- ============================================
--- SISTEMA DE WISHLIST, NOTIFICAÇÕES E CUPONS
+-- SISTEMA DE WISHLIST, NOTIFICAÃƒâ€¡Ãƒâ€¢ES E CUPONS
 -- ============================================
 
 -- ============================================
@@ -44,7 +44,7 @@ CREATE POLICY "admins_view_all_wishlists"
   );
 
 -- ============================================
--- 2. NOTIFICAÇÕES
+-- 2. NOTIFICAÃƒâ€¡Ãƒâ€¢ES
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS notifications (
@@ -52,19 +52,19 @@ CREATE TABLE IF NOT EXISTS notifications (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   type TEXT NOT NULL CHECK (type IN (
-    'order_update',      -- Atualização de pedido
-    'quote_response',    -- Resposta de orçamento
+    'order_update',      -- AtualizaÃƒÂ§ÃƒÂ£o de pedido
+    'quote_response',    -- Resposta de orÃƒÂ§amento
     'new_model',         -- Novo modelo adicionado
-    'wishlist_available',-- Item da wishlist disponível
+    'wishlist_available',-- Item da wishlist disponÃƒÂ­vel
     'badge_earned',      -- Badge conquistado
-    'level_up',          -- Subiu de nível
-    'system',            -- Notificação do sistema
-    'promotion'          -- Promoção/Marketing
+    'level_up',          -- Subiu de nÃƒÂ­vel
+    'system',            -- NotificaÃƒÂ§ÃƒÂ£o do sistema
+    'promotion'          -- PromoÃƒÂ§ÃƒÂ£o/Marketing
   )),
   
   title TEXT NOT NULL,
   message TEXT NOT NULL,
-  link TEXT, -- URL para onde a notificação leva
+  link TEXT, -- URL para onde a notificaÃƒÂ§ÃƒÂ£o leva
   
   is_read BOOLEAN DEFAULT false,
   read_at TIMESTAMPTZ,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   metadata JSONB DEFAULT '{}',
   
   created_at TIMESTAMPTZ DEFAULT now(),
-  expires_at TIMESTAMPTZ -- Notificações podem expirar
+  expires_at TIMESTAMPTZ -- NotificaÃƒÂ§ÃƒÂµes podem expirar
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
@@ -122,7 +122,7 @@ CREATE POLICY "admins_manage_notifications"
     )
   );
 
--- Função para marcar notificação como lida
+-- FunÃƒÂ§ÃƒÂ£o para marcar notificaÃƒÂ§ÃƒÂ£o como lida
 CREATE OR REPLACE FUNCTION mark_notification_as_read(notification_id UUID)
 RETURNS VOID AS $$
 BEGIN
@@ -132,7 +132,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Função para marcar todas como lidas
+-- FunÃƒÂ§ÃƒÂ£o para marcar todas como lidas
 CREATE OR REPLACE FUNCTION mark_all_notifications_as_read()
 RETURNS VOID AS $$
 BEGIN
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS coupons (
   discount_type TEXT NOT NULL CHECK (discount_type IN ('percentage', 'fixed_amount')),
   discount_value DECIMAL(10,2) NOT NULL CHECK (discount_value > 0),
   
-  -- Valor mínimo do pedido
+  -- Valor mÃƒÂ­nimo do pedido
   min_order_value DECIMAL(10,2) DEFAULT 0,
   
   -- Limites de uso
@@ -164,9 +164,9 @@ CREATE TABLE IF NOT EXISTS coupons (
   max_uses_per_user INTEGER DEFAULT 1,
   current_uses INTEGER DEFAULT 0,
   
-  -- Restrições
+  -- RestriÃƒÂ§ÃƒÂµes
   applicable_to TEXT, -- 'all', 'category', 'franchise', 'model'
-  applicable_ids TEXT[], -- IDs específicos se aplicável
+  applicable_ids TEXT[], -- IDs especÃƒÂ­ficos se aplicÃƒÂ¡vel
   
   -- Validade
   valid_from TIMESTAMPTZ DEFAULT now(),
@@ -204,7 +204,7 @@ CREATE INDEX IF NOT EXISTS idx_coupon_usage_used_at ON coupon_usage(used_at DESC
 -- RLS para coupons
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 
--- Usuários podem ver cupons ativos
+-- UsuÃƒÂ¡rios podem ver cupons ativos
 DROP POLICY IF EXISTS "users_view_active_coupons" ON coupons;
 CREATE POLICY "users_view_active_coupons"
   ON coupons FOR SELECT
@@ -262,7 +262,7 @@ CREATE POLICY "admins_view_all_coupon_usage"
     )
   );
 
--- Função para validar cupom
+-- FunÃƒÂ§ÃƒÂ£o para validar cupom
 CREATE OR REPLACE FUNCTION validate_coupon(
   coupon_code TEXT,
   user_id_param UUID,
@@ -287,17 +287,17 @@ BEGIN
   AND valid_from <= now()
   AND (valid_until IS NULL OR valid_until >= now());
   
-  -- Cupom não encontrado ou inválido
+  -- Cupom nÃƒÂ£o encontrado ou invÃƒÂ¡lido
   IF coupon_record IS NULL THEN
-    RETURN QUERY SELECT false, 'Cupom inválido ou expirado'::TEXT, 0::DECIMAL, NULL::UUID;
+    RETURN QUERY SELECT false, 'Cupom invÃƒÂ¡lido ou expirado'::TEXT, 0::DECIMAL, NULL::UUID;
     RETURN;
   END IF;
   
-  -- Verificar valor mínimo
+  -- Verificar valor mÃƒÂ­nimo
   IF order_value_param < coupon_record.min_order_value THEN
     RETURN QUERY SELECT 
       false, 
-      'Valor mínimo do pedido: R$ ' || coupon_record.min_order_value::TEXT,
+      'Valor mÃƒÂ­nimo do pedido: R$ ' || coupon_record.min_order_value::TEXT,
       0::DECIMAL,
       NULL::UUID;
     RETURN;
@@ -309,14 +309,14 @@ BEGIN
     RETURN;
   END IF;
   
-  -- Verificar limite por usuário
+  -- Verificar limite por usuÃƒÂ¡rio
   SELECT COUNT(*) INTO user_usage_count
   FROM coupon_usage
   WHERE coupon_id = coupon_record.id
   AND user_id = user_id_param;
   
   IF user_usage_count >= coupon_record.max_uses_per_user THEN
-    RETURN QUERY SELECT false, 'Você já usou este cupom'::TEXT, 0::DECIMAL, NULL::UUID;
+    RETURN QUERY SELECT false, 'VocÃƒÂª jÃƒÂ¡ usou este cupom'::TEXT, 0::DECIMAL, NULL::UUID;
     RETURN;
   END IF;
   
@@ -330,12 +330,12 @@ BEGIN
       discount := coupon_record.discount_value;
     END IF;
     
-    -- Desconto não pode ser maior que o valor do pedido
+    -- Desconto nÃƒÂ£o pode ser maior que o valor do pedido
     IF discount > order_value_param THEN
       discount := order_value_param;
     END IF;
     
-    RETURN QUERY SELECT true, 'Cupom válido'::TEXT, discount, coupon_record.id;
+    RETURN QUERY SELECT true, 'Cupom vÃƒÂ¡lido'::TEXT, discount, coupon_record.id;
   END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -365,5 +365,5 @@ CREATE TRIGGER trigger_coupons_updated_at
   EXECUTE FUNCTION set_updated_at();
 
 -- ============================================
--- CONCLUÍDO!
+-- CONCLUÃƒÂDO!
 -- ============================================

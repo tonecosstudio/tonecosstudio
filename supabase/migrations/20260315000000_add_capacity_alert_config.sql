@@ -10,7 +10,7 @@ ALTER TABLE cycles
   ADD COLUMN IF NOT EXISTS alert_triggered BOOLEAN DEFAULT false,
   ADD COLUMN IF NOT EXISTS alert_triggered_at TIMESTAMPTZ;
 
--- Create index for alert monitoring
+-- CREATE INDEX IF NOT EXISTS for alert monitoring
 CREATE INDEX IF NOT EXISTS idx_cycles_alert_threshold ON cycles(capacity_current, capacity_max, alert_triggered)
   WHERE alert_triggered = false;
 

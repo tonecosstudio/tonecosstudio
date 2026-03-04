@@ -1,12 +1,15 @@
 -- ============================================
--- Migration: Atualizar get_collection_pricing para Níveis de Preço
+-- Migration: Atualizar get_collection_pricing para NÃƒÂ­veis de PreÃƒÂ§o
 -- Data: 2026-03-01 14:00
--- Descrição: Modificar função para buscar preços de níveis quando aplicável
+-- DescriÃƒÂ§ÃƒÂ£o: Modificar funÃƒÂ§ÃƒÂ£o para buscar preÃƒÂ§os de nÃƒÂ­veis quando aplicÃƒÂ¡vel
 -- ============================================
 
 -- =====================================================
--- ATUALIZAR FUNÇÃO get_collection_pricing
+-- ATUALIZAR FUNÃƒâ€¡ÃƒÆ’O get_collection_pricing
 -- =====================================================
+
+-- Drop the existing function first to allow changing return type
+DROP FUNCTION IF EXISTS get_collection_pricing(UUID);
 
 CREATE OR REPLACE FUNCTION get_collection_pricing(p_collection_id UUID)
 RETURNS TABLE (
@@ -27,7 +30,7 @@ DECLARE
   v_default_price_pix NUMERIC;
   v_default_deposit NUMERIC;
 BEGIN
-  -- Buscar configurações da coleção
+  -- Buscar configuraÃƒÂ§ÃƒÂµes da coleÃƒÂ§ÃƒÂ£o
   SELECT 
     c.price_full,
     c.price_pix,
@@ -38,7 +41,7 @@ BEGIN
   FROM collections c
   WHERE c.id = p_collection_id;
   
-  -- Se não encontrou a coleção, retornar valores padrão
+  -- Se nÃƒÂ£o encontrou a coleÃƒÂ§ÃƒÂ£o, retornar valores padrÃƒÂ£o
   IF NOT FOUND THEN
     SELECT value::NUMERIC INTO v_default_price_full FROM system_settings WHERE key = 'default_price_full';
     SELECT value::NUMERIC INTO v_default_price_pix FROM system_settings WHERE key = 'default_price_pix';
@@ -57,7 +60,7 @@ BEGIN
     RETURN;
   END IF;
   
-  -- PRIORIDADE 1: Se usa preço customizado, retornar valores da coleção
+  -- PRIORIDADE 1: Se usa preÃƒÂ§o customizado, retornar valores da coleÃƒÂ§ÃƒÂ£o
   IF v_collection.is_price_custom THEN
     RETURN QUERY SELECT 
       v_collection.price_full,
@@ -72,9 +75,9 @@ BEGIN
     RETURN;
   END IF;
   
-  -- PRIORIDADE 2: Se usa nível de preço, buscar do nível
+  -- PRIORIDADE 2: Se usa nÃƒÂ­vel de preÃƒÂ§o, buscar do nÃƒÂ­vel
   IF v_collection.uses_tier_pricing THEN
-    -- Buscar nível atribuído
+    -- Buscar nÃƒÂ­vel atribuÃƒÂ­do
     SELECT 
       pt.id,
       pt.name,
@@ -87,7 +90,7 @@ BEGIN
     WHERE cta.collection_id = p_collection_id
     AND pt.is_active = true;
     
-    -- Se encontrou nível ativo, usar preços do nível
+    -- Se encontrou nÃƒÂ­vel ativo, usar preÃƒÂ§os do nÃƒÂ­vel
     IF FOUND THEN
       RETURN QUERY SELECT 
         v_tier.price_full,
@@ -103,7 +106,7 @@ BEGIN
     END IF;
   END IF;
   
-  -- PRIORIDADE 3: Usar valores padrão do sistema
+  -- PRIORIDADE 3: Usar valores padrÃƒÂ£o do sistema
   SELECT value::NUMERIC INTO v_default_price_full FROM system_settings WHERE key = 'default_price_full';
   SELECT value::NUMERIC INTO v_default_price_pix FROM system_settings WHERE key = 'default_price_pix';
   SELECT value::NUMERIC INTO v_default_deposit FROM system_settings WHERE key = 'default_deposit_amount';
@@ -121,7 +124,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION get_collection_pricing IS 'Retorna preços de uma coleção (nível, customizado ou padrão) com informações do nível quando aplicável';
+COMMENT ON FUNCTION get_collection_pricing IS 'Retorna preÃƒÂ§os de uma coleÃƒÂ§ÃƒÂ£o (nÃƒÂ­vel, customizado ou padrÃƒÂ£o) com informaÃƒÂ§ÃƒÂµes do nÃƒÂ­vel quando aplicÃƒÂ¡vel';
 
 -- =====================================================
 -- FIM DA MIGRATION

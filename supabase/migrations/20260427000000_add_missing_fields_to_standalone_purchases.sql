@@ -12,7 +12,7 @@
 ALTER TABLE standalone_purchases
   ADD COLUMN IF NOT EXISTS character_id UUID REFERENCES collection_characters(id);
 
--- Create index for character lookups
+-- CREATE INDEX IF NOT EXISTS for character lookups
 CREATE INDEX IF NOT EXISTS idx_standalone_purchases_character 
   ON standalone_purchases(character_id);
 
@@ -23,7 +23,7 @@ COMMENT ON COLUMN standalone_purchases.character_id IS 'Reference to the specifi
 -- =====================================================
 
 -- Rename deposit_amount to price_deposit
-DO $
+DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
@@ -33,10 +33,10 @@ BEGIN
     ALTER TABLE standalone_purchases RENAME COLUMN deposit_amount TO price_deposit;
     RAISE NOTICE 'Renamed deposit_amount to price_deposit';
   END IF;
-END $;
+END $$;
 
 -- Rename balance_amount to price_balance
-DO $
+DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
@@ -46,10 +46,10 @@ BEGIN
     ALTER TABLE standalone_purchases RENAME COLUMN balance_amount TO price_balance;
     RAISE NOTICE 'Renamed balance_amount to price_balance';
   END IF;
-END $;
+END $$;
 
 -- Rename total_amount to price_full
-DO $
+DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
@@ -59,14 +59,14 @@ BEGIN
     ALTER TABLE standalone_purchases RENAME COLUMN total_amount TO price_full;
     RAISE NOTICE 'Renamed total_amount to price_full';
   END IF;
-END $;
+END $$;
 
 -- =====================================================
 -- 3. RENAME VOUCHER FIELDS TO MATCH CODE EXPECTATIONS
 -- =====================================================
 
 -- Rename payment_voucher_deposit_url to deposit_voucher_url
-DO $
+DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
@@ -76,10 +76,10 @@ BEGIN
     ALTER TABLE standalone_purchases RENAME COLUMN payment_voucher_deposit_url TO deposit_voucher_url;
     RAISE NOTICE 'Renamed payment_voucher_deposit_url to deposit_voucher_url';
   END IF;
-END $;
+END $$;
 
 -- Rename payment_voucher_balance_url to balance_voucher_url
-DO $
+DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
@@ -89,7 +89,7 @@ BEGIN
     ALTER TABLE standalone_purchases RENAME COLUMN payment_voucher_balance_url TO balance_voucher_url;
     RAISE NOTICE 'Renamed payment_voucher_balance_url to balance_voucher_url';
   END IF;
-END $;
+END $$;
 
 -- =====================================================
 -- 4. ADD EXPECTED_DELIVERY_DATE AND ACTUAL_DELIVERY_DATE
@@ -110,7 +110,7 @@ COMMENT ON COLUMN standalone_purchases.actual_delivery_date IS 'Actual delivery 
 -- 5. VALIDATE CHANGES
 -- =====================================================
 
-DO $
+DO $$
 BEGIN
   -- Check if character_id was added
   IF NOT EXISTS (
@@ -181,7 +181,7 @@ BEGIN
   END IF;
   
   RAISE NOTICE 'Migration 20260427000000_add_missing_fields_to_standalone_purchases.sql completed successfully';
-END $;
+END $$;
 
 -- =====================================================
 -- 6. MIGRATION SUMMARY

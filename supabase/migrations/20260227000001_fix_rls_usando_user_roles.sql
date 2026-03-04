@@ -1,12 +1,12 @@
 -- =====================================================
 -- Migration: Fix RLS Usando user_roles Corretamente
 -- Date: 2026-02-27
--- Problem: Migration anterior usava profiles.role que não existe
+-- Problem: Migration anterior usava profiles.role que nÃƒÂ£o existe
 -- Solution: Usar user_roles.role corretamente
 -- =====================================================
 
 -- =====================================================
--- STEP 1: Limpar TODAS as políticas existentes
+-- STEP 1: Limpar TODAS as polÃƒÂ­ticas existentes
 -- =====================================================
 
 -- chat_groups
@@ -83,7 +83,7 @@ DROP POLICY IF EXISTS "admin_insert_attachments" ON chat_group_attachments;
 DROP POLICY IF EXISTS "admin_delete_own_attachments" ON chat_group_attachments;
 
 -- =====================================================
--- STEP 2: Garantir que RLS está habilitado
+-- STEP 2: Garantir que RLS estÃƒÂ¡ habilitado
 -- =====================================================
 
 ALTER TABLE chat_groups ENABLE ROW LEVEL SECURITY;
@@ -92,21 +92,21 @@ ALTER TABLE chat_group_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_group_attachments ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
--- STEP 3: Criar políticas CORRETAS para chat_groups
+-- STEP 3: Criar polÃƒÂ­ticas CORRETAS para chat_groups
 -- =====================================================
 
--- SELECT: Admins veem tudo, membros veem seus grupos não deletados
+-- SELECT: Admins veem tudo, membros veem seus grupos nÃƒÂ£o deletados
 CREATE POLICY "select_groups"
   ON chat_groups FOR SELECT
   TO authenticated
   USING (
-    -- Admin vê tudo (incluindo deletados)
+    -- Admin vÃƒÂª tudo (incluindo deletados)
     EXISTS (
       SELECT 1 FROM user_roles
       WHERE user_id = auth.uid() AND role = 'admin'::app_role
     )
     OR
-    -- Membro vê apenas seus grupos não deletados
+    -- Membro vÃƒÂª apenas seus grupos nÃƒÂ£o deletados
     (
       deleted_at IS NULL
       AND EXISTS (
@@ -135,10 +135,10 @@ CREATE POLICY "admin_manage_groups"
   );
 
 -- =====================================================
--- STEP 4: Criar políticas CORRETAS para chat_group_members
+-- STEP 4: Criar polÃƒÂ­ticas CORRETAS para chat_group_members
 -- =====================================================
 
--- SELECT: Admins veem tudo, usuários veem apenas seus memberships
+-- SELECT: Admins veem tudo, usuÃƒÂ¡rios veem apenas seus memberships
 CREATE POLICY "select_members"
   ON chat_group_members FOR SELECT
   TO authenticated
@@ -171,7 +171,7 @@ CREATE POLICY "admin_delete_members"
     )
   );
 
--- UPDATE: Admins podem tudo, usuários podem atualizar apenas last_viewed_at
+-- UPDATE: Admins podem tudo, usuÃƒÂ¡rios podem atualizar apenas last_viewed_at
 CREATE POLICY "admin_update_members"
   ON chat_group_members FOR UPDATE
   TO authenticated
@@ -195,7 +195,7 @@ CREATE POLICY "user_update_own_last_viewed"
   WITH CHECK (user_id = auth.uid());
 
 -- =====================================================
--- STEP 5: Criar políticas CORRETAS para chat_group_messages
+-- STEP 5: Criar polÃƒÂ­ticas CORRETAS para chat_group_messages
 -- =====================================================
 
 -- SELECT: Apenas membros do grupo podem ver mensagens
@@ -221,7 +221,7 @@ CREATE POLICY "admin_insert_messages"
     )
   );
 
--- UPDATE: Apenas admins podem atualizar suas próprias mensagens
+-- UPDATE: Apenas admins podem atualizar suas prÃƒÂ³prias mensagens
 CREATE POLICY "admin_update_own_messages"
   ON chat_group_messages FOR UPDATE
   TO authenticated
@@ -240,7 +240,7 @@ CREATE POLICY "admin_update_own_messages"
     )
   );
 
--- DELETE: Apenas admins podem deletar suas próprias mensagens
+-- DELETE: Apenas admins podem deletar suas prÃƒÂ³prias mensagens
 CREATE POLICY "admin_delete_own_messages"
   ON chat_group_messages FOR DELETE
   TO authenticated
@@ -253,7 +253,7 @@ CREATE POLICY "admin_delete_own_messages"
   );
 
 -- =====================================================
--- STEP 6: Criar políticas CORRETAS para chat_group_attachments
+-- STEP 6: Criar polÃƒÂ­ticas CORRETAS para chat_group_attachments
 -- =====================================================
 
 -- SELECT: Apenas membros do grupo podem ver anexos
@@ -281,7 +281,7 @@ CREATE POLICY "admin_insert_attachments"
     )
   );
 
--- DELETE: Apenas admins podem deletar seus próprios anexos
+-- DELETE: Apenas admins podem deletar seus prÃƒÂ³prios anexos
 CREATE POLICY "admin_delete_own_attachments"
   ON chat_group_attachments FOR DELETE
   TO authenticated
@@ -294,32 +294,32 @@ CREATE POLICY "admin_delete_own_attachments"
   );
 
 -- =====================================================
--- STEP 7: Criar índices para otimizar políticas RLS
+-- STEP 7: Criar ÃƒÂ­ndices para otimizar polÃƒÂ­ticas RLS
 -- =====================================================
 
--- Otimizar verificação de admin
+-- Otimizar verificaÃƒÂ§ÃƒÂ£o de admin
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_admin 
 ON user_roles(user_id) WHERE role = 'admin'::app_role;
 
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_role 
 ON user_roles(user_id, role);
 
--- Otimizar verificação de membership (já existe, mas garantir)
+-- Otimizar verificaÃƒÂ§ÃƒÂ£o de membership (jÃƒÂ¡ existe, mas garantir)
 CREATE INDEX IF NOT EXISTS idx_chat_group_members_user_group 
 ON chat_group_members(user_id, group_id);
 
 CREATE INDEX IF NOT EXISTS idx_chat_group_members_group_user 
 ON chat_group_members(group_id, user_id);
 
--- Otimizar listagem de mensagens (já existe, mas garantir)
+-- Otimizar listagem de mensagens (jÃƒÂ¡ existe, mas garantir)
 CREATE INDEX IF NOT EXISTS idx_chat_group_messages_group_created 
 ON chat_group_messages(group_id, created_at DESC);
 
--- Otimizar verificação de sender
+-- Otimizar verificaÃƒÂ§ÃƒÂ£o de sender
 CREATE INDEX IF NOT EXISTS idx_chat_group_messages_sender 
 ON chat_group_messages(sender_id);
 
--- Otimizar verificação de anexos
+-- Otimizar verificaÃƒÂ§ÃƒÂ£o de anexos
 CREATE INDEX IF NOT EXISTS idx_chat_group_attachments_message 
 ON chat_group_attachments(message_id);
 
@@ -330,40 +330,40 @@ ON chat_group_attachments(message_id);
 NOTIFY pgrst, 'reload schema';
 
 -- =====================================================
--- STEP 9: Verificação
+-- STEP 9: VerificaÃƒÂ§ÃƒÂ£o
 -- =====================================================
 
 DO $$
 DECLARE
   policy_count INTEGER;
 BEGIN
-  -- Contar políticas em chat_groups
+  -- Contar polÃƒÂ­ticas em chat_groups
   SELECT COUNT(*) INTO policy_count
   FROM pg_policies
   WHERE tablename = 'chat_groups';
   
-  RAISE NOTICE 'chat_groups: % políticas', policy_count;
+  RAISE NOTICE 'chat_groups: % polÃƒÂ­ticas', policy_count;
   
-  -- Contar políticas em chat_group_members
+  -- Contar polÃƒÂ­ticas em chat_group_members
   SELECT COUNT(*) INTO policy_count
   FROM pg_policies
   WHERE tablename = 'chat_group_members';
   
-  RAISE NOTICE 'chat_group_members: % políticas', policy_count;
+  RAISE NOTICE 'chat_group_members: % polÃƒÂ­ticas', policy_count;
   
-  -- Contar políticas em chat_group_messages
+  -- Contar polÃƒÂ­ticas em chat_group_messages
   SELECT COUNT(*) INTO policy_count
   FROM pg_policies
   WHERE tablename = 'chat_group_messages';
   
-  RAISE NOTICE 'chat_group_messages: % políticas', policy_count;
+  RAISE NOTICE 'chat_group_messages: % polÃƒÂ­ticas', policy_count;
   
-  -- Contar políticas em chat_group_attachments
+  -- Contar polÃƒÂ­ticas em chat_group_attachments
   SELECT COUNT(*) INTO policy_count
   FROM pg_policies
   WHERE tablename = 'chat_group_attachments';
   
-  RAISE NOTICE 'chat_group_attachments: % políticas', policy_count;
+  RAISE NOTICE 'chat_group_attachments: % polÃƒÂ­ticas', policy_count;
   
-  RAISE NOTICE '✅ Migration aplicada com sucesso!';
+  RAISE NOTICE 'Ã¢Å“â€¦ Migration aplicada com sucesso!';
 END $$;

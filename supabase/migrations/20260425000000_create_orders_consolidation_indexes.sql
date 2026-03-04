@@ -3,7 +3,7 @@
 -- Date: 2026-04-25
 -- Description: Creates database indexes to optimize query performance for the unified orders page
 -- Requirements: 11.3
--- Task: 11.1 Criar índices de banco de dados
+-- Task: 11.1 Criar Ã­ndices de banco de dados
 -- =====================================================
 
 -- =====================================================
@@ -26,7 +26,7 @@
 -- Note: idx_subscription_deliveries_status already exists from 20260202115000_create_subscriptions_system.sql
 -- We'll create it only if it doesn't exist
 
-DO $
+DO $$
 BEGIN
   -- Index for status filtering (if not exists)
   IF NOT EXISTS (
@@ -39,7 +39,7 @@ BEGIN
   ELSE
     RAISE NOTICE 'Index already exists: idx_subscription_deliveries_status';
   END IF;
-END $;
+END $$;
 
 -- Index for date sorting (created_at DESC for default sort order)
 CREATE INDEX IF NOT EXISTS idx_subscription_deliveries_created_at_desc 
@@ -77,7 +77,7 @@ COMMENT ON INDEX idx_subscription_deliveries_subscription_status IS
 -- Note: idx_standalone_purchases_status already exists from 20260315000000_create_standalone_purchases.sql
 -- We'll verify it exists
 
-DO $
+DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes 
@@ -89,7 +89,7 @@ BEGIN
   ELSE
     RAISE NOTICE 'Index already exists: idx_standalone_purchases_status';
   END IF;
-END $;
+END $$;
 
 -- Index for date sorting (created_at DESC for default sort order)
 CREATE INDEX IF NOT EXISTS idx_standalone_purchases_created_at_desc 
@@ -109,7 +109,7 @@ COMMENT ON INDEX idx_standalone_purchases_tracking_code IS
 -- Note: idx_standalone_purchases_user already exists from 20260315000000_create_standalone_purchases.sql
 -- We'll verify it exists
 
-DO $
+DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes 
@@ -121,7 +121,7 @@ BEGIN
   ELSE
     RAISE NOTICE 'Index already exists: idx_standalone_purchases_user';
   END IF;
-END $;
+END $$;
 
 -- Composite index for common filter: status + created_at
 CREATE INDEX IF NOT EXISTS idx_standalone_purchases_status_created_at 
@@ -148,7 +148,7 @@ COMMENT ON INDEX idx_standalone_purchases_collection_status IS
 -- 3. VALIDATE INDEX CREATION
 -- =====================================================
 
-DO $
+DO $$
 DECLARE
   v_subscription_deliveries_indexes INTEGER;
   v_standalone_purchases_indexes INTEGER;
@@ -194,7 +194,7 @@ BEGIN
   END IF;
   
   RAISE NOTICE 'Migration 20260425000000_create_orders_consolidation_indexes.sql completed successfully';
-END $;
+END $$;
 
 -- =====================================================
 -- 4. MIGRATION SUMMARY

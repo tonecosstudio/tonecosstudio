@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS chat_group_members (
 );
 
 -- Create indexes for efficient queries
-CREATE INDEX idx_chat_group_members_group ON chat_group_members(group_id);
-CREATE INDEX idx_chat_group_members_user ON chat_group_members(user_id);
-CREATE INDEX idx_chat_group_members_last_viewed ON chat_group_members(group_id, last_viewed_at);
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_group ON chat_group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_user ON chat_group_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_last_viewed ON chat_group_members(group_id, last_viewed_at);
 
 -- Add comment for documentation
 COMMENT ON TABLE chat_group_members IS 'Stores group membership and view tracking for unread counter calculation';

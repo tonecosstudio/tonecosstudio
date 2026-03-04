@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS message_templates (
   link_text VARCHAR(100),
   link_url TEXT,
   
-  -- Categoria para organização
+  -- Categoria para organizaÃƒÂ§ÃƒÂ£o
   category VARCHAR(50) DEFAULT 'geral',
   
-  -- Variáveis dinâmicas suportadas
+  -- VariÃƒÂ¡veis dinÃƒÂ¢micas suportadas
   has_variables BOOLEAN DEFAULT false,
   
   -- Metadados
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS message_templates (
   deleted_at TIMESTAMPTZ
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX IF NOT EXISTS idx_message_templates_created_by ON message_templates(created_by);
 CREATE INDEX IF NOT EXISTS idx_message_templates_category ON message_templates(category);
 CREATE INDEX IF NOT EXISTS idx_message_templates_deleted_at ON message_templates(deleted_at);
@@ -65,7 +65,7 @@ BEGIN
   WHERE raw_user_meta_data->>'role' = 'admin'
   LIMIT 1;
   
-  -- Se não houver admin, usar primeiro usuário
+  -- Se nÃƒÂ£o houver admin, usar primeiro usuÃƒÂ¡rio
   IF admin_id IS NULL THEN
     SELECT id INTO admin_id
     FROM auth.users
@@ -79,23 +79,23 @@ BEGIN
     (
       'Boas-vindas',
       'Mensagem de boas-vindas para novos membros',
-      'Olá! 👋 Seja bem-vindo(a) ao nosso grupo! Estamos felizes em ter você aqui.',
+      'OlÃƒÂ¡! Ã°Å¸â€˜â€¹ Seja bem-vindo(a) ao nosso grupo! Estamos felizes em ter vocÃƒÂª aqui.',
       'boas-vindas',
       admin_id,
       false
     ),
     (
-      'Lançamento de Produto',
-      'Anúncio de novo produto ou coleção',
-      '🎉 Novidade! Acabamos de lançar um novo produto. Confira agora!',
+      'LanÃƒÂ§amento de Produto',
+      'AnÃƒÂºncio de novo produto ou coleÃƒÂ§ÃƒÂ£o',
+      'Ã°Å¸Å½â€° Novidade! Acabamos de lanÃƒÂ§ar um novo produto. Confira agora!',
       'marketing',
       admin_id,
       false
     ),
     (
       'Lembrete de Pagamento',
-      'Lembrete para assinantes sobre renovação',
-      '💳 Lembrete: Sua assinatura vence em breve. Mantenha seu acesso ativo!',
+      'Lembrete para assinantes sobre renovaÃƒÂ§ÃƒÂ£o',
+      'Ã°Å¸â€™Â³ Lembrete: Sua assinatura vence em breve. Mantenha seu acesso ativo!',
       'financeiro',
       admin_id,
       false
@@ -105,4 +105,4 @@ BEGIN
   RAISE NOTICE 'Templates criados com sucesso usando admin_id: %', admin_id;
 END $$;
 
-COMMENT ON TABLE message_templates IS 'Templates reutilizáveis para mensagens de broadcast';
+COMMENT ON TABLE message_templates IS 'Templates reutilizÃƒÂ¡veis para mensagens de broadcast';

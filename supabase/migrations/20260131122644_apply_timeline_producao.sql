@@ -1,7 +1,7 @@
--- Timeline de Produção Visual (Ordax)
+-- Timeline de ProduÃƒÂ§ÃƒÂ£o Visual (Ordax)
 -- Rode isto no seu banco (ambiente de TEST) antes de testar a UI.
 
--- 1) Bucket para fotos (público para simplificar o acesso do cliente)
+-- 1) Bucket para fotos (pÃƒÂºblico para simplificar o acesso do cliente)
 insert into storage.buckets (id, name, public)
 values ('production', 'production', true)
 on conflict (id) do update set public = true;
@@ -39,7 +39,7 @@ alter table public.quote_production enable row level security;
 alter table public.quote_production_updates enable row level security;
 alter table public.quote_production_photos enable row level security;
 
--- Cliente: pode ver apenas o que é do seu quote
+-- Cliente: pode ver apenas o que ÃƒÂ© do seu quote
 drop policy if exists "production_select_own" on public.quote_production;
 create policy "production_select_own"
 on public.quote_production
@@ -79,7 +79,7 @@ using (
   )
 );
 
--- Admin: pode inserir/atualizar tudo (usa função has_role existente)
+-- Admin: pode inserir/atualizar tudo (usa funÃƒÂ§ÃƒÂ£o has_role existente)
 drop policy if exists "production_admin_write" on public.quote_production;
 create policy "production_admin_write"
 on public.quote_production

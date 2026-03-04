@@ -1,45 +1,45 @@
 -- =====================================================
--- TESTE DO SISTEMA DE NOTIFICAÇÕES
+-- TESTE DO SISTEMA DE NOTIFICAÃƒâ€¡Ãƒâ€¢ES
 -- =====================================================
 -- Criado em: 2026-02-28
--- Descrição: Script de teste para criar notificações de exemplo
+-- DescriÃƒÂ§ÃƒÂ£o: Script de teste para criar notificaÃƒÂ§ÃƒÂµes de exemplo
 -- =====================================================
 
--- Criar notificação para todos os usuários existentes
+-- Criar notificaÃƒÂ§ÃƒÂ£o para todos os usuÃƒÂ¡rios existentes
 DO $$
 DECLARE
   user_record RECORD;
   notification_id UUID;
 BEGIN
-  -- Verificar se há usuários
+  -- Verificar se hÃƒÂ¡ usuÃƒÂ¡rios
   IF NOT EXISTS (SELECT 1 FROM auth.users LIMIT 1) THEN
-    RAISE NOTICE 'AVISO: Nenhum usuário encontrado. Notificações não foram criadas.';
-    RAISE NOTICE 'Faça login na aplicação primeiro para criar um usuário.';
+    RAISE NOTICE 'AVISO: Nenhum usuÃƒÂ¡rio encontrado. NotificaÃƒÂ§ÃƒÂµes nÃƒÂ£o foram criadas.';
+    RAISE NOTICE 'FaÃƒÂ§a login na aplicaÃƒÂ§ÃƒÂ£o primeiro para criar um usuÃƒÂ¡rio.';
   ELSE
-    -- Criar notificação de boas-vindas para cada usuário
+    -- Criar notificaÃƒÂ§ÃƒÂ£o de boas-vindas para cada usuÃƒÂ¡rio
     FOR user_record IN SELECT id, email FROM auth.users LOOP
-      -- Notificação de sistema
+      -- NotificaÃƒÂ§ÃƒÂ£o de sistema
       notification_id := create_user_notification(
         user_record.id,
         'system_announcement',
-        'Sistema de Notificações Ativado! 🎉',
-        'O novo sistema de notificações está funcionando perfeitamente. Você receberá atualizações em tempo real sobre pedidos, pagamentos e muito mais!',
+        'Sistema de NotificaÃƒÂ§ÃƒÂµes Ativado! Ã°Å¸Å½â€°',
+        'O novo sistema de notificaÃƒÂ§ÃƒÂµes estÃƒÂ¡ funcionando perfeitamente. VocÃƒÂª receberÃƒÂ¡ atualizaÃƒÂ§ÃƒÂµes em tempo real sobre pedidos, pagamentos e muito mais!',
         'high',
         NULL,
         NULL,
         '/notificacoes',
-        'Ver Notificações',
+        'Ver NotificaÃƒÂ§ÃƒÂµes',
         'Megaphone'
       );
       
-      RAISE NOTICE 'Notificação criada para usuário: % (ID: %)', user_record.email, notification_id;
+      RAISE NOTICE 'NotificaÃƒÂ§ÃƒÂ£o criada para usuÃƒÂ¡rio: % (ID: %)', user_record.email, notification_id;
     END LOOP;
     
-    RAISE NOTICE 'Processo concluído com sucesso!';
+    RAISE NOTICE 'Processo concluÃƒÂ­do com sucesso!';
   END IF;
 END $$;
 
--- Mostrar estatísticas
+-- Mostrar estatÃƒÂ­sticas
 DO $$
 DECLARE
   total_users INTEGER;
@@ -51,10 +51,10 @@ BEGIN
   SELECT COUNT(*) INTO unread_notifications FROM user_notifications WHERE is_read = FALSE;
   
   RAISE NOTICE '========================================';
-  RAISE NOTICE 'ESTATÍSTICAS DO SISTEMA';
+  RAISE NOTICE 'ESTATÃƒÂSTICAS DO SISTEMA';
   RAISE NOTICE '========================================';
-  RAISE NOTICE 'Total de usuários: %', total_users;
-  RAISE NOTICE 'Total de notificações: %', total_notifications;
-  RAISE NOTICE 'Notificações não lidas: %', unread_notifications;
+  RAISE NOTICE 'Total de usuÃƒÂ¡rios: %', total_users;
+  RAISE NOTICE 'Total de notificaÃƒÂ§ÃƒÂµes: %', total_notifications;
+  RAISE NOTICE 'NotificaÃƒÂ§ÃƒÂµes nÃƒÂ£o lidas: %', unread_notifications;
   RAISE NOTICE '========================================';
 END $$;

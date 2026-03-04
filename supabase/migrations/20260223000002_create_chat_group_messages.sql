@@ -20,10 +20,10 @@ CREATE TABLE IF NOT EXISTS chat_group_messages (
 
 -- Create indexes for efficient queries
 -- Composite index for group messages ordered by creation time (DESC for most recent first)
-CREATE INDEX idx_chat_group_messages_group_created ON chat_group_messages(group_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_group_messages_group_created ON chat_group_messages(group_id, created_at DESC);
 
 -- Index for sender queries
-CREATE INDEX idx_chat_group_messages_sender ON chat_group_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_messages_sender ON chat_group_messages(sender_id);
 
 -- Add comments for documentation
 COMMENT ON TABLE chat_group_messages IS 'Stores broadcast messages sent to groups. Messages are stored ONCE (not per-member) for scalability';

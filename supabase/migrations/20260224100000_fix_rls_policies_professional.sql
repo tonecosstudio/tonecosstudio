@@ -262,7 +262,7 @@ BEGIN
   FROM pg_policies
   WHERE tablename IN ('chat_groups', 'chat_group_members', 'chat_group_messages', 'chat_group_attachments');
   
-  RAISE NOTICE '✅ RLS policies recreated successfully';
+  RAISE NOTICE 'Ã¢Å“â€¦ RLS policies recreated successfully';
   RAISE NOTICE 'Total policies created: %', policy_count;
   RAISE NOTICE 'Expected: 16 policies (4 per table)';
   

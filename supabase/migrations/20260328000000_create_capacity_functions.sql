@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION check_capacity_available(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 STABLE
-AS $
+AS $$
 DECLARE
   v_capacity_max INTEGER;
   v_capacity_current INTEGER;
@@ -37,7 +37,7 @@ BEGIN
   -- Check if adding the quantity would exceed the limit
   RETURN (v_capacity_current + p_quantity) <= v_effective_max;
 END;
-$;
+$$;
 
 -- Function: Reserve capacity for a subscription or standalone purchase
 -- Increments the cycle's capacity_current by the specified quantity
@@ -48,7 +48,7 @@ CREATE OR REPLACE FUNCTION reserve_capacity(
 )
 RETURNS VOID
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
   v_capacity_max INTEGER;
   v_capacity_current INTEGER;
@@ -82,7 +82,7 @@ BEGIN
       updated_at = now()
   WHERE id = p_cycle_id;
 END;
-$;
+$$;
 
 -- Function: Release capacity when a purchase is cancelled
 -- Decrements the cycle's capacity_current by the specified quantity
@@ -93,7 +93,7 @@ CREATE OR REPLACE FUNCTION release_capacity(
 )
 RETURNS VOID
 LANGUAGE plpgsql
-AS $
+AS $$
 BEGIN
   -- Update the cycle's capacity_current, ensuring it doesn't go below 0
   UPDATE cycles
@@ -106,7 +106,7 @@ BEGIN
     RAISE EXCEPTION 'Cycle not found: %', p_cycle_id;
   END IF;
 END;
-$;
+$$;
 
 -- Comments
 COMMENT ON FUNCTION check_capacity_available IS 'Check if capacity is available for a purchase in a cycle';

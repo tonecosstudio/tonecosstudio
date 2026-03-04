@@ -7,5 +7,5 @@ ALTER PUBLICATION supabase_realtime ADD TABLE support_messages;
 -- Habilitar Realtime para support_attachments
 ALTER PUBLICATION supabase_realtime ADD TABLE support_attachments;
 
--- Habilitar Realtime para support_conversations (se ainda não estiver)
+-- Habilitar Realtime para support_conversations (se ainda nÃƒÂ£o estiver)
 ALTER PUBLICATION supabase_realtime ADD TABLE support_conversations;

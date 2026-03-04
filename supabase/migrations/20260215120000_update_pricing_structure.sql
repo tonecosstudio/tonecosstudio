@@ -1,10 +1,10 @@
 -- ============================================
--- Migration: Atualizar Estrutura de Preços
+-- Migration: Atualizar Estrutura de PreÃƒÂ§os
 -- Data: 2026-02-15
--- Descrição: Desativar plano anual e atualizar preços oficiais
+-- DescriÃƒÂ§ÃƒÂ£o: Desativar plano anual e atualizar preÃƒÂ§os oficiais
 -- ============================================
 
--- DESATIVAR PLANO ANUAL (mantém no banco para uso futuro)
+-- DESATIVAR PLANO ANUAL (mantÃƒÂ©m no banco para uso futuro)
 UPDATE subscription_plans
 SET is_active = false
 WHERE plan_type = 'anual';
@@ -17,7 +17,7 @@ SET
   deliveries_total = 3,
   description = 'Receba 3 personagens consecutivos',
   collections_count = 1,
-  collections_count_description = 'Escolha 1 coleção',
+  collections_count_description = 'Escolha 1 coleÃƒÂ§ÃƒÂ£o',
   max_installments = 10
 WHERE plan_type = 'trimestral';
 
@@ -27,9 +27,9 @@ SET
   price_full = 2700.00,
   price_pix = 2565.00,
   deliveries_total = 7,
-  description = 'Receba 6 personagens + 1 peça bônus',
+  description = 'Receba 6 personagens + 1 peÃƒÂ§a bÃƒÂ´nus',
   collections_count = 1,
-  collections_count_description = 'Escolha 1 coleção',
+  collections_count_description = 'Escolha 1 coleÃƒÂ§ÃƒÂ£o',
   max_installments = 10
 WHERE plan_type = 'semestral';
 
@@ -47,6 +47,6 @@ FROM subscription_plans
 ORDER BY display_order;
 
 -- ============================================
--- COMENTÁRIOS
+-- COMENTÃƒÂRIOS
 -- ============================================
 COMMENT ON TABLE subscription_plans IS 'SSOT para planos de assinatura. Anual desativado mas mantido para uso futuro.';

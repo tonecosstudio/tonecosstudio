@@ -2,11 +2,11 @@
 -- Migration: Fix 406 - Force Complete Reload
 -- Date: 2026-02-27
 -- Problem: Cache do PostgREST pode estar causando 406
--- Solution: Forçar reload completo e limpar cache
+-- Solution: ForÃƒÆ’Ã‚Â§ar reload completo e limpar cache
 -- =====================================================
 
 -- =====================================================
--- STEP 1: Dropar e recriar a tabela (força reload)
+-- STEP 1: Dropar e recriar a tabela (forÃƒÆ’Ã‚Â§a reload)
 -- =====================================================
 
 -- Backup dos dados
@@ -17,7 +17,7 @@ SELECT * FROM chat_group_members;
 DROP TABLE IF EXISTS chat_group_members CASCADE;
 
 -- Recriar tabela
-CREATE TABLE chat_group_members (
+CREATE TABLE IF NOT EXISTS chat_group_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID NOT NULL REFERENCES chat_groups(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -30,15 +30,15 @@ CREATE TABLE chat_group_members (
 INSERT INTO chat_group_members 
 SELECT * FROM chat_group_members_backup;
 
--- Criar índices
-CREATE INDEX idx_chat_group_members_group ON chat_group_members(group_id);
-CREATE INDEX idx_chat_group_members_user ON chat_group_members(user_id);
-CREATE INDEX idx_chat_group_members_last_viewed ON chat_group_members(group_id, last_viewed_at);
-CREATE INDEX idx_chat_group_members_user_group ON chat_group_members(user_id, group_id);
-CREATE INDEX idx_chat_group_members_group_user ON chat_group_members(group_id, user_id);
+-- Criar ÃƒÆ’Ã‚Â­ndices
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_group ON chat_group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_user ON chat_group_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_last_viewed ON chat_group_members(group_id, last_viewed_at);
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_user_group ON chat_group_members(user_id, group_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_members_group_user ON chat_group_members(group_id, user_id);
 
 -- =====================================================
--- STEP 2: Garantir permissões
+-- STEP 2: Garantir permissÃƒÆ’Ã‚Âµes
 -- =====================================================
 
 GRANT ALL ON chat_group_members TO authenticated;
@@ -51,7 +51,7 @@ GRANT ALL ON chat_group_members TO anon;
 ALTER TABLE chat_group_members DISABLE ROW LEVEL SECURITY;
 
 -- =====================================================
--- STEP 4: Notificar PostgREST múltiplas vezes
+-- STEP 4: Notificar PostgREST mÃƒÆ’Ã‚Âºltiplas vezes
 -- =====================================================
 
 NOTIFY pgrst, 'reload schema';
@@ -59,17 +59,17 @@ NOTIFY pgrst, 'reload config';
 NOTIFY pgrst;
 
 -- =====================================================
--- STEP 5: Verificação
+-- STEP 5: VerificaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
 -- =====================================================
 
 DO $$
 BEGIN
-  RAISE NOTICE '✅ Tabela chat_group_members recriada';
-  RAISE NOTICE '✅ Dados restaurados';
-  RAISE NOTICE '✅ Índices criados';
-  RAISE NOTICE '✅ Permissões concedidas';
-  RAISE NOTICE '✅ RLS desabilitado';
-  RAISE NOTICE '✅ PostgREST notificado';
+  RAISE NOTICE 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Tabela chat_group_members recriada';
+  RAISE NOTICE 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Dados restaurados';
+  RAISE NOTICE 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ÃƒÆ’Ã‚Ândices criados';
+  RAISE NOTICE 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PermissÃƒÆ’Ã‚Âµes concedidas';
+  RAISE NOTICE 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ RLS desabilitado';
+  RAISE NOTICE 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PostgREST notificado';
   RAISE NOTICE '';
-  RAISE NOTICE '🔄 RECARREGUE O NAVEGADOR (Ctrl+Shift+R)';
+  RAISE NOTICE 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ RECARREGUE O NAVEGADOR (Ctrl+Shift+R)';
 END $$;

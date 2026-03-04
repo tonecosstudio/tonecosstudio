@@ -18,10 +18,10 @@ CREATE TABLE IF NOT EXISTS chat_group_attachments (
 
 -- Create indexes for efficient queries
 -- Index for message attachments lookup
-CREATE INDEX idx_chat_group_attachments_message ON chat_group_attachments(message_id);
+CREATE INDEX IF NOT EXISTS idx_chat_group_attachments_message ON chat_group_attachments(message_id);
 
 -- Index for uploaded_by queries
-CREATE INDEX idx_chat_group_attachments_uploaded_by ON chat_group_attachments(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_chat_group_attachments_uploaded_by ON chat_group_attachments(uploaded_by);
 
 -- Add comments for documentation
 COMMENT ON TABLE chat_group_attachments IS 'Stores file attachments for group broadcast messages. Reuses existing attachment system infrastructure';

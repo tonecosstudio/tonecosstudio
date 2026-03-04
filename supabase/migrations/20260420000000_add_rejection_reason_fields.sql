@@ -42,7 +42,7 @@ COMMENT ON COLUMN subscriptions.payment_rejection_reason IS
 -- 3. VALIDATE MIGRATION
 -- =====================================================
 
-DO $
+DO $$
 BEGIN
   -- Check if columns were added to standalone_purchases
   IF NOT EXISTS (
@@ -74,7 +74,7 @@ BEGIN
   END IF;
   
   RAISE NOTICE 'Migration 20260420000000_add_rejection_reason_fields.sql completed successfully';
-END $;
+END $$;
 
 -- =====================================================
 -- 4. MIGRATION SUMMARY

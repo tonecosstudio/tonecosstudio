@@ -103,7 +103,7 @@ WHERE id = 'support-attachments';
 
 -- 7. Verify policies
 SELECT 
-  'Políticas criadas:' as status,
+  'PolÃƒÂ­ticas criadas:' as status,
   policyname,
   cmd,
   qual

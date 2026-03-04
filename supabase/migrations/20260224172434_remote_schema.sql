@@ -77,12 +77,12 @@ DECLARE
   current_year INTEGER := EXTRACT(YEAR FROM CURRENT_DATE);
   is_closed_flag BOOLEAN;
 BEGIN
-  -- Buscar status do mês atual
+  -- Buscar status do mÃƒÂªs atual
   SELECT is_closed INTO is_closed_flag
   FROM monthly_production
   WHERE month = current_month AND year = current_year;
   
-  -- Se não existe registro, vendas estão abertas
+  -- Se nÃƒÂ£o existe registro, vendas estÃƒÂ£o abertas
   IF is_closed_flag IS NULL THEN
     RETURN TRUE;
   END IF;
@@ -126,7 +126,7 @@ BEGIN
   WHERE raw_user_meta_data->>'role' = 'admin'
   LIMIT 1;
 
-  -- Se não houver admin, usar o primeiro usuário
+  -- Se nÃƒÂ£o houver admin, usar o primeiro usuÃƒÂ¡rio
   IF admin_user_id IS NULL THEN
     SELECT id INTO admin_user_id
     FROM auth.users
@@ -134,10 +134,10 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- Grupo: Novos Membros (todos os usuários cadastrados)
+  -- Grupo: Novos Membros (todos os usuÃƒÂ¡rios cadastrados)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '🎉 Novos Membros',
+    'Ã°Å¸Å½â€° Novos Membros',
     'manual',
     NULL,
     admin_user_id
@@ -147,7 +147,7 @@ BEGIN
   -- Grupo: Assinantes Geral (todos com assinatura ativa)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '⭐ Assinantes',
+    'Ã¢Â­Â Assinantes',
     'assinantes',
     '{"type": "assinantes", "subscriptionStatus": "active"}'::jsonb,
     admin_user_id
@@ -157,44 +157,44 @@ BEGIN
   -- Grupo: Avisos Importantes (manual, admin escolhe quando usar)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '📢 Avisos Importantes',
+    'Ã°Å¸â€œÂ¢ Avisos Importantes',
     'manual',
-    '{"type": "avisos", "description": "Comunicados críticos do sistema"}'::jsonb,
+    '{"type": "avisos", "description": "Comunicados crÃƒÂ­ticos do sistema"}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  -- Grupo: Assinaturas Expirando (assinaturas que vencem em até 7 dias)
+  -- Grupo: Assinaturas Expirando (assinaturas que vencem em atÃƒÂ© 7 dias)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '⏰ Assinaturas Expirando',
+    'Ã¢ÂÂ° Assinaturas Expirando',
     'expirando',
     '{"type": "expirando", "daysUntilExpiration": 7}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  -- Grupo: Ex-Assinantes (usuários que já tiveram assinatura mas não têm mais)
+  -- Grupo: Ex-Assinantes (usuÃƒÂ¡rios que jÃƒÂ¡ tiveram assinatura mas nÃƒÂ£o tÃƒÂªm mais)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '🔄 Ex-Assinantes',
+    'Ã°Å¸â€â€ž Ex-Assinantes',
     'ex_assinantes',
     '{"type": "ex_assinantes", "hadSubscription": true, "currentStatus": "inactive"}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  -- Grupo: Usuários Free (nunca tiveram assinatura)
+  -- Grupo: UsuÃƒÂ¡rios Free (nunca tiveram assinatura)
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
-    '🆓 Usuários Free',
+    'Ã°Å¸â€ â€œ UsuÃƒÂ¡rios Free',
     'free',
     '{"type": "free", "neverHadSubscription": true}'::jsonb,
     admin_user_id
   )
   ON CONFLICT DO NOTHING;
 
-  RAISE NOTICE 'Grupos padrão criados com sucesso';
+  RAISE NOTICE 'Grupos padrÃƒÂ£o criados com sucesso';
 END;
 $function$
 ;
@@ -207,16 +207,16 @@ DECLARE
   admin_user_id UUID;
   group_name TEXT;
 BEGIN
-  -- Pegar o criador da coleção ou primeiro admin
+  -- Pegar o criador da coleÃƒÂ§ÃƒÂ£o ou primeiro admin
   SELECT id INTO admin_user_id
   FROM auth.users
   WHERE raw_user_meta_data->>'role' = 'admin'
   LIMIT 1;
 
-  -- Nome do grupo baseado no nome da coleção
-  group_name := '📦 ' || NEW.name;
+  -- Nome do grupo baseado no nome da coleÃƒÂ§ÃƒÂ£o
+  group_name := 'Ã°Å¸â€œÂ¦ ' || NEW.name;
 
-  -- Criar grupo para a coleção
+  -- Criar grupo para a coleÃƒÂ§ÃƒÂ£o
   INSERT INTO chat_groups (name, type, membership_criteria, created_by)
   VALUES (
     group_name,
@@ -229,7 +229,7 @@ BEGIN
   )
   ON CONFLICT DO NOTHING;
 
-  RAISE NOTICE 'Grupo criado para coleção: %', NEW.name;
+  RAISE NOTICE 'Grupo criado para coleÃƒÂ§ÃƒÂ£o: %', NEW.name;
 
   RETURN NEW;
 END;
@@ -289,7 +289,7 @@ BEGIN
   
   -- Verificar se excede limite
   IF new_sold > current_limit THEN
-    RAISE EXCEPTION 'Limite de produção mensal atingido (% / %)', current_sold, current_limit;
+    RAISE EXCEPTION 'Limite de produÃƒÂ§ÃƒÂ£o mensal atingido (% / %)', current_sold, current_limit;
   END IF;
   
   -- Atualizar vendas
@@ -329,7 +329,7 @@ END;
 $function$
 ;
 
-
+  DROP POLICY IF EXISTS "chat_group_members_delete" ON "public"."chat_group_members";
   create policy "chat_group_members_delete"
   on "public"."chat_group_members"
   as permissive
@@ -338,7 +338,7 @@ $function$
 using (true);
 
 
-
+  DROP POLICY IF EXISTS "chat_group_members_insert" ON "public"."chat_group_members";
   create policy "chat_group_members_insert"
   on "public"."chat_group_members"
   as permissive
@@ -348,6 +348,7 @@ with check (true);
 
 
 
+  DROP POLICY IF EXISTS "chat_group_members_select" ON "public"."chat_group_members";
   create policy "chat_group_members_select"
   on "public"."chat_group_members"
   as permissive
@@ -356,7 +357,7 @@ with check (true);
 using (true);
 
 
-
+  DROP POLICY IF EXISTS "chat_group_members_update" ON "public"."chat_group_members";
   create policy "chat_group_members_update"
   on "public"."chat_group_members"
   as permissive
@@ -366,7 +367,7 @@ using (true)
 with check (true);
 
 
-
+  DROP POLICY IF EXISTS "authenticated_manage_franchise_rules" ON "public"."franchise_rules";
   create policy "authenticated_manage_franchise_rules"
   on "public"."franchise_rules"
   as permissive
@@ -376,7 +377,7 @@ using (true)
 with check (true);
 
 
-
+  DROP POLICY IF EXISTS "authenticated_select_franchise_rules" ON "public"."franchise_rules";
   create policy "authenticated_select_franchise_rules"
   on "public"."franchise_rules"
   as permissive
@@ -385,7 +386,7 @@ with check (true);
 using (true);
 
 
-
+  DROP POLICY IF EXISTS "Admins can delete files in models bucket" ON "storage"."objects";
   create policy "Admins can delete files in models bucket"
   on "storage"."objects"
   as permissive
@@ -396,7 +397,7 @@ using (((bucket_id = 'models'::text) AND (EXISTS ( SELECT 1
   WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'admin'::public.app_role))))));
 
 
-
+  DROP POLICY IF EXISTS "Admins can update files in models bucket" ON "storage"."objects";
   create policy "Admins can update files in models bucket"
   on "storage"."objects"
   as permissive
@@ -407,7 +408,7 @@ using (((bucket_id = 'models'::text) AND (EXISTS ( SELECT 1
   WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'admin'::public.app_role))))));
 
 
-
+  DROP POLICY IF EXISTS "Admins can upload to models bucket" ON "storage"."objects";
   create policy "Admins can upload to models bucket"
   on "storage"."objects"
   as permissive
@@ -418,13 +419,12 @@ with check (((bucket_id = 'models'::text) AND (EXISTS ( SELECT 1
   WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'admin'::public.app_role))))));
 
 
-
+  DROP POLICY IF EXISTS "Public can view files in models bucket" ON "storage"."objects";
   create policy "Public can view files in models bucket"
   on "storage"."objects"
   as permissive
   for select
   to public
 using ((bucket_id = 'models'::text));
-
 
 

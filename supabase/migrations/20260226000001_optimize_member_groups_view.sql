@@ -71,7 +71,7 @@ BEGIN
     um.last_viewed_at,
     COALESCE(uc.unread_count, 0) as unread_count,
     lm.message as last_message_text,
-    COALESCE(lm.full_name, lm.email, 'Usuário') as last_message_sender_name,
+    COALESCE(lm.full_name, lm.email, 'UsuÃƒÂ¡rio') as last_message_sender_name,
     lm.created_at as last_message_created_at
   FROM group_info gi
   INNER JOIN user_memberships um ON um.group_id = gi.id
@@ -87,7 +87,7 @@ COMMENT ON FUNCTION get_member_groups_optimized IS 'Optimized function to get al
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION get_member_groups_optimized TO authenticated;
 
--- Create index to optimize the function
+-- CREATE INDEX IF NOT EXISTS to optimize the function
 CREATE INDEX IF NOT EXISTS idx_chat_group_messages_group_created 
 ON chat_group_messages(group_id, created_at DESC);
 

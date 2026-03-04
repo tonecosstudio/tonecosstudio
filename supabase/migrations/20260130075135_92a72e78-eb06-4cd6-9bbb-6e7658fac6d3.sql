@@ -1,4 +1,4 @@
--- Regras automáticas de franquia (keyword/pattern -> franquia canônica)
+-- Regras automÃƒÂ¡ticas de franquia (keyword/pattern -> franquia canÃƒÂ´nica)
 
 create extension if not exists pg_trgm;
 
@@ -11,10 +11,10 @@ create table if not exists public.franchise_rules (
   enabled boolean not null default true,
   priority int not null default 100,
 
-  -- padrão simples (case-insensitive). Ex.: 'magneto', 'tobi', 'x-men'
+  -- padrÃƒÂ£o simples (case-insensitive). Ex.: 'magneto', 'tobi', 'x-men'
   pattern text not null,
 
-  -- franquia canônica para aplicar quando bater
+  -- franquia canÃƒÂ´nica para aplicar quando bater
   franchise_canonical text not null,
 
   note text null
@@ -39,7 +39,7 @@ create trigger set_franchise_rules_updated_at
 before update on public.franchise_rules
 for each row execute function public.set_updated_at();
 
--- Índices para busca/similaridade
+-- ÃƒÂndices para busca/similaridade
 create index if not exists franchise_rules_enabled_priority_idx
 on public.franchise_rules (enabled, priority);
 

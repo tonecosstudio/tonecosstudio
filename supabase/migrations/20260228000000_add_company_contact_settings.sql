@@ -1,21 +1,21 @@
--- Migration: Adicionar configurações de empresa e contato ao system_settings
--- Permite que o admin gerencie essas informações via interface
+-- Migration: Adicionar configuraÃƒÂ§ÃƒÂµes de empresa e contato ao system_settings
+-- Permite que o admin gerencie essas informaÃƒÂ§ÃƒÂµes via interface
 
 -- =====================================================
--- CONFIGURAÇÕES DE EMPRESA E CONTATO
+-- CONFIGURAÃƒâ€¡Ãƒâ€¢ES DE EMPRESA E CONTATO
 -- =====================================================
 
 INSERT INTO system_settings (key, value, description) VALUES
 
--- Informações da Empresa
+-- InformaÃƒÂ§ÃƒÂµes da Empresa
 ('company_name', 'Tonecos Studios', 'Nome da empresa'),
-('company_address', 'São Paulo, Brasil', 'Endereço da empresa'),
+('company_address', 'SÃƒÂ£o Paulo, Brasil', 'EndereÃƒÂ§o da empresa'),
 ('company_logo_url', '/logo.png', 'URL do logo da empresa'),
 
 -- Emails de Contato
 ('contact_email', 'contato@ordax.com.br', 'Email principal de contato'),
 ('support_email', 'suporte@ordax.com.br', 'Email de suporte ao cliente'),
-('privacy_email', 'privacidade@ordax.com.br', 'Email para questões de privacidade'),
+('privacy_email', 'privacidade@ordax.com.br', 'Email para questÃƒÂµes de privacidade'),
 ('dpo_email', 'dpo@ordax.com.br', 'Email do Encarregado de Dados (DPO)'),
 
 -- Website e Redes Sociais
@@ -29,79 +29,79 @@ INSERT INTO system_settings (key, value, description) VALUES
 ('phone_primary', '', 'Telefone principal (opcional)'),
 ('phone_whatsapp', '', 'WhatsApp para contato (opcional)'),
 
--- Horário de Atendimento
-('business_hours', 'Segunda a Sexta, 9h às 18h', 'Horário de atendimento'),
+-- HorÃƒÂ¡rio de Atendimento
+('business_hours', 'Segunda a Sexta, 9h ÃƒÂ s 18h', 'HorÃƒÂ¡rio de atendimento'),
 
--- Informações Legais
+-- InformaÃƒÂ§ÃƒÂµes Legais
 ('cnpj', '', 'CNPJ da empresa (opcional)'),
-('legal_name', '', 'Razão social (opcional)')
+('legal_name', '', 'RazÃƒÂ£o social (opcional)')
 
 ON CONFLICT (key) DO UPDATE SET
   value = EXCLUDED.value,
   updated_at = NOW();
 
 -- =====================================================
--- CONFIGURAÇÕES DE PREÇOS E PAGAMENTOS
+-- CONFIGURAÃƒâ€¡Ãƒâ€¢ES DE PREÃƒâ€¡OS E PAGAMENTOS
 -- =====================================================
 
 INSERT INTO system_settings (key, value, description) VALUES
 
--- Preços Padrão
-('default_price_full', '500', 'Preço padrão cartão (R$)'),
-('default_price_pix', '475', 'Preço padrão PIX (R$)'),
-('default_deposit_amount', '100', 'Valor de entrada padrão (R$)'),
+-- PreÃƒÂ§os PadrÃƒÂ£o
+('default_price_full', '500', 'PreÃƒÂ§o padrÃƒÂ£o cartÃƒÂ£o (R$)'),
+('default_price_pix', '475', 'PreÃƒÂ§o padrÃƒÂ£o PIX (R$)'),
+('default_deposit_amount', '100', 'Valor de entrada padrÃƒÂ£o (R$)'),
 
 -- Descontos
 ('pix_discount_percentage', '5', 'Desconto PIX em porcentagem (%)'),
 
 -- Parcelamento
-('max_installments_no_interest', '6', 'Máximo de parcelas sem juros'),
-('max_installments_with_interest', '10', 'Máximo de parcelas com juros'),
+('max_installments_no_interest', '6', 'MÃƒÂ¡ximo de parcelas sem juros'),
+('max_installments_with_interest', '10', 'MÃƒÂ¡ximo de parcelas com juros'),
 
 -- Dias e Prazos
-('days_to_next_delivery', '30', 'Dias para próxima entrega'),
-('exchange_deadline_days', '1', 'Dias antes da produção para trocar coleção')
+('days_to_next_delivery', '30', 'Dias para prÃƒÂ³xima entrega'),
+('exchange_deadline_days', '1', 'Dias antes da produÃƒÂ§ÃƒÂ£o para trocar coleÃƒÂ§ÃƒÂ£o')
 
 ON CONFLICT (key) DO UPDATE SET
   value = EXCLUDED.value,
   updated_at = NOW();
 
 -- =====================================================
--- CONFIGURAÇÕES DE NOTIFICAÇÕES
+-- CONFIGURAÃƒâ€¡Ãƒâ€¢ES DE NOTIFICAÃƒâ€¡Ãƒâ€¢ES
 -- =====================================================
 
 INSERT INTO system_settings (key, value, description) VALUES
 
 -- Timeouts e Intervalos
-('user_online_threshold_minutes', '5', 'Minutos para considerar usuário online'),
-('notification_polling_interval_ms', '30000', 'Intervalo de polling de notificações (ms)'),
-('toast_duration_ms', '5000', 'Duração do toast de notificação (ms)')
+('user_online_threshold_minutes', '5', 'Minutos para considerar usuÃƒÂ¡rio online'),
+('notification_polling_interval_ms', '30000', 'Intervalo de polling de notificaÃƒÂ§ÃƒÂµes (ms)'),
+('toast_duration_ms', '5000', 'DuraÃƒÂ§ÃƒÂ£o do toast de notificaÃƒÂ§ÃƒÂ£o (ms)')
 
 ON CONFLICT (key) DO UPDATE SET
   value = EXCLUDED.value,
   updated_at = NOW();
 
 -- =====================================================
--- CONFIGURAÇÕES DE UI/UX
+-- CONFIGURAÃƒâ€¡Ãƒâ€¢ES DE UI/UX
 -- =====================================================
 
 INSERT INTO system_settings (key, value, description) VALUES
 
--- Paginação
-('default_page_size', '20', 'Itens por página padrão'),
+-- PaginaÃƒÂ§ÃƒÂ£o
+('default_page_size', '20', 'Itens por pÃƒÂ¡gina padrÃƒÂ£o'),
 ('search_debounce_ms', '300', 'Debounce de busca (ms)'),
 ('input_debounce_ms', '500', 'Debounce de input (ms)'),
 
 -- Imagens
-('image_compression_quality', '0.8', 'Qualidade de compressão de imagem (0-1)'),
-('max_image_size_mb', '5', 'Tamanho máximo de imagem (MB)')
+('image_compression_quality', '0.8', 'Qualidade de compressÃƒÂ£o de imagem (0-1)'),
+('max_image_size_mb', '5', 'Tamanho mÃƒÂ¡ximo de imagem (MB)')
 
 ON CONFLICT (key) DO UPDATE SET
   value = EXCLUDED.value,
   updated_at = NOW();
 
 -- =====================================================
--- CRIAR VIEW PARA CONFIGURAÇÕES AGRUPADAS
+-- CRIAR VIEW PARA CONFIGURAÃƒâ€¡Ãƒâ€¢ES AGRUPADAS
 -- =====================================================
 
 CREATE OR REPLACE VIEW system_settings_grouped AS
@@ -129,7 +129,7 @@ SELECT
   MAX(CASE WHEN key = 'twitter_url' THEN value END) as twitter_url,
   MAX(CASE WHEN key = 'youtube_url' THEN value END) as youtube_url,
   
-  -- Preços
+  -- PreÃƒÂ§os
   MAX(CASE WHEN key = 'default_price_full' THEN value::NUMERIC END) as default_price_full,
   MAX(CASE WHEN key = 'default_price_pix' THEN value::NUMERIC END) as default_price_pix,
   MAX(CASE WHEN key = 'default_deposit_amount' THEN value::NUMERIC END) as default_deposit_amount,
@@ -142,7 +142,7 @@ SELECT
   MAX(CASE WHEN key = 'exchange_deadline_days' THEN value::INTEGER END) as exchange_deadline_days,
   MAX(CASE WHEN key = 'days_to_next_delivery' THEN value::INTEGER END) as days_to_next_delivery,
   
-  -- Notificações
+  -- NotificaÃƒÂ§ÃƒÂµes
   MAX(CASE WHEN key = 'user_online_threshold_minutes' THEN value::INTEGER END) as user_online_threshold_minutes,
   MAX(CASE WHEN key = 'notification_polling_interval_ms' THEN value::INTEGER END) as notification_polling_interval_ms,
   MAX(CASE WHEN key = 'toast_duration_ms' THEN value::INTEGER END) as toast_duration_ms,
@@ -156,28 +156,28 @@ SELECT
 FROM system_settings;
 
 -- =====================================================
--- PERMISSÕES
+-- PERMISSÃƒâ€¢ES
 -- =====================================================
 
--- Permitir leitura pública das configurações
+-- Permitir leitura pÃƒÂºblica das configuraÃƒÂ§ÃƒÂµes
 GRANT SELECT ON system_settings_grouped TO authenticated, anon;
 
--- Comentários
-COMMENT ON VIEW system_settings_grouped IS 'View consolidada com todas as configurações do sistema agrupadas por categoria';
+-- ComentÃƒÂ¡rios
+COMMENT ON VIEW system_settings_grouped IS 'View consolidada com todas as configuraÃƒÂ§ÃƒÂµes do sistema agrupadas por categoria';
 
 -- =====================================================
--- ÍNDICES PARA PERFORMANCE
+-- ÃƒÂNDICES PARA PERFORMANCE
 -- =====================================================
 
--- Criar índice para buscas por categoria de configuração
+-- Criar ÃƒÂ­ndice para buscas por categoria de configuraÃƒÂ§ÃƒÂ£o
 CREATE INDEX IF NOT EXISTS idx_system_settings_key_prefix 
 ON system_settings (substring(key from 1 for 10));
 
 -- =====================================================
--- VALIDAÇÕES
+-- VALIDAÃƒâ€¡Ãƒâ€¢ES
 -- =====================================================
 
--- Função para validar email
+-- FunÃƒÂ§ÃƒÂ£o para validar email
 CREATE OR REPLACE FUNCTION validate_email(email TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -192,18 +192,18 @@ BEGIN
   -- Validar emails
   IF NEW.key LIKE '%_email' AND NEW.value != '' THEN
     IF NOT validate_email(NEW.value) THEN
-      RAISE EXCEPTION 'Email inválido: %', NEW.value;
+      RAISE EXCEPTION 'Email invÃƒÂ¡lido: %', NEW.value;
     END IF;
   END IF;
   
   -- Validar URLs
   IF NEW.key LIKE '%_url' AND NEW.value != '' THEN
     IF NEW.value !~ '^https?://' AND NEW.value != '' THEN
-      RAISE EXCEPTION 'URL deve começar com http:// ou https://: %', NEW.value;
+      RAISE EXCEPTION 'URL deve comeÃƒÂ§ar com http:// ou https://: %', NEW.value;
     END IF;
   END IF;
   
-  -- Validar valores numéricos positivos
+  -- Validar valores numÃƒÂ©ricos positivos
   IF NEW.key IN ('default_price_full', 'default_price_pix', 'default_deposit_amount') THEN
     IF NEW.value::NUMERIC <= 0 THEN
       RAISE EXCEPTION 'Valor deve ser maior que zero: %', NEW.key;
@@ -229,8 +229,8 @@ CREATE TRIGGER validate_system_settings_trigger
   EXECUTE FUNCTION validate_system_settings();
 
 -- =====================================================
--- COMENTÁRIOS FINAIS
+-- COMENTÃƒÂRIOS FINAIS
 -- =====================================================
 
 COMMENT ON FUNCTION validate_email IS 'Valida formato de email';
-COMMENT ON FUNCTION validate_system_settings IS 'Valida configurações do sistema antes de salvar';
+COMMENT ON FUNCTION validate_system_settings IS 'Valida configuraÃƒÂ§ÃƒÂµes do sistema antes de salvar';

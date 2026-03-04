@@ -1,145 +1,145 @@
--- Templates de Respostas Rápidas com Variáveis Dinâmicas
+-- Templates de Respostas RÃƒÂ¡pidas com VariÃƒÂ¡veis DinÃƒÂ¢micas
 
 -- Templates de Rastreamento
 INSERT INTO quick_replies (category, title, message, display_order, is_active) VALUES
-('rastreamento', 'Informar Código de Rastreio', 
-'Olá {{NOME_CLIENTE}}! 👋
+('rastreamento', 'Informar CÃƒÂ³digo de Rastreio', 
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸â€˜â€¹
 
-Seu pedido {{ULTIMO_PEDIDO_ID}} já foi enviado! 📦
+Seu pedido {{ULTIMO_PEDIDO_ID}} jÃƒÂ¡ foi enviado! Ã°Å¸â€œÂ¦
 
-🔍 Código de rastreamento: {{ULTIMO_PEDIDO_RASTREIO}}
+Ã°Å¸â€Â CÃƒÂ³digo de rastreamento: {{ULTIMO_PEDIDO_RASTREIO}}
 
-Você pode acompanhar a entrega através dos Correios ou transportadora.
+VocÃƒÂª pode acompanhar a entrega atravÃƒÂ©s dos Correios ou transportadora.
 
-Qualquer dúvida, estou à disposição!', 
+Qualquer dÃƒÂºvida, estou ÃƒÂ  disposiÃƒÂ§ÃƒÂ£o!', 
 10, true),
 
-('rastreamento', 'Pedido em Produção',
-'Oi {{NOME_CLIENTE}}! 😊
+('rastreamento', 'Pedido em ProduÃƒÂ§ÃƒÂ£o',
+'Oi {{NOME_CLIENTE}}! Ã°Å¸ËœÅ 
 
-Seu pedido {{ULTIMO_PEDIDO_ID}} está em produção! 🎨
+Seu pedido {{ULTIMO_PEDIDO_ID}} estÃƒÂ¡ em produÃƒÂ§ÃƒÂ£o! Ã°Å¸Å½Â¨
 
 Status atual: {{ULTIMO_PEDIDO_STATUS}}
 Data do pedido: {{ULTIMO_PEDIDO_DATA}}
 
-Assim que estiver pronto para envio, você receberá o código de rastreamento.
+Assim que estiver pronto para envio, vocÃƒÂª receberÃƒÂ¡ o cÃƒÂ³digo de rastreamento.
 
-Previsão de conclusão: 7-10 dias úteis.', 
+PrevisÃƒÂ£o de conclusÃƒÂ£o: 7-10 dias ÃƒÂºteis.', 
 11, true);
 
 -- Templates de Pedido
 INSERT INTO quick_replies (category, title, message, display_order, is_active) VALUES
 ('pedido', 'Status do Pedido',
-'Olá {{NOME_CLIENTE}}! 👋
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸â€˜â€¹
 
 Consultei seu pedido {{ULTIMO_PEDIDO_ID}} aqui no sistema.
 
-📊 Status atual: {{ULTIMO_PEDIDO_STATUS}}
-📅 Data do pedido: {{ULTIMO_PEDIDO_DATA}}
+Ã°Å¸â€œÅ  Status atual: {{ULTIMO_PEDIDO_STATUS}}
+Ã°Å¸â€œâ€¦ Data do pedido: {{ULTIMO_PEDIDO_DATA}}
 
-Tudo está correndo conforme o planejado! 
+Tudo estÃƒÂ¡ correndo conforme o planejado! 
 
-Alguma dúvida específica sobre o pedido?', 
+Alguma dÃƒÂºvida especÃƒÂ­fica sobre o pedido?', 
 20, true),
 
 ('pedido', 'Pedido Entregue',
-'Oi {{NOME_CLIENTE}}! 🎉
+'Oi {{NOME_CLIENTE}}! Ã°Å¸Å½â€°
 
 Seu pedido {{ULTIMO_PEDIDO_ID}} foi entregue com sucesso!
 
-Esperamos que você tenha gostado! 😊
+Esperamos que vocÃƒÂª tenha gostado! Ã°Å¸ËœÅ 
 
-Se puder, adoraríamos ver fotos da sua coleção! 📸
+Se puder, adorarÃƒÂ­amos ver fotos da sua coleÃƒÂ§ÃƒÂ£o! Ã°Å¸â€œÂ¸
 
-Avalie sua experiência conosco e ganhe 10% de desconto na próxima compra!', 
+Avalie sua experiÃƒÂªncia conosco e ganhe 10% de desconto na prÃƒÂ³xima compra!', 
 21, true);
 
 -- Templates de Pagamento
 INSERT INTO quick_replies (category, title, message, display_order, is_active) VALUES
 ('pagamento', 'Confirmar Pagamento',
-'Olá {{NOME_CLIENTE}}! 👋
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸â€˜â€¹
 
-Confirmamos o recebimento do seu pagamento! ✅
+Confirmamos o recebimento do seu pagamento! Ã¢Å“â€¦
 
-💰 Valor: {{ULTIMO_PAGAMENTO_VALOR}}
-📊 Status: {{ULTIMO_PAGAMENTO_STATUS}}
+Ã°Å¸â€™Â° Valor: {{ULTIMO_PAGAMENTO_VALOR}}
+Ã°Å¸â€œÅ  Status: {{ULTIMO_PAGAMENTO_STATUS}}
 
-Seu pedido já está sendo processado!
+Seu pedido jÃƒÂ¡ estÃƒÂ¡ sendo processado!
 
-Obrigado pela confiança! 🙏', 
+Obrigado pela confianÃƒÂ§a! Ã°Å¸â„¢Â', 
 30, true),
 
 ('pagamento', 'Aguardando Pagamento',
-'Oi {{NOME_CLIENTE}}! 😊
+'Oi {{NOME_CLIENTE}}! Ã°Å¸ËœÅ 
 
-Estamos aguardando a confirmação do seu pagamento.
+Estamos aguardando a confirmaÃƒÂ§ÃƒÂ£o do seu pagamento.
 
-💰 Valor: {{ULTIMO_PAGAMENTO_VALOR}}
-📊 Status: {{ULTIMO_PAGAMENTO_STATUS}}
+Ã°Å¸â€™Â° Valor: {{ULTIMO_PAGAMENTO_VALOR}}
+Ã°Å¸â€œÅ  Status: {{ULTIMO_PAGAMENTO_STATUS}}
 
-Assim que o pagamento for confirmado, iniciaremos a produção do seu pedido.
+Assim que o pagamento for confirmado, iniciaremos a produÃƒÂ§ÃƒÂ£o do seu pedido.
 
-Já realizou o pagamento? Me envie o comprovante para agilizar! 📸', 
+JÃƒÂ¡ realizou o pagamento? Me envie o comprovante para agilizar! Ã°Å¸â€œÂ¸', 
 31, true);
 
--- Templates de Orçamento
+-- Templates de OrÃƒÂ§amento
 INSERT INTO quick_replies (category, title, message, display_order, is_active) VALUES
-('orcamento', 'Orçamento Aprovado',
-'Olá {{NOME_CLIENTE}}! 🎉
+('orcamento', 'OrÃƒÂ§amento Aprovado',
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸Å½â€°
 
-Seu orçamento {{ULTIMO_ORCAMENTO_ID}} foi aprovado!
+Seu orÃƒÂ§amento {{ULTIMO_ORCAMENTO_ID}} foi aprovado!
 
-💰 Valor total: {{ULTIMO_ORCAMENTO_VALOR}}
+Ã°Å¸â€™Â° Valor total: {{ULTIMO_ORCAMENTO_VALOR}}
 
 Para prosseguir com o pedido, basta realizar o pagamento.
 
-Aceita PIX? Tenho 5% de desconto! 💚', 
+Aceita PIX? Tenho 5% de desconto! Ã°Å¸â€™Å¡', 
 40, true),
 
-('orcamento', 'Lembrar Orçamento Pendente',
-'Oi {{NOME_CLIENTE}}! 👋
+('orcamento', 'Lembrar OrÃƒÂ§amento Pendente',
+'Oi {{NOME_CLIENTE}}! Ã°Å¸â€˜â€¹
 
-Vi que você tem um orçamento pendente:
+Vi que vocÃƒÂª tem um orÃƒÂ§amento pendente:
 
-📋 Orçamento: {{ULTIMO_ORCAMENTO_ID}}
-💰 Valor: {{ULTIMO_ORCAMENTO_VALOR}}
+Ã°Å¸â€œâ€¹ OrÃƒÂ§amento: {{ULTIMO_ORCAMENTO_ID}}
+Ã°Å¸â€™Â° Valor: {{ULTIMO_ORCAMENTO_VALOR}}
 
-Ainda tem interesse? Posso te ajudar com alguma dúvida?
+Ainda tem interesse? Posso te ajudar com alguma dÃƒÂºvida?
 
-Esse orçamento é válido por 7 dias! ⏰', 
+Esse orÃƒÂ§amento ÃƒÂ© vÃƒÂ¡lido por 7 dias! Ã¢ÂÂ°', 
 41, true);
 
 -- Templates de Assinatura
 INSERT INTO quick_replies (category, title, message, display_order, is_active) VALUES
 ('outro', 'Status da Assinatura',
-'Olá {{NOME_CLIENTE}}! 👋
+'OlÃƒÂ¡ {{NOME_CLIENTE}}! Ã°Å¸â€˜â€¹
 
 Consultei sua assinatura aqui:
 
-📦 Plano: {{ASSINATURA_PLANO}}
-📊 Status: {{ASSINATURA_STATUS}}
+Ã°Å¸â€œÂ¦ Plano: {{ASSINATURA_PLANO}}
+Ã°Å¸â€œÅ  Status: {{ASSINATURA_STATUS}}
 
 Tudo certo com sua assinatura! 
 
-Alguma dúvida sobre os benefícios do seu plano?', 
+Alguma dÃƒÂºvida sobre os benefÃƒÂ­cios do seu plano?', 
 50, true);
 
 -- Templates Gerais com Data/Hora
 INSERT INTO quick_replies (category, title, message, display_order, is_active) VALUES
 ('saudacao', 'Bom dia Personalizado',
-'Bom dia, {{NOME_CLIENTE}}! ☀️
+'Bom dia, {{NOME_CLIENTE}}! Ã¢Ëœâ‚¬Ã¯Â¸Â
 
-Hoje é {{DATA_HOJE}} e são {{HORA_ATUAL}}.
+Hoje ÃƒÂ© {{DATA_HOJE}} e sÃƒÂ£o {{HORA_ATUAL}}.
 
-Como posso te ajudar hoje? 😊', 
+Como posso te ajudar hoje? Ã°Å¸ËœÅ ', 
 5, true),
 
 ('despedida', 'Despedida Personalizada',
-'Obrigado pelo contato, {{NOME_CLIENTE}}! 🙏
+'Obrigado pelo contato, {{NOME_CLIENTE}}! Ã°Å¸â„¢Â
 
-Qualquer dúvida, estou por aqui!
+Qualquer dÃƒÂºvida, estou por aqui!
 
-Atendimento realizado em {{DATA_HOJE}} às {{HORA_ATUAL}}.
+Atendimento realizado em {{DATA_HOJE}} ÃƒÂ s {{HORA_ATUAL}}.
 
-Tenha um ótimo dia! ✨', 
+Tenha um ÃƒÂ³timo dia! Ã¢Å“Â¨', 
 60, true);

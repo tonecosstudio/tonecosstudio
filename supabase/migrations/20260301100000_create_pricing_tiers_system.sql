@@ -1,7 +1,7 @@
 -- ============================================
--- Migration: Sistema de Níveis de Preço (Pricing Tiers)
+-- Migration: Sistema de NÃƒÂ­veis de PreÃƒÂ§o (Pricing Tiers)
 -- Data: 2026-03-01 10:00
--- Descrição: Criar estrutura completa para sistema de níveis de preço
+-- DescriÃƒÂ§ÃƒÂ£o: Criar estrutura completa para sistema de nÃƒÂ­veis de preÃƒÂ§o
 -- ============================================
 
 -- =====================================================
@@ -13,13 +13,13 @@ CREATE TABLE IF NOT EXISTS pricing_tiers (
   name TEXT NOT NULL UNIQUE,
   description TEXT,
   
-  -- Preços
+  -- PreÃƒÂ§os
   price_full NUMERIC(10,2) NOT NULL CHECK (price_full > 0),
   deposit_amount NUMERIC(10,2) NOT NULL CHECK (deposit_amount > 0),
   pix_discount_percentage NUMERIC(5,2) NOT NULL DEFAULT 5.00 CHECK (pix_discount_percentage >= 0 AND pix_discount_percentage <= 100),
   price_pix NUMERIC(10,2) GENERATED ALWAYS AS (ROUND(price_full * (1 - pix_discount_percentage / 100), 2)) STORED,
   
-  -- Status e configuração
+  -- Status e configuraÃƒÂ§ÃƒÂ£o
   is_active BOOLEAN NOT NULL DEFAULT true,
   is_default BOOLEAN NOT NULL DEFAULT false,
   display_order INTEGER NOT NULL DEFAULT 0,
@@ -35,20 +35,20 @@ CREATE TABLE IF NOT EXISTS pricing_tiers (
   CONSTRAINT check_pix_less_than_full CHECK (price_pix < price_full)
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX idx_pricing_tiers_active ON pricing_tiers(is_active) WHERE is_active = true;
 CREATE INDEX idx_pricing_tiers_default ON pricing_tiers(is_default) WHERE is_default = true;
 CREATE INDEX idx_pricing_tiers_display_order ON pricing_tiers(display_order);
 
--- Comentários
-COMMENT ON TABLE pricing_tiers IS 'Níveis de preço reutilizáveis para coleções';
-COMMENT ON COLUMN pricing_tiers.name IS 'Nome único do nível (ex: "Nível 1", "Premium")';
-COMMENT ON COLUMN pricing_tiers.price_full IS 'Preço cheio sem desconto';
-COMMENT ON COLUMN pricing_tiers.price_pix IS 'Preço com desconto PIX (calculado automaticamente)';
+-- ComentÃƒÂ¡rios
+COMMENT ON TABLE pricing_tiers IS 'NÃƒÂ­veis de preÃƒÂ§o reutilizÃƒÂ¡veis para coleÃƒÂ§ÃƒÂµes';
+COMMENT ON COLUMN pricing_tiers.name IS 'Nome ÃƒÂºnico do nÃƒÂ­vel (ex: "NÃƒÂ­vel 1", "Premium")';
+COMMENT ON COLUMN pricing_tiers.price_full IS 'PreÃƒÂ§o cheio sem desconto';
+COMMENT ON COLUMN pricing_tiers.price_pix IS 'PreÃƒÂ§o com desconto PIX (calculado automaticamente)';
 COMMENT ON COLUMN pricing_tiers.deposit_amount IS 'Valor da entrada';
-COMMENT ON COLUMN pricing_tiers.pix_discount_percentage IS 'Percentual de desconto PIX (padrão 5%)';
-COMMENT ON COLUMN pricing_tiers.is_default IS 'Se true, este é o nível padrão para novas coleções';
-COMMENT ON COLUMN pricing_tiers.display_order IS 'Ordem de exibição na UI';
+COMMENT ON COLUMN pricing_tiers.pix_discount_percentage IS 'Percentual de desconto PIX (padrÃƒÂ£o 5%)';
+COMMENT ON COLUMN pricing_tiers.is_default IS 'Se true, este ÃƒÂ© o nÃƒÂ­vel padrÃƒÂ£o para novas coleÃƒÂ§ÃƒÂµes';
+COMMENT ON COLUMN pricing_tiers.display_order IS 'Ordem de exibiÃƒÂ§ÃƒÂ£o na UI';
 
 -- =====================================================
 -- 2. CRIAR TABELA collection_tier_assignments
@@ -65,14 +65,14 @@ CREATE TABLE IF NOT EXISTS collection_tier_assignments (
   CONSTRAINT unique_collection_tier UNIQUE(collection_id)
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX idx_collection_tier_assignments_collection ON collection_tier_assignments(collection_id);
 CREATE INDEX idx_collection_tier_assignments_tier ON collection_tier_assignments(tier_id);
 CREATE INDEX idx_collection_tier_assignments_assigned_at ON collection_tier_assignments(assigned_at DESC);
 
--- Comentários
-COMMENT ON TABLE collection_tier_assignments IS 'Atribuições de coleções a níveis de preço';
-COMMENT ON COLUMN collection_tier_assignments.previous_tier_id IS 'Nível anterior para histórico';
+-- ComentÃƒÂ¡rios
+COMMENT ON TABLE collection_tier_assignments IS 'AtribuiÃƒÂ§ÃƒÂµes de coleÃƒÂ§ÃƒÂµes a nÃƒÂ­veis de preÃƒÂ§o';
+COMMENT ON COLUMN collection_tier_assignments.previous_tier_id IS 'NÃƒÂ­vel anterior para histÃƒÂ³rico';
 
 -- =====================================================
 -- 3. CRIAR TABELA pricing_history
@@ -104,17 +104,17 @@ CREATE TABLE IF NOT EXISTS pricing_history (
   CONSTRAINT check_tier_or_collection CHECK (tier_id IS NOT NULL OR collection_id IS NOT NULL)
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX idx_pricing_history_tier ON pricing_history(tier_id, changed_at DESC);
 CREATE INDEX idx_pricing_history_collection ON pricing_history(collection_id, changed_at DESC);
 CREATE INDEX idx_pricing_history_changed_at ON pricing_history(changed_at DESC);
 CREATE INDEX idx_pricing_history_changed_by ON pricing_history(changed_by);
 CREATE INDEX idx_pricing_history_change_type ON pricing_history(change_type);
 
--- Comentários
-COMMENT ON TABLE pricing_history IS 'Histórico completo de mudanças de preço';
-COMMENT ON COLUMN pricing_history.change_type IS 'Tipo de mudança realizada';
-COMMENT ON COLUMN pricing_history.metadata IS 'Dados adicionais sobre a mudança (JSON)';
+-- ComentÃƒÂ¡rios
+COMMENT ON TABLE pricing_history IS 'HistÃƒÂ³rico completo de mudanÃƒÂ§as de preÃƒÂ§o';
+COMMENT ON COLUMN pricing_history.change_type IS 'Tipo de mudanÃƒÂ§a realizada';
+COMMENT ON COLUMN pricing_history.metadata IS 'Dados adicionais sobre a mudanÃƒÂ§a (JSON)';
 
 -- =====================================================
 -- 4. CRIAR TABELA migration_audit
@@ -138,27 +138,27 @@ CREATE TABLE IF NOT EXISTS migration_audit (
   )
 );
 
--- Índices
+-- ÃƒÂndices
 CREATE INDEX idx_migration_audit_status ON migration_audit(status);
 CREATE INDEX idx_migration_audit_started_at ON migration_audit(started_at DESC);
 
--- Comentários
-COMMENT ON TABLE migration_audit IS 'Auditoria de operações de migração';
-COMMENT ON COLUMN migration_audit.migration_data IS 'Snapshot dos dados antes da migração (JSON)';
+-- ComentÃƒÂ¡rios
+COMMENT ON TABLE migration_audit IS 'Auditoria de operaÃƒÂ§ÃƒÂµes de migraÃƒÂ§ÃƒÂ£o';
+COMMENT ON COLUMN migration_audit.migration_data IS 'Snapshot dos dados antes da migraÃƒÂ§ÃƒÂ£o (JSON)';
 
 -- =====================================================
 -- 5. MODIFICAR TABELA collections
 -- =====================================================
 
--- Adicionar coluna para indicar se usa nível ou preço customizado
+-- Adicionar coluna para indicar se usa nÃƒÂ­vel ou preÃƒÂ§o customizado
 ALTER TABLE collections
 ADD COLUMN IF NOT EXISTS uses_tier_pricing BOOLEAN NOT NULL DEFAULT false;
 
--- Adicionar índice
+-- Adicionar ÃƒÂ­ndice
 CREATE INDEX IF NOT EXISTS idx_collections_uses_tier_pricing ON collections(uses_tier_pricing);
 
--- Comentário
-COMMENT ON COLUMN collections.uses_tier_pricing IS 'Se true, usa preço do nível. Se false, usa preço customizado (is_price_custom)';
+-- ComentÃƒÂ¡rio
+COMMENT ON COLUMN collections.uses_tier_pricing IS 'Se true, usa preÃƒÂ§o do nÃƒÂ­vel. Se false, usa preÃƒÂ§o customizado (is_price_custom)';
 
 -- =====================================================
 -- 6. HABILITAR ROW LEVEL SECURITY
@@ -170,16 +170,16 @@ ALTER TABLE pricing_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE migration_audit ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
--- 7. CRIAR POLÍTICAS RLS
+-- 7. CRIAR POLÃƒÂTICAS RLS
 -- =====================================================
 
--- Políticas para pricing_tiers
-CREATE POLICY "Usuários autenticados podem visualizar níveis ativos"
+-- PolÃƒÂ­ticas para pricing_tiers
+CREATE POLICY "UsuÃƒÂ¡rios autenticados podem visualizar nÃƒÂ­veis ativos"
   ON pricing_tiers FOR SELECT
   TO authenticated
   USING (is_active = true);
 
-CREATE POLICY "Admins podem gerenciar todos os níveis"
+CREATE POLICY "Admins podem gerenciar todos os nÃƒÂ­veis"
   ON pricing_tiers FOR ALL
   TO authenticated
   USING (
@@ -190,13 +190,13 @@ CREATE POLICY "Admins podem gerenciar todos os níveis"
     )
   );
 
--- Políticas para collection_tier_assignments
-CREATE POLICY "Usuários autenticados podem visualizar atribuições"
+-- PolÃƒÂ­ticas para collection_tier_assignments
+CREATE POLICY "UsuÃƒÂ¡rios autenticados podem visualizar atribuiÃƒÂ§ÃƒÂµes"
   ON collection_tier_assignments FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Admins podem gerenciar atribuições"
+CREATE POLICY "Admins podem gerenciar atribuiÃƒÂ§ÃƒÂµes"
   ON collection_tier_assignments FOR ALL
   TO authenticated
   USING (
@@ -207,8 +207,8 @@ CREATE POLICY "Admins podem gerenciar atribuições"
     )
   );
 
--- Políticas para pricing_history
-CREATE POLICY "Admins podem visualizar histórico"
+-- PolÃƒÂ­ticas para pricing_history
+CREATE POLICY "Admins podem visualizar histÃƒÂ³rico"
   ON pricing_history FOR SELECT
   TO authenticated
   USING (
@@ -219,8 +219,8 @@ CREATE POLICY "Admins podem visualizar histórico"
     )
   );
 
--- Políticas para migration_audit
-CREATE POLICY "Admins podem visualizar auditorias de migração"
+-- PolÃƒÂ­ticas para migration_audit
+CREATE POLICY "Admins podem visualizar auditorias de migraÃƒÂ§ÃƒÂ£o"
   ON migration_audit FOR SELECT
   TO authenticated
   USING (

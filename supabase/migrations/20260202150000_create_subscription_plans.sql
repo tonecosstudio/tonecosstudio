@@ -36,14 +36,14 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 
 -- Insert default plans
 INSERT INTO subscription_plans (plan_type, name, description, price_full, price_pix, collections_count, collections_count_description, deliveries_total, can_switch, switch_limit, switch_cutoff_days, display_order) VALUES
-  ('trimestral', 'Trimestral', 'Plano de 3 meses com 2 coleções', 1000.00, 900.00, 2, 'Escolha 2 coleções', 3, true, NULL, 1, 1),
-  ('semestral', 'Semestral', 'Plano de 6 meses com 3 coleções + 1 entrega grátis', 2000.00, 1800.00, 3, 'Escolha 3 coleções', 7, true, NULL, 1, 2),
-  ('anual', 'Anual', 'Plano anual com acesso a todas as coleções', 3600.00, 3240.00, -1, 'Todas as coleções', 12, true, NULL, 1, 3);
+  ('trimestral', 'Trimestral', 'Plano de 3 meses com 2 coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 1000.00, 900.00, 2, 'Escolha 2 coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 3, true, NULL, 1, 1),
+  ('semestral', 'Semestral', 'Plano de 6 meses com 3 coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes + 1 entrega grÃƒÆ’Ã‚Â¡tis', 2000.00, 1800.00, 3, 'Escolha 3 coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 7, true, NULL, 1, 2),
+  ('anual', 'Anual', 'Plano anual com acesso a todas as coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 3600.00, 3240.00, -1, 'Todas as coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes', 12, true, NULL, 1, 3);
 
 -- Add indexes
-CREATE INDEX idx_subscription_plans_plan_type ON subscription_plans(plan_type);
-CREATE INDEX idx_subscription_plans_is_active ON subscription_plans(is_active);
-CREATE INDEX idx_subscription_plans_display_order ON subscription_plans(display_order);
+CREATE INDEX IF NOT EXISTS idx_subscription_plans_plan_type ON subscription_plans(plan_type);
+CREATE INDEX IF NOT EXISTS idx_subscription_plans_is_active ON subscription_plans(is_active);
+CREATE INDEX IF NOT EXISTS idx_subscription_plans_display_order ON subscription_plans(display_order);
 
 -- Enable RLS
 ALTER TABLE subscription_plans ENABLE ROW LEVEL SECURITY;

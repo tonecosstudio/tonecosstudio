@@ -1,7 +1,7 @@
 -- =====================================================
 -- MIGRATION: Create payment_info_requests table
 -- Date: 2026-03-02
--- Description: Sistema de solicitação de informações para pagamentos manuais
+-- Description: Sistema de solicitaÃƒÂ§ÃƒÂ£o de informaÃƒÂ§ÃƒÂµes para pagamentos manuais
 -- =====================================================
 
 -- =====================================================
@@ -30,7 +30,7 @@ CREATE INDEX idx_payment_info_requests_status ON payment_info_requests(status);
 CREATE INDEX idx_payment_info_requests_created ON payment_info_requests(created_at DESC);
 
 -- =====================================================
--- 3. CREATE NOTIFICATIONS TABLE (se não existir)
+-- 3. CREATE NOTIFICATIONS TABLE (se nÃƒÂ£o existir)
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS user_notifications (
@@ -127,11 +127,11 @@ GRANT ALL ON user_notifications TO service_role;
 -- 9. ADD COMMENTS
 -- =====================================================
 
-COMMENT ON TABLE payment_info_requests IS 'Solicitações de informações adicionais para pagamentos manuais';
-COMMENT ON TABLE user_notifications IS 'Notificações para usuários do sistema';
+COMMENT ON TABLE payment_info_requests IS 'SolicitaÃƒÂ§ÃƒÂµes de informaÃƒÂ§ÃƒÂµes adicionais para pagamentos manuais';
+COMMENT ON TABLE user_notifications IS 'NotificaÃƒÂ§ÃƒÂµes para usuÃƒÂ¡rios do sistema';
 COMMENT ON COLUMN payment_info_requests.payment_id IS 'ID do pagamento manual relacionado';
-COMMENT ON COLUMN payment_info_requests.message IS 'Mensagem solicitando informações específicas';
+COMMENT ON COLUMN payment_info_requests.message IS 'Mensagem solicitando informaÃƒÂ§ÃƒÂµes especÃƒÂ­ficas';
 COMMENT ON COLUMN payment_info_requests.status IS 'Status: pending, responded, cancelled';
-COMMENT ON COLUMN user_notifications.type IS 'Tipo de notificação (payment_info_request, order_update, etc)';
+COMMENT ON COLUMN user_notifications.type IS 'Tipo de notificaÃƒÂ§ÃƒÂ£o (payment_info_request, order_update, etc)';
 COMMENT ON COLUMN user_notifications.related_id IS 'ID do objeto relacionado (payment_id, order_id, etc)';
 COMMENT ON COLUMN user_notifications.related_type IS 'Tipo do objeto relacionado (manual_payment, order, etc)';

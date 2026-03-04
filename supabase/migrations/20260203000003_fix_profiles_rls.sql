@@ -1,5 +1,5 @@
--- Adicionar política para permitir INSERT em profiles
--- (necessário para o trigger sync_user_email funcionar)
+-- Adicionar polÃƒÂ­tica para permitir INSERT em profiles
+-- (necessÃƒÂ¡rio para o trigger sync_user_email funcionar)
 
 -- Permitir que o sistema crie profiles automaticamente
 CREATE POLICY "system_insert_profiles"

@@ -51,14 +51,14 @@ BEGIN
   PERFORM cron.schedule(
     'daily-character-revelation',         -- Job name
     '0 10 * * *',                         -- Cron expression: 10:00 daily (Bahia time)
-    $$
+    $body$
     SELECT
       net.http_post(
         url:='https://pabxpvqwtvbjaunjejud.supabase.co/functions/v1/cron-reveal-characters',
         headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYnhwdnF3dHZiamF1bmplanVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTU4NTYsImV4cCI6MjA4NTM5MTg1Nn0.W3n9h6zoLJumHNrFwG_aBB_AI6CjBt4LAP5a9alXZm4"}'::jsonb,
         body:='{}'::jsonb
       ) as request_id;
-    $$
+    $body$
   );
   
   RAISE NOTICE 'Successfully scheduled daily-character-revelation cron job at 10:00 Bahia time';

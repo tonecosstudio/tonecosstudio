@@ -62,15 +62,10 @@ export interface ChoiceFilters {
 export async function fetchPendingChoices(
   filters: ChoiceFilters = {}
 ): Promise<CharacterChoice[]> {
-  // Start query
+  // Query character_choices without joins - use denormalized fields
   let query = supabase
     .from("character_choices")
-    .select(`
-      *,
-      profiles!character_choices_user_id_fkey(full_name, email),
-      collections(name),
-      collection_characters(name, image_url)
-    `)
+    .select("*")
     .order("deadline", { ascending: true });
 
   // Apply status filter
@@ -97,19 +92,19 @@ export async function fetchPendingChoices(
     throw new Error(`Error fetching character choices: ${error.message}`);
   }
 
-  // Transform data
+  // Transform data using denormalized fields
   const choices: CharacterChoice[] = (data || []).map((item: any) => ({
     id: item.id,
     orderId: item.order_id,
     orderType: item.order_type,
     userId: item.user_id,
-    customerName: item.profiles?.full_name || item.profiles?.email || "Unknown",
-    customerEmail: item.profiles?.email || "",
+    customerName: item.customer_name || "Unknown",
+    customerEmail: item.customer_email || "",
     collectionId: item.collection_id,
-    collectionName: item.collections?.name || "Unknown Collection",
+    collectionName: item.collection_name || "Unknown Collection",
     characterId: item.character_id,
-    characterName: item.collection_characters?.name || null,
-    characterImageUrl: item.collection_characters?.image_url || null,
+    characterName: item.character_name,
+    characterImageUrl: item.character_image_url,
     status: item.status,
     submittedAt: item.submitted_at,
     approvedAt: item.approved_at,
@@ -286,14 +281,10 @@ export async function extendDeadline(
  * @returns Array of character choices (history)
  */
 export async function getChoiceHistory(orderId: string): Promise<CharacterChoice[]> {
+  // Query character_choices without joins - use denormalized fields
   const { data, error } = await supabase
     .from("character_choices")
-    .select(`
-      *,
-      profiles!character_choices_user_id_fkey(full_name, email),
-      collections(name),
-      collection_characters(name, image_url)
-    `)
+    .select("*")
     .eq("order_id", orderId)
     .order("created_at", { ascending: false });
 
@@ -301,19 +292,19 @@ export async function getChoiceHistory(orderId: string): Promise<CharacterChoice
     throw new Error(`Error fetching choice history: ${error.message}`);
   }
 
-  // Transform data
+  // Transform data using denormalized fields
   return (data || []).map((item: any) => ({
     id: item.id,
     orderId: item.order_id,
     orderType: item.order_type,
     userId: item.user_id,
-    customerName: item.profiles?.full_name || item.profiles?.email || "Unknown",
-    customerEmail: item.profiles?.email || "",
+    customerName: item.customer_name || "Unknown",
+    customerEmail: item.customer_email || "",
     collectionId: item.collection_id,
-    collectionName: item.collections?.name || "Unknown Collection",
+    collectionName: item.collection_name || "Unknown Collection",
     characterId: item.character_id,
-    characterName: item.collection_characters?.name || null,
-    characterImageUrl: item.collection_characters?.image_url || null,
+    characterName: item.character_name,
+    characterImageUrl: item.character_image_url,
     status: item.status,
     submittedAt: item.submitted_at,
     approvedAt: item.approved_at,

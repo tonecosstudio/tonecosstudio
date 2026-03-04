@@ -9,7 +9,7 @@
 -- 1. CREATE PRODUCTION_QUEUE TABLE
 -- =====================================================
 
-CREATE TABLE production_queue (
+CREATE TABLE IF NOT EXISTS production_queue (
   -- Primary key
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -18,9 +18,9 @@ CREATE TABLE production_queue (
   order_type TEXT NOT NULL CHECK (order_type IN ('subscription_delivery', 'standalone_purchase')),
   
   -- Customer reference
-  customer_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  customer_name TEXT NOT NULL,
-  customer_email TEXT NOT NULL,
+  customer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  customer_name TEXT,
+  customer_email TEXT,
   
   -- Collection & Character
   collection_id UUID NOT NULL REFERENCES collections(id),
@@ -99,6 +99,67 @@ CREATE TABLE production_queue (
   )
 );
 
+-- Add missing columns if table already exists
+DO $$
+BEGIN
+  -- Customer columns
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'customer_id') THEN
+    ALTER TABLE production_queue ADD COLUMN customer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'customer_name') THEN
+    ALTER TABLE production_queue ADD COLUMN customer_name TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'customer_email') THEN
+    ALTER TABLE production_queue ADD COLUMN customer_email TEXT;
+  END IF;
+  
+  -- Choice Management columns
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'choice_deadline') THEN
+    ALTER TABLE production_queue ADD COLUMN choice_deadline TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'choice_made_at') THEN
+    ALTER TABLE production_queue ADD COLUMN choice_made_at TIMESTAMPTZ;
+  END IF;
+  
+  -- Priority columns
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'priority_score') THEN
+    ALTER TABLE production_queue ADD COLUMN priority_score INTEGER NOT NULL DEFAULT 50;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'scheduled_production_date') THEN
+    ALTER TABLE production_queue ADD COLUMN scheduled_production_date TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'estimated_completion_date') THEN
+    ALTER TABLE production_queue ADD COLUMN estimated_completion_date TIMESTAMPTZ;
+  END IF;
+  
+  -- Assignment columns
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'assigned_to_name') THEN
+    ALTER TABLE production_queue ADD COLUMN assigned_to_name TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'assigned_at') THEN
+    ALTER TABLE production_queue ADD COLUMN assigned_at TIMESTAMPTZ;
+  END IF;
+  
+  -- Tracking columns
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'production_started_at') THEN
+    ALTER TABLE production_queue ADD COLUMN production_started_at TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'production_completed_at') THEN
+    ALTER TABLE production_queue ADD COLUMN production_completed_at TIMESTAMPTZ;
+  END IF;
+  
+  -- Notes columns
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'production_notes') THEN
+    ALTER TABLE production_queue ADD COLUMN production_notes TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'customer_notes') THEN
+    ALTER TABLE production_queue ADD COLUMN customer_notes TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'production_queue' AND column_name = 'internal_flags') THEN
+    ALTER TABLE production_queue ADD COLUMN internal_flags TEXT[] DEFAULT '{}';
+  END IF;
+END $$;
+
 -- =====================================================
 -- 2. ADD FOREIGN KEY CONSTRAINTS
 -- =====================================================
@@ -151,30 +212,30 @@ COMMENT ON FUNCTION validate_production_queue_order_reference IS
 -- =====================================================
 
 -- Index for order lookups (most common query)
-CREATE INDEX idx_production_queue_order ON production_queue(order_id, order_type);
+CREATE INDEX IF NOT EXISTS idx_production_queue_order ON production_queue(order_id, order_type);
 
 -- Index for customer lookups
-CREATE INDEX idx_production_queue_customer ON production_queue(customer_id);
+CREATE INDEX IF NOT EXISTS idx_production_queue_customer ON production_queue(customer_id);
 
 -- Index for status filtering (critical for dashboard)
-CREATE INDEX idx_production_queue_status ON production_queue(production_status);
+CREATE INDEX IF NOT EXISTS idx_production_queue_status ON production_queue(production_status);
 
 -- Index for priority sorting (critical for dashboard)
-CREATE INDEX idx_production_queue_priority ON production_queue(priority_score DESC, choice_deadline ASC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_production_queue_priority ON production_queue(priority_score DESC, choice_deadline ASC NULLS LAST);
 
 -- Index for choice deadline queries (for reminder jobs)
-CREATE INDEX idx_production_queue_choice_deadline ON production_queue(choice_deadline) 
+CREATE INDEX IF NOT EXISTS idx_production_queue_choice_deadline ON production_queue(choice_deadline) 
   WHERE choice_status = 'pending' AND choice_deadline IS NOT NULL;
 
 -- Composite index for collection-based views
-CREATE INDEX idx_production_queue_collection_stage ON production_queue(collection_id, current_stage);
+CREATE INDEX IF NOT EXISTS idx_production_queue_collection_stage ON production_queue(collection_id, current_stage);
 
 -- Index for assignment queries
-CREATE INDEX idx_production_queue_assigned ON production_queue(assigned_to) 
+CREATE INDEX IF NOT EXISTS idx_production_queue_assigned ON production_queue(assigned_to) 
   WHERE assigned_to IS NOT NULL;
 
 -- Index for scheduled production date
-CREATE INDEX idx_production_queue_scheduled ON production_queue(scheduled_production_date) 
+CREATE INDEX IF NOT EXISTS idx_production_queue_scheduled ON production_queue(scheduled_production_date) 
   WHERE scheduled_production_date IS NOT NULL;
 
 -- =====================================================

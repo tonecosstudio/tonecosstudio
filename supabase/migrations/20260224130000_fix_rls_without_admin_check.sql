@@ -1,9 +1,9 @@
--- Migration: Fix RLS sem verificação de admin
--- Issue: 403 Forbidden porque verificação de admin não funciona corretamente
--- Solution: Políticas baseadas em membership, não em role
+-- Migration: Fix RLS sem verificaÃƒÂ§ÃƒÂ£o de admin
+-- Issue: 403 Forbidden porque verificaÃƒÂ§ÃƒÂ£o de admin nÃƒÂ£o funciona corretamente
+-- Solution: PolÃƒÂ­ticas baseadas em membership, nÃƒÂ£o em role
 
 -- =====================================================
--- 1. REMOVER POLÍTICAS ATUAIS
+-- 1. REMOVER POLÃƒÂTICAS ATUAIS
 -- =====================================================
 
 DROP POLICY IF EXISTS "chat_groups_select" ON chat_groups;
@@ -27,10 +27,10 @@ DROP POLICY IF EXISTS "chat_group_attachments_update" ON chat_group_attachments;
 DROP POLICY IF EXISTS "chat_group_attachments_delete" ON chat_group_attachments;
 
 -- =====================================================
--- 2. CRIAR POLÍTICAS PERMISSIVAS PARA AUTHENTICATED
+-- 2. CRIAR POLÃƒÂTICAS PERMISSIVAS PARA AUTHENTICATED
 -- =====================================================
 
--- CHAT_GROUPS: Usuários autenticados podem ver grupos não-deletados
+-- CHAT_GROUPS: UsuÃƒÂ¡rios autenticados podem ver grupos nÃƒÂ£o-deletados
 CREATE POLICY "chat_groups_select"
   ON chat_groups FOR SELECT
   TO authenticated
@@ -119,7 +119,7 @@ CREATE POLICY "chat_group_attachments_delete"
   USING (true);
 
 -- =====================================================
--- 3. VERIFICAÇÃO
+-- 3. VERIFICAÃƒâ€¡ÃƒÆ’O
 -- =====================================================
 
 SELECT 
@@ -130,4 +130,4 @@ WHERE tablename IN ('chat_groups', 'chat_group_members', 'chat_group_messages', 
 GROUP BY tablename
 ORDER BY tablename;
 
-SELECT '✅ Políticas RLS permissivas aplicadas. Sistema deve funcionar agora.' as resultado;
+SELECT 'Ã¢Å“â€¦ PolÃƒÂ­ticas RLS permissivas aplicadas. Sistema deve funcionar agora.' as resultado;

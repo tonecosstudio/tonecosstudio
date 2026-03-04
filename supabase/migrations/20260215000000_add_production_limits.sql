@@ -1,11 +1,11 @@
--- Migration: Sistema de Limite de Produção Mensal
+-- Migration: Sistema de Limite de ProduÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o Mensal
 -- Data: 15/02/2026
--- Descrição: Implementa controle de limite global de produção mensal
+-- DescriÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o: Implementa controle de limite global de produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o mensal
 
 -- =====================================================
 -- 1. TABELA: system_settings
 -- =====================================================
--- Armazena configurações globais do sistema
+-- Armazena configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais do sistema
 
 CREATE TABLE IF NOT EXISTS system_settings (
   key TEXT PRIMARY KEY,
@@ -15,17 +15,17 @@ CREATE TABLE IF NOT EXISTS system_settings (
   updated_by UUID REFERENCES auth.users(id)
 );
 
--- Inserir configuração padrão de limite mensal
+-- Inserir configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o padrÃƒÆ’Ã‚Â£o de limite mensal
 INSERT INTO system_settings (key, value, description)
 VALUES 
-  ('monthly_production_limit', '20', 'Limite global de produção mensal (todas as coleções somadas)'),
-  ('sales_open_day', '15', 'Dia do mês em que as vendas abrem (padrão: dia 15)')
+  ('monthly_production_limit', '20', 'Limite global de produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o mensal (todas as coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes somadas)'),
+  ('sales_open_day', '15', 'Dia do mÃƒÆ’Ã‚Âªs em que as vendas abrem (padrÃƒÆ’Ã‚Â£o: dia 15)')
 ON CONFLICT (key) DO NOTHING;
 
 -- =====================================================
 -- 2. TABELA: monthly_production
 -- =====================================================
--- Controla a produção mensal e limite de vendas
+-- Controla a produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o mensal e limite de vendas
 
 CREATE TABLE IF NOT EXISTS monthly_production (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -39,24 +39,24 @@ CREATE TABLE IF NOT EXISTS monthly_production (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   
-  -- Garantir apenas um registro por mês/ano
+  -- Garantir apenas um registro por mÃƒÆ’Ã‚Âªs/ano
   UNIQUE(month, year)
 );
 
--- Índices para performance
-CREATE INDEX idx_monthly_production_period ON monthly_production(year, month);
-CREATE INDEX idx_monthly_production_status ON monthly_production(is_closed);
+-- ÃƒÆ’Ã‚Ândices para performance
+CREATE INDEX IF NOT EXISTS idx_monthly_production_period ON monthly_production(year, month);
+CREATE INDEX IF NOT EXISTS idx_monthly_production_status ON monthly_production(is_closed);
 
 -- =====================================================
 -- 3. ADICIONAR CAMPOS EM COLLECTIONS
 -- =====================================================
--- Adicionar informações de ciclo anual
+-- Adicionar informaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de ciclo anual
 
 ALTER TABLE collections
 ADD COLUMN IF NOT EXISTS cycle_year INTEGER DEFAULT 2026,
 ADD COLUMN IF NOT EXISTS release_order INTEGER;
 
--- Atualizar coleções existentes com ordem de lançamento
+-- Atualizar coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes existentes com ordem de lanÃƒÆ’Ã‚Â§amento
 WITH numbered_collections AS (
   SELECT 
     id,
@@ -75,7 +75,7 @@ SET release_order = numbered_collections.new_order
 FROM numbered_collections
 WHERE collections.id = numbered_collections.id;
 
--- Adicionar constraint após atualizar os dados
+-- Adicionar constraint apÃƒÆ’Ã‚Â³s atualizar os dados
 ALTER TABLE collections
 ADD CONSTRAINT collections_release_order_check 
 CHECK (release_order BETWEEN 1 AND 4);
@@ -83,7 +83,7 @@ CHECK (release_order BETWEEN 1 AND 4);
 -- =====================================================
 -- 4. ADICIONAR CAMPOS EM COLLECTION_CHARACTERS
 -- =====================================================
--- Adicionar informações de lançamento mensal
+-- Adicionar informaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de lanÃƒÆ’Ã‚Â§amento mensal
 
 ALTER TABLE collection_characters
 ADD COLUMN IF NOT EXISTS release_month INTEGER CHECK (release_month BETWEEN 1 AND 12),
@@ -91,7 +91,7 @@ ADD COLUMN IF NOT EXISTS release_date DATE,
 ADD COLUMN IF NOT EXISTS is_revealed BOOLEAN DEFAULT FALSE;
 
 -- =====================================================
--- 5. FUNÇÃO: Obter Limite de Produção Atual
+-- 5. FUNÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Obter Limite de ProduÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o Atual
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION get_current_production_limit()
@@ -114,12 +114,12 @@ BEGIN
   FROM system_settings
   WHERE key = 'monthly_production_limit';
   
-  -- Criar registro do mês atual se não existir
+  -- Criar registro do mÃƒÆ’Ã‚Âªs atual se nÃƒÆ’Ã‚Â£o existir
   INSERT INTO monthly_production (month, year, global_limit)
   VALUES (v_current_month, v_current_year, v_limit_value)
   ON CONFLICT (month, year) DO NOTHING;
   
-  -- Retornar dados do mês atual
+  -- Retornar dados do mÃƒÆ’Ã‚Âªs atual
   RETURN QUERY
   SELECT 
     mp.month,
@@ -135,7 +135,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 6. FUNÇÃO: Incrementar Vendas do Mês
+-- 6. FUNÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Incrementar Vendas do MÃƒÆ’Ã‚Âªs
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION increment_monthly_sales(quantity INTEGER DEFAULT 1)
@@ -157,7 +157,7 @@ BEGIN
   
   -- Verificar se excede limite
   IF v_new_sold > v_current_limit THEN
-    RAISE EXCEPTION 'Limite de produção mensal atingido (% / %)', v_current_sold, v_current_limit;
+    RAISE EXCEPTION 'Limite de produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o mensal atingido (% / %)', v_current_sold, v_current_limit;
   END IF;
   
   -- Atualizar vendas
@@ -176,7 +176,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 7. FUNÇÃO: Verificar se Vendas Estão Abertas
+-- 7. FUNÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Verificar se Vendas EstÃƒÆ’Ã‚Â£o Abertas
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION are_sales_open()
@@ -186,12 +186,12 @@ DECLARE
   v_current_year INTEGER := EXTRACT(YEAR FROM CURRENT_DATE);
   v_is_closed_flag BOOLEAN;
 BEGIN
-  -- Buscar status do mês atual
+  -- Buscar status do mÃƒÆ’Ã‚Âªs atual
   SELECT is_closed INTO v_is_closed_flag
   FROM monthly_production
   WHERE month = v_current_month AND year = v_current_year;
   
-  -- Se não existe registro, vendas estão abertas
+  -- Se nÃƒÆ’Ã‚Â£o existe registro, vendas estÃƒÆ’Ã‚Â£o abertas
   IF v_is_closed_flag IS NULL THEN
     RETURN TRUE;
   END IF;
@@ -201,7 +201,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 8. FUNÇÃO: Fechar Vendas Manualmente
+-- 8. FUNÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Fechar Vendas Manualmente
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION close_monthly_sales(reason TEXT DEFAULT 'manual')
@@ -223,7 +223,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 9. FUNÇÃO: Reabrir Vendas
+-- 9. FUNÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Reabrir Vendas
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION reopen_monthly_sales()
@@ -252,12 +252,12 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE monthly_production ENABLE ROW LEVEL SECURITY;
 
--- Políticas para system_settings
-CREATE POLICY "Todos podem ler configurações"
+-- PolÃƒÆ’Ã‚Â­ticas para system_settings
+CREATE POLICY "Todos podem ler configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes"
   ON system_settings FOR SELECT
   USING (true);
 
-CREATE POLICY "Apenas admins podem atualizar configurações"
+CREATE POLICY "Apenas admins podem atualizar configuraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes"
   ON system_settings FOR UPDATE
   USING (
     EXISTS (
@@ -266,12 +266,12 @@ CREATE POLICY "Apenas admins podem atualizar configurações"
     )
   );
 
--- Políticas para monthly_production
-CREATE POLICY "Todos podem ler produção mensal"
+-- PolÃƒÆ’Ã‚Â­ticas para monthly_production
+CREATE POLICY "Todos podem ler produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o mensal"
   ON monthly_production FOR SELECT
   USING (true);
 
-CREATE POLICY "Apenas admins podem gerenciar produção"
+CREATE POLICY "Apenas admins podem gerenciar produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o"
   ON monthly_production FOR ALL
   USING (
     EXISTS (
@@ -281,22 +281,22 @@ CREATE POLICY "Apenas admins podem gerenciar produção"
   );
 
 -- =====================================================
--- 11. COMENTÁRIOS
+-- 11. COMENTÃƒÆ’Ã‚ÂRIOS
 -- =====================================================
 
-COMMENT ON TABLE system_settings IS 'Configurações globais do sistema Ordax';
-COMMENT ON TABLE monthly_production IS 'Controle de limite de produção mensal';
-COMMENT ON FUNCTION get_current_production_limit() IS 'Retorna informações do limite de produção do mês atual';
+COMMENT ON TABLE system_settings IS 'ConfiguraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes globais do sistema Ordax';
+COMMENT ON TABLE monthly_production IS 'Controle de limite de produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o mensal';
+COMMENT ON FUNCTION get_current_production_limit() IS 'Retorna informaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do limite de produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do mÃƒÆ’Ã‚Âªs atual';
 COMMENT ON FUNCTION increment_monthly_sales(INTEGER) IS 'Incrementa contador de vendas e fecha automaticamente se atingir limite';
-COMMENT ON FUNCTION are_sales_open() IS 'Verifica se as vendas do mês atual estão abertas';
-COMMENT ON FUNCTION close_monthly_sales(TEXT) IS 'Fecha vendas do mês atual manualmente';
-COMMENT ON FUNCTION reopen_monthly_sales() IS 'Reabre vendas do mês atual';
+COMMENT ON FUNCTION are_sales_open() IS 'Verifica se as vendas do mÃƒÆ’Ã‚Âªs atual estÃƒÆ’Ã‚Â£o abertas';
+COMMENT ON FUNCTION close_monthly_sales(TEXT) IS 'Fecha vendas do mÃƒÆ’Ã‚Âªs atual manualmente';
+COMMENT ON FUNCTION reopen_monthly_sales() IS 'Reabre vendas do mÃƒÆ’Ã‚Âªs atual';
 
 -- =====================================================
 -- 12. DADOS INICIAIS
 -- =====================================================
 
--- Criar registro para o mês atual
+-- Criar registro para o mÃƒÆ’Ã‚Âªs atual
 INSERT INTO monthly_production (month, year, global_limit)
 VALUES (
   EXTRACT(MONTH FROM CURRENT_DATE)::INTEGER,

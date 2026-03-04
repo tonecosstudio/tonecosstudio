@@ -293,13 +293,69 @@ describe("Production Service", () => {
 
   describe("blockProduction", () => {
     it("deve bloquear produção com motivo", async () => {
+      const mockQueueItem = {
+        id: "1",
+        current_stage: "production",
+        customer_id: "user-1",
+        customer_email: "user@example.com",
+        collection_name: "Test Collection",
+        order_id: "order-1",
+        order_type: "subscription_delivery",
+      };
+
       const mockUpdatedItem = {
         id: "1",
         production_status: "on_hold",
         production_notes: "Falta de material",
         updated_at: "2024-01-02T00:00:00Z",
+        order_id: "order-1",
+        order_type: "subscription_delivery",
+        customer_id: "user-1",
+        customer_name: "Test User",
+        customer_email: "user@example.com",
+        collection_id: "col-1",
+        collection_name: "Test Collection",
+        character_id: null,
+        character_name: null,
+        current_stage: "production",
+        choice_status: "approved",
+        choice_deadline: null,
+        priority: "normal",
+        priority_score: 50,
+        scheduled_production_date: null,
+        estimated_completion_date: null,
+        assigned_to: null,
+        assigned_to_name: null,
+        assigned_at: null,
+        production_started_at: null,
+        production_completed_at: null,
+        production_notes: "Falta de material",
+        customer_notes: null,
+        internal_flags: [],
+        created_at: "2024-01-01T00:00:00Z",
       };
 
+      // Mock the initial fetch query
+      const mockFetchQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: mockQueueItem,
+          error: null,
+        }),
+      };
+
+      // Mock the stage update query
+      const mockStageUpdateQuery = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {},
+          error: null,
+        }),
+      };
+
+      // Mock the production_queue update query
       const mockUpdateQuery = {
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -310,12 +366,28 @@ describe("Production Service", () => {
         }),
       };
 
-      vi.mocked(supabase.from).mockReturnValue(mockUpdateQuery as any);
+      // Mock the estimated date update query
+      const mockEstimatedDateQuery = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({
+          data: {},
+          error: null,
+        }),
+      };
+
+      // Setup the mock to return different queries based on call order
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(mockFetchQuery as any) // First call: fetch queue item
+        .mockReturnValueOnce(mockStageUpdateQuery as any) // Second call: update stage
+        .mockReturnValueOnce(mockUpdateQuery as any) // Third call: update queue
+        .mockReturnValueOnce(mockEstimatedDateQuery as any); // Fourth call: update estimated date
 
       const result = await blockProduction("1", "Falta de material");
 
       expect(result.productionStatus).toBe("on_hold");
       expect(result.productionNotes).toBe("Falta de material");
+      expect(supabase.from).toHaveBeenCalledWith("production_queue");
+      expect(supabase.from).toHaveBeenCalledWith("production_stages");
     });
   });
 

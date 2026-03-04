@@ -24,7 +24,7 @@
 
 -- Remove any existing schedule for this job
 -- This ensures clean re-deployment of the migration
-DO $
+DO $$
 BEGIN
   PERFORM cron.unschedule('daily-delivery-creation');
   RAISE NOTICE 'Unscheduled existing daily-delivery-creation job (if any)';
@@ -34,7 +34,7 @@ EXCEPTION
   WHEN OTHERS THEN
     -- Job doesn't exist, that's fine
     RAISE NOTICE 'No existing job to unschedule';
-END $;
+END $$;
 
 -- =====================================================
 -- STEP 2: Schedule the delivery creation cron job
@@ -45,19 +45,19 @@ END $;
 -- Since cron.timezone is set to 'America/Bahia', this runs at 00:01 Bahia time
 -- which is 03:01 UTC (Bahia is UTC-3)
 
-DO $
+DO $$
 BEGIN
   PERFORM cron.schedule(
     'daily-delivery-creation',           -- Job name
     '1 0 * * *',                          -- Cron expression: 00:01 daily (Bahia time)
-    $
+    $body$
     SELECT
       net.http_post(
         url:='https://pabxpvqwtvbjaunjejud.supabase.co/functions/v1/cron-create-deliveries',
         headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYnhwdnF3dHZiamF1bmplanVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTU4NTYsImV4cCI6MjA4NTM5MTg1Nn0.W3n9h6zoLJumHNrFwG_aBB_AI6CjBt4LAP5a9alXZm4"}'::jsonb,
         body:='{}'::jsonb
       ) as request_id;
-    $
+    $body$
   );
   
   RAISE NOTICE 'Successfully scheduled daily-delivery-creation cron job at 00:01 Bahia time';
@@ -66,7 +66,7 @@ EXCEPTION
     RAISE NOTICE 'pg_cron not available. Please schedule manually or use Edge Function with cron trigger';
   WHEN OTHERS THEN
     RAISE NOTICE 'Error scheduling job: %', SQLERRM;
-END $;
+END $$;
 
 -- Add comment for documentation
 COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - includes daily-delivery-creation job at 00:01 Bahia time';
@@ -82,17 +82,6 @@ COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - includes daily-deliv
 -- SELECT * FROM cron.job_run_details 
 -- WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'daily-delivery-creation')
 -- ORDER BY start_time DESC LIMIT 10;
---
--- To manually trigger the job for testing:
--- SELECT cron.schedule('test-delivery-creation-now', '* * * * *', $
---   SELECT net.http_post(
---     url:='https://pabxpvqwtvbjaunjejud.supabase.co/functions/v1/cron-create-deliveries',
---     headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYnhwdnF3dHZiamF1bmplanVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTU4NTYsImV4cCI6MjA4NTM5MTg1Nn0.W3n9h6zoLJumHNrFwG_aBB_AI6CjBt4LAP5a9alXZm4"}'::jsonb,
---     body:='{}'::jsonb
---   ) as request_id;
--- $);
--- -- Then unschedule after testing:
--- -- SELECT cron.unschedule('test-delivery-creation-now');
 --
 -- To check ORDAX cron job logs:
 -- SELECT * FROM cron_job_logs 
@@ -130,4 +119,3 @@ COMMENT ON EXTENSION pg_cron IS 'Cron-based job scheduler - includes daily-deliv
 -- - Check cron.job_run_details for pg_cron execution history
 --
 -- =====================================================
-

@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, List, Calendar } from "lucide-react";
 import { ProductionMetricsBar } from "@/components/production/ProductionMetricsBar";
@@ -263,60 +264,53 @@ export default function ProductionDashboardPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard de Produção</h1>
-            <p className="text-sm text-gray-500">
-              Gerencie a fila de produção e acompanhe o progresso dos pedidos
-            </p>
-          </div>
-
-          {/* View Switcher */}
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-            <TabsList>
-              <TabsTrigger value="kanban" className="flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4" />
-                Kanban
-              </TabsTrigger>
-              <TabsTrigger value="list" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
-                Lista
-              </TabsTrigger>
-              <TabsTrigger value="calendar" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Calendário
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard de Produção</h1>
+          <p className="text-muted-foreground">
+            Gerencie a fila de produção e acompanhe o progresso dos pedidos
+          </p>
         </div>
-      </header>
 
-      {/* Urgent Alerts Bar */}
-      <div className="border-b bg-white px-6 py-3">
+        {/* View Switcher */}
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+          <TabsList>
+            <TabsTrigger value="kanban" className="flex items-center gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              Kanban
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Lista
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendário
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Urgent Alerts Bar */}
         <UrgentAlertsBar onAlertClick={handleAlertClick} />
-      </div>
 
-      {/* Metrics Bar */}
-      <div className="border-b bg-white px-6 py-3">
+        {/* Metrics Bar */}
         <ProductionMetricsBar />
-      </div>
 
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Filters Sidebar */}
-        <aside className="w-80 border-r bg-white overflow-y-auto">
-          <ProductionFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            onReset={handleResetFilters}
-          />
-        </aside>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Filters Sidebar */}
+          <aside className="lg:col-span-1">
+            <ProductionFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              onReset={handleResetFilters}
+            />
+          </aside>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-auto p-6">
+          {/* Content Area */}
+          <main className="lg:col-span-3">
           {viewMode === "kanban" && (
             <ProductionKanbanBoard filters={filters} />
           )}
@@ -348,36 +342,37 @@ export default function ProductionDashboardPage() {
               isLoading={isLoading}
               onItemClick={handleItemClick}
             />
-          )}
-        </main>
+            )}
+          </main>
+        </div>
+
+        {/* Bulk Action Modals */}
+        <BulkAssignModal
+          open={showAssignModal}
+          onOpenChange={setShowAssignModal}
+          selectedCount={selectedIds.size}
+          onConfirm={handleBulkAssign}
+        />
+
+        <BulkStageUpdateModal
+          open={showStageModal}
+          onOpenChange={setShowStageModal}
+          selectedCount={selectedIds.size}
+          onConfirm={handleBulkStageUpdate}
+        />
+
+        <BulkProgressModal
+          open={showProgressModal}
+          onOpenChange={setShowProgressModal}
+          title={progressState.title}
+          total={progressState.total}
+          processed={progressState.processed}
+          successful={progressState.successful}
+          failed={progressState.failed}
+          isComplete={progressState.isComplete}
+          errors={progressState.errors}
+        />
       </div>
-
-      {/* Bulk Action Modals */}
-      <BulkAssignModal
-        open={showAssignModal}
-        onOpenChange={setShowAssignModal}
-        selectedCount={selectedIds.size}
-        onConfirm={handleBulkAssign}
-      />
-
-      <BulkStageUpdateModal
-        open={showStageModal}
-        onOpenChange={setShowStageModal}
-        selectedCount={selectedIds.size}
-        onConfirm={handleBulkStageUpdate}
-      />
-
-      <BulkProgressModal
-        open={showProgressModal}
-        onOpenChange={setShowProgressModal}
-        title={progressState.title}
-        total={progressState.total}
-        processed={progressState.processed}
-        successful={progressState.successful}
-        failed={progressState.failed}
-        isComplete={progressState.isComplete}
-        errors={progressState.errors}
-      />
-    </div>
+    </AdminLayout>
   );
 }

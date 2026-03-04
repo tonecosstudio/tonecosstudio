@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { PaymentVoucherUpload } from "@/components/PaymentVoucherUpload";
 import { VoucherRejectionAlert } from "@/components/VoucherRejectionAlert";
+import { CharacterChoiceStatus } from "@/components/customer/CharacterChoiceStatus";
 import { getStandalonePurchase } from "@/services/standalone-purchase-service";
 import { formatDistanceToNow, isPast, differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -415,6 +416,16 @@ export default function PayStandaloneBalance() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Character Choice Status */}
+              {purchase.collection_id && (
+                <CharacterChoiceStatus
+                  orderId={purchase.id}
+                  collectionId={purchase.collection_id}
+                  collectionName={collection.name}
+                  orderType="standalone_purchase"
+                />
+              )}
 
               {/* Deadline Card */}
               {purchase.balance_due_date && !isPaid && !isCancelled && (

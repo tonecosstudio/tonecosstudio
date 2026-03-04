@@ -1,8 +1,8 @@
 -- Migration: Create subscriptions system
--- Purpose: Sistema completo de assinaturas de coleções
+-- Purpose: Sistema completo de assinaturas de coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
 -- Date: 2026-02-02
 
--- Tabela de personagens das coleções
+-- Tabela de personagens das coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes
 CREATE TABLE IF NOT EXISTS collection_characters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   collection_id UUID NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
@@ -66,14 +66,14 @@ CREATE TABLE IF NOT EXISTS subscription_deliveries (
   UNIQUE(subscription_id, delivery_number)
 );
 
--- Índices
-CREATE INDEX idx_collection_characters_collection ON collection_characters(collection_id);
-CREATE INDEX idx_collection_characters_order ON collection_characters(release_order);
-CREATE INDEX idx_subscriptions_user ON subscriptions(user_id);
-CREATE INDEX idx_subscriptions_collection ON subscriptions(collection_id);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX idx_subscription_deliveries_subscription ON subscription_deliveries(subscription_id);
-CREATE INDEX idx_subscription_deliveries_status ON subscription_deliveries(status);
+-- ÃƒÆ’Ã‚Ândices
+CREATE INDEX IF NOT EXISTS idx_collection_characters_collection ON collection_characters(collection_id);
+CREATE INDEX IF NOT EXISTS idx_collection_characters_order ON collection_characters(release_order);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_collection ON subscriptions(collection_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscription_deliveries_subscription ON subscription_deliveries(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_deliveries_status ON subscription_deliveries(status);
 
 -- Enable RLS
 ALTER TABLE collection_characters ENABLE ROW LEVEL SECURITY;
@@ -196,6 +196,6 @@ CREATE TRIGGER subscription_deliveries_updated_at
   EXECUTE FUNCTION update_subscription_deliveries_updated_at();
 
 -- Comments
-COMMENT ON TABLE collection_characters IS 'Personagens/itens de cada coleção';
-COMMENT ON TABLE subscriptions IS 'Assinaturas de coleções dos usuários';
+COMMENT ON TABLE collection_characters IS 'Personagens/itens de cada coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o';
+COMMENT ON TABLE subscriptions IS 'Assinaturas de coleÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes dos usuÃƒÆ’Ã‚Â¡rios';
 COMMENT ON TABLE subscription_deliveries IS 'Entregas programadas das assinaturas';

@@ -281,7 +281,7 @@ SELECT
 -- =====================================================
 
 -- Example 1: Search for orders by customer name
--- SELECT * FROM search_unified_orders('João Silva', 'all');
+-- SELECT * FROM search_unified_orders('JoÃƒÂ£o Silva', 'all');
 
 -- Example 2: Search for orders by email
 -- SELECT * FROM search_unified_orders('joao@example.com', 'all');

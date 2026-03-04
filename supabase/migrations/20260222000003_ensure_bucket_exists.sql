@@ -1,4 +1,4 @@
--- Garantir que o bucket support-attachments existe e está configurado corretamente
+-- Garantir que o bucket support-attachments existe e estÃƒÂ¡ configurado corretamente
 
 -- Atualizar ou criar bucket
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

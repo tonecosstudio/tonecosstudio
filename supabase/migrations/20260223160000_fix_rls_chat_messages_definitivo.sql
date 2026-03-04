@@ -2,11 +2,11 @@
 -- FIX DEFINITIVO: Chat Group Messages RLS
 -- =====================================================
 -- Problema: Erro 406 ao fazer queries em chat_group_messages
--- Causa: Políticas RLS foram sobrescritas por migration posterior
--- Solução: Recriar políticas corretas com suporte a anon
+-- Causa: PolÃƒÂ­ticas RLS foram sobrescritas por migration posterior
+-- SoluÃƒÂ§ÃƒÂ£o: Recriar polÃƒÂ­ticas corretas com suporte a anon
 -- =====================================================
 
--- 1. Remover TODAS as políticas antigas
+-- 1. Remover TODAS as polÃƒÂ­ticas antigas
 DROP POLICY IF EXISTS "allow_all_operations" ON chat_group_messages;
 DROP POLICY IF EXISTS "Members can read group messages" ON chat_group_messages;
 DROP POLICY IF EXISTS "Admins can send messages" ON chat_group_messages;
@@ -18,11 +18,11 @@ DROP POLICY IF EXISTS "Admins can send group messages" ON chat_group_messages;
 DROP POLICY IF EXISTS "Admins can update their messages" ON chat_group_messages;
 DROP POLICY IF EXISTS "Admins can delete their messages" ON chat_group_messages;
 
--- 2. Garantir que RLS está habilitado
+-- 2. Garantir que RLS estÃƒÂ¡ habilitado
 ALTER TABLE chat_group_messages ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
--- POLÍTICAS CORRETAS
+-- POLÃƒÂTICAS CORRETAS
 -- =====================================================
 
 -- Policy 1: Admins podem ler TODAS as mensagens
@@ -72,12 +72,12 @@ CREATE POLICY "admins_delete_messages"
   );
 
 -- =====================================================
--- VERIFICAÇÃO
+-- VERIFICAÃƒâ€¡ÃƒÆ’O
 -- =====================================================
 
--- Verificar políticas criadas
+-- Verificar polÃƒÂ­ticas criadas
 SELECT 
-  '✅ POLÍTICAS CRIADAS' as status,
+  'Ã¢Å“â€¦ POLÃƒÂTICAS CRIADAS' as status,
   policyname,
   cmd,
   roles::text,
@@ -92,28 +92,28 @@ ORDER BY cmd, policyname;
 
 -- Testar query que estava causando erro 406
 SELECT 
-  '✅ TESTE DA QUERY' as status,
+  'Ã¢Å“â€¦ TESTE DA QUERY' as status,
   CASE 
     WHEN EXISTS (
       SELECT 1 FROM chat_group_messages 
       WHERE group_id = '95b093fe-083d-4b64-9a67-8d3b281dcd23'
       LIMIT 1
-    ) THEN 'Query funciona! ✅'
+    ) THEN 'Query funciona! Ã¢Å“â€¦'
     ELSE 'Sem mensagens neste grupo (mas query funciona)'
   END as resultado;
 
--- Instruções finais
+-- InstruÃƒÂ§ÃƒÂµes finais
 SELECT 
-  '✅✅✅ FIX APLICADO COM SUCESSO!' as mensagem_final,
+  'Ã¢Å“â€¦Ã¢Å“â€¦Ã¢Å“â€¦ FIX APLICADO COM SUCESSO!' as mensagem_final,
   '' as espaco,
-  'PRÓXIMOS PASSOS:' as instrucoes,
-  '1. Recarregue a página (F5)' as passo_1,
+  'PRÃƒâ€œXIMOS PASSOS:' as instrucoes,
+  '1. Recarregue a pÃƒÂ¡gina (F5)' as passo_1,
   '2. O erro 406 deve ter desaparecido' as passo_2,
   '3. Teste criar e visualizar mensagens' as passo_3,
   '' as espaco2,
-  '📋 POLÍTICAS CRIADAS:' as resumo,
+  'Ã°Å¸â€œâ€¹ POLÃƒÂTICAS CRIADAS:' as resumo,
   '- admins_read_all_messages: Admins veem tudo' as politica_1,
   '- members_read_own_group_messages: Membros veem seus grupos' as politica_2,
-  '- admins_insert_messages: Só admins criam mensagens' as politica_3,
-  '- admins_update_messages: Só admins editam mensagens' as politica_4,
-  '- admins_delete_messages: Só admins deletam mensagens' as politica_5;
+  '- admins_insert_messages: SÃƒÂ³ admins criam mensagens' as politica_3,
+  '- admins_update_messages: SÃƒÂ³ admins editam mensagens' as politica_4,
+  '- admins_delete_messages: SÃƒÂ³ admins deletam mensagens' as politica_5;

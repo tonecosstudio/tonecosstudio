@@ -1,7 +1,7 @@
--- Migration: Implementar função update_tier_and_recalculate_plans
+-- Migration: Implementar funÃƒÂ§ÃƒÂ£o update_tier_and_recalculate_plans
 -- Feature: pricing-system-restructure
 -- Requisitos: 1.2, 4.1, 4.4, 6.5
--- Descrição: Atualiza nível e recalcula automaticamente preços de todos os planos
+-- DescriÃƒÂ§ÃƒÂ£o: Atualiza nÃƒÂ­vel e recalcula automaticamente preÃƒÂ§os de todos os planos
 
 CREATE OR REPLACE FUNCTION update_tier_and_recalculate_plans(
   p_tier_id UUID,
@@ -24,20 +24,20 @@ DECLARE
   v_plans_updated INTEGER := 0;
   v_collections_updated INTEGER := 0;
 BEGIN
-  -- Buscar dados atuais do nível
+  -- Buscar dados atuais do nÃƒÂ­vel
   SELECT * INTO v_old_tier FROM pricing_tiers WHERE id = p_tier_id;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Nível de preço não encontrado';
+    RAISE EXCEPTION 'NÃƒÂ­vel de preÃƒÂ§o nÃƒÂ£o encontrado';
   END IF;
   
   -- Determinar novos valores
   v_new_price_full := COALESCE(p_price_full, v_old_tier.price_full);
   v_new_pix_discount := COALESCE(p_pix_discount_percentage, v_old_tier.pix_discount_percentage);
   
-  -- Atualizar nível
+  -- Atualizar nÃƒÂ­vel
   BEGIN
-    -- Tentar usar função existente
+    -- Tentar usar funÃƒÂ§ÃƒÂ£o existente
     PERFORM update_pricing_tier(
       p_tier_id,
       NULL, -- name
@@ -52,7 +52,7 @@ BEGIN
     );
   EXCEPTION
     WHEN undefined_function THEN
-      -- Se função não existe, atualizar diretamente
+      -- Se funÃƒÂ§ÃƒÂ£o nÃƒÂ£o existe, atualizar diretamente
       UPDATE pricing_tiers
       SET
         price_full = COALESCE(p_price_full, price_full),
@@ -63,11 +63,11 @@ BEGIN
       WHERE id = p_tier_id;
   END;
   
-  -- Recalcular preços de todos os planos do nível
+  -- Recalcular preÃƒÂ§os de todos os planos do nÃƒÂ­vel
   FOR v_plan IN
     SELECT * FROM subscription_plans WHERE tier_id = p_tier_id
   LOOP
-    -- Calcular novos preços
+    -- Calcular novos preÃƒÂ§os
     v_new_plan_price_full := ROUND(v_new_price_full * v_plan.price_multiplier, 2);
     v_new_plan_price_pix := ROUND(v_new_plan_price_full * (1 - v_new_pix_discount / 100), 2);
     
@@ -81,7 +81,7 @@ BEGIN
     
     v_plans_updated := v_plans_updated + 1;
     
-    -- Registrar no histórico (se tabela existir)
+    -- Registrar no histÃƒÂ³rico (se tabela existir)
     BEGIN
       INSERT INTO pricing_history (
         tier_id, change_type,
@@ -107,13 +107,13 @@ BEGIN
     END;
   END LOOP;
   
-  -- Propagar para coleções (usa função existente se disponível)
+  -- Propagar para coleÃƒÂ§ÃƒÂµes (usa funÃƒÂ§ÃƒÂ£o existente se disponÃƒÂ­vel)
   BEGIN
     SELECT COUNT(*) INTO v_collections_updated
     FROM propagate_tier_prices(p_tier_id, p_updated_by);
   EXCEPTION
     WHEN undefined_function THEN
-      -- Se função não existe, atualizar coleções diretamente
+      -- Se funÃƒÂ§ÃƒÂ£o nÃƒÂ£o existe, atualizar coleÃƒÂ§ÃƒÂµes diretamente
       UPDATE collections c
       SET
         price_full = v_new_price_full,
@@ -131,4 +131,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION update_tier_and_recalculate_plans IS 'Atualiza nível e recalcula automaticamente preços de todos os planos e coleções';
+COMMENT ON FUNCTION update_tier_and_recalculate_plans IS 'Atualiza nÃƒÂ­vel e recalcula automaticamente preÃƒÂ§os de todos os planos e coleÃƒÂ§ÃƒÂµes';
