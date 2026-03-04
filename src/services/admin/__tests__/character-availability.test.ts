@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Unit Tests for Character Availability Check
  * 

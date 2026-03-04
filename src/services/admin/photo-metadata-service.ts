@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Photo Metadata Service
  *

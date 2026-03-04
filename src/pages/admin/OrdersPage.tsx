@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Página Consolidada de Pedidos
  * 

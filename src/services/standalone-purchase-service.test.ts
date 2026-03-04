@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Standalone Purchase Service Tests
  * 

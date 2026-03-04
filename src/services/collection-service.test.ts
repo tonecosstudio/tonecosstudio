@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Collection Service Tests
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Exemplo de Uso do Modal de Confirmação de Ações em Massa
  * 

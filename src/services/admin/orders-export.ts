@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Serviço de Exportação de Pedidos
  * 

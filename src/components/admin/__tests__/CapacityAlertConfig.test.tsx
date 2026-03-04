@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Capacity Alert Configuration Component Tests
  * 

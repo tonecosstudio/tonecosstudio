@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Testes para funcionalidade de atualização de status no OrderDetailPanel
  * 

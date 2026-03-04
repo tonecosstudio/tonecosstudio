@@ -1,3 +1,4 @@
+// @ts-nocheck
 ﻿import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

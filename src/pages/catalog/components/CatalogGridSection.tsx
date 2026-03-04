@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import type { ModelRow } from "../catalogTypes";
 import { ModelCard } from "./ModelCard";

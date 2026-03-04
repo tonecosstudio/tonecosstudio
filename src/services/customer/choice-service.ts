@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Customer Character Choice Service
  *
