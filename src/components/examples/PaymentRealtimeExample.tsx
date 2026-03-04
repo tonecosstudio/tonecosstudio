@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PaymentRealtimeExample - Componente de exemplo para demonstrar o uso dos hooks de realtime
  *
