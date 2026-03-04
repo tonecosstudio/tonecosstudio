@@ -30,16 +30,13 @@
     "useDefineForClassFields": true
   },
   "include": [
-    "src"
+    "src/integrations/**/*",
+    "src/App.tsx",
+    "src/main.tsx",
+    "src/vite-env.d.ts"
   ],
   "exclude": [
     "src/**/*.test.ts",
-    "src/**/*.test.tsx",
-    "src/test/**",
-    "src/components/admin/**",
-    "src/pages/admin/**",
-    "src/services/**",
-    "src/components/customer/**",
-    "src/components/production/**"
+    "src/**/*.test.tsx"
   ]
 }

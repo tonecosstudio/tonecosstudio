@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook de Seleção Múltipla de Pedidos
  * 

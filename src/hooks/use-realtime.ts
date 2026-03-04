@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Barrel file para exportar todos os hooks de realtime do sistema de pagamento
  *

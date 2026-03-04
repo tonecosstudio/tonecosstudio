@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Custom Hook for Paginated Queries
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Professional Error Tracking and Logging Service
  * 

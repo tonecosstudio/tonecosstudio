@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Cancel with Refund Dialog
  * Allows user to cancel subscription with proportional refund

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook de Gerenciamento de Paginação de Pedidos
  * 

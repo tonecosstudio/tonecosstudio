@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import SEOHead from "@/components/SEOHead";

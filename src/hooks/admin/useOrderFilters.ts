@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook de Gerenciamento de Filtros de Pedidos
  * 

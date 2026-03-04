@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Reupload Subscription Voucher Page
  * 

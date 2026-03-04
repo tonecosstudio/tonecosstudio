@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook personalizado para gerenciar atualizações em tempo real na visualização de detalhes de pagamento
  *

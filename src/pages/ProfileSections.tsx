@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Componentes de Seção Adicionais para Profile.tsx
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

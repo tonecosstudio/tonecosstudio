@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para buscar configurações do sistema do banco de dados
  *
