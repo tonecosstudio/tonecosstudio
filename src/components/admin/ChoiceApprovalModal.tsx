@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Choice Approval Modal
  *

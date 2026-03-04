@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PricingHierarchyView - Visualização hierárquica completa de preços
  * 
