@@ -1,9 +1,9 @@
-// @ts-nocheck
 /**
  * API Service for Subscription Credit System
- * Connects to the subscription-api backend
+ * Uses Supabase directly instead of external API
  */
 
+import { supabase } from '@/integrations/supabase/client';
 import {
   Subscription,
   UserCredits,
@@ -22,105 +22,198 @@ import {
   PlanType,
 } from '@/types/subscription-credit-system';
 
-// Get API base URL from environment variable
-const API_BASE_URL = import.meta.env.VITE_SUBSCRIPTION_API_URL || 'http://localhost:3001';
-
 class SubscriptionCreditAPI {
-  private baseUrl: string;
-
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    // Get auth token from localStorage or your auth system
-    const token = localStorage.getItem('auth_token');
-    
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
+  private async getCurrentUserId(): Promise<string> {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      throw new Error('User not authenticated');
     }
-
-    return response.json();
+    return user.id;
   }
 
   // ============ Subscriptions ============
 
   async getMySubscription(): Promise<Subscription | null> {
-    try {
-      return await this.request<Subscription>('/api/subscriptions/me');
-    } catch (error) {
-      // If 404, user has no subscription
-      if (error instanceof Error && error.message.includes('404')) {
-        return null;
-      }
+    const userId = await this.getCurrentUserId();
+    
+    const { data, error } = await supabase
+      .from('subscription_credit_subscriptions')
+      .select('*, plan:subscription_credit_plans(*)')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // No rows returned
       throw error;
     }
+
+    return data as any;
   }
 
   async activateSubscription(
     planType: PlanType,
     paymentMethodId: string
   ): Promise<SubscriptionActivationResponse> {
-    return this.request<SubscriptionActivationResponse>('/api/subscriptions/activate', {
-      method: 'POST',
-      body: JSON.stringify({ plan_type: planType, payment_method_id: paymentMethodId }),
-    });
+    const userId = await this.getCurrentUserId();
+    
+    // Get plan details
+    const { data: plan, error: planError } = await supabase
+      .from('subscription_credit_plans')
+      .select('*')
+      .eq('plan_type', planType)
+      .eq('is_active', true)
+      .single();
+
+    if (planError) throw planError;
+
+    // Calculate dates
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + plan.duration_months);
+
+    // Create subscription
+    const { data: subscription, error: subError } = await supabase
+      .from('subscription_credit_subscriptions')
+      .insert({
+        user_id: userId,
+        plan_id: plan.id,
+        plan_type: planType,
+        status: 'active',
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        next_billing_date: endDate.toISOString(),
+        auto_renew: true,
+      })
+      .select()
+      .single();
+
+    if (subError) throw subError;
+
+    // Allocate credits
+    const totalCredits = plan.base_credits + plan.bonus_credits;
+    const { error: creditsError } = await supabase
+      .from('subscription_credit_user_credits')
+      .insert({
+        user_id: userId,
+        subscription_id: subscription.id,
+        total_credits: totalCredits,
+        used_credits: 0,
+        available_credits: totalCredits,
+        expired_credits: 0,
+      });
+
+    if (creditsError) throw creditsError;
+
+    // Log transaction
+    await supabase
+      .from('subscription_credit_transactions')
+      .insert({
+        user_id: userId,
+        subscription_id: subscription.id,
+        transaction_type: 'allocation',
+        credits_amount: totalCredits,
+        description: `Créditos alocados - Plano ${planType}`,
+      });
+
+    return {
+      subscription_id: subscription.id,
+      credits_allocated: totalCredits,
+      message: 'Assinatura ativada com sucesso',
+    };
   }
 
   async schedulePlanChange(
-    subscriptionId: number,
+    subscriptionId: string,
     newPlanType: PlanType
   ): Promise<PlanChangeResponse> {
-    return this.request<PlanChangeResponse>(
-      `/api/subscriptions/${subscriptionId}/schedule-plan-change`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ new_plan_type: newPlanType }),
-      }
-    );
+    const { data, error } = await supabase
+      .from('subscription_credit_subscriptions')
+      .update({ pending_plan_change: newPlanType })
+      .eq('id', subscriptionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      subscription_id: subscriptionId,
+      pending_plan_change: newPlanType,
+      message: 'Mudança de plano agendada para próxima renovação',
+    };
   }
 
-  async cancelWithRefund(subscriptionId: number): Promise<CancelWithRefundResponse> {
-    return this.request<CancelWithRefundResponse>(
-      `/api/subscriptions/${subscriptionId}/cancel`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ cancellation_type: 'with_refund' }),
-      }
-    );
+  async cancelWithRefund(subscriptionId: string): Promise<CancelWithRefundResponse> {
+    const { data, error } = await supabase
+      .from('subscription_credit_subscriptions')
+      .update({
+        status: 'cancelled',
+        cancellation_type: 'with_refund',
+        cancelled_at: new Date().toISOString(),
+        auto_renew: false,
+      })
+      .eq('id', subscriptionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      subscription_id: subscriptionId,
+      refund_amount: 0, // Calculate based on remaining days
+      message: 'Assinatura cancelada com reembolso',
+    };
   }
 
-  async setNoRenewal(subscriptionId: number): Promise<NoRenewalResponse> {
-    return this.request<NoRenewalResponse>(
-      `/api/subscriptions/${subscriptionId}/no-renewal`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ cancellation_type: 'no_renewal' }),
-      }
-    );
+  async setNoRenewal(subscriptionId: string): Promise<NoRenewalResponse> {
+    const { data, error } = await supabase
+      .from('subscription_credit_subscriptions')
+      .update({
+        auto_renew: false,
+        cancellation_type: 'no_renewal',
+      })
+      .eq('id', subscriptionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      subscription_id: subscriptionId,
+      end_date: data.end_date,
+      message: 'Renovação automática desativada',
+    };
   }
 
   // ============ Credits ============
 
   async getCreditsBalance(): Promise<CreditsBalanceResponse> {
-    return this.request<CreditsBalanceResponse>('/api/credits/balance');
+    const userId = await this.getCurrentUserId();
+    
+    const { data, error } = await supabase
+      .from('subscription_credit_user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return {
+          total_credits: 0,
+          used_credits: 0,
+          available_credits: 0,
+          expired_credits: 0,
+        };
+      }
+      throw error;
+    }
+
+    return {
+      total_credits: data.total_credits,
+      used_credits: data.used_credits,
+      available_credits: data.available_credits,
+      expired_credits: data.expired_credits,
+    };
   }
 
   async getCreditTransactions(
@@ -128,12 +221,33 @@ class SubscriptionCreditAPI {
     limit: number = 20,
     transactionType?: string
   ): Promise<TransactionsResponse> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(transactionType && { transaction_type: transactionType }),
-    });
-    return this.request<TransactionsResponse>(`/api/credits/transactions?${params}`);
+    const userId = await this.getCurrentUserId();
+    const offset = (page - 1) * limit;
+
+    let query = supabase
+      .from('subscription_credit_transactions')
+      .select('*, character:subscription_credit_characters(*)', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (transactionType) {
+      query = query.eq('transaction_type', transactionType);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      transactions: data as any[],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        total_pages: Math.ceil((count || 0) / limit),
+      },
+    };
   }
 
   async validateCredits(creditsRequired: number): Promise<{
@@ -141,10 +255,15 @@ class SubscriptionCreditAPI {
     available_credits: number;
     shortfall: number;
   }> {
-    return this.request('/api/credits/validate', {
-      method: 'POST',
-      body: JSON.stringify({ credits_required: creditsRequired }),
-    });
+    const balance = await this.getCreditsBalance();
+    const hasSufficient = balance.available_credits >= creditsRequired;
+    const shortfall = hasSufficient ? 0 : creditsRequired - balance.available_credits;
+
+    return {
+      has_sufficient_credits: hasSufficient,
+      available_credits: balance.available_credits,
+      shortfall,
+    };
   }
 
   // ============ Characters ============
@@ -157,82 +276,298 @@ class SubscriptionCreditAPI {
     characters: Character[];
     pagination: any;
   }> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(planType && { plan_type: planType }),
-    });
-    return this.request(`/api/characters?${params}`);
+    const offset = (page - 1) * limit;
+
+    let query = supabase
+      .from('subscription_credit_characters')
+      .select('*', { count: 'exact' })
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // Filter by plan type if specified
+    if (planType === 'trimestral') {
+      query = query.eq('is_exclusive_semestral', false);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      characters: data as any[],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        total_pages: Math.ceil((count || 0) / limit),
+      },
+    };
   }
 
-  async getCharacterById(id: number): Promise<Character> {
-    return this.request<Character>(`/api/characters/${id}`);
+  async getCharacterById(id: string): Promise<Character> {
+    const { data, error } = await supabase
+      .from('subscription_credit_characters')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    return data as any;
   }
 
   async getStandardCollection(): Promise<{ characters: Character[] }> {
-    return this.request('/api/characters/standard-collection');
+    const { data, error } = await supabase
+      .from('subscription_credit_characters')
+      .select('*')
+      .eq('is_standard_collection', true)
+      .eq('is_active', true)
+      .order('name');
+
+    if (error) throw error;
+
+    return { characters: data as any[] };
   }
 
   // ============ Orders ============
 
   async createIndividualOrder(
-    characterId: number,
+    characterId: string,
     useCredits: boolean = true
   ): Promise<{
-    order_id: number;
+    order_id: string;
     credits_debited: number;
-    production_cycle_id: number;
+    production_cycle_id: string;
   }> {
-    return this.request('/api/orders/individual', {
-      method: 'POST',
-      body: JSON.stringify({ character_id: characterId, use_credits: useCredits }),
-    });
+    const userId = await this.getCurrentUserId();
+    
+    // Get current cycle
+    const { data: cycle, error: cycleError } = await supabase
+      .from('subscription_credit_production_cycles')
+      .select('*')
+      .eq('status', 'open')
+      .order('close_date', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (cycleError) throw new Error('Nenhum ciclo de produção aberto');
+
+    // Get character
+    const { data: character, error: charError } = await supabase
+      .from('subscription_credit_characters')
+      .select('*')
+      .eq('id', characterId)
+      .single();
+
+    if (charError) throw charError;
+
+    // Get subscription
+    const { data: subscription, error: subError } = await supabase
+      .from('subscription_credit_subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (subError) throw new Error('Assinatura não encontrada');
+
+    // Create order
+    const { data: order, error: orderError } = await supabase
+      .from('subscription_credit_orders')
+      .insert({
+        user_id: userId,
+        subscription_id: subscription.id,
+        production_cycle_id: cycle.id,
+        order_type: 'individual',
+        status: 'pending',
+        total_credits: character.price_credits,
+        credits_debited: true,
+      })
+      .select()
+      .single();
+
+    if (orderError) throw orderError;
+
+    // Add order item
+    await supabase
+      .from('subscription_credit_order_items')
+      .insert({
+        order_id: order.id,
+        character_id: characterId,
+        credits_cost: character.price_credits,
+      });
+
+    // Debit credits
+    const { data: credits, error: creditsError } = await supabase
+      .from('subscription_credit_user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (creditsError) throw creditsError;
+
+    await supabase
+      .from('subscription_credit_user_credits')
+      .update({
+        used_credits: credits.used_credits + character.price_credits,
+        available_credits: credits.available_credits - character.price_credits,
+      })
+      .eq('user_id', userId);
+
+    // Log transaction
+    await supabase
+      .from('subscription_credit_transactions')
+      .insert({
+        user_id: userId,
+        subscription_id: subscription.id,
+        transaction_type: 'debit_immediate',
+        credits_amount: -character.price_credits,
+        character_id: characterId,
+        order_id: order.id,
+        production_cycle_id: cycle.id,
+        description: `Compra individual - ${character.name}`,
+      });
+
+    return {
+      order_id: order.id,
+      credits_debited: character.price_credits,
+      production_cycle_id: cycle.id,
+    };
   }
 
-  async getAutomaticOrder(orderId: number): Promise<{
-    order_id: number;
+  async getAutomaticOrder(orderId: string): Promise<{
+    order_id: string;
     characters: Character[];
     total_credits: number;
     is_locked: boolean;
     cycle_close_date: string;
   }> {
-    return this.request(`/api/orders/automatic/${orderId}`);
+    const { data: order, error: orderError } = await supabase
+      .from('subscription_credit_orders')
+      .select('*, items:subscription_credit_order_items(*, character:subscription_credit_characters(*)), cycle:subscription_credit_production_cycles(*)')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError) throw orderError;
+
+    return {
+      order_id: order.id,
+      characters: order.items.map((item: any) => item.character),
+      total_credits: order.total_credits,
+      is_locked: order.is_locked,
+      cycle_close_date: order.cycle.close_date,
+    };
   }
 
   async updateAutomaticOrder(
-    orderId: number,
-    characterIds: number[]
+    orderId: string,
+    characterIds: string[]
   ): Promise<{
-    order_id: number;
+    order_id: string;
     characters: Character[];
     total_credits: number;
   }> {
-    return this.request(`/api/orders/automatic/${orderId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ character_ids: characterIds }),
-    });
+    // Delete existing items
+    await supabase
+      .from('subscription_credit_order_items')
+      .delete()
+      .eq('order_id', orderId);
+
+    // Get characters
+    const { data: characters, error: charError } = await supabase
+      .from('subscription_credit_characters')
+      .select('*')
+      .in('id', characterIds);
+
+    if (charError) throw charError;
+
+    // Add new items
+    const items = characters.map(char => ({
+      order_id: orderId,
+      character_id: char.id,
+      credits_cost: char.price_credits,
+    }));
+
+    await supabase
+      .from('subscription_credit_order_items')
+      .insert(items);
+
+    // Update order total
+    const totalCredits = characters.reduce((sum, char) => sum + char.price_credits, 0);
+    await supabase
+      .from('subscription_credit_orders')
+      .update({ total_credits: totalCredits })
+      .eq('id', orderId);
+
+    return {
+      order_id: orderId,
+      characters: characters as any[],
+      total_credits: totalCredits,
+    };
   }
 
   async getUserOrders(): Promise<{ orders: OrderWithItems[] }> {
-    return this.request('/api/orders');
+    const userId = await this.getCurrentUserId();
+    
+    const { data, error } = await supabase
+      .from('subscription_credit_orders')
+      .select('*, items:subscription_credit_order_items(*, character:subscription_credit_characters(*)), cycle:subscription_credit_production_cycles(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return { orders: data as any[] };
   }
 
   async getUserCycleCount(): Promise<UserCycleCountResponse> {
-    return this.request('/api/orders/user-cycle-count');
+    const userId = await this.getCurrentUserId();
+    
+    const { count, error } = await supabase
+      .from('subscription_credit_orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    return { cycle_count: count || 0 };
   }
 
   // ============ Production Cycles ============
 
   async getCurrentCycle(): Promise<ProductionCycle> {
-    return this.request<ProductionCycle>('/api/production-cycles/current');
+    const { data, error } = await supabase
+      .from('subscription_credit_production_cycles')
+      .select('*')
+      .eq('status', 'open')
+      .order('close_date', { ascending: true })
+      .maybeSingle(); // Usa maybeSingle em vez de single para não dar erro se não houver dados
+
+    if (error) throw error;
+
+    // Se não houver ciclo aberto, retorna null
+    if (!data) {
+      throw new Error('Nenhum ciclo de produção aberto encontrado');
+    }
+
+    return data as any;
   }
 
-  async getCycleById(id: number): Promise<ProductionCycle> {
-    return this.request<ProductionCycle>(`/api/production-cycles/${id}`);
+  async getCycleById(id: string): Promise<ProductionCycle> {
+    const { data, error } = await supabase
+      .from('subscription_credit_production_cycles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    return data as any;
   }
 
   async getCycleOrders(
-    cycleId: number,
+    cycleId: string,
     page: number = 1,
     limit: number = 20,
     priorityOnly: boolean = false
@@ -240,12 +575,32 @@ class SubscriptionCreditAPI {
     orders: OrderWithItems[];
     pagination: any;
   }> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(priorityOnly && { priority_only: 'true' }),
-    });
-    return this.request(`/api/production-cycles/${cycleId}/orders?${params}`);
+    const offset = (page - 1) * limit;
+
+    let query = supabase
+      .from('subscription_credit_orders')
+      .select('*, items:subscription_credit_order_items(*, character:subscription_credit_characters(*)), user:auth.users(email)', { count: 'exact' })
+      .eq('production_cycle_id', cycleId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (priorityOnly) {
+      query = query.eq('is_priority', true);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      orders: data as any[],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        total_pages: Math.ceil((count || 0) / limit),
+      },
+    };
   }
 }
 

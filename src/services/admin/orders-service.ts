@@ -347,7 +347,14 @@ async function fetchStandalonePurchases(filters: OrderFilters) {
     query = query.lte("created_at", filters.dateTo);
   }
 
-  return await query;
+  const result = await query;
+  
+  if (result.error) {
+    console.error('❌ Error fetching standalone purchases (orders-service):', result.error);
+    console.error('Error details:', JSON.stringify(result.error, null, 2));
+  }
+
+  return result;
 }
 
 // ============================================================================

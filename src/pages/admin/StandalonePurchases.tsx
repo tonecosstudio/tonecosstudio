@@ -312,25 +312,25 @@ export function StandalonePurchasesContent() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {purchase.user?.full_name || "N/A"}
+                              {purchase.profiles?.full_name || "N/A"}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {purchase.user?.email || "N/A"}
+                              {purchase.profiles?.email || "N/A"}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {purchase.collection?.name || "N/A"}
+                              {purchase.collections?.name || "N/A"}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              R$ {purchase.collection?.price_full?.toFixed(2) || "0.00"}
+                              R$ {purchase.price_full?.toFixed(2) || "0.00"}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {formatCycle(purchase.cycle)}
+                          {formatCycle(purchase.cycles)}
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(purchase.status)}

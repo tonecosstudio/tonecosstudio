@@ -37,6 +37,7 @@ import {
   Box,
   Grid,
   Tag,
+  Coins,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -67,6 +68,11 @@ const iconMap: Record<string, any> = {
   Users,
   MessageSquare,
   Settings,
+  Coins,
+  // Ícones adicionados para Sistema de Créditos
+  Gauge,
+  Wallet,
+  BarChart3,
 };
 
 export function AdminLayout({ children }: AdminLayoutProps) {

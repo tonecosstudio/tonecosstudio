@@ -1,0 +1,950 @@
+# Sistema de Preços Contextuais - Tasks
+
+## Status: ✅ COMPLETED (2026-03-05)
+
+---
+
+## 1. Setup e Preparação
+- [x] 1.1 Criar branch `feature/contextual-pricing-system`
+- [x] 1.2 Revisar requisitos e design
+- [x] 1.3 Preparar ambiente de desenvolvimento
+
+## 2. Migrations de Banco de Dados
+- [x] 2.1 Criar migration para tabela `collection_types` (nova - tipos dinâmicos)
+  - [x] 2.1.1 Definir estrutura da tabela (id UUID, name, display_name, description, is_active, sort_order)
+  - [x] 2.1.2 Adicionar constraints (name UNIQUE NOT NULL)
+  - [x] 2.1.3 Criar índices (is_active, sort_order)
+  - [x] 2.1.4 Popular dados iniciais (subscription, standard_catalog, premium_catalog)
+  - [x] 2.1.5 Adicionar comentários explicando tipos dinâmicos
+- [-] 2.2 Criar migration para tabela `collection_base_pricing`
+  - [~] 2.2.1 Definir estrutura da tabela (usar `collection_type_id UUID FK` referenciando collection_types)
+  - [~] 2.2.2 Adicionar FK para collection_types(id) com ON DELETE CASCADE
+  - [~] 2.2.3 Adicionar constraints e checks (base_price_coins > 0)
+  - [~] 2.2.4 Criar índices
+  - [~] 2.2.5 Popular dados iniciais usando SELECT do collection_types (1000, 1400, 1800 coins)
+  - [~] 2.2.6 Adicionar comentários explicando preço base e referência UUID
+- [ ] 2.3 Criar migration para tabela `pricing_context_multipliers`
+  - [~] 2.3.1 Definir estrutura da tabela (usar `multiplier DECIMAL(4,2)`)
+  - [~] 2.3.2 Adicionar campo `chosen_collection_discount_percentage INTEGER` (armazena percentual como 20 para 20%)
+  - [~] 2.3.3 Adicionar constraints e checks (multiplier > 0, discount_percentage BETWEEN 0 AND 100)
+  - [~] 2.3.4 Criar índices
+  - [~] 2.3.5 Popular dados iniciais (multiplier: 1.0, 1.2, 1.2; discount: 20)
+  - [~] 2.3.6 Adicionar comentários explicando multiplicadores e desconto configurável
+- [ ] 2.4 Criar migration para tabela `pricing_history`
+  - [~] 2.4.1 Definir estrutura da tabela (change_type, collection_type_id UUID FK, old_value, new_value)
+  - [~] 2.4.2 Adicionar índices para auditoria
+  - [~] 2.4.3 Adicionar comentários explicando tipos de mudança (base_price ou multiplier)
+- [ ] 2.5 Alterar tabela `collections`
+  - [~] 2.5.1 Adicionar coluna `collection_type_id UUID` referenciando collection_types(id)
+  - [~] 2.5.2 Popular collection_type_id baseado em tipo padrão 'subscription'
+  - [~] 2.5.3 Tornar coluna obrigatória (NOT NULL)
+  - [~] 2.5.4 Criar índice em collection_type_id
+  - [~] 2.5.5 Migrar dados existentes
+- [ ] 2.6 Alterar tabela `characters` (RN008 - multiplicador de preço por personagem)
+  - [~] 2.6.1 Adicionar coluna `price_multiplier DECIMAL(4,2)` (nullable, default NULL)
+  - [~] 2.6.2 Adicionar constraint: `CHECK (price_multiplier > 0 OR price_multiplier IS NULL)`
+  - [~] 2.6.3 Adicionar comentário explicando multiplicador opcional por personagem
+  - [~] 2.6.4 Popular personagens existentes com NULL (usa 1.0 por padrão)
+  - [~] 2.6.5 Criar índice em price_multiplier para queries de filtro
+- [x] 2.7 Aplicar migrations no banco de desenvolvimento
+- [x] 2.8 Validar integridade dos dados após migration
+- [x] 2.9 Validar que collection_types permite adicionar novos tipos dinamicamente
+
+## 3. Funções de Banco de Dados
+- [x] 3.1 Criar função `get_collection_price()`
+  - [x] 3.1.1 Retornar INTEGER (coins, não DECIMAL)
+  - [x] 3.1.2 Implementar lógica de busca de tipo
+  - [x] 3.1.3 Implementar busca de preço base
+  - [x] 3.1.4 Implementar lógica de verificação de assinatura
+  - [x] 3.1.5 Implementar lógica de verificação de escolha
+  - [x] 3.1.6 Implementar busca de multiplicador e discount_percentage
+  - [x] 3.1.7 Implementar cálculo com dois métodos:
+    - Para coleções escolhidas: `base_price - (base_price × discount_percentage / 100)`
+    - Para coleções não escolhidas: `base_price × multiplier`
+  - [x] 3.1.8 Adicionar comentário explicando os dois métodos de cálculo
+  - [x] 3.1.9 Adicionar tratamento de erros
+  - [x] 3.1.10 Otimizar com STABLE
+- [ ] 3.2 Criar função `get_character_price()` (RN008 - com multiplicador de personagem)
+  - [~] 3.2.1 Retornar INTEGER (coins em COINS)
+  - [~] 3.2.2 Implementar busca de collection_id e price_multiplier do personagem
+  - [~] 3.2.3 Chamar get_collection_price() para calcular preço base da coleção
+  - [~] 3.2.4 Buscar character.price_multiplier do banco de dados
+  - [~] 3.2.5 Usar COALESCE(price_multiplier, 1.0) para tratar NULL como 1.0
+  - [~] 3.2.6 Aplicar fórmula: `collection_price × COALESCE(character.price_multiplier, 1.0)`
+  - [~] 3.2.7 Adicionar comentário explicando cálculo em dois estágios (coleção + personagem)
+  - [~] 3.2.8 Retornar resultado como INTEGER (arredondar se necessário)
+  - [~] 3.2.9 Adicionar tratamento de erros
+  - [~] 3.2.10 Otimizar com STABLE
+- [ ] 3.3 Criar função `validate_collection_limit()`
+  - [~] 3.3.1 Implementar busca de limite do plano
+  - [~] 3.3.2 Implementar contagem de coleções atuais
+  - [~] 3.3.3 Implementar lógica de validação
+  - [~] 3.3.4 Retornar informações detalhadas
+- [ ] 3.4 Criar função `update_base_price_with_history()`
+  - [~] 3.4.1 Parâmetro `p_new_base_price_coins INTEGER`
+  - [~] 3.4.2 Implementar busca de preço base atual
+  - [~] 3.4.3 Implementar atualização de preço base
+  - [~] 3.4.4 Implementar registro de histórico (change_type='base_price')
+  - [~] 3.4.5 Adicionar transação atômica
+- [ ] 3.5 Criar função `update_multiplier_with_history()`
+  - [~] 3.5.1 Parâmetro `p_new_multiplier DECIMAL(4,2)`
+  - [~] 3.5.2 Implementar busca de multiplicador atual
+  - [~] 3.5.3 Implementar atualização de multiplicador
+  - [~] 3.5.4 Implementar registro de histórico (change_type='multiplier')
+  - [~] 3.5.5 Adicionar transação atômica
+- [ ] 3.6 Criar função `purchase_character()` (nova - integração com sistema de coins)
+  - [~] 3.6.1 Chamar get_character_price() para calcular preço contextual
+  - [~] 3.6.2 Validar saldo do usuário (user_coins.balance >= preço) - RN007
+  - [~] 3.6.3 Retornar erro detalhado se saldo insuficiente (necessário, disponível, faltam) - RN007
+  - [~] 3.6.4 Validar se usuário já possui o personagem
+  - [~] 3.6.5 Debitar coins do saldo (UPDATE user_coins)
+  - [ ] 3.6.6 Registrar transação (INSERT coin_transactions)
+  - [ ] 3.6.7 Adicionar personagem ao usuário (INSERT user_characters)
+  - [ ] 3.6.8 Garantir atomicidade (tudo ou nada)
+  - [ ] 3.6.9 Retornar resultado (success, message, new_balance, error_details)
+- [ ] 3.7 Testar funções com dados de teste
+- [ ] 3.8 Validar performance das funções
+- [ ] 3.9 Testar cálculo com diferentes multiplicadores de contexto (0.8, 1.0, 1.2)
+- [ ] 3.10 Testar cálculo com diferentes multiplicadores de personagem (RN008)
+  - [ ] 3.10.1 Teste: multiplicador 1.0 (normal) - preço = preço da coleção
+  - [ ] 3.10.2 Teste: multiplicador 1.2 (complexo) - preço = coleção × 1.2
+  - [ ] 3.10.3 Teste: multiplicador 1.5 (premium) - preço = coleção × 1.5
+  - [ ] 3.10.4 Teste: multiplicador 2.0 (raro) - preço = coleção × 2.0
+  - [ ] 3.10.5 Teste: multiplicador NULL - deve usar 1.0 por padrão
+  - [ ] 3.10.6 Teste: coleção escolhida (800) × 1.5 = 1200 coins
+  - [ ] 3.10.7 Teste: coleção não escolhida (1200) × 1.5 = 1800 coins
+- [ ] 3.11 Validar que get_character_price() SEM multiplicador retorna mesmo valor que get_collection_price()
+- [ ] 3.12 Testar validação de saldo insuficiente (RN007)
+  - [ ] 3.12.1 Teste: balance < preço retorna erro com valores exatos
+  - [ ] 3.12.2 Teste: balance >= preço permite compra
+  - [ ] 3.12.3 Teste: erro inclui campos (required, available, missing)
+
+## 4. RLS Policies
+- [ ] 4.1 Criar policies para `collection_base_pricing`
+  - [ ] 4.1.1 Policy de SELECT para todos (preços base ativos)
+  - [ ] 4.1.2 Policy de ALL para admins
+- [ ] 4.2 Criar policies para `pricing_context_multipliers`
+  - [ ] 4.2.1 Policy de SELECT para todos (multiplicadores ativos)
+  - [ ] 4.2.2 Policy de ALL para admins
+- [ ] 4.3 Criar policies para `pricing_history`
+  - [ ] 4.3.1 Policy de SELECT para admins
+  - [ ] 4.3.2 Bloquear UPDATE/DELETE
+- [ ] 4.4 Testar policies com diferentes usuários
+- [ ] 4.5 Validar segurança das policies
+
+## 5. Hooks Personalizados
+- [ ] 5.1 Criar `useCollectionTypes` hook (novo - gerenciar tipos dinâmicos)
+  - [ ] 5.1.1 Implementar query de busca de tipos (collection_types)
+  - [ ] 5.1.2 Implementar mutation de criação de tipo
+  - [ ] 5.1.3 Implementar mutation de atualização de tipo
+  - [ ] 5.1.4 Implementar mutation de ativar/desativar tipo
+  - [ ] 5.1.5 Adicionar invalidação de cache
+  - [ ] 5.1.6 Adicionar tratamento de erros
+  - [ ] 5.1.7 Adicionar tipos TypeScript
+- [ ] 5.2 Criar `useBasePricing` hook
+  - [ ] 5.1.1 Implementar query de busca de preços base
+  - [ ] 5.1.2 Implementar mutation de atualização de preço base
+  - [ ] 5.1.3 Adicionar invalidação de cache (base-pricing e collection-price)
+  - [ ] 5.1.4 Adicionar tratamento de erros
+  - [ ] 5.1.5 Adicionar tipos TypeScript (base_price_coins: number)
+- [ ] 5.2 Criar `useContextPricing` hook (anteriormente useContextMultipliers)
+  - [ ] 5.2.1 Implementar query de busca de multiplicadores e discount_percentage
+  - [ ] 5.2.2 Implementar mutation de atualização de multiplicador
+  - [ ] 5.2.3 Implementar mutation de atualização de discount_percentage
+  - [ ] 5.2.4 Adicionar validação de discount (0-100%)
+  - [ ] 5.2.5 Adicionar invalidação de cache (context-multipliers e collection-price)
+  - [ ] 5.2.6 Adicionar tratamento de erros
+  - [ ] 5.2.7 Adicionar tipos TypeScript (multiplier: number, chosen_collection_discount_percentage: number)
+- [ ] 5.3 Criar `useCollectionPrice` hook
+  - [ ] 5.3.1 Implementar chamada RPC get_collection_price()
+  - [ ] 5.3.2 Retornar INTEGER coins calculado
+  - [ ] 5.3.3 Adicionar cache strategy
+  - [ ] 5.3.4 Adicionar loading states
+  - [ ] 5.3.5 Adicionar tipos TypeScript (retorna number coins)
+- [ ] 5.4 Criar `useCharacterPrice` hook (RN008 - com multiplicador de personagem)
+  - [ ] 5.4.1 Implementar chamada RPC get_character_price()
+  - [ ] 5.4.2 Retornar INTEGER coins calculado (com multiplicador aplicado)
+  - [ ] 5.4.3 Adicionar cache strategy que considera mudanças no multiplicador
+  - [ ] 5.4.4 Adicionar loading states
+  - [ ] 5.4.5 Adicionar tipos TypeScript (retorna number coins)
+  - [ ] 5.4.6 Documentar que herda preço da coleção e aplica multiplicador opcional
+- [ ] 5.5 Criar `useCollectionLimit` hook
+  - [ ] 5.5.1 Implementar chamada RPC
+  - [ ] 5.5.2 Processar resposta
+  - [ ] 5.5.3 Adicionar helpers (isUnlimited, etc)
+  - [ ] 5.5.4 Adicionar tipos TypeScript
+- [ ] 5.6 Criar `useUserCoins` hook (novo - sistema de coins)
+  - [ ] 5.6.1 Implementar query de busca de saldo (user_coins.balance)
+  - [ ] 5.6.2 Adicionar cache strategy (30 segundos)
+  - [ ] 5.6.3 Adicionar loading states
+  - [ ] 5.6.4 Adicionar tipos TypeScript (retorna number)
+  - [ ] 5.6.5 Adicionar helper `hasInsufficientBalance(price)` para validação
+- [ ] 5.7 Criar `usePurchaseCharacter` hook (novo - sistema de coins)
+  - [ ] 5.7.1 Implementar mutation chamando purchase_character()
+  - [ ] 5.7.2 Adicionar invalidação de cache (user-coins, user-characters, coin-transactions)
+  - [ ] 5.7.3 Adicionar toast de sucesso/erro
+  - [ ] 5.7.4 Adicionar tratamento de erros específicos (saldo insuficiente, personagem já possui)
+  - [ ] 5.7.5 Adicionar tipos TypeScript
+  - [ ] 5.7.6 Retornar mensagem detalhada com valores (necessário, disponível, faltam)
+- [ ] 5.8 Criar `useCoinTransactions` hook (novo - sistema de coins)
+  - [ ] 5.8.1 Implementar query de busca de transações
+  - [ ] 5.8.2 Adicionar ordenação por data (DESC)
+  - [ ] 5.8.3 Adicionar limite configurável
+  - [ ] 5.8.4 Adicionar tipos TypeScript
+- [ ] 5.9 Criar `useCharacterPriceMultiplier` hook (RN008 - gerenciar multiplicador)
+  - [ ] 5.9.1 Implementar mutation de atualização de price_multiplier
+  - [ ] 5.9.2 Adicionar validação (> 0 ou NULL)
+  - [ ] 5.9.3 Adicionar invalidação de cache (character-price)
+  - [ ] 5.9.4 Adicionar tratamento de erros
+  - [ ] 5.9.5 Adicionar tipos TypeScript (price_multiplier?: number)
+- [ ] 5.10 Testar hooks isoladamente
+- [ ] 5.11 Documentar hooks
+- [ ] 5.12 Validar que useCharacterPrice SEM multiplicador retorna mesmo valor que useCollectionPrice
+- [ ] 5.13 Validar que useCharacterPrice COM multiplicador aplica corretamente
+- [ ] 5.14 Validar integração entre useCharacterPrice e usePurchaseCharacter
+
+## 5A. Cache Strategy Implementation (RN010)
+- [ ] 5A.1 Configurar React Query cache strategy
+  - [ ] 5A.1.1 Definir staleTime: 5 minutos (300000ms)
+  - [ ] 5A.1.2 Definir cacheTime: 10 minutos (600000ms)
+  - [ ] 5A.1.3 Aplicar em useCollectionPrice hook
+  - [ ] 5A.1.4 Aplicar em useCharacterPrice hook
+  - [ ] 5A.1.5 Documentar configuração de cache
+- [ ] 5A.2 Implementar invalidação de cache para mudanças de preço base
+  - [ ] 5A.2.1 Invalidar queryKey ['collection-price'] ao atualizar base_price
+  - [ ] 5A.2.2 Invalidar queryKey ['character-price'] ao atualizar base_price
+  - [ ] 5A.2.3 Adicionar invalidação em useBasePricing mutation
+  - [ ] 5A.2.4 Testar invalidação em cascata
+- [ ] 5A.3 Implementar invalidação de cache para mudanças de multiplicadores
+  - [ ] 5A.3.1 Invalidar queryKey ['collection-price'] ao atualizar multiplier
+  - [ ] 5A.3.2 Invalidar queryKey ['character-price'] ao atualizar multiplier
+  - [ ] 5A.3.3 Adicionar invalidação em useContextPricing mutation
+  - [ ] 5A.3.4 Testar invalidação em cascata
+- [ ] 5A.4 Implementar invalidação de cache para mudanças de desconto
+  - [ ] 5A.4.1 Invalidar queryKey ['collection-price'] ao atualizar discount_percentage
+  - [ ] 5A.4.2 Invalidar queryKey ['character-price'] ao atualizar discount_percentage
+  - [ ] 5A.4.3 Adicionar invalidação em useContextPricing mutation
+  - [ ] 5A.4.4 Testar invalidação em cascata
+- [ ] 5A.5 Implementar invalidação de cache para escolha/remoção de coleções
+  - [ ] 5A.5.1 Invalidar cache específico do usuário ao escolher coleção
+  - [ ] 5A.5.2 Invalidar cache específico do usuário ao remover coleção
+  - [ ] 5A.5.3 Usar predicate para invalidar apenas caches do usuário afetado
+  - [ ] 5A.5.4 Exemplo: `queryClient.invalidateQueries({ predicate: (query) => query.queryKey[2] === userId })`
+  - [ ] 5A.5.5 Testar que outros usuários não são afetados
+- [ ] 5A.6 Implementar invalidação de cache para multiplicador de personagem
+  - [ ] 5A.6.1 Invalidar queryKey ['character-price', characterId] ao atualizar price_multiplier
+  - [ ] 5A.6.2 Adicionar invalidação em useCharacterPriceMultiplier mutation
+  - [ ] 5A.6.3 Testar que apenas personagem afetado é invalidado
+- [ ] 5A.7 Otimizar funções SQL para cache
+  - [ ] 5A.7.1 Marcar get_collection_price() como STABLE
+  - [ ] 5A.7.2 Marcar get_character_price() como STABLE
+  - [ ] 5A.7.3 Validar que STABLE permite cache interno do PostgreSQL
+  - [ ] 5A.7.4 Testar performance com STABLE vs sem STABLE
+- [ ] 5A.8 Adicionar métricas de cache
+  - [ ] 5A.8.1 Implementar logging de cache hits/misses (dev mode)
+  - [ ] 5A.8.2 Calcular taxa de hit do cache
+  - [ ] 5A.8.3 Monitorar tempo de resposta com cache vs sem cache
+  - [ ] 5A.8.4 Validar que taxa de hit > 80%
+  - [ ] 5A.8.5 Validar que tempo com cache < 10ms
+- [ ] 5A.9 Documentar estratégia de cache
+  - [ ] 5A.9.1 Documentar duração de cache (5 minutos)
+  - [ ] 5A.9.2 Documentar regras de invalidação
+  - [ ] 5A.9.3 Documentar chaves de cache usadas
+  - [ ] 5A.9.4 Criar diagrama de fluxo de cache
+  - [ ] 5A.9.5 Adicionar exemplos de uso
+- [ ] 5A.10 Testar estratégia de cache completa
+  - [ ] 5A.10.1 Teste: Cache hit retorna resultado em < 10ms
+  - [ ] 5A.10.2 Teste: Cache miss calcula e cacheia resultado
+  - [ ] 5A.10.3 Teste: Cache expira após 5 minutos
+  - [ ] 5A.10.4 Teste: Mudança de preço base invalida todos os caches
+  - [ ] 5A.10.5 Teste: Escolha de coleção invalida apenas caches do usuário
+  - [ ] 5A.10.6 Teste: Múltiplos usuários têm caches independentes
+  - [ ] 5A.10.7 Teste: Taxa de hit > 80% em uso normal
+
+## 6. Componentes Admin - Preços Contextuais
+- [ ] 6.1 Criar `CollectionTypesManager` component (novo - gerenciar tipos dinamicamente)
+  - [ ] 6.1.1 Criar estrutura básica com tabela de tipos
+  - [ ] 6.1.2 Integrar com useCollectionTypes hook
+  - [ ] 6.1.3 Adicionar botão "Novo Tipo"
+  - [ ] 6.1.4 Implementar modal de criação/edição de tipo
+  - [ ] 6.1.5 Adicionar toggle ativar/desativar tipo
+  - [ ] 6.1.6 Adicionar controle de ordenação (sort_order)
+  - [ ] 6.1.7 Adicionar loading states
+  - [ ] 6.1.8 Adicionar error handling
+- [ ] 6.2 Criar `ContextualPricingManager` component
+  - [ ] 6.2.1 Criar estrutura básica com Tabs
+  - [ ] 6.2.2 Integrar com useBasePricing e useContextPricing
+  - [ ] 6.2.3 Criar 3 abas: Preços Base, Multiplicadores, Preview
+  - [ ] 6.2.4 Adicionar loading states
+  - [ ] 6.2.5 Adicionar error handling
+  - [ ] 6.2.6 Adicionar estilização com ícone 🪙
+- [ ] 6.3 Criar `BasePricingTable` component
+  - [ ] 6.2.1 Criar tabela com headers (Tipo, Preço Base)
+  - [ ] 6.2.2 Implementar células editáveis (input type="number" step="1")
+  - [ ] 6.2.3 Adicionar validação inline (valor > 0, INTEGER)
+  - [ ] 6.2.4 Adicionar sufixo "🪙" nos inputs
+  - [ ] 6.2.5 Adicionar Alert explicando que afeta todos os contextos
+  - [ ] 6.2.6 Botão Salvar por linha
+- [ ] 6.3 Criar `MultipliersTable` component
+  - [ ] 6.3.1 Criar tabela com headers (Contexto, Multiplicador, Percentual)
+  - [ ] 6.3.2 Adicionar linha especial "Desconto Coleções Escolhidas (%)"
+  - [ ] 6.3.3 Implementar células editáveis para multiplicadores (input type="number" step="0.1")
+  - [ ] 6.3.4 Implementar input para desconto (type="number" min="0" max="100" step="1")
+  - [ ] 6.3.5 Adicionar validação inline (multiplicador > 0, desconto 0-100%)
+  - [ ] 6.3.6 Calcular e exibir percentual automaticamente para multiplicadores
+  - [ ] 6.3.7 Mostrar preview para desconto: "20% = Preço base - 20%"
+  - [ ] 6.3.8 Adicionar Alert explicando multiplicadores (1.0=100%, 0.8=desconto, 1.2=acréscimo)
+  - [ ] 6.3.9 Adicionar Alert explicando desconto de coleções escolhidas (subtração direta)
+  - [ ] 6.3.10 Botão Salvar por linha
+- [ ] 6.4 Criar `PricingPreviewTable` component
+  - [ ] 6.4.1 Criar tabela mostrando preços finais calculados
+  - [ ] 6.4.2 Exibir fórmulas de cálculo diferenciadas:
+    - Coleções escolhidas: "1000 - (1000 × 20%) = 800 coins"
+    - Coleções não escolhidas: "1000 × 1.2 = 1200 coins"
+  - [ ] 6.4.3 Atualizar automaticamente quando base, multiplicador ou desconto mudam
+  - [ ] 6.4.4 Formatar valores como "1000 🪙"
+  - [ ] 6.4.5 Adicionar cores para destacar diferenças entre métodos de cálculo
+  - [ ] 6.4.6 Adicionar legenda explicando os dois métodos
+- [ ] 6.5 Criar `PricingHistoryModal` component
+  - [ ] 6.5.1 Criar modal básico
+  - [ ] 6.5.2 Buscar histórico do banco (change_type, old_value, new_value)
+  - [ ] 6.5.3 Exibir timeline de mudanças separada por tipo
+  - [ ] 6.5.4 Adicionar filtros (base_price vs multiplier)
+  - [ ] 6.5.5 Adicionar paginação
+  - [ ] 6.5.6 Formatar valores corretamente (coins vs decimal)
+- [ ] 6.6 Testar componentes isoladamente
+- [ ] 6.7 Validar acessibilidade
+- [ ] 6.8 Criar `CharacterPriceMultiplierConfig` component (RN008 - configurar multiplicador por personagem)
+  - [ ] 6.8.1 Criar campo no formulário de edição de personagem
+  - [ ] 6.8.2 Adicionar input type="number" min="0.1" max="10" step="0.1"
+  - [ ] 6.8.3 Adicionar botões preset: Normal (1.0), Complexo (1.2), Premium (1.5), Raro (2.0)
+  - [ ] 6.8.4 Adicionar preview mostrando: "Preço base coleção: X coins × Multiplicador: Y = Preço final: Z coins"
+  - [ ] 6.8.5 Adicionar tooltip explicando propósito do multiplicador
+  - [ ] 6.8.6 Adicionar validação (> 0)
+  - [ ] 6.8.7 Permitir NULL (limpar campo para usar 1.0 padrão)
+  - [ ] 6.8.8 Integrar com useCharacterPriceMultiplier hook
+  - [ ] 6.8.9 Adicionar funcionalidade de salvar
+  - [ ] 6.8.10 Adicionar loading states e feedback visual
+
+## 7. Componentes Admin - Limite de Coleções
+- [ ] 7.1 Criar `CollectionLimitConfig` component
+  - [ ] 7.1.1 Criar input de número
+  - [ ] 7.1.2 Adicionar validação (>= -1)
+  - [ ] 7.1.3 Adicionar texto explicativo
+  - [ ] 7.1.4 Integrar com mutation
+  - [ ] 7.1.5 Adicionar feedback visual
+- [ ] 7.2 Integrar em cards de planos existentes
+- [ ] 7.3 Testar fluxo completo de atualização
+- [ ] 7.4 Validar UX
+
+## 8. Atualizar AdminPlansConfiguration Page
+- [x] 8.1 Adicionar nova aba "Preços Contextuais"
+  - [x] 8.1.1 Atualizar TabsList
+  - [x] 8.1.2 Criar TabsContent
+  - [x] 8.1.3 Adicionar Alert informativo
+- [x] 8.2 Integrar ContextualPricingManager
+- [x] 8.3 Adicionar CollectionLimitConfig aos cards de planos
+- [x] 8.4 Atualizar layout e espaçamento
+- [x] 8.5 Testar navegação entre abas
+- [x] 8.6 Validar responsividade
+
+## 9. Atualizar Catálogo de Coleções (Frontend Usuário)
+- [x] 9.1 Integrar useCollectionPrice no catálogo de coleções
+- [ ] 9.2 Integrar useCharacterPrice no catálogo de personagens (RN008 - com multiplicador)
+  - [ ] 9.2.1 Garantir que hook retorna preço com multiplicador aplicado
+  - [ ] 9.2.2 Adicionar loading state para cálculo de preço
+  - [ ] 9.2.3 Cache strategy considera mudanças no multiplicador do personagem
+- [x] 9.3 Exibir preços contextuais em COINS (ex: "1000 🪙")
+- [ ] 9.4 Adicionar badges de contexto (RN008 - incluir multiplicador de personagem)
+  - [ ] 9.4.1 Badge "Coleção Escolhida" com preço promocional
+  - [ ] 9.4.2 Badge para multiplicador de personagem quando != 1.0
+  - [ ] 9.4.3 Exemplos: "Premium" (1.5), "Raro" (2.0), "Grande" (1.3)
+  - [ ] 9.4.4 Adicionar indicador visual (ícone estrela, coroa, etc)
+- [ ] 9.5 Adicionar indicador visual de preço promocional
+- [ ] 9.6 Atualizar preços ao escolher/remover coleção
+- [ ] 9.7 Testar com diferentes contextos de usuário
+- [ ] 9.8 Garantir que NUNCA mostra R$, apenas COINS
+- [ ] 9.9 Validar que preço do personagem SEM multiplicador = preço da coleção
+- [ ] 9.10 Exibir breakdown do multiplicador de personagem (RN008)
+  - [ ] 9.10.1 Adicionar tooltip mostrando cálculo: "Coleção: 800 coins × Multiplicador: 1.5 = 1200 coins"
+  - [ ] 9.10.2 Adicionar breakdown visual no card do personagem
+  - [ ] 9.10.3 Indicação clara quando multiplicador está aplicado
+  - [ ] 9.10.4 Mostrar apenas quando multiplicador != 1.0
+- [ ] 9.11 Implementar Badge System para Status de Coleção (RN009, RF015)
+  - [ ] 9.11.1 Criar componente `CollectionStatusBadge`
+  - [ ] 9.11.2 Badge "Sua Coleção" (verde/primary, bg-green-500) para coleções escolhidas
+  - [ ] 9.11.3 Badge "Disponível" (cinza, bg-gray-400) opcional para coleções não escolhidas
+  - [ ] 9.11.4 Badge "Preço Avulso" (cinza, bg-gray-500) opcional para não assinantes
+  - [ ] 9.11.5 Posicionar badge no canto superior direito do card (top-2 right-2)
+  - [ ] 9.11.6 Incluir ícone de check (✓) para coleções escolhidas
+  - [ ] 9.11.7 Adicionar aria-label descritivo para acessibilidade
+  - [ ] 9.11.8 Implementar design responsivo (text-xs ou text-sm, font-semibold, uppercase)
+  - [ ] 9.11.9 Adicionar padding interno (px-2 py-1)
+  - [ ] 9.11.10 Integrar badge nos cards de coleção existentes
+- [ ] 9.12 Implementar Price Display com Descontos Visuais (RN009, RF015)
+  - [ ] 9.12.1 Exibir preço com desconto em destaque (font-bold, text-lg ou text-xl, cor verde)
+  - [ ] 9.12.2 Exibir preço original riscado com percentual (line-through, text-sm, text-gray-500)
+  - [ ] 9.12.3 Formato: "~~1000 coins~~ 800 coins (-20%)"
+  - [ ] 9.12.4 Adicionar badge de economia: "Economize X coins" ou "Y% OFF"
+  - [ ] 9.12.5 Renderização condicional baseado em contexto (escolhida vs não escolhida)
+  - [ ] 9.12.6 Adicionar animação de número ao mudar preço (number animation)
+  - [ ] 9.12.7 Usar ícone 🪙 ou "coins" consistentemente
+  - [ ] 9.12.8 Garantir que NUNCA mostra R$, apenas COINS
+- [ ] 9.13 Implementar Tooltip System Explicativo (RN009, RF015)
+  - [ ] 9.13.1 Criar componente `PriceTooltip` reutilizável
+  - [ ] 9.13.2 Tooltip para coleções escolhidas: "Você escolheu esta coleção na sua assinatura e recebe X% de desconto"
+  - [ ] 9.13.3 Tooltip para coleções não escolhidas: "Escolha esta coleção na sua assinatura para receber desconto" + link "Gerenciar Coleções"
+  - [ ] 9.13.4 Tooltip para não assinantes: "Assine para ter acesso a preços com desconto" + link "Ver Planos"
+  - [ ] 9.13.5 Mostrar breakdown de cálculo com valores específicos (ex: "Preço base: 1000 coins → Seu preço: 800 coins")
+  - [ ] 9.13.6 Tooltip aparece ao hover em < 500ms
+  - [ ] 9.13.7 Tooltip acessível via teclado (focus)
+  - [ ] 9.13.8 Posicionamento inteligente (não sair da tela)
+  - [ ] 9.13.9 Adicionar links clicáveis nos tooltips (Gerenciar Coleções, Ver Planos)
+  - [ ] 9.13.10 Integrar tooltips em badges e preços
+- [ ] 9.14 Implementar Visual Hierarchy para Cards de Coleção (RN009, RF015)
+  - [ ] 9.14.1 Coleções escolhidas: Border colorido (border-green-500, border-2)
+  - [ ] 9.14.2 Coleções escolhidas: Sombra pronunciada (shadow-lg)
+  - [ ] 9.14.3 Coleções escolhidas: Animação ao hover (scale-105, transition-transform)
+  - [ ] 9.14.4 Coleções não escolhidas: Border neutra (border-gray-300)
+  - [ ] 9.14.5 Coleções não escolhidas: Sombra padrão (shadow-md)
+  - [ ] 9.14.6 Opcional: Ordenação - coleções escolhidas aparecem primeiro na lista
+  - [ ] 9.14.7 Garantir hierarquia visual clara e consistente
+- [ ] 9.15 Implementar Color Coding System Consistente (RN009, RF015)
+  - [ ] 9.15.1 Definir constantes de cores: Verde (#10B981) para escolhidas/descontos
+  - [ ] 9.15.2 Definir constantes de cores: Cinza (#6B7280) para neutro/não escolhidas
+  - [ ] 9.15.3 Definir constantes de cores: Vermelho (#EF4444) para alertas
+  - [ ] 9.15.4 Definir constantes de cores: Azul (#3B82F6) para CTAs/links
+  - [ ] 9.15.5 Aplicar cores consistentemente em todos os cards de coleção
+  - [ ] 9.15.6 Validar contraste WCAG AA (mínimo 4.5:1)
+  - [ ] 9.15.7 Criar classes CSS/Tailwind utility para reutilização
+  - [ ] 9.15.8 Documentar paleta de cores no código
+- [ ] 9.16 Implementar Interactive Feedback e Animações (RN009, RF015)
+  - [ ] 9.16.1 Animação ao escolher coleção: Badge fade in (transition-opacity)
+  - [ ] 9.16.2 Animação ao escolher coleção: Preço animado (number animation)
+  - [ ] 9.16.3 Animação ao escolher coleção: Mensagem de confirmação "Coleção escolhida! Você agora tem X% de desconto"
+  - [ ] 9.16.4 Animação ao remover coleção: Badge fade out
+  - [ ] 9.16.5 Animação ao remover coleção: Preço volta ao normal com animação
+  - [ ] 9.16.6 Animação ao remover coleção: Mensagem de confirmação "Coleção removida. Preços atualizados"
+  - [ ] 9.16.7 Atualização imediata de todos os preços na tela
+  - [ ] 9.16.8 Loading state durante recálculo de preços
+  - [ ] 9.16.9 Toast notifications para ações (sucesso/erro)
+  - [ ] 9.16.10 Respeitar prefers-reduced-motion para acessibilidade
+- [ ] 9.17 Implementar Contextual Information Display (RN009, RF015)
+  - [ ] 9.17.1 Card mostra: nome da coleção, badge de status, preço por personagem
+  - [ ] 9.17.2 Card mostra: quantidade de personagens na coleção
+  - [ ] 9.17.3 Card mostra: preview de 3-4 personagens (imagens)
+  - [ ] 9.17.4 Botão contextual para coleções escolhidas: "Ver Personagens" ou "Remover Coleção"
+  - [ ] 9.17.5 Botão contextual para coleções não escolhidas: "Escolher Coleção" ou "Ver Personagens"
+  - [ ] 9.17.6 Botão contextual para não assinantes: "Ver Personagens" ou "Assinar Agora"
+  - [ ] 9.17.7 Mensagem de limite para assinantes: "Você escolheu X de Y coleções permitidas"
+  - [ ] 9.17.8 Sugestão de upgrade: "Quer mais coleções? Faça upgrade para plano Semestral"
+  - [ ] 9.17.9 Mensagem para assinantes ilimitados: "Você tem acesso ilimitado!"
+- [ ] 9.18 Implementar Call-to-Action para Não Assinantes (RN009, RF015)
+  - [ ] 9.18.1 Botão "Assinar para Economizar" visível e destacado (bg-blue-500)
+  - [ ] 9.18.2 Link "Ver Planos" em tooltips de não assinantes
+  - [ ] 9.18.3 Opcional: View de comparação "Com assinatura" vs "Sem assinatura"
+  - [ ] 9.18.4 Opcional: Gráfico visual de economia (barra de progresso)
+  - [ ] 9.18.5 Redirecionamento para página de assinatura (/planos)
+  - [ ] 9.18.6 Mensagem clara: "Assine e economize até X%"
+
+## 9A. Implementar Comportamento de Saldo Insuficiente (RN007)
+- [ ] 9A.1 Criar componente `BalanceIndicator` (indicador visual de saldo)
+  - [ ] 9A.1.1 Exibir saldo atual do usuário
+  - [ ] 9A.1.2 Adicionar indicador verde quando balance >= preço
+  - [ ] 9A.1.3 Adicionar indicador vermelho quando balance < preço
+  - [ ] 9A.1.4 Exibir preview do saldo após compra (quando suficiente)
+  - [ ] 9A.1.5 Adicionar ícone de alerta quando insuficiente
+  - [ ] 9A.1.6 Integrar com useUserCoins hook
+- [ ] 9A.2 Criar componente `InsufficientBalanceMessage`
+  - [ ] 9A.2.1 Exibir mensagem "Saldo insuficiente"
+  - [ ] 9A.2.2 Mostrar valores exatos: "Necessário: X coins"
+  - [ ] 9A.2.3 Mostrar valores exatos: "Disponível: Y coins"
+  - [ ] 9A.2.4 Calcular e mostrar: "Faltam: Z coins"
+  - [ ] 9A.2.5 Adicionar estilização com cores de alerta
+- [ ] 9A.3 Atualizar botão de compra de personagem
+  - [ ] 9A.3.1 Validar saldo antes de habilitar botão
+  - [ ] 9A.3.2 Quando balance >= preço: mostrar botão "Comprar"
+  - [ ] 9A.3.3 Quando balance < preço: mostrar botão "Comprar Coins"
+  - [ ] 9A.3.4 Botão "Comprar Coins" redireciona para /coins/purchase
+  - [ ] 9A.3.5 Adicionar tooltip explicativo no botão
+  - [ ] 9A.3.6 Desabilitar botão "Comprar" durante loading
+- [ ] 9A.4 Integrar validação frontend com backend
+  - [ ] 9A.4.1 Frontend valida saldo antes de chamar mutation
+  - [ ] 9A.4.2 Backend valida saldo novamente (segurança)
+  - [ ] 9A.4.3 Tratar erro de saldo insuficiente do backend
+  - [ ] 9A.4.4 Exibir mensagem de erro com valores exatos
+  - [ ] 9A.4.5 Sincronizar saldo após erro (refetch)
+- [ ] 9A.5 Adicionar página de compra de coins (/coins/purchase)
+  - [ ] 9A.5.1 Criar rota /coins/purchase
+  - [ ] 9A.5.2 Exibir pacotes de coins disponíveis
+  - [ ] 9A.5.3 Integrar com sistema de pagamento
+  - [ ] 9A.5.4 Adicionar botão "Voltar" para página anterior
+- [ ] 9A.6 Testar fluxo completo de saldo insuficiente
+  - [ ] 9A.6.1 Teste: usuário com saldo suficiente vê botão "Comprar"
+  - [ ] 9A.6.2 Teste: usuário com saldo insuficiente vê botão "Comprar Coins"
+  - [ ] 9A.6.3 Teste: mensagem de erro mostra valores corretos
+  - [ ] 9A.6.4 Teste: redirecionamento para página de compra funciona
+  - [ ] 9A.6.5 Teste: indicadores visuais mudam conforme saldo
+
+## 10. Implementar Validação de Limite
+- [x] 10.1 Integrar useCollectionLimit no painel de assinatura
+- [x] 10.2 Exibir contador "X de Y coleções"
+- [x] 10.3 Desabilitar botão se limite atingido
+- [x] 10.4 Exibir mensagem de erro ao tentar exceder
+- [x] 10.5 Adicionar sugestão de remover coleção
+- [x] 10.6 Testar validação com diferentes planos
+
+## 11. Atualizar Tipos TypeScript
+- [x] 11.1 Criar tipos para collection_base_pricing (base_price_coins: number)
+- [x] 11.2 Criar tipos para pricing_context_multipliers (multiplier: number, chosen_collection_discount_percentage: number)
+- [x] 11.3 Criar tipo de validação para discount (DiscountPercentage: number entre 0-100)
+- [x] 11.4 Criar tipos para pricing_history (change_type, old_value, new_value: number)
+- [x] 11.6 Atualizar tipo de collections (adicionar collection_type)
+- [x] 11.7 Criar tipos para respostas de RPC (retorna number coins)
+- [x] 11.8 Atualizar tipos de hooks (todos retornam/aceitam coins: number, multiplier: number, discount_percentage: number)
+- [x] 11.10 Validar tipos em todo o código
+- [x] 11.11 Garantir que não há tipos DECIMAL ou price em R$
+
+## 12. Testes Unitários
+- [ ] 12.1 Testar função get_collection_price()
+  - [ ] 12.1.1 Teste: assinante com coleção escolhida usando desconto 20% (base 1000 - (1000 × 20%) = 800 coins)
+  - [ ] 12.1.2 Teste: assinante com coleção escolhida usando desconto 10% (base 1000 - (1000 × 10%) = 900 coins)
+  - [ ] 12.1.3 Teste: assinante com coleção escolhida usando desconto 50% (base 1000 - (1000 × 50%) = 500 coins)
+  - [ ] 12.1.4 Teste: assinante sem coleção escolhida usando multiplicador (base 1000 × 1.2 = 1200 coins)
+  - [ ] 12.1.5 Teste: não assinante usando multiplicador (base 1000 × 1.2 = 1200 coins)
+  - [ ] 12.1.6 Teste: catálogo padrão (base 1400 × 1.0 = 1400 coins)
+  - [ ] 12.1.7 Teste: catálogo premium (base 1800 × 1.0 = 1800 coins)
+  - [ ] 12.1.8 Teste: promoção com multiplicador 0.8 (base 1000 × 0.8 = 800 coins)
+  - [ ] 12.1.9 Teste: acréscimo com multiplicador 1.5 (base 1000 × 1.5 = 1500 coins)
+  - [ ] 12.1.10 Teste: coleção não encontrada
+  - [ ] 12.1.11 Validar que retorna INTEGER, não DECIMAL
+  - [ ] 12.1.12 Validar que coleções escolhidas usam desconto (subtração) e não multiplicador
+- [ ] 12.1A Testar ordem de prioridade (RN011)
+  - [ ] 12.1A.1 Teste: Catálogo premium + Assinante + "Escolhida" → Retorna preço fixo premium (ignora assinatura)
+  - [ ] 12.1A.2 Teste: Catálogo standard + Assinante + "Escolhida" → Retorna preço fixo standard (ignora assinatura)
+  - [ ] 12.1A.3 Teste: Subscription + Não assinante + "Escolhida" → Retorna preço padrão (ignora escolha)
+  - [ ] 12.1A.4 Teste: Subscription + Assinante + Escolhida → Retorna preço com desconto
+  - [ ] 12.1A.5 Teste: Subscription + Assinante + Não escolhida → Retorna preço com multiplicador
+  - [ ] 12.1A.6 Validar que tipo de coleção tem PRIORIDADE MÁXIMA
+  - [ ] 12.1A.7 Validar que status de assinatura tem PRIORIDADE MÉDIA
+  - [ ] 12.1A.8 Validar que escolha de coleção tem PRIORIDADE BAIXA
+  - [ ] 12.1A.9 Teste: Catálogo nunca aplica desconto de escolha
+  - [ ] 12.1A.10 Teste: Não assinante nunca considera escolha
+- [ ] 12.2 Testar função get_character_price() (RN008 - com multiplicador de personagem)
+  - [ ] 12.2.1 Teste: personagem com multiplicador 1.0 (normal) - retorna preço da coleção
+  - [ ] 12.2.2 Teste: personagem com multiplicador 1.2 (complexo) - coleção × 1.2
+  - [ ] 12.2.3 Teste: personagem com multiplicador 1.5 (premium) - coleção × 1.5
+  - [ ] 12.2.4 Teste: personagem com multiplicador 2.0 (raro) - coleção × 2.0
+  - [ ] 12.2.5 Teste: personagem com multiplicador NULL - deve usar 1.0 por padrão
+  - [ ] 12.2.6 Teste: coleção escolhida (800) × multiplicador 1.5 = 1200 coins
+  - [ ] 12.2.7 Teste: coleção não escolhida (1200) × multiplicador 1.5 = 1800 coins
+  - [ ] 12.2.8 Teste: personagem de catálogo padrão (1400) × multiplicador 1.5 = 2100 coins
+  - [ ] 12.2.9 Teste: personagem de catálogo premium (1800) × multiplicador 2.0 = 3600 coins
+  - [ ] 12.2.10 Teste: personagem não encontrado
+  - [ ] 12.2.11 Validar que SEM multiplicador retorna mesmo valor que get_collection_price()
+  - [ ] 12.2.12 Validar que multiplicador é aplicado APÓS cálculo de contexto da coleção
+- [ ] 12.3 Testar função validate_collection_limit()
+  - [ ] 12.3.1 Teste: limite não atingido
+  - [ ] 12.3.2 Teste: limite atingido
+  - [ ] 12.3.3 Teste: limite ilimitado
+  - [ ] 12.3.4 Teste: sem assinatura
+- [ ] 12.4 Testar função update_base_price_with_history()
+  - [ ] 12.4.1 Teste: atualização bem-sucedida
+  - [ ] 12.4.2 Teste: histórico registrado corretamente
+  - [ ] 12.4.3 Teste: change_type = 'base_price'
+- [ ] 12.5 Testar função update_multiplier_with_history()
+  - [ ] 12.5.1 Teste: atualização bem-sucedida
+  - [ ] 12.5.2 Teste: histórico registrado corretamente
+  - [ ] 12.5.3 Teste: change_type = 'multiplier'
+- [ ] 12.6 Testar função purchase_character() (RN007)
+  - [ ] 12.6.1 Teste: compra bem-sucedida com saldo suficiente
+  - [ ] 12.6.2 Teste: erro quando balance < preço
+  - [ ] 12.6.3 Teste: erro inclui valores exatos (required, available, missing)
+  - [ ] 12.6.4 Teste: erro quando personagem já possui
+  - [ ] 12.6.5 Teste: erro quando personagem não existe
+  - [ ] 12.6.6 Teste: atomicidade (rollback em caso de erro)
+  - [ ] 12.6.7 Teste: saldo é debitado corretamente
+  - [ ] 12.6.8 Teste: transação é registrada corretamente
+  - [ ] 12.6.9 Teste: personagem é adicionado corretamente
+- [ ] 12.7 Testar hooks React
+  - [ ] 12.7.1 Teste: useBasePricing
+  - [ ] 12.7.2 Teste: useContextPricing (incluindo discount_percentage)
+  - [ ] 12.7.3 Teste: validação de discount_percentage (0-100%)
+  - [ ] 12.7.4 Teste: useCollectionPrice (com desconto e multiplicador)
+  - [ ] 12.7.5 Teste: useCharacterPrice (com desconto, multiplicador de contexto e multiplicador de personagem RN008)
+  - [ ] 12.7.6 Teste: useCharacterPriceMultiplier (RN008 - atualização de multiplicador)
+  - [ ] 12.7.7 Teste: useCollectionLimit
+  - [ ] 12.7.8 Teste: useUserCoins (incluindo hasInsufficientBalance)
+  - [ ] 12.7.9 Teste: usePurchaseCharacter (incluindo tratamento de erros RN007)
+- [ ] 12.8 Testar componentes de saldo insuficiente (RN007)
+  - [ ] 12.8.1 Teste: BalanceIndicator mostra verde quando suficiente
+  - [ ] 12.8.2 Teste: BalanceIndicator mostra vermelho quando insuficiente
+  - [ ] 12.8.3 Teste: InsufficientBalanceMessage exibe valores corretos
+  - [ ] 12.8.4 Teste: Botão muda de "Comprar" para "Comprar Coins"
+  - [ ] 12.8.5 Teste: Redirecionamento para /coins/purchase funciona
+- [ ] 12.9 Testar componente CharacterPriceMultiplierConfig (RN008)
+  - [ ] 12.9.1 Teste: Input aceita valores entre 0.1 e 10
+  - [ ] 12.9.2 Teste: Botões preset definem valores corretos
+  - [ ] 12.9.3 Teste: Preview mostra cálculo correto
+  - [ ] 12.9.4 Teste: Validação bloqueia valores <= 0
+  - [ ] 12.9.5 Teste: Limpar campo define NULL (usa 1.0 padrão)
+  - [ ] 12.9.6 Teste: Salvar atualiza multiplicador no banco
+- [ ] 12.10 Testar Badge System (RN009, RF015)
+  - [ ] 12.10.1 Teste: Badge "Sua Coleção" renderiza para coleções escolhidas
+  - [ ] 12.10.2 Teste: Badge tem cor verde/primary (bg-green-500)
+  - [ ] 12.10.3 Teste: Badge inclui ícone de check (✓)
+  - [ ] 12.10.4 Teste: Badge "Disponível" renderiza para não escolhidas (opcional)
+  - [ ] 12.10.5 Teste: Badge "Preço Avulso" renderiza para não assinantes
+  - [ ] 12.10.6 Teste: Badge posicionado corretamente (top-2 right-2)
+  - [ ] 12.10.7 Teste: Aria-label está presente e descritivo
+  - [ ] 12.10.8 Teste: Design responsivo funciona
+- [ ] 12.11 Testar Tooltip System (RN009, RF015)
+  - [ ] 12.11.1 Teste: Tooltip renderiza conteúdo correto para cada contexto
+  - [ ] 12.11.2 Teste: Tooltip para escolhidas mostra desconto e breakdown
+  - [ ] 12.11.3 Teste: Tooltip para não escolhidas mostra link "Gerenciar Coleções"
+  - [ ] 12.11.4 Teste: Tooltip para não assinantes mostra link "Ver Planos"
+  - [ ] 12.11.5 Teste: Tooltip aparece em < 500ms ao hover
+  - [ ] 12.11.6 Teste: Tooltip acessível via teclado (focus)
+  - [ ] 12.11.7 Teste: Posicionamento inteligente (não sai da tela)
+  - [ ] 12.11.8 Teste: Links nos tooltips são clicáveis e funcionam
+- [ ] 12.12 Testar Price Display com Descontos (RN009, RF015)
+  - [ ] 12.12.1 Teste: Preço com desconto em destaque (font-bold, text-lg, verde)
+  - [ ] 12.12.2 Teste: Preço original riscado com percentual
+  - [ ] 12.12.3 Teste: Badge de economia renderiza corretamente
+  - [ ] 12.12.4 Teste: Renderização condicional baseado em contexto
+  - [ ] 12.12.5 Teste: Animação de número funciona ao mudar preço
+  - [ ] 12.12.6 Teste: Nunca mostra R$, apenas COINS
+- [ ] 12.13 Testar Visual Feedback e Animações (RN009, RF015)
+  - [ ] 12.13.1 Teste: Badge fade in ao escolher coleção
+  - [ ] 12.13.2 Teste: Badge fade out ao remover coleção
+  - [ ] 12.13.3 Teste: Preço anima ao mudar
+  - [ ] 12.13.4 Teste: Mensagem de confirmação aparece
+  - [ ] 12.13.5 Teste: Toast notifications funcionam
+  - [ ] 12.13.6 Teste: Loading state durante recálculo
+  - [ ] 12.13.7 Teste: Todos os preços atualizam imediatamente
+  - [ ] 12.13.8 Teste: prefers-reduced-motion é respeitado
+- [ ] 12.14 Testar Visual Hierarchy (RN009, RF015)
+  - [ ] 12.14.1 Teste: Coleções escolhidas têm border verde (border-green-500, border-2)
+  - [ ] 12.14.2 Teste: Coleções escolhidas têm shadow-lg
+  - [ ] 12.14.3 Teste: Animação hover (scale-105) funciona
+  - [ ] 12.14.4 Teste: Coleções não escolhidas têm border cinza
+  - [ ] 12.14.5 Teste: Hierarquia visual é clara
+- [ ] 12.15 Testar Color Coding System (RN009, RF015)
+  - [ ] 12.15.1 Teste: Verde (#10B981) usado para escolhidas/descontos
+  - [ ] 12.15.2 Teste: Cinza (#6B7280) usado para neutro
+  - [ ] 12.15.3 Teste: Vermelho (#EF4444) usado para alertas
+  - [ ] 12.15.4 Teste: Azul (#3B82F6) usado para CTAs
+  - [ ] 12.15.5 Teste: Contraste WCAG AA (4.5:1) validado
+  - [ ] 12.15.6 Teste: Cores consistentes em toda aplicação
+- [ ] 12.16 Testar Acessibilidade (RN009, RF015)
+  - [ ] 12.16.1 Teste: Todos os badges têm aria-label
+  - [ ] 12.16.2 Teste: Tooltips navegáveis por teclado
+  - [ ] 12.16.3 Teste: Ícones têm texto alternativo
+  - [ ] 12.16.4 Teste: Foco visível em elementos interativos
+  - [ ] 12.16.5 Teste: Contraste de cores adequado
+  - [ ] 12.16.6 Teste: Screen reader lê informações corretamente
+- [ ] 12.17 Validar cobertura de testes (> 80%)
+- [ ] 12.18 Testar cache strategy (RN010)
+  - [ ] 12.18.1 Teste: Cache hit retorna resultado em < 10ms
+  - [ ] 12.18.2 Teste: Cache miss calcula preço e armazena no cache
+  - [ ] 12.18.3 Teste: Cache expira após 5 minutos (staleTime)
+  - [ ] 12.18.4 Teste: Mudança de preço base invalida cache de collection-price
+  - [ ] 12.18.5 Teste: Mudança de preço base invalida cache de character-price
+  - [ ] 12.18.6 Teste: Mudança de multiplicador invalida todos os caches
+  - [ ] 12.18.7 Teste: Mudança de discount_percentage invalida todos os caches
+  - [ ] 12.18.8 Teste: Escolha de coleção invalida apenas caches do usuário
+  - [ ] 12.18.9 Teste: Remoção de coleção invalida apenas caches do usuário
+  - [ ] 12.18.10 Teste: Mudança de price_multiplier invalida apenas cache do personagem
+  - [ ] 12.18.11 Teste: Múltiplos usuários têm caches independentes
+  - [ ] 12.18.12 Teste: Taxa de hit do cache > 80% em uso simulado
+  - [ ] 12.18.13 Teste: Funções SQL marcadas como STABLE permitem cache interno
+  - [ ] 12.18.14 Validar que invalidação em cascata funciona corretamente
+
+## 13. Testes de Integração
+- [ ] 13.1 Testar fluxo completo: admin atualiza preço base
+- [ ] 13.2 Testar fluxo completo: admin atualiza multiplicador
+- [ ] 13.3 Testar fluxo completo: admin atualiza discount_percentage
+- [ ] 13.4 Testar fluxo completo: validação de discount_percentage (0-100%)
+- [ ] 13.5 Testar fluxo completo: usuário vê preço atualizado
+- [ ] 13.6 Testar fluxo completo: usuário escolhe coleção e vê desconto aplicado
+- [ ] 13.7 Testar fluxo completo: preço recalcula quando discount_percentage muda
+- [ ] 13.8 Testar fluxo completo: validação de limite
+- [ ] 13.9 Testar fluxo completo: promoção temporária (multiplicador 0.8)
+- [ ] 13.10 Testar histórico de mudanças (base_price e multiplier)
+- [ ] 13.11 Testar RLS policies
+- [ ] 13.12 Testar consistência: mudança de base recalcula todos os contextos
+- [ ] 13.13 Testar criação de novo tipo dinamicamente (ex: rare_catalog)
+- [ ] 13.14 Testar ativação/desativação de tipos
+- [ ] 13.15 Testar que novos tipos funcionam sem alterar código
+- [ ] 13.16 Testar diferença entre cálculo de escolhidas (desconto) vs não escolhidas (multiplicador)
+- [ ] 13.17 Testar fluxo completo: multiplicador de personagem (RN008)
+  - [ ] 13.17.1 Admin configura multiplicador de personagem
+  - [ ] 13.17.2 Preço recalcula quando multiplicador muda
+  - [ ] 13.17.3 Validação de multiplicador (> 0)
+  - [ ] 13.17.4 NULL multiplicador usa 1.0 por padrão
+  - [ ] 13.17.5 Multiplicador aplicado APÓS cálculo de contexto da coleção
+  - [ ] 13.17.6 Badges visuais aparecem quando multiplicador != 1.0
+  - [ ] 13.17.7 Tooltip mostra breakdown do cálculo
+  - [ ] 13.17.8 Fluxo completo: coleção escolhida (800) × multiplicador (1.5) = 1200 coins
+  - [ ] 13.17.9 Fluxo completo: coleção não escolhida (1200) × multiplicador (2.0) = 2400 coins
+- [ ] 13.18 Testar fluxo completo: compra com saldo suficiente (RN007)
+  - [ ] 13.18.1 Usuário com balance >= preço consegue comprar
+  - [ ] 13.18.2 Botão "Comprar" está habilitado
+  - [ ] 13.18.3 Indicador visual verde no saldo
+  - [ ] 13.18.4 Compra é processada com sucesso
+  - [ ] 13.18.5 Saldo é atualizado corretamente
+- [ ] 13.19 Testar fluxo completo: compra com saldo insuficiente (RN007)
+  - [ ] 13.19.1 Usuário com balance < preço vê botão "Comprar Coins"
+  - [ ] 13.19.2 Mensagem de erro mostra valores exatos
+  - [ ] 13.19.3 Indicador visual vermelho no saldo
+  - [ ] 13.19.4 Botão "Comprar Coins" redireciona corretamente
+  - [ ] 13.19.5 Frontend bloqueia tentativa de compra
+  - [ ] 13.19.6 Backend valida e retorna erro se tentativa forçada
+- [ ] 13.20 Testar sincronização frontend-backend (RN007)
+  - [ ] 13.20.1 Validação frontend previne chamada desnecessária
+  - [ ] 13.20.2 Validação backend garante segurança
+  - [ ] 13.20.3 Mensagens de erro são consistentes
+  - [ ] 13.20.4 Saldo é refetchado após erro
+- [ ] 13.21 Testar fluxo completo: Visual Explanation System (RN009, RF015)
+  - [ ] 13.21.1 Usuário vê badge "Sua Coleção" em coleções escolhidas
+  - [ ] 13.21.2 Usuário passa mouse e vê tooltip explicativo em < 500ms
+  - [ ] 13.21.3 Tooltip mostra breakdown do cálculo com valores específicos
+  - [ ] 13.21.4 Preço com desconto está destacado visualmente (verde, bold)
+  - [ ] 13.21.5 Preço original riscado com percentual de economia
+  - [ ] 13.21.6 Badge de economia "Economize X coins" visível
+  - [ ] 13.21.7 Coleções escolhidas têm border verde e shadow-lg
+  - [ ] 13.21.8 Animação hover funciona (scale-105)
+  - [ ] 13.21.9 Usuário escolhe nova coleção e vê animações (badge fade in, preço anima)
+  - [ ] 13.21.10 Mensagem de confirmação aparece
+  - [ ] 13.21.11 Todos os preços atualizam imediatamente
+  - [ ] 13.21.12 Usuário remove coleção e vê animações reversas
+  - [ ] 13.21.13 Não assinante vê botão "Assinar para Economizar"
+  - [ ] 13.21.14 Tooltip de não assinante tem link "Ver Planos" funcional
+  - [ ] 13.21.15 Cores são consistentes em todos os cards
+  - [ ] 13.21.16 Navegação por teclado funciona (tooltips, botões)
+  - [ ] 13.21.17 Screen reader lê informações corretamente
+  - [ ] 13.21.18 Usuário entende diferença de preços em < 3 segundos (validação UX)
+- [ ] 13.22 Testar fluxo completo: Priority Order (RN011)
+  - [ ] 13.22.1 Fluxo: Admin cria catálogo premium → Assinante vê preço fixo (ignora assinatura)
+  - [ ] 13.22.2 Fluxo: Usuário assina → Escolhe coleção subscription → Vê desconto aplicado
+  - [ ] 13.22.3 Fluxo: Usuário cancela assinatura → Preço muda para padrão (ignora escolha anterior)
+  - [ ] 13.22.4 Fluxo: Admin muda tipo de subscription para premium_catalog → Preço muda para fixo
+  - [ ] 13.22.5 Validar que ordem de prioridade é sempre respeitada
+  - [ ] 13.22.6 Validar que conflitos são resolvidos consistentemente
+  - [ ] 13.22.7 Validar que árvore de decisão é seguida corretamente
+- [ ] 13.23 Testar fluxo completo: Cache Strategy (RN010)
+  - [ ] 13.23.1 Fluxo: Usuário acessa catálogo → Preços cacheados → Acesso subsequente instantâneo
+  - [ ] 13.23.2 Fluxo: Admin atualiza preço base → Cache invalidado → Usuário vê novo preço
+  - [ ] 13.23.3 Fluxo: Usuário escolhe coleção → Cache do usuário invalidado → Preços recalculados
+  - [ ] 13.23.4 Fluxo: Admin atualiza multiplicador → Todos os caches invalidados → Preços recalculados
+  - [ ] 13.23.5 Fluxo: Admin atualiza discount_percentage → Todos os caches invalidados
+  - [ ] 13.23.6 Fluxo: Admin atualiza price_multiplier de personagem → Cache do personagem invalidado
+  - [ ] 13.23.7 Validar que cache expira após 5 minutos
+  - [ ] 13.23.8 Validar que taxa de hit > 80% em uso normal
+  - [ ] 13.23.9 Validar que tempo de resposta com cache < 10ms
+  - [ ] 13.23.10 Validar que invalidação não afeta usuários não relacionados
+
+## 14. Limpeza de Código Legado
+- [ ] 14.1 Identificar arquivos obsoletos
+- [ ] 14.2 Remover imports não utilizados
+- [ ] 14.3 Remover componentes obsoletos
+- [ ] 14.4 Remover funções não utilizadas
+- [ ] 14.5 Atualizar documentação
+- [ ] 14.6 Validar que nada quebrou
+
+## 15. Documentação
+- [ ] 15.1 Atualizar README principal
+- [ ] 15.2 Documentar funções SQL
+- [ ] 15.3 Documentar componentes React
+- [ ] 15.4 Criar guia de uso para admin
+- [ ] 15.5 Atualizar CHANGELOG
+- [ ] 15.6 Criar diagramas de fluxo
+
+## 16. Performance e Otimização
+- [ ] 16.1 Validar índices de banco
+- [ ] 16.2 Testar performance de queries
+- [ ] 16.3 Otimizar cache strategy
+- [ ] 16.4 Validar tempo de resposta (< 100ms)
+- [ ] 16.5 Testar com volume de dados realista
+- [ ] 16.6 Identificar e resolver gargalos
+
+## 17. Testes de Aceitação
+- [ ] 17.1 Admin consegue configurar preços contextuais
+- [ ] 17.2 Admin consegue configurar limite de coleções
+- [ ] 17.3 Admin consegue ver histórico de mudanças
+- [ ] 17.4 Usuário vê preços corretos baseado em contexto
+- [ ] 17.5 Usuário consegue escolher coleções respeitando limite
+- [ ] 17.6 Sistema valida limite corretamente
+- [ ] 17.7 Admin consegue configurar multiplicador de personagem (RN008)
+- [ ] 17.8 Usuário vê preço correto com multiplicador aplicado (RN008)
+- [ ] 17.9 Indicadores visuais mostram status do multiplicador (RN008)
+- [ ] 17.10 Tooltip mostra breakdown do cálculo de preço (RN008)
+- [ ] 17.11 Usuário com saldo suficiente consegue comprar personagem (RN007)
+- [ ] 17.12 Usuário com saldo insuficiente vê botão "Comprar Coins" (RN007)
+- [ ] 17.13 Mensagem de erro mostra valores exatos quando saldo insuficiente (RN007)
+- [ ] 17.14 Indicadores visuais de saldo funcionam corretamente (RN007)
+- [ ] 17.15 Redirecionamento para compra de coins funciona (RN007)
+- [ ] 17.16 Validação frontend previne compras com saldo insuficiente (RN007)
+- [ ] 17.17 Validação backend garante segurança mesmo se frontend falhar (RN007)
+- [ ] 17.18 Usuário entende visualmente por que preços diferem (RN009, RF015)
+- [ ] 17.19 Badge "Sua Coleção" é imediatamente reconhecível (RN009, RF015)
+- [ ] 17.20 Tooltips fornecem explicações claras e detalhadas (RN009, RF015)
+- [ ] 17.21 Cores são consistentes em toda a aplicação (RN009, RF015)
+- [ ] 17.22 Animações melhoram UX sem serem distrativas (RN009, RF015)
+- [ ] 17.23 Requisitos de acessibilidade WCAG AA são atendidos (RN009, RF015)
+- [ ] 17.24 Usuário entende diferença de preços em < 3 segundos (RN009, RF015)
+- [ ] 17.25 Não assinantes veem CTAs claros para assinar (RN009, RF015)
+- [ ] 17.26 Feedback visual ao escolher/remover coleção é claro (RN009, RF015)
+- [ ] 17.27 Sistema segue ordem de prioridade de regras de preço (RN011)
+- [ ] 17.28 Tipo de coleção tem prioridade máxima sobre outras regras (RN011)
+- [ ] 17.29 Status de assinatura tem prioridade sobre escolha de coleção (RN011)
+- [ ] 17.30 Catálogos sempre retornam preço fixo independente de assinatura (RN011)
+- [ ] 17.31 Não assinantes nunca recebem desconto de escolha (RN011)
+- [ ] 17.32 Conflitos de regras são resolvidos consistentemente (RN011)
+- [ ] 17.33 Cache de preços funciona corretamente (RN010)
+- [ ] 17.34 Cache é invalidado quando preços base mudam (RN010)
+- [ ] 17.35 Cache é invalidado quando multiplicadores mudam (RN010)
+- [ ] 17.36 Cache é invalidado quando desconto muda (RN010)
+- [ ] 17.37 Cache é invalidado quando usuário escolhe/remove coleção (RN010)
+- [ ] 17.38 Cache é invalidado quando multiplicador de personagem muda (RN010)
+- [ ] 17.39 Taxa de hit do cache > 80% em uso normal (RN010)
+- [ ] 17.40 Tempo de resposta com cache < 10ms (RN010)
+- [ ] 17.41 Performance sem cache < 100ms (RN010)
+
+## 18. Revisão e Refinamento
+- [ ] 18.1 Code review completo
+- [ ] 18.2 Revisar acessibilidade
+- [ ] 18.3 Revisar responsividade
+- [ ] 18.4 Revisar mensagens de erro
+- [ ] 18.5 Revisar feedback visual
+- [ ] 18.6 Ajustes finais
+
+## 19. Preparação para Deploy
+- [ ] 19.1 Criar script de migration para produção
+- [ ] 19.2 Criar plano de rollback
+- [ ] 19.3 Documentar processo de deploy
+- [ ] 19.4 Validar backup de dados
+- [ ] 19.5 Preparar comunicação para usuários
+- [ ] 19.6 Validar ambiente de staging
+
+## 20. Deploy e Monitoramento
+- [ ] 20.1 Aplicar migrations em staging
+- [ ] 20.2 Testar em staging
+- [ ] 20.3 Aplicar migrations em produção
+- [ ] 20.4 Deploy do frontend
+- [ ] 20.5 Monitorar logs e erros
+- [ ] 20.6 Validar funcionamento em produção
+
+---
+
+## Notas de Implementação
+
+### Prioridades
+1. **Alta**: Tasks 2-8 (estrutura base e funcionalidade core)
+2. **Média**: Tasks 9-9A-13 (integrações, saldo insuficiente e testes)
+3. **Baixa**: Tasks 14-16 (limpeza e otimização)
+
+### Dependências Críticas
+- Task 2 deve ser concluída antes de Task 3
+- Task 3 deve ser concluída antes de Task 5
+- Task 5 deve ser concluída antes de Task 6
+- Task 6 deve ser concluída antes de Task 8
+- Task 3.6 (purchase_character) deve incluir validação RN007
+- Task 5.6 e 5.7 devem suportar validação de saldo (RN007)
+- Task 9A depende de Task 5.6, 5.7 e 3.6
+
+### Estimativas de Tempo
+- Tasks 2-4: 1 dia (banco de dados)
+- Tasks 5-5A-7: 1.5 dias (hooks, cache strategy e componentes base)
+- Task 8: 0.5 dia (integração admin)
+- Tasks 9-9A: 1 dia (frontend usuário + saldo insuficiente RN007)
+- Task 10: 0.5 dia (validação de limite)
+- Tasks 11-13: 1.5 dias (testes incluindo RN007, RN010, RN011)
+- Tasks 14-20: 1 dia (limpeza, docs, deploy)
+
+**Total Estimado**: 7 dias
+
+### Novidades RN007 (Saldo Insuficiente)
+- **Backend**: Função `purchase_character()` valida saldo e retorna erro detalhado
+- **Frontend**: Componentes `BalanceIndicator` e `InsufficientBalanceMessage`
+- **UX**: Botão muda de "Comprar" para "Comprar Coins" quando insuficiente
+- **Segurança**: Validação dupla (frontend + backend)
+- **Mensagens**: Valores exatos (necessário, disponível, faltam)
+
+### Novidades RN008 (Multiplicador de Preço por Personagem)
+- **Backend**: Coluna `price_multiplier` na tabela `characters` (nullable, default NULL)
+- **Função**: `get_character_price()` aplica multiplicador APÓS cálculo de contexto da coleção
+- **Fórmula**: `collection_price × COALESCE(character.price_multiplier, 1.0)`
+- **Frontend**: Componente `CharacterPriceMultiplierConfig` para admin configurar
+- **UX**: Badges visuais (Premium, Raro, Grande) quando multiplicador != 1.0
+- **Tooltip**: Mostra breakdown do cálculo (Coleção: X × Multiplicador: Y = Z)
+- **Presets**: Normal (1.0), Complexo (1.2), Premium (1.5), Raro (2.0)
+- **Opcional**: NULL usa 1.0 por padrão, permite granularidade por personagem
+- **Hierarquia**: Contexto da coleção → Multiplicador do personagem
+
+### Novidades RN009 e RF015 (Visual Explanation System)
+- **Badge System**: Componente `CollectionStatusBadge` com 3 variantes (Sua Coleção, Disponível, Preço Avulso)
+- **Tooltip System**: Componente `PriceTooltip` com explicações contextuais e breakdown de cálculo
+- **Price Display**: Preço destacado (verde, bold) + preço original riscado + badge de economia
+- **Visual Hierarchy**: Border verde + shadow-lg para escolhidas, border cinza para não escolhidas
+- **Color Coding**: Verde (#10B981) escolhidas, Cinza (#6B7280) neutro, Vermelho (#EF4444) alertas, Azul (#3B82F6) CTAs
+- **Animações**: Fade in/out de badges, animação de preços, mensagens de confirmação, toast notifications
+- **Contextual Info**: Cards mostram nome, badge, preço, quantidade, preview de personagens, botões contextuais
+- **CTAs**: Botão "Assinar para Economizar" para não assinantes, links em tooltips
+- **Acessibilidade**: Aria-labels, navegação por teclado, contraste WCAG AA, prefers-reduced-motion
+- **UX Goal**: Usuário entende diferença de preços em < 3 segundos
+
+### Novidades RN010 (Cache Strategy for Price Calculations)
+- **Cache Duration**: 5 minutos (staleTime) para cálculos de preço
+- **React Query**: Configuração com staleTime: 5min, cacheTime: 10min
+- **Cache Keys**: `['collection-price', collectionId, userId]` e `['character-price', characterId, userId]`
+- **Invalidação**: Automática quando preços base, multiplicadores, descontos ou escolhas mudam
+- **Invalidação Seletiva**: Apenas usuário afetado quando escolhe/remove coleção
+- **Invalidação em Cascata**: Todos os caches quando preço base ou multiplicadores mudam
+- **SQL Optimization**: Funções marcadas como STABLE para cache interno do PostgreSQL
+- **Performance Target**: < 10ms com cache hit, < 100ms sem cache, taxa de hit > 80%
+- **Métricas**: Monitorar cache hits/misses, tempo de resposta, queries por segundo
+- **Benefícios**: Redução de 80%+ em queries, melhor UX, menor carga no banco
+
+### Novidades RN011 (Priority Order for Pricing Rules)
+- **Ordem de Prioridade**: 1) Tipo de Coleção (MÁXIMA), 2) Status de Assinatura (MÉDIA), 3) Coleção Escolhida (BAIXA)
+- **Tipo de Coleção**: Se catálogo (standard/premium), retorna preço fixo e ignora assinatura/escolha
+- **Status de Assinatura**: Se não assinante, ignora escolha de coleção (não pode escolher sem assinatura)
+- **Coleção Escolhida**: Apenas para assinantes com coleções tipo subscription
+- **Árvore de Decisão**: Fluxo claro de verificação em ordem de prioridade
+- **Resolução de Conflitos**: Regras claras para cenários ambíguos
+- **Implementação SQL**: Função get_collection_price() segue ordem de prioridade com IF/ELSE aninhados
+- **Validações**: Testes específicos para cada cenário de conflito
+- **Benefícios**: Eliminação de ambiguidade, comportamento previsível, facilita debugging
+
+### Riscos e Mitigações
+- **Risco**: Migration pode falhar com dados existentes
+  - **Mitigação**: Testar migration em cópia do banco primeiro
+- **Risco**: Performance de cálculo de preço pode ser lenta
+  - **Mitigação**: Adicionar índices e cache agressivo
+- **Risco**: Usuários podem ficar confusos com múltiplos preços
+  - **Mitigação**: UI clara com badges e tooltips explicativos
+- **Risco**: Usuários podem tentar burlar validação de saldo (RN007)
+  - **Mitigação**: Validação dupla (frontend UX + backend segurança)
+- **Risco**: Multiplicadores de personagem podem causar confusão de preços (RN008)
+  - **Mitigação**: Tooltips claros mostrando breakdown do cálculo, badges visuais indicando multiplicador ativo
+- **Risco**: Usuários podem não entender por que preços diferem entre coleções (RN009)
+  - **Mitigação**: Sistema completo de badges, tooltips explicativos, hierarquia visual clara, cores consistentes
+- **Risco**: Tooltips podem não aparecer ou serem ignorados (RN009)
+  - **Mitigação**: Badges visíveis sem hover, preços destacados visualmente, múltiplos indicadores visuais
+- **Risco**: Animações podem ser distrativas ou causar problemas de performance (RF015)
+  - **Mitigação**: Animações sutis e rápidas, respeitar prefers-reduced-motion, testar performance
+- **Risco**: Cores podem não ter contraste suficiente para acessibilidade (RF015)
+  - **Mitigação**: Validar contraste WCAG AA (4.5:1), testar com ferramentas de acessibilidade
+- **Risco**: Sistema visual pode aumentar complexidade do código (RN009, RF015)
+  - **Mitigação**: Componentes reutilizáveis, tipos TypeScript bem definidos, testes abrangentes
+- **Risco**: Cache pode causar inconsistência temporária de preços (RN010)
+  - **Mitigação**: TTL curto (5 minutos), invalidação agressiva em mudanças, documentação clara
+- **Risco**: Invalidação de cache pode ser esquecida em novas features (RN010)
+  - **Mitigação**: Documentação clara, code review checklist, testes de invalidação
+- **Risco**: Cache pode consumir muita memória (RN010)
+  - **Mitigação**: cacheTime limitado (10 minutos), monitorar uso de memória, limpar caches antigos
+- **Risco**: Ordem de prioridade pode ser violada em novas implementações (RN011)
+  - **Mitigação**: Testes específicos de prioridade, documentação clara, code review
+- **Risco**: Desenvolvedores podem não entender árvore de decisão (RN011)
+  - **Mitigação**: Diagrama visual na documentação, exemplos claros, comentários no código SQL

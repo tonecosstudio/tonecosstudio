@@ -28,17 +28,20 @@ export interface StandalonePurchase {
   /** Cycle reference */
   cycle_id: string;
   
+  /** Character reference (optional) */
+  character_id: string | null;
+  
   /** Purchase status */
   status: 'deposit_paid' | 'awaiting_balance' | 'balance_paid' | 'shipped' | 'delivered' | 'cancelled';
   
   /** Fixed R$100 deposit (non-refundable arras confirmatórias) */
-  deposit_amount: number;
+  price_deposit: number;
   
   /** Remaining amount after deposit (collection price - 100) */
-  balance_amount: number;
+  price_balance: number;
   
   /** Total collection price */
-  total_amount: number;
+  price_full: number;
   
   /** Timestamp when deposit was paid */
   deposit_paid_at: Date | null;
@@ -68,16 +71,22 @@ export interface StandalonePurchase {
   tracking_code: string | null;
   
   /** URL to deposit payment voucher */
-  payment_voucher_deposit_url: string | null;
+  deposit_voucher_url: string | null;
   
   /** Rejection reason for deposit payment voucher (cleared when new voucher uploaded) */
   deposit_rejection_reason: string | null;
   
   /** URL to balance payment voucher */
-  payment_voucher_balance_url: string | null;
+  balance_voucher_url: string | null;
   
   /** Rejection reason for balance payment voucher (cleared when new voucher uploaded) */
   balance_rejection_reason: string | null;
+  
+  /** Expected delivery date */
+  expected_delivery_date: Date | null;
+  
+  /** Actual delivery date */
+  actual_delivery_date: Date | null;
   
   /** Record creation timestamp */
   created_at: Date;
@@ -256,10 +265,11 @@ export interface StandalonePurchaseRow {
   user_id: string;
   collection_id: string;
   cycle_id: string;
+  character_id: string | null;
   status: 'deposit_paid' | 'awaiting_balance' | 'balance_paid' | 'shipped' | 'delivered' | 'cancelled';
-  deposit_amount: number;
-  balance_amount: number;
-  total_amount: number;
+  price_deposit: number;
+  price_balance: number;
+  price_full: number;
   deposit_paid_at: string | null;
   balance_due_date: string | null;
   balance_paid_at: string | null;
@@ -269,8 +279,10 @@ export interface StandalonePurchaseRow {
   cancelled_at: string | null;
   cancellation_reason: string | null;
   tracking_code: string | null;
-  payment_voucher_deposit_url: string | null;
-  payment_voucher_balance_url: string | null;
+  deposit_voucher_url: string | null;
+  balance_voucher_url: string | null;
+  expected_delivery_date: string | null;
+  actual_delivery_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -338,6 +350,8 @@ export function convertStandalonePurchaseRow(row: StandalonePurchaseRow): Standa
     shipped_at: row.shipped_at ? new Date(row.shipped_at) : null,
     delivered_at: row.delivered_at ? new Date(row.delivered_at) : null,
     cancelled_at: row.cancelled_at ? new Date(row.cancelled_at) : null,
+    expected_delivery_date: row.expected_delivery_date ? new Date(row.expected_delivery_date) : null,
+    actual_delivery_date: row.actual_delivery_date ? new Date(row.actual_delivery_date) : null,
     created_at: new Date(row.created_at),
     updated_at: new Date(row.updated_at),
   };

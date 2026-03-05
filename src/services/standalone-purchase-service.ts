@@ -110,11 +110,11 @@ export async function createWithDeposit(
       collection_id: collectionId,
       cycle_id: cycleId,
       status: 'deposit_paid',
-      deposit_amount: depositAmount,
-      balance_amount: balanceAmount,
-      total_amount: totalAmount,
+      price_deposit: depositAmount,
+      price_balance: balanceAmount,
+      price_full: totalAmount,
       deposit_paid_at: new Date().toISOString(),
-      payment_voucher_deposit_url: depositVoucherUrl || null
+      deposit_voucher_url: depositVoucherUrl || null
     })
     .select()
     .single();
@@ -439,7 +439,7 @@ export async function processBalancePayment(
     .update({
       status: 'balance_paid',
       balance_paid_at: new Date().toISOString(),
-      payment_voucher_balance_url: balanceVoucherUrl,
+      balance_voucher_url: balanceVoucherUrl,
       tracking_code: trackingCode
     })
     .eq('id', purchaseId);
@@ -655,10 +655,29 @@ export async function getAllStandalonePurchases(filters?: {
   let query = supabase
     .from('standalone_purchases')
     .select(`
-      *,
-      user:profiles(id, full_name, email),
-      collection:collections(id, name, price_full),
-      cycle:cycles(id, cycle_number, month, year)
+      id,
+      status,
+      user_id,
+      collection_id,
+      cycle_id,
+      character_id,
+      price_deposit,
+      price_balance,
+      price_full,
+      deposit_paid_at,
+      balance_paid_at,
+      balance_due_date,
+      deposit_voucher_url,
+      balance_voucher_url,
+      tracking_code,
+      expected_delivery_date,
+      actual_delivery_date,
+      created_at,
+      updated_at,
+      profiles(id, full_name, email),
+      collections(id, name, slug),
+      cycles(id, cycle_number, month, year),
+      collection_characters(id, name, image_url)
     `, { count: 'exact' });
 
   // Apply status filter
@@ -696,8 +715,13 @@ export async function getAllStandalonePurchases(filters?: {
   const { data, error, count } = await query;
 
   if (error) {
-    console.error('Error fetching standalone purchases:', error);
-    throw new Error(`Failed to fetch standalone purchases: ${error.message}`);
+    console.error('❌ Error fetching standalone purchases:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Error hint:', error.hint);
+    console.error('Error details:', error.details);
+    throw new Error(`Failed to fetch standalone purchases: ${error.message} (code: ${error.code})`);
   }
 
   return {
@@ -742,9 +766,9 @@ export async function searchStandalonePurchasesByCustomer(
     .from('standalone_purchases')
     .select(`
       *,
-      user:profiles(id, full_name, email),
-      collection:collections(id, name, price_full),
-      cycle:cycles(id, cycle_number, month, year)
+      profiles(id, full_name, email),
+      collections(id, name, slug),
+      cycles(id, cycle_number, month, year)
     `)
     .in('user_id', userIds)
     .order('created_at', { ascending: false })
@@ -863,9 +887,9 @@ export async function rejectPaymentVoucher(
   const updateData: any = {};
   
   if (voucherType === 'deposit') {
-    updateData.payment_voucher_deposit_url = null;
+    updateData.deposit_voucher_url = null;
   } else if (voucherType === 'balance') {
-    updateData.payment_voucher_balance_url = null;
+    updateData.balance_voucher_url = null;
   }
 
   const { error: updateError } = await supabase

@@ -50,6 +50,7 @@ import { toBahiaTime, nowInBahia } from "@/lib/timezone";
 import { CutoffCountdown, useIsBeforeCutoff } from "@/components/CutoffCountdown";
 import { CollectionDetailModal } from "@/components/CollectionDetailModal";
 import { CollectionChangeConfirmation } from "@/components/CollectionChangeConfirmation";
+import { useCollectionLimit } from "@/hooks/useCollectionLimit";
 
 export default function MySubscriptions() {
   const { user } = useAuth();
@@ -804,11 +805,18 @@ function ChangeCollectionDialog({
   onSuccess,
 }: any) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedCollection, setSelectedCollection] = useState(subscription.collection_id);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailCollection, setDetailCollection] = useState<any>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const isBeforeCutoff = useIsBeforeCutoff();
+
+  // Validate collection limit
+  const { data: limitValidation, isLoading: limitLoading } = useCollectionLimit(
+    user?.id,
+    selectedCollection
+  );
 
   // Calculate time remaining for urgency check
   const [timeRemaining, setTimeRemaining] = useState<any>(null);
@@ -968,6 +976,34 @@ function ChangeCollectionDialog({
                 O que importa é qual coleção estará selecionada quando a produção iniciar.
               </AlertDescription>
             </Alert>
+
+            {/* Collection Limit Info */}
+            {limitValidation && (
+              <Alert className={limitValidation.can_add ? "border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20" : "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20"}>
+                <Package className="h-4 w-4" />
+                <AlertDescription>
+                  {limitValidation.is_unlimited ? (
+                    <span>
+                      <strong>Acesso Ilimitado!</strong> Você pode escolher quantas coleções quiser.
+                    </span>
+                  ) : (
+                    <span>
+                      Seu plano permite <strong>{limitValidation.limit} {limitValidation.limit === 1 ? 'coleção' : 'coleções'}</strong>.
+                      {' '}Atualmente você tem <strong>{limitValidation.current_count}</strong> escolhida{limitValidation.current_count !== 1 ? 's' : ''}.
+                      {limitValidation.can_add ? (
+                        <span className="text-green-600 dark:text-green-400">
+                          {' '}Você pode adicionar mais {limitValidation.remaining} coleção{limitValidation.remaining !== 1 ? 'ões' : ''}.
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400">
+                          {' '}Você atingiu o limite do seu plano.
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Cutoff Countdown */}
             <CutoffCountdown variant="alert" />

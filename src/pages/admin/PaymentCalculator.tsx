@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 
 export default function PaymentCalculator() {
   const [valor, setValor] = useState<string>("500");
+  const [modoCalculo, setModoCalculo] = useState<"cobrar" | "receber">("cobrar");
+  const [valorDesejado, setValorDesejado] = useState<string>("500");
 
   // Taxas fixas Mercado Pago
   const TAXA_PIX = 0.01; // 1%
@@ -21,9 +23,10 @@ export default function PaymentCalculator() {
 
   // Presets de valores
   const PRESETS = [
-    { label: "Avulso", valor: 500 },
-    { label: "Trimestral", valor: 1350 },
-    { label: "Semestral", valor: 2700 },
+    { label: "Avulso", valor: 500, pecas: 1 },
+    { label: "Trimestral", valor: 1350, pecas: 3 },
+    { label: "Semestral", valor: 2700, pecas: 6 },
+    { label: "Anual", valor: 5400, pecas: 12 },
   ];
 
   // Calcular valores
@@ -99,18 +102,19 @@ export default function PaymentCalculator() {
         <CardContent>
           <div className="space-y-4">
             {/* Presets */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {PRESETS.map((preset) => (
                 <Button
                   key={preset.label}
                   variant={parseFloat(valor) === preset.valor ? "default" : "outline"}
                   size="sm"
                   onClick={() => setValor(String(preset.valor))}
-                  className="flex-1"
+                  className="flex flex-col h-auto py-3"
                 >
-                  <Package className="h-4 w-4 mr-2" />
-                  {preset.label}
-                  <span className="ml-2 text-xs opacity-70">R$ {preset.valor}</span>
+                  <Package className="h-4 w-4 mb-1" />
+                  <span className="font-semibold">{preset.label}</span>
+                  <span className="text-xs opacity-70">R$ {preset.valor}</span>
+                  <span className="text-xs opacity-60">{preset.pecas} peça{preset.pecas > 1 ? 's' : ''}</span>
                 </Button>
               ))}
             </div>
@@ -128,6 +132,73 @@ export default function PaymentCalculator() {
                 className="text-2xl font-bold h-14"
                 placeholder="500.00"
               />
+            </div>
+
+            {/* Calculadora Bidirecional */}
+            <div className="border-t pt-4 mt-4">
+              <div className="flex gap-2 mb-3">
+                <Button
+                  variant={modoCalculo === "cobrar" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setModoCalculo("cobrar")}
+                  className="flex-1"
+                >
+                  Quanto cobrar?
+                </Button>
+                <Button
+                  variant={modoCalculo === "receber" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setModoCalculo("receber")}
+                  className="flex-1"
+                >
+                  Quanto vou receber?
+                </Button>
+              </div>
+
+              {modoCalculo === "receber" && (
+                <div className="space-y-2">
+                  <Label htmlFor="valorDesejado">Quanto você quer receber? (R$)</Label>
+                  <Input
+                    id="valorDesejado"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={valorDesejado}
+                    onChange={(e) => setValorDesejado(e.target.value)}
+                    className="text-xl font-bold h-12"
+                    placeholder="400.00"
+                  />
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                    <p className="text-sm font-semibold text-blue-900">Para receber R$ {parseFloat(valorDesejado || "0").toFixed(2)}:</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white rounded p-2">
+                        <p className="text-muted-foreground">PIX (1% taxa):</p>
+                        <p className="font-bold text-green-600">
+                          Cobrar R$ {((parseFloat(valorDesejado || "0") / (1 - TAXA_PIX)) / (1 - DESCONTO_PIX)).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded p-2">
+                        <p className="text-muted-foreground">6x (14,94% taxa):</p>
+                        <p className="font-bold text-blue-600">
+                          Cobrar R$ {(parseFloat(valorDesejado || "0") / (1 - TAXA_VENDA_PARCELADO - TAXA_PARCELAMENTO_6X)).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded p-2">
+                        <p className="text-muted-foreground">10x loja (19,91% taxa):</p>
+                        <p className="font-bold text-purple-600">
+                          Cobrar R$ {(parseFloat(valorDesejado || "0") / (1 - TAXA_VENDA_PARCELADO - TAXA_PARCELAMENTO_10X_LOJA)).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded p-2">
+                        <p className="text-muted-foreground">10x juros (cliente paga):</p>
+                        <p className="font-bold text-orange-600">
+                          Cobrar R$ {(parseFloat(valorDesejado || "0") / (1 + TAXA_PARCELAMENTO_10X_CLIENTE - TAXA_VENDA_PARCELADO - TAXA_PARCELAMENTO_10X_CLIENTE)).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -167,6 +238,17 @@ export default function PaymentCalculator() {
               <div className="text-xs text-center text-muted-foreground">
                 {((recebePix / valorPix) * 100).toFixed(1)}% líquido
               </div>
+              {/* Valor por peça */}
+              {PRESETS.find(p => p.valor === valorNumerico) && (
+                <div className="bg-green-100 rounded p-2 text-center">
+                  <p className="text-xs text-green-700 font-medium">
+                    R$ {(recebePix / PRESETS.find(p => p.valor === valorNumerico)!.pecas).toFixed(2)} por peça
+                  </p>
+                  <p className="text-xs text-green-600">
+                    ({PRESETS.find(p => p.valor === valorNumerico)!.pecas} peças)
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -204,6 +286,17 @@ export default function PaymentCalculator() {
               <div className="text-xs text-center text-muted-foreground">
                 {percentualLiquido6x.toFixed(1)}% líquido
               </div>
+              {/* Valor por peça */}
+              {PRESETS.find(p => p.valor === valorNumerico) && (
+                <div className="bg-blue-100 rounded p-2 text-center">
+                  <p className="text-xs text-blue-700 font-medium">
+                    R$ {(recebeParcelado6x / PRESETS.find(p => p.valor === valorNumerico)!.pecas).toFixed(2)} por peça
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    ({PRESETS.find(p => p.valor === valorNumerico)!.pecas} peças)
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -241,6 +334,17 @@ export default function PaymentCalculator() {
               <div className="text-xs text-center text-muted-foreground">
                 {percentualLiquido10xLoja.toFixed(1)}% líquido
               </div>
+              {/* Valor por peça */}
+              {PRESETS.find(p => p.valor === valorNumerico) && (
+                <div className="bg-purple-100 rounded p-2 text-center">
+                  <p className="text-xs text-purple-700 font-medium">
+                    R$ {(recebeParcelado10xLoja / PRESETS.find(p => p.valor === valorNumerico)!.pecas).toFixed(2)} por peça
+                  </p>
+                  <p className="text-xs text-purple-600">
+                    ({PRESETS.find(p => p.valor === valorNumerico)!.pecas} peças)
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -293,6 +397,17 @@ export default function PaymentCalculator() {
               <div className="text-xs text-center text-muted-foreground">
                 {((recebeParcelado10xCliente / valorNumerico) * 100).toFixed(1)}% do valor base
               </div>
+              {/* Valor por peça */}
+              {PRESETS.find(p => p.valor === valorNumerico) && (
+                <div className="bg-orange-100 rounded p-2 text-center">
+                  <p className="text-xs text-orange-700 font-medium">
+                    R$ {(recebeParcelado10xCliente / PRESETS.find(p => p.valor === valorNumerico)!.pecas).toFixed(2)} por peça
+                  </p>
+                  <p className="text-xs text-orange-600">
+                    ({PRESETS.find(p => p.valor === valorNumerico)!.pecas} peças)
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -430,7 +545,7 @@ export default function PaymentCalculator() {
                 </tr>
               </thead>
               <tbody>
-                {[500, 1350, 2700].map((val) => {
+                {[500, 1350, 2700, 5400].map((val) => {
                   const vPix = val * (1 - DESCONTO_PIX);
                   const tPix = vPix * TAXA_PIX;
                   const rPix = vPix - tPix;
@@ -452,9 +567,14 @@ export default function PaymentCalculator() {
                         ? "PIX"
                         : "6x";
 
+                  const preset = PRESETS.find(p => p.valor === val);
+
                   return (
                     <tr key={val} className="border-b hover:bg-muted/50">
-                      <td className="p-2 font-medium">R$ {val.toFixed(2)}</td>
+                      <td className="p-2 font-medium">
+                        R$ {val.toFixed(2)}
+                        {preset && <span className="text-xs text-muted-foreground ml-2">({preset.label})</span>}
+                      </td>
                       <td className="text-right p-2 text-green-600">R$ {vPix.toFixed(2)}</td>
                       <td className="text-right p-2 font-semibold text-green-600">
                         R$ {rPix.toFixed(2)}
