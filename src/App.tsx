@@ -114,6 +114,7 @@ function AppContent() {
           <Route path="/sobre" element={<About />} />
           <Route path="/planos" element={<Plans />} />
           <Route path="/colecoes" element={<Collections />} />
+          <Route path="/selecionar-personagem" element={<CharacterSelect />} />
           <Route path="/colecoes/:slug" element={<CollectionDetails />} />
           <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
           <Route path="/termos" element={<Terms />} />
