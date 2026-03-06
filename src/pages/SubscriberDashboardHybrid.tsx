@@ -1,9 +1,9 @@
-// @ts-nocheck
 /**
  * Painel do Assinante - Sistema Híbrido
  * Versão atualizada com sistema de coins e escolha mensal
  */
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -11,12 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Calendar,
   Coins,
@@ -38,29 +33,33 @@ import {
   useMonthlySelections,
   canChangeSelection,
 } from "@/hooks/useSubscriptionCoins";
+import { ChangeActiveCollectionDialog } from "@/components/subscription/ChangeActiveCollectionDialog";
 import AppShell from "@/components/AppShell";
 
 export default function SubscriberDashboardHybrid() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [showChangeCollectionDialog, setShowChangeCollectionDialog] = useState(false);
 
   // Buscar assinatura ativa
   const { data: activeSubscription } = useQuery({
-    queryKey: ['active-subscription', user?.id],
+    queryKey: ["active-subscription", user?.id],
     enabled: Boolean(user?.id),
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscriptions')
-        .select(`
+        .from("subscriptions")
+        .select(
+          `
           *,
           plan:plan_id (
             name,
             plan_type,
             description
           )
-        `)
-        .eq('user_id', user!.id)
-        .eq('status', 'active')
+        `
+        )
+        .eq("user_id", user!.id)
+        .eq("status", "active")
         .maybeSingle();
 
       if (error) throw error;
@@ -68,9 +67,9 @@ export default function SubscriberDashboardHybrid() {
       // Buscar coleção ativa separadamente
       if (data && (data as any).active_collection_id) {
         const { data: collection } = await supabase
-          .from('collections')
-          .select('id, name, slug, description')
-          .eq('id', (data as any).active_collection_id)
+          .from("collections")
+          .select("id, name, slug, description")
+          .eq("id", (data as any).active_collection_id)
           .single();
 
         return {
@@ -98,13 +97,16 @@ export default function SubscriberDashboardHybrid() {
     if (!activeSubscription) return [];
 
     const startDate = new Date(activeSubscription.created_at);
-    const monthsCount = activeSubscription.plan_type === 'trimestral' ? 3 
-      : activeSubscription.plan_type === 'semestral' ? 6 
-      : 12;
+    const monthsCount =
+      activeSubscription.plan_type === "trimestral"
+        ? 3
+        : activeSubscription.plan_type === "semestral"
+          ? 6
+          : 12;
 
     return Array.from({ length: monthsCount }, (_, i) => {
       const monthDate = addMonths(startDate, i);
-      return format(monthDate, 'yyyy-MM');
+      return format(monthDate, "yyyy-MM");
     });
   };
 
@@ -157,9 +159,7 @@ export default function SubscriberDashboardHybrid() {
                     <Coins className="h-5 w-5 text-amber-500" />
                     Seu Saldo de Coins
                   </CardTitle>
-                  <Badge variant="secondary">
-                    {activeSubscription.plan?.plan_type}
-                  </Badge>
+                  <Badge variant="secondary">{activeSubscription.plan?.plan_type}</Badge>
                 </div>
                 <CardDescription>
                   Use seus coins para escolher personagens mensalmente
@@ -182,7 +182,14 @@ export default function SubscriberDashboardHybrid() {
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-muted-foreground">Utilização</span>
                       <span className="font-medium">
-                        {coinsData ? Math.round(((coinsData.coins_initial - coinsData.coins_balance) / coinsData.coins_initial) * 100) : 0}%
+                        {coinsData
+                          ? Math.round(
+                              ((coinsData.coins_initial - coinsData.coins_balance) /
+                                coinsData.coins_initial) *
+                                100
+                            )
+                          : 0}
+                        %
                       </span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-3">
@@ -216,7 +223,8 @@ export default function SubscriberDashboardHybrid() {
                     <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
                       <AlertTriangle className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-amber-900 dark:text-amber-100">
-                        <strong>Saldo baixo!</strong> Você pode não ter coins suficientes para os próximos meses.
+                        <strong>Saldo baixo!</strong> Você pode não ter coins suficientes para os
+                        próximos meses.
                         <Button
                           variant="link"
                           size="sm"
@@ -235,51 +243,48 @@ export default function SubscriberDashboardHybrid() {
             </Card>
 
             {/* Card de Coleção Ativa */}
-            {(activeSubscription as any)?.active_collection && 'name' in (activeSubscription as any).active_collection && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    Sua Coleção Ativa
-                  </CardTitle>
-                  <CardDescription>
-                    Personagens desta coleção custam 200 coins (preço prioritário)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-2">
-                        {(activeSubscription.active_collection as any).name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {(activeSubscription.active_collection as any).description}
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // TODO: Implementar troca de coleção ativa
-                          }}
-                        >
-                          Trocar Coleção Ativa
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                        >
-                          <Link to={`/colecoes/${(activeSubscription.active_collection as any).slug}`}>
-                            Ver Personagens
-                          </Link>
-                        </Button>
+            {(activeSubscription as any)?.active_collection &&
+              "name" in (activeSubscription as any).active_collection && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Sua Coleção Ativa
+                    </CardTitle>
+                    <CardDescription>
+                      Personagens desta coleção custam 200 coins (preço prioritário)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold mb-2">
+                          {(activeSubscription.active_collection as any).name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {(activeSubscription.active_collection as any).description}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowChangeCollectionDialog(true)}
+                          >
+                            Trocar Coleção Ativa
+                          </Button>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              to={`/colecoes/${(activeSubscription.active_collection as any).slug}`}
+                            >
+                              Ver Personagens
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
             {/* Escolhas Mensais */}
             <Card>
@@ -292,8 +297,8 @@ export default function SubscriberDashboardHybrid() {
               <CardContent>
                 <div className="space-y-3">
                   {months.map((month) => {
-                    const selection = selections.find(s => s.delivery_month === month);
-                    const monthDate = new Date(month + '-01');
+                    const selection = selections.find((s) => s.delivery_month === month);
+                    const monthDate = new Date(month + "-01");
                     const { canChange, reason } = canChangeSelection(selection, month);
 
                     return (
@@ -301,26 +306,26 @@ export default function SubscriberDashboardHybrid() {
                         key={month}
                         className={`flex items-center justify-between p-4 rounded-lg border ${
                           selection
-                            ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
+                            ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
                             : canChange
-                            ? 'bg-muted border-border'
-                            : 'bg-muted/50 border-border opacity-50'
+                              ? "bg-muted border-border"
+                              : "bg-muted/50 border-border opacity-50"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <Calendar className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <div className="font-medium">
-                              {format(monthDate, 'MMMM yyyy', { locale: ptBR })}
+                              {format(monthDate, "MMMM yyyy", { locale: ptBR })}
                             </div>
                             {selection ? (
                               <div className="text-sm text-muted-foreground">
                                 {selection.character_name} ({selection.coins_spent} coins)
-                                {selection.is_auto_selected && ' - Escolha automática'}
+                                {selection.is_auto_selected && " - Escolha automática"}
                               </div>
                             ) : (
                               <div className="text-sm text-muted-foreground">
-                                {canChange ? 'Aguardando escolha' : reason}
+                                {canChange ? "Aguardando escolha" : reason}
                               </div>
                             )}
                           </div>
@@ -367,9 +372,7 @@ export default function SubscriberDashboardHybrid() {
                               <ArrowRight className="h-4 w-4 ml-2" />
                             </Button>
                           ) : (
-                            <Badge variant="secondary">
-                              {reason}
-                            </Badge>
+                            <Badge variant="secondary">{reason}</Badge>
                           )}
                         </div>
                       </div>
@@ -390,9 +393,7 @@ export default function SubscriberDashboardHybrid() {
               <CardContent className="space-y-3">
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Plano</div>
-                  <div className="font-semibold capitalize">
-                    {activeSubscription.plan?.name}
-                  </div>
+                  <div className="font-semibold capitalize">{activeSubscription.plan?.name}</div>
                 </div>
 
                 <div>
@@ -403,19 +404,14 @@ export default function SubscriberDashboardHybrid() {
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Início</div>
                   <div className="text-sm">
-                    {format(new Date(activeSubscription.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                    {format(new Date(activeSubscription.created_at), "dd/MM/yyyy", {
+                      locale: ptBR,
+                    })}
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  asChild
-                >
-                  <Link to="/minhas-assinaturas">
-                    Ver Detalhes
-                  </Link>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link to="/minhas-assinaturas">Ver Detalhes</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -438,24 +434,14 @@ export default function SubscriberDashboardHybrid() {
                   Comprar Coins Extras
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  asChild
-                >
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                   <Link to="/meus-pagamentos">
                     <TrendingUp className="h-4 w-4 mr-2" />
                     Histórico de Pagamentos
                   </Link>
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  asChild
-                >
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                   <Link to="/minhas-assinaturas">
                     <Package className="h-4 w-4 mr-2" />
                     Gerenciar Assinatura
@@ -468,12 +454,23 @@ export default function SubscriberDashboardHybrid() {
             <Alert>
               <Sparkles className="h-4 w-4" />
               <AlertDescription>
-                <strong>💡 Dica:</strong> Escolha personagens da sua coleção ativa para economizar coins!
+                <strong>💡 Dica:</strong> Escolha personagens da sua coleção ativa para economizar
+                coins!
               </AlertDescription>
             </Alert>
           </div>
         </div>
       </div>
+
+      {/* Modal de Troca de Coleção Ativa */}
+      {subscriptionId && (
+        <ChangeActiveCollectionDialog
+          subscriptionId={subscriptionId}
+          currentCollectionId={(activeSubscription as any)?.active_collection_id || null}
+          isOpen={showChangeCollectionDialog}
+          onOpenChange={setShowChangeCollectionDialog}
+        />
+      )}
     </AppShell>
   );
 }
