@@ -28,7 +28,6 @@ import ModelDetails from "./pages/catalog/ModelDetails";
 import Collections from "./pages/Collections";
 import CollectionDetails from "./pages/CollectionDetails";
 import BuyCharacter from "./pages/BuyCharacter";
-import AdminCoupons from "./pages/admin/AdminCoupons";
 import AuditTrail from "./pages/admin/AuditTrail";
 import CollectionManagement from "./pages/admin/CollectionManagement";
 import BonusPieces from "./pages/admin/BonusPieces";
@@ -56,16 +55,15 @@ import AdminGroupsPage from "./pages/admin/AdminGroupsPage";
 import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
 import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
-import ProductionDashboardPage from "./pages/admin/ProductionDashboardPage";
-import CharacterChoiceManagerPage from "./pages/admin/CharacterChoiceManagerPage";
+import ProductionHub from "./pages/admin/ProductionHub";
 import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
-import AdminSubscriptionCreditDashboard from "./pages/admin/AdminSubscriptionCreditDashboard";
-import AdminSubscriptionCreditSubscriptions from "./pages/admin/AdminSubscriptionCreditSubscriptions";
-import AdminSubscriptionCreditCharacters from "./pages/admin/AdminSubscriptionCreditCharacters";
 import AdminSubscriptionCreditCycles from "./pages/admin/AdminSubscriptionCreditCycles";
 import AdminPlansConfiguration from "./pages/admin/AdminPlansConfiguration";
 import SubscriptionCreditPanel from "./pages/SubscriptionCreditPanel";
 import CharacterCatalog from "./pages/CharacterCatalog";
+import CharacterCatalogNew from "./pages/catalog/CharacterCatalog";
+import CoinsPurchase from "./pages/CoinsPurchase";
+import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -81,7 +79,7 @@ const queryClient = new QueryClient();
 function AppContent() {
   // Integra Sentry com autenticação
   useSentry();
-  
+
   // Sincroniza profile após login OAuth
   useAuthProfileSync();
 
@@ -269,11 +267,29 @@ function AppContent() {
               </RequireAuth>
             }
           />
+          {/* Novo Catálogo Profissional (Sistema Híbrido) */}
+          <Route
+            path="/catalog"
+            element={
+              <RequireAuth>
+                <CharacterCatalogNew />
+              </RequireAuth>
+            }
+          />
+          {/* Catálogo Antigo (Deprecated - será removido) */}
           <Route
             path="/catalogo-personagens"
             element={
               <RequireAuth>
                 <CharacterCatalog />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/coins/purchase"
+            element={
+              <RequireAuth>
+                <CoinsPurchase />
               </RequireAuth>
             }
           />
@@ -364,18 +380,12 @@ function AppContent() {
             element={<Navigate to="/admin/catalogo?tab=collections" replace />}
           />
           {/* Redirects de Preços para Página Única */}
-          <Route
-            path="/admin/precos"
-            element={<Navigate to="/admin/planos" replace />}
-          />
+          <Route path="/admin/precos" element={<Navigate to="/admin/planos" replace />} />
           <Route
             path="/admin/niveis-preco"
             element={<Navigate to="/admin/planos?tab=collection-pricing" replace />}
           />
-          <Route
-            path="/admin/precos-planos"
-            element={<Navigate to="/admin/planos" replace />}
-          />
+          <Route path="/admin/precos-planos" element={<Navigate to="/admin/planos" replace />} />
           <Route
             path="/admin/precos-gerenciar"
             element={<Navigate to="/admin/planos?tab=collection-pricing" replace />}
@@ -401,11 +411,6 @@ function AppContent() {
               </RequireAdmin>
             }
           />
-          {/* Redirect Cupons para Financeiro */}
-          <Route
-            path="/admin/cupons"
-            element={<Navigate to="/admin/financeiro-hub?tab=coupons" replace />}
-          />
           <Route
             path="/admin/pedidos"
             element={
@@ -414,47 +419,23 @@ function AppContent() {
               </RequireAdmin>
             }
           />
+          {/* Hub de Produção (consolida produção + escolhas) */}
           <Route
             path="/admin/producao"
             element={
               <RequireAdmin>
-                <ProductionDashboardPage />
+                <ProductionHub />
               </RequireAdmin>
             }
           />
+
+          {/* Redirects de páginas antigas de produção */}
           <Route
             path="/admin/escolhas-personagens"
-            element={
-              <RequireAdmin>
-                <CharacterChoiceManagerPage />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/producao?tab=choices" replace />}
           />
+
           {/* Sistema de Créditos - Admin */}
-          <Route
-            path="/admin/creditos/dashboard"
-            element={
-              <RequireAdmin>
-                <AdminSubscriptionCreditDashboard />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/creditos/assinaturas"
-            element={
-              <RequireAdmin>
-                <AdminSubscriptionCreditSubscriptions />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/creditos/personagens"
-            element={
-              <RequireAdmin>
-                <AdminSubscriptionCreditCharacters />
-              </RequireAdmin>
-            }
-          />
           <Route
             path="/admin/creditos/ciclos"
             element={
@@ -479,6 +460,30 @@ function AppContent() {
               </RequireAdmin>
             }
           />
+          {/* Nova Página de Gerenciamento de Assinaturas */}
+          <Route
+            path="/admin/assinaturas-gerenciar"
+            element={
+              <RequireAdmin>
+                <SubscriptionsManagement />
+              </RequireAdmin>
+            }
+          />
+
+          {/* Redirects de páginas antigas do sistema de créditos */}
+          <Route
+            path="/admin/creditos/personagens"
+            element={<Navigate to="/admin/catalogo?tab=credit-characters" replace />}
+          />
+          <Route
+            path="/admin/creditos/dashboard"
+            element={<Navigate to="/admin/assinaturas-gerenciar" replace />}
+          />
+          <Route
+            path="/admin/creditos/assinaturas"
+            element={<Navigate to="/admin/assinaturas-gerenciar" replace />}
+          />
+
           {/* Redirects das páginas antigas para a nova página consolidada */}
           <Route
             path="/admin/assinaturas"
@@ -523,10 +528,6 @@ function AppContent() {
                 <AdminPackaging />
               </RequireAdmin>
             }
-          />
-          <Route
-            path="/admin/cupons"
-            element={<Navigate to="/admin/financeiro-hub?tab=coupons" replace />}
           />
           <Route
             path="/admin/analytics"
