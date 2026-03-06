@@ -1,6 +1,6 @@
 /**
  * Subscription Routes
- * 
+ *
  * Rotas para gerenciamento de assinaturas.
  */
 
@@ -10,9 +10,9 @@ import { z } from 'zod';
 import {
   activateSubscription,
   schedulePlanChange,
-  cancelWithRefund,
-  setNoRenewal
+  setNoRenewal,
 } from '../services/subscription.service';
+import { cancelSubscriptionWithRefund, simulateCancellation } from '../services/refund.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -20,11 +20,11 @@ const router = Router();
 // Schemas de validação
 const activateSchema = z.object({
   planType: z.enum(['trimestral', 'semestral']),
-  paymentMethodId: z.string().min(1)
+  paymentMethodId: z.string().min(1),
 });
 
 const schedulePlanChangeSchema = z.object({
-  newPlanType: z.enum(['trimestral', 'semestral'])
+  newPlanType: z.enum(['trimestral', 'semestral']),
 });
 
 /**
@@ -41,20 +41,16 @@ router.post(
       const { planType, paymentMethodId } = req.body;
       const userId = req.user!.id;
 
-      const result = await activateSubscription(
-        userId,
-        planType,
-        paymentMethodId
-      );
+      const result = await activateSubscription(userId, planType, paymentMethodId);
 
       res.status(201).json({
         success: true,
-        data: result
+        data: result,
       });
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -79,12 +75,40 @@ router.post(
       res.json({
         success: true,
         data: result,
-        message: `Plan change to ${newPlanType} scheduled for ${result.effectiveDate.toISOString()}`
+        message: `Plan change to ${newPlanType} scheduled for ${result.effectiveDate.toISOString()}`,
       });
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        error: error.message
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/subscriptions/:id/simulate-cancellation
+ * Simula cancelamento (dry-run) para mostrar valor de reembolso
+ */
+router.get(
+  '/:id/simulate-cancellation',
+  authenticate,
+  authorize('user'),
+  async (req: AuthRequest, res) => {
+    try {
+      const subscriptionId = req.params.id;
+
+      const result = await simulateCancellation(subscriptionId);
+
+      res.json({
+        success: true,
+        data: result,
+        message: `Refund simulation: R$ ${result.refundAmount.toFixed(2)} (${result.charactersDelivered} characters delivered)`,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
       });
     }
   }
@@ -92,123 +116,110 @@ router.post(
 
 /**
  * POST /api/subscriptions/:id/cancel
- * Cancela assinatura com reembolso proporcional
+ * Cancela assinatura com reembolso segundo CDC
+ *
+ * Fórmula: Reembolso = Valor Pago - (Personagens Entregues × Valor Avulso)
  */
-router.post(
-  '/:id/cancel',
-  authenticate,
-  authorize('user'),
-  async (req: AuthRequest, res) => {
-    try {
-      const subscriptionId = parseInt(req.params.id, 10);
+router.post('/:id/cancel', authenticate, authorize('user'), async (req: AuthRequest, res) => {
+  try {
+    const subscriptionId = req.params.id;
 
-      const result = await cancelWithRefund(subscriptionId);
+    const result = await cancelSubscriptionWithRefund(subscriptionId);
 
-      res.json({
-        success: true,
-        data: result,
-        message: `Subscription cancelled. Refund amount: ${result.refundAmount}`
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        error: error.message
-      });
-    }
+    res.json({
+      success: true,
+      data: result,
+      message: result.message,
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * POST /api/subscriptions/:id/no-renewal
  * Desativa renovação automática
  */
-router.post(
-  '/:id/no-renewal',
-  authenticate,
-  authorize('user'),
-  async (req: AuthRequest, res) => {
-    try {
-      const subscriptionId = parseInt(req.params.id, 10);
+router.post('/:id/no-renewal', authenticate, authorize('user'), async (req: AuthRequest, res) => {
+  try {
+    const subscriptionId = parseInt(req.params.id, 10);
 
-      const result = await setNoRenewal(subscriptionId);
+    const result = await setNoRenewal(subscriptionId);
 
-      res.json({
-        success: true,
-        data: result,
-        message: 'Auto-renewal disabled. Subscription will expire on end date.'
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        error: error.message
-      });
-    }
+    res.json({
+      success: true,
+      data: result,
+      message: 'Auto-renewal disabled. Subscription will expire on end date.',
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * GET /api/subscriptions/:id
  * Consulta detalhes de uma assinatura
  */
-router.get(
-  '/:id',
-  authenticate,
-  authorize('user'),
-  async (req: AuthRequest, res) => {
-    try {
-      const subscriptionId = parseInt(req.params.id, 10);
-      const userId = req.user!.id;
+router.get('/:id', authenticate, authorize('user'), async (req: AuthRequest, res) => {
+  try {
+    const subscriptionId = parseInt(req.params.id, 10);
+    const userId = req.user!.id;
 
-      // Busca assinatura do banco
-      const { getPrismaClient } = await import('../config/database');
-      const prisma = getPrismaClient();
+    // Busca assinatura do banco
+    const { getPrismaClient } = await import('../config/database');
+    const prisma = getPrismaClient();
 
-      const subscription = await prisma.subscription.findFirst({
-        where: {
-          id: BigInt(subscriptionId),
-          userId: BigInt(userId)
-        },
-        include: {
-          plan: true
-        }
-      });
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        id: BigInt(subscriptionId),
+        userId: BigInt(userId),
+      },
+      include: {
+        plan: true,
+      },
+    });
 
-      if (!subscription) {
-        res.status(404).json({
-          success: false,
-          error: 'Subscription not found'
-        });
-        return;
-      }
-
-      res.json({
-        success: true,
-        data: {
-          id: Number(subscription.id),
-          userId: Number(subscription.userId),
-          planType: subscription.planType,
-          status: subscription.status,
-          startDate: subscription.startDate,
-          endDate: subscription.endDate,
-          nextBillingDate: subscription.nextBillingDate,
-          autoRenew: subscription.autoRenew,
-          pendingPlanChange: subscription.pendingPlanChange,
-          plan: {
-            name: subscription.plan.name,
-            price: Number(subscription.plan.price),
-            durationMonths: subscription.plan.durationMonths,
-            baseCredits: subscription.plan.baseCredits,
-            bonusCredits: subscription.plan.bonusCredits
-          }
-        }
-      });
-    } catch (error: any) {
-      res.status(400).json({
+    if (!subscription) {
+      res.status(404).json({
         success: false,
-        error: error.message
+        error: 'Subscription not found',
       });
+      return;
     }
+
+    res.json({
+      success: true,
+      data: {
+        id: Number(subscription.id),
+        userId: Number(subscription.userId),
+        planType: subscription.planType,
+        status: subscription.status,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        nextBillingDate: subscription.nextBillingDate,
+        autoRenew: subscription.autoRenew,
+        pendingPlanChange: subscription.pendingPlanChange,
+        plan: {
+          name: subscription.plan.name,
+          price: Number(subscription.plan.price),
+          durationMonths: subscription.plan.durationMonths,
+          baseCredits: subscription.plan.baseCredits,
+          bonusCredits: subscription.plan.bonusCredits,
+        },
+      },
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
   }
-);
+});
 
 export default router;
