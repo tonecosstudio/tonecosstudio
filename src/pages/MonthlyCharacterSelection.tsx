@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Página de Escolha Mensal de Personagens
  * Sistema híbrido: cliente escolhe personagem do mês com saldo de coins

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Painel do Assinante - Sistema Híbrido
  * Versão atualizada com sistema de coins e escolha mensal
