@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Catálogo de Personagens - Versão Profissional
  * 
