@@ -1,6 +1,6 @@
 /**
  * Exportações centralizadas dos hooks de Coins
- * 
+ *
  * @module hooks/coins
  */
 
@@ -13,7 +13,7 @@ export {
   invalidateCoinsBalance,
   updateCoinsBalanceCache,
   coinsBalanceKeys,
-} from './useCoinsBalance';
+} from "./useCoinsBalance";
 
 // Transações de coins
 export {
@@ -23,7 +23,7 @@ export {
   useCoinsTransactionStats,
   invalidateCoinsTransactions,
   coinsTransactionsKeys,
-} from './useCoinsTransactions';
+} from "./useCoinsTransactions";
 
 // Compras com coins
 export {
@@ -33,7 +33,7 @@ export {
   useValidatePurchase,
   invalidatePurchases,
   purchaseKeys,
-} from './usePurchaseWithCoins';
+} from "./usePurchaseWithCoins";
 
-// Pacotes de coins (já existe)
-export { useCoinsPackages } from './useCoinPackages';
+// Pacotes de coins (hook existente em src/hooks)
+export { useCoinsPackages } from "../useCoinPackages";
