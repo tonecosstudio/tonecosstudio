@@ -1,4 +1,5 @@
 // @ts-nocheck
+/**
  * Tipos TypeScript para o Sistema de Preços Contextuais
  * 
  * Este arquivo contém tipos auxiliares, constantes e validações
