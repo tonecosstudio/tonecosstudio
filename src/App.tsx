@@ -51,7 +51,6 @@ import AdminPaymentHub from "./pages/admin/AdminPaymentHub";
 import AdminCommunication from "./pages/admin/AdminCommunication";
 import AdminCollectionsHub from "./pages/admin/AdminCollectionsHub";
 import AdminFinancialHub from "./pages/admin/AdminFinancialHub";
-import AdminPricingManagement from "./pages/admin/AdminPricingManagement";
 import AdminQuickReplies from "./pages/admin/AdminQuickReplies";
 import AdminGroupsPage from "./pages/admin/AdminGroupsPage";
 import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
@@ -60,6 +59,13 @@ import OrdersPage from "./pages/admin/OrdersPage";
 import ProductionDashboardPage from "./pages/admin/ProductionDashboardPage";
 import CharacterChoiceManagerPage from "./pages/admin/CharacterChoiceManagerPage";
 import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
+import AdminSubscriptionCreditDashboard from "./pages/admin/AdminSubscriptionCreditDashboard";
+import AdminSubscriptionCreditSubscriptions from "./pages/admin/AdminSubscriptionCreditSubscriptions";
+import AdminSubscriptionCreditCharacters from "./pages/admin/AdminSubscriptionCreditCharacters";
+import AdminSubscriptionCreditCycles from "./pages/admin/AdminSubscriptionCreditCycles";
+import AdminPlansConfiguration from "./pages/admin/AdminPlansConfiguration";
+import SubscriptionCreditPanel from "./pages/SubscriptionCreditPanel";
+import CharacterCatalog from "./pages/CharacterCatalog";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -254,6 +260,24 @@ function AppContent() {
             }
           />
 
+          {/* Sistema de Créditos - Usuário */}
+          <Route
+            path="/painel-creditos"
+            element={
+              <RequireAuth>
+                <SubscriptionCreditPanel />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/catalogo-personagens"
+            element={
+              <RequireAuth>
+                <CharacterCatalog />
+              </RequireAuth>
+            }
+          />
+
           <Route
             path="/admin"
             element={
@@ -339,26 +363,34 @@ function AppContent() {
             path="/admin/gerenciar-colecoes"
             element={<Navigate to="/admin/catalogo?tab=collections" replace />}
           />
-          {/* Redirects de Preços para Catálogo */}
+          {/* Redirects de Preços para Página Única */}
           <Route
             path="/admin/precos"
-            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
-          />
-          <Route
-            path="/admin/planos"
-            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+            element={<Navigate to="/admin/planos" replace />}
           />
           <Route
             path="/admin/niveis-preco"
-            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+            element={<Navigate to="/admin/planos?tab=collection-pricing" replace />}
           />
           <Route
             path="/admin/precos-planos"
-            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+            element={<Navigate to="/admin/planos" replace />}
           />
           <Route
             path="/admin/precos-gerenciar"
-            element={<Navigate to="/admin/catalogo?tab=pricing" replace />}
+            element={<Navigate to="/admin/planos?tab=collection-pricing" replace />}
+          />
+          <Route
+            path="/admin/pricing"
+            element={<Navigate to="/admin/planos?tab=collection-pricing" replace />}
+          />
+          <Route
+            path="/admin/catalogo"
+            element={
+              <RequireAdmin>
+                <AdminCollectionsHub />
+              </RequireAdmin>
+            }
           />
           {/* Hub Financeiro */}
           <Route
@@ -395,6 +427,55 @@ function AppContent() {
             element={
               <RequireAdmin>
                 <CharacterChoiceManagerPage />
+              </RequireAdmin>
+            }
+          />
+          {/* Sistema de Créditos - Admin */}
+          <Route
+            path="/admin/creditos/dashboard"
+            element={
+              <RequireAdmin>
+                <AdminSubscriptionCreditDashboard />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/creditos/assinaturas"
+            element={
+              <RequireAdmin>
+                <AdminSubscriptionCreditSubscriptions />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/creditos/personagens"
+            element={
+              <RequireAdmin>
+                <AdminSubscriptionCreditCharacters />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/creditos/ciclos"
+            element={
+              <RequireAdmin>
+                <AdminSubscriptionCreditCycles />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/creditos/planos"
+            element={
+              <RequireAdmin>
+                <AdminPlansConfiguration />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/planos"
+            element={
+              <RequireAdmin>
+                <AdminPlansConfiguration />
               </RequireAdmin>
             }
           />

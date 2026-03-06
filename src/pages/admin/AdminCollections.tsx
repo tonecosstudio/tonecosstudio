@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { CollectionForm, type CollectionFormDataWithCharacters } from "@/components/admin/CollectionForm";
 import {
   Dialog,
   DialogContent,
@@ -132,12 +133,14 @@ export default function AdminCollectionsV2() {
               Sistema completo de gerenciamento de coleções temáticas
             </p>
           </div>
-            <CreateCollectionDialog
-              isOpen={isCreateOpen}
+            <CollectionForm
+              open={isCreateOpen}
               onOpenChange={setIsCreateOpen}
-              onSuccess={() => {
+              onSubmit={async (data: CollectionFormDataWithCharacters) => {
+                // TODO: Implementar criação de coleção com personagens
+                console.log("Criar coleção:", data);
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
-                setIsCreateOpen(false);
               }}
             />
           </div>
@@ -737,7 +740,6 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [rotationType, setRotationType] = useState<'fixed' | 'odd_months' | 'even_months'>('fixed');
-  const [characterRevelationDate, setCharacterRevelationDate] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -786,7 +788,6 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
         is_active: isActive,
         image_url: imageUrl,
         rotation_type: rotationType,
-        character_revelation_date: characterRevelationDate || null,
       });
 
       if (error) throw error;
@@ -801,7 +802,6 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
       setDescription("");
       setIsActive(true);
       setRotationType('fixed');
-      setCharacterRevelationDate("");
       setImageFile(null);
       setImagePreview(null);
       setIsUploading(false);
@@ -948,21 +948,6 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
               </div>
             )}
           </div>
-
-          {/* Character Revelation Date */}
-          <div>
-            <Label htmlFor="revelation-date">Data de Revelação do Personagem</Label>
-            <Input
-              id="revelation-date"
-              type="datetime-local"
-              value={characterRevelationDate}
-              onChange={(e) => setCharacterRevelationDate(e.target.value)}
-              className="mt-2"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Data em que o personagem da coleção será revelado aos assinantes
-            </p>
-          </div>
         </div>
 
         <DialogFooter>
@@ -994,11 +979,6 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
   const [description, setDescription] = useState(collection.description || "");
   const [rotationType, setRotationType] = useState<'fixed' | 'odd_months' | 'even_months'>(
     (collection as any).rotation_type || 'fixed'
-  );
-  const [characterRevelationDate, setCharacterRevelationDate] = useState(
-    (collection as any).character_revelation_date 
-      ? new Date((collection as any).character_revelation_date).toISOString().slice(0, 16)
-      : ""
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(collection.image_url);
@@ -1064,7 +1044,6 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
           description, 
           image_url: imageUrl,
           rotation_type: rotationType,
-          character_revelation_date: characterRevelationDate || null,
         })
         .eq("id", collection.id);
 
@@ -1192,21 +1171,6 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
                 </p>
               </div>
             )}
-          </div>
-
-          {/* Character Revelation Date */}
-          <div>
-            <Label htmlFor="edit-revelation-date">Data de Revelação do Personagem</Label>
-            <Input
-              id="edit-revelation-date"
-              type="datetime-local"
-              value={characterRevelationDate}
-              onChange={(e) => setCharacterRevelationDate(e.target.value)}
-              className="mt-2"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Data em que o personagem da coleção será revelado aos assinantes
-            </p>
           </div>
         </div>
 

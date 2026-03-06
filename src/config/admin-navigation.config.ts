@@ -102,6 +102,49 @@ export const adminNavigationConfig: NavigationSection[] = [
     ],
   },
   {
+    id: 'pricing-plans',
+    title: 'Preços & Planos',
+    items: [
+      {
+        id: 'plans-pricing',
+        label: 'Planos & Preços',
+        path: '/admin/planos',
+        icon: 'DollarSign',
+        badge: 'SSOT',
+      },
+    ],
+  },
+  {
+    id: 'subscription-credits',
+    title: 'Sistema de Créditos',
+    items: [
+      {
+        id: 'credit-dashboard',
+        label: 'Dashboard de Créditos',
+        path: '/admin/creditos/dashboard',
+        icon: 'TrendingUp',
+      },
+      {
+        id: 'credit-subscriptions',
+        label: 'Assinaturas com Créditos',
+        path: '/admin/creditos/assinaturas',
+        icon: 'CreditCard',
+      },
+      {
+        id: 'credit-characters',
+        label: 'Catálogo de Personagens',
+        path: '/admin/creditos/personagens',
+        icon: 'Grid',
+      },
+      {
+        id: 'credit-cycles',
+        label: 'Ciclos de Produção',
+        path: '/admin/creditos/ciclos',
+        icon: 'RefreshCw',
+      },
+    ],
+  },
+  {
     id: 'production',
     title: 'Produção',
     items: [

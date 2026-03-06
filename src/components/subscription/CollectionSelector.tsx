@@ -1,6 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Check, Info } from "lucide-react";
+import { Check, Info, Coins, Loader2, TrendingDown } from "lucide-react";
+import { useCollectionPrice } from "@/hooks/useCollectionPrice";
+import { useAuth } from "@/lib/auth";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 export interface Collection {
   id: string;
@@ -31,6 +40,8 @@ export function CollectionSelector({
   collections,
   isLoading = false,
 }: CollectionSelectorProps) {
+  const { user } = useAuth();
+  
   // Filtrar coleções disponíveis para o plano
   const availableCollections = collections.filter((col) => {
     // Se for exclusiva de semestral, só mostrar para plano semestral
@@ -43,6 +54,48 @@ export function CollectionSelector({
     }
     return true;
   });
+
+  // Component to display collection price
+  function CollectionPrice({ collectionId }: { collectionId: string }) {
+    const { data: price, isLoading: priceLoading } = useCollectionPrice(collectionId, user?.id);
+    
+    if (priceLoading) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Calculando...</span>
+        </div>
+      );
+    }
+    
+    if (!price) return null;
+    
+    // Check if this is a discounted price (you could compare with base price if available)
+    const hasDiscount = false; // This would need base price comparison
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={`flex items-center gap-1 text-xs font-medium cursor-help ${
+              hasDiscount ? 'text-green-600' : 'text-primary'
+            }`}>
+              <Coins className="h-3 w-3" />
+              <span>{price} 🪙 por personagem</span>
+              {hasDiscount && <TrendingDown className="h-3 w-3" />}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="font-semibold mb-1">Preço Contextual</p>
+            <p className="text-xs">
+              Este preço é calculado baseado no seu plano de assinatura e nas coleções que você escolheu.
+              Cada personagem desta coleção custará {price} 🪙.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -107,7 +160,8 @@ export function CollectionSelector({
         <Alert className="mb-4">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Você poderá trocar de personagem ILIMITADAMENTE até o início da produção do ciclo
+            Você poderá trocar de personagem <strong>ILIMITADAMENTE</strong> até o início da produção do ciclo.
+            Os preços mostrados são calculados baseado no seu contexto de assinatura.
           </AlertDescription>
         </Alert>
 
@@ -144,11 +198,14 @@ export function CollectionSelector({
                         {collection.description}
                       </p>
                     )}
-                    {collection.is_semestral_exclusive && (
-                      <p className="text-xs text-amber-600 mt-2 font-medium">
-                        Exclusivo do Plano Semestral
-                      </p>
-                    )}
+                    <div className="mt-2 space-y-1">
+                      <CollectionPrice collectionId={collection.id} />
+                      {collection.is_semestral_exclusive && (
+                        <p className="text-xs text-amber-600 font-medium">
+                          Exclusivo do Plano Semestral
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

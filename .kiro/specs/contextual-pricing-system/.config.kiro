@@ -1,0 +1,10 @@
+{
+  "specType": "feature",
+  "workflowType": "requirements-first",
+  "featureName": "contextual-pricing-system",
+  "createdAt": "2026-03-05",
+  "status": "not_started",
+  "priority": "high",
+  "estimatedDays": 5,
+  "assignedTo": null
+}
