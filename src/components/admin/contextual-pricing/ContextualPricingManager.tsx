@@ -15,24 +15,35 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, DollarSign, Percent, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Info, DollarSign, Percent, Eye, History } from "lucide-react";
 import { BasePricingTable } from "./BasePricingTable";
 import { MultipliersTable } from "./MultipliersTable";
 import { PricingPreviewTable } from "./PricingPreviewTable";
+import { PricingHistoryModal } from "./PricingHistoryModal";
 
 export function ContextualPricingManager() {
   const [activeTab, setActiveTab] = useState("base-prices");
+  const [showHistory, setShowHistory] = useState(false);
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Preços Contextuais
-        </CardTitle>
-        <CardDescription>
-          Configure preços base, multiplicadores e descontos para diferentes contextos de usuário
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Preços Contextuais
+            </CardTitle>
+            <CardDescription>
+              Configure preços base, multiplicadores e descontos para diferentes contextos de usuário
+            </CardDescription>
+          </div>
+          <Button variant="outline" onClick={() => setShowHistory(true)}>
+            <History className="h-4 w-4 mr-2" />
+            Ver Histórico
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Alert className="mb-6">
@@ -72,6 +83,8 @@ export function ContextualPricingManager() {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      <PricingHistoryModal open={showHistory} onOpenChange={setShowHistory} />
     </Card>
   );
 }
