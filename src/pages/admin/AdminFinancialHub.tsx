@@ -5,7 +5,6 @@
  * Consolida todos os relatórios de vendas e receita:
  * - Visão Geral (dashboard financeiro)
  * - Por Coleção (receita por coleção)
- * - Cupons & Descontos
  *
  * Foco: RECEITA e VENDAS (não criação de produtos)
  */
@@ -16,10 +15,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, Package, Tag, TrendingUp, TrendingDown } from "lucide-react";
+import { DollarSign, Package } from "lucide-react";
 import { PeriodFilter, DateRange } from "@/components/admin/PeriodFilter";
 import AdminCollectionFinancials from "./AdminCollectionFinancials";
-import AdminCoupons from "./AdminCoupons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchUnifiedOrders } from "@/services/admin/orders-service";
 
@@ -36,7 +34,7 @@ export default function AdminFinancialHub() {
 
   // Sincronizar tab com URL
   useEffect(() => {
-    if (tabParam && ["overview", "collections", "coupons"].includes(tabParam)) {
+    if (tabParam && ["overview", "collections"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -139,7 +137,7 @@ export default function AdminFinancialHub() {
 
         {/* Tabs Unificadas */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="overview">
               <DollarSign className="h-4 w-4 mr-2" />
               Visão Geral
@@ -147,10 +145,6 @@ export default function AdminFinancialHub() {
             <TabsTrigger value="collections">
               <Package className="h-4 w-4 mr-2" />
               Por Coleção
-            </TabsTrigger>
-            <TabsTrigger value="coupons">
-              <Tag className="h-4 w-4 mr-2" />
-              Cupons & Descontos
             </TabsTrigger>
           </TabsList>
 
@@ -291,19 +285,6 @@ export default function AdminFinancialHub() {
               </p>
             </div>
             <AdminCollectionFinancials />
-          </TabsContent>
-
-          {/* Tab 3: Cupons & Descontos */}
-          <TabsContent value="coupons" className="space-y-4">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight mb-2">
-                Cupons & Descontos
-              </h2>
-              <p className="text-muted-foreground">
-                Gerencie cupons promocionais e acompanhe seu impacto na receita
-              </p>
-            </div>
-            <AdminCoupons />
           </TabsContent>
         </Tabs>
       </div>

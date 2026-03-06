@@ -24,3 +24,20 @@ export {
   formatBRL,
   formatPaymentDate,
 } from './useProcessPayment';
+
+// Créditos de Assinatura
+export {
+  useSubscriptionCreditPlans,
+  useUserSubscriptionCreditSummary,
+  useValidateSubscriptionCredits,
+  useSubscriptionCreditsForPurchase,
+  useProcessSubscriptionPayment as useProcessSubscriptionPaymentWithCredits,
+  calculatePricePerCredit,
+  formatCredits,
+  calculateSavings,
+  isCreditsExpiringSoon,
+  type SubscriptionCreditPlan,
+  type UserSubscriptionCreditSummary,
+  type CreditValidationResult,
+  subscriptionCreditKeys,
+} from './useSubscriptionCredits';

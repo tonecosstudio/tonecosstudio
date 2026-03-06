@@ -58,12 +58,20 @@ import OrdersPage from "./pages/admin/OrdersPage";
 import ProductionHub from "./pages/admin/ProductionHub";
 import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
 import AdminSubscriptionCreditCycles from "./pages/admin/AdminSubscriptionCreditCycles";
+import AdminSubscriptionCreditDashboard from "./pages/admin/AdminSubscriptionCreditDashboard";
+import AdminSubscriptionCreditCharacters from "./pages/admin/AdminSubscriptionCreditCharacters";
 import AdminPlansConfiguration from "./pages/admin/AdminPlansConfiguration";
 import SubscriptionCreditPanel from "./pages/SubscriptionCreditPanel";
+import SubscriptionPlans from "./pages/SubscriptionPlans";
 import CharacterCatalog from "./pages/CharacterCatalog";
 import CharacterCatalogNew from "./pages/catalog/CharacterCatalog";
 import CoinsPurchase from "./pages/CoinsPurchase";
 import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
+import AdminCoinsSystem from "./pages/admin/AdminCoinsSystem";
+import MonthlyCharacterSelection from "./pages/MonthlyCharacterSelection";
+import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
+import AdminMonthlyReleases from "./pages/admin/AdminMonthlyReleases";
+import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -259,11 +267,40 @@ function AppContent() {
           />
 
           {/* Sistema de Créditos - Usuário */}
+          {/* Sistema Híbrido - Painel do Assinante */}
           <Route
-            path="/painel-creditos"
+            path="/painel-assinante"
             element={
               <RequireAuth>
-                <SubscriptionCreditPanel />
+                <SubscriberDashboardHybrid />
+              </RequireAuth>
+            }
+          />
+          {/* Compatibilidade: Redireciona página antiga para nova */}
+          <Route
+            path="/assinaturas"
+            element={<Navigate to="/painel-assinante" replace />}
+          />
+          {/* Sistema Híbrido - Escolha Mensal */}
+          <Route
+            path="/escolher-personagem/:month"
+            element={
+              <RequireAuth>
+                <MonthlyCharacterSelection />
+              </RequireAuth>
+            }
+          />
+          {/* Planos de Assinatura com Créditos (Deprecated - Redireciona para /assinar) */}
+          <Route
+            path="/planos-assinatura"
+            element={<Navigate to="/assinar" replace />}
+          />
+          {/* Página Legada de Planos (Deprecated) */}
+          <Route
+            path="/planos-assinatura-legado"
+            element={
+              <RequireAuth>
+                <SubscriptionPlans />
               </RequireAuth>
             }
           />
@@ -460,12 +497,40 @@ function AppContent() {
               </RequireAdmin>
             }
           />
-          {/* Nova Página de Gerenciamento de Assinaturas */}
+          {/* Nova Página de Gerenciamento de Assinaturas (Sistema Híbrido) */}
           <Route
             path="/admin/assinaturas-gerenciar"
             element={
               <RequireAdmin>
+                <AdminSubscriptionsHybrid />
+              </RequireAdmin>
+            }
+          />
+          {/* Página Legada de Gerenciamento (Deprecated) */}
+          <Route
+            path="/admin/assinaturas-gerenciar-legado"
+            element={
+              <RequireAdmin>
                 <SubscriptionsManagement />
+              </RequireAdmin>
+            }
+          />
+
+          {/* Sistema de Coins */}
+          <Route
+            path="/admin/coins"
+            element={
+              <RequireAdmin>
+                <AdminCoinsSystem />
+              </RequireAdmin>
+            }
+          />
+          {/* Sistema Híbrido - Lançamentos Mensais */}
+          <Route
+            path="/admin/lancamentos-mensais"
+            element={
+              <RequireAdmin>
+                <AdminMonthlyReleases />
               </RequireAdmin>
             }
           />

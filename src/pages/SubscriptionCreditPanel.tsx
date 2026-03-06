@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { subscriptionCreditAPI } from '@/services/subscription-credit-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package } from 'lucide-react';
+import { Package, Coins } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
 import { MySubscriptionSection } from '@/components/subscription-credit/MySubscriptionSection';
@@ -91,6 +91,12 @@ export default function SubscriptionCreditPanel() {
                     <Link to="/catalogo-personagens">
                       <Package className="h-4 w-4 mr-2" />
                       Ver Catálogo
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link to="/coins/purchase">
+                      <Coins className="h-4 w-4 mr-2" />
+                      Comprar Coins
                     </Link>
                   </Button>
                 </CardContent>

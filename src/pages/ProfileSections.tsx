@@ -373,40 +373,45 @@ export function SubscriptionSection({ userId }: { userId: string }) {
   const subscriptionQuery = useQuery({
     queryKey: ["user-subscription", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Buscar assinatura
+      const { data: subscription, error: subError } = await supabase
         .from("subscriptions")
         .select(
           `
           id,
           user_id,
-          collection_id,
+          active_collection_id,
           plan_type,
           status,
-          total_paid,
-          payment_method,
-          payment_id,
-          deliveries_total,
-          deliveries_completed,
-          next_delivery_date,
-          next_production_start,
-          pause_count,
+          coins_balance,
+          coins_initial,
           created_at,
-          updated_at,
-          subscription_collections (
-            collections (
-              id,
-              name,
-              slug
-            )
-          )
+          updated_at
         `
         )
         .eq("user_id", userId)
         .eq("status", "active")
         .single();
 
-      if (error && error.code !== "PGRST116") throw error;
-      return data;
+      if (subError && subError.code !== "PGRST116") throw subError;
+      if (!subscription) return null;
+
+      // Buscar coleção ativa se existir
+      let activeCollection = null;
+      if (subscription.active_collection_id) {
+        const { data: collection } = await supabase
+          .from("collections")
+          .select("id, name, slug")
+          .eq("id", subscription.active_collection_id)
+          .single();
+        
+        activeCollection = collection;
+      }
+
+      return {
+        ...subscription,
+        active_collection: activeCollection,
+      };
     },
   });
 
@@ -466,35 +471,31 @@ export function SubscriptionSection({ userId }: { userId: string }) {
           </p>
         </div>
 
-        {/* Próxima Cobrança */}
+        {/* Saldo de Coins */}
         <div>
-          <span className="text-xs text-muted-foreground">Próxima cobrança</span>
+          <span className="text-xs text-muted-foreground">Saldo de Coins</span>
           <div className="flex items-center gap-2 mt-1">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Package className="h-4 w-4 text-amber-500" />
             <p className="text-sm font-medium">
-              {format(new Date(sub.next_delivery_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {sub.coins_balance} / {sub.coins_initial} coins
             </p>
           </div>
         </div>
 
-        {/* Coleção */}
-        {sub.subscription_collections && sub.subscription_collections.length > 0 && (
+        {/* Coleção Ativa */}
+        {sub.active_collection && (
           <div>
-            <span className="text-xs text-muted-foreground">
-              {sub.subscription_collections.length === 1 ? "Coleção" : "Coleções"}
-            </span>
+            <span className="text-xs text-muted-foreground">Coleção Ativa</span>
             <p className="text-sm font-medium mt-1">
-              {sub.subscription_collections.length === 1
-                ? sub.subscription_collections[0]?.collections?.name
-                : `${sub.subscription_collections.length} coleções`}
+              {sub.active_collection.name}
             </p>
           </div>
         )}
 
         {/* Botão para página completa */}
         <Button asChild variant="outline" className="w-full mt-4">
-          <Link to="/assinaturas">
-            Ver Detalhes e Entregas
+          <Link to="/painel-assinante">
+            Ver Painel do Assinante
             <ExternalLink className="h-4 w-4 ml-2" />
           </Link>
         </Button>

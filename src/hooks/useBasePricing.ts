@@ -28,6 +28,7 @@ export interface CollectionBasePrice {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  sort_order?: number;
 }
 
 export interface UpdateBasePriceInput {
@@ -75,18 +76,19 @@ export function useBasePricing() {
           updated_at,
           collection_types!inner (
             name,
-            display_name
+            display_name,
+            sort_order
           )
         `)
         .eq("is_active", true)
-        .order("collection_types(sort_order)", { ascending: true });
+        .order("collection_type_id", { ascending: true });
 
       if (error) {
         throw new Error(`Erro ao buscar preços base: ${error.message}`);
       }
 
       // Transformar dados para formato mais amigável
-      return data.map((item: any) => ({
+      const transformed = data.map((item: any) => ({
         collection_type_id: item.collection_type_id,
         collection_type_name: item.collection_types.name,
         collection_type_display_name: item.collection_types.display_name,
@@ -94,7 +96,13 @@ export function useBasePricing() {
         is_active: item.is_active,
         created_at: item.created_at,
         updated_at: item.updated_at,
-      })) as CollectionBasePrice[];
+        sort_order: item.collection_types.sort_order,
+      }));
+
+      // Ordenar por sort_order no cliente
+      return transformed.sort((a: CollectionBasePrice, b: CollectionBasePrice) => 
+        (a.sort_order || 0) - (b.sort_order || 0)
+      ) as CollectionBasePrice[];
     },
     staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)
   });

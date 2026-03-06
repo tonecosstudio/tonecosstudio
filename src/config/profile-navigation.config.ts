@@ -95,6 +95,12 @@ export const profileNavigationConfig: ProfileSection[] = [
         path: '/profile/subscriptions',
         icon: 'RefreshCw',
       },
+      {
+        id: 'credits',
+        label: 'Meus Créditos',
+        path: '/painel-creditos',
+        icon: 'CreditCard',
+      },
     ],
   },
   {
@@ -148,5 +154,6 @@ export const legacyProfilePathMapping: Record<string, string> = {
   'payment': '/profile/payment',
   'orders': '/profile/orders',
   'subscriptions': '/profile/subscriptions',
+  'credits': '/painel-creditos',
   'support': '/profile/support',
 };

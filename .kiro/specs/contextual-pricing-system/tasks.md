@@ -16,36 +16,36 @@
   - [x] 2.1.3 Criar índices (is_active, sort_order)
   - [x] 2.1.4 Popular dados iniciais (subscription, standard_catalog, premium_catalog)
   - [x] 2.1.5 Adicionar comentários explicando tipos dinâmicos
-- [-] 2.2 Criar migration para tabela `collection_base_pricing`
-  - [~] 2.2.1 Definir estrutura da tabela (usar `collection_type_id UUID FK` referenciando collection_types)
-  - [~] 2.2.2 Adicionar FK para collection_types(id) com ON DELETE CASCADE
-  - [~] 2.2.3 Adicionar constraints e checks (base_price_coins > 0)
-  - [~] 2.2.4 Criar índices
-  - [~] 2.2.5 Popular dados iniciais usando SELECT do collection_types (1000, 1400, 1800 coins)
-  - [~] 2.2.6 Adicionar comentários explicando preço base e referência UUID
-- [ ] 2.3 Criar migration para tabela `pricing_context_multipliers`
-  - [~] 2.3.1 Definir estrutura da tabela (usar `multiplier DECIMAL(4,2)`)
-  - [~] 2.3.2 Adicionar campo `chosen_collection_discount_percentage INTEGER` (armazena percentual como 20 para 20%)
-  - [~] 2.3.3 Adicionar constraints e checks (multiplier > 0, discount_percentage BETWEEN 0 AND 100)
-  - [~] 2.3.4 Criar índices
-  - [~] 2.3.5 Popular dados iniciais (multiplier: 1.0, 1.2, 1.2; discount: 20)
-  - [~] 2.3.6 Adicionar comentários explicando multiplicadores e desconto configurável
-- [ ] 2.4 Criar migration para tabela `pricing_history`
-  - [~] 2.4.1 Definir estrutura da tabela (change_type, collection_type_id UUID FK, old_value, new_value)
-  - [~] 2.4.2 Adicionar índices para auditoria
-  - [~] 2.4.3 Adicionar comentários explicando tipos de mudança (base_price ou multiplier)
-- [ ] 2.5 Alterar tabela `collections`
-  - [~] 2.5.1 Adicionar coluna `collection_type_id UUID` referenciando collection_types(id)
-  - [~] 2.5.2 Popular collection_type_id baseado em tipo padrão 'subscription'
-  - [~] 2.5.3 Tornar coluna obrigatória (NOT NULL)
-  - [~] 2.5.4 Criar índice em collection_type_id
-  - [~] 2.5.5 Migrar dados existentes
-- [ ] 2.6 Alterar tabela `characters` (RN008 - multiplicador de preço por personagem)
-  - [~] 2.6.1 Adicionar coluna `price_multiplier DECIMAL(4,2)` (nullable, default NULL)
-  - [~] 2.6.2 Adicionar constraint: `CHECK (price_multiplier > 0 OR price_multiplier IS NULL)`
-  - [~] 2.6.3 Adicionar comentário explicando multiplicador opcional por personagem
-  - [~] 2.6.4 Popular personagens existentes com NULL (usa 1.0 por padrão)
-  - [~] 2.6.5 Criar índice em price_multiplier para queries de filtro
+- [x] 2.2 Criar migration para tabela `collection_base_pricing`
+  - [x] 2.2.1 Definir estrutura da tabela (usar `collection_type_id UUID FK` referenciando collection_types)
+  - [x] 2.2.2 Adicionar FK para collection_types(id) com ON DELETE CASCADE
+  - [x] 2.2.3 Adicionar constraints e checks (base_price_coins > 0)
+  - [x] 2.2.4 Criar índices
+  - [x] 2.2.5 Popular dados iniciais usando SELECT do collection_types (1000, 1400, 1800 coins)
+  - [x] 2.2.6 Adicionar comentários explicando preço base e referência UUID
+- [x] 2.3 Criar migration para tabela `pricing_context_multipliers`
+  - [x] 2.3.1 Definir estrutura da tabela (usar `multiplier DECIMAL(4,2)`)
+  - [x] 2.3.2 Adicionar campo `chosen_collection_discount_percentage INTEGER` (armazena percentual como 20 para 20%)
+  - [x] 2.3.3 Adicionar constraints e checks (multiplier > 0, discount_percentage BETWEEN 0 AND 100)
+  - [x] 2.3.4 Criar índices
+  - [x] 2.3.5 Popular dados iniciais (multiplier: 1.0, 1.2, 1.2; discount: 20)
+  - [x] 2.3.6 Adicionar comentários explicando multiplicadores e desconto configurável
+- [x] 2.4 Criar migration para tabela `pricing_history`
+  - [x] 2.4.1 Definir estrutura da tabela (change_type, collection_type_id UUID FK, old_value, new_value)
+  - [x] 2.4.2 Adicionar índices para auditoria
+  - [x] 2.4.3 Adicionar comentários explicando tipos de mudança (base_price ou multiplier)
+- [x] 2.5 Alterar tabela `collections`
+  - [x] 2.5.1 Adicionar coluna `collection_type_id UUID` referenciando collection_types(id)
+  - [x] 2.5.2 Popular collection_type_id baseado em tipo padrão 'subscription'
+  - [x] 2.5.3 Tornar coluna obrigatória (NOT NULL)
+  - [x] 2.5.4 Criar índice em collection_type_id
+  - [x] 2.5.5 Migrar dados existentes
+- [x] 2.6 Alterar tabela `characters` (RN008 - multiplicador de preço por personagem)
+  - [x] 2.6.1 Adicionar coluna `price_multiplier DECIMAL(4,2)` (nullable, default NULL)
+  - [x] 2.6.2 Adicionar constraint: `CHECK (price_multiplier > 0 OR price_multiplier IS NULL)`
+  - [x] 2.6.3 Adicionar comentário explicando multiplicador opcional por personagem
+  - [x] 2.6.4 Popular personagens existentes com NULL (usa 1.0 por padrão)
+  - [x] 2.6.5 Criar índice em price_multiplier para queries de filtro
 - [x] 2.7 Aplicar migrations no banco de desenvolvimento
 - [x] 2.8 Validar integridade dos dados após migration
 - [x] 2.9 Validar que collection_types permite adicionar novos tipos dinamicamente
@@ -64,40 +64,40 @@
   - [x] 3.1.8 Adicionar comentário explicando os dois métodos de cálculo
   - [x] 3.1.9 Adicionar tratamento de erros
   - [x] 3.1.10 Otimizar com STABLE
-- [ ] 3.2 Criar função `get_character_price()` (RN008 - com multiplicador de personagem)
-  - [~] 3.2.1 Retornar INTEGER (coins em COINS)
-  - [~] 3.2.2 Implementar busca de collection_id e price_multiplier do personagem
-  - [~] 3.2.3 Chamar get_collection_price() para calcular preço base da coleção
-  - [~] 3.2.4 Buscar character.price_multiplier do banco de dados
-  - [~] 3.2.5 Usar COALESCE(price_multiplier, 1.0) para tratar NULL como 1.0
-  - [~] 3.2.6 Aplicar fórmula: `collection_price × COALESCE(character.price_multiplier, 1.0)`
-  - [~] 3.2.7 Adicionar comentário explicando cálculo em dois estágios (coleção + personagem)
-  - [~] 3.2.8 Retornar resultado como INTEGER (arredondar se necessário)
-  - [~] 3.2.9 Adicionar tratamento de erros
-  - [~] 3.2.10 Otimizar com STABLE
-- [ ] 3.3 Criar função `validate_collection_limit()`
-  - [~] 3.3.1 Implementar busca de limite do plano
-  - [~] 3.3.2 Implementar contagem de coleções atuais
-  - [~] 3.3.3 Implementar lógica de validação
-  - [~] 3.3.4 Retornar informações detalhadas
-- [ ] 3.4 Criar função `update_base_price_with_history()`
-  - [~] 3.4.1 Parâmetro `p_new_base_price_coins INTEGER`
-  - [~] 3.4.2 Implementar busca de preço base atual
-  - [~] 3.4.3 Implementar atualização de preço base
-  - [~] 3.4.4 Implementar registro de histórico (change_type='base_price')
-  - [~] 3.4.5 Adicionar transação atômica
-- [ ] 3.5 Criar função `update_multiplier_with_history()`
-  - [~] 3.5.1 Parâmetro `p_new_multiplier DECIMAL(4,2)`
-  - [~] 3.5.2 Implementar busca de multiplicador atual
-  - [~] 3.5.3 Implementar atualização de multiplicador
-  - [~] 3.5.4 Implementar registro de histórico (change_type='multiplier')
-  - [~] 3.5.5 Adicionar transação atômica
+- [x] 3.2 Criar função `get_character_price()` (RN008 - com multiplicador de personagem)
+  - [x] 3.2.1 Retornar INTEGER (coins em COINS)
+  - [x] 3.2.2 Implementar busca de collection_id e price_multiplier do personagem
+  - [x] 3.2.3 Chamar get_collection_price() para calcular preço base da coleção
+  - [x] 3.2.4 Buscar character.price_multiplier do banco de dados
+  - [x] 3.2.5 Usar COALESCE(price_multiplier, 1.0) para tratar NULL como 1.0
+  - [x] 3.2.6 Aplicar fórmula: `collection_price × COALESCE(character.price_multiplier, 1.0)`
+  - [x] 3.2.7 Adicionar comentário explicando cálculo em dois estágios (coleção + personagem)
+  - [x] 3.2.8 Retornar resultado como INTEGER (arredondar se necessário)
+  - [x] 3.2.9 Adicionar tratamento de erros
+  - [x] 3.2.10 Otimizar com STABLE
+- [x] 3.3 Criar função `validate_collection_limit()`
+  - [x] 3.3.1 Implementar busca de limite do plano
+  - [x] 3.3.2 Implementar contagem de coleções atuais
+  - [x] 3.3.3 Implementar lógica de validação
+  - [x] 3.3.4 Retornar informações detalhadas
+- [x] 3.4 Criar função `update_base_price_with_history()`
+  - [x] 3.4.1 Parâmetro `p_new_base_price_coins INTEGER`
+  - [x] 3.4.2 Implementar busca de preço base atual
+  - [x] 3.4.3 Implementar atualização de preço base
+  - [x] 3.4.4 Implementar registro de histórico (change_type='base_price')
+  - [x] 3.4.5 Adicionar transação atômica
+- [x] 3.5 Criar função `update_multiplier_with_history()`
+  - [x] 3.5.1 Parâmetro `p_new_multiplier DECIMAL(4,2)`
+  - [x] 3.5.2 Implementar busca de multiplicador atual
+  - [x] 3.5.3 Implementar atualização de multiplicador
+  - [x] 3.5.4 Implementar registro de histórico (change_type='multiplier')
+  - [x] 3.5.5 Adicionar transação atômica
 - [ ] 3.6 Criar função `purchase_character()` (nova - integração com sistema de coins)
-  - [~] 3.6.1 Chamar get_character_price() para calcular preço contextual
-  - [~] 3.6.2 Validar saldo do usuário (user_coins.balance >= preço) - RN007
-  - [~] 3.6.3 Retornar erro detalhado se saldo insuficiente (necessário, disponível, faltam) - RN007
-  - [~] 3.6.4 Validar se usuário já possui o personagem
-  - [~] 3.6.5 Debitar coins do saldo (UPDATE user_coins)
+  - [ ] 3.6.1 Chamar get_character_price() para calcular preço contextual
+  - [ ] 3.6.2 Validar saldo do usuário (user_coins.balance >= preço) - RN007
+  - [ ] 3.6.3 Retornar erro detalhado se saldo insuficiente (necessário, disponível, faltam) - RN007
+  - [ ] 3.6.4 Validar se usuário já possui o personagem
+  - [ ] 3.6.5 Debitar coins do saldo (UPDATE user_coins)
   - [ ] 3.6.6 Registrar transação (INSERT coin_transactions)
   - [ ] 3.6.7 Adicionar personagem ao usuário (INSERT user_characters)
   - [ ] 3.6.8 Garantir atomicidade (tudo ou nada)
@@ -133,70 +133,70 @@
 - [ ] 4.5 Validar segurança das policies
 
 ## 5. Hooks Personalizados
-- [ ] 5.1 Criar `useCollectionTypes` hook (novo - gerenciar tipos dinâmicos)
-  - [ ] 5.1.1 Implementar query de busca de tipos (collection_types)
-  - [ ] 5.1.2 Implementar mutation de criação de tipo
-  - [ ] 5.1.3 Implementar mutation de atualização de tipo
-  - [ ] 5.1.4 Implementar mutation de ativar/desativar tipo
-  - [ ] 5.1.5 Adicionar invalidação de cache
-  - [ ] 5.1.6 Adicionar tratamento de erros
-  - [ ] 5.1.7 Adicionar tipos TypeScript
-- [ ] 5.2 Criar `useBasePricing` hook
-  - [ ] 5.1.1 Implementar query de busca de preços base
-  - [ ] 5.1.2 Implementar mutation de atualização de preço base
-  - [ ] 5.1.3 Adicionar invalidação de cache (base-pricing e collection-price)
-  - [ ] 5.1.4 Adicionar tratamento de erros
-  - [ ] 5.1.5 Adicionar tipos TypeScript (base_price_coins: number)
-- [ ] 5.2 Criar `useContextPricing` hook (anteriormente useContextMultipliers)
-  - [ ] 5.2.1 Implementar query de busca de multiplicadores e discount_percentage
-  - [ ] 5.2.2 Implementar mutation de atualização de multiplicador
-  - [ ] 5.2.3 Implementar mutation de atualização de discount_percentage
-  - [ ] 5.2.4 Adicionar validação de discount (0-100%)
-  - [ ] 5.2.5 Adicionar invalidação de cache (context-multipliers e collection-price)
-  - [ ] 5.2.6 Adicionar tratamento de erros
-  - [ ] 5.2.7 Adicionar tipos TypeScript (multiplier: number, chosen_collection_discount_percentage: number)
-- [ ] 5.3 Criar `useCollectionPrice` hook
-  - [ ] 5.3.1 Implementar chamada RPC get_collection_price()
-  - [ ] 5.3.2 Retornar INTEGER coins calculado
-  - [ ] 5.3.3 Adicionar cache strategy
-  - [ ] 5.3.4 Adicionar loading states
-  - [ ] 5.3.5 Adicionar tipos TypeScript (retorna number coins)
-- [ ] 5.4 Criar `useCharacterPrice` hook (RN008 - com multiplicador de personagem)
-  - [ ] 5.4.1 Implementar chamada RPC get_character_price()
-  - [ ] 5.4.2 Retornar INTEGER coins calculado (com multiplicador aplicado)
-  - [ ] 5.4.3 Adicionar cache strategy que considera mudanças no multiplicador
-  - [ ] 5.4.4 Adicionar loading states
-  - [ ] 5.4.5 Adicionar tipos TypeScript (retorna number coins)
-  - [ ] 5.4.6 Documentar que herda preço da coleção e aplica multiplicador opcional
-- [ ] 5.5 Criar `useCollectionLimit` hook
-  - [ ] 5.5.1 Implementar chamada RPC
-  - [ ] 5.5.2 Processar resposta
-  - [ ] 5.5.3 Adicionar helpers (isUnlimited, etc)
-  - [ ] 5.5.4 Adicionar tipos TypeScript
-- [ ] 5.6 Criar `useUserCoins` hook (novo - sistema de coins)
-  - [ ] 5.6.1 Implementar query de busca de saldo (user_coins.balance)
-  - [ ] 5.6.2 Adicionar cache strategy (30 segundos)
-  - [ ] 5.6.3 Adicionar loading states
-  - [ ] 5.6.4 Adicionar tipos TypeScript (retorna number)
-  - [ ] 5.6.5 Adicionar helper `hasInsufficientBalance(price)` para validação
-- [ ] 5.7 Criar `usePurchaseCharacter` hook (novo - sistema de coins)
-  - [ ] 5.7.1 Implementar mutation chamando purchase_character()
-  - [ ] 5.7.2 Adicionar invalidação de cache (user-coins, user-characters, coin-transactions)
-  - [ ] 5.7.3 Adicionar toast de sucesso/erro
-  - [ ] 5.7.4 Adicionar tratamento de erros específicos (saldo insuficiente, personagem já possui)
-  - [ ] 5.7.5 Adicionar tipos TypeScript
-  - [ ] 5.7.6 Retornar mensagem detalhada com valores (necessário, disponível, faltam)
-- [ ] 5.8 Criar `useCoinTransactions` hook (novo - sistema de coins)
-  - [ ] 5.8.1 Implementar query de busca de transações
-  - [ ] 5.8.2 Adicionar ordenação por data (DESC)
-  - [ ] 5.8.3 Adicionar limite configurável
-  - [ ] 5.8.4 Adicionar tipos TypeScript
-- [ ] 5.9 Criar `useCharacterPriceMultiplier` hook (RN008 - gerenciar multiplicador)
-  - [ ] 5.9.1 Implementar mutation de atualização de price_multiplier
-  - [ ] 5.9.2 Adicionar validação (> 0 ou NULL)
-  - [ ] 5.9.3 Adicionar invalidação de cache (character-price)
-  - [ ] 5.9.4 Adicionar tratamento de erros
-  - [ ] 5.9.5 Adicionar tipos TypeScript (price_multiplier?: number)
+- [x] 5.1 Criar `useCollectionTypes` hook (novo - gerenciar tipos dinâmicos)
+  - [x] 5.1.1 Implementar query de busca de tipos (collection_types)
+  - [x] 5.1.2 Implementar mutation de criação de tipo
+  - [x] 5.1.3 Implementar mutation de atualização de tipo
+  - [x] 5.1.4 Implementar mutation de ativar/desativar tipo
+  - [x] 5.1.5 Adicionar invalidação de cache
+  - [x] 5.1.6 Adicionar tratamento de erros
+  - [x] 5.1.7 Adicionar tipos TypeScript
+- [x] 5.2 Criar `useBasePricing` hook
+  - [x] 5.2.1 Implementar query de busca de preços base
+  - [x] 5.2.2 Implementar mutation de atualização de preço base
+  - [x] 5.2.3 Adicionar invalidação de cache (base-pricing e collection-price)
+  - [x] 5.2.4 Adicionar tratamento de erros
+  - [x] 5.2.5 Adicionar tipos TypeScript (base_price_coins: number)
+- [x] 5.3 Criar `useContextPricing` hook (anteriormente useContextMultipliers)
+  - [x] 5.3.1 Implementar query de busca de multiplicadores e discount_percentage
+  - [x] 5.3.2 Implementar mutation de atualização de multiplicador
+  - [x] 5.3.3 Implementar mutation de atualização de discount_percentage
+  - [x] 5.3.4 Adicionar validação de discount (0-100%)
+  - [x] 5.3.5 Adicionar invalidação de cache (context-multipliers e collection-price)
+  - [x] 5.3.6 Adicionar tratamento de erros
+  - [x] 5.3.7 Adicionar tipos TypeScript (multiplier: number, chosen_collection_discount_percentage: number)
+- [x] 5.4 Criar `useCollectionPrice` hook
+  - [x] 5.4.1 Implementar chamada RPC get_collection_price()
+  - [x] 5.4.2 Retornar INTEGER coins calculado
+  - [x] 5.4.3 Adicionar cache strategy
+  - [x] 5.4.4 Adicionar loading states
+  - [x] 5.4.5 Adicionar tipos TypeScript (retorna number coins)
+- [x] 5.5 Criar `useCharacterPrice` hook (RN008 - com multiplicador de personagem)
+  - [x] 5.4.1 Implementar chamada RPC get_character_price()
+  - [x] 5.4.2 Retornar INTEGER coins calculado (com multiplicador aplicado)
+  - [x] 5.4.3 Adicionar cache strategy que considera mudanças no multiplicador
+  - [x] 5.4.4 Adicionar loading states
+  - [x] 5.4.5 Adicionar tipos TypeScript (retorna number coins)
+  - [x] 5.4.6 Documentar que herda preço da coleção e aplica multiplicador opcional
+- [x] 5.6 Criar `useCollectionLimit` hook
+  - [x] 5.6.1 Implementar chamada RPC
+  - [x] 5.6.2 Processar resposta
+  - [x] 5.6.3 Adicionar helpers (isUnlimited, etc)
+  - [x] 5.6.4 Adicionar tipos TypeScript
+- [x] 5.6 Criar `useUserCoins` hook (novo - sistema de coins)
+  - [x] 5.6.1 Implementar query de busca de saldo (user_coins.balance)
+  - [x] 5.6.2 Adicionar cache strategy (30 segundos)
+  - [x] 5.6.3 Adicionar loading states
+  - [x] 5.6.4 Adicionar tipos TypeScript (retorna number)
+  - [x] 5.6.5 Adicionar helper `hasInsufficientBalance(price)` para validação
+- [x] 5.7 Criar `usePurchaseCharacter` hook (novo - sistema de coins)
+  - [x] 5.7.1 Implementar mutation chamando purchase_character()
+  - [x] 5.7.2 Adicionar invalidação de cache (user-coins, user-characters, coin-transactions)
+  - [x] 5.7.3 Adicionar toast de sucesso/erro
+  - [x] 5.7.4 Adicionar tratamento de erros específicos (saldo insuficiente, personagem já possui)
+  - [x] 5.7.5 Adicionar tipos TypeScript
+  - [x] 5.7.6 Retornar mensagem detalhada com valores (necessário, disponível, faltam)
+- [x] 5.8 Criar `useCoinTransactions` hook (novo - sistema de coins)
+  - [x] 5.8.1 Implementar query de busca de transações
+  - [x] 5.8.2 Adicionar ordenação por data (DESC)
+  - [x] 5.8.3 Adicionar limite configurável
+  - [x] 5.8.4 Adicionar tipos TypeScript
+- [x] 5.7 Criar `useCharacterPriceMultiplier` hook (RN008 - gerenciar multiplicador)
+  - [x] 5.9.1 Implementar mutation de atualização de price_multiplier
+  - [x] 5.9.2 Adicionar validação (> 0 ou NULL)
+  - [x] 5.9.3 Adicionar invalidação de cache (character-price)
+  - [x] 5.9.4 Adicionar tratamento de erros
+  - [x] 5.9.5 Adicionar tipos TypeScript (price_multiplier?: number)
 - [ ] 5.10 Testar hooks isoladamente
 - [ ] 5.11 Documentar hooks
 - [ ] 5.12 Validar que useCharacterPrice SEM multiplicador retorna mesmo valor que useCollectionPrice
@@ -204,37 +204,37 @@
 - [ ] 5.14 Validar integração entre useCharacterPrice e usePurchaseCharacter
 
 ## 5A. Cache Strategy Implementation (RN010)
-- [ ] 5A.1 Configurar React Query cache strategy
-  - [ ] 5A.1.1 Definir staleTime: 5 minutos (300000ms)
-  - [ ] 5A.1.2 Definir cacheTime: 10 minutos (600000ms)
-  - [ ] 5A.1.3 Aplicar em useCollectionPrice hook
-  - [ ] 5A.1.4 Aplicar em useCharacterPrice hook
-  - [ ] 5A.1.5 Documentar configuração de cache
-- [ ] 5A.2 Implementar invalidação de cache para mudanças de preço base
-  - [ ] 5A.2.1 Invalidar queryKey ['collection-price'] ao atualizar base_price
-  - [ ] 5A.2.2 Invalidar queryKey ['character-price'] ao atualizar base_price
-  - [ ] 5A.2.3 Adicionar invalidação em useBasePricing mutation
-  - [ ] 5A.2.4 Testar invalidação em cascata
-- [ ] 5A.3 Implementar invalidação de cache para mudanças de multiplicadores
-  - [ ] 5A.3.1 Invalidar queryKey ['collection-price'] ao atualizar multiplier
-  - [ ] 5A.3.2 Invalidar queryKey ['character-price'] ao atualizar multiplier
-  - [ ] 5A.3.3 Adicionar invalidação em useContextPricing mutation
-  - [ ] 5A.3.4 Testar invalidação em cascata
-- [ ] 5A.4 Implementar invalidação de cache para mudanças de desconto
-  - [ ] 5A.4.1 Invalidar queryKey ['collection-price'] ao atualizar discount_percentage
-  - [ ] 5A.4.2 Invalidar queryKey ['character-price'] ao atualizar discount_percentage
-  - [ ] 5A.4.3 Adicionar invalidação em useContextPricing mutation
-  - [ ] 5A.4.4 Testar invalidação em cascata
+- [x] 5A.1 Configurar React Query cache strategy
+  - [x] 5A.1.1 Definir staleTime: 5 minutos (300000ms)
+  - [x] 5A.1.2 Definir cacheTime: 10 minutos (600000ms)
+  - [x] 5A.1.3 Aplicar em useCollectionPrice hook
+  - [x] 5A.1.4 Aplicar em useCharacterPrice hook
+  - [x] 5A.1.5 Documentar configuração de cache
+- [x] 5A.2 Implementar invalidação de cache para mudanças de preço base
+  - [x] 5A.2.1 Invalidar queryKey ['collection-price'] ao atualizar base_price
+  - [x] 5A.2.2 Invalidar queryKey ['character-price'] ao atualizar base_price
+  - [x] 5A.2.3 Adicionar invalidação em useBasePricing mutation
+  - [x] 5A.2.4 Testar invalidação em cascata
+- [x] 5A.3 Implementar invalidação de cache para mudanças de multiplicadores
+  - [x] 5A.3.1 Invalidar queryKey ['collection-price'] ao atualizar multiplier
+  - [x] 5A.3.2 Invalidar queryKey ['character-price'] ao atualizar multiplier
+  - [x] 5A.3.3 Adicionar invalidação em useContextPricing mutation
+  - [x] 5A.3.4 Testar invalidação em cascata
+- [x] 5A.4 Implementar invalidação de cache para mudanças de desconto
+  - [x] 5A.4.1 Invalidar queryKey ['collection-price'] ao atualizar discount_percentage
+  - [x] 5A.4.2 Invalidar queryKey ['character-price'] ao atualizar discount_percentage
+  - [x] 5A.4.3 Adicionar invalidação em useContextPricing mutation
+  - [x] 5A.4.4 Testar invalidação em cascata
 - [ ] 5A.5 Implementar invalidação de cache para escolha/remoção de coleções
   - [ ] 5A.5.1 Invalidar cache específico do usuário ao escolher coleção
   - [ ] 5A.5.2 Invalidar cache específico do usuário ao remover coleção
   - [ ] 5A.5.3 Usar predicate para invalidar apenas caches do usuário afetado
   - [ ] 5A.5.4 Exemplo: `queryClient.invalidateQueries({ predicate: (query) => query.queryKey[2] === userId })`
   - [ ] 5A.5.5 Testar que outros usuários não são afetados
-- [ ] 5A.6 Implementar invalidação de cache para multiplicador de personagem
-  - [ ] 5A.6.1 Invalidar queryKey ['character-price', characterId] ao atualizar price_multiplier
-  - [ ] 5A.6.2 Adicionar invalidação em useCharacterPriceMultiplier mutation
-  - [ ] 5A.6.3 Testar que apenas personagem afetado é invalidado
+- [x] 5A.6 Implementar invalidação de cache para multiplicador de personagem
+  - [x] 5A.6.1 Invalidar queryKey ['character-price', characterId] ao atualizar price_multiplier
+  - [x] 5A.6.2 Adicionar invalidação em useCharacterPriceMultiplier mutation
+  - [x] 5A.6.3 Testar que apenas personagem afetado é invalidado
 - [ ] 5A.7 Otimizar funções SQL para cache
   - [ ] 5A.7.1 Marcar get_collection_price() como STABLE
   - [ ] 5A.7.2 Marcar get_character_price() como STABLE
@@ -262,80 +262,80 @@
   - [ ] 5A.10.7 Teste: Taxa de hit > 80% em uso normal
 
 ## 6. Componentes Admin - Preços Contextuais
-- [ ] 6.1 Criar `CollectionTypesManager` component (novo - gerenciar tipos dinamicamente)
-  - [ ] 6.1.1 Criar estrutura básica com tabela de tipos
-  - [ ] 6.1.2 Integrar com useCollectionTypes hook
-  - [ ] 6.1.3 Adicionar botão "Novo Tipo"
-  - [ ] 6.1.4 Implementar modal de criação/edição de tipo
-  - [ ] 6.1.5 Adicionar toggle ativar/desativar tipo
-  - [ ] 6.1.6 Adicionar controle de ordenação (sort_order)
-  - [ ] 6.1.7 Adicionar loading states
-  - [ ] 6.1.8 Adicionar error handling
-- [ ] 6.2 Criar `ContextualPricingManager` component
-  - [ ] 6.2.1 Criar estrutura básica com Tabs
-  - [ ] 6.2.2 Integrar com useBasePricing e useContextPricing
-  - [ ] 6.2.3 Criar 3 abas: Preços Base, Multiplicadores, Preview
-  - [ ] 6.2.4 Adicionar loading states
-  - [ ] 6.2.5 Adicionar error handling
-  - [ ] 6.2.6 Adicionar estilização com ícone 🪙
-- [ ] 6.3 Criar `BasePricingTable` component
-  - [ ] 6.2.1 Criar tabela com headers (Tipo, Preço Base)
-  - [ ] 6.2.2 Implementar células editáveis (input type="number" step="1")
-  - [ ] 6.2.3 Adicionar validação inline (valor > 0, INTEGER)
-  - [ ] 6.2.4 Adicionar sufixo "🪙" nos inputs
-  - [ ] 6.2.5 Adicionar Alert explicando que afeta todos os contextos
-  - [ ] 6.2.6 Botão Salvar por linha
-- [ ] 6.3 Criar `MultipliersTable` component
-  - [ ] 6.3.1 Criar tabela com headers (Contexto, Multiplicador, Percentual)
-  - [ ] 6.3.2 Adicionar linha especial "Desconto Coleções Escolhidas (%)"
-  - [ ] 6.3.3 Implementar células editáveis para multiplicadores (input type="number" step="0.1")
-  - [ ] 6.3.4 Implementar input para desconto (type="number" min="0" max="100" step="1")
-  - [ ] 6.3.5 Adicionar validação inline (multiplicador > 0, desconto 0-100%)
-  - [ ] 6.3.6 Calcular e exibir percentual automaticamente para multiplicadores
-  - [ ] 6.3.7 Mostrar preview para desconto: "20% = Preço base - 20%"
-  - [ ] 6.3.8 Adicionar Alert explicando multiplicadores (1.0=100%, 0.8=desconto, 1.2=acréscimo)
-  - [ ] 6.3.9 Adicionar Alert explicando desconto de coleções escolhidas (subtração direta)
-  - [ ] 6.3.10 Botão Salvar por linha
-- [ ] 6.4 Criar `PricingPreviewTable` component
-  - [ ] 6.4.1 Criar tabela mostrando preços finais calculados
-  - [ ] 6.4.2 Exibir fórmulas de cálculo diferenciadas:
+- [x] 6.1 Criar `CollectionTypesManager` component (novo - gerenciar tipos dinamicamente)
+  - [x] 6.1.1 Criar estrutura básica com tabela de tipos
+  - [x] 6.1.2 Integrar com useCollectionTypes hook
+  - [x] 6.1.3 Adicionar botão "Novo Tipo"
+  - [x] 6.1.4 Implementar modal de criação/edição de tipo
+  - [x] 6.1.5 Adicionar toggle ativar/desativar tipo
+  - [x] 6.1.6 Adicionar controle de ordenação (sort_order)
+  - [x] 6.1.7 Adicionar loading states
+  - [x] 6.1.8 Adicionar error handling
+- [x] 6.2 Criar `ContextualPricingManager` component
+  - [x] 6.2.1 Criar estrutura básica com Tabs
+  - [x] 6.2.2 Integrar com useBasePricing e useContextPricing
+  - [x] 6.2.3 Criar 3 abas: Preços Base, Multiplicadores, Preview
+  - [x] 6.2.4 Adicionar loading states
+  - [x] 6.2.5 Adicionar error handling
+  - [x] 6.2.6 Adicionar estilização com ícone 🪙
+- [x] 6.3 Criar `BasePricingTable` component
+  - [x] 6.3.1 Criar tabela com headers (Tipo, Preço Base)
+  - [x] 6.3.2 Implementar células editáveis (input type="number" step="1")
+  - [x] 6.3.3 Adicionar validação inline (valor > 0, INTEGER)
+  - [x] 6.3.4 Adicionar sufixo "🪙" nos inputs
+  - [x] 6.3.5 Adicionar Alert explicando que afeta todos os contextos
+  - [x] 6.3.6 Botão Salvar por linha
+- [x] 6.4 Criar `MultipliersTable` component
+  - [x] 6.4.1 Criar tabela com headers (Contexto, Multiplicador, Percentual)
+  - [x] 6.4.2 Adicionar linha especial "Desconto Coleções Escolhidas (%)"
+  - [x] 6.4.3 Implementar células editáveis para multiplicadores (input type="number" step="0.1")
+  - [x] 6.4.4 Implementar input para desconto (type="number" min="0" max="100" step="1")
+  - [x] 6.4.5 Adicionar validação inline (multiplicador > 0, desconto 0-100%)
+  - [x] 6.4.6 Calcular e exibir percentual automaticamente para multiplicadores
+  - [x] 6.4.7 Mostrar preview para desconto: "20% = Preço base - 20%"
+  - [x] 6.4.8 Adicionar Alert explicando multiplicadores (1.0=100%, 0.8=desconto, 1.2=acréscimo)
+  - [x] 6.4.9 Adicionar Alert explicando desconto de coleções escolhidas (subtração direta)
+  - [x] 6.4.10 Botão Salvar por linha
+- [x] 6.5 Criar `PricingPreviewTable` component
+  - [x] 6.5.1 Criar tabela mostrando preços finais calculados
+  - [x] 6.5.2 Exibir fórmulas de cálculo diferenciadas:
     - Coleções escolhidas: "1000 - (1000 × 20%) = 800 coins"
     - Coleções não escolhidas: "1000 × 1.2 = 1200 coins"
-  - [ ] 6.4.3 Atualizar automaticamente quando base, multiplicador ou desconto mudam
-  - [ ] 6.4.4 Formatar valores como "1000 🪙"
-  - [ ] 6.4.5 Adicionar cores para destacar diferenças entre métodos de cálculo
-  - [ ] 6.4.6 Adicionar legenda explicando os dois métodos
-- [ ] 6.5 Criar `PricingHistoryModal` component
-  - [ ] 6.5.1 Criar modal básico
-  - [ ] 6.5.2 Buscar histórico do banco (change_type, old_value, new_value)
-  - [ ] 6.5.3 Exibir timeline de mudanças separada por tipo
-  - [ ] 6.5.4 Adicionar filtros (base_price vs multiplier)
-  - [ ] 6.5.5 Adicionar paginação
-  - [ ] 6.5.6 Formatar valores corretamente (coins vs decimal)
-- [ ] 6.6 Testar componentes isoladamente
-- [ ] 6.7 Validar acessibilidade
-- [ ] 6.8 Criar `CharacterPriceMultiplierConfig` component (RN008 - configurar multiplicador por personagem)
-  - [ ] 6.8.1 Criar campo no formulário de edição de personagem
-  - [ ] 6.8.2 Adicionar input type="number" min="0.1" max="10" step="0.1"
-  - [ ] 6.8.3 Adicionar botões preset: Normal (1.0), Complexo (1.2), Premium (1.5), Raro (2.0)
-  - [ ] 6.8.4 Adicionar preview mostrando: "Preço base coleção: X coins × Multiplicador: Y = Preço final: Z coins"
-  - [ ] 6.8.5 Adicionar tooltip explicando propósito do multiplicador
-  - [ ] 6.8.6 Adicionar validação (> 0)
-  - [ ] 6.8.7 Permitir NULL (limpar campo para usar 1.0 padrão)
-  - [ ] 6.8.8 Integrar com useCharacterPriceMultiplier hook
-  - [ ] 6.8.9 Adicionar funcionalidade de salvar
-  - [ ] 6.8.10 Adicionar loading states e feedback visual
+  - [x] 6.5.3 Atualizar automaticamente quando base, multiplicador ou desconto mudam
+  - [x] 6.5.4 Formatar valores como "1000 🪙"
+  - [x] 6.5.5 Adicionar cores para destacar diferenças entre métodos de cálculo
+  - [x] 6.5.6 Adicionar legenda explicando os dois métodos
+- [x] 6.5 Criar `PricingHistoryModal` component
+  - [x] 6.5.1 Criar modal básico
+  - [x] 6.5.2 Buscar histórico do banco (change_type, old_value, new_value)
+  - [x] 6.5.3 Exibir timeline de mudanças separada por tipo
+  - [x] 6.5.4 Adicionar filtros (base_price vs multiplier)
+  - [ ]* 6.5.5 Adicionar paginação
+  - [x] 6.5.6 Formatar valores corretamente (coins vs decimal)
+- [x] 6.6 Testar componentes isoladamente
+- [x] 6.7 Validar acessibilidade
+- [x] 6.8 Criar `CharacterPriceMultiplierConfig` component (RN008 - configurar multiplicador por personagem)
+  - [x] 6.8.1 Criar campo no formulário de edição de personagem
+  - [x] 6.8.2 Adicionar input type="number" min="0.1" max="10" step="0.1"
+  - [x] 6.8.3 Adicionar botões preset: Normal (1.0), Complexo (1.2), Premium (1.5), Raro (2.0)
+  - [x] 6.8.4 Adicionar preview mostrando: "Preço base coleção: X coins × Multiplicador: Y = Preço final: Z coins"
+  - [x] 6.8.5 Adicionar tooltip explicando propósito do multiplicador
+  - [x] 6.8.6 Adicionar validação (> 0)
+  - [x] 6.8.7 Permitir NULL (limpar campo para usar 1.0 padrão)
+  - [x] 6.8.8 Integrar com useCharacterPriceMultiplier hook
+  - [x] 6.8.9 Adicionar funcionalidade de salvar
+  - [x] 6.8.10 Adicionar loading states e feedback visual
 
 ## 7. Componentes Admin - Limite de Coleções
-- [ ] 7.1 Criar `CollectionLimitConfig` component
-  - [ ] 7.1.1 Criar input de número
-  - [ ] 7.1.2 Adicionar validação (>= -1)
-  - [ ] 7.1.3 Adicionar texto explicativo
-  - [ ] 7.1.4 Integrar com mutation
-  - [ ] 7.1.5 Adicionar feedback visual
-- [ ] 7.2 Integrar em cards de planos existentes
-- [ ] 7.3 Testar fluxo completo de atualização
-- [ ] 7.4 Validar UX
+- [x] 7.1 Criar `CollectionLimitConfig` component
+  - [x] 7.1.1 Criar input de número
+  - [x] 7.1.2 Adicionar validação (>= -1)
+  - [x] 7.1.3 Adicionar texto explicativo
+  - [x] 7.1.4 Integrar com mutation
+  - [x] 7.1.5 Adicionar feedback visual
+- [x] 7.2 Integrar em cards de planos existentes
+- [x] 7.3 Testar fluxo completo de atualização
+- [x] 7.4 Validar UX
 
 ## 8. Atualizar AdminPlansConfiguration Page
 - [x] 8.1 Adicionar nova aba "Preços Contextuais"
@@ -350,46 +350,46 @@
 
 ## 9. Atualizar Catálogo de Coleções (Frontend Usuário)
 - [x] 9.1 Integrar useCollectionPrice no catálogo de coleções
-- [ ] 9.2 Integrar useCharacterPrice no catálogo de personagens (RN008 - com multiplicador)
-  - [ ] 9.2.1 Garantir que hook retorna preço com multiplicador aplicado
-  - [ ] 9.2.2 Adicionar loading state para cálculo de preço
-  - [ ] 9.2.3 Cache strategy considera mudanças no multiplicador do personagem
+- [x] 9.2 Integrar useCharacterPrice no catálogo de personagens (RN008 - com multiplicador)
+  - [x] 9.2.1 Garantir que hook retorna preço com multiplicador aplicado
+  - [x] 9.2.2 Adicionar loading state para cálculo de preço
+  - [x] 9.2.3 Cache strategy considera mudanças no multiplicador do personagem
 - [x] 9.3 Exibir preços contextuais em COINS (ex: "1000 🪙")
-- [ ] 9.4 Adicionar badges de contexto (RN008 - incluir multiplicador de personagem)
-  - [ ] 9.4.1 Badge "Coleção Escolhida" com preço promocional
-  - [ ] 9.4.2 Badge para multiplicador de personagem quando != 1.0
-  - [ ] 9.4.3 Exemplos: "Premium" (1.5), "Raro" (2.0), "Grande" (1.3)
-  - [ ] 9.4.4 Adicionar indicador visual (ícone estrela, coroa, etc)
-- [ ] 9.5 Adicionar indicador visual de preço promocional
-- [ ] 9.6 Atualizar preços ao escolher/remover coleção
-- [ ] 9.7 Testar com diferentes contextos de usuário
-- [ ] 9.8 Garantir que NUNCA mostra R$, apenas COINS
-- [ ] 9.9 Validar que preço do personagem SEM multiplicador = preço da coleção
-- [ ] 9.10 Exibir breakdown do multiplicador de personagem (RN008)
-  - [ ] 9.10.1 Adicionar tooltip mostrando cálculo: "Coleção: 800 coins × Multiplicador: 1.5 = 1200 coins"
-  - [ ] 9.10.2 Adicionar breakdown visual no card do personagem
-  - [ ] 9.10.3 Indicação clara quando multiplicador está aplicado
-  - [ ] 9.10.4 Mostrar apenas quando multiplicador != 1.0
-- [ ] 9.11 Implementar Badge System para Status de Coleção (RN009, RF015)
-  - [ ] 9.11.1 Criar componente `CollectionStatusBadge`
-  - [ ] 9.11.2 Badge "Sua Coleção" (verde/primary, bg-green-500) para coleções escolhidas
-  - [ ] 9.11.3 Badge "Disponível" (cinza, bg-gray-400) opcional para coleções não escolhidas
-  - [ ] 9.11.4 Badge "Preço Avulso" (cinza, bg-gray-500) opcional para não assinantes
-  - [ ] 9.11.5 Posicionar badge no canto superior direito do card (top-2 right-2)
-  - [ ] 9.11.6 Incluir ícone de check (✓) para coleções escolhidas
-  - [ ] 9.11.7 Adicionar aria-label descritivo para acessibilidade
-  - [ ] 9.11.8 Implementar design responsivo (text-xs ou text-sm, font-semibold, uppercase)
-  - [ ] 9.11.9 Adicionar padding interno (px-2 py-1)
-  - [ ] 9.11.10 Integrar badge nos cards de coleção existentes
-- [ ] 9.12 Implementar Price Display com Descontos Visuais (RN009, RF015)
-  - [ ] 9.12.1 Exibir preço com desconto em destaque (font-bold, text-lg ou text-xl, cor verde)
-  - [ ] 9.12.2 Exibir preço original riscado com percentual (line-through, text-sm, text-gray-500)
-  - [ ] 9.12.3 Formato: "~~1000 coins~~ 800 coins (-20%)"
-  - [ ] 9.12.4 Adicionar badge de economia: "Economize X coins" ou "Y% OFF"
-  - [ ] 9.12.5 Renderização condicional baseado em contexto (escolhida vs não escolhida)
-  - [ ] 9.12.6 Adicionar animação de número ao mudar preço (number animation)
-  - [ ] 9.12.7 Usar ícone 🪙 ou "coins" consistentemente
-  - [ ] 9.12.8 Garantir que NUNCA mostra R$, apenas COINS
+- [x] 9.4 Adicionar badges de contexto (RN008 - incluir multiplicador de personagem)
+  - [x] 9.4.1 Badge "Coleção Escolhida" com preço promocional
+  - [x] 9.4.2 Badge para multiplicador de personagem quando != 1.0
+  - [x] 9.4.3 Exemplos: "Premium" (1.5), "Raro" (2.0), "Grande" (1.3)
+  - [x] 9.4.4 Adicionar indicador visual (ícone estrela, coroa, etc)
+- [x] 9.5 Adicionar indicador visual de preço promocional
+- [x] 9.6 Atualizar preços ao escolher/remover coleção
+- [x] 9.7 Testar com diferentes contextos de usuário
+- [x] 9.8 Garantir que NUNCA mostra R$, apenas COINS
+- [x] 9.9 Validar que preço do personagem SEM multiplicador = preço da coleção
+- [x] 9.10 Exibir breakdown do multiplicador de personagem (RN008)
+  - [x] 9.10.1 Adicionar tooltip mostrando cálculo: "Coleção: 800 coins × Multiplicador: 1.5 = 1200 coins"
+  - [x] 9.10.2 Adicionar breakdown visual no card do personagem
+  - [x] 9.10.3 Indicação clara quando multiplicador está aplicado
+  - [x] 9.10.4 Mostrar apenas quando multiplicador != 1.0
+- [x] 9.11 Implementar Badge System para Status de Coleção (RN009, RF015)
+  - [x] 9.11.1 Criar componente `CollectionStatusBadge`
+  - [x] 9.11.2 Badge "Sua Coleção" (verde/primary, bg-green-500) para coleções escolhidas
+  - [x] 9.11.3 Badge "Disponível" (cinza, bg-gray-400) opcional para coleções não escolhidas
+  - [x] 9.11.4 Badge "Preço Avulso" (cinza, bg-gray-500) opcional para não assinantes
+  - [x] 9.11.5 Posicionar badge no canto superior direito do card (top-2 right-2)
+  - [x] 9.11.6 Incluir ícone de check (✓) para coleções escolhidas
+  - [x] 9.11.7 Adicionar aria-label descritivo para acessibilidade
+  - [x] 9.11.8 Implementar design responsivo (text-xs ou text-sm, font-semibold, uppercase)
+  - [x] 9.11.9 Adicionar padding interno (px-2 py-1)
+  - [x] 9.11.10 Integrar badge nos cards de coleção existentes
+- [x] 9.12 Implementar Price Display com Descontos Visuais (RN009, RF015)
+  - [x] 9.12.1 Exibir preço com desconto em destaque (font-bold, text-lg ou text-xl, cor verde)
+  - [x] 9.12.2 Exibir preço original riscado com percentual (line-through, text-sm, text-gray-500)
+  - [x] 9.12.3 Formato: "~~1000 coins~~ 800 coins (-20%)"
+  - [x] 9.12.4 Adicionar badge de economia: "Economize X coins" ou "Y% OFF"
+  - [x] 9.12.5 Renderização condicional baseado em contexto (escolhida vs não escolhida)
+  - [ ]* 9.12.6 Adicionar animação de número ao mudar preço (number animation)
+  - [x] 9.12.7 Usar ícone 🪙 ou "coins" consistentemente
+  - [x] 9.12.8 Garantir que NUNCA mostra R$, apenas COINS
 - [ ] 9.13 Implementar Tooltip System Explicativo (RN009, RF015)
   - [ ] 9.13.1 Criar componente `PriceTooltip` reutilizável
   - [ ] 9.13.2 Tooltip para coleções escolhidas: "Você escolheu esta coleção na sua assinatura e recebe X% de desconto"
@@ -448,37 +448,37 @@
   - [ ] 9.18.6 Mensagem clara: "Assine e economize até X%"
 
 ## 9A. Implementar Comportamento de Saldo Insuficiente (RN007)
-- [ ] 9A.1 Criar componente `BalanceIndicator` (indicador visual de saldo)
-  - [ ] 9A.1.1 Exibir saldo atual do usuário
-  - [ ] 9A.1.2 Adicionar indicador verde quando balance >= preço
-  - [ ] 9A.1.3 Adicionar indicador vermelho quando balance < preço
-  - [ ] 9A.1.4 Exibir preview do saldo após compra (quando suficiente)
-  - [ ] 9A.1.5 Adicionar ícone de alerta quando insuficiente
-  - [ ] 9A.1.6 Integrar com useUserCoins hook
-- [ ] 9A.2 Criar componente `InsufficientBalanceMessage`
-  - [ ] 9A.2.1 Exibir mensagem "Saldo insuficiente"
-  - [ ] 9A.2.2 Mostrar valores exatos: "Necessário: X coins"
-  - [ ] 9A.2.3 Mostrar valores exatos: "Disponível: Y coins"
-  - [ ] 9A.2.4 Calcular e mostrar: "Faltam: Z coins"
-  - [ ] 9A.2.5 Adicionar estilização com cores de alerta
-- [ ] 9A.3 Atualizar botão de compra de personagem
-  - [ ] 9A.3.1 Validar saldo antes de habilitar botão
-  - [ ] 9A.3.2 Quando balance >= preço: mostrar botão "Comprar"
-  - [ ] 9A.3.3 Quando balance < preço: mostrar botão "Comprar Coins"
-  - [ ] 9A.3.4 Botão "Comprar Coins" redireciona para /coins/purchase
-  - [ ] 9A.3.5 Adicionar tooltip explicativo no botão
-  - [ ] 9A.3.6 Desabilitar botão "Comprar" durante loading
+- [x] 9A.1 Criar componente `BalanceIndicator` (indicador visual de saldo)
+  - [x] 9A.1.1 Exibir saldo atual do usuário
+  - [x] 9A.1.2 Adicionar indicador verde quando balance >= preço
+  - [x] 9A.1.3 Adicionar indicador vermelho quando balance < preço
+  - [x] 9A.1.4 Exibir preview do saldo após compra (quando suficiente)
+  - [x] 9A.1.5 Adicionar ícone de alerta quando insuficiente
+  - [x] 9A.1.6 Integrar com useUserCoins hook
+- [x] 9A.2 Criar componente `InsufficientBalanceMessage`
+  - [x] 9A.2.1 Exibir mensagem "Saldo insuficiente"
+  - [x] 9A.2.2 Mostrar valores exatos: "Necessário: X coins"
+  - [x] 9A.2.3 Mostrar valores exatos: "Disponível: Y coins"
+  - [x] 9A.2.4 Calcular e mostrar: "Faltam: Z coins"
+  - [x] 9A.2.5 Adicionar estilização com cores de alerta
+- [x] 9A.3 Atualizar botão de compra de personagem
+  - [x] 9A.3.1 Validar saldo antes de habilitar botão
+  - [x] 9A.3.2 Quando balance >= preço: mostrar botão "Comprar"
+  - [x] 9A.3.3 Quando balance < preço: mostrar botão "Comprar Coins"
+  - [x] 9A.3.4 Botão "Comprar Coins" redireciona para /coins/purchase
+  - [x] 9A.3.5 Adicionar tooltip explicativo no botão
+  - [x] 9A.3.6 Desabilitar botão "Comprar" durante loading
 - [ ] 9A.4 Integrar validação frontend com backend
   - [ ] 9A.4.1 Frontend valida saldo antes de chamar mutation
   - [ ] 9A.4.2 Backend valida saldo novamente (segurança)
   - [ ] 9A.4.3 Tratar erro de saldo insuficiente do backend
   - [ ] 9A.4.4 Exibir mensagem de erro com valores exatos
   - [ ] 9A.4.5 Sincronizar saldo após erro (refetch)
-- [ ] 9A.5 Adicionar página de compra de coins (/coins/purchase)
-  - [ ] 9A.5.1 Criar rota /coins/purchase
-  - [ ] 9A.5.2 Exibir pacotes de coins disponíveis
-  - [ ] 9A.5.3 Integrar com sistema de pagamento
-  - [ ] 9A.5.4 Adicionar botão "Voltar" para página anterior
+- [x] 9A.5 Adicionar página de compra de coins (/coins/purchase)
+  - [x] 9A.5.1 Criar rota /coins/purchase
+  - [x] 9A.5.2 Exibir pacotes de coins disponíveis
+  - [x] 9A.5.3 Integrar com sistema de pagamento
+  - [x] 9A.5.4 Adicionar botão "Voltar" para página anterior
 - [ ] 9A.6 Testar fluxo completo de saldo insuficiente
   - [ ] 9A.6.1 Teste: usuário com saldo suficiente vê botão "Comprar"
   - [ ] 9A.6.2 Teste: usuário com saldo insuficiente vê botão "Comprar Coins"

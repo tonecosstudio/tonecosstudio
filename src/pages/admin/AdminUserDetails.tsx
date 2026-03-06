@@ -146,6 +146,75 @@ export default function AdminUserDetails() {
     },
   });
 
+  // Query para assinatura de crédito
+  const creditSubscriptionQuery = useQuery({
+    queryKey: ["admin-user-credit-subscription", userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscription_credit_subscriptions")
+        .select("*")
+        .eq("user_id", userId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Query para saldo de coins
+  const coinsBalanceQuery = useQuery({
+    queryKey: ["admin-user-coins-balance", userId, creditSubscriptionQuery.data?.id],
+    enabled: Boolean(userId) && Boolean(creditSubscriptionQuery.data?.id) && !creditSubscriptionQuery.isLoading,
+    queryFn: async () => {
+      if (!creditSubscriptionQuery.data?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("subscription_credit_balances")
+        .select("*")
+        .eq("subscription_id", creditSubscriptionQuery.data.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Query para pedidos de crédito
+  const creditOrdersQuery = useQuery({
+    queryKey: ["admin-user-credit-orders", userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { data: orders, error } = await supabase
+        .from("subscription_credit_orders")
+        .select("*")
+        .eq("user_id", userId!)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      if (!orders) return [];
+
+      // Buscar dados dos personagens separadamente
+      const ordersWithCharacters = await Promise.all(
+        orders.map(async (order: any) => {
+          if (order.character_id) {
+            const { data: character } = await supabase
+              .from("subscription_credit_characters")
+              .select("name, rarity, cost_in_credits")
+              .eq("id", order.character_id)
+              .maybeSingle();
+            
+            return {
+              ...order,
+              subscription_credit_characters: character,
+            };
+          }
+          return order;
+        })
+      );
+
+      return ordersWithCharacters;
+    },
+  });
+
   const isLoading = profileQuery.isLoading;
   const profile = profileQuery.data;
   const roles = rolesQuery.data || [];
@@ -153,6 +222,9 @@ export default function AdminUserDetails() {
   const paymentMethods = paymentMethodsQuery.data || [];
   const orders = ordersQuery.data || [];
   const subscriptions = subscriptionsQuery.data || [];
+  const creditSubscription = creditSubscriptionQuery.data;
+  const coinsBalance = coinsBalanceQuery.data;
+  const creditOrders = creditOrdersQuery.data || [];
 
   // Filtrar pedidos
   const filteredOrders = useMemo(() => {
@@ -265,7 +337,7 @@ export default function AdminUserDetails() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
@@ -300,6 +372,17 @@ export default function AdminUserDetails() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {coinsBalance?.available_credits || 0}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Coins</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
                 <div className="text-2xl font-bold text-primary">
                   {formatCurrency(totalSpent)}
                 </div>
@@ -312,7 +395,7 @@ export default function AdminUserDetails() {
 
       {/* Tabs */}
       <Tabs defaultValue="info" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
           <TabsTrigger value="info">
             <User className="h-4 w-4 mr-2" />
             Info
@@ -324,6 +407,10 @@ export default function AdminUserDetails() {
           <TabsTrigger value="address">
             <MapPin className="h-4 w-4 mr-2" />
             Endereço
+          </TabsTrigger>
+          <TabsTrigger value="subscription">
+            <CreditCard className="h-4 w-4 mr-2" />
+            Assinatura
           </TabsTrigger>
           <TabsTrigger value="collector">
             <Trophy className="h-4 w-4 mr-2" />
@@ -578,6 +665,146 @@ export default function AdminUserDetails() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab: Subscription & Coins */}
+        <TabsContent value="subscription" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Assinatura de Crédito */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Assinatura de Crédito
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!creditSubscription ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhuma assinatura ativa
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Plano</div>
+                      <div className="text-base mt-1 capitalize">{creditSubscription.plan_type}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Status</div>
+                      <Badge 
+                        variant={creditSubscription.status === 'active' ? 'default' : 'secondary'}
+                        className="mt-1"
+                      >
+                        {creditSubscription.status}
+                      </Badge>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Créditos por Ciclo</div>
+                      <div className="text-base mt-1 font-semibold text-blue-600">
+                        {creditSubscription.credits_per_cycle} coins
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">Início</div>
+                        <div className="text-base mt-1">
+                          {new Date(creditSubscription.start_date).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">Término</div>
+                        <div className="text-base mt-1">
+                          {new Date(creditSubscription.end_date).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Saldo de Coins */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Saldo de Coins
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!coinsBalance ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhum saldo disponível
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center p-6 rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <div className="text-4xl font-bold text-blue-600">
+                        {coinsBalance.available_credits}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-2">Coins Disponíveis</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 rounded-lg bg-muted/50">
+                        <div className="text-2xl font-bold text-green-600">
+                          {coinsBalance.total_allocated || 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">Total Alocado</div>
+                      </div>
+                      <div className="text-center p-4 rounded-lg bg-muted/50">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {coinsBalance.used_credits || 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">Usados</div>
+                      </div>
+                    </div>
+                    {coinsBalance.last_allocation_date && (
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">Última Alocação</div>
+                        <div className="text-base mt-1">
+                          {new Date(coinsBalance.last_allocation_date).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Pedidos de Crédito */}
+          {creditOrders.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pedidos com Coins ({creditOrders.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {creditOrders.map((order: any) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-4 rounded-lg border"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium">
+                          {order.subscription_credit_characters?.name || "Personagem"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {order.credits_used} coins • {order.order_type}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(order.created_at).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                      <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Tab: Collector */}

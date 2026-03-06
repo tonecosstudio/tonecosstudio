@@ -217,50 +217,13 @@ export async function fetchProductionQueue(
 /**
  * Busca métricas agregadas de produção
  *
- * Utiliza a função get_production_metrics() do PostgreSQL que retorna
- * estatísticas completas sobre a fila de produção.
+ * Calcula estatísticas completas sobre a fila de produção.
  *
  * @returns Métricas de produção
  */
 export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
   try {
-    // Try to use the RPC function first
-    const { data: rpcData, error: rpcError } = await supabase.rpc("get_production_metrics");
-
-    if (!rpcError && rpcData) {
-      // Parse RPC response
-      const metrics = typeof rpcData === "string" ? JSON.parse(rpcData) : rpcData;
-
-      return {
-        stages: metrics.stages || {},
-        statuses: metrics.statuses || {},
-        priorities: metrics.priorities || {},
-        choices: metrics.choices || {},
-        urgent: {
-          deadlineCritical: metrics.urgent?.deadline_critical || 0,
-          deadlineUrgent: metrics.urgent?.deadline_urgent || 0,
-          blocked: metrics.urgent?.blocked || 0,
-          overdue: metrics.urgent?.overdue || 0,
-        },
-        scheduled: {
-          today: metrics.scheduled?.today || 0,
-          thisWeek: metrics.scheduled?.this_week || 0,
-          thisMonth: metrics.scheduled?.this_month || 0,
-        },
-        avgStageDurations: metrics.avg_stage_durations || {},
-        overall: {
-          totalItems: metrics.overall?.total_items || 0,
-          avgProductionTimeHours: metrics.overall?.avg_production_time_hours || 0,
-          completionRate: metrics.overall?.completion_rate || 0,
-          avgPriorityScore: metrics.overall?.avg_priority_score || 0,
-        },
-        generatedAt: metrics.generated_at || new Date().toISOString(),
-      };
-    }
-
-    // Fallback: Calculate metrics manually from production_queue
-    console.warn("RPC function not available, calculating metrics manually");
-
+    // Calculate metrics from production_queue table
     const { data: queueData, error: queueError } = await supabase
       .from("production_queue")
       .select("*");

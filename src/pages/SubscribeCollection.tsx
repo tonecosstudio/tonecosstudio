@@ -26,7 +26,7 @@ export default function SubscribeCollection() {
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
   const [paymentVoucherUrl, setPaymentVoucherUrl] = useState<string | null>(null);
 
   // Buscar planos disponíveis
@@ -73,12 +73,12 @@ export default function SubscribeCollection() {
     },
   });
 
-  // Auto-selecionar primeira coleção
+  // Auto-selecionar primeira coleção como ativa
   useEffect(() => {
-    if (initialCollection && selectedCollections.length === 0) {
-      setSelectedCollections([initialCollection.id]);
+    if (initialCollection && !activeCollectionId) {
+      setActiveCollectionId(initialCollection.id);
     }
-  }, [initialCollection, selectedCollections.length]);
+  }, [initialCollection, activeCollectionId]);
 
   // Auto-selecionar primeiro plano
   useEffect(() => {
@@ -87,16 +87,6 @@ export default function SubscribeCollection() {
       setSelectedPlanId(popularPlan.id);
     }
   }, [plans, selectedPlanId]);
-
-  // Auto-selecionar todas para plano anual
-  useEffect(() => {
-    const selectedPlan = plans?.find(p => p.id === selectedPlanId);
-    const isAnualPlan = selectedPlan?.plan_type === "anual";
-    
-    if (isAnualPlan && collections && selectedCollections.length !== collections.length) {
-      setSelectedCollections(collections.map(c => c.id));
-    }
-  }, [selectedPlanId, plans, collections, selectedCollections.length]);
 
   // Criar assinatura
   const subscribeMutation = useMutation({
@@ -109,13 +99,14 @@ export default function SubscribeCollection() {
       const selectedPlan = plans?.find(p => p.id === selectedPlanId);
       if (!selectedPlan) throw new Error("Selecione um plano");
 
-      const requiredCollections = selectedPlan.collections_count === -1 
-        ? collections?.length || 0 
-        : selectedPlan.collections_count;
-
-      if (selectedCollections.length !== requiredCollections) {
-        throw new Error(`Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`);
+      if (!activeCollectionId) {
+        throw new Error("Selecione uma coleção ativa");
       }
+
+      // Calcular coins iniciais baseado no plano
+      const coinsInitial = selectedPlan.plan_type === "trimestral" ? 600
+        : selectedPlan.plan_type === "semestral" ? 1300
+        : 2800;
 
       // Criar assinatura
       const { data: subscription, error: subError } = await supabase
@@ -126,19 +117,14 @@ export default function SubscribeCollection() {
           plan_type: selectedPlan.plan_type,
           status: "pending_payment",
           payment_voucher_url: paymentVoucherUrl,
+          active_collection_id: activeCollectionId,
+          coins_balance: coinsInitial,
+          coins_initial: coinsInitial,
         })
         .select()
         .single();
 
       if (subError) throw subError;
-
-      // Associar coleções
-      for (const collectionId of selectedCollections) {
-        await supabase.from("subscription_collections").insert({
-          subscription_id: subscription.id,
-          collection_id: collectionId,
-        });
-      }
 
       // Criar pagamento
       const amount = paymentMethod === "pix" ? selectedPlan.price_pix : selectedPlan.price_full;
@@ -189,21 +175,11 @@ export default function SubscribeCollection() {
   }
 
   const selectedPlan = plans?.find(p => p.id === selectedPlanId);
-  const requiredCollections = selectedPlan 
-    ? (selectedPlan.collections_count === -1 ? collections?.length || 0 : selectedPlan.collections_count)
+  const coinsToReceive = selectedPlan 
+    ? (selectedPlan.plan_type === "trimestral" ? 600
+      : selectedPlan.plan_type === "semestral" ? 1300
+      : 2800)
     : 0;
-  const isAnualPlan = selectedPlan?.plan_type === "anual";
-  const canSelectMore = selectedCollections.length < requiredCollections;
-
-  const toggleCollection = (collectionId: string) => {
-    if (isAnualPlan) return; // Anual não permite desmarcar
-
-    if (selectedCollections.includes(collectionId)) {
-      setSelectedCollections(selectedCollections.filter(id => id !== collectionId));
-    } else if (canSelectMore) {
-      setSelectedCollections([...selectedCollections, collectionId]);
-    }
-  };
 
   const finalPrice = selectedPlan 
     ? (paymentMethod === "pix" ? Number(selectedPlan.price_pix) : Number(selectedPlan.price_full))
@@ -335,36 +311,37 @@ export default function SubscribeCollection() {
                 </RadioGroup>
               </div>
 
-              {/* Escolha de Coleções */}
+              {/* Escolha de Coleção Ativa */}
               <div>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg">
                     2
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-950 dark:text-white">Escolha suas Coleções</h2>
+                    <h2 className="text-2xl font-bold text-slate-950 dark:text-white">Escolha sua Coleção Ativa</h2>
                     <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {isAnualPlan 
-                        ? "Acesso a todas as coleções" 
-                        : `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"} (${selectedCollections.length}/${requiredCollections})`
-                      }
+                      Personagens desta coleção custarão 200 coins (preço prioritário)
                     </p>
                   </div>
                 </div>
 
-                {isAnualPlan && (
-                  <Alert className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-                    <Sparkles className="h-4 w-4 text-amber-600" />
-                    <AlertDescription className="text-amber-900 dark:text-amber-100">
-                      Com o plano Anual, você tem acesso a TODAS as coleções e pode trocar entre elas ilimitadamente!
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <Alert className="mb-6 border-primary bg-primary/5">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <AlertDescription>
+                    <strong>Sistema de Preços Contextuais:</strong>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      <li>• Coleção Ativa: <strong>200 coins</strong> (preço prioritário)</li>
+                      <li>• Outras Coleções: <strong>240-450 coins</strong> (dependendo do tipo)</li>
+                    </ul>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Você receberá <strong>{coinsToReceive} coins</strong> de saldo para escolher seus personagens mensalmente.
+                    </p>
+                  </AlertDescription>
+                </Alert>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   {collections?.map((col: any) => {
-                    const isSelected = selectedCollections.includes(col.id);
-                    const canSelect = isAnualPlan || canSelectMore || isSelected;
+                    const isSelected = activeCollectionId === col.id;
                     const characterCount = col.collection_characters?.length || 0;
 
                     if (characterCount === 0) return null;
@@ -372,14 +349,12 @@ export default function SubscribeCollection() {
                     return (
                       <Card
                         key={col.id}
-                        onClick={() => canSelect && toggleCollection(col.id)}
+                        onClick={() => setActiveCollectionId(col.id)}
                         className={`cursor-pointer transition-all ${
                           isSelected
                             ? 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-950/20'
-                            : canSelect
-                            ? 'hover:shadow-lg'
-                            : 'opacity-50 cursor-not-allowed'
-                        } ${isAnualPlan ? 'cursor-default' : ''}`}
+                            : 'hover:shadow-lg'
+                        }`}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
@@ -389,7 +364,15 @@ export default function SubscribeCollection() {
                               {isSelected && <Check className="h-4 w-4 text-white" />}
                             </div>
                             <div className="flex-1">
-                              <h4 className="font-bold text-slate-950 dark:text-white mb-1">{col.name}</h4>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-bold text-slate-950 dark:text-white">{col.name}</h4>
+                                {isSelected && (
+                                  <Badge className="bg-amber-500 text-white text-xs">
+                                    <Sparkles className="h-3 w-3 mr-1" />
+                                    Ativa
+                                  </Badge>
+                                )}
+                              </div>
                               {col.description && (
                                 <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">
                                   {col.description}
@@ -398,6 +381,11 @@ export default function SubscribeCollection() {
                               <p className="text-xs text-slate-500 dark:text-slate-500">
                                 {characterCount} {characterCount === 1 ? "personagem" : "personagens"}
                               </p>
+                              {isSelected && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
+                                  ⭐ Personagens desta coleção: 200 coins
+                                </p>
+                              )}
                             </div>
                           </div>
                         </CardContent>
@@ -544,9 +532,15 @@ export default function SubscribeCollection() {
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Coleções:</span>
+                        <span className="text-slate-600 dark:text-slate-400">Coins:</span>
+                        <span className="font-semibold text-amber-600 dark:text-amber-400">
+                          {coinsToReceive} coins
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Coleção Ativa:</span>
                         <span className="font-semibold text-slate-950 dark:text-white">
-                          {isAnualPlan ? "Todas" : `${selectedCollections.length} selecionadas`}
+                          {activeCollectionId ? collections?.find(c => c.id === activeCollectionId)?.name : "-"}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -598,7 +592,7 @@ export default function SubscribeCollection() {
                       disabled={
                         subscribeMutation.isPending ||
                         !selectedPlanId ||
-                        selectedCollections.length !== requiredCollections ||
+                        !activeCollectionId ||
                         !paymentVoucherUrl
                       }
                     >
@@ -606,8 +600,8 @@ export default function SubscribeCollection() {
                         "Processando..."
                       ) : !paymentVoucherUrl ? (
                         "Envie o comprovante"
-                      ) : selectedCollections.length !== requiredCollections ? (
-                        `Selecione ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`
+                      ) : !activeCollectionId ? (
+                        "Selecione uma coleção ativa"
                       ) : (
                         <>
                           Confirmar Assinatura

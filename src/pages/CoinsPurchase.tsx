@@ -8,6 +8,87 @@
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
+import { useUserCoins } from '@/hooks/useUserCoins';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  Coins, 
+  ArrowLeft, 
+  Info, 
+  Sparkles, 
+  TrendingUp, 
+  Zap, 
+  Check 
+} from 'lucide-react';
+
+// =====================================================
+// TYPES
+// =====================================================
+
+interface CoinPackage {
+  id: string;
+  name: string;
+  amount: number;
+  bonus: number;
+  price_brl: number;
+  is_active: boolean;
+  is_popular: boolean;
+  is_best_value: boolean;
+}
+
+// =====================================================
+// HOOKS
+// =====================================================
+
+function useCoinPackages() {
+  return useQuery({
+    queryKey: ['coin-packages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('coin_packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('amount', { ascending: true });
+      
+      if (error) throw error;
+      return data as CoinPackage[];
+    },
+  });
+}
+
+// =====================================================
+// HELPERS
+// =====================================================
+
+function getTotalCoins(pkg: CoinPackage) {
+  return pkg.amount + pkg.bonus;
+}
+
+function getBonusPercentage(pkg: CoinPackage) {
+  if (pkg.bonus === 0) return 0;
+  return Math.round((pkg.bonus / pkg.amount) * 100);
+}
+
+function formatPriceInCoins(amount: number) {
+  return `${amount.toLocaleString('pt-BR')} coins`;
+}
+
+function formatPriceBRL(amount: number) {
+  return `R$ ${amount.toFixed(2)}`;
+}
 
 // =====================================================
 // COMPONENT
@@ -16,6 +97,7 @@ import { useState } from 'react';
 export default function CoinsPurchase() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { data: coinsData, isLoading: coinsLoading } = useUserCoins(user?.id);
   const { data: packages, isLoading: packagesLoading } = useCoinPackages();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);

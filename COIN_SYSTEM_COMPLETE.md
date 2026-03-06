@@ -1,8 +1,55 @@
-# 🎉 Sistema de Coins - COMPLETO E APLICADO!
+# 🎉 Sistema de Coins - COMPLETO E ATUALIZADO!
 
-## ✅ Status: PRONTO PARA USO
+## ✅ Status: PRONTO PARA USO (Valores Ajustados)
 
 Todas as migrations foram aplicadas com sucesso no Supabase!
+
+**ATUALIZAÇÃO 2026-03-06**: Preços ajustados para valores corretos (200-450 coins)
+
+## 📊 Valores Corretos do Sistema (SSOT)
+
+### Base de Referência
+**Coleção Ativa = 200 coins (fixo)**
+
+Todos os outros preços são calculados aplicando multiplicadores sobre essa base.
+
+### Preços Finais por Tipo
+| Tipo | Coins | Cálculo |
+|------|-------|---------|
+| **Coleção Ativa** | 200 | Base × 1.0 (referência) |
+| **Coleção Secundária** | 240 | Base × 1.2 (+20%) |
+| **Catálogo Geral** | 300 | Base × 1.5 (+50%) |
+| **Premium** | 450 | Base × 2.25 (+125%) |
+
+### Como os Preços São Calculados
+
+#### 1. Coleção Ativa (200 coins) - BASE DE REFERÊNCIA
+```
+Base: 200 coins (fixo - referência)
+Multiplicador: ×1.0 (sem acréscimo)
+Cálculo: 200 × 1.0 = 200 coins ✓
+```
+
+#### 2. Coleção Secundária (240 coins)
+```
+Base: 200 coins
+Multiplicador: ×1.2 (+20%)
+Cálculo: 200 × 1.2 = 240 coins ✓
+```
+
+#### 3. Catálogo Geral (300 coins)
+```
+Base: 200 coins
+Multiplicador: ×1.5 (+50%)
+Cálculo: 200 × 1.5 = 300 coins ✓
+```
+
+#### 4. Premium (450 coins)
+```
+Base: 200 coins
+Multiplicador: ×2.25 (+125%)
+Cálculo: 200 × 2.25 = 450 coins ✓
+```
 
 ## 📊 O que foi criado
 

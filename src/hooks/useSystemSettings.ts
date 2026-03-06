@@ -125,6 +125,18 @@ export function useSystemSettings() {
   return useQuery({
     queryKey: ["system-settings"],
     queryFn: async () => {
+      // Tentar usar a função RPC primeiro (mais confiável)
+      const { data: rpcData, error: rpcError } = await supabase.rpc("get_system_settings").single();
+
+      if (!rpcError && rpcData) {
+        // Função RPC já retorna os tipos corretos
+        return {
+          ...DEFAULT_SETTINGS,
+          ...rpcData,
+        } as SystemSettings;
+      }
+
+      // Fallback para a view (caso a função não exista ainda)
       const { data, error } = await supabase.from("system_settings_grouped").select("*").single();
 
       if (error) {
@@ -132,10 +144,32 @@ export function useSystemSettings() {
         return DEFAULT_SETTINGS;
       }
 
+      // Converter strings para números (PostgREST retorna números como strings em views)
+      const normalized = data ? {
+        ...data,
+        default_price_full: Number(data.default_price_full),
+        default_price_pix: Number(data.default_price_pix),
+        default_deposit_amount: Number(data.default_deposit_amount),
+        pix_discount_percentage: Number(data.pix_discount_percentage),
+        max_installments_no_interest: Number(data.max_installments_no_interest),
+        max_installments_with_interest: Number(data.max_installments_with_interest),
+        shipping_business_days: Number(data.shipping_business_days),
+        exchange_deadline_days: Number(data.exchange_deadline_days),
+        days_to_next_delivery: Number(data.days_to_next_delivery),
+        user_online_threshold_minutes: Number(data.user_online_threshold_minutes),
+        notification_polling_interval_ms: Number(data.notification_polling_interval_ms),
+        toast_duration_ms: Number(data.toast_duration_ms),
+        default_page_size: Number(data.default_page_size),
+        search_debounce_ms: Number(data.search_debounce_ms),
+        input_debounce_ms: Number(data.input_debounce_ms),
+        image_compression_quality: Number(data.image_compression_quality),
+        max_image_size_mb: Number(data.max_image_size_mb),
+      } : data;
+
       // Mesclar dados do banco com valores padrão (banco tem prioridade)
       return {
         ...DEFAULT_SETTINGS,
-        ...data,
+        ...normalized,
       } as SystemSettings;
     },
     staleTime: 1 * 60 * 1000, // 1 minuto
@@ -182,6 +216,18 @@ export function useSystemSettingsMultiple<K extends keyof SystemSettings>(
  * @returns Promise com as configurações
  */
 export async function fetchSystemSettings(): Promise<SystemSettings> {
+  // Tentar usar a função RPC primeiro (mais confiável)
+  const { data: rpcData, error: rpcError } = await supabase.rpc("get_system_settings").single();
+
+  if (!rpcError && rpcData) {
+    // Função RPC já retorna os tipos corretos
+    return {
+      ...DEFAULT_SETTINGS,
+      ...rpcData,
+    } as SystemSettings;
+  }
+
+  // Fallback para a view (caso a função não exista ainda)
   const { data, error } = await supabase.from("system_settings_grouped").select("*").single();
 
   if (error) {
@@ -189,9 +235,31 @@ export async function fetchSystemSettings(): Promise<SystemSettings> {
     return DEFAULT_SETTINGS;
   }
 
+  // Converter strings para números (PostgREST retorna números como strings em views)
+  const normalized = data ? {
+    ...data,
+    default_price_full: Number(data.default_price_full),
+    default_price_pix: Number(data.default_price_pix),
+    default_deposit_amount: Number(data.default_deposit_amount),
+    pix_discount_percentage: Number(data.pix_discount_percentage),
+    max_installments_no_interest: Number(data.max_installments_no_interest),
+    max_installments_with_interest: Number(data.max_installments_with_interest),
+    shipping_business_days: Number(data.shipping_business_days),
+    exchange_deadline_days: Number(data.exchange_deadline_days),
+    days_to_next_delivery: Number(data.days_to_next_delivery),
+    user_online_threshold_minutes: Number(data.user_online_threshold_minutes),
+    notification_polling_interval_ms: Number(data.notification_polling_interval_ms),
+    toast_duration_ms: Number(data.toast_duration_ms),
+    default_page_size: Number(data.default_page_size),
+    search_debounce_ms: Number(data.search_debounce_ms),
+    input_debounce_ms: Number(data.input_debounce_ms),
+    image_compression_quality: Number(data.image_compression_quality),
+    max_image_size_mb: Number(data.max_image_size_mb),
+  } : data;
+
   return {
     ...DEFAULT_SETTINGS,
-    ...data,
+    ...normalized,
   } as SystemSettings;
 }
 

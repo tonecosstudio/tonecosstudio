@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,13 +21,13 @@ import {
   XCircle,
   Sparkles,
   Info,
-  TrendingUp,
-  Tag
+  TrendingUp
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ContextualPricingManager } from "@/components/admin/contextual-pricing";
+import { CharacterPricesReference } from "@/components/admin/CharacterPricesReference";
+import { PurchasingPowerCalculator } from "@/components/admin/PurchasingPowerCalculator";
 
 interface PlanConfig {
   id?: string;
@@ -321,19 +320,12 @@ export default function AdminPlansConfiguration() {
 
         {/* Tabs Principais */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-1 h-auto p-1">
             <TabsTrigger value="subscription-plans" className="flex items-center gap-2 py-3">
               <Coins className="h-5 w-5" />
               <div className="text-left">
                 <div className="font-semibold">Planos de Assinatura</div>
                 <div className="text-xs text-muted-foreground">Sistema de coins e peças</div>
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="collection-pricing" className="flex items-center gap-2 py-3">
-              <Tag className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-semibold">Preços Contextuais</div>
-                <div className="text-xs text-muted-foreground">Sistema dinâmico de preços</div>
               </div>
             </TabsTrigger>
           </TabsList>
@@ -348,6 +340,9 @@ export default function AdminPlansConfiguration() {
                 Assinantes recebem créditos para escolher personagens do catálogo. Defina peças base, bônus e cotação do coin.
               </AlertDescription>
             </Alert>
+
+            {/* Character Prices Reference - INTEGRAÇÃO COM /admin/coins */}
+            <CharacterPricesReference />
 
             {/* Coin Exchange Rate */}
             <CoinExchangeRateCard />
@@ -431,19 +426,9 @@ export default function AdminPlansConfiguration() {
             </div>
           </TabsContent>
 
-          {/* Tab 2: Preços de Coleções */}
-          <TabsContent value="collection-pricing" className="space-y-6">
-            <Alert className="border-purple-500/50 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20">
-              <Info className="h-4 w-4 text-purple-600" />
-              <AlertDescription className="text-sm">
-                <strong>Sistema de Preços Contextuais:</strong> Configure preços base por tipo de coleção, 
-                multiplicadores de contexto (assinante/não assinante) e descontos para coleções escolhidas. 
-                O sistema calcula automaticamente os preços finais baseado no contexto do usuário.
-              </AlertDescription>
-            </Alert>
-
-            <ContextualPricingManager />
-          </TabsContent>
+          {/* Tab 2: Preços de Coleções - REMOVIDO */}
+          {/* Movido para /admin/coins → Aba "Preços Contextuais" */}
+          {/* Esta funcionalidade pertence ao SSOT de coins, não de planos */}
         </Tabs>
       </AdminLayout>
     </>
@@ -1006,6 +991,14 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: any) {
                 </div>
               </div>
             </div>
+
+            {/* Purchasing Power Calculator - INTEGRAÇÃO COM /admin/coins */}
+            {formData.total_credits > 0 && (
+              <PurchasingPowerCalculator 
+                totalCoins={formData.total_credits}
+                planName={formData.name}
+              />
+            )}
           </>
         )}
 
