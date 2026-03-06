@@ -1,11 +1,10 @@
-// @ts-nocheck
 /**
  * No Renewal Dialog
  * Allows user to disable auto-renewal without immediate cancellation
  */
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -13,16 +12,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RefreshCw, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
-import { Subscription } from '@/types/subscription-credit-system';
-import { subscriptionCreditAPI } from '@/services/subscription-credit-api';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { RefreshCw, Calendar, AlertTriangle, CheckCircle, Coins } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { Subscription } from "@/types/subscription-credit-system";
+import { subscriptionCreditAPI } from "@/services/subscription-credit-api";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useUserCoins } from "@/hooks/useUserCoins";
+import { useAuth } from "@/lib/auth";
 
 interface NoRenewalDialogProps {
   subscription: Subscription;
@@ -30,30 +31,28 @@ interface NoRenewalDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function NoRenewalDialog({
-  subscription,
-  isOpen,
-  onOpenChange,
-}: NoRenewalDialogProps) {
+export function NoRenewalDialog({ subscription, isOpen, onOpenChange }: NoRenewalDialogProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [confirmed, setConfirmed] = useState(false);
+  const { data: coinsData } = useUserCoins(user?.id);
 
   const noRenewalMutation = useMutation({
     mutationFn: () => subscriptionCreditAPI.setNoRenewal(subscription.id),
     onSuccess: (data) => {
       toast({
-        title: 'Renovação automática desativada',
+        title: "Renovação automática desativada",
         description: `Sua assinatura expirará em ${format(new Date(data.end_date), "dd 'de' MMMM", { locale: ptBR })}`,
       });
-      queryClient.invalidateQueries({ queryKey: ['subscription-credit'] });
+      queryClient.invalidateQueries({ queryKey: ["subscription-credit"] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erro ao desativar renovação',
+        title: "Erro ao desativar renovação",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -61,9 +60,9 @@ export function NoRenewalDialog({
   const handleNoRenewal = () => {
     if (!confirmed) {
       toast({
-        title: 'Confirmação necessária',
-        description: 'Por favor, confirme que você entende as consequências.',
-        variant: 'destructive',
+        title: "Confirmação necessária",
+        description: "Por favor, confirme que você entende as consequências.",
+        variant: "destructive",
       });
       return;
     }
@@ -88,10 +87,10 @@ export function NoRenewalDialog({
           <div className="p-4 rounded-lg border bg-muted/50">
             <div className="text-sm text-muted-foreground mb-1">Plano Atual</div>
             <div className="font-semibold">
-              {subscription.plan_type === 'trimestral' ? 'Trimestral' : 'Semestral'}
+              {subscription.plan_type === "trimestral" ? "Trimestral" : "Semestral"}
             </div>
             <div className="text-sm text-muted-foreground">
-              Expira em: {format(new Date(subscription.end_date), 'dd/MM/yyyy', { locale: ptBR })}
+              Expira em: {format(new Date(subscription.end_date), "dd/MM/yyyy", { locale: ptBR })}
             </div>
           </div>
 
@@ -99,24 +98,59 @@ export function NoRenewalDialog({
           <Alert className="bg-blue-50 border-blue-200">
             <CheckCircle className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-blue-900 space-y-2">
-              <p><strong>O que acontecerá:</strong></p>
+              <p>
+                <strong>O que acontecerá:</strong>
+              </p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Sua assinatura permanecerá ativa até {format(new Date(subscription.end_date), "dd 'de' MMMM", { locale: ptBR })}</li>
+                <li>
+                  Sua assinatura permanecerá ativa até{" "}
+                  {format(new Date(subscription.end_date), "dd 'de' MMMM", { locale: ptBR })}
+                </li>
                 <li>Seus créditos continuam válidos até essa data</li>
                 <li>Você pode continuar usando todos os benefícios</li>
                 <li>Não haverá cobrança na próxima renovação</li>
-                <li>Seus créditos expirarão na data de término</li>
               </ul>
             </AlertDescription>
           </Alert>
+
+          {/* Coins Warning */}
+          {coinsData && coinsData.balance > 0 && (
+            <Alert variant="default" className="bg-amber-50 border-amber-200">
+              <Coins className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-900 font-semibold mb-2">
+                Atenção: Seus Coins Expirarão
+              </AlertTitle>
+              <AlertDescription className="text-sm text-amber-900 space-y-2">
+                <div className="bg-amber-100 p-3 rounded-md border border-amber-300">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Coins className="h-4 w-4 text-amber-700" />
+                    <span className="font-semibold">
+                      Você tem {coinsData.balance.toLocaleString("pt-BR")} coins disponíveis
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800">
+                    Seus coins permanecerão válidos até{" "}
+                    <strong>
+                      {format(new Date(subscription.end_date), "dd/MM/yyyy", { locale: ptBR })}
+                    </strong>
+                    . Após essa data, todos os coins não utilizados expirarão automaticamente.
+                  </p>
+                </div>
+                <p className="text-xs">
+                  <strong>Importante:</strong> Coins não possuem valor monetário e não são
+                  reembolsáveis. Use seus coins antes da data de expiração.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Pending Plan Change Warning */}
           {subscription.pending_plan_change && (
             <Alert className="bg-yellow-50 border-yellow-200">
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
               <AlertDescription className="text-sm text-yellow-900">
-                <strong>Atenção:</strong> Você tem uma mudança de plano agendada para{' '}
-                {subscription.plan_type === 'trimestral' ? 'Semestral' : 'Trimestral'}. Esta mudança
+                <strong>Atenção:</strong> Você tem uma mudança de plano agendada para{" "}
+                {subscription.plan_type === "trimestral" ? "Semestral" : "Trimestral"}. Esta mudança
                 será cancelada se você desativar a renovação.
               </AlertDescription>
             </Alert>
@@ -142,8 +176,9 @@ export function NoRenewalDialog({
               htmlFor="confirm-no-renewal"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Eu entendo que minha assinatura não renovará automaticamente e meus créditos
-              expirarão em {format(new Date(subscription.end_date), 'dd/MM/yyyy', { locale: ptBR })}
+              Eu entendo que minha assinatura não renovará automaticamente, meus créditos e coins
+              expirarão em {format(new Date(subscription.end_date), "dd/MM/yyyy", { locale: ptBR })}
+              , e que coins não são reembolsáveis
             </label>
           </div>
         </div>
@@ -152,11 +187,8 @@ export function NoRenewalDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            onClick={handleNoRenewal}
-            disabled={!confirmed || noRenewalMutation.isPending}
-          >
-            {noRenewalMutation.isPending ? 'Processando...' : 'Confirmar'}
+          <Button onClick={handleNoRenewal} disabled={!confirmed || noRenewalMutation.isPending}>
+            {noRenewalMutation.isPending ? "Processando..." : "Confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>
