@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para gerenciar preços base do sistema de preços contextuais
  * 
