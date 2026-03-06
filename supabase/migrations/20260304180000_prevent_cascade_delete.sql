@@ -21,15 +21,20 @@ ADD CONSTRAINT subscriptions_user_id_fkey
   REFERENCES auth.users(id)
   ON DELETE RESTRICT;
 
--- Standalone Purchases
-ALTER TABLE standalone_purchases
-DROP CONSTRAINT IF EXISTS standalone_purchases_user_id_fkey;
-
-ALTER TABLE standalone_purchases
-ADD CONSTRAINT standalone_purchases_user_id_fkey
-  FOREIGN KEY (user_id)
-  REFERENCES auth.users(id)
-  ON DELETE RESTRICT;
+-- Standalone Purchases (if exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'standalone_purchases') THEN
+    ALTER TABLE standalone_purchases
+    DROP CONSTRAINT IF EXISTS standalone_purchases_user_id_fkey;
+    
+    ALTER TABLE standalone_purchases
+    ADD CONSTRAINT standalone_purchases_user_id_fkey
+      FOREIGN KEY (user_id)
+      REFERENCES auth.users(id)
+      ON DELETE RESTRICT;
+  END IF;
+END $$;
 
 -- Quotes
 ALTER TABLE quotes
