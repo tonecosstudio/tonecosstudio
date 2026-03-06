@@ -73,6 +73,7 @@ import MonthlyCharacterSelection from "./pages/MonthlyCharacterSelection";
 import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
 import AdminMonthlyReleases from "./pages/admin/AdminMonthlyReleases";
 import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
+import CharacterSelect from "./pages/CharacterSelect";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
