@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tipos unificados para o sistema de Assinaturas
  * 

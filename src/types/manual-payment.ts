@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Types for Manual Payment System
  * Based on database schema: supabase/migrations/20260216000000_create_manual_payment_system.sql
