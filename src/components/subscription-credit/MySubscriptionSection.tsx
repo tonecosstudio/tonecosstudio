@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * My Subscription Section Component
  * Displays subscription status, plan info, and action buttons

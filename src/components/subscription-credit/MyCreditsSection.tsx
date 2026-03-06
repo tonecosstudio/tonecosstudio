@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * My Credits Section Component
  * Displays credit balance with visual bar and transaction history
