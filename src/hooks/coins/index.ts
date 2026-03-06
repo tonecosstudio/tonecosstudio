@@ -18,10 +18,14 @@ export {
 // Transações de coins
 export {
   useCoinsTransactions,
-  useCoinsTransactionsPaginated,
-  useCoinsTransactionsByType,
-  useCoinsTransactionStats,
-  invalidateCoinsTransactions,
+  useTransactionsByType,
+  useTransaction,
+  useTransactionStats,
+  useRecentTransactions,
+  groupTransactionsByDate,
+  groupTransactionsByType,
+  calculateTotalByType,
+  filterTransactionsByPeriod,
   coinsTransactionsKeys,
 } from "./useCoinsTransactions";
 
@@ -31,8 +35,7 @@ export {
   usePurchaseCollection,
   useRefundPurchase,
   useValidatePurchase,
-  invalidatePurchases,
-  purchaseKeys,
+  usePurchaseItem,
 } from "./usePurchaseWithCoins";
 
 // Pacotes de coins (hook existente em src/hooks)
