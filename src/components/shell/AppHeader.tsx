@@ -38,28 +38,13 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
+          {/* SEÇÃO 1: NAVEGAÇÃO PRINCIPAL (Público) */}
           <NavLink
             to="/"
             className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
             activeClassName="text-background bg-background/15"
           >
-            Home
-          </NavLink>
-
-          <NavLink
-            to="/pre-lancamento"
-            className="rounded-md px-3 py-2 text-xs font-black text-amber-400 transition-colors hover:text-amber-300 hover:bg-amber-500/10 animate-pulse"
-            activeClassName="text-amber-300 bg-amber-500/15"
-          >
-            🔥 Voucher R$ 100
-          </NavLink>
-
-          <NavLink
-            to="/landing"
-            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
-            activeClassName="text-background bg-background/15"
-          >
-            Landing
+            Início
           </NavLink>
 
           <NavLink
@@ -86,55 +71,85 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
             Planos
           </NavLink>
 
+          {/* DESTAQUE: Promoção */}
           <NavLink
-            to="/sobre"
-            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
-            activeClassName="text-background bg-background/15"
+            to="/pre-lancamento"
+            className="rounded-md px-3 py-2 text-xs font-black text-amber-400 transition-colors hover:text-amber-300 hover:bg-amber-500/10 animate-pulse"
+            activeClassName="text-amber-300 bg-amber-500/15"
           >
-            Sobre
+            🔥 Voucher R$ 100
           </NavLink>
 
-          <NavLink
-            to="/contato"
-            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
-            activeClassName="text-background bg-background/15"
-          >
-            Contato
-          </NavLink>
+          <div className="mx-2 h-5 w-px bg-background/20" />
 
-          <NavLink
-            to="/orcamento/carrinho"
-            className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
-            activeClassName="text-background bg-background/15"
-          >
-            Carrinho{cartCount ? ` (${cartCount})` : ""}
-          </NavLink>
-
+          {/* SEÇÃO 2: AÇÕES DO USUÁRIO (Autenticado) */}
           {user && (
-            <NavLink
-              to="/perfil"
-              className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
-              activeClassName="text-background bg-background/15"
-            >
-              Conta
-            </NavLink>
+            <>
+              <NavLink
+                to="/catalogo-personagens"
+                className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+                activeClassName="text-background bg-background/15"
+              >
+                Personagens
+              </NavLink>
+
+              <NavLink
+                to="/coins/purchase"
+                className="rounded-md px-3 py-2 text-xs font-medium text-amber-400 transition-colors hover:text-amber-300 hover:bg-amber-500/10"
+                activeClassName="text-amber-300 bg-amber-500/15"
+              >
+                🪙 Coins
+              </NavLink>
+
+              <NavLink
+                to="/orcamento/carrinho"
+                className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+                activeClassName="text-background bg-background/15"
+              >
+                Carrinho{cartCount ? ` (${cartCount})` : ""}
+              </NavLink>
+            </>
           )}
 
-          {isAdmin && (
+          {/* Carrinho para não autenticados */}
+          {!user && (
             <NavLink
-              to="/admin"
+              to="/orcamento/carrinho"
               className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
               activeClassName="text-background bg-background/15"
             >
-              Admin
+              Carrinho{cartCount ? ` (${cartCount})` : ""}
             </NavLink>
           )}
 
           <div className="mx-2 h-5 w-px bg-background/20" />
 
-          {/* Centro de Notificações */}
-          {user && <UserNotificationCenter />}
+          {/* SEÇÃO 3: CONTA E ADMIN */}
+          {user && (
+            <>
+              <UserNotificationCenter />
 
+              <NavLink
+                to="/perfil"
+                className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
+                activeClassName="text-background bg-background/15"
+              >
+                Conta
+              </NavLink>
+            </>
+          )}
+
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              className="rounded-md px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:text-red-300 hover:bg-red-500/10"
+              activeClassName="text-red-300 bg-red-500/15"
+            >
+              Admin
+            </NavLink>
+          )}
+
+          {/* SEÇÃO 4: AUTENTICAÇÃO */}
           {user ? (
             <Button
               variant="ghost"
@@ -167,116 +182,172 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
           </SheetTrigger>
 
           <SheetContent side="right" className="w-[300px] bg-foreground border-white/10">
-            <div className="flex flex-col gap-6 mt-8">
-              <NavLink
-                to="/"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </NavLink>
-              <NavLink
-                to="/pre-lancamento"
-                className="text-lg font-black text-amber-400 hover:text-amber-300 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                🔥 Voucher R$ 100
-              </NavLink>
-              <NavLink
-                to="/landing"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Landing
-              </NavLink>
-              <NavLink
-                to="/catalogo"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Catálogo
-              </NavLink>
-              <NavLink
-                to="/colecoes"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Coleções
-              </NavLink>
-              <NavLink
-                to="/planos"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Planos
-              </NavLink>
-              <NavLink
-                to="/sobre"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sobre
-              </NavLink>
-              <NavLink
-                to="/contato"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Contato
-              </NavLink>
-              <NavLink
-                to="/orcamento/carrinho"
-                className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                activeClassName="underline"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Carrinho {cartCount ? `(${cartCount})` : ""}
-              </NavLink>
-
-              {user && (
+            <div className="flex flex-col gap-4 mt-8">
+              {/* SEÇÃO: NAVEGAÇÃO PRINCIPAL */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-background/50 uppercase tracking-wider px-2">
+                  Navegação
+                </p>
                 <NavLink
-                  to="/perfil"
-                  className="text-lg font-medium text-background hover:text-background/80 transition-colors"
+                  to="/"
+                  className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
                   activeClassName="underline"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Conta
+                  Início
                 </NavLink>
+                <NavLink
+                  to="/catalogo"
+                  className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                  activeClassName="underline"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Catálogo
+                </NavLink>
+                <NavLink
+                  to="/colecoes"
+                  className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                  activeClassName="underline"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Coleções
+                </NavLink>
+                <NavLink
+                  to="/planos"
+                  className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                  activeClassName="underline"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Planos
+                </NavLink>
+                <NavLink
+                  to="/pre-lancamento"
+                  className="block text-base font-black text-amber-400 hover:text-amber-300 transition-colors px-2 py-1"
+                  activeClassName="underline"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  🔥 Voucher R$ 100
+                </NavLink>
+              </div>
+
+              <div className="h-px bg-background/20" />
+
+              {/* SEÇÃO: MINHA CONTA (Usuário Autenticado) */}
+              {user && (
+                <>
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-background/50 uppercase tracking-wider px-2">
+                      Minha Conta
+                    </p>
+                    <NavLink
+                      to="/perfil"
+                      className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                      activeClassName="underline"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Perfil
+                    </NavLink>
+                    <NavLink
+                      to="/catalogo-personagens"
+                      className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                      activeClassName="underline"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Meus Personagens
+                    </NavLink>
+                    <NavLink
+                      to="/coins/purchase"
+                      className="block text-base font-medium text-amber-400 hover:text-amber-300 transition-colors px-2 py-1"
+                      activeClassName="underline"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      🪙 Comprar Coins
+                    </NavLink>
+                    <NavLink
+                      to="/orcamento/carrinho"
+                      className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                      activeClassName="underline"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Carrinho {cartCount ? `(${cartCount})` : ""}
+                    </NavLink>
+                    <NavLink
+                      to="/notificacoes"
+                      className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                      activeClassName="underline"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Notificações
+                    </NavLink>
+                  </div>
+
+                  <div className="h-px bg-background/20" />
+                </>
               )}
 
+              {/* Carrinho para não autenticados */}
+              {!user && (
+                <>
+                  <div className="space-y-3">
+                    <NavLink
+                      to="/orcamento/carrinho"
+                      className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                      activeClassName="underline"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Carrinho {cartCount ? `(${cartCount})` : ""}
+                    </NavLink>
+                  </div>
+                  <div className="h-px bg-background/20" />
+                </>
+              )}
+
+              {/* SEÇÃO: INFORMAÇÕES */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-background/50 uppercase tracking-wider px-2">
+                  Informações
+                </p>
+                <NavLink
+                  to="/sobre"
+                  className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                  activeClassName="underline"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sobre
+                </NavLink>
+                <NavLink
+                  to="/contato"
+                  className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
+                  activeClassName="underline"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Contato
+                </NavLink>
+              </div>
+
+              {/* SEÇÃO: ADMIN */}
               {isAdmin && (
-                <NavLink
-                  to="/admin"
-                  className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                  activeClassName="underline"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Admin
-                </NavLink>
+                <>
+                  <div className="h-px bg-background/20" />
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider px-2">
+                      Administração
+                    </p>
+                    <NavLink
+                      to="/admin"
+                      className="block text-base font-medium text-red-400 hover:text-red-300 transition-colors px-2 py-1"
+                      activeClassName="underline"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Painel Admin
+                    </NavLink>
+                  </div>
+                </>
               )}
 
-              {/* Notificações no Mobile */}
-              {user && (
-                <NavLink
-                  to="/notificacoes"
-                  className="text-lg font-medium text-background hover:text-background/80 transition-colors"
-                  activeClassName="underline"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Notificações
-                </NavLink>
-              )}
+              <div className="h-px bg-background/20 mt-auto" />
 
-              <div className="h-px bg-background/20 my-2" />
-
+              {/* BOTÃO DE AUTENTICAÇÃO */}
               {user ? (
                 <Button
                   variant="outline"
