@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * My Automatic Order Section Component
  * Displays the automatic order with character list

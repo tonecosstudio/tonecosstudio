@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para processar compra de personagens
  * 

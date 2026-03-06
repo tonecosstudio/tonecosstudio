@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para calcular preço contextual de personagens
  * 

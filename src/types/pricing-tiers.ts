@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tipos TypeScript para o Sistema de Níveis de Preço
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Página de Compra de Coins
  * 

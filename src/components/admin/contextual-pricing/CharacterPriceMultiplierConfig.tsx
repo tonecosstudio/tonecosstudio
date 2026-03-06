@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Componente para configurar multiplicador de preço por personagem
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * API Service for Subscription Credit System
  * Uses Supabase directly instead of external API

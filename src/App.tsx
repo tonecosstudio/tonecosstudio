@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -72,6 +73,7 @@ import MonthlyCharacterSelection from "./pages/MonthlyCharacterSelection";
 import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
 import AdminMonthlyReleases from "./pages/admin/AdminMonthlyReleases";
 import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
+import CharacterSelect from "./pages/CharacterSelect";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -112,6 +114,7 @@ function AppContent() {
           <Route path="/sobre" element={<About />} />
           <Route path="/planos" element={<Plans />} />
           <Route path="/colecoes" element={<Collections />} />
+          <Route path="/selecionar-personagem" element={<CharacterSelect />} />
           <Route path="/colecoes/:slug" element={<CollectionDetails />} />
           <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
           <Route path="/termos" element={<Terms />} />

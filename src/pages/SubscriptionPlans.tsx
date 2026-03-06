@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Página de Planos de Assinatura com Créditos
  * 

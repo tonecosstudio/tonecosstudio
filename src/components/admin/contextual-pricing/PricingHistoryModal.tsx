@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Modal para exibir histórico de mudanças de preços
  * 

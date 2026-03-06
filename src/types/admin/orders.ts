@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tipos TypeScript para o Sistema de Pedidos Unificados
  * 

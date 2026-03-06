@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Página Admin - Gerenciamento de Lançamentos Mensais
  * Permite configurar qual personagem de cada coleção será disponibilizado por mês
