@@ -87,22 +87,61 @@ export default function Terms() {
 
                 {/* Seção 5 */}
                 <section>
-                  <h2 className="text-base font-semibold mb-3">5. Assinaturas</h2>
+                  <h2 className="text-base font-semibold mb-3">5. Assinaturas e Coins</h2>
+                  
                   <p className="text-muted-foreground leading-relaxed mb-3">
-                    <strong>5.1 Planos:</strong> Oferecemos planos trimestral, semestral e anual com
-                    diferentes benefícios.
+                    <strong>5.1 Planos de Assinatura:</strong> Oferecemos planos trimestral, semestral e anual com
+                    diferentes benefícios e quantidades de coins.
                   </p>
+                  
                   <p className="text-muted-foreground leading-relaxed mb-3">
-                    <strong>5.2 Renovação:</strong> As assinaturas são renovadas automaticamente,
-                    salvo cancelamento prévio.
+                    <strong>5.2 Sistema de Coins:</strong> Coins são a moeda virtual da plataforma, utilizada
+                    exclusivamente para seleção de personagens no catálogo. É importante entender que:
                   </p>
+                  
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg p-4 mb-3">
+                    <h3 className="font-semibold text-sm mb-2 text-amber-900 dark:text-amber-100">
+                      ⚠️ Regras Importantes sobre Coins
+                    </h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-amber-900 dark:text-amber-100 ml-2">
+                      <li><strong>Sem valor monetário:</strong> Coins não possuem valor monetário e não podem ser convertidos em dinheiro</li>
+                      <li><strong>Não transferíveis:</strong> Coins não podem ser transferidos entre usuários</li>
+                      <li><strong>Uso exclusivo:</strong> Coins servem apenas para seleção de produtos na plataforma</li>
+                      <li><strong>Vinculados à assinatura:</strong> Coins são vinculados à sua assinatura ativa</li>
+                      <li><strong>Não reembolsáveis:</strong> Coins não utilizados não são reembolsáveis isoladamente</li>
+                      <li><strong>Expiração:</strong> Coins expiram imediatamente em caso de cancelamento com reembolso</li>
+                    </ul>
+                  </div>
+                  
                   <p className="text-muted-foreground leading-relaxed mb-3">
-                    <strong>5.3 Cancelamento:</strong> Você pode cancelar sua assinatura a qualquer
-                    momento através da plataforma.
+                    <strong>5.3 Renovação:</strong> As assinaturas são renovadas automaticamente,
+                    salvo cancelamento prévio. Novos coins são creditados a cada renovação.
                   </p>
+                  
+                  <p className="text-muted-foreground leading-relaxed mb-3">
+                    <strong>5.4 Cancelamento com Reembolso:</strong> Ao cancelar sua assinatura com reembolso:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4 mb-3">
+                    <li>O reembolso é calculado baseado em personagens já recebidos (não em tempo)</li>
+                    <li>Todos os coins não utilizados expiram imediatamente</li>
+                    <li>Coins não são reembolsados separadamente</li>
+                    <li>O acesso à plataforma é encerrado imediatamente</li>
+                  </ul>
+                  
+                  <p className="text-muted-foreground leading-relaxed mb-3">
+                    <strong>5.5 Não-Renovação (sem reembolso):</strong> Ao desativar a renovação automática:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4 mb-3">
+                    <li>Não há reembolso do valor pago</li>
+                    <li>Você mantém acesso até o fim do período contratado</li>
+                    <li>Seus coins permanecem válidos até a data de expiração da assinatura</li>
+                    <li>Você pode continuar usando coins normalmente até o fim</li>
+                  </ul>
+                  
                   <p className="text-muted-foreground leading-relaxed">
-                    <strong>5.4 Reembolso:</strong> Não há reembolso para assinaturas já pagas, mas
-                    você continuará recebendo as entregas até o fim do período contratado.
+                    <strong>5.6 Reembolso Proporcional:</strong> Em caso de cancelamento com reembolso, o valor
+                    é calculado segundo o Código de Defesa do Consumidor: Valor Pago - (Personagens Recebidos × Valor Avulso).
+                    Coins não entram neste cálculo.
                   </p>
                 </section>
 
