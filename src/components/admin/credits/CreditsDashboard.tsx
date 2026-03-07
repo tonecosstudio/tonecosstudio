@@ -67,7 +67,7 @@ export function CreditsDashboard() {
     queryKey: ["credits-active-cycles"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("production_cycles")
+        .from("subscription_credit_production_cycles")
         .select("*", { count: "exact", head: true })
         .eq("status", "active");
       
@@ -83,7 +83,7 @@ export function CreditsDashboard() {
       const { count, error } = await supabase
         .from("subscription_plans")
         .select("*", { count: "exact", head: true })
-        .eq("active", true);
+        .eq("is_active", true);
       
       if (error) throw error;
       return { count: count || 0 };

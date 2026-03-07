@@ -215,7 +215,7 @@ export function useAvailablePlans() {
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
-        .eq('active', true)
+        .eq('is_active', true)
         .order('price_monthly', { ascending: true });
       
       if (error) {
@@ -273,7 +273,7 @@ export function useCreateSubscription() {
         .from('subscription_plans')
         .select('*')
         .eq('type', plan_type)
-        .eq('active', true)
+        .eq('is_active', true)
         .single();
       
       if (planError || !plan) {
