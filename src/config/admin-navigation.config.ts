@@ -62,12 +62,6 @@ export const adminNavigationConfig: NavigationSection[] = [
         path: '/admin/embalagem',
         icon: 'Box',
       },
-      {
-        id: 'bonus-pieces',
-        label: 'Peças Bônus',
-        path: '/admin/pecas-bonus',
-        icon: 'Gift',
-      },
     ],
   },
   {

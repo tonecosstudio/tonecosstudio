@@ -27,7 +27,6 @@ import Collections from "./pages/Collections";
 import CollectionDetails from "./pages/CollectionDetails";
 import BuyCharacter from "./pages/BuyCharacter";
 import AuditTrail from "./pages/admin/AuditTrail";
-import BonusPieces from "./pages/admin/BonusPieces";
 import AdminCreditsHub from "./pages/admin/AdminCreditsHub";
 import CapacityManagement from "./pages/admin/CapacityManagement";
 import MySubscriptions from "./pages/MySubscriptions";
@@ -536,14 +535,6 @@ function AppContent() {
             element={
               <RequireAdmin>
                 <CapacityManagement />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/pecas-bonus"
-            element={
-              <RequireAdmin>
-                <BonusPieces />
               </RequireAdmin>
             }
           />
