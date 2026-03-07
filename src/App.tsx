@@ -61,7 +61,7 @@ import AdminCoinsSystem from "./pages/admin/AdminCoinsSystem";
 import MonthlyCharacterSelection from "./pages/MonthlyCharacterSelection";
 import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
 import AdminMonthlyReleases from "./pages/admin/AdminMonthlyReleases";
-import AdminProductionQueue from "./pages/admin/AdminProductionQueue";
+import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
 import CharacterSelect from "./pages/CharacterSelect";
 import CollectionsArcade from "./pages/CollectionsArcade";
 import CharacterDetails from "./pages/CharacterDetails";
