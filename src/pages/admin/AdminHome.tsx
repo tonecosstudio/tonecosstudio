@@ -14,7 +14,6 @@ import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { ConversionFunnel } from "@/components/admin/ConversionFunnel";
 import { SubscriptionMetrics } from "@/components/admin/SubscriptionMetrics";
-import { FranchiseAnalytics } from "@/components/admin/FranchiseAnalytics";
 import { usePricingSettings } from "@/hooks/usePricingSettings";
 import { useContentSettings } from "@/hooks/useContentSettings";
 import { fetchUnifiedOrders } from "@/services/admin/orders-service";
@@ -414,40 +413,6 @@ export default function AdminHome() {
         averageSubscriptionValue,
       };
 
-      // Dados para FranchiseAnalytics (usando quotes agrupados por cidade/região)
-      const { data: allQuotes } = await supabase
-        .from("quotes")
-        .select("id, total_amount, status, created_at")
-        .gte("created_at", fromDate)
-        .lte("created_at", toDate);
-
-      // Agrupar por região (simulação - em produção usar campo real)
-      const regions = [
-        "São Paulo",
-        "Rio de Janeiro",
-        "Belo Horizonte",
-        "Curitiba",
-        "Porto Alegre",
-        "Brasília",
-      ];
-
-      const franchiseData = regions
-        .map((region, index) => {
-          // Distribuir quotes entre regiões (simulação)
-          const regionQuotes = allQuotes?.filter((_, i) => i % regions.length === index) || [];
-          const sales = regionQuotes.length;
-          const revenue = regionQuotes.reduce((acc, q) => acc + (q.total_amount || 0), 0);
-          const growth = Math.floor(Math.random() * 40) - 10; // -10% a +30%
-
-          return {
-            name: region,
-            sales,
-            revenue,
-            growth,
-          };
-        })
-        .filter((f) => f.sales > 0); // Apenas regiões com vendas
-
       return {
         models: modelsCount || 0,
         users: {
@@ -483,7 +448,6 @@ export default function AdminHome() {
         revenueData,
         funnelData,
         subscriptionMetrics,
-        franchiseData,
       };
     },
   });
@@ -1084,11 +1048,6 @@ export default function AdminHome() {
               </div>
             )}
           </div>
-
-          {/* Analytics por Franquia */}
-          {stats?.franchiseData && stats.franchiseData.length > 0 && (
-            <FranchiseAnalytics data={stats.franchiseData} />
-          )}
         </div>
       </div>
     </AdminLayout>
