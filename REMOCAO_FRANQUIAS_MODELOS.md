@@ -278,3 +278,41 @@ AdminCollectionsHub (3 tabs)
 ---
 
 *Sistema limpo, focado e profissional* 🎉
+
+
+---
+
+## 🔧 Correção Adicional (Commit 3bb2710)
+
+### Problema Identificado
+Após a remoção dos arquivos, o `AdminHome.tsx` ainda tentava importar e usar o componente `FranchiseAnalytics` deletado, causando erro 404.
+
+### Solução Aplicada
+```typescript
+// ❌ Removido
+import { FranchiseAnalytics } from "@/components/admin/FranchiseAnalytics";
+
+// ❌ Removido código de geração de dados
+const franchiseData = regions.map(...) // ~40 linhas
+
+// ❌ Removido do return
+franchiseData,
+
+// ❌ Removido componente renderizado
+{stats?.franchiseData && stats.franchiseData.length > 0 && (
+  <FranchiseAnalytics data={stats.franchiseData} />
+)}
+```
+
+### Resultado
+✅ AdminHome.tsx sem erros  
+✅ Dashboard funcionando corretamente  
+✅ ~41 linhas removidas  
+✅ Sem referências a franquias
+
+**Commit:** `3bb2710 - fix: remover import e uso de FranchiseAnalytics do AdminHome`
+
+---
+
+**Total de Commits:** 4  
+**Status Final:** ✅ **100% LIMPO E FUNCIONAL**
