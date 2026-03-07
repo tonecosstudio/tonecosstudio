@@ -57,12 +57,10 @@ import AdminPlansConfiguration from "./pages/admin/AdminPlansConfiguration";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
 import CharacterCatalog from "./pages/CharacterCatalog";
 import CoinsPurchase from "./pages/CoinsPurchase";
-import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 import AdminCoinsSystem from "./pages/admin/AdminCoinsSystem";
 import MonthlyCharacterSelection from "./pages/MonthlyCharacterSelection";
 import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
 import AdminMonthlyReleases from "./pages/admin/AdminMonthlyReleases";
-import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
 import AdminProductionQueue from "./pages/admin/AdminProductionQueue";
 import CharacterSelect from "./pages/CharacterSelect";
 import CollectionsArcade from "./pages/CollectionsArcade";
@@ -470,15 +468,6 @@ function AppContent() {
             element={
               <RequireAdmin>
                 <AdminSubscriptionsHybrid />
-              </RequireAdmin>
-            }
-          />
-          {/* Página Legada de Gerenciamento (Deprecated) */}
-          <Route
-            path="/admin/assinaturas-gerenciar-legado"
-            element={
-              <RequireAdmin>
-                <SubscriptionsManagement />
               </RequireAdmin>
             }
           />
