@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import SEOHead from "@/components/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -293,31 +292,30 @@ export default function AdminPlansConfiguration() {
     .reduce((sum, p) => sum + (p.base_credits || 0) + (p.bonus_credits || 0), 0);
 
   return (
-    <>
+    <div className="space-y-6">
       <SEOHead
         title="Admin - Gestão de Planos & Preços"
         description="Central de configuração de planos de assinatura e preços de coleções"
         noindex={true}
       />
 
-      <AdminLayout>
-        {/* Header Moderno */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Gestão de Planos & Preços
-              </h1>
-              <p className="text-muted-foreground mt-2 text-lg">
-                Configure planos de assinatura com créditos e níveis de preço para coleções
-              </p>
-            </div>
-            <Badge variant="outline" className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 text-lg px-4 py-2 w-fit">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              SSOT
-            </Badge>
+      {/* Header Moderno */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Gestão de Planos & Preços
+            </h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Configure planos de assinatura com créditos e níveis de preço para coleções
+            </p>
           </div>
+          <Badge variant="outline" className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 text-lg px-4 py-2 w-fit">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            SSOT
+          </Badge>
         </div>
+      </div>
 
         {/* Tabs Principais */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -427,12 +425,11 @@ export default function AdminPlansConfiguration() {
             </div>
           </TabsContent>
 
-          {/* Tab 2: Preços de Coleções - REMOVIDO */}
-          {/* Movido para /admin/coins → Aba "Preços Contextuais" */}
-          {/* Esta funcionalidade pertence ao SSOT de coins, não de planos */}
-        </Tabs>
-      </AdminLayout>
-    </>
+        {/* Tab 2: Preços de Coleções - REMOVIDO */}
+        {/* Movido para /admin/coins → Aba "Preços Contextuais" */}
+        {/* Esta funcionalidade pertence ao SSOT de coins, não de planos */}
+      </Tabs>
+    </div>
   );
 }
 

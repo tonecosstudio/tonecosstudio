@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -178,16 +177,15 @@ export default function AdminCoinsSystem() {
   ];
 
   return (
-    <AdminLayout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Coins className="h-8 w-8 text-yellow-500" />
-            <h1 className="text-4xl font-bold tracking-tight">Sistema de Coins</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Gerenciamento completo do sistema de créditos internos da plataforma
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <Coins className="h-8 w-8 text-yellow-500" />
+          <h1 className="text-4xl font-bold tracking-tight">Sistema de Coins</h1>
+        </div>
+        <p className="text-muted-foreground">
+          Gerenciamento completo do sistema de créditos internos da plataforma
           </p>
         </div>
 
@@ -892,12 +890,10 @@ export default function AdminCoinsSystem() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
-              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </div>
   );
 }
