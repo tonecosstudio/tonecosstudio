@@ -28,7 +28,6 @@ import CollectionDetails from "./pages/CollectionDetails";
 import BuyCharacter from "./pages/BuyCharacter";
 import AuditTrail from "./pages/admin/AuditTrail";
 import AdminCreditsHub from "./pages/admin/AdminCreditsHub";
-import CapacityManagement from "./pages/admin/CapacityManagement";
 import MySubscriptions from "./pages/MySubscriptions";
 import MyPaymentsPage from "./pages/MyPaymentsPage";
 import PaymentDetails from "./pages/PaymentDetails";
@@ -527,14 +526,6 @@ function AppContent() {
             element={
               <RequireAdmin>
                 <AuditTrail />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/capacidade"
-            element={
-              <RequireAdmin>
-                <CapacityManagement />
               </RequireAdmin>
             }
           />

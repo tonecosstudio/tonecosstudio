@@ -82,12 +82,7 @@ export const adminNavigationConfig: NavigationSection[] = [
         icon: 'RefreshCw',
         badge: 'Completo',
       },
-      {
-        id: 'capacity',
-        label: 'Gerenciar Capacidade',
-        path: '/admin/capacidade',
-        icon: 'Package',
-      },
+
       {
         id: 'audit',
         label: 'Trilha de Auditoria',
