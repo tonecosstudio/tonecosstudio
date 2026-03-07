@@ -266,6 +266,17 @@ export function CreditCharactersContent() {
                       <Badge variant={character.status === 'released' ? 'default' : 'outline'}>
                         {character.status === 'released' ? 'Disponível' : 'Em breve'}
                       </Badge>
+                      {character.theme_category && (
+                        <Badge variant="outline" className="capitalize">
+                          {character.theme_category === 'dc' ? 'DC Comics' : 
+                           character.theme_category === 'games' ? 'Games' :
+                           character.theme_category === 'movies' ? 'Filmes' :
+                           character.theme_category === 'series' ? 'Séries' :
+                           character.theme_category === 'cartoons' ? 'Desenhos' :
+                           character.theme_category === 'other' ? 'Outros' :
+                           character.theme_category}
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Prices */}
@@ -342,6 +353,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
     description: "",
     status: "released",
     price_category_id: "",
+    theme_category: "",
     image_url: "",
     is_catalog: true,
   });
@@ -354,6 +366,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         description: character.description || "",
         status: character.status || "released",
         price_category_id: character.price_category_id || "",
+        theme_category: character.theme_category || "",
         image_url: character.image_url || "",
         is_catalog: character.is_catalog ?? true,
       });
@@ -364,6 +377,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         description: "",
         status: "released",
         price_category_id: "",
+        theme_category: "",
         image_url: "",
         is_catalog: true,
       });
@@ -433,14 +447,38 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="theme_category">Categoria Temática</Label>
+              <Select
+                value={formData.theme_category}
+                onValueChange={(value) => setFormData({ ...formData, theme_category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="anime">Anime</SelectItem>
+                  <SelectItem value="marvel">Marvel</SelectItem>
+                  <SelectItem value="dc">DC Comics</SelectItem>
+                  <SelectItem value="games">Games</SelectItem>
+                  <SelectItem value="movies">Filmes</SelectItem>
+                  <SelectItem value="series">Séries</SelectItem>
+                  <SelectItem value="cartoons">Desenhos</SelectItem>
+                  <SelectItem value="other">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
