@@ -53,7 +53,7 @@ export function ProductionListView({
   };
 
   // Sort items based on current sort column and direction
-  const sortedItems = [...items].sort((a, b) => {
+  const sortedItems = [...(items || [])].sort((a, b) => {
     let aValue: any;
     let bValue: any;
 

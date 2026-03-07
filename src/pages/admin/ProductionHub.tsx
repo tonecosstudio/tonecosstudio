@@ -439,7 +439,7 @@ function ProductionHub() {
                 </div>
                 <div className="px-6 pb-6">
                   <ProductionListView
-                    data={queueData?.data || []}
+                    items={queueData?.data || []}
                     isLoading={isLoading}
                     selectedIds={selectedIds}
                     isAllSelected={isAllSelected}
@@ -462,7 +462,7 @@ function ProductionHub() {
                 </div>
                 <div className="px-6 pb-6">
                   <ProductionCalendarView
-                    data={queueData?.data || []}
+                    items={queueData?.data || []}
                     isLoading={isLoading}
                   />
                 </div>
