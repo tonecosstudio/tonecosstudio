@@ -325,3 +325,31 @@ dbf4dfb - fix(admin): redirecionar fila-producao para hub
 ---
 
 *Sistema limpo, organizado e pronto para produção* 🎉
+
+
+---
+
+## 🔧 Correção Aplicada
+
+### Import Faltante (Commit 891e42f)
+
+**Problema Identificado:**
+- Ao remover imports de páginas legadas, acidentalmente removeu `AdminSubscriptionsHybrid`
+- Erro: `ReferenceError: AdminSubscriptionsHybrid is not defined at App.tsx:470`
+
+**Solução:**
+```typescript
+// Adicionado import faltante
+import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
+```
+
+**Resultado:**
+✅ Aplicação funcionando sem erros
+✅ Todas as rotas operacionais
+✅ Sistema 100% limpo e funcional
+
+**Commit:** `891e42f - fix: adicionar import faltante de AdminSubscriptionsHybrid`
+
+---
+
+**Status Final:** ✅ **SISTEMA TOTALMENTE OPERACIONAL**
