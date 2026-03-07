@@ -33,47 +33,49 @@ Execute o arquivo `debug-production-queue.sql` no Supabase SQL Editor para:
 
 ### Opção 2: Adicionar Política RLS para Admins
 
-Se o problema for RLS, adicione esta política:
+Se o problema for RLS, execute o script `fix-production-queue-rls.sql`:
 
 ```sql
--- Permitir que admins vejam todos os registros
-CREATE POLICY "Admins podem ver todos os registros de produção"
-ON production_queue
-FOR SELECT
-TO authenticated
+-- Execute: fix-production-queue-rls.sql
+-- Este script:
+-- 1. Cria função is_admin() usando user_roles
+-- 2. Remove políticas antigas
+-- 3. Cria políticas corretas para admins e clientes
+-- 4. Verifica se funcionou
+```
+
+Ou execute manualmente:
+
+```sql
+-- 1. Criar função is_admin
+CREATE OR REPLACE FUNCTION is_admin(user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM user_roles
+    WHERE user_roles.user_id = $1
+    AND user_roles.role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Criar política para SELECT
+CREATE POLICY "production_queue_select_policy"
+ON production_queue FOR SELECT TO authenticated
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.is_admin = true
-  )
+  is_admin(auth.uid()) OR customer_id = auth.uid()
 );
 
--- Permitir que admins atualizem todos os registros
-CREATE POLICY "Admins podem atualizar todos os registros de produção"
-ON production_queue
-FOR UPDATE
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.is_admin = true
-  )
-);
+-- 3. Criar política para UPDATE
+CREATE POLICY "production_queue_update_policy"
+ON production_queue FOR UPDATE TO authenticated
+USING (is_admin(auth.uid()))
+WITH CHECK (is_admin(auth.uid()));
 
--- Permitir que admins insiram registros
-CREATE POLICY "Admins podem inserir registros de produção"
-ON production_queue
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.is_admin = true
-  )
-);
+-- 4. Criar política para INSERT
+CREATE POLICY "production_queue_insert_policy"
+ON production_queue FOR INSERT TO authenticated
+WITH CHECK (is_admin(auth.uid()));
 ```
 
 ### Opção 3: Desabilitar RLS Temporariamente (Apenas para Debug)
