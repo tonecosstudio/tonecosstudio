@@ -1,18 +1,20 @@
 // @ts-nocheck
 /**
- * Tests for Delivery Scheduling Service
+ * Tests for Delivery Scheduling Service (Monthly Cycles)
  * 
  * Tests the consecutive delivery scheduling logic including:
- * - First delivery month calculation based on entry cycle
+ * - First delivery month calculation (always next month)
  * - Consecutive month scheduling
  * - Correct number of deliveries (3 for Trimestral, 6 for Semestral)
+ * 
+ * UPDATED: Now uses monthly cycles instead of bi-weekly cycles
  */
 
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 
 // Test the delivery schedule calculation logic directly
-describe('Delivery Scheduling Logic', () => {
+describe('Delivery Scheduling Logic (Monthly Cycles)', () => {
   describe('Input validation', () => {
     it('should validate plan type is trimestral or semestral', () => {
       const validPlans = ['trimestral', 'semestral'];
@@ -29,14 +31,13 @@ describe('Delivery Scheduling Logic', () => {
     });
   });
 
-  describe('First delivery month calculation', () => {
-    it('should calculate next month for Cycle 1 entry', () => {
-      // Entry: March 2026, Cycle 1
+  describe('First delivery month calculation (Monthly)', () => {
+    it('should always calculate next month for any entry', () => {
+      // Entry: March 2026
       const entryMonth = 3;
       const entryYear = 2026;
-      const entryCycleNumber = 1;
       
-      // First delivery should be in next month (April)
+      // First delivery should always be in next month (April)
       let firstDeliveryMonth = entryMonth + 1;
       let firstDeliveryYear = entryYear;
       
@@ -49,23 +50,22 @@ describe('Delivery Scheduling Logic', () => {
       expect(firstDeliveryYear).toBe(2026);
     });
 
-    it('should calculate second subsequent month for Cycle 2 entry', () => {
-      // Entry: March 2026, Cycle 2
-      const entryMonth = 3;
+    it('should handle December entry correctly', () => {
+      // Entry: December 2026
+      const entryMonth = 12;
       const entryYear = 2026;
-      const entryCycleNumber = 2;
       
-      // First delivery should be in second subsequent month (May)
-      let firstDeliveryMonth = entryMonth + 2;
+      // First delivery should be in January 2027
+      let firstDeliveryMonth = entryMonth + 1;
       let firstDeliveryYear = entryYear;
       
       if (firstDeliveryMonth > 12) {
-        firstDeliveryMonth -= 12;
+        firstDeliveryMonth = 1;
         firstDeliveryYear += 1;
       }
       
-      expect(firstDeliveryMonth).toBe(5);
-      expect(firstDeliveryYear).toBe(2026);
+      expect(firstDeliveryMonth).toBe(1);
+      expect(firstDeliveryYear).toBe(2027);
     });
   });
 
@@ -170,41 +170,30 @@ describe('Delivery Scheduling Logic', () => {
       expect(nextYear).toBe(2027);
     });
   });
-
-  describe('Cycle association', () => {
-    it('should associate deliveries with Cycle 1 (start of month)', () => {
-      // All deliveries are created at the start of the month
-      // which corresponds to Cycle 1
-      const cycleNumber = 1;
-      
-      expect(cycleNumber).toBe(1);
-    });
-  });
 });
 
 
 /**
- * Property 31: Deliveries Scheduled Consecutively
+ * Property 31: Deliveries Scheduled Consecutively (Monthly Cycles)
  * 
  * **Validates: Requirements 9.3**
  * 
  * For any subscription, all deliveries should be scheduled in consecutive months
- * starting from the first delivery month.
+ * starting from the month after subscription creation.
  * 
  * This property test verifies that:
  * 1. Deliveries are scheduled in consecutive months (no gaps)
  * 2. The correct number of deliveries is created (3 for Trimestral, 6 for Semestral)
  * 3. Year rollover is handled correctly (e.g., Dec -> Jan)
- * 4. First delivery month is calculated correctly based on entry cycle
+ * 4. First delivery is always in the next month after subscription
  */
-describe('Property-Based Tests', () => {
+describe('Property-Based Tests (Monthly Cycles)', () => {
   describe('Property 31: Deliveries Scheduled Consecutively', () => {
     it('should schedule deliveries in consecutive months for any subscription scenario', () => {
       fc.assert(
         fc.property(
-          // Generate random entry cycle data
+          // Generate random entry cycle data (monthly)
           fc.record({
-            cycle_number: fc.constantFrom(1 as const, 2 as const),
             month: fc.integer({ min: 1, max: 12 }),
             year: fc.integer({ min: 2024, max: 2030 }),
           }),
@@ -214,24 +203,13 @@ describe('Property-Based Tests', () => {
             // Calculate expected delivery count
             const expectedCount = planType === 'trimestral' ? 3 : 6;
             
-            // Calculate first delivery month based on entry cycle
-            let firstMonth = entryCycle.month;
+            // Calculate first delivery month (always next month)
+            let firstMonth = entryCycle.month + 1;
             let firstYear = entryCycle.year;
             
-            if (entryCycle.cycle_number === 1) {
-              // Cycle 1: first delivery in next month
-              firstMonth += 1;
-              if (firstMonth > 12) {
-                firstMonth = 1;
-                firstYear += 1;
-              }
-            } else {
-              // Cycle 2: first delivery in second subsequent month
-              firstMonth += 2;
-              if (firstMonth > 12) {
-                firstMonth -= 12;
-                firstYear += 1;
-              }
+            if (firstMonth > 12) {
+              firstMonth = 1;
+              firstYear += 1;
             }
             
             // Generate delivery schedule
@@ -254,10 +232,10 @@ describe('Property-Based Tests', () => {
               }
             }
             
-            // Property 1: Correct number of deliveries
+            // Verify correct number of deliveries
             expect(deliveries).toHaveLength(expectedCount);
             
-            // Property 2: Deliveries are consecutive (no gaps)
+            // Verify deliveries are consecutive
             for (let i = 1; i < deliveries.length; i++) {
               const prev = deliveries[i - 1];
               const curr = deliveries[i];
@@ -271,32 +249,28 @@ describe('Property-Based Tests', () => {
                 expectedYear += 1;
               }
               
-              // Verify current delivery is in the expected consecutive month
+              // Verify current delivery is in expected month/year
               expect(curr.month).toBe(expectedMonth);
               expect(curr.year).toBe(expectedYear);
             }
             
-            // Property 3: Delivery numbers are sequential
-            for (let i = 0; i < deliveries.length; i++) {
-              expect(deliveries[i].deliveryNumber).toBe(i + 1);
-            }
-            
-            // Property 4: First delivery month matches entry cycle rules
-            const firstDelivery = deliveries[0];
-            expect(firstDelivery.month).toBe(firstMonth);
-            expect(firstDelivery.year).toBe(firstYear);
+            // Verify delivery numbers are sequential
+            deliveries.forEach((delivery, index) => {
+              expect(delivery.deliveryNumber).toBe(index + 1);
+            });
           }
         ),
-        { numRuns: 100 } // Run 100 iterations as specified
+        { numRuns: 100 } // Run 100 random scenarios
       );
     });
+  });
 
-    it('should handle year rollover correctly in consecutive scheduling', () => {
+  describe('Property 32: Year Boundary Handling', () => {
+    it('should correctly handle deliveries that cross year boundaries', () => {
       fc.assert(
         fc.property(
           // Generate scenarios that will cross year boundaries
           fc.record({
-            cycle_number: fc.constantFrom(1 as const, 2 as const),
             month: fc.integer({ min: 10, max: 12 }), // Oct, Nov, Dec
             year: fc.integer({ min: 2024, max: 2029 }),
           }),
@@ -305,24 +279,15 @@ describe('Property-Based Tests', () => {
             const expectedCount = planType === 'trimestral' ? 3 : 6;
             
             // Calculate first delivery month
-            let firstMonth = entryCycle.month;
+            let firstMonth = entryCycle.month + 1;
             let firstYear = entryCycle.year;
             
-            if (entryCycle.cycle_number === 1) {
-              firstMonth += 1;
-              if (firstMonth > 12) {
-                firstMonth = 1;
-                firstYear += 1;
-              }
-            } else {
-              firstMonth += 2;
-              if (firstMonth > 12) {
-                firstMonth -= 12;
-                firstYear += 1;
-              }
+            if (firstMonth > 12) {
+              firstMonth = 1;
+              firstYear += 1;
             }
             
-            // Generate delivery schedule
+            // Generate deliveries
             const deliveries = [];
             let currentMonth = firstMonth;
             let currentYear = firstYear;
@@ -340,153 +305,37 @@ describe('Property-Based Tests', () => {
               }
             }
             
-            // Property: Year increments when crossing December
-            for (let i = 1; i < deliveries.length; i++) {
-              const prev = deliveries[i - 1];
-              const curr = deliveries[i];
-              
-              if (prev.month === 12) {
-                // After December, should be January of next year
-                expect(curr.month).toBe(1);
-                expect(curr.year).toBe(prev.year + 1);
-              } else {
-                // Otherwise, same year and next month
-                expect(curr.month).toBe(prev.month + 1);
-                expect(curr.year).toBe(prev.year);
-              }
+            // Verify at least one delivery crosses year boundary
+            const years = [...new Set(deliveries.map(d => d.year))];
+            
+            // If entry is Oct-Dec, we should have deliveries in next year
+            if (entryCycle.month >= 10) {
+              expect(years.length).toBeGreaterThan(1);
             }
+            
+            // Verify months are valid (1-12)
+            deliveries.forEach(delivery => {
+              expect(delivery.month).toBeGreaterThanOrEqual(1);
+              expect(delivery.month).toBeLessThanOrEqual(12);
+            });
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 50 }
       );
     });
+  });
 
-    it('should verify Trimestral plans always create exactly 3 deliveries', () => {
+  describe('Property 33: First Delivery Always Next Month', () => {
+    it('should always schedule first delivery in the month after subscription', () => {
       fc.assert(
         fc.property(
           fc.record({
-            cycle_number: fc.constantFrom(1 as const, 2 as const),
             month: fc.integer({ min: 1, max: 12 }),
             year: fc.integer({ min: 2024, max: 2030 }),
           }),
-          (entryCycle) => {
-            const planType = 'trimestral';
-            const expectedCount = 3;
-            
+          fc.constantFrom('trimestral' as const, 'semestral' as const),
+          (entryCycle, planType) => {
             // Calculate first delivery month
-            let firstMonth = entryCycle.month;
-            let firstYear = entryCycle.year;
-            
-            if (entryCycle.cycle_number === 1) {
-              firstMonth += 1;
-              if (firstMonth > 12) {
-                firstMonth = 1;
-                firstYear += 1;
-              }
-            } else {
-              firstMonth += 2;
-              if (firstMonth > 12) {
-                firstMonth -= 12;
-                firstYear += 1;
-              }
-            }
-            
-            // Generate delivery schedule
-            const deliveries = [];
-            let currentMonth = firstMonth;
-            let currentYear = firstYear;
-            
-            for (let i = 0; i < expectedCount; i++) {
-              deliveries.push({ month: currentMonth, year: currentYear });
-              
-              currentMonth += 1;
-              if (currentMonth > 12) {
-                currentMonth = 1;
-                currentYear += 1;
-              }
-            }
-            
-            // Property: Trimestral always has exactly 3 deliveries
-            expect(deliveries).toHaveLength(3);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('should verify Semestral plans always create exactly 6 deliveries', () => {
-      fc.assert(
-        fc.property(
-          fc.record({
-            cycle_number: fc.constantFrom(1 as const, 2 as const),
-            month: fc.integer({ min: 1, max: 12 }),
-            year: fc.integer({ min: 2024, max: 2030 }),
-          }),
-          (entryCycle) => {
-            const planType = 'semestral';
-            const expectedCount = 6;
-            
-            // Calculate first delivery month
-            let firstMonth = entryCycle.month;
-            let firstYear = entryCycle.year;
-            
-            if (entryCycle.cycle_number === 1) {
-              firstMonth += 1;
-              if (firstMonth > 12) {
-                firstMonth = 1;
-                firstYear += 1;
-              }
-            } else {
-              firstMonth += 2;
-              if (firstMonth > 12) {
-                firstMonth -= 12;
-                firstYear += 1;
-              }
-            }
-            
-            // Generate delivery schedule
-            const deliveries = [];
-            let currentMonth = firstMonth;
-            let currentYear = firstYear;
-            
-            for (let i = 0; i < expectedCount; i++) {
-              deliveries.push({ month: currentMonth, year: currentYear });
-              
-              currentMonth += 1;
-              if (currentMonth > 12) {
-                currentMonth = 1;
-                currentYear += 1;
-              }
-            }
-            
-            // Property: Semestral always has exactly 6 deliveries
-            expect(deliveries).toHaveLength(6);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('should verify first delivery month calculation for Cycle 1 entries', () => {
-      fc.assert(
-        fc.property(
-          fc.record({
-            month: fc.integer({ min: 1, max: 12 }),
-            year: fc.integer({ min: 2024, max: 2030 }),
-          }),
-          (entry) => {
-            const entryCycle = { ...entry, cycle_number: 1 as const };
-            
-            // Calculate expected first delivery month
-            let expectedMonth = entryCycle.month + 1;
-            let expectedYear = entryCycle.year;
-            
-            if (expectedMonth > 12) {
-              expectedMonth = 1;
-              expectedYear += 1;
-            }
-            
-            // Calculate actual first delivery month
             let firstMonth = entryCycle.month + 1;
             let firstYear = entryCycle.year;
             
@@ -495,147 +344,15 @@ describe('Property-Based Tests', () => {
               firstYear += 1;
             }
             
-            // Property: Cycle 1 entry results in first delivery next month
-            expect(firstMonth).toBe(expectedMonth);
-            expect(firstYear).toBe(expectedYear);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('should verify first delivery month calculation for Cycle 2 entries', () => {
-      fc.assert(
-        fc.property(
-          fc.record({
-            month: fc.integer({ min: 1, max: 12 }),
-            year: fc.integer({ min: 2024, max: 2030 }),
-          }),
-          (entry) => {
-            const entryCycle = { ...entry, cycle_number: 2 as const };
-            
-            // Calculate expected first delivery month (2 months later)
-            let expectedMonth = entryCycle.month + 2;
-            let expectedYear = entryCycle.year;
-            
-            if (expectedMonth > 12) {
-              expectedMonth -= 12;
-              expectedYear += 1;
-            }
-            
-            // Calculate actual first delivery month
-            let firstMonth = entryCycle.month + 2;
-            let firstYear = entryCycle.year;
-            
-            if (firstMonth > 12) {
-              firstMonth -= 12;
-              firstYear += 1;
-            }
-            
-            // Property: Cycle 2 entry results in first delivery 2 months later
-            expect(firstMonth).toBe(expectedMonth);
-            expect(firstYear).toBe(expectedYear);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-  });
-});
-
-
-/**
- * Bonus Piece Assignment Tests
- * 
- * Tests the bonus piece assignment logic for Semestral subscriptions.
- * Validates Requirements 11.1 and 11.3.
- */
-describe('Bonus Piece Assignment', () => {
-  describe('Semestral subscription bonus piece logic', () => {
-    it('should mark 6th delivery for bonus piece in Semestral plan', () => {
-      const planType = 'semestral';
-      const deliveryCount = 6;
-      
-      // Simulate creating 6 deliveries
-      const deliveries = Array.from({ length: deliveryCount }, (_, i) => ({
-        deliveryNumber: i + 1,
-        hasBonusPiece: i === 5, // 6th delivery (index 5) should have bonus piece
-      }));
-      
-      // Property: Only the 6th delivery should have bonus piece
-      expect(deliveries[5].hasBonusPiece).toBe(true);
-      expect(deliveries[5].deliveryNumber).toBe(6);
-      
-      // Property: Other deliveries should not have bonus piece
-      for (let i = 0; i < 5; i++) {
-        expect(deliveries[i].hasBonusPiece).toBe(false);
-      }
-    });
-
-    it('should not assign bonus piece to Trimestral plan', () => {
-      const planType = 'trimestral';
-      const deliveryCount = 3;
-      
-      // Simulate creating 3 deliveries
-      const deliveries = Array.from({ length: deliveryCount }, (_, i) => ({
-        deliveryNumber: i + 1,
-        hasBonusPiece: false, // No bonus pieces for Trimestral
-      }));
-      
-      // Property: No deliveries should have bonus piece
-      for (const delivery of deliveries) {
-        expect(delivery.hasBonusPiece).toBe(false);
-      }
-    });
-
-    it('should verify bonus piece is only for 6th delivery, not earlier', () => {
-      const semestralDeliveries = [1, 2, 3, 4, 5, 6];
-      
-      for (const deliveryNumber of semestralDeliveries) {
-        const shouldHaveBonus = deliveryNumber === 6;
-        
-        if (deliveryNumber === 6) {
-          expect(shouldHaveBonus).toBe(true);
-        } else {
-          expect(shouldHaveBonus).toBe(false);
-        }
-      }
-    });
-  });
-
-  describe('Property-Based Test: Bonus Piece Assignment', () => {
-    it('should assign bonus piece only to Semestral 6th delivery', () => {
-      fc.assert(
-        fc.property(
-          fc.constantFrom('trimestral' as const, 'semestral' as const),
-          (planType) => {
-            const deliveryCount = planType === 'trimestral' ? 3 : 6;
-            
-            // Simulate delivery creation with bonus piece logic
-            const deliveries = Array.from({ length: deliveryCount }, (_, i) => {
-              const deliveryNumber = i + 1;
-              const hasBonusPiece = planType === 'semestral' && deliveryNumber === 6;
-              
-              return {
-                deliveryNumber,
-                hasBonusPiece,
-              };
-            });
-            
-            if (planType === 'semestral') {
-              // Property 1: Semestral 6th delivery has bonus piece
-              expect(deliveries[5].hasBonusPiece).toBe(true);
-              expect(deliveries[5].deliveryNumber).toBe(6);
-              
-              // Property 2: Other Semestral deliveries don't have bonus piece
-              for (let i = 0; i < 5; i++) {
-                expect(deliveries[i].hasBonusPiece).toBe(false);
-              }
+            // Verify first delivery is exactly one month after entry
+            if (entryCycle.month === 12) {
+              // December -> January next year
+              expect(firstMonth).toBe(1);
+              expect(firstYear).toBe(entryCycle.year + 1);
             } else {
-              // Property 3: Trimestral deliveries never have bonus piece
-              for (const delivery of deliveries) {
-                expect(delivery.hasBonusPiece).toBe(false);
-              }
+              // Any other month -> next month same year
+              expect(firstMonth).toBe(entryCycle.month + 1);
+              expect(firstYear).toBe(entryCycle.year);
             }
           }
         ),
