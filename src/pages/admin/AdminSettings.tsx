@@ -1,13 +1,14 @@
 // @ts-nocheck
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, FileText, DollarSign, Gauge, Scale, ExternalLink, Clock } from "lucide-react";
+import { Settings, FileText, DollarSign, Gauge, Scale, ExternalLink, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminSystemSettings from "./AdminSystemSettings";
 import AdminProductionLimit from "./AdminProductionLimit";
 import AdminDeadlinesSettings from "./AdminDeadlinesSettings";
 import LegalCompliance from "./LegalCompliance";
+import AdminHolidayManager from "./AdminHolidayManager";
 
 /**
  * AdminSettings - Página Unificada de Configurações
@@ -19,6 +20,12 @@ import LegalCompliance from "./LegalCompliance";
  */
 export default function AdminSettings() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "general";
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
 
   return (
     <AdminLayout>
@@ -32,8 +39,8 @@ export default function AdminSettings() {
         </div>
 
         {/* Tabs Unificadas */}
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general">
               <Settings className="h-4 w-4 mr-2" />
               Geral
@@ -41,6 +48,10 @@ export default function AdminSettings() {
             <TabsTrigger value="operational">
               <Gauge className="h-4 w-4 mr-2" />
               Operacional
+            </TabsTrigger>
+            <TabsTrigger value="holidays">
+              <Calendar className="h-4 w-4 mr-2" />
+              Feriados
             </TabsTrigger>
             <TabsTrigger value="legal">
               <Scale className="h-4 w-4 mr-2" />
@@ -85,6 +96,13 @@ export default function AdminSettings() {
                 </div>
                 <AdminProductionLimit />
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Feriados - AdminHolidayManager sem AdminLayout */}
+          <TabsContent value="holidays" className="space-y-4">
+            <div className="rounded-lg border p-6">
+              <AdminHolidayManager />
             </div>
           </TabsContent>
 

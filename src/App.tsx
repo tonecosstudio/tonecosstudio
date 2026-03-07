@@ -27,8 +27,8 @@ import Collections from "./pages/Collections";
 import CollectionDetails from "./pages/CollectionDetails";
 import BuyCharacter from "./pages/BuyCharacter";
 import AuditTrail from "./pages/admin/AuditTrail";
-import CollectionManagement from "./pages/admin/CollectionManagement";
 import BonusPieces from "./pages/admin/BonusPieces";
+import AdminCreditsHub from "./pages/admin/AdminCreditsHub";
 import CapacityManagement from "./pages/admin/CapacityManagement";
 import MySubscriptions from "./pages/MySubscriptions";
 import MyPaymentsPage from "./pages/MyPaymentsPage";
@@ -490,15 +490,42 @@ function AppContent() {
             }
           />
 
-          {/* Sistema de Coins */}
+          {/* Sistema de Créditos - Hub Consolidado */}
           <Route
-            path="/admin/coins"
+            path="/admin/creditos"
             element={
               <RequireAdmin>
-                <AdminCoinsSystem />
+                <AdminCreditsHub />
               </RequireAdmin>
             }
           />
+
+          {/* Redirects de páginas antigas do sistema de créditos para o novo hub */}
+          <Route
+            path="/admin/coins"
+            element={<Navigate to="/admin/creditos?tab=coins" replace />}
+          />
+          <Route
+            path="/admin/ciclos"
+            element={<Navigate to="/admin/creditos?tab=cycles" replace />}
+          />
+          <Route
+            path="/admin/planos-configuracao"
+            element={<Navigate to="/admin/creditos?tab=plans" replace />}
+          />
+          <Route
+            path="/admin/creditos/dashboard"
+            element={<Navigate to="/admin/creditos" replace />}
+          />
+          <Route
+            path="/admin/creditos/analytics"
+            element={<Navigate to="/admin/creditos?tab=analytics" replace />}
+          />
+          <Route
+            path="/admin/creditos/personagens"
+            element={<Navigate to="/admin/catalogo?tab=credit-characters" replace />}
+          />
+
           {/* Sistema Híbrido - Lançamentos Mensais */}
           <Route
             path="/admin/lancamentos-mensais"
@@ -507,16 +534,6 @@ function AppContent() {
                 <AdminMonthlyReleases />
               </RequireAdmin>
             }
-          />
-
-          {/* Redirects de páginas antigas do sistema de créditos */}
-          <Route
-            path="/admin/creditos/personagens"
-            element={<Navigate to="/admin/catalogo?tab=credit-characters" replace />}
-          />
-          <Route
-            path="/admin/creditos/dashboard"
-            element={<Navigate to="/admin/assinaturas-gerenciar" replace />}
           />
           <Route
             path="/admin/creditos/assinaturas"
@@ -586,11 +603,7 @@ function AppContent() {
           />
           <Route
             path="/admin/feriados"
-            element={
-              <RequireAdmin>
-                <AdminHolidayManager />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/configuracoes?tab=holidays" replace />}
           />
           <Route
             path="/admin/chaves-pagamento"

@@ -104,39 +104,15 @@ export const adminNavigationConfig: NavigationSection[] = [
     ],
   },
   {
-    id: 'subscription-credits',
+    id: 'credits',
     title: 'Sistema de Créditos',
     items: [
       {
-        id: 'coins-system',
-        label: 'Sistema de Coins',
-        path: '/admin/coins',
+        id: 'credits-hub',
+        label: 'Créditos',
+        path: '/admin/creditos',
         icon: 'Coins',
-        badge: 'Novo',
-      },
-      {
-        id: 'cycles',
-        label: 'Ciclos de Produção',
-        path: '/admin/ciclos',
-        icon: 'RefreshCw',
-      },
-      {
-        id: 'credit-dashboard',
-        label: 'Dashboard de Créditos',
-        path: '/admin/creditos/dashboard',
-        icon: 'Gauge',
-      },
-      {
-        id: 'credit-plans',
-        label: 'Planos de Créditos',
-        path: '/admin/planos-configuracao',
-        icon: 'Wallet',
-      },
-      {
-        id: 'credit-analytics',
-        label: 'Análise de Créditos',
-        path: '/admin/creditos/analytics',
-        icon: 'BarChart3',
+        badge: 'Hub',
       },
     ],
   },
@@ -198,15 +174,10 @@ export const adminNavigationConfig: NavigationSection[] = [
     items: [
       {
         id: 'system',
-        label: 'Configurações do Sistema',
+        label: 'Configurações',
         path: '/admin/configuracoes',
         icon: 'Settings',
-      },
-      {
-        id: 'holidays',
-        label: 'Feriados',
-        path: '/admin/feriados',
-        icon: 'Calendar',
+        badge: 'Hub',
       },
     ],
   },
