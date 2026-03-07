@@ -353,3 +353,50 @@ import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
 ---
 
 **Status Final:** ✅ **SISTEMA TOTALMENTE OPERACIONAL**
+
+
+---
+
+## 🗑️ Remoção de Franquias & Modelos (Commits 90b08ee, 80157a7, 6eb35bf)
+
+### Objetivo
+Remover interface administrativa de Franquias & Modelos, mantendo apenas funcionalidades essenciais focadas em produtos vendáveis.
+
+### Arquivos Deletados (5)
+1. ❌ `src/pages/admin/AdminModels.tsx` (358 linhas)
+2. ❌ `src/pages/admin/AdminFranchises.tsx` (489 linhas)
+3. ❌ `src/pages/admin/AdminModelsAndFranchises.tsx` (45 linhas)
+4. ❌ `src/components/admin/FranchiseAnalytics.tsx` (415 linhas)
+5. ❌ `src/tests/admin/AdminModels.test.tsx` (142 linhas)
+
+**Total:** ~1.449 linhas removidas
+
+### Mudanças no AdminCollectionsHub
+- **Antes:** 4 tabs (Franquias & Modelos, Coleções, Personagens, Preços)
+- **Depois:** 3 tabs (Coleções, Personagens, Preços)
+- **Redução:** -25% nas tabs
+
+### Rotas Removidas
+```typescript
+❌ /admin/modelos           → /admin/catalogo?tab=models
+❌ /admin/franquias         → /admin/catalogo?tab=models
+❌ /admin/modelos-franquias → /admin/catalogo?tab=models
+```
+
+### Dados Preservados
+✅ Tabelas do banco (`franchises`, `franchise_rules`, `models`)  
+✅ Funcionalidade no catálogo público  
+✅ Filtros de busca por franquia  
+✅ Dados históricos
+
+### Resultado
+✅ Interface simplificada e focada  
+✅ ~1.500 linhas de código removidas  
+✅ Sistema mais profissional  
+✅ Sem gambiarras
+
+**Documentação Completa:** `REMOCAO_FRANQUIAS_MODELOS.md`
+
+---
+
+**Status Atualizado:** ✅ **SISTEMA 100% LIMPO E PROFISSIONAL**
