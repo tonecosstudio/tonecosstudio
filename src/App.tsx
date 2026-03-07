@@ -435,14 +435,10 @@ function AppContent() {
             }
           />
 
-          {/* Fila de Produção */}
+          {/* Fila de Produção - Redirect para Hub */}
           <Route
             path="/admin/fila-producao"
-            element={
-              <RequireAdmin>
-                <AdminProductionQueue />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/producao?tab=production&view=list" replace />}
           />
 
           {/* Redirects de páginas antigas de produção */}

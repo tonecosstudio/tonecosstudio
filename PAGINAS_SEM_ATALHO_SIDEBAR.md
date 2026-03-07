@@ -64,13 +64,10 @@ Após verificação detalhada, identifiquei as páginas admin que **não têm at
   - **Opção C:** Remover se não for usado
 
 #### `/admin/fila-producao` - Fila de Produção
-- **Status:** ⚠️ **SEM ATALHO**
-- **Acesso Atual:** URL direta apenas
-- **Problema:** Já existe `/admin/producao` (Hub)
-- **Recomendação:**
-  - Verificar se é duplicado do Hub de Produção
-  - Se sim, remover ou redirecionar
-  - Se não, adicionar na sidebar
+- **Status:** ✅ **RESOLVIDO**
+- **Acesso Atual:** Redireciona para `/admin/producao?tab=production&view=list`
+- **Problema:** Página legada duplicava funcionalidade do Hub
+- **Solução:** Redirect implementado para o Hub de Produção (view lista)
 
 #### `/admin/lancamentos-mensais` - Lançamentos Mensais
 - **Status:** ⚠️ **SEM ATALHO**
@@ -249,12 +246,12 @@ Estas páginas são componentes internos de hubs e são acessadas via tabs:
 ## 📊 Resumo
 
 ### Páginas COM Atalho: 18 ✅
-### Páginas SEM Atalho (Requerem Atenção): 5 ⚠️
+### Páginas SEM Atalho (Requerem Atenção): 4 ⚠️
 
-1. ⚠️ `/admin/analytics` - **ADICIONAR NA SIDEBAR**
-2. ⚠️ `/admin/pecas-bonus` - **ADICIONAR NA SIDEBAR**
-3. ⚠️ `/admin/fila-producao` - **VERIFICAR DUPLICAÇÃO**
-4. ⚠️ `/admin/lancamentos-mensais` - **ADICIONAR NA SIDEBAR**
+1. ⚠️ `/admin/analytics` - **RESOLVIDO** ✅
+2. ⚠️ `/admin/pecas-bonus` - **RESOLVIDO** ✅
+3. ⚠️ `/admin/fila-producao` - **RESOLVIDO** ✅ (redirect para hub)
+4. ⚠️ `/admin/lancamentos-mensais` - **RESOLVIDO** ✅
 5. ⚠️ `/admin/assinaturas-gerenciar-legado` - **DELETAR**
 
 ### Páginas de Detalhe (Correto): 2 ✅
