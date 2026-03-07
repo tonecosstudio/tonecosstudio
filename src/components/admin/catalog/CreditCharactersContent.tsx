@@ -267,14 +267,13 @@ export function CreditCharactersContent() {
                         {character.status === 'released' ? 'Disponível' : 'Em breve'}
                       </Badge>
                       {character.theme_category && (
-                        <Badge variant="outline" className="capitalize">
-                          {character.theme_category === 'dc' ? 'DC Comics' : 
-                           character.theme_category === 'games' ? 'Games' :
-                           character.theme_category === 'movies' ? 'Filmes' :
-                           character.theme_category === 'series' ? 'Séries' :
-                           character.theme_category === 'cartoons' ? 'Desenhos' :
-                           character.theme_category === 'other' ? 'Outros' :
-                           character.theme_category}
+                        <Badge variant="outline">
+                          {character.theme_category}
+                        </Badge>
+                      )}
+                      {character.product_line && (
+                        <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-500/20">
+                          {character.product_line}
                         </Badge>
                       )}
                     </div>
@@ -354,6 +353,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
     status: "released",
     price_category_id: "",
     theme_category: "",
+    product_line: "",
     image_url: "",
     is_catalog: true,
   });
@@ -367,6 +367,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         status: character.status || "released",
         price_category_id: character.price_category_id || "",
         theme_category: character.theme_category || "",
+        product_line: character.product_line || "",
         image_url: character.image_url || "",
         is_catalog: character.is_catalog ?? true,
       });
@@ -378,6 +379,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         status: "released",
         price_category_id: "",
         theme_category: "",
+        product_line: "",
         image_url: "",
         is_catalog: true,
       });
@@ -394,6 +396,38 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         .order('display_order');
       if (error) throw error;
       return data || [];
+    },
+  });
+
+  // Fetch existing theme categories for suggestions
+  const { data: existingThemes } = useQuery({
+    queryKey: ["admin-theme-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('collection_characters')
+        .select('theme_category')
+        .not('theme_category', 'is', null)
+        .order('theme_category');
+      if (error) throw error;
+      // Get unique values
+      const unique = [...new Set(data?.map(d => d.theme_category).filter(Boolean))];
+      return unique;
+    },
+  });
+
+  // Fetch existing product lines for suggestions
+  const { data: existingProductLines } = useQuery({
+    queryKey: ["admin-product-lines"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('collection_characters')
+        .select('product_line')
+        .not('product_line', 'is', null)
+        .order('product_line');
+      if (error) throw error;
+      // Get unique values
+      const unique = [...new Set(data?.map(d => d.product_line).filter(Boolean))];
+      return unique;
     },
   });
 
@@ -447,37 +481,66 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome do Personagem *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Ex: Homem de Ferro, Batman, Naruto..."
+              required
+            />
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome *</Label>
+              <Label htmlFor="theme_category">Categoria Temática</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
+                id="theme_category"
+                list="theme-categories"
+                value={formData.theme_category}
+                onChange={(e) => setFormData({ ...formData, theme_category: e.target.value })}
+                placeholder="Ex: Marvel, DC, Anime, Games..."
               />
+              <datalist id="theme-categories">
+                <option value="Marvel" />
+                <option value="DC Comics" />
+                <option value="Anime" />
+                <option value="Games" />
+                <option value="Filmes" />
+                <option value="Séries" />
+                <option value="Desenhos" />
+                {existingThemes?.map((theme) => (
+                  <option key={theme} value={theme} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                Digite ou selecione uma categoria existente
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="theme_category">Categoria Temática</Label>
-              <Select
-                value={formData.theme_category}
-                onValueChange={(value) => setFormData({ ...formData, theme_category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="anime">Anime</SelectItem>
-                  <SelectItem value="marvel">Marvel</SelectItem>
-                  <SelectItem value="dc">DC Comics</SelectItem>
-                  <SelectItem value="games">Games</SelectItem>
-                  <SelectItem value="movies">Filmes</SelectItem>
-                  <SelectItem value="series">Séries</SelectItem>
-                  <SelectItem value="cartoons">Desenhos</SelectItem>
-                  <SelectItem value="other">Outros</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="product_line">Linha de Produto</Label>
+              <Input
+                id="product_line"
+                list="product-lines"
+                value={formData.product_line}
+                onChange={(e) => setFormData({ ...formData, product_line: e.target.value })}
+                placeholder="Ex: Vingadores, Liga da Justiça, Akatsuki..."
+              />
+              <datalist id="product-lines">
+                <option value="Vingadores" />
+                <option value="Liga da Justiça" />
+                <option value="X-Men" />
+                <option value="Akatsuki" />
+                <option value="Chapéu de Palha" />
+                {existingProductLines?.map((line) => (
+                  <option key={line} value={line} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                Digite ou selecione uma linha existente
+              </p>
             </div>
           </div>
 
@@ -488,6 +551,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
+              placeholder="Descreva o personagem..."
             />
           </div>
 
