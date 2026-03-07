@@ -51,7 +51,6 @@ import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
 import ProductionHub from "./pages/admin/ProductionHub";
 import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
-import AdminPlansConfiguration from "./pages/admin/AdminPlansConfiguration";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
 import CharacterCatalog from "./pages/CharacterCatalog";
 import CoinsPurchase from "./pages/CoinsPurchase";
@@ -432,21 +431,14 @@ function AppContent() {
           />
 
           {/* Planos e Créditos - Admin */}
+          {/* Redirects: Planos agora está no hub de Créditos */}
           <Route
             path="/admin/creditos/planos"
-            element={
-              <RequireAdmin>
-                <AdminPlansConfiguration />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/creditos?tab=plans" replace />}
           />
           <Route
             path="/admin/planos"
-            element={
-              <RequireAdmin>
-                <AdminPlansConfiguration />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/creditos?tab=plans" replace />}
           />
           {/* Nova Página de Gerenciamento de Assinaturas (Sistema Híbrido) */}
           <Route

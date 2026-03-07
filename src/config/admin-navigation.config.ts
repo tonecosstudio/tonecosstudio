@@ -92,19 +92,6 @@ export const adminNavigationConfig: NavigationSection[] = [
     ],
   },
   {
-    id: 'pricing-plans',
-    title: 'Preços & Planos',
-    items: [
-      {
-        id: 'plans-pricing',
-        label: 'Planos & Preços',
-        path: '/admin/planos',
-        icon: 'DollarSign',
-        badge: 'SSOT',
-      },
-    ],
-  },
-  {
     id: 'credits',
     title: 'Sistema de Créditos',
     items: [
