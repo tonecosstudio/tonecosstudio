@@ -34,7 +34,6 @@ import { subscriptionCreditAdminAPI } from "@/services/subscription-credit-admin
 import { subscriptionCreditAPI } from "@/services/subscription-credit-api";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit, Trash2, Star, Package, Coins, Layers } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function CreditCharactersContent() {
   const { toast } = useToast();
@@ -43,6 +42,8 @@ export function CreditCharactersContent() {
   const [editingCharacter, setEditingCharacter] = useState<any>(null);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // Fetch catalog characters from collection_characters table
   const charactersQuery = useQuery({
@@ -85,6 +86,11 @@ export function CreditCharactersContent() {
   const characters = charactersQuery.data || [];
   const categories = categoriesQuery.data || [];
 
+  // Filter characters by selected category
+  const filteredCharacters = selectedCategory
+    ? characters.filter((c: any) => c.price_category_id === selectedCategory)
+    : characters;
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -105,135 +111,29 @@ export function CreditCharactersContent() {
   });
 
   return (
-    <Tabs defaultValue="characters" className="space-y-6">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="characters">
-          <Package className="h-4 w-4 mr-2" />
-          Personagens
-        </TabsTrigger>
-        <TabsTrigger value="categories">
-          <Layers className="h-4 w-4 mr-2" />
-          Categorias de Preço
-        </TabsTrigger>
-      </TabsList>
-
-      {/* Tab: Personagens */}
-      <TabsContent value="characters" className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-semibold">Personagens de Crédito</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Personagens disponíveis para compra com coins
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-semibold">Personagens de Crédito</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Personagens disponíveis para compra com coins
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowCategoryManager(!showCategoryManager)}>
+            <Layers className="h-4 w-4 mr-2" />
+            {showCategoryManager ? 'Ver Personagens' : 'Gerenciar Categorias'}
+          </Button>
           <Button onClick={() => setIsCreating(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Personagem
           </Button>
         </div>
+      </div>
 
-        {/* Characters Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {charactersQuery.isLoading && (
-            <div className="col-span-full text-center py-12 text-muted-foreground">
-              <p>Carregando personagens...</p>
-            </div>
-          )}
-
-          {charactersQuery.isError && (
-            <div className="col-span-full text-center py-12 text-destructive">
-              <p>Erro ao carregar personagens</p>
-            </div>
-          )}
-
-          {characters.length === 0 && !charactersQuery.isLoading && (
-            <div className="col-span-full text-center py-12 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum personagem cadastrado</p>
-              <Button onClick={() => setIsCreating(true)} className="mt-4">
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Primeiro Personagem
-              </Button>
-            </div>
-          )}
-
-          {characters.map((character: any) => (
-            <Card key={character.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg">{character.name}</CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {character.description || "Sem descrição"}
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingCharacter(character)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        if (confirm(`Excluir personagem "${character.name}"?`)) {
-                          deleteMutation.mutate(character.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {/* Image */}
-                  {character.image_url && (
-                    <img
-                      src={character.image_url}
-                      alt={character.name}
-                      className="w-full h-48 object-cover rounded-md"
-                    />
-                  )}
-
-                  {/* Badges */}
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary" className="font-mono">
-                      {character.price_categories?.display_name || 'Sem Categoria'}
-                    </Badge>
-                    <Badge variant={character.status === 'released' ? 'default' : 'outline'}>
-                      {character.status === 'released' ? 'Disponível' : 'Em breve'}
-                    </Badge>
-                  </div>
-
-                  {/* Prices */}
-                  {character.price_categories && (
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Coins className="h-3 w-3 text-blue-500" />
-                        <span className="font-semibold text-blue-600">
-                          {character.price_categories.price_coins} coins
-                        </span>
-                      </div>
-                      <div className="text-muted-foreground">
-                        R$ {(character.price_categories.price_standalone / 100).toFixed(2)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </TabsContent>
-
-      {/* Tab: Categorias de Preço */}
-      <TabsContent value="categories" className="space-y-6">
+      {/* Category Manager View */}
+      {showCategoryManager ? (
         <PriceCategoriesSection
           categories={categories}
           isLoading={categoriesQuery.isLoading}
@@ -242,7 +142,153 @@ export function CreditCharactersContent() {
           onEditCategory={setEditingCategory}
           onRefresh={() => qc.invalidateQueries({ queryKey: ["admin-price-categories"] })}
         />
-      </TabsContent>
+      ) : (
+        <>
+          {/* Category Filter Cards */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedCategory === null ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCategory(null)}
+              className="h-auto py-3 px-4"
+            >
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-semibold">Todos</span>
+                <span className="text-xs opacity-70">{characters.length} personagens</span>
+              </div>
+            </Button>
+
+            {categories.map((category: any) => {
+              const count = characters.filter((c: any) => c.price_category_id === category.id).length;
+              return (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category.id)}
+                  className="h-auto py-3 px-4"
+                >
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="font-semibold">{category.display_name}</span>
+                    <div className="flex items-center gap-2 text-xs opacity-70">
+                      <span className="flex items-center gap-1">
+                        <Coins className="h-3 w-3" />
+                        {category.price_coins}
+                      </span>
+                      <span>•</span>
+                      <span>{count} personagens</span>
+                    </div>
+                  </div>
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* Characters Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {charactersQuery.isLoading && (
+              <div className="col-span-full text-center py-12 text-muted-foreground">
+                <p>Carregando personagens...</p>
+              </div>
+            )}
+
+            {charactersQuery.isError && (
+              <div className="col-span-full text-center py-12 text-destructive">
+                <p>Erro ao carregar personagens</p>
+              </div>
+            )}
+
+            {filteredCharacters.length === 0 && !charactersQuery.isLoading && (
+              <div className="col-span-full text-center py-12 text-muted-foreground">
+                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>
+                  {selectedCategory 
+                    ? 'Nenhum personagem nesta categoria' 
+                    : 'Nenhum personagem cadastrado'}
+                </p>
+                {!selectedCategory && (
+                  <Button onClick={() => setIsCreating(true)} className="mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Primeiro Personagem
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {filteredCharacters.map((character: any) => (
+              <Card key={character.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg">{character.name}</CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {character.description || "Sem descrição"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingCharacter(character)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm(`Excluir personagem "${character.name}"?`)) {
+                            deleteMutation.mutate(character.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {/* Image */}
+                    {character.image_url && (
+                      <img
+                        src={character.image_url}
+                        alt={character.name}
+                        className="w-full h-48 object-cover rounded-md"
+                      />
+                    )}
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary" className="font-mono">
+                        {character.price_categories?.display_name || 'Sem Categoria'}
+                      </Badge>
+                      <Badge variant={character.status === 'released' ? 'default' : 'outline'}>
+                        {character.status === 'released' ? 'Disponível' : 'Em breve'}
+                      </Badge>
+                    </div>
+
+                    {/* Prices */}
+                    {character.price_categories && (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Coins className="h-3 w-3 text-blue-500" />
+                          <span className="font-semibold text-blue-600">
+                            {character.price_categories.price_coins} coins
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground">
+                          R$ {(character.price_categories.price_standalone / 100).toFixed(2)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Dialogs */}
       <CharacterFormDialog
@@ -284,7 +330,7 @@ export function CreditCharactersContent() {
           qc.invalidateQueries({ queryKey: ["admin-price-categories"] });
         }}
       />
-    </Tabs>
+    </div>
   );
 }
 
