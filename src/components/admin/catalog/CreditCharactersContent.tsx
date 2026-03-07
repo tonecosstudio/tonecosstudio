@@ -453,41 +453,53 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="price_category_id">Categoria de Preço *</Label>
-              <Select
-                value={formData.price_category_id}
-                onValueChange={(value) => setFormData({ ...formData, price_category_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories?.map((cat: any) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.display_name} - {cat.price_coins} coins
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="price_category_id">Categoria de Preço (Tier) *</Label>
+            <Select
+              value={formData.price_category_id}
+              onValueChange={(value) => setFormData({ ...formData, price_category_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories?.map((cat: any) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <div className="flex items-center justify-between gap-4 w-full">
+                      <span className="font-semibold">{cat.display_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {cat.price_coins} coins • R$ {(cat.price_standalone / 100).toFixed(0)}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formData.price_category_id && categories && (
+              <p className="text-xs text-muted-foreground">
+                {(() => {
+                  const selectedCat = categories.find((c: any) => c.id === formData.price_category_id);
+                  if (!selectedCat) return null;
+                  return `Preço: ${selectedCat.price_coins} coins (≈ R$ ${((selectedCat.price_coins * (selectedCat.coin_value_in_cents || 200)) / 100).toFixed(2)}) ou R$ ${(selectedCat.price_standalone / 100).toFixed(2)} avulso`;
+                })()}
+              </p>
+            )}
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="released">Disponível</SelectItem>
-                  <SelectItem value="coming_soon">Em breve</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status *</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => setFormData({ ...formData, status: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="released">Disponível</SelectItem>
+                <SelectItem value="coming_soon">Em breve</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
