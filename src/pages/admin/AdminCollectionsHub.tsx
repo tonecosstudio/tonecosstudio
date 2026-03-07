@@ -2,13 +2,11 @@
 /**
  * AdminCollectionsHub - Catálogo & Produtos (Hub Unificado)
  *
- * Consolida gerenciamento de produtos e preços:
- * - Coleções (produtos de assinatura com preços)
+ * Consolida gerenciamento de produtos:
+ * - Coleções (produtos de assinatura)
  * - Personagens de Crédito (sistema de coins)
- * - Níveis & Planos (sistema de preços)
  *
- * Nota: Franquias e Modelos foram removidos da interface admin.
- * Os dados permanecem no banco para uso no catálogo público.
+ * Nota: Preços e Planos foram movidos para /admin/planos (SSOT)
  */
 
 import { useState, useEffect } from "react";
@@ -17,11 +15,9 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Package, 
-  Layers,
   Coins,
 } from "lucide-react";
 import AdminCollections from "./AdminCollections";
-import { PricingHierarchyView } from "@/components/admin/pricing-tiers/PricingHierarchyView";
 import { CreditCharactersContent } from "@/components/admin/catalog/CreditCharactersContent";
 
 export default function AdminCollectionsHub() {
@@ -31,7 +27,7 @@ export default function AdminCollectionsHub() {
 
   // Sincronizar tab com URL
   useEffect(() => {
-    if (tabParam && ["collections", "pricing", "credit-characters"].includes(tabParam)) {
+    if (tabParam && ["collections", "credit-characters"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -50,13 +46,13 @@ export default function AdminCollectionsHub() {
             Catálogo & Produtos
           </h1>
           <p className="text-muted-foreground">
-            Gerencie coleções, personagens de crédito e preços em um só lugar
+            Gerencie coleções e personagens de crédito
           </p>
         </div>
 
         {/* Tabs Unificadas */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="collections">
               <Package className="h-4 w-4 mr-2" />
               Coleções
@@ -64,10 +60,6 @@ export default function AdminCollectionsHub() {
             <TabsTrigger value="credit-characters">
               <Coins className="h-4 w-4 mr-2" />
               Personagens (Coins)
-            </TabsTrigger>
-            <TabsTrigger value="pricing">
-              <Layers className="h-4 w-4 mr-2" />
-              Preços & Planos
             </TabsTrigger>
           </TabsList>
 
@@ -87,11 +79,6 @@ export default function AdminCollectionsHub() {
           {/* Tab 2: Personagens de Crédito (Coins) */}
           <TabsContent value="credit-characters" className="space-y-4">
             <CreditCharactersContent />
-          </TabsContent>
-
-          {/* Tab 3: Preços & Planos (Hierarquia Completa) */}
-          <TabsContent value="pricing" className="space-y-4">
-            <PricingHierarchyView />
           </TabsContent>
         </Tabs>
       </div>
