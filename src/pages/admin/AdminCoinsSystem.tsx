@@ -180,17 +180,17 @@ export default function AdminCoinsSystem() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <Coins className="h-8 w-8 text-yellow-500" />
-          <h1 className="text-4xl font-bold tracking-tight">Sistema de Coins</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <Coins className="h-8 w-8 text-yellow-500" />
+            <h1 className="text-4xl font-bold tracking-tight">Sistema de Coins</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Gerenciamento completo do sistema de créditos internos da plataforma
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Gerenciamento completo do sistema de créditos internos da plataforma
-        </p>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Coins em Circulação</CardTitle>
@@ -894,8 +894,7 @@ export default function AdminCoinsSystem() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </div>
+      </Tabs>
     </div>
   );
 }
