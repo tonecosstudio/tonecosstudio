@@ -69,7 +69,7 @@ export function CreditsDashboard() {
       const { count, error } = await supabase
         .from("subscription_credit_production_cycles")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active");
+        .eq("status", "open");
       
       if (error) throw error;
       return { count: count || 0 };
