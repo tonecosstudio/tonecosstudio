@@ -1,8 +1,9 @@
 // @ts-nocheck
+/**
+ * Página de detalhes do usuário no painel admin
+ * Refatorado para seguir padrão AAA e remover código legado
+ */
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,246 +25,29 @@ import {
   MessageSquare,
   MapPinned,
   ExternalLink,
+  Calendar,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchOrdersByUserId } from "@/services/admin/orders-service";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { OrderTypeIndicator } from "@/components/admin/orders/OrderTypeIndicator";
 import { UserQuickActions } from "@/components/admin/user/UserQuickActions";
 import { UserOrderFilters } from "@/components/admin/user/UserOrderFilters";
+import { MonthlySelectionsTimeline } from "@/components/admin/user/MonthlySelectionsTimeline";
 import { formatCurrency } from "@/lib/utils";
+import { useUserDetails } from "@/hooks/admin/useUserDetails";
+import { useUserSubscription } from "@/hooks/admin/useUserSubscription";
+import { useUserOrders } from "@/hooks/admin/useUserOrders";
 
 export default function AdminUserDetails() {
+  // Arrange: Obter ID do usuário da URL
   const { userId } = useParams<{ userId: string }>();
-  
-  // Estados para filtros de pedidos
-  const [orderTypeFilter, setOrderTypeFilter] = useState("all");
-  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
-  const [orderSearchQuery, setOrderSearchQuery] = useState("");
 
-  // Query para perfil completo (inclui email)
-  const profileQuery = useQuery({
-    queryKey: ["admin-user-profile", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId!)
-        .maybeSingle();
+  // Arrange: Hooks customizados para dados do usuário
+  const { profile, roles, badges, paymentMethods, isLoading, isError } = useUserDetails({ userId });
+  const { activeSubscription, coinsBalance, monthlySelections } = useUserSubscription({ userId });
+  const { filteredOrders, stats, filters, setFilters, orders } = useUserOrders({ userId });
 
-      if (error) throw error;
-
-      if (!data) {
-        throw new Error("Usuário não encontrado");
-      }
-
-      return data;
-    },
-  });
-
-  // Query para roles
-  const rolesQuery = useQuery({
-    queryKey: ["admin-user-roles", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId!);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Query para badges
-  const badgesQuery = useQuery({
-    queryKey: ["admin-user-badges", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_badges")
-        .select(
-          `
-          id,
-          earned_at,
-          badge:collector_badges(*)
-        `
-        )
-        .eq("user_id", userId!);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Query para métodos de pagamento
-  const paymentMethodsQuery = useQuery({
-    queryKey: ["admin-user-payment-methods", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payment_methods")
-        .select("*")
-        .eq("user_id", userId!)
-        .eq("is_active", true);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Query para pedidos consolidados (todos os tipos)
-  const ordersQuery = useQuery({
-    queryKey: ["admin-user-orders", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      if (!userId) return [];
-      return await fetchOrdersByUserId(userId);
-    },
-  });
-
-  // Query para assinaturas
-  const subscriptionsQuery = useQuery({
-    queryKey: ["admin-user-subscriptions", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select(
-          `
-          *,
-          subscription_collections (
-            collections (
-              name,
-              slug
-            )
-          )
-        `
-        )
-        .eq("user_id", userId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Query para assinatura de crédito
-  const creditSubscriptionQuery = useQuery({
-    queryKey: ["admin-user-credit-subscription", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscription_credit_subscriptions")
-        .select("*")
-        .eq("user_id", userId!)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Query para saldo de coins
-  const coinsBalanceQuery = useQuery({
-    queryKey: ["admin-user-coins-balance", userId, creditSubscriptionQuery.data?.id],
-    enabled: Boolean(userId) && Boolean(creditSubscriptionQuery.data?.id) && !creditSubscriptionQuery.isLoading,
-    queryFn: async () => {
-      if (!creditSubscriptionQuery.data?.id) return null;
-      
-      const { data, error } = await supabase
-        .from("subscription_credit_balances")
-        .select("*")
-        .eq("subscription_id", creditSubscriptionQuery.data.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Query para pedidos de crédito
-  const creditOrdersQuery = useQuery({
-    queryKey: ["admin-user-credit-orders", userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data: orders, error } = await supabase
-        .from("subscription_credit_orders")
-        .select("*")
-        .eq("user_id", userId!)
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      if (!orders) return [];
-
-      // Buscar dados dos personagens separadamente
-      const ordersWithCharacters = await Promise.all(
-        orders.map(async (order: any) => {
-          if (order.character_id) {
-            const { data: character } = await supabase
-              .from("subscription_credit_characters")
-              .select("name, rarity, cost_in_credits")
-              .eq("id", order.character_id)
-              .maybeSingle();
-            
-            return {
-              ...order,
-              subscription_credit_characters: character,
-            };
-          }
-          return order;
-        })
-      );
-
-      return ordersWithCharacters;
-    },
-  });
-
-  const isLoading = profileQuery.isLoading;
-  const profile = profileQuery.data;
-  const roles = rolesQuery.data || [];
-  const badges = badgesQuery.data || [];
-  const paymentMethods = paymentMethodsQuery.data || [];
-  const orders = ordersQuery.data || [];
-  const subscriptions = subscriptionsQuery.data || [];
-  const creditSubscription = creditSubscriptionQuery.data;
-  const coinsBalance = coinsBalanceQuery.data;
-  const creditOrders = creditOrdersQuery.data || [];
-
-  // Filtrar pedidos
-  const filteredOrders = useMemo(() => {
-    let filtered = orders;
-
-    // Filtro por tipo
-    if (orderTypeFilter !== "all") {
-      filtered = filtered.filter((order) => order.type === orderTypeFilter);
-    }
-
-    // Filtro por status
-    if (orderStatusFilter !== "all") {
-      filtered = filtered.filter((order) => order.status === orderStatusFilter);
-    }
-
-    // Filtro por busca
-    if (orderSearchQuery.trim()) {
-      const query = orderSearchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (order) =>
-          order.id.toLowerCase().includes(query) ||
-          (order.trackingCode && order.trackingCode.toLowerCase().includes(query)) ||
-          (order.collection && order.collection.name.toLowerCase().includes(query))
-      );
-    }
-
-    return filtered;
-  }, [orders, orderTypeFilter, orderStatusFilter, orderSearchQuery]);
-
-  // Calcular estatísticas de pedidos (usando pedidos filtrados)
-  const totalSpent = filteredOrders.reduce((sum, order) => sum + (order.amount || 0), 0);
-  const pendingOrders = filteredOrders.filter(
-    (order) =>
-      order.status === "pending" ||
-      order.status === "under_review" ||
-      order.status === "requires_info" ||
-      order.status === "reviewing"
-  );
-
+  // Act: Renderizar loading state
   if (isLoading) {
     return (
       <AdminLayout>
@@ -275,7 +59,8 @@ export default function AdminUserDetails() {
     );
   }
 
-  if (!profile) {
+  // Act: Renderizar error state
+  if (isError || !profile) {
     return (
       <AdminLayout>
         <div className="text-center py-12">
@@ -291,6 +76,7 @@ export default function AdminUserDetails() {
     );
   }
 
+  // Arrange: Extrair dados do endereço
   const address = profile.address as any;
 
   return (
@@ -384,7 +170,7 @@ export default function AdminUserDetails() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">
-                  {formatCurrency(totalSpent)}
+                  {formatCurrency(stats.totalSpent)}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Total Gasto</div>
               </div>
@@ -670,16 +456,16 @@ export default function AdminUserDetails() {
         {/* Tab: Subscription & Coins */}
         <TabsContent value="subscription" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Assinatura de Crédito */}
+            {/* Assinatura Ativa (Sistema Híbrido) */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Assinatura de Crédito
+                  Assinatura Ativa
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {!creditSubscription ? (
+                {!activeSubscription ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
                     Nenhuma assinatura ativa
                   </p>
@@ -687,35 +473,33 @@ export default function AdminUserDetails() {
                   <div className="space-y-4">
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">Plano</div>
-                      <div className="text-base mt-1 capitalize">{creditSubscription.plan_type}</div>
+                      <div className="text-base mt-1 capitalize">{activeSubscription.plan_type}</div>
                     </div>
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">Status</div>
                       <Badge 
-                        variant={creditSubscription.status === 'active' ? 'default' : 'secondary'}
+                        variant={activeSubscription.status === 'active' ? 'default' : 'secondary'}
                         className="mt-1"
                       >
-                        {creditSubscription.status}
+                        {activeSubscription.status}
                       </Badge>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Créditos por Ciclo</div>
-                      <div className="text-base mt-1 font-semibold text-blue-600">
-                        {creditSubscription.credits_per_cycle} coins
+                      <div className="text-sm font-medium text-muted-foreground">Coleção Ativa</div>
+                      <div className="text-base mt-1">
+                        {activeSubscription.collections?.name || 'Não definida'}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground">Início</div>
-                        <div className="text-base mt-1">
-                          {new Date(creditSubscription.start_date).toLocaleDateString("pt-BR")}
-                        </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Coins Iniciais</div>
+                      <div className="text-base mt-1 font-semibold text-amber-600">
+                        {activeSubscription.coins_initial || 0} coins
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground">Término</div>
-                        <div className="text-base mt-1">
-                          {new Date(creditSubscription.end_date).toLocaleDateString("pt-BR")}
-                        </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Data de Criação</div>
+                      <div className="text-base mt-1">
+                        {new Date(activeSubscription.created_at).toLocaleDateString("pt-BR")}
                       </div>
                     </div>
                   </div>
@@ -749,62 +533,36 @@ export default function AdminUserDetails() {
                         <div className="text-2xl font-bold text-green-600">
                           {coinsBalance.total_allocated || 0}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">Total Alocado</div>
+                        <div className="text-xs text-muted-foreground mt-1">Total Inicial</div>
                       </div>
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-orange-600">
                           {coinsBalance.used_credits || 0}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">Usados</div>
+                        <div className="text-xs text-muted-foreground mt-1">Gastos</div>
                       </div>
                     </div>
-                    {coinsBalance.last_allocation_date && (
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground">Última Alocação</div>
-                        <div className="text-base mt-1">
-                          {new Date(coinsBalance.last_allocation_date).toLocaleDateString("pt-BR")}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Pedidos de Crédito */}
-          {creditOrders.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Pedidos com Coins ({creditOrders.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {creditOrders.map((order: any) => (
-                    <div
-                      key={order.id}
-                      className="flex items-center justify-between p-4 rounded-lg border"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">
-                          {order.subscription_credit_characters?.name || "Personagem"}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {order.credits_used} coins • {order.order_type}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                        </div>
-                      </div>
-                      <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
-                        {order.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Timeline de Escolhas Mensais */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Escolhas Mensais
+              </CardTitle>
+              <CardDescription>
+                Personagens escolhidos organizados por status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MonthlySelectionsTimeline selections={monthlySelections} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Tab: Collector */}
@@ -874,7 +632,7 @@ export default function AdminUserDetails() {
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold text-primary">
-                      {formatCurrency(totalSpent)}
+                      {formatCurrency(stats.totalSpent)}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">Total Gasto</div>
                   </div>
@@ -925,7 +683,7 @@ export default function AdminUserDetails() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{orders.length}</div>
+                  <div className="text-2xl font-bold text-primary">{stats.totalOrders}</div>
                   <div className="text-xs text-muted-foreground mt-1">Total de Pedidos</div>
                 </div>
               </CardContent>
@@ -933,7 +691,7 @@ export default function AdminUserDetails() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{filteredOrders.length}</div>
+                  <div className="text-2xl font-bold text-primary">{stats.filteredCount}</div>
                   <div className="text-xs text-muted-foreground mt-1">Filtrados</div>
                 </div>
               </CardContent>
@@ -941,7 +699,7 @@ export default function AdminUserDetails() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{formatCurrency(totalSpent)}</div>
+                  <div className="text-2xl font-bold text-primary">{formatCurrency(stats.totalSpent)}</div>
                   <div className="text-xs text-muted-foreground mt-1">Valor Total</div>
                 </div>
               </CardContent>
@@ -949,7 +707,7 @@ export default function AdminUserDetails() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{pendingOrders.length}</div>
+                  <div className="text-2xl font-bold text-primary">{stats.pendingCount}</div>
                   <div className="text-xs text-muted-foreground mt-1">Pendentes</div>
                 </div>
               </CardContent>
@@ -961,7 +719,7 @@ export default function AdminUserDetails() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Todos os Pedidos ({filteredOrders.length} de {orders.length})
+                Todos os Pedidos ({stats.filteredCount} de {stats.totalOrders})
               </CardTitle>
               <CardDescription>
                 Entregas de assinatura, compras avulsas, pagamentos manuais e orçamentos
@@ -970,18 +728,18 @@ export default function AdminUserDetails() {
             <CardContent>
               {/* Filtros */}
               <UserOrderFilters
-                typeFilter={orderTypeFilter}
-                statusFilter={orderStatusFilter}
-                searchQuery={orderSearchQuery}
-                onTypeChange={setOrderTypeFilter}
-                onStatusChange={setOrderStatusFilter}
-                onSearchChange={setOrderSearchQuery}
+                typeFilter={filters.type}
+                statusFilter={filters.status}
+                searchQuery={filters.search}
+                onTypeChange={setFilters.setType}
+                onStatusChange={setFilters.setStatus}
+                onSearchChange={setFilters.setSearch}
               />
 
               {filteredOrders.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  {orders.length === 0 
-                    ? "Nenhum pedido realizado" 
+                  {stats.totalOrders === 0
+                    ? "Nenhum pedido realizado"
                     : "Nenhum pedido encontrado com os filtros aplicados"}
                 </p>
               ) : (
@@ -1044,39 +802,6 @@ export default function AdminUserDetails() {
               )}
             </CardContent>
           </Card>
-
-          {/* Assinaturas */}
-          {subscriptions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Assinaturas Ativas ({subscriptions.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {subscriptions.map((sub: any) => (
-                    <div
-                      key={sub.id}
-                      className="flex items-center justify-between p-4 rounded-lg border"
-                    >
-                      <div>
-                        <div className="font-medium">{sub.collection?.name}</div>
-                        <div className="text-sm text-muted-foreground">Plano: {sub.plan_type}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {sub.deliveries_completed}/{sub.deliveries_total} entregas
-                        </div>
-                      </div>
-                      <Badge variant={sub.status === "active" ? "default" : "secondary"}>
-                        {sub.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         {/* Tab: Preferences */}

@@ -11,19 +11,52 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
-import { useCurrentCycle } from "@/hooks/useCycles";
 
 export default function Collections() {
-  // Buscar ciclo atual
-  const { data: currentCycle, isLoading: cycleLoading } = useCurrentCycle();
 
-  // Buscar configurações do sistema (incluindo hero_image_url)
+  // Buscar configurações do sistema (incluindo prazos)
   const { data: systemSettings, refetch: refetchSettings } = useSystemSettings();
   
   // Forçar refetch ao montar o componente
   useEffect(() => {
     refetchSettings();
   }, [refetchSettings]);
+
+  // Calcular datas baseado nos prazos do system_settings
+  const calculateDates = () => {
+    if (!systemSettings) return null;
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    // Prazos do SSOT
+    const productionDays = parseInt(systemSettings.production_days_min || '30');
+    const shippingDays = parseInt(systemSettings.shipping_business_days || '15');
+
+    // Vendas: até o final do mês atual
+    const salesEnd = new Date(currentYear, currentMonth + 1, 0); // Último dia do mês
+
+    // Produção: mês seguinte (30 dias)
+    const productionStart = new Date(currentYear, currentMonth + 1, 1);
+    const productionEnd = new Date(currentYear, currentMonth + 2, 0);
+
+    // Envio: segunda quinzena do mês seguinte à produção
+    const shippingMonth = currentMonth + 2;
+    const shippingDate = new Date(currentYear, shippingMonth, shippingDays);
+
+    return {
+      salesEnd,
+      productionStart,
+      productionEnd,
+      shippingDate,
+      productionDays,
+      shippingDays,
+      currentMonth: today.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    };
+  };
+
+  const dates = calculateDates();
 
   // Buscar coleções ativas do banco de dados
   const { data: collections, isLoading } = useQuery({
@@ -65,12 +98,6 @@ export default function Collections() {
     ? Math.min(...plans.map(p => Math.floor(Number(p.price_full) / p.deliveries_total)))
     : null;
 
-  // Formatar data do ciclo
-  const formatCycleDate = (month: number, year: number) => {
-    const date = new Date(year, month - 1);
-    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  };
-
   return (
     <AppShell>
       <div className="min-h-screen bg-white-override dark:bg-slate-950">
@@ -94,31 +121,28 @@ export default function Collections() {
               </h1>
 
               <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 text-center max-w-2xl leading-relaxed">
-                Produção limitada por ciclo. Envio sempre até o 5° dia útil do mês.
+                Produção limitada mensal. Envio sempre até o {dates?.shippingDays}° dia útil do mês.
               </p>
 
-              {/* Cycle Info Badge */}
-              {currentCycle && !cycleLoading && (
+              {/* Info Badge */}
+              {dates && (
                 <div className="inline-flex items-center bg-slate-900 dark:bg-slate-800 text-white rounded-lg px-6 py-3 text-sm shadow-lg">
                   <span className="text-slate-400 font-medium">VAGAS LIMITADAS EM</span>
                   <span className="mx-2 text-amber-400">•</span>
-                  <span className="font-bold">{formatCycleDate(currentCycle.month, currentCycle.year).toUpperCase()}</span>
+                  <span className="font-bold">{dates.currentMonth.toUpperCase()}</span>
                 </div>
               )}
 
-              {/* CTA Button */}
-              <div>
                 <Button 
                   size="lg"
                   className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-6 text-base shadow-xl hover:shadow-2xl transition-all"
                   asChild
                 >
                   <Link to="#colecoes-disponiveis">
-                    ENTRAR NO CICLO ATUAL
+                    ENTRAR NO MÊS ATUAL
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-              </div>
             </div>
 
             {/* Coluna Direita - Imagem (30%) */}
@@ -142,12 +166,12 @@ export default function Collections() {
           <div className="flex flex-wrap items-center justify-center gap-8 py-4 text-sm text-slate-300">
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-amber-400" />
-              <span className="font-medium">Produção por Ciclo</span>
+              <span className="font-medium">Produção Mensal</span>
             </div>
             <div className="h-4 w-px bg-slate-600"></div>
             <div className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-amber-400" />
-              <span className="font-medium">Envio até 5° Dia Útil</span>
+              <span className="font-medium">Envio até {dates?.shippingDays || 15}° Dia Útil</span>
             </div>
             <div className="h-4 w-px bg-slate-600"></div>
             <div className="flex items-center gap-2">
@@ -158,13 +182,13 @@ export default function Collections() {
         </div>
       </section>
 
-      {/* Ciclo Atual - Banner Melhorado */}
+      {/* Prazos Atuais - Banner */}
       <section className="py-12 bg-white dark:bg-slate-950">
         <div className="container max-w-5xl mx-auto">
-          {currentCycle && !cycleLoading ? (
+          {dates ? (
             <div className="text-center">
               <h2 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">
-                Ciclo Atual: {formatCycleDate(currentCycle.month, currentCycle.year)}
+                Prazos de {dates.currentMonth}
               </h2>
 
               <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-lg p-6 border border-slate-200 dark:border-slate-700 inline-block">
@@ -172,7 +196,7 @@ export default function Collections() {
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-xs text-muted-foreground font-medium">Compras até</span>
                     <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
-                      {new Date(currentCycle.open_end).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      {dates.salesEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     </span>
                   </div>
 
@@ -181,7 +205,7 @@ export default function Collections() {
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-xs text-muted-foreground font-medium">Produção até</span>
                     <span className="text-xl font-bold text-slate-900 dark:text-white">
-                      {new Date(currentCycle.production_end).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      {dates.productionEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     </span>
                   </div>
 
@@ -190,17 +214,17 @@ export default function Collections() {
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-xs text-muted-foreground font-medium">Envio até</span>
                     <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                      {new Date(currentCycle.shipping_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      {dates.shippingDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     </span>
                   </div>
                 </div>
               </div>
 
               <p className="text-sm text-muted-foreground mt-4 font-medium">
-                Produção: ~30 dias • Envio: até 5° dia útil • Entrega: 7-15 dias úteis
+                Produção: ~{dates.productionDays} dias • Envio: segunda quinzena do mês • Entrega: 90 dias (3 meses)
               </p>
             </div>
-          ) : cycleLoading ? (
+          ) : (
             <div className="text-center">
               <Skeleton className="h-6 w-48 mx-auto mb-4" />
               <div className="bg-slate-50 dark:bg-slate-900 rounded-xl shadow-lg p-6 border border-slate-200 dark:border-slate-800 inline-block">
@@ -209,18 +233,6 @@ export default function Collections() {
                   <Skeleton className="h-12 w-20" />
                   <Skeleton className="h-12 w-20" />
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-lg p-8 border border-slate-200 dark:border-slate-700 inline-block">
-                <Package className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-                <h2 className="text-lg font-bold mb-2 text-slate-900 dark:text-white">
-                  Nenhum Ciclo Ativo
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Aguarde o próximo ciclo de produção
-                </p>
               </div>
             </div>
           )}
@@ -426,7 +438,7 @@ export default function Collections() {
           </h2>
           
           <p className="text-base text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Cada peça é artesanal, pintada à mão e entregue com embalagem premium. Edição limitada por ciclo.
+            Cada peça é artesanal, pintada à mão e entregue com embalagem premium. Edição limitada mensal.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -458,7 +470,7 @@ export default function Collections() {
           <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
             <div className="flex flex-col items-center gap-2 p-6 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 hover:bg-slate-800/70 transition-all">
               <Package className="w-8 h-8 text-amber-400" />
-              <span className="font-bold text-base text-white">Produção por Ciclo</span>
+              <span className="font-bold text-base text-white">Produção Mensal</span>
               <span className="text-slate-400 text-sm">Limitada e exclusiva</span>
             </div>
             <div className="flex flex-col items-center gap-2 p-6 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 hover:bg-slate-800/70 transition-all">

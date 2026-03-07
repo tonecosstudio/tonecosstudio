@@ -79,7 +79,7 @@ export function useCoinsBalance(userId?: UserId | null) {
       // Busca saldo de coins
       const { data, error } = await supabase
         .from('user_coins')
-        .select('balance, last_updated')
+        .select('balance, updated_at')
         .eq('user_id', targetUserId)
         .maybeSingle();
       

@@ -7,15 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import SEOHead from '@/components/SEOHead';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCurrentCycle } from '@/hooks/useCycles';
 
 const DEPOSIT_AMOUNT = 100.00;
 
 export default function PreLaunch() {
   const navigate = useNavigate();
-  
-  // Buscar ciclo atual
-  const { data: currentCycle } = useCurrentCycle();
   
   // Buscar coleções ativas
   const { data: collections, isLoading } = useQuery({

@@ -40,7 +40,7 @@ export interface CoinsBalance {
   /** Saldo atual em coins */
   balance: CoinsAmount;
   /** Última atualização do saldo */
-  last_updated: string;
+  updated_at: string;
 }
 
 // ============================================================================
@@ -360,7 +360,7 @@ export interface CoinsBalanceResponse {
   /** Saldo atual */
   balance: CoinsAmount;
   /** Última atualização */
-  last_updated: string;
+  updated_at: string;
 }
 
 /**

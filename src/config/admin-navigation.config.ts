@@ -51,18 +51,6 @@ export const adminNavigationConfig: NavigationSection[] = [
         badge: 'Hub',
       },
       {
-        id: 'upload',
-        label: 'Upload Massivo',
-        path: '/admin/upload',
-        icon: 'Upload',
-      },
-      {
-        id: 'conveyor',
-        label: 'Modo Esteira',
-        path: '/admin/esteira',
-        icon: 'Layers',
-      },
-      {
         id: 'packaging',
         label: 'Embalagem',
         path: '/admin/embalagem',
@@ -74,12 +62,6 @@ export const adminNavigationConfig: NavigationSection[] = [
     id: 'operations',
     title: 'Operações',
     items: [
-      {
-        id: 'quotes',
-        label: 'Orçamentos',
-        path: '/admin/orcamentos',
-        icon: 'FileText',
-      },
       {
         id: 'orders',
         label: 'Pedidos',
@@ -133,9 +115,9 @@ export const adminNavigationConfig: NavigationSection[] = [
         badge: 'Novo',
       },
       {
-        id: 'credit-cycles',
+        id: 'cycles',
         label: 'Ciclos de Produção',
-        path: '/admin/creditos/ciclos',
+        path: '/admin/ciclos',
         icon: 'RefreshCw',
       },
       {

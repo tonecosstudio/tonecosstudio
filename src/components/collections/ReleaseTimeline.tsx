@@ -62,7 +62,7 @@ export function ReleaseTimeline() {
     {
       phase: "Entrega",
       period: currentBatch.shippingMonth,
-      duration: "7-15 dias",
+      duration: "Segunda quinzena",
       icon: CheckCircle,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",

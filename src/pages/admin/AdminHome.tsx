@@ -909,30 +909,10 @@ export default function AdminHome() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {stats?.queue && stats.queue > 0 && (
-                <div
-                  className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate("/admin/esteira")}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-                      <Upload className="h-5 w-5 text-orange-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Fila de Upload</p>
-                      <p className="text-sm text-muted-foreground">
-                        {stats.queue} imagens aguardando
-                      </p>
-                    </div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              )}
-
               {stats?.quotes.pending && stats.quotes.pending > 0 && (
                 <div
                   className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate("/admin/orcamentos")}
+                  onClick={() => navigate("/admin/pedidos")}
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -993,22 +973,6 @@ export default function AdminHome() {
               <Button
                 className="w-full justify-start"
                 variant="outline"
-                onClick={() => navigate("/admin/upload")}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Massivo
-              </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => navigate("/admin/esteira")}
-              >
-                <Workflow className="h-4 w-4 mr-2" />
-                Modo Esteira
-              </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
                 onClick={() => navigate("/admin/pre-vendas")}
               >
                 <Clock className="h-4 w-4 mr-2" />
@@ -1021,6 +985,14 @@ export default function AdminHome() {
               >
                 <Layers className="h-4 w-4 mr-2" />
                 Coleções
+              </Button>
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                onClick={() => navigate("/admin/fila-producao")}
+              >
+                <Package className="h-4 w-4 mr-2" />
+                Fila de Produção
               </Button>
               <Button
                 className="w-full justify-start"

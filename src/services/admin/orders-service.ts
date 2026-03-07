@@ -282,7 +282,6 @@ async function fetchSubscriptionDeliveries(filters: OrderFilters) {
  * Esta query usa joins para buscar todos os dados relacionados em uma única operação:
  * - profiles (INNER JOIN)
  * - collections (INNER JOIN)
- * - cycles (INNER JOIN)
  * - collection_characters (LEFT JOIN)
  *
  * Isso evita N+1 queries e garante performance otimizada.
@@ -318,12 +317,6 @@ async function fetchStandalonePurchases(filters: OrderFilters) {
         id,
         name,
         slug
-      ),
-      cycles (
-        id,
-        cycle_number,
-        month,
-        year
       ),
       collection_characters (
         id,
@@ -530,12 +523,6 @@ export async function fetchOrderById(
           name,
           slug
         ),
-        cycles (
-          id,
-          cycle_number,
-          month,
-          year
-        ),
         collection_characters (
           id,
           name,
@@ -640,12 +627,6 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
         id,
         name,
         slug
-      ),
-      cycles (
-        id,
-        cycle_number,
-        month,
-        year
       ),
       collection_characters (
         id,

@@ -13,13 +13,10 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Plans from "./pages/Plans";
 import AdminHome from "./pages/admin/AdminHome";
-import UploadQueue from "./pages/admin/UploadQueue";
-import Conveyor from "./pages/admin/Conveyor";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetails from "./pages/admin/AdminUserDetails";
 import Quote from "./pages/Quote";
 import QuoteCart from "./pages/QuoteCart";
-import AdminQuotes from "./pages/admin/AdminQuotes";
 import PublicProfile from "./pages/PublicProfile";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -58,14 +55,10 @@ import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
 import ProductionHub from "./pages/admin/ProductionHub";
 import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
-import AdminSubscriptionCreditCycles from "./pages/admin/AdminSubscriptionCreditCycles";
-import AdminSubscriptionCreditDashboard from "./pages/admin/AdminSubscriptionCreditDashboard";
-import AdminSubscriptionCreditCharacters from "./pages/admin/AdminSubscriptionCreditCharacters";
 import AdminPlansConfiguration from "./pages/admin/AdminPlansConfiguration";
 import SubscriptionCreditPanel from "./pages/SubscriptionCreditPanel";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
 import CharacterCatalog from "./pages/CharacterCatalog";
-import CharacterCatalogNew from "./pages/catalog/CharacterCatalog";
 import CoinsPurchase from "./pages/CoinsPurchase";
 import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 import AdminCoinsSystem from "./pages/admin/AdminCoinsSystem";
@@ -73,7 +66,11 @@ import MonthlyCharacterSelection from "./pages/MonthlyCharacterSelection";
 import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
 import AdminMonthlyReleases from "./pages/admin/AdminMonthlyReleases";
 import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
+import AdminProductionQueue from "./pages/admin/AdminProductionQueue";
 import CharacterSelect from "./pages/CharacterSelect";
+import CollectionsArcade from "./pages/CollectionsArcade";
+import CharacterDetails from "./pages/CharacterDetails";
+import CollectionDetailsArcade from "./pages/CollectionDetailsArcade";
 
 import MemberGroupsPage from "./pages/MemberGroupsPage";
 import MemberGroupDetailsPage from "./pages/MemberGroupDetailsPage";
@@ -114,8 +111,10 @@ function AppContent() {
           <Route path="/sobre" element={<About />} />
           <Route path="/planos" element={<Plans />} />
           <Route path="/colecoes" element={<Collections />} />
+          <Route path="/colecoes-arcade" element={<CollectionsArcade />} />
+          <Route path="/personagem/:id" element={<CharacterDetails />} />
           <Route path="/selecionar-personagem" element={<CharacterSelect />} />
-          <Route path="/colecoes/:slug" element={<CollectionDetails />} />
+          <Route path="/colecoes/:slug" element={<CollectionDetailsArcade />} />
           <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
           <Route path="/termos" element={<Terms />} />
           <Route path="/privacidade" element={<Privacy />} />
@@ -307,15 +306,6 @@ function AppContent() {
               </RequireAuth>
             }
           />
-          {/* Novo Catálogo Profissional (Sistema Híbrido) */}
-          <Route
-            path="/catalog"
-            element={
-              <RequireAuth>
-                <CharacterCatalogNew />
-              </RequireAuth>
-            }
-          />
           {/* Catálogo Antigo (Deprecated - será removido) */}
           <Route
             path="/catalogo-personagens"
@@ -342,22 +332,8 @@ function AppContent() {
               </RequireAdmin>
             }
           />
-          <Route
-            path="/admin/upload"
-            element={
-              <RequireAdmin>
-                <UploadQueue />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="/admin/esteira"
-            element={
-              <RequireAdmin>
-                <Conveyor />
-              </RequireAdmin>
-            }
-          />
+
+
           <Route
             path="/admin/users"
             element={
@@ -375,14 +351,7 @@ function AppContent() {
             }
           />
 
-          <Route
-            path="/admin/orcamentos"
-            element={
-              <RequireAdmin>
-                <AdminQuotes />
-              </RequireAdmin>
-            }
-          />
+
           <Route
             path="/admin/colecoes"
             element={<Navigate to="/admin/catalogo?tab=collections" replace />}
@@ -469,21 +438,23 @@ function AppContent() {
             }
           />
 
+          {/* Fila de Produção */}
+          <Route
+            path="/admin/fila-producao"
+            element={
+              <RequireAdmin>
+                <AdminProductionQueue />
+              </RequireAdmin>
+            }
+          />
+
           {/* Redirects de páginas antigas de produção */}
           <Route
             path="/admin/escolhas-personagens"
             element={<Navigate to="/admin/producao?tab=choices" replace />}
           />
 
-          {/* Sistema de Créditos - Admin */}
-          <Route
-            path="/admin/creditos/ciclos"
-            element={
-              <RequireAdmin>
-                <AdminSubscriptionCreditCycles />
-              </RequireAdmin>
-            }
-          />
+          {/* Planos e Créditos - Admin */}
           <Route
             path="/admin/creditos/planos"
             element={

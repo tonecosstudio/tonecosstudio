@@ -296,8 +296,7 @@ export default function About() {
           <div className="mt-12 text-center">
             <p className="text-muted-foreground italic">
               Tempo médio estimado de produção:{" "}
-              <strong className="text-foreground">15 a 45 dias úteis</strong>, podendo variar
-              conforme complexidade e escala.
+              <strong className="text-foreground">30 dias (mês completo)</strong>, com envio na segunda quinzena do mês seguinte (a partir do dia 15).
             </p>
           </div>
         </section>

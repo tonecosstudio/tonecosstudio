@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AppShell from '@/components/AppShell';
 import SEOHead from '@/components/SEOHead';
@@ -43,6 +44,7 @@ import {
   Eye,
   TrendingUp,
   Package,
+  ExternalLink,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -62,6 +64,7 @@ interface SubscriptionWithDetails {
 }
 
 export default function AdminSubscriptionsHybrid() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithDetails | null>(null);
 
@@ -87,7 +90,7 @@ export default function AdminSubscriptionsHybrid() {
             .eq('id', sub.user_id)
             .single();
 
-          // Buscar coleção ativa
+          // Buscar coleção ativa diretamente
           let collectionName = null;
           if (sub.active_collection_id) {
             const { data: collection } = await supabase
@@ -95,7 +98,10 @@ export default function AdminSubscriptionsHybrid() {
               .select('name')
               .eq('id', sub.active_collection_id)
               .single();
-            collectionName = collection?.name;
+            
+            if (collection) {
+              collectionName = collection.name;
+            }
           }
 
           // Contar escolhas
@@ -294,11 +300,18 @@ export default function AdminSubscriptionsHybrid() {
                 </TableHeader>
                 <TableBody>
                   {filteredSubscriptions.map((sub) => (
-                    <TableRow key={sub.id}>
+                    <TableRow 
+                      key={sub.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => navigate(`/admin/users/${sub.user_id}`)}
+                    >
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{sub.user_name}</div>
-                          <div className="text-sm text-muted-foreground">{sub.user_email}</div>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <div className="font-medium">{sub.user_name}</div>
+                            <div className="text-sm text-muted-foreground">{sub.user_email}</div>
+                          </div>
+                          <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                       </TableCell>
                       <TableCell>{getPlanBadge(sub.plan_type)}</TableCell>
@@ -327,7 +340,10 @@ export default function AdminSubscriptionsHybrid() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setSelectedSubscription(sub)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSubscription(sub);
+                              }}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>

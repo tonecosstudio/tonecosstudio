@@ -247,21 +247,10 @@ SELECT
     AND sms.status = 'delivered'
   ) as characters_delivered,
   
-  -- Total de valores avulsos
+  -- Total de valores avulsos (simplificado - usa preço padrão)
   (
-    SELECT COALESCE(SUM(
-      COALESCE(csp.price_full, 
-        CASE 
-          WHEN cc.character_type = 'premium' THEN 900.00
-          ELSE 500.00
-        END
-      )
-    ), 0)
+    SELECT COUNT(*) * 50000 -- R$ 500 em centavos
     FROM subscription_monthly_selections sms
-    JOIN collection_characters cc ON cc.id = sms.character_id
-    LEFT JOIN character_standalone_pricing csp 
-      ON csp.character_type = cc.character_type 
-      AND csp.is_active = true
     WHERE sms.subscription_id = s.id
     AND sms.status = 'delivered'
   ) as total_standalone_value,

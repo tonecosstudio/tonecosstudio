@@ -19,9 +19,15 @@ export interface RedirectRule {
 export const activeRedirects: RedirectRule[] = [
   {
     from: '/admin/quotes',
-    to: '/admin/orcamentos',
+    to: '/admin/pedidos',
     permanent: false,
     reason: 'URL em inglês pode estar em emails/documentação',
+  },
+  {
+    from: '/admin/orcamentos',
+    to: '/admin/pedidos',
+    permanent: false,
+    reason: 'Orçamentos consolidados em Pedidos',
   },
   {
     from: '/admin/subscriptions',

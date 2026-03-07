@@ -25,6 +25,12 @@ type Character = {
   release_order: number;
   release_month: number | null;
   status: "upcoming" | "revealed" | "released";
+  is_catalog?: boolean;
+  price_category_id?: string | null;
+  price_category_name?: string | null;
+  price_category_display_name?: string | null;
+  price_coins?: number | null;
+  price_standalone?: number | null;
 };
 
 export default function CollectionDetails() {
@@ -37,10 +43,42 @@ export default function CollectionDetails() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
-        .select(`*, collection_characters (id, name, description, image_url, release_order, release_month, status)`)
+        .select(`
+          *,
+          collection_characters (
+            id,
+            name,
+            description,
+            image_url,
+            release_order,
+            release_month,
+            status,
+            is_catalog,
+            price_category_id,
+            price_categories (
+              name,
+              display_name,
+              price_coins,
+              price_standalone
+            )
+          )
+        `)
         .eq("slug", slug || "")
         .maybeSingle();
       if (error) throw error;
+      
+      // Transform the data to flatten price_categories
+      if (data && data.collection_characters) {
+        data.collection_characters = data.collection_characters.map((char: any) => ({
+          ...char,
+          price_category_name: char.price_categories?.name,
+          price_category_display_name: char.price_categories?.display_name,
+          price_coins: char.price_categories?.price_coins,
+          price_standalone: char.price_categories?.price_standalone,
+          price_categories: undefined, // Remove nested object
+        }));
+      }
+      
       return data;
     },
   });
@@ -403,6 +441,110 @@ export default function CollectionDetails() {
           </section>
         )}
 
+        {/* Pricing Information Section */}
+        <section className="py-16 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/10 dark:to-orange-950/10">
+          <div className="container max-w-6xl px-6">
+            <div className="text-center mb-10">
+              <Badge className="mb-4 bg-amber-500 text-slate-950 px-5 py-2.5 text-sm font-bold">
+                <Info className="w-4 h-4 mr-2" />
+                Sistema de Preços
+              </Badge>
+              <h2 className="text-3xl font-bold text-slate-950 dark:text-white mb-3">
+                Como Funciona o Sistema de Coins
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+                Assinantes pagam com coins. Personagens de coleção têm preço contextual, enquanto personagens do catálogo têm preço fixo por categoria.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Personagens de Coleção */}
+              <Card className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Package className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-950 dark:text-white">Personagens de Coleção</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Preço contextual</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Coleção Ativa</span>
+                      <span className="text-lg font-bold text-green-600 dark:text-green-400">200 coins</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Outra Coleção</span>
+                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">300 coins</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Compra Avulsa</span>
+                      <span className="text-lg font-bold text-slate-600 dark:text-slate-400">R$ 500</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-4 leading-relaxed">
+                    Personagens de coleção têm desconto quando você assina a coleção correspondente.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Personagens do Catálogo */}
+              <Card className="bg-white dark:bg-slate-900 border-2 border-amber-500">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center">
+                      <Star className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-950 dark:text-white">Personagens do Catálogo</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Preço fixo por categoria</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Padrão</span>
+                      <span className="text-lg font-bold text-slate-600 dark:text-slate-400">200 coins</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-900">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Premium</span>
+                      <span className="text-lg font-bold text-purple-600 dark:text-purple-400">300 coins</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Ultra Raro</span>
+                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">450 coins</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Lendário</span>
+                      <span className="text-lg font-bold text-amber-600 dark:text-amber-400">600 coins</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-4 leading-relaxed">
+                    Personagens do catálogo não pertencem a coleções e têm preço fixo baseado na raridade.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-8 p-6 bg-white dark:bg-slate-900 rounded-xl border-2 border-slate-200 dark:border-slate-800 text-center">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                <strong className="text-slate-950 dark:text-white">Importante:</strong> Coins são exclusivos para assinantes e não têm valor monetário. Não podem ser convertidos em dinheiro ou reembolsados.
+              </p>
+              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                <Link to="/planos">
+                  <Crown className="mr-2 h-4 w-4" />
+                  Ver Planos de Assinatura
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* Galeria com Tabs - Grid ou Lista */}
         <section className="py-24 bg-slate-50 dark:bg-slate-900">
           <div className="container max-w-7xl px-6">
@@ -565,7 +707,7 @@ export default function CollectionDetails() {
                 { 
                   step: '4', 
                   title: 'Envio e Entrega', 
-                  desc: 'Enviamos até o 5° dia útil. Entrega em 7-15 dias',
+                  desc: 'Enviamos na segunda quinzena do mês (a partir do dia 15)',
                   icon: Truck,
                   color: 'blue'
                 }
@@ -961,7 +1103,7 @@ export default function CollectionDetails() {
                 },
                 { 
                   q: 'Quando recebo minha primeira peça?', 
-                  a: 'Após confirmar sua compra ou assinatura, sua peça entra no próximo ciclo de produção disponível. A produção leva aproximadamente 30 dias e o envio é feito sempre até o 5° dia útil do mês seguinte. Você acompanha todo o processo com fotos exclusivas da produção. O prazo de entrega após o envio é de 7 a 15 dias úteis.' 
+                  a: 'Após confirmar sua compra ou assinatura, sua peça entra no próximo ciclo de produção disponível. O ciclo completo leva aproximadamente 90 dias (3 meses): vendas no primeiro mês, produção no segundo mês, e envio/entrega na segunda quinzena do terceiro mês (a partir do dia 15). Você acompanha todo o processo com fotos exclusivas da produção.' 
                 },
                 { 
                   q: 'Posso trocar o personagem escolhido?', 
@@ -1089,6 +1231,12 @@ function CharacterCard({ character }: { character: Character }) {
   const isRevealed = character.status === "revealed" || character.status === "released";
   const displayImage = isRevealed ? character.image_url : null;
   const displayName = isRevealed ? character.name : "Personagem Misterioso";
+  
+  // Determine pricing display
+  const isCatalog = character.is_catalog === true;
+  const priceDisplay = isCatalog && character.price_coins 
+    ? `${character.price_coins} coins`
+    : '200-300 coins'; // Collection contextual pricing
 
   return (
     <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-300 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500">
@@ -1106,10 +1254,15 @@ function CharacterCard({ character }: { character: Character }) {
           </div>
         )}
         
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
           <div className={`${config.color} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg`}>
             {config.label}
           </div>
+          {isCatalog && character.price_category_display_name && (
+            <div className="bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+              {character.price_category_display_name}
+            </div>
+          )}
         </div>
 
         <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white text-sm font-bold px-3 py-1.5 rounded-full">
@@ -1126,15 +1279,31 @@ function CharacterCard({ character }: { character: Character }) {
       </div>
 
       <CardContent className="p-4">
-        <h3 className="font-bold text-lg mb-2 text-slate-950 dark:text-white line-clamp-1">
-          {displayName}
-        </h3>
-        {character.release_month && (
-          <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Mês {character.release_month}
-          </p>
-        )}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-bold text-lg text-slate-950 dark:text-white line-clamp-1 flex-1">
+            {displayName}
+          </h3>
+          {isCatalog && (
+            <Badge variant="outline" className="text-xs whitespace-nowrap border-amber-500 text-amber-600 dark:text-amber-400">
+              Catálogo
+            </Badge>
+          )}
+        </div>
+        
+        <div className="flex items-center justify-between">
+          {character.release_month && (
+            <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Mês {character.release_month}
+            </p>
+          )}
+          
+          {isRevealed && (
+            <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
+              {priceDisplay}
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -1154,6 +1323,12 @@ function CharacterListItem({ character }: { character: Character }) {
   const displayImage = isRevealed ? character.image_url : null;
   const displayName = isRevealed ? character.name : "Personagem Misterioso";
   const displayDescription = isRevealed ? character.description : "Este personagem será revelado em breve. Aguarde a data de revelação!";
+  
+  // Determine pricing display
+  const isCatalog = character.is_catalog === true;
+  const priceDisplay = isCatalog && character.price_coins 
+    ? `${character.price_coins} coins`
+    : '200-300 coins'; // Collection contextual pricing
 
   return (
     <Card className="overflow-hidden hover:shadow-xl transition-all bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500">
@@ -1180,11 +1355,25 @@ function CharacterListItem({ character }: { character: Character }) {
         <div className="flex-1 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-4 mb-2">
-              <h3 className="font-bold text-lg text-slate-950 dark:text-white">
-                {displayName}
-              </h3>
-              <div className={`${config.color} text-white text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap`}>
-                {config.label}
+              <div className="flex-1">
+                <h3 className="font-bold text-lg text-slate-950 dark:text-white mb-1">
+                  {displayName}
+                </h3>
+                {isCatalog && character.price_category_display_name && (
+                  <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 dark:text-amber-400">
+                    Catálogo • {character.price_category_display_name}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <div className={`${config.color} text-white text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap`}>
+                  {config.label}
+                </div>
+                {isRevealed && (
+                  <div className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                    {priceDisplay}
+                  </div>
+                )}
               </div>
             </div>
             

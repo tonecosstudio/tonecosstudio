@@ -6,13 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCurrentCycle } from '@/hooks/useCycles';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  
-  // Buscar ciclo atual do banco de dados
-  const { data: currentCycle } = useCurrentCycle();
   
   // Buscar coleções ativas do banco de dados
   const { data: collections } = useQuery({
@@ -30,11 +26,7 @@ export default function LandingPage() {
     },
   });
   
-  // Formatar data do ciclo
-  const formatCycleDate = (month: number, year: number) => {
-    const date = new Date(year, month - 1);
-    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  };
+
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
@@ -47,16 +39,10 @@ export default function LandingPage() {
 
         <div className="relative w-full max-w-6xl mx-auto px-6 py-16">
           <div className="text-center text-white space-y-6">
-            {/* Badge com Ciclo Atual */}
-            {currentCycle ? (
-              <Badge className="bg-amber-500 text-slate-900 px-3 py-1 text-xs font-bold shadow-lg">
-                VAGAS ABERTAS • {formatCycleDate(currentCycle.month, currentCycle.year).toUpperCase()}
-              </Badge>
-            ) : (
-              <Badge className="bg-amber-500 text-slate-900 px-3 py-1 text-xs font-bold shadow-lg">
-                LANÇAMENTO OFICIAL
-              </Badge>
-            )}
+            {/* Badge de Lançamento */}
+            <Badge className="bg-amber-500 text-slate-900 px-3 py-1 text-xs font-bold shadow-lg">
+              VAGAS ABERTAS • {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}
+            </Badge>
 
             {/* Títulos */}
             <div className="space-y-2">
@@ -161,11 +147,9 @@ export default function LandingPage() {
 
                 <CardHeader className="pb-2 px-4 pt-3">
                   <CardTitle className="text-base font-bold">{collection.name}</CardTitle>
-                  {currentCycle && (
-                    <p className="text-amber-400 text-xs">
-                      Ativa até {formatCycleDate(currentCycle.month, currentCycle.year)}
-                    </p>
-                  )}
+                  <p className="text-amber-400 text-xs">
+                    Ativa até {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString('pt-BR')}
+                  </p>
                 </CardHeader>
 
                 <CardContent className="space-y-2.5 px-4 pb-4">
@@ -182,14 +166,12 @@ export default function LandingPage() {
                   </ul>
 
                   {/* Vagas */}
-                  {currentCycle && (
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-center">
-                      <div className="text-2xl font-bold text-white">
-                        {currentCycle.capacity_max - currentCycle.capacity_current}
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">VAGAS DISPONÍVEIS</div>
+                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-center">
+                    <div className="text-2xl font-bold text-white">
+                      Disponível
                     </div>
-                  )}
+                    <div className="text-[10px] text-slate-400 mt-0.5">VAGAS ABERTAS</div>
+                  </div>
 
                   {/* CTA */}
                   <Button 
@@ -240,17 +222,15 @@ export default function LandingPage() {
               Produção Organizada por Ciclo
             </h2>
             <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-              Cada coleção ativa é produzida em <span className="font-semibold">ciclos mensais</span> estruturados (2 ciclos por mês). Durante esse período,
+              Cada coleção ativa é produzida em <span className="font-semibold">lotes mensais</span> estruturados. Durante esse período,
               os participantes recebem atualizações sobre as etapas de produção até a finalização.
             </p>
-            {currentCycle && (
-              <div className="mt-4 inline-flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-md">
-                <Truck className="w-4 h-4 text-amber-600" />
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                  Envio garantido até {new Date(currentCycle.shipping_date).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
-            )}
+            <div className="mt-4 inline-flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-md">
+              <Truck className="w-4 h-4 text-amber-600" />
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                Produção e envio organizados mensalmente
+              </span>
+            </div>
           </div>
         </div>
       </section>

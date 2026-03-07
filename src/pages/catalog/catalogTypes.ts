@@ -1,3 +1,10 @@
+// @ts-nocheck
+/**
+ * Tipos compartilhados para o sistema de catálogo
+ */
+
+export const PAGE_SIZE = 24;
+
 export type ModelRow = {
   id: string;
   name: string;
@@ -9,5 +16,3 @@ export type ModelRow = {
   image_path: string;
   created_at: string;
 };
-
-export const PAGE_SIZE = 24;

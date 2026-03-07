@@ -77,7 +77,7 @@ export default function Terms() {
                   </p>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     <strong>4.2 Prazo de Produção:</strong> Cada peça é artesanal e leva
-                    aproximadamente 15 dias para produção, mais o prazo de entrega.
+                    aproximadamente 30 dias para produção (mês completo), mais o prazo de envio na segunda quinzena do mês seguinte.
                   </p>
                   <p className="text-muted-foreground leading-relaxed mb-3">
                     <strong>4.3 Pagamento:</strong> O pagamento deve ser realizado conforme as

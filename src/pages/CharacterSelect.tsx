@@ -43,7 +43,7 @@ type Collection = {
   name: string;
   slug: string;
   description: string | null;
-  cover_image_url: string | null;
+  image_url: string | null;
   is_active: boolean;
   collection_characters: Character[];
 };
@@ -376,7 +376,7 @@ export default function CharacterSelect() {
         .from("collections")
         .select(
           `
-          id, name, slug, description, cover_image_url, is_active,
+          id, name, slug, description, image_url, is_active,
           collection_characters (id, name, description, image_url, release_order, status)
         `
         )

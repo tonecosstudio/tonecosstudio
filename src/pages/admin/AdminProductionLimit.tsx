@@ -277,7 +277,7 @@ export default function AdminProductionLimit() {
                   <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
                     <li>O limite é global: soma de todas as coleções</li>
                     <li>Vendas fecham automaticamente ao atingir o limite</li>
-                    <li>Vendas também fecham após 30 dias (dia 15 a dia 15)</li>
+                    <li>Vendas também fecham após 30 dias (mês completo de vendas)</li>
                     <li>Você pode fechar/reabrir manualmente a qualquer momento</li>
                   </ul>
                 </div>

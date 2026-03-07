@@ -582,7 +582,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
                   <h4 className="font-medium">Marcar Produção Concluída</h4>
                   <p className="text-sm text-muted-foreground mt-1">
                     Marca a produção como concluída e notifica o cliente para pagar o saldo.
-                    O prazo de 5 dias úteis será calculado automaticamente.
+                    O prazo de 5 dias será calculado automaticamente.
                   </p>
                   <Button
                     onClick={handleMarkComplete}
