@@ -47,18 +47,23 @@ async function createTestUser(email: string): Promise<string> {
 /**
  * Create a test cycle
  */
-async function createTestCycle(month: number, year: number, cycleNumber: 1 | 2): Promise<string> {
+async function createTestCycle(month: number, year: number): Promise<string> {
+  // Use the populate_cycles RPC to create cycle with SSOT
+  const { error: rpcError } = await supabase
+    .rpc('populate_cycles', {
+      p_start_month: month,
+      p_start_year: year,
+      p_num_months: 1
+    });
+  
+  if (rpcError) throw rpcError;
+  
+  // Fetch the created cycle
   const { data, error } = await supabase
     .from('cycles')
-    .insert({
-      cycle_number: cycleNumber,
-      month,
-      year,
-      status: 'open',
-      capacity_max: 100,
-      capacity_current: 0,
-    })
-    .select()
+    .select('id')
+    .eq('month', month)
+    .eq('year', year)
     .single();
   
   if (error) throw error;
@@ -119,7 +124,7 @@ describeIntegration('Task 30.6: Subscription Creation Flow Integration Test', ()
   beforeEach(async () => {
     // Setup test data
     userId = await createTestUser('subscription-test@ordax.com');
-    cycleId = await createTestCycle(3, 2026, 1);
+    cycleId = await createTestCycle(3, 2026);
     collectionId = await createTestCollection('Test Collection');
   });
 
@@ -226,7 +231,7 @@ describeIntegration('Task 30.7: Standalone Purchase Deposit Flow Integration Tes
 
   beforeEach(async () => {
     userId = await createTestUser('standalone-test@ordax.com');
-    cycleId = await createTestCycle(3, 2026, 1);
+    cycleId = await createTestCycle(3, 2026);
     collectionId = await createTestCollection('Standalone Collection');
   });
 
@@ -395,7 +400,7 @@ describeIntegration('Task 30.8: Collection Change with Audit Trail Integration T
 
   beforeEach(async () => {
     userId = await createTestUser('audit-test@ordax.com');
-    cycleId = await createTestCycle(3, 2026, 1);
+    cycleId = await createTestCycle(3, 2026);
     collection1Id = await createTestCollection('Collection 1');
     collection2Id = await createTestCollection('Collection 2');
 
@@ -556,8 +561,8 @@ describeIntegration('Task 30.9: Complete Subscription Lifecycle E2E Test', () =>
 
   beforeEach(async () => {
     userId = await createTestUser('lifecycle-test@ordax.com');
-    cycle1Id = await createTestCycle(3, 2026, 1);
-    cycle2Id = await createTestCycle(3, 2026, 2);
+    cycle1Id = await createTestCycle(3, 2026);
+    cycle2Id = await createTestCycle(4, 2026);
     collectionId = await createTestCollection('Lifecycle Collection');
   });
 

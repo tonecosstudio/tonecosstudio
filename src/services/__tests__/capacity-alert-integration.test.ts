@@ -24,24 +24,22 @@ describe('Capacity Alert Integration', () => {
   let testCycleId: string;
 
   beforeEach(async () => {
-    // Create a test cycle for integration testing
+    // Create a test cycle using populate_cycles RPC
+    const { error: rpcError } = await supabase
+      .rpc('populate_cycles', {
+        p_start_month: 3,
+        p_start_year: 2026,
+        p_num_months: 1
+      });
+
+    if (rpcError) throw rpcError;
+
+    // Fetch the created cycle
     const { data: cycle, error } = await supabase
       .from('cycles')
-      .insert({
-        cycle_number: 1,
-        month: 3,
-        year: 2026,
-        open_start: new Date('2026-03-01T00:00:00Z').toISOString(),
-        open_end: new Date('2026-03-15T23:59:59Z').toISOString(),
-        production_start: new Date('2026-03-16T00:00:00Z').toISOString(),
-        production_end: new Date('2026-03-30T23:59:59Z').toISOString(),
-        shipping_date: '2026-04-05',
-        status: 'open',
-        capacity_max: 100,
-        capacity_current: 0,
-        alert_threshold: 80
-      })
-      .select()
+      .select('id')
+      .eq('month', 3)
+      .eq('year', 2026)
       .single();
 
     if (error) throw error;
