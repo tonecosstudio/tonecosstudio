@@ -340,54 +340,58 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
   const [formData, setFormData] = useState({
     name: character?.name || "",
     description: character?.description || "",
-    rarity: character?.rarity || "common",
-    costInCredits: character?.costInCredits || 0,
-    priceInReais: character?.priceInReais || 0,
-    stockQuantity: character?.stockQuantity ?? null,
-    isActive: character?.isActive ?? true,
-    isExclusiveSemestral: character?.isExclusiveSemestral || false,
-    isStandardCollection: character?.isStandardCollection || false,
-    imageUrl: character?.imageUrl || "",
+    status: character?.status || "released",
+    price_category_id: character?.price_category_id || "",
+    image_url: character?.image_url || "",
+    is_catalog: character?.is_catalog ?? true,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data: any) => subscriptionCreditAdminAPI.createCharacter(data),
-    onSuccess: () => {
-      toast({ title: "Personagem criado com sucesso" });
-      onSuccess();
-    },
-    onError: () => {
-      toast({ title: "Erro ao criar personagem", variant: "destructive" });
+  // Fetch price categories for dropdown
+  const { data: categories } = useQuery({
+    queryKey: ["admin-price-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('price_categories')
+        .select('*')
+        .order('display_order');
+      if (error) throw error;
+      return data || [];
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (data: any) =>
-      subscriptionCreditAdminAPI.updateCharacter(character.id, data),
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (character) {
+        // Update
+        const { error } = await supabase
+          .from('collection_characters')
+          .update(data)
+          .eq('id', character.id);
+        if (error) throw error;
+      } else {
+        // Create
+        const { error } = await supabase
+          .from('collection_characters')
+          .insert(data);
+        if (error) throw error;
+      }
+    },
     onSuccess: () => {
-      toast({ title: "Personagem atualizado com sucesso" });
+      toast({ title: character ? "Personagem atualizado" : "Personagem criado" });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: "Erro ao atualizar personagem", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao salvar personagem", 
+        description: error.message,
+        variant: "destructive" 
+      });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const data = {
-      ...formData,
-      costInCredits: Number(formData.costInCredits),
-      priceInReais: Number(formData.priceInReais),
-      stockQuantity: formData.stockQuantity === "" ? null : Number(formData.stockQuantity),
-    };
-
-    if (character) {
-      updateMutation.mutate(data);
-    } else {
-      createMutation.mutate(data);
-    }
+    saveMutation.mutate(formData);
   };
 
   return (
@@ -405,34 +409,14 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rarity">Raridade *</Label>
-              <Select
-                value={formData.rarity}
-                onValueChange={(value) => setFormData({ ...formData, rarity: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="common">Common</SelectItem>
-                  <SelectItem value="rare">Rare</SelectItem>
-                  <SelectItem value="epic">Epic</SelectItem>
-                  <SelectItem value="legendary">Legendary</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -445,100 +429,78 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="costInCredits">Custo em Coins *</Label>
-              <Input
-                id="costInCredits"
-                type="number"
-                min="0"
-                value={formData.costInCredits}
-                onChange={(e) =>
-                  setFormData({ ...formData, costInCredits: e.target.value })
-                }
-                required
-              />
+              <Label htmlFor="price_category_id">Categoria de Preço *</Label>
+              <Select
+                value={formData.price_category_id}
+                onValueChange={(value) => setFormData({ ...formData, price_category_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((cat: any) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.display_name} - {cat.price_coins} coins
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priceInReais">Preço em R$</Label>
-              <Input
-                id="priceInReais"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.priceInReais}
-                onChange={(e) =>
-                  setFormData({ ...formData, priceInReais: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stockQuantity">Estoque</Label>
-              <Input
-                id="stockQuantity"
-                type="number"
-                min="0"
-                value={formData.stockQuantity ?? ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, stockQuantity: e.target.value })
-                }
-                placeholder="Ilimitado"
-              />
+              <Label htmlFor="status">Status *</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="released">Disponível</SelectItem>
+                  <SelectItem value="coming_soon">Em breve</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="imageUrl">URL da Imagem</Label>
+            <Label htmlFor="image_url">URL da Imagem</Label>
             <Input
-              id="imageUrl"
+              id="image_url"
               type="url"
-              value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              value={formData.image_url}
+              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
               placeholder="https://..."
             />
+            {formData.image_url && (
+              <div className="mt-2">
+                <img
+                  src={formData.image_url}
+                  alt="Preview"
+                  className="w-full max-w-xs h-48 object-cover rounded-md border"
+                  onError={(e) => {
+                    e.currentTarget.src = '';
+                    e.currentTarget.alt = 'Erro ao carregar imagem';
+                  }}
+                />
+              </div>
+            )}
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isActive: checked as boolean })
-                }
-              />
-              <Label htmlFor="isActive" className="cursor-pointer">
-                Ativo (visível no catálogo)
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isExclusiveSemestral"
-                checked={formData.isExclusiveSemestral}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isExclusiveSemestral: checked as boolean })
-                }
-              />
-              <Label htmlFor="isExclusiveSemestral" className="cursor-pointer">
-                Exclusivo para plano semestral
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isStandardCollection"
-                checked={formData.isStandardCollection}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isStandardCollection: checked as boolean })
-                }
-              />
-              <Label htmlFor="isStandardCollection" className="cursor-pointer">
-                Incluir na coleção padrão
-              </Label>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is_catalog"
+              checked={formData.is_catalog}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, is_catalog: checked as boolean })
+              }
+            />
+            <Label htmlFor="is_catalog" className="cursor-pointer">
+              Disponível no catálogo
+            </Label>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
@@ -547,7 +509,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
             </Button>
             <Button
               type="submit"
-              disabled={createMutation.isPending || updateMutation.isPending}
+              disabled={saveMutation.isPending}
             >
               {character ? "Atualizar" : "Criar"}
             </Button>
