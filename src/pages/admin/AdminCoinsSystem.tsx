@@ -890,6 +890,8 @@ export default function AdminCoinsSystem() {
                       </TableRow>
                     ))}
                   </TableBody>
+                </Table>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
