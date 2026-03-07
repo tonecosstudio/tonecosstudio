@@ -38,6 +38,7 @@ import {
   Grid,
   Tag,
   Coins,
+  Gift,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -69,6 +70,7 @@ const iconMap: Record<string, any> = {
   MessageSquare,
   Settings,
   Coins,
+  Gift,
   // Ícones adicionados para Sistema de Créditos
   Gauge,
   Wallet,

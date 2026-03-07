@@ -37,6 +37,12 @@ export const adminNavigationConfig: NavigationSection[] = [
         path: '/admin',
         icon: 'LayoutDashboard',
       },
+      {
+        id: 'analytics',
+        label: 'Analytics',
+        path: '/admin/analytics',
+        icon: 'BarChart3',
+      },
     ],
   },
   {
@@ -55,6 +61,12 @@ export const adminNavigationConfig: NavigationSection[] = [
         label: 'Embalagem',
         path: '/admin/embalagem',
         icon: 'Box',
+      },
+      {
+        id: 'bonus-pieces',
+        label: 'Peças Bônus',
+        path: '/admin/pecas-bonus',
+        icon: 'Gift',
       },
     ],
   },
@@ -126,6 +138,12 @@ export const adminNavigationConfig: NavigationSection[] = [
         path: '/admin/producao',
         icon: 'Grid',
         badge: 'Hub',
+      },
+      {
+        id: 'monthly-releases',
+        label: 'Lançamentos Mensais',
+        path: '/admin/lancamentos-mensais',
+        icon: 'Calendar',
       },
     ],
   },
