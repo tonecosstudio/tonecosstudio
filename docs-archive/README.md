@@ -1,81 +1,33 @@
-# 📚 Arquivo de Documentação Histórica
+# Documentos Arquivados
 
-Esta pasta contém documentação histórica do projeto Ordax, preservada para referência futura.
+Esta pasta contém documentos de trabalho, correções aplicadas e instruções temporárias que foram utilizadas durante o desenvolvimento mas não são mais necessárias para referência ativa.
 
-**Data de Arquivamento**: 25 de fevereiro de 2026
+## Conteúdo
 
----
+### Instruções de Aplicação (Concluídas)
+- `APLICADO_SUCESSO.md` - Confirmação de aplicação bem-sucedida
+- `APLICAR_AGORA.md` - Instruções de aplicação imediata
+- `APLICAR_CYCLES_MANUAL.md` - Aplicação manual de ciclos
+- `APLICAR_CYCLES_SSOT_MANUAL.md` - Aplicação SSOT de ciclos
+- `APLICAR_PRAZOS_MANUAL.md` - Aplicação manual de prazos
+- `APLICAR_SQL_MANUAL.md` - Aplicação manual de SQL
+- `COMO_APLICAR_SQL.md` - Guia de aplicação SQL
+- `COMO_USAR.md` - Instruções de uso
 
-## 📁 Estrutura
+### Correções Aplicadas
+- `CORRECAO_DATAS.md` - Correção de datas
+- `CORRECAO_DELIVERY_MONTH.md` - Correção de meses de entrega
+- `CORRECAO_FINAL.md` - Correção final
+- `SISTEMA_CORRIGIDO.md` - Sistema corrigido
 
-### implementations/
+### Resumos de Trabalho
+- `PRAZOS_APLICADOS_SUCESSO.md` - Prazos aplicados com sucesso
+- `PRAZOS_ATUALIZADOS_INTERFACE.md` - Interface de prazos atualizada
+- `RESUMO_CORRECOES.md` - Resumo de correções
+- `RESUMO_PRAZOS_CORRIGIDO.md` - Resumo de prazos corrigidos
 
-Documentos de implementação de funcionalidades e sistemas.
+## Nota
 
-### sprints/
+Estes documentos foram movidos para arquivo em 2026-03-07 durante a reorganização da documentação do projeto. Eles permanecem disponíveis para referência histórica, mas não são mais necessários para o desenvolvimento ativo.
 
-Documentos de sprints de desenvolvimento.
-
-### sessions/
-
-Documentos de sessões de trabalho e desenvolvimento.
-
-### phases/
-
-Documentos de fases do projeto.
-
-### corrections/
-
-Documentos de correções e fixes.
-
-### improvements/
-
-Documentos de melhorias implementadas.
-
-### analysis/
-
-Análises técnicas e de negócio.
-
-### migrations/
-
-Documentos relacionados a migrations de banco de dados.
-
-### summaries/
-
-Resumos executivos e relatórios finais.
-
-### guides/
-
-Guias históricos (guias ativos estão em docs/guides/).
-
-### checklists/
-
-Checklists de processos passados.
-
-### indices/
-
-Índices antigos de documentação.
-
----
-
-## ⚠️ IMPORTANTE
-
-Esta documentação é **histórica** e pode estar **desatualizada**.
-
-Para documentação atual, consulte:
-
-- [docs/README.md](../docs/README.md) - Documentação técnica ativa
-- [README.md](../README.md) - README principal do projeto
-
----
-
-## 🔍 Como Usar Este Arquivo
-
-1. **Referência Histórica**: Consulte para entender decisões passadas
-2. **Contexto**: Útil para entender evolução do projeto
-3. **Não Modificar**: Estes documentos são apenas para leitura
-
----
-
-**Arquivado em**: 25/02/2026  
-**Por**: Kiro AI - Reorganização da Documentação
+Para documentação atual, consulte o arquivo principal: `../DOCS_INDEX.md`

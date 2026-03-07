@@ -83,15 +83,18 @@
   - Fluxo oficial de cálculo de prazos
   - Integração com sistema
 
-- **[RESUMO_PRAZOS_CORRIGIDO.md](./RESUMO_PRAZOS_CORRIGIDO.md)**
-  - Correções aplicadas no sistema de prazos
+- **[RESUMO_FINAL_PRAZOS.md](./RESUMO_FINAL_PRAZOS.md)**
+  - Resumo final do sistema de prazos
+
+- **[ANALISE_PRAZOS_SISTEMA.md](./ANALISE_PRAZOS_SISTEMA.md)**
+  - Análise completa do sistema de prazos
 
 ### Sistema de Preços
 - **[LIMPEZA_PRICING_MANAGEMENT.md](./LIMPEZA_PRICING_MANAGEMENT.md)**
   - Limpeza do sistema de preços
   - Consolidação de páginas
 
-### Resumos e Correções
+### Resumos e Refatorações
 - **[LIMPEZA_COMPLETA.md](./LIMPEZA_COMPLETA.md)**
   - Limpeza geral do projeto
 
@@ -103,6 +106,13 @@
 
 - **[REFATORACAO_PROFISSIONAL.md](./REFATORACAO_PROFISSIONAL.md)**
   - Refatoração profissional geral
+
+### Documentos Arquivados
+- **[docs-archive/](./docs-archive/)**
+  - Instruções de aplicação concluídas
+  - Correções já aplicadas
+  - Resumos de trabalho temporários
+  - Ver [docs-archive/README.md](./docs-archive/README.md) para detalhes
 
 ---
 
