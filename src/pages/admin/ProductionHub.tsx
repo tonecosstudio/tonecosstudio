@@ -309,26 +309,26 @@ function ProductionHub() {
       />
 
       <AdminLayout>
-        <div className="space-y-6">
-          {/* Alertas Urgentes - Sticky Banner */}
-          <UrgentAlertsBanner onAlertClick={handleAlertClick} />
-
+        {/* Alertas Urgentes - Sticky Banner (fora do container principal) */}
+        <UrgentAlertsBanner onAlertClick={handleAlertClick} />
+        
+        <div className="space-y-6 p-6">
           {/* Header Compacto */}
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight">Hub de Produção</h1>
-              <p className="text-sm text-muted-foreground">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Hub de Produção</h1>
+              <p className="text-sm text-muted-foreground mt-1">
                 Controle completo da produção em tempo real
               </p>
             </div>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs h-6">
               <Activity className="h-3 w-3 mr-1" />
-              Atualizado há {metricsQuery.dataUpdatedAt ? 'poucos segundos' : '...'}
+              Atualizado agora
             </Badge>
           </div>
 
           {/* Métricas Principais - Grid Compacto */}
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               icon={Package}
               label="Total em Produção"
@@ -360,44 +360,59 @@ function ProductionHub() {
           </div>
 
           {/* Filtros Globais - Sempre Visíveis */}
-          <Card className="bg-muted/30">
-            <CardContent className="p-4">
-              <ProductionFilters
-                filters={filters}
-                onFiltersChange={setFilters}
-                onReset={handleResetFilters}
-              />
-            </CardContent>
-          </Card>
+          <div className="bg-muted/30 rounded-lg border p-4">
+            <ProductionFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              onReset={handleResetFilters}
+            />
+          </div>
 
           {/* Tabs Principais */}
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5 max-w-3xl">
-              <TabsTrigger value="kanban" className="gap-2">
-                <LayoutGrid className="h-4 w-4" />
-                Kanban
-              </TabsTrigger>
-              <TabsTrigger value="list" className="gap-2">
-                <List className="h-4 w-4" />
-                Lista
-              </TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-2">
-                <Calendar className="h-4 w-4" />
-                Calendário
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Análises
-              </TabsTrigger>
-              <TabsTrigger value="choices" className="gap-2">
-                <CheckSquare className="h-4 w-4" />
-                Escolhas
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+            <div className="border-b">
+              <TabsList className="h-12 bg-transparent border-0 w-full justify-start gap-4">
+                <TabsTrigger 
+                  value="kanban" 
+                  className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  <span className="hidden sm:inline">Kanban</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="list" 
+                  className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                >
+                  <List className="h-4 w-4" />
+                  <span className="hidden sm:inline">Lista</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="calendar" 
+                  className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">Calendário</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="analytics" 
+                  className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Análises</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="choices" 
+                  className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">Escolhas</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Bulk Actions Toolbar - Floating */}
             {selectedIds.size > 0 && (
-              <div className="sticky top-16 z-40">
+              <div className="sticky top-0 z-40 -mx-6 px-6 py-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
                 <BulkActionsToolbar
                   selectedCount={selectedIds.size}
                   onAssign={() => setShowAssignModal(true)}
@@ -414,13 +429,15 @@ function ProductionHub() {
             </TabsContent>
 
             {/* Tab: Lista */}
-            <TabsContent value="list" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Fila de Produção</CardTitle>
-                  <CardDescription>Visualização em lista com seleção múltipla</CardDescription>
-                </CardHeader>
-                <CardContent>
+            <TabsContent value="list" className="mt-0 space-y-0">
+              <div className="rounded-lg border bg-card">
+                <div className="p-6 pb-4">
+                  <h3 className="text-lg font-semibold">Fila de Produção</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Visualização em lista com seleção múltipla
+                  </p>
+                </div>
+                <div className="px-6 pb-6">
                   <ProductionListView
                     data={queueData?.data || []}
                     isLoading={isLoading}
@@ -430,44 +447,46 @@ function ProductionHub() {
                     onSelectItem={handleSelectItem}
                     onItemClick={handleItemClick}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
 
             {/* Tab: Calendário */}
-            <TabsContent value="calendar" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Calendário de Produção</CardTitle>
-                  <CardDescription>Visualização por prazos e datas</CardDescription>
-                </CardHeader>
-                <CardContent>
+            <TabsContent value="calendar" className="mt-0 space-y-0">
+              <div className="rounded-lg border bg-card">
+                <div className="p-6 pb-4">
+                  <h3 className="text-lg font-semibold">Calendário de Produção</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Visualização por prazos e datas
+                  </p>
+                </div>
+                <div className="px-6 pb-6">
                   <ProductionCalendarView
                     data={queueData?.data || []}
                     isLoading={isLoading}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
 
             {/* Tab: Análises (NOVO) */}
-            <TabsContent value="analytics" className="mt-0">
+            <TabsContent value="analytics" className="mt-0 space-y-0">
               <ProductionAnalytics />
             </TabsContent>
 
             {/* Tab: Escolhas */}
-            <TabsContent value="choices" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Escolhas de Personagens</CardTitle>
-                  <CardDescription>
+            <TabsContent value="choices" className="mt-0 space-y-0">
+              <div className="rounded-lg border bg-card">
+                <div className="p-6 pb-4">
+                  <h3 className="text-lg font-semibold">Escolhas de Personagens</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Gerencie e aprove escolhas de personagens dos clientes
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                  </p>
+                </div>
+                <div className="px-6 pb-6">
                   <CharacterChoicesContent />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
 
