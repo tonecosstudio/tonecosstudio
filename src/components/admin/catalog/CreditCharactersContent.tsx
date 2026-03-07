@@ -6,7 +6,7 @@
  * como uma aba dentro do AdminCollectionsHub
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -338,13 +338,37 @@ export function CreditCharactersContent() {
 function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: character?.name || "",
-    description: character?.description || "",
-    status: character?.status || "released",
-    price_category_id: character?.price_category_id || "",
-    image_url: character?.image_url || "",
-    is_catalog: character?.is_catalog ?? true,
+    name: "",
+    description: "",
+    status: "released",
+    price_category_id: "",
+    image_url: "",
+    is_catalog: true,
   });
+
+  // Update form when character changes
+  useEffect(() => {
+    if (character) {
+      setFormData({
+        name: character.name || "",
+        description: character.description || "",
+        status: character.status || "released",
+        price_category_id: character.price_category_id || "",
+        image_url: character.image_url || "",
+        is_catalog: character.is_catalog ?? true,
+      });
+    } else {
+      // Reset form for new character
+      setFormData({
+        name: "",
+        description: "",
+        status: "released",
+        price_category_id: "",
+        image_url: "",
+        is_catalog: true,
+      });
+    }
+  }, [character, isOpen]);
 
   // Fetch price categories for dropdown
   const { data: categories } = useQuery({
