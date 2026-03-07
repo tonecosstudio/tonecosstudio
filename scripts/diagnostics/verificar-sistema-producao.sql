@@ -45,9 +45,10 @@ ORDER BY ordinal_position;
 SELECT 
   '📦 ITENS NA FILA' as secao,
   COUNT(*) as total_itens,
-  COUNT(CASE WHEN status = 'pending' THEN 1 END) as pendentes,
-  COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as em_progresso,
-  COUNT(CASE WHEN status = 'completed' THEN 1 END) as completos
+  COUNT(CASE WHEN production_status = 'awaiting_choice' THEN 1 END) as aguardando_escolha,
+  COUNT(CASE WHEN production_status = 'ready_for_production' THEN 1 END) as pronto_producao,
+  COUNT(CASE WHEN production_status = 'in_production' THEN 1 END) as em_producao,
+  COUNT(CASE WHEN production_status = 'completed' THEN 1 END) as completos
 FROM production_queue;
 
 -- ============================================
@@ -56,9 +57,11 @@ FROM production_queue;
 SELECT 
   '🕐 ÚLTIMOS 5 ITENS' as secao,
   id,
-  user_id,
+  customer_id,
   priority,
-  status,
+  priority_score,
+  production_status,
+  current_stage,
   created_at
 FROM production_queue
 ORDER BY created_at DESC
@@ -92,13 +95,8 @@ WHERE status = 'confirmed';
 SELECT 
   '🔗 CORRELAÇÃO PAGAMENTOS → FILA' as secao,
   (SELECT COUNT(*) FROM manual_payments WHERE status = 'approved') as pagamentos_aprovados,
-  (SELECT COUNT(*) FROM production_queue WHERE source_type = 'manual_payment') as itens_na_fila,
-  CASE 
-    WHEN (SELECT COUNT(*) FROM manual_payments WHERE status = 'approved') = 
-         (SELECT COUNT(*) FROM production_queue WHERE source_type = 'manual_payment')
-    THEN '✅ SINCRONIZADO'
-    ELSE '⚠️ DESSINCRONIZADO'
-  END as status_sincronia;
+  (SELECT COUNT(*) FROM production_queue WHERE order_type = 'standalone_purchase') as itens_na_fila_standalone,
+  (SELECT COUNT(*) FROM production_queue WHERE order_type = 'subscription_delivery') as itens_na_fila_subscription;
 
 -- ============================================
 -- 9. VERIFICAR DADOS DE TESTE DISPONÍVEIS
