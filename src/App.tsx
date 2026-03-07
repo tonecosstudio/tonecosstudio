@@ -360,18 +360,6 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/modelos"
-            element={<Navigate to="/admin/catalogo?tab=models" replace />}
-          />
-          <Route
-            path="/admin/franquias"
-            element={<Navigate to="/admin/catalogo?tab=models" replace />}
-          />
-          <Route
-            path="/admin/modelos-franquias"
-            element={<Navigate to="/admin/catalogo?tab=models" replace />}
-          />
-          <Route
             path="/admin/financeiro"
             element={<Navigate to="/admin/financeiro-hub?tab=collections" replace />}
           />
