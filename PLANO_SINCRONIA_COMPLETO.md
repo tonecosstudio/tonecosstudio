@@ -140,11 +140,14 @@ Estas páginas NÃO precisam atualização pois não interagem com production_qu
 3. ✅ OrdersPage: Nenhuma correção necessária
 4. ✅ Triggers validados e funcionando
 
-### Fase 4: Sincronização de Schema ⏳ PRÓXIMA
-1. ⏳ Executar `npx supabase db pull`
-2. ⏳ Revisar diferenças
-3. ⏳ Criar migration de correção se necessário
-4. ⏳ Aplicar e testar
+### Fase 4: Sincronização de Schema ⏸️ EM ANDAMENTO (80%)
+1. ✅ Identificar migrations locais vs remotas
+2. ✅ Reparar 2/3 migrations (20260307000004, 20260513000007)
+3. ⏸️ Aguardar circuit breaker reset (~5-10 min)
+4. ⏳ Reparar última migration (20260513000008)
+5. ⏳ Executar `npx supabase db pull`
+6. ⏳ Revisar diferenças
+7. ⏳ Criar migration de correção se necessário
 
 ### Fase 5: Testes e Validação ⏳ AGUARDANDO
 1. ⏳ Testar criação de novo pedido
@@ -212,4 +215,11 @@ Após execução completa:
 - ⏳ Fase 4: Sincronização (0%)
 - ⏳ Fase 5: Testes (0%)
 
-**Progresso Total**: 60% concluído
+**Progresso Total**: 68% concluído
+
+### Detalhamento
+- Fase 1: 100% ✅
+- Fase 2: 100% ✅
+- Fase 3: 100% ✅
+- Fase 4: 80% ⏸️ (aguardando circuit breaker)
+- Fase 5: 0% ⏳
