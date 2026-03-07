@@ -570,7 +570,7 @@ export default function BonusPieces() {
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                {searchQuery || statusFilter !== 'all'
+                {searchQuerySanitized || statusFilter !== 'all'
                   ? 'Nenhuma peça bônus encontrada com os filtros aplicados.'
                   : 'Nenhuma peça bônus cadastrada ainda.'}
               </div>
