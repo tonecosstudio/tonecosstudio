@@ -675,7 +675,7 @@ export async function getAllStandalonePurchases(filters?: {
       updated_at,
       profiles(id, full_name, email),
       collections(id, name, slug),
-      cycles(id, cycle_number, month, year),
+      cycles(id, month, year),
       collection_characters(id, name, image_url)
     `, { count: 'exact' });
 
@@ -767,7 +767,7 @@ export async function searchStandalonePurchasesByCustomer(
       *,
       profiles(id, full_name, email),
       collections(id, name, slug),
-      cycles(id, cycle_number, month, year)
+      cycles(id, month, year)
     `)
     .in('user_id', userIds)
     .order('created_at', { ascending: false })
