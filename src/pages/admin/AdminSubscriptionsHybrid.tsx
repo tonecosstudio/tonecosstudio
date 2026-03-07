@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import AppShell from '@/components/AppShell';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import SEOHead from '@/components/SEOHead';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -193,10 +193,10 @@ export default function AdminSubscriptionsHybrid() {
   };
 
   return (
-    <AppShell>
+    <AdminLayout>
       <SEOHead title="Gerenciar Assinaturas - Admin" noindex />
 
-      <div className="container py-8 max-w-7xl">
+      <div className="space-y-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Gerenciar Assinaturas</h1>
@@ -466,6 +466,6 @@ export default function AdminSubscriptionsHybrid() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </AdminLayout>
   );
 }
