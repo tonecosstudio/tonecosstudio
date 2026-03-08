@@ -153,31 +153,6 @@ function AppContent() {
             }
           />
 
-          <Route
-            path="/orcamento"
-            element={
-              <RequireAuth>
-                <QuoteArcade />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/orcamento-old"
-            element={
-              <RequireAuth>
-                <Quote />
-              </RequireAuth>
-            }
-          />
-
-          <Route
-            path="/orcamento/carrinho"
-            element={
-              <RequireAuth>
-                <QuoteCart />
-              </RequireAuth>
-            }
-          />
 
           <Route path="/suporte" element={<Navigate to="/perfil?section=support" replace />} />
 
