@@ -561,8 +561,8 @@ function transformSubscription(
         status: d.status,
         characterId: d.character_id,
         characterName: d._character?.name || null,
-        expectedDeliveryDate: d.expected_delivery_date,
-        actualDeliveryDate: d.actual_delivery_date,
+        actualDeliveryDate: d.actual_delivery_date || d.delivered_date,
+        shippingDate: d.shipping_date,
         trackingCode: d.tracking_code,
         revealDate: d.reveal_date,
       }))
