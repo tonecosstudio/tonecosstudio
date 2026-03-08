@@ -39,8 +39,9 @@ interface SubscriptionWithDeliveries {
     delivery_order: number;
     status: string;
     character_id: string | null;
-    expected_delivery_date: string | null;
     actual_delivery_date: string | null;
+    delivered_date: string | null;
+    shipping_date: string | null;
     tracking_code: string | null;
     reveal_date: string | null;
     _character?: any;
