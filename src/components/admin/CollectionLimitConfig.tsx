@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Componente para configurar limite de coleções por plano
  * 

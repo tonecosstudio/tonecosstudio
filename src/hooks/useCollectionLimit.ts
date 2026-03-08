@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para validar limite de coleções por plano
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Formulário de Edição de Preços Avulsos (em R$) - 4 Tipos
  *

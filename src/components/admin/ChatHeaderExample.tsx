@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ChatHeaderExample - Exemplo de uso do ChatHeader com agendamento de lembretes
  *

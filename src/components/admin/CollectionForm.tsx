@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CollectionForm Component
  * 
@@ -140,8 +139,8 @@ export function CollectionForm({
     if (collection) {
       setName(collection.name);
       setDescription(collection.description);
-      setImageUrl(collection.coverImage || "");
-      setRotationType(collection.rotation_type || "fixed");
+      setImageUrl(collection.cover_image_url || "");
+      setRotationType((collection.rotation_type as "fixed" | "odd_months" | "even_months") || "fixed");
       setIsActive(collection.is_active);
       setCharacters([]);
       // TODO: Load tier from collection_tier_assignments
