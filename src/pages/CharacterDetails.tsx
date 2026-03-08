@@ -2,6 +2,7 @@
  * Character Details Page - Metal Slug Style
  * 
  * Página de detalhes do personagem com estética arcade
+ * Route: /colecoes/:slug/:characterId
  */
 
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -23,41 +24,54 @@ import {
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
-type CharacterDetails = {
+type CharacterData = {
   id: string;
   name: string;
   description: string | null;
   image_url: string | null;
   status: string;
   is_catalog: boolean;
-  collection_id: string | null;
-  collection_name: string | null;
-  collection_slug: string | null;
+  collection_id: string;
   price_category_id: string | null;
-  price_category_display_name: string | null;
-  price_coins: number | null;
-  price_standalone: number | null;
+  price_categories: {
+    display_name: string;
+    price_coins: number;
+    price_standalone: number;
+  } | null;
+  collections: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
 };
 
 export default function CharacterDetails() {
-  const { id } = useParams<{ id: string }>();
+  const { slug, characterId } = useParams<{ slug: string; characterId: string }>();
   const navigate = useNavigate();
 
-  // Buscar dados do personagem
+  // Buscar dados do personagem direto de collection_characters + joins
   const { data: character, isLoading } = useQuery({
-    queryKey: ["character-details", id],
+    queryKey: ["character-details", characterId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("characters_with_pricing")
-        .select("*")
-        .eq("id", id)
-        .single();
+        .from("collection_characters")
+        .select(`
+          id, name, description, image_url, status, is_catalog, collection_id, price_category_id,
+          price_categories (display_name, price_coins, price_standalone),
+          collections (id, name, slug)
+        `)
+        .eq("id", characterId)
+        .maybeSingle();
 
       if (error) throw error;
-      return data as CharacterDetails;
+      return data as CharacterData | null;
     },
-    enabled: !!id,
+    enabled: !!characterId,
   });
+
+  const collectionSlug = character?.collections?.slug || slug || "";
+  const collectionName = character?.collections?.name || "";
+  const priceCategory = character?.price_categories;
 
   if (isLoading) {
     return (
@@ -87,8 +101,8 @@ export default function CharacterDetails() {
         <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Personagem não encontrado</h1>
-            <Button onClick={() => navigate("/colecoes-arcade")}>
-              Voltar para Coleções
+            <Button onClick={() => navigate(slug ? `/colecoes/${slug}` : "/colecoes")}>
+              Voltar para Coleção
             </Button>
           </div>
         </div>
@@ -119,11 +133,11 @@ export default function CharacterDetails() {
           {/* Back Button */}
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(`/colecoes/${collectionSlug}`)}
             className="mb-6 font-mono uppercase tracking-wider text-xs hover:text-[hsl(var(--gold-accent))]"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
+            Voltar para {collectionName || "Coleção"}
           </Button>
 
           {/* Main Content Grid */}
@@ -155,11 +169,11 @@ export default function CharacterDetails() {
               </div>
 
               {/* Category Badge */}
-              {character.is_catalog && character.price_category_display_name && (
+              {character.is_catalog && priceCategory?.display_name && (
                 <div className="absolute -top-3 -right-3 z-10">
                   <Badge className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] font-mono uppercase tracking-wider px-4 py-2 text-sm border-2 border-[hsl(var(--foreground))]">
                     <Star className="w-4 h-4 mr-1" />
-                    {character.price_category_display_name}
+                    {priceCategory.display_name}
                   </Badge>
                 </div>
               )}
@@ -172,12 +186,12 @@ export default function CharacterDetails() {
                 <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] mb-2 font-mono">
                   {character.name}
                 </h1>
-                {character.collection_name && (
+                {collectionName && (
                   <Link
-                    to={`/colecao/${character.collection_slug}`}
+                    to={`/colecoes/${collectionSlug}`}
                     className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--gold-accent))] transition-colors font-mono uppercase tracking-wider"
                   >
-                    {character.collection_name}
+                    {collectionName}
                   </Link>
                 )}
               </div>
@@ -198,7 +212,7 @@ export default function CharacterDetails() {
                 </h3>
 
                 {/* Coins Price */}
-                {character.price_coins && (
+                {priceCategory?.price_coins ? (
                   <div className="flex items-center justify-between p-3 bg-[hsl(var(--background))] rounded-sm border border-[hsl(var(--border))]">
                     <div className="flex items-center gap-2">
                       <Coins className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
@@ -207,13 +221,13 @@ export default function CharacterDetails() {
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-[hsl(var(--gold-accent))] font-mono">
-                      {character.price_coins}
+                      {priceCategory.price_coins}
                     </span>
                   </div>
-                )}
+                ) : null}
 
                 {/* Standalone Price */}
-                {character.price_standalone && (
+                {priceCategory?.price_standalone ? (
                   <div className="flex items-center justify-between p-3 bg-[hsl(var(--background))] rounded-sm border border-[hsl(var(--border))]">
                     <div className="flex items-center gap-2">
                       <ShoppingCart className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
@@ -222,9 +236,15 @@ export default function CharacterDetails() {
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-[hsl(var(--foreground))] font-mono">
-                      R$ {(character.price_standalone / 100).toFixed(0)}
+                      R$ {(priceCategory.price_standalone / 100).toFixed(0)}
                     </span>
                   </div>
+                ) : null}
+
+                {!priceCategory && (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
+                    Preço disponível em breve
+                  </p>
                 )}
               </div>
 
