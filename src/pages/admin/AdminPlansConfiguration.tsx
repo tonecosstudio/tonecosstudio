@@ -70,18 +70,24 @@ function CoinExchangeRateCard() {
   const [reaisAmount, setReaisAmount] = useState(500);
   const [coinsAmount, setCoinsAmount] = useState(100);
 
-  // Fetch exchange rate
+  // Fetch exchange rate from price_categories (coin_value_in_cents)
   const exchangeRateQuery = useQuery({
     queryKey: ["coin-exchange-rate"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('coin_exchange_rate')
+        .from('price_categories')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .order('display_order', { ascending: true })
+        .limit(1);
       
       if (error) throw error;
-      return data;
+      const cat = data?.[0];
+      return {
+        id: cat?.id || null,
+        reais_amount: cat ? (cat.coin_value_in_cents / 100) * 100 : 500,
+        coins_amount: 100,
+      };
     },
   });
 
