@@ -144,8 +144,14 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
       )
       .subscribe();
 
+      return channel;
+    };
+
+    let channelRef: ReturnType<typeof supabase.channel> | undefined;
+    setup().then(ch => { channelRef = ch; });
+
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef) supabase.removeChannel(channelRef);
     };
   }, [queryClient, enableToast, soundEnabled, settings, toast]);
 
