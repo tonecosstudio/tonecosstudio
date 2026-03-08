@@ -116,11 +116,14 @@ function AppContent() {
           <Route path="/selecionar-personagem" element={<CharacterSelect />} />
           <Route path="/colecoes/:slug" element={<CollectionDetailsArcade />} />
           <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
-          <Route path="/termos" element={<Terms />} />
-          <Route path="/privacidade" element={<Privacy />} />
+          <Route path="/termos" element={<TermsArcade />} />
+          <Route path="/termos-old" element={<Terms />} />
+          <Route path="/privacidade" element={<PrivacyArcade />} />
+          <Route path="/privacidade-old" element={<Privacy />} />
           <Route path="/contato" element={<ContactArcade />} />
           <Route path="/contato-old" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginArcade />} />
+          <Route path="/login-old" element={<Login />} />
           <Route path="/collector/:username" element={<PublicProfile />} />
 
           <Route
