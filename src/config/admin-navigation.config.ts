@@ -78,7 +78,7 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'subscriptions-management',
         label: 'Assinaturas',
-        path: '/admin/assinaturas-gerenciar',
+        path: '/admin/pedidos?type=subscription',
         icon: 'RefreshCw',
         badge: 'Completo',
       },

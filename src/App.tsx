@@ -428,11 +428,7 @@ function AppContent() {
             path="/admin/planos"
             element={<Navigate to="/admin/creditos?tab=plans" replace />}
           />
-          {/* Redirecionar gerenciamento de assinaturas para página de pedidos */}
-          <Route
-            path="/admin/assinaturas-gerenciar"
-            element={<Navigate to="/admin/pedidos?type=subscription" replace />}
-          />
+
 
           {/* Sistema de Créditos - Hub Consolidado */}
           <Route
