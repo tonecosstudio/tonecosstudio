@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CreditCharactersContent - Gerenciamento de Personagens de Crédito
  * 

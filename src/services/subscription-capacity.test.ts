@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Subscription Capacity Integration Tests
  * 

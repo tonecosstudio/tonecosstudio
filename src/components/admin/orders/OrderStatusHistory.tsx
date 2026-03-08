@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Componente de Histórico de Status do Pedido
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Character Details Page - Metal Slug Style
  * 

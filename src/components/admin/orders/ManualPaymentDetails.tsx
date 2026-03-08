@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Componente de Detalhes de Pagamento Manual
  *

@@ -31,7 +31,7 @@ export function OrderRow({
 }: OrderRowProps) {
   // Determinar o ID correto para buscar informações de produção
   let productionOrderId = order.id;
-  let productionOrderType = order.type;
+  const productionOrderType = order.type;
 
   // Para assinaturas, usar o ID da próxima entrega (ou última)
   if (order.type === 'subscription_delivery' && order.subscriptionDelivery?.allDeliveries) {

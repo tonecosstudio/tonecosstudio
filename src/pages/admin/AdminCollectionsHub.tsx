@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * AdminCollectionsHub - Catálogo & Produtos (Hub Unificado)
  *

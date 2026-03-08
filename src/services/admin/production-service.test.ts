@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Testes para o Serviço de Gestão de Produção
  *

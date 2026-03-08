@@ -11,7 +11,6 @@
  * - Quote = 1 orçamento
  */
 
-// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import type { OrderFilters, PaginationParams, UnifiedOrder } from "@/types/admin/orders";
 

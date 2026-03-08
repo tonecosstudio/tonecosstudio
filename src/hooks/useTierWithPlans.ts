@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para buscar nível de preço com todos os planos
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Validador de Transições de Status de Pedidos
  * 

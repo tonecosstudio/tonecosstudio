@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for batch label generation functionality in DeliveryManagement
  * Requirements: 18.9

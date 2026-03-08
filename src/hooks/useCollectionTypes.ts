@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para gerenciar tipos de coleção dinâmicos
  * 

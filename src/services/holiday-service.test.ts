@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Holiday Service Tests
  * 

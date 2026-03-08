@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Seção de Informações de Produção
  * 
@@ -28,20 +27,23 @@ interface ProductionInfoSectionProps {
 }
 
 export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
-  // Apenas mostrar para pedidos elegíveis
-  if (order.type !== 'subscription_delivery' && order.type !== 'standalone_purchase') {
-    return null;
-  }
-
+  // Determinar se deve buscar informações de produção
+  const shouldFetchProduction = order.type === 'subscription_delivery' || order.type === 'standalone_purchase';
+  
   const { data: productionInfo, isLoading: isLoadingProduction } = useProductionInfo(
-    order.id,
-    order.type
+    shouldFetchProduction ? order.id : null,
+    shouldFetchProduction ? order.type : null
   );
 
   const { data: characterChoice } = useCharacterChoice(
-    order.id,
-    order.type
+    shouldFetchProduction ? order.id : null,
+    shouldFetchProduction ? order.type : null
   );
+
+  // Apenas mostrar para pedidos elegíveis
+  if (!shouldFetchProduction) {
+    return null;
+  }
 
   // Se não há informações de produção, não mostrar a seção
   if (!isLoadingProduction && !productionInfo) {

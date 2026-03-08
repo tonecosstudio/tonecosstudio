@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ChatButton - Botão flutuante de chat para clientes
  * ATUALIZADO: Removidos workarounds (setTimeout, refreshKey)
@@ -23,15 +22,6 @@ export function ChatButton() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Buscar status da conversa selecionada
-  const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
-  const isClosed = selectedConversation?.status === "closed";
-
-  // Não renderizar o botão na página de suporte para evitar duplicação
-  if (location.pathname === "/suporte") {
-    return null;
-  }
 
   // Carregar contador de mensagens não lidas
   useEffect(() => {
@@ -126,6 +116,15 @@ export function ChatButton() {
 
     loadConversations();
   }, [isOpen, user]);
+
+  // Buscar status da conversa selecionada
+  const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
+  const isClosed = selectedConversation?.status === "closed";
+
+  // Não renderizar o botão na página de suporte para evitar duplicação
+  if (location.pathname === "/suporte") {
+    return null;
+  }
 
   if (!user) return null;
 

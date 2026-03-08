@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Holiday Management Service for ORDAX Platform
  * 

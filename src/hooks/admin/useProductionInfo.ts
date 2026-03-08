@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para buscar informações de produção de um pedido
  * 

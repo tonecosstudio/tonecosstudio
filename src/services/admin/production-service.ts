@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Serviço de Gestão de Produção
  *
@@ -429,22 +428,22 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
 
     items.forEach((item) => {
       // Count by stage
-      if (item.current_stage && stages.hasOwnProperty(item.current_stage)) {
+      if (item.current_stage && Object.prototype.hasOwnProperty.call(stages, item.current_stage)) {
         stages[item.current_stage as ProductionStage]++;
       }
 
       // Count by status
-      if (item.production_status && statuses.hasOwnProperty(item.production_status)) {
+      if (item.production_status && Object.prototype.hasOwnProperty.call(statuses, item.production_status)) {
         statuses[item.production_status as ProductionStatus]++;
       }
 
       // Count by priority
-      if (item.priority && priorities.hasOwnProperty(item.priority)) {
+      if (item.priority && Object.prototype.hasOwnProperty.call(priorities, item.priority)) {
         priorities[item.priority as Priority]++;
       }
 
       // Count by choice status
-      if (item.choice_status && choices.hasOwnProperty(item.choice_status)) {
+      if (item.choice_status && Object.prototype.hasOwnProperty.call(choices, item.choice_status)) {
         choices[item.choice_status as ChoiceStatus]++;
       }
 

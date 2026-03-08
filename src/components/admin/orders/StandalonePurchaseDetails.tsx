@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Detalhes de Compra Avulsa
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para buscar preços de personagens como referência
  * 

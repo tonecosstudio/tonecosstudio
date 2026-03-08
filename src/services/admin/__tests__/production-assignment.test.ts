@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Unit tests for production assignment logic
  * Tests assignment, reassignment, logging, and notifications

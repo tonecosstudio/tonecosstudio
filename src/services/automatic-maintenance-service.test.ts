@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for Automatic Maintenance Service
  * 

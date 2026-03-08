@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para gerenciar migração para o sistema de níveis
  * 

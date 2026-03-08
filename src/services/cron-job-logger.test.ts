@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Unit tests for cron job logging infrastructure
  * Task 12.1: Set up pg_cron extension

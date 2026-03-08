@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para gerenciar multiplicador de preço por personagem
  * 

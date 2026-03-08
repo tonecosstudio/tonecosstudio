@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * 📦 CALCULADORA AUTOMÁTICA DE LOTES - MODELO RECORRENTE MENSAL
  *

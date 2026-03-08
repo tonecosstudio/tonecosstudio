@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { GroupsContent } from "@/components/groups/GroupsContent";
 

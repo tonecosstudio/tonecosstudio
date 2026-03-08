@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import type { Message, SendMessageData, PaginationOptions } from "@/types/support";
 import type { GroupMessage, GroupAttachment, Pagination } from "@/types/groups";

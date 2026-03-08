@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentMethodService - Service for managing admin payment methods
  *

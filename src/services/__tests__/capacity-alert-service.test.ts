@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Capacity Alert Service Tests
  * 

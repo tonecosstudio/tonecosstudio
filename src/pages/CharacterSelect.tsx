@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Metal Slug-style Character Select Screen
  * 

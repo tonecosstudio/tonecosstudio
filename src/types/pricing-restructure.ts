@@ -1,4 +1,3 @@
-// @ts-nocheck
 // src/types/pricing-restructure.ts
 // Feature: pricing-system-restructure
 // Tipos TypeScript para o sistema de preços reestruturado

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for delivery CSV export functionality
  * Requirements: 15.9

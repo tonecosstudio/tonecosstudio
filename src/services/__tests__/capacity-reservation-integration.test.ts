@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for capacity reservation management
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentError - Custom error class for payment-related errors
  * Requirements: 19.1-19.15

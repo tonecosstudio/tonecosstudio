@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ProductionHub - Hub Consolidado de Produção (REDESENHADO)
  * 

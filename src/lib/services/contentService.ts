@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Content Service - SSOT (Single Source of Truth)
  * Centraliza TODOS os textos, políticas, prazos e informações do sistema

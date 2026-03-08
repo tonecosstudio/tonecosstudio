@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Testes para o serviço de geração de etiquetas
  * 

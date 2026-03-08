@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para gerenciar níveis de preço (Pricing Tiers)
  * 

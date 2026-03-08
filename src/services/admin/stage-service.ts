@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Serviço de Gestão de Estágios de Produção
  *

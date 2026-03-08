@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Performance Test for Query Optimization - Task 11.3
  * 

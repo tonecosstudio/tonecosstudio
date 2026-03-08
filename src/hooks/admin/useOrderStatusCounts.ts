@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para Contadores de Status de Pedidos
  * 

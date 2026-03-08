@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Pay Standalone Balance Page
  * 

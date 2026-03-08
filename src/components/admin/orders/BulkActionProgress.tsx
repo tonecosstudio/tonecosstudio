@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Componente de Progresso de Ação em Massa
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Detalhes de Entrega de Assinatura
  * 

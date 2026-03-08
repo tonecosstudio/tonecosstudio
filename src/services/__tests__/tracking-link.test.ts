@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tracking Link Tests
  * 

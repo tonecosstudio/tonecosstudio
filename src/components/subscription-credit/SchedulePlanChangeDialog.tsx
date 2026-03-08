@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Schedule Plan Change Dialog
  * Allows user to schedule upgrade/downgrade for next renewal

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Testes para OrderDetailPanel - Foco em funcionalidade de rastreamento
  */

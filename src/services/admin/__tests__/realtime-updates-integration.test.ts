@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration test for real-time updates
  * 

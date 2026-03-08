@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentService - Service for managing manual payments
  *

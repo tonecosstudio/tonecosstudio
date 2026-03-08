@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * AdminHolidayManager - Gerenciamento de Feriados
  * 

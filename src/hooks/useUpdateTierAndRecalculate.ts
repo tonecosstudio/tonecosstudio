@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para atualizar nível e recalcular preços de planos
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Testes para o Modal de Confirmação de Ações em Massa
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * AdminFinancialHub - Hub de Relatórios Financeiros
  *

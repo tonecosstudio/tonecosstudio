@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Template Service
  * Processa templates de mensagens com variáveis dinâmicas

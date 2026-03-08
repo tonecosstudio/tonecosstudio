@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock, Calendar as CalendarIcon } from "lucide-react";

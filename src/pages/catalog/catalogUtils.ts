@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Utilitários compartilhados para o sistema de catálogo
  */

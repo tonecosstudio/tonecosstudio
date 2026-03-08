@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Database Types for ORDAX Complete System
  * 

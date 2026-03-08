@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { emailService } from '../email-service';
 import { supabase } from '@/integrations/supabase/client';

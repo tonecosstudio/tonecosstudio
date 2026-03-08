@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Página de detalhes do usuário no painel admin
  * Refatorado para seguir padrão AAA e remover código legado

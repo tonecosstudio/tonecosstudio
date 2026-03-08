@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { GroupList } from "./GroupList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para usar configurações de preços (SSOT)
  * Atualiza automaticamente quando as configurações mudam

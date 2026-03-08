@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Custom Hook for Secure File Upload
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook para gerenciar créditos de assinatura
  * 

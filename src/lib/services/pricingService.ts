@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Pricing Service - SSOT (Single Source of Truth)
  * Centraliza TODAS as configurações de preços e taxas do sistema

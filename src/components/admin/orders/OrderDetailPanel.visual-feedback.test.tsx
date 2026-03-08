@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Testes para feedback visual de atualização de status no OrderDetailPanel
  * 
