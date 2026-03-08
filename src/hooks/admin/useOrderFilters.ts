@@ -195,8 +195,14 @@ function parseFiltersFromURL(searchParams: URLSearchParams): OrderFilters {
 
   // Parse type
   const type = searchParams.get(URL_PARAMS.TYPE);
-  if (type === 'subscription_delivery' || type === 'standalone_purchase') {
+  if (type === 'subscription_delivery' || type === 'standalone_purchase' || type === 'manual_payment' || type === 'quote') {
     filters.type = type;
+  } else if (type === 'subscription') {
+    // Compatibilidade com URLs antigas
+    filters.type = 'subscription_delivery';
+  } else if (type === 'standalone') {
+    // Compatibilidade com URLs antigas
+    filters.type = 'standalone_purchase';
   }
 
   // Parse status
@@ -327,7 +333,7 @@ export function validateFilters(filters: OrderFilters): {
   const errors: string[] = [];
 
   // Validar tipo
-  if (!['all', 'subscription_delivery', 'standalone_purchase'].includes(filters.type)) {
+  if (!['all', 'subscription_delivery', 'standalone_purchase', 'manual_payment', 'quote'].includes(filters.type)) {
     errors.push('Tipo de pedido inválido');
   }
 
