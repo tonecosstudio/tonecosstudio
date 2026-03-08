@@ -198,14 +198,21 @@ export interface ManualPaymentData {
 /**
  * Dados específicos de um orçamento
  */
+export interface QuoteItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  imageUrl?: string | null;
+  characterId?: string | null;
+}
+
 export interface QuoteData {
-  items: any[];
+  items: QuoteItem[];
   totalAmount?: number | null;
-  validUntil?: string | null;
   notes: string | null;
-  // Legacy
-  quoteId?: string;
-  deadline?: string | null;
 }
 
 // ============================================================================

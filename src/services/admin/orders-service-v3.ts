@@ -691,9 +691,17 @@ function transformQuote(
     actualDeliveryDate: null,
 
     quote: {
-      items: quote.items || [],
+      items: (quote._items || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        totalPrice: item.total_price,
+        imageUrl: item.image_url,
+        characterId: item.character_id,
+      })),
       totalAmount: quote.total_amount,
-      validUntil: quote.valid_until,
       notes: quote.notes,
     },
   };
