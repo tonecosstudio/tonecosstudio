@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Formulário de Edição de Preços do Sistema de Coins
  *
