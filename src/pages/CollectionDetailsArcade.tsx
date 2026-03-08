@@ -39,7 +39,7 @@ type Collection = {
   name: string;
   slug: string;
   description: string | null;
-  image_url: string | null;
+  cover_image_url: string | null;
   is_active: boolean;
   collection_characters: Character[];
 };
