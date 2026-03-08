@@ -211,8 +211,26 @@ export default function CollectionsShowcase() {
             ORDAX
           </Link>
 
-          {/* Coin HUD */}
-          <CoinCounter balance={userBalance} isLoading={balanceLoading} />
+          <div className="flex items-center gap-3">
+            <CoinCounter balance={userBalance} isLoading={balanceLoading} />
+            {user ? (
+              <button
+                onClick={() => signOut()}
+                className="flex items-center gap-1.5 text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] transition-colors font-mono uppercase tracking-wider text-[10px]"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sair</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/login")}
+                className="flex items-center gap-1.5 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] hover:brightness-110 font-mono uppercase tracking-[0.1em] text-[10px] px-3 py-1.5 transition-all"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Entrar
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 
