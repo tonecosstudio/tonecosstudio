@@ -159,8 +159,6 @@ export function PaymentRealtimeExample({
 
   // Usar o resultado apropriado baseado no modo
   const dashboardRealtime = mode === "admin" ? adminDashboardRealtime : userPaymentsRealtime;
-        );
-
   // Função para simular reconexão manual
   const handleManualReconnect = () => {
     paymentStatusRealtime.reconnect();

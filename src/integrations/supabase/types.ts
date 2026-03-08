@@ -14,6 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_logs: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          delivery_id: string | null
+          id: string
+          new_status: string | null
+          notes: string | null
+          previous_status: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          delivery_id?: string | null
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          previous_status?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          delivery_id?: string | null
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          previous_status?: string | null
+        }
+        Relationships: []
+      }
+      character_choices: {
+        Row: {
+          alternative_character_id: string | null
+          approved_at: string | null
+          character_id: string | null
+          chosen_at: string | null
+          collection_id: string | null
+          created_at: string
+          id: string
+          order_id: string
+          order_type: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alternative_character_id?: string | null
+          approved_at?: string | null
+          character_id?: string | null
+          chosen_at?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          order_type?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alternative_character_id?: string | null
+          approved_at?: string | null
+          character_id?: string | null
+          chosen_at?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          order_type?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_choices_alternative_character_id_fkey"
+            columns: ["alternative_character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_choices_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_choices_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_group_attachments: {
         Row: {
           created_at: string
@@ -161,6 +267,458 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_characters: {
+        Row: {
+          collection_id: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          image_urls: string[] | null
+          name: string
+          status: string
+          stock_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          image_urls?: string[] | null
+          name: string
+          status?: string
+          stock_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          image_urls?: string[] | null
+          name?: string
+          status?: string
+          stock_quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_characters_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_price_custom: boolean
+          name: string
+          rotation_type: string
+          slug: string
+          total_characters: number
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_price_custom?: boolean
+          name: string
+          rotation_type?: string
+          slug: string
+          total_characters?: number
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_price_custom?: boolean
+          name?: string
+          rotation_type?: string
+          slug?: string
+          total_characters?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          current_uses: number | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_amount: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_amount?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_amount?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      cron_logs: {
+        Row: {
+          completed_at: string | null
+          details: Json | null
+          duration_ms: number | null
+          error_details: Json | null
+          error_message: string | null
+          id: string
+          job_name: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_details?: Json | null
+          error_message?: string | null
+          id?: string
+          job_name: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_details?: Json | null
+          error_message?: string | null
+          id?: string
+          job_name?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      cycles: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          cutoff_date: string | null
+          id: string
+          month: number
+          name: string
+          reveal_date: string | null
+          shipping_start_date: string | null
+          status: string
+          updated_at: string
+          used_capacity: number | null
+          year: number
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          cutoff_date?: string | null
+          id?: string
+          month: number
+          name: string
+          reveal_date?: string | null
+          shipping_start_date?: string | null
+          status?: string
+          updated_at?: string
+          used_capacity?: number | null
+          year: number
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          cutoff_date?: string | null
+          id?: string
+          month?: number
+          name?: string
+          reveal_date?: string | null
+          shipping_start_date?: string | null
+          status?: string
+          updated_at?: string
+          used_capacity?: number | null
+          year?: number
+        }
+        Relationships: []
+      }
+      email_notifications: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          recipient_user_id: string | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      holidays: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      manual_payments: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          reference_id: string
+          reference_type: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          reference_id: string
+          reference_type: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          reference_id?: string
+          reference_type?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          read_at: string | null
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          read_at?: string | null
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          read_at?: string | null
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pricing_tiers: {
+        Row: {
+          base_price: number
+          created_at: string
+          description: string | null
+          display_order: number
+          features: Json | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      production_queue: {
+        Row: {
+          character_id: string | null
+          choice_deadline: string | null
+          collection_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string
+          order_type: string
+          priority: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          character_id?: string | null
+          choice_deadline?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          order_type: string
+          priority?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          character_id?: string | null
+          choice_deadline?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          order_type?: string
+          priority?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_queue_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_queue_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -191,6 +749,670 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_items: {
+        Row: {
+          character_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          quantity: number
+          quote_id: string
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          quantity?: number
+          quote_id: string
+          total_price?: number
+          unit_price?: number
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          quantity?: number
+          quote_id?: string
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          customer_paid_notification_at: string | null
+          deposit_amount: number | null
+          id: string
+          is_preorder: boolean | null
+          notes: string | null
+          payment_instructions: string | null
+          payment_link: string | null
+          payment_link_sent_at: string | null
+          payment_status: string | null
+          pix_key: string | null
+          remaining_amount: number | null
+          status: string
+          total_amount: number | null
+          tracking_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          customer_paid_notification_at?: string | null
+          deposit_amount?: number | null
+          id?: string
+          is_preorder?: boolean | null
+          notes?: string | null
+          payment_instructions?: string | null
+          payment_link?: string | null
+          payment_link_sent_at?: string | null
+          payment_status?: string | null
+          pix_key?: string | null
+          remaining_amount?: number | null
+          status?: string
+          total_amount?: number | null
+          tracking_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          customer_paid_notification_at?: string | null
+          deposit_amount?: number | null
+          id?: string
+          is_preorder?: boolean | null
+          notes?: string | null
+          payment_instructions?: string | null
+          payment_link?: string | null
+          payment_link_sent_at?: string | null
+          payment_status?: string | null
+          pix_key?: string | null
+          remaining_amount?: number | null
+          status?: string
+          total_amount?: number | null
+          tracking_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      standalone_purchases: {
+        Row: {
+          amount: number
+          balance_amount: number | null
+          character_id: string | null
+          collection_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          paid_amount: number | null
+          payment_link: string | null
+          payment_method: string | null
+          shipping_carrier: string | null
+          status: string
+          tracking_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          balance_amount?: number | null
+          character_id?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          payment_link?: string | null
+          payment_method?: string | null
+          shipping_carrier?: string | null
+          status?: string
+          tracking_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_amount?: number | null
+          character_id?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          payment_link?: string | null
+          payment_method?: string | null
+          shipping_carrier?: string | null
+          status?: string
+          tracking_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standalone_purchases_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standalone_purchases_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_deliveries: {
+        Row: {
+          actual_delivery_date: string | null
+          character_id: string | null
+          created_at: string
+          cycle_id: string | null
+          delivered_date: string | null
+          delivery_number: number | null
+          delivery_order: number
+          id: string
+          production_start_date: string | null
+          progress_photos: Json | null
+          reveal_date: string | null
+          shipping_carrier: string | null
+          shipping_date: string | null
+          status: string
+          subscription_id: string
+          tracking_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_delivery_date?: string | null
+          character_id?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          delivered_date?: string | null
+          delivery_number?: number | null
+          delivery_order?: number
+          id?: string
+          production_start_date?: string | null
+          progress_photos?: Json | null
+          reveal_date?: string | null
+          shipping_carrier?: string | null
+          shipping_date?: string | null
+          status?: string
+          subscription_id: string
+          tracking_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_delivery_date?: string | null
+          character_id?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          delivered_date?: string | null
+          delivery_number?: number | null
+          delivery_order?: number
+          id?: string
+          production_start_date?: string | null
+          progress_photos?: Json | null
+          reveal_date?: string | null
+          shipping_carrier?: string | null
+          shipping_date?: string | null
+          status?: string
+          subscription_id?: string
+          tracking_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_deliveries_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_deliveries_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          billing_interval: string
+          created_at: string
+          deliveries_per_cycle: number
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          slug: string | null
+          tier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_interval?: string
+          created_at?: string
+          deliveries_per_cycle?: number
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          slug?: string | null
+          tier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_interval?: string
+          created_at?: string
+          deliveries_per_cycle?: number
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          slug?: string | null
+          tier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plans_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tier_stats"
+            referencedColumns: ["tier_id"]
+          },
+          {
+            foreignKeyName: "subscription_plans_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_plans_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers_with_plans"
+            referencedColumns: ["tier_id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          collection_id: string | null
+          completed_at: string | null
+          created_at: string
+          deliveries_completed: number
+          deliveries_total: number | null
+          id: string
+          next_delivery_at: string | null
+          notes: string | null
+          payment_method: string | null
+          plan_id: string | null
+          plan_type: string | null
+          started_at: string | null
+          status: string
+          total_paid: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          collection_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deliveries_completed?: number
+          deliveries_total?: number | null
+          id?: string
+          next_delivery_at?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_id?: string | null
+          plan_type?: string | null
+          started_at?: string | null
+          status?: string
+          total_paid?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          collection_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deliveries_completed?: number
+          deliveries_total?: number | null
+          id?: string
+          next_delivery_at?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_id?: string | null
+          plan_type?: string | null
+          started_at?: string | null
+          status?: string
+          total_paid?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers_with_plans"
+            referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          message_id: string
+          public_url: string | null
+          thumbnail_path: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          message_id: string
+          public_url?: string | null
+          thumbnail_path?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          message_id?: string
+          public_url?: string | null
+          thumbnail_path?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "support_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_conversations: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          first_response_at: string | null
+          id: string
+          last_message_at: string | null
+          priority: string | null
+          resolved_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          first_response_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          first_response_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_admin: boolean
+          is_internal: boolean
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          is_internal?: boolean
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          is_internal?: boolean
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "support_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      user_coins: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_earned: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notification_settings: {
+        Row: {
+          created_at: string
+          email_notifications: boolean | null
+          id: string
+          marketing_emails: boolean | null
+          push_notifications: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean | null
+          id?: string
+          marketing_emails?: boolean | null
+          push_notifications?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean | null
+          id?: string
+          marketing_emails?: boolean | null
+          push_notifications?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string | null
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -211,7 +1433,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pricing_tier_stats: {
+        Row: {
+          base_price: number | null
+          display_order: number | null
+          features: Json | null
+          is_active: boolean | null
+          is_default: boolean | null
+          plan_count: number | null
+          subscriber_count: number | null
+          tier_description: string | null
+          tier_id: string | null
+          tier_name: string | null
+        }
+        Relationships: []
+      }
+      pricing_tiers_with_plans: {
+        Row: {
+          billing_interval: string | null
+          deliveries_per_cycle: number | null
+          plan_description: string | null
+          plan_features: Json | null
+          plan_id: string | null
+          plan_is_active: boolean | null
+          plan_name: string | null
+          plan_price: number | null
+          plan_slug: string | null
+          tier_base_price: number | null
+          tier_description: string | null
+          tier_display_order: number | null
+          tier_features: Json | null
+          tier_id: string | null
+          tier_is_active: boolean | null
+          tier_is_default: boolean | null
+          tier_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
