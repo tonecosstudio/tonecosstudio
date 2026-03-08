@@ -982,6 +982,33 @@ export type Database = {
         }
         Relationships: []
       }
+      message_templates: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       model_likes: {
         Row: {
           created_at: string
@@ -1352,6 +1379,7 @@ export type Database = {
       }
       production_queue: {
         Row: {
+          assigned_to: string | null
           character_id: string | null
           choice_deadline: string | null
           collection_id: string | null
@@ -1366,6 +1394,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
           character_id?: string | null
           choice_deadline?: string | null
           collection_id?: string | null
@@ -1380,6 +1409,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
           character_id?: string | null
           choice_deadline?: string | null
           collection_id?: string | null
@@ -1406,6 +1436,65 @@ export type Database = {
             columns: ["collection_id"]
             isOneToOne: false
             referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_stages: {
+        Row: {
+          assigned_to: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_blocked: boolean
+          notes: string | null
+          production_queue_id: string
+          stage_name: string
+          started_at: string | null
+          status: string
+          unblocked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_blocked?: boolean
+          notes?: string | null
+          production_queue_id: string
+          stage_name: string
+          started_at?: string | null
+          status?: string
+          unblocked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_blocked?: boolean
+          notes?: string | null
+          production_queue_id?: string
+          stage_name?: string
+          started_at?: string | null
+          status?: string
+          unblocked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_stages_production_queue_id_fkey"
+            columns: ["production_queue_id"]
+            isOneToOne: false
+            referencedRelation: "production_queue"
             referencedColumns: ["id"]
           },
         ]
@@ -1652,6 +1741,39 @@ export type Database = {
           tracking_code?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_messages: {
+        Row: {
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          message: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          message: string
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          message?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
         }
         Relationships: []
       }
