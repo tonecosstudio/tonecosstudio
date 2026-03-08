@@ -23,7 +23,7 @@ const DEBUG = true;
 interface SubscriptionWithDeliveries {
   id: string;
   user_id: string;
-  collection_id: string;
+  collection_id: string | null;
   plan_type: string;
   status: string;
   total_paid: number;
@@ -31,15 +31,19 @@ interface SubscriptionWithDeliveries {
   deliveries_completed: number;
   created_at: string;
   updated_at: string;
+  // Dados resolvidos via junction table
+  _collections: Array<{ id: string; name: string; slug: string }>;
   deliveries: Array<{
     id: string;
     delivery_number: number;
+    delivery_order: number;
     status: string;
     character_id: string | null;
     expected_delivery_date: string | null;
     actual_delivery_date: string | null;
     tracking_code: string | null;
     reveal_date: string | null;
+    _character?: any;
   }>;
 }
 
