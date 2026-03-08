@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "react-router-dom";
 import type { CatalogSort } from "@/pages/catalog/hooks/useCatalogModels";
 
 export function CatalogToolbar(props: {
@@ -16,7 +15,6 @@ export function CatalogToolbar(props: {
   onChangeQ: (next: string) => void;
   needle: string;
   page: number;
-  count: number;
   franchise: string;
   onChangeFranchise: (next: string) => void;
   category: string;
@@ -31,7 +29,6 @@ export function CatalogToolbar(props: {
     onChangeQ,
     needle,
     page,
-    count,
     franchise,
     onChangeFranchise,
     category,
@@ -119,7 +116,7 @@ export function CatalogToolbar(props: {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-muted-foreground">
             <span className="font-medium text-foreground text-xs sm:text-sm">
-              {needle ? `Resultados para \"${needle}\"` : "Todos os modelos"}
+              {needle ? `Resultados para "${needle}"` : "Todos os modelos"}
             </span>
             <span className="hidden sm:inline text-muted-foreground">•</span>
             <span className="text-xs sm:text-sm">Página {page + 1}</span>
@@ -151,15 +148,6 @@ export function CatalogToolbar(props: {
                 Limpar filtros
               </Button>
             )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-border hover:bg-muted flex-1 sm:flex-none"
-              asChild
-            >
-              <Link to="/orcamento/carrinho">Carrinho ({count})</Link>
-            </Button>
           </div>
         </div>
       </div>

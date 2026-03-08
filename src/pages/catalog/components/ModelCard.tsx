@@ -12,9 +12,8 @@ export function ModelCard(props: {
   variant: "catalog" | "forYou";
   isLiked: boolean;
   onToggleLike: () => void;
-  onQuote: () => void;
 }) {
-  const { model: m, imageUrl, variant, isLiked, onToggleLike, onQuote } = props;
+  const { model: m, imageUrl, variant, isLiked, onToggleLike } = props;
   const title = buildModelTitle(m.name, m.franchise);
 
   if (variant === "forYou") {
@@ -53,9 +52,9 @@ export function ModelCard(props: {
           <div className="mt-auto pt-4">
             <Button
               className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
-              onClick={onQuote}
+              asChild
             >
-              Solicitar Orçamento
+              <Link to={`/catalogo/${encodeURIComponent(m.id)}`}>Ver Detalhes</Link>
             </Button>
           </div>
         </CardContent>
@@ -123,9 +122,9 @@ export function ModelCard(props: {
         <div className="mt-auto pt-6">
           <Button
             className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
-            onClick={onQuote}
+            asChild
           >
-            Solicitar Orçamento
+            <Link to={`/catalogo/${encodeURIComponent(m.id)}`}>Ver Detalhes</Link>
           </Button>
         </div>
       </CardContent>

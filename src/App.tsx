@@ -20,8 +20,6 @@ import ContactArcade from "./pages/ContactArcade";
 import AdminHome from "./pages/admin/AdminHome";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetails from "./pages/admin/AdminUserDetails";
-import Quote from "./pages/Quote";
-import QuoteCart from "./pages/QuoteCart";
 import PublicProfile from "./pages/PublicProfile";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -82,7 +80,7 @@ import MyPaymentsArcade from "./pages/MyPaymentsArcade";
 import NotificationsArcade from "./pages/NotificationsArcade";
 import GroupsArcade from "./pages/GroupsArcade";
 import CoinsPurchaseArcade from "./pages/CoinsPurchaseArcade";
-import QuoteArcade from "./pages/QuoteArcade";
+
 import PublicProfileArcade from "./pages/PublicProfileArcade";
 import { ChatButton } from "@/components/customer/ChatButton";
 
@@ -155,31 +153,6 @@ function AppContent() {
             }
           />
 
-          <Route
-            path="/orcamento"
-            element={
-              <RequireAuth>
-                <QuoteArcade />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/orcamento-old"
-            element={
-              <RequireAuth>
-                <Quote />
-              </RequireAuth>
-            }
-          />
-
-          <Route
-            path="/orcamento/carrinho"
-            element={
-              <RequireAuth>
-                <QuoteCart />
-              </RequireAuth>
-            }
-          />
 
           <Route path="/suporte" element={<Navigate to="/perfil?section=support" replace />} />
 
@@ -279,37 +252,10 @@ function AppContent() {
           />
 
           <Route
-            path="/orcamento/checkout"
-            element={
-              <RequireAuth>
-                <PreorderCheckout />
-              </RequireAuth>
-            }
-          />
-
-          <Route
-            path="/orcamento/acompanhar/:quoteId"
-            element={
-              <RequireAuth>
-                <PreorderTracking />
-              </RequireAuth>
-            }
-          />
-
-          <Route
             path="/pedido/:orderType/:orderId/progresso"
             element={
               <RequireAuth>
                 <CustomerOrderProgressPage />
-              </RequireAuth>
-            }
-          />
-
-          <Route
-            path="/orcamento/pagamento"
-            element={
-              <RequireAuth>
-                <PaymentPage />
               </RequireAuth>
             }
           />

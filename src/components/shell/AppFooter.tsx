@@ -47,8 +47,8 @@ export default function AppFooter() {
                 </Link>
               </li>
               <li>
-                <Link to="/orcamento/carrinho" className="hover:text-background transition-colors">
-                  Carrinho
+                <Link to="/colecoes" className="hover:text-background transition-colors">
+                  Coleções
                 </Link>
               </li>
               <li>

@@ -3,7 +3,6 @@ import SEOHead from "@/components/SEOHead";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
-import { useQuoteCart } from "@/lib/quote-cart";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -18,12 +17,9 @@ import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQue
 import { useProfileQuery } from "@/pages/catalog/hooks/useProfileQuery";
 import { useForYouModels } from "@/pages/catalog/hooks/useForYouModels";
 
-// Tipos e utilitários do catálogo foram extraídos para src/pages/catalog/*
-
 export default function Catalog() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { count } = useQuoteCart();
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -101,7 +97,6 @@ export default function Catalog() {
         onChangeQ={setQ}
         needle={needle}
         page={page}
-        count={count}
         franchise={franchise}
         onChangeFranchise={setFranchise}
         category={category}
@@ -117,7 +112,6 @@ export default function Catalog() {
           models={forYouQuery.data}
           getIsLiked={getIsLiked}
           onToggleLike={handleToggleLike}
-          onQuote={(modelId) => navigate(`/orcamento?model=${encodeURIComponent(modelId)}`)}
         />
       ) : null}
 
@@ -128,9 +122,6 @@ export default function Catalog() {
           needle={needle}
           getIsLiked={getIsLiked}
           onToggleLike={handleToggleLike}
-          onQuote={(modelId) => {
-            navigate(`/orcamento?model=${encodeURIComponent(modelId)}`);
-          }}
           onClearSearch={() => setQ("")}
         />
 

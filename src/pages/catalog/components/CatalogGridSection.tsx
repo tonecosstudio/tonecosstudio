@@ -10,10 +10,9 @@ export function CatalogGridSection(props: {
   needle: string;
   getIsLiked: (id: string) => boolean;
   onToggleLike: (model: ModelRow, isLiked: boolean) => void;
-  onQuote: (modelId: string) => void;
   onClearSearch: () => void;
 }) {
-  const { isLoading, rows, needle, getIsLiked, onToggleLike, onQuote, onClearSearch } = props;
+  const { isLoading, rows, needle, getIsLiked, onToggleLike, onClearSearch } = props;
 
   if (isLoading) {
     return (
@@ -43,7 +42,6 @@ export function CatalogGridSection(props: {
             variant="catalog"
             isLiked={isLiked}
             onToggleLike={() => onToggleLike(m, isLiked)}
-            onQuote={() => onQuote(m.id)}
           />
         );
       })}
