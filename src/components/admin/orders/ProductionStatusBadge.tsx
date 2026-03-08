@@ -117,7 +117,12 @@ export function ProductionStatusBadge({ stage, className = '' }: ProductionStatu
     );
   }
 
-  const config = stageConfig[stage];
+  const config = stageConfig[stage] || {
+    label: stage,
+    icon: AlertCircle,
+    variant: 'outline' as const,
+    className: 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950/20 dark:text-gray-400 dark:border-gray-800'
+  };
   const Icon = config.icon;
 
   return (
