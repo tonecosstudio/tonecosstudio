@@ -277,12 +277,18 @@ export async function getTransitionHistory(
  */
 function getStageName(stage: string): string {
   const names: Record<string, string> = {
-    awaiting_choice: "Awaiting Choice",
-    design: "Design",
-    production: "Production",
-    quality_check: "Quality Check",
-    packaging: "Packaging",
-    shipped: "Shipped",
+    awaiting_payment: "Aguardando Pagamento",
+    payment_confirmed: "Pagamento Confirmado",
+    awaiting_choice: "Aguardando Escolha",
+    model_preparation: "Preparação do Modelo",
+    printing: "Em Impressão 3D",
+    post_processing: "Limpeza e Preparação",
+    painting: "Pintura Artesanal",
+    quality_check: "Controle de Qualidade",
+    packaging: "Embalagem",
+    ready_to_ship: "Pronto para Envio",
+    shipped: "Enviado",
+    delivered: "Entregue",
   };
   return names[stage] || stage;
 }

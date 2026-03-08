@@ -12,12 +12,18 @@ import { supabase } from "@/integrations/supabase/client";
 // ============================================================================
 
 export type StageType =
+  | "awaiting_payment"
+  | "payment_confirmed"
   | "awaiting_choice"
-  | "design"
-  | "production"
+  | "model_preparation"
+  | "printing"
+  | "post_processing"
+  | "painting"
   | "quality_check"
   | "packaging"
-  | "shipped";
+  | "ready_to_ship"
+  | "shipped"
+  | "delivered";
 
 export type StageStatus = "pending" | "in_progress" | "completed" | "blocked";
 
