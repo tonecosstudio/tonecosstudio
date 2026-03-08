@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { useToast } from "@/hooks/use-toast";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { Mail, Lock, ArrowRight, User, Phone } from "lucide-react";
@@ -124,17 +125,8 @@ export default function Login() {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      // Build the redirect URL - always use the current origin
-      const origin = window.location.origin;
-      const redirectUrl = `${origin}${next}`;
-      
-      console.log('OAuth redirect URL:', redirectUrl); // Debug log
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-        },
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
       if (error) throw error;
     } catch (e) {

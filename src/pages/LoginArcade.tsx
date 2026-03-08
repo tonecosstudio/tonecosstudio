@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { useToast } from "@/hooks/use-toast";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { Mail, Lock, ArrowRight, User, Phone, Shield, Zap } from "lucide-react";
@@ -94,11 +95,8 @@ export default function LoginArcade() {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      const origin = window.location.origin;
-      const redirectUrl = `${origin}${next}`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: redirectUrl },
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
       if (error) throw error;
     } catch (e) {
