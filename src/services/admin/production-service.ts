@@ -784,11 +784,11 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
   // Determinar status baseado no estágio atual
   let newStatus: ProductionStatus = "ready_for_production";
 
-  if (currentItem.current_stage === "awaiting_choice") {
+  if (currentItem.current_stage === "awaiting_choice" || currentItem.current_stage === "awaiting_payment") {
     newStatus = "awaiting_choice";
-  } else if (["production", "quality_check", "packaging"].includes(currentItem.current_stage)) {
+  } else if (["printing", "post_processing", "painting", "quality_check", "packaging", "ready_to_ship"].includes(currentItem.current_stage)) {
     newStatus = "in_production";
-  } else if (currentItem.current_stage === "shipped") {
+  } else if (currentItem.current_stage === "shipped" || currentItem.current_stage === "delivered") {
     newStatus = "completed";
   }
 
