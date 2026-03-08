@@ -23,6 +23,7 @@ import About from "./pages/About";
 import Profile from "./pages/Profile";
 import ModelDetails from "./pages/catalog/ModelDetails";
 import Collections from "./pages/Collections";
+import CollectionsShowcase from "./pages/CollectionsShowcase";
 import BuyCharacter from "./pages/BuyCharacter";
 import AuditTrail from "./pages/admin/AuditTrail";
 import AdminCreditsHub from "./pages/admin/AdminCreditsHub";
