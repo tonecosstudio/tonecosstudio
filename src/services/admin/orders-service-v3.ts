@@ -555,6 +555,9 @@ function transformPurchase(purchase: any): UnifiedOrder {
     imageUrl: purchase.collection_characters.image_url,
   } : undefined;
 
+  const profile = purchase.profiles || {};
+  const collection = purchase.collections;
+
   return {
     id: purchase.id,
     type: 'standalone_purchase',
@@ -563,34 +566,34 @@ function transformPurchase(purchase: any): UnifiedOrder {
     updatedAt: purchase.updated_at,
 
     customer: {
-      id: purchase.profiles.id,
-      name: purchase.profiles.full_name || 'Nome não disponível',
-      email: purchase.profiles.email || 'Email não disponível',
+      id: profile.id || purchase.user_id,
+      name: profile.full_name || 'Nome não disponível',
+      email: profile.email || 'Email não disponível',
     },
 
-    collection: {
-      id: purchase.collections.id,
-      name: purchase.collections.name,
-      slug: purchase.collections.slug,
-    },
+    collection: collection ? {
+      id: collection.id,
+      name: collection.name,
+      slug: collection.slug,
+    } : null,
 
-    amount: purchase.price_full || 0,
+    amount: purchase.amount || 0,
 
-    trackingCode: purchase.tracking_code,
-    expectedDeliveryDate: purchase.expected_delivery_date,
-    actualDeliveryDate: purchase.actual_delivery_date,
+    trackingCode: purchase.tracking_code || null,
+    expectedDeliveryDate: null,
+    actualDeliveryDate: null,
 
     standalonePurchase: {
-      cycleId: purchase.cycle_id,
+      cycleId: null,
       characterId: purchase.character_id,
-      priceDeposit: purchase.price_deposit,
-      priceBalance: purchase.price_balance,
-      priceFull: purchase.price_full,
-      depositPaidAt: purchase.deposit_paid_at,
-      balancePaidAt: purchase.balance_paid_at,
-      balanceDueDate: purchase.balance_due_date,
-      depositVoucherUrl: purchase.deposit_voucher_url,
-      balanceVoucherUrl: purchase.balance_voucher_url,
+      priceDeposit: 0,
+      priceBalance: purchase.balance_amount || 0,
+      priceFull: purchase.amount || 0,
+      depositPaidAt: null,
+      balancePaidAt: purchase.paid_amount > 0 ? purchase.updated_at : null,
+      balanceDueDate: null,
+      depositVoucherUrl: null,
+      balanceVoucherUrl: null,
       character: character,
     },
   };
@@ -623,8 +626,10 @@ function transformPayment(payment: any, profilesMap: Map<string, any>): UnifiedO
       paymentMethod: payment.payment_method,
       paymentDate: payment.payment_date,
       referenceId: payment.reference_id,
+      referenceType: payment.reference_type,
       notes: payment.notes,
-      voucherUrl: payment.voucher_url,
+      confirmedAt: payment.confirmed_at,
+      confirmedBy: payment.confirmed_by,
     },
   };
 }
