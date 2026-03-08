@@ -96,10 +96,13 @@ function AppContent() {
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/pre-lancamento" element={<PreLaunch />} />
           <Route path="/migrar-pedido" element={<MigratePedido />} />
-          <Route path="/catalogo" element={<Catalog />} />
+          <Route path="/catalogo" element={<CatalogArcade />} />
+          <Route path="/catalogo-old" element={<Catalog />} />
           <Route path="/catalogo/:id" element={<ModelDetails />} />
-          <Route path="/sobre" element={<About />} />
-          <Route path="/planos" element={<Plans />} />
+          <Route path="/sobre" element={<AboutArcade />} />
+          <Route path="/sobre-old" element={<About />} />
+          <Route path="/planos" element={<PlansArcade />} />
+          <Route path="/planos-old" element={<Plans />} />
           <Route path="/colecoes" element={<CollectionsShowcase />} />
           <Route path="/colecoes-old" element={<Collections />} />
           <Route path="/colecoes-arcade" element={<CollectionsArcade />} />
@@ -109,7 +112,8 @@ function AppContent() {
           <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
           <Route path="/termos" element={<Terms />} />
           <Route path="/privacidade" element={<Privacy />} />
-          <Route path="/contato" element={<Contact />} />
+          <Route path="/contato" element={<ContactArcade />} />
+          <Route path="/contato-old" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/collector/:username" element={<PublicProfile />} />
 
