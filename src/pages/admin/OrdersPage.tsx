@@ -122,7 +122,7 @@ export default function OrdersPage() {
     if (filters.type !== newType) {
       setType(newType);
     }
-  }, [activeTab, filters.type, setType]);
+  }, [activeTab]); // Remove filters.type e setType das dependências para evitar loop
 
   // Handler para mudança de tab
   const handleTabChange = (value: string) => {
