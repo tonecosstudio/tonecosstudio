@@ -133,7 +133,10 @@ function AppContent() {
           <Route path="/contato-old" element={<Contact />} />
           <Route path="/login" element={<LoginArcade />} />
           <Route path="/login-old" element={<Login />} />
-          <Route path="/collector/:username" element={<PublicProfile />} />
+          <Route path="/collector/:username" element={<PublicProfileArcade />} />
+          <Route path="/collector-old/:username" element={<PublicProfile />} />
+          <Route path="/pre-lancamento" element={<PreLaunchArcade />} />
+          <Route path="/pre-lancamento-old" element={<PreLaunch />} />
 
           <Route
             path="/perfil"
