@@ -20,8 +20,6 @@ import ContactArcade from "./pages/ContactArcade";
 import AdminHome from "./pages/admin/AdminHome";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetails from "./pages/admin/AdminUserDetails";
-import Quote from "./pages/Quote";
-import QuoteCart from "./pages/QuoteCart";
 import PublicProfile from "./pages/PublicProfile";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
