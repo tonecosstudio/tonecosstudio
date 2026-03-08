@@ -280,18 +280,14 @@ export default function AdminPlansConfiguration() {
 
   const plans = plansQuery.data || [];
 
-  // Calculate totals
+  // Calculate totals from pricing_tiers
   const totalMonthlyRevenue = plans
-    .filter(p => p.is_active && p.plan_type !== 'avulso')
-    .reduce((sum, p) => sum + (p.price || 0), 0);
+    .filter((p: any) => p.is_active)
+    .reduce((sum: number, p: any) => sum + (p.price_full || 0), 0);
 
-  const totalPieces = plans
-    .filter(p => p.is_active)
-    .reduce((sum, p) => sum + (p.pieces_per_subscription || 0), 0);
+  const totalPieces = plans.filter((p: any) => p.is_active).length;
 
-  const totalCoins = plans
-    .filter(p => p.is_active)
-    .reduce((sum, p) => sum + (p.base_credits || 0) + (p.bonus_credits || 0), 0);
+  const totalCoins = 0; // Coins are managed separately via coin_transactions
 
   return (
     <div className="space-y-6">
