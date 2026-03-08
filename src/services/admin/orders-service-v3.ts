@@ -245,12 +245,34 @@ async function fetchSubscriptions(filters: OrderFilters) {
 
   console.log('📦 [OrdersV3] Deliveries found:', deliveries?.length || 0);
 
+  // Buscar dados dos personagens das entregas
+  const characterIds = [...new Set(
+    (deliveries || [])
+      .map(d => d.character_id)
+      .filter(Boolean)
+  )] as string[];
+
+  let charactersMap = new Map<string, any>();
+  if (characterIds.length > 0) {
+    const { data: characters } = await supabase
+      .from('collection_characters')
+      .select('id, name, image_url, collection_id')
+      .in('id', characterIds);
+
+    characters?.forEach(c => charactersMap.set(c.id, c));
+    console.log('🎭 [OrdersV3] Characters found for deliveries:', characters?.length || 0);
+  }
+
   // Agrupar entregas por assinatura
   const deliveriesBySubscription = new Map<string, any[]>();
   deliveries?.forEach(delivery => {
     const subId = delivery.subscription_id;
     if (!deliveriesBySubscription.has(subId)) {
       deliveriesBySubscription.set(subId, []);
+    }
+    // Attach character data to delivery
+    if (delivery.character_id && charactersMap.has(delivery.character_id)) {
+      delivery._character = charactersMap.get(delivery.character_id);
     }
     deliveriesBySubscription.get(subId)!.push(delivery);
   });
