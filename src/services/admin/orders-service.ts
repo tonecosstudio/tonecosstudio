@@ -724,13 +724,6 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
           .filter((id): id is string => typeof id === "string")
       ),
     ];
-    const collectionIds = [
-      ...new Set(
-        deliveriesData
-          .map((d: any) => d.subscriptions?.collection_id)
-          .filter((id): id is string => typeof id === "string")
-      ),
-    ];
 
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
@@ -743,14 +736,20 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       }
     }
 
-    if (collectionIds.length > 0) {
-      const { data: collections } = await supabase
-        .from("collections")
-        .select("id, name, slug")
-        .in("id", collectionIds);
+    // Fetch collections via subscription_collections junction
+    const subIds = [...new Set(deliveriesData.map((d: any) => d.subscription_id).filter(Boolean))];
+    if (subIds.length > 0) {
+      const { data: subCols } = await supabase
+        .from("subscription_collections")
+        .select("subscription_id, collection_id, collections(id, name, slug)")
+        .in("subscription_id", subIds);
 
-      if (collections) {
-        collections.forEach((c: any) => collectionsMap.set(c.id, c));
+      if (subCols) {
+        subCols.forEach((sc: any) => {
+          if (sc.collections) {
+            collectionsMap.set(sc.collections.id, sc.collections);
+          }
+        });
       }
     }
   }
