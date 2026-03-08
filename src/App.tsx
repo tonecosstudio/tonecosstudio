@@ -159,6 +159,14 @@ function AppContent() {
             path="/orcamento"
             element={
               <RequireAuth>
+                <QuoteArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/orcamento-old"
+            element={
+              <RequireAuth>
                 <Quote />
               </RequireAuth>
             }
