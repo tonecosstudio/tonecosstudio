@@ -265,7 +265,7 @@ export function useInitializeBalance() {
         .insert({
           user_id: userId,
           amount: initialAmount,
-          type: 'bonus',
+          transaction_type: 'bonus',
           description,
         });
       
