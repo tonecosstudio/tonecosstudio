@@ -107,12 +107,6 @@ export const adminNavigationConfig: NavigationSection[] = [
         icon: 'Grid',
         badge: 'Hub',
       },
-      {
-        id: 'monthly-releases',
-        label: 'Lançamentos Mensais',
-        path: '/admin/lancamentos-mensais',
-        icon: 'Calendar',
-      },
     ],
   },
   {
