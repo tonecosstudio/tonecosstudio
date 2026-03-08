@@ -124,17 +124,8 @@ export default function Login() {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      // Build the redirect URL - always use the current origin
-      const origin = window.location.origin;
-      const redirectUrl = `${origin}${next}`;
-      
-      console.log('OAuth redirect URL:', redirectUrl); // Debug log
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-        },
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
       if (error) throw error;
     } catch (e) {
