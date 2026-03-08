@@ -6,22 +6,34 @@ interface StageDistributionChartProps {
 }
 
 const stageLabels: Record<string, string> = {
+  awaiting_payment: "Aguardando Pagamento",
+  payment_confirmed: "Pagamento Confirmado",
   awaiting_choice: "Aguardando Escolha",
-  design: "Design",
-  production: "Produção",
+  model_preparation: "Preparação do Modelo",
+  printing: "Em Impressão 3D",
+  post_processing: "Limpeza e Preparação",
+  painting: "Pintura Artesanal",
   quality_check: "Controle de Qualidade",
   packaging: "Embalagem",
+  ready_to_ship: "Pronto para Envio",
   shipped: "Enviado",
+  delivered: "Entregue",
   blocked: "Bloqueado",
 };
 
 const stageColors: Record<string, string> = {
+  awaiting_payment: "bg-slate-500",
+  payment_confirmed: "bg-emerald-500",
   awaiting_choice: "bg-yellow-500",
-  design: "bg-purple-500",
-  production: "bg-blue-500",
+  model_preparation: "bg-blue-500",
+  printing: "bg-indigo-500",
+  post_processing: "bg-violet-500",
+  painting: "bg-pink-500",
   quality_check: "bg-green-500",
   packaging: "bg-orange-500",
-  shipped: "bg-gray-500",
+  ready_to_ship: "bg-amber-500",
+  shipped: "bg-cyan-500",
+  delivered: "bg-gray-500",
   blocked: "bg-red-500",
 };
 

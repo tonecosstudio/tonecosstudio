@@ -58,12 +58,18 @@ interface ValidationError {
 
 // Stage display configuration
 const STAGE_LABELS: Record<StageType, string> = {
+  awaiting_payment: "Aguardando Pagamento",
+  payment_confirmed: "Pagamento Confirmado",
   awaiting_choice: "Aguardando Escolha",
-  design: "Design",
-  production: "Produção",
+  model_preparation: "Preparação do Modelo",
+  printing: "Em Impressão 3D",
+  post_processing: "Limpeza e Preparação",
+  painting: "Pintura Artesanal",
   quality_check: "Controle de Qualidade",
   packaging: "Embalagem",
+  ready_to_ship: "Pronto para Envio",
   shipped: "Enviado",
+  delivered: "Entregue",
 };
 
 // ============================================================================

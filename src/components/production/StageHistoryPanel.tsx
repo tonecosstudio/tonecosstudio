@@ -29,12 +29,18 @@ interface StageHistoryPanelProps {
 
 // Stage display configuration
 const STAGE_CONFIG: Record<StageType, { label: string; color: string }> = {
-  awaiting_choice: { label: "Aguardando Escolha", color: "bg-gray-500" },
-  design: { label: "Design", color: "bg-blue-500" },
-  production: { label: "Produção", color: "bg-purple-500" },
-  quality_check: { label: "Controle de Qualidade", color: "bg-yellow-500" },
-  packaging: { label: "Embalagem", color: "bg-green-500" },
-  shipped: { label: "Enviado", color: "bg-emerald-500" },
+  awaiting_payment: { label: "Aguardando Pagamento", color: "bg-slate-500" },
+  payment_confirmed: { label: "Pagamento Confirmado", color: "bg-emerald-500" },
+  awaiting_choice: { label: "Aguardando Escolha", color: "bg-yellow-500" },
+  model_preparation: { label: "Preparação do Modelo", color: "bg-blue-500" },
+  printing: { label: "Em Impressão 3D", color: "bg-indigo-500" },
+  post_processing: { label: "Limpeza e Preparação", color: "bg-violet-500" },
+  painting: { label: "Pintura Artesanal", color: "bg-pink-500" },
+  quality_check: { label: "Controle de Qualidade", color: "bg-green-500" },
+  packaging: { label: "Embalagem", color: "bg-orange-500" },
+  ready_to_ship: { label: "Pronto para Envio", color: "bg-amber-500" },
+  shipped: { label: "Enviado", color: "bg-cyan-500" },
+  delivered: { label: "Entregue", color: "bg-gray-500" },
 };
 
 // ============================================================================
