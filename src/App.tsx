@@ -196,6 +196,14 @@ function AppContent() {
             path="/pagamentos"
             element={
               <RequireAuth>
+                <MyPaymentsArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/pagamentos-old"
+            element={
+              <RequireAuth>
                 <MyPaymentsPage />
               </RequireAuth>
             }
