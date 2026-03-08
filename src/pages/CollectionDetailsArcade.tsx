@@ -387,8 +387,9 @@ export default function CollectionDetailsArcade() {
             const currentMonth = new Date().getMonth() + 1; // 1-12
 
             // Separar catálogo dos personagens mensais
-            const catalogCharacters = allCharacters.filter(c => c.is_catalog);
-            const monthlyCharacters = allCharacters.filter(c => !c.is_catalog);
+            const allChars = collection.collection_characters;
+            const catalogCharacters = allChars.filter(c => c.is_catalog);
+            const monthlyCharacters = allChars.filter(c => !c.is_catalog);
 
             // Personagem destaque = o do mês atual
             const featuredCharacter = monthlyCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
