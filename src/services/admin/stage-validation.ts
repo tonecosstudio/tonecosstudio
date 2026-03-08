@@ -35,12 +35,18 @@ export interface StageTransitionLog {
 
 // Stage order mapping
 const STAGE_ORDER: Record<StageType, number> = {
-  awaiting_choice: 1,
-  design: 2,
-  production: 3,
-  quality_check: 4,
-  packaging: 5,
-  shipped: 6,
+  awaiting_payment: 1,
+  payment_confirmed: 2,
+  awaiting_choice: 3,
+  model_preparation: 4,
+  printing: 5,
+  post_processing: 6,
+  painting: 7,
+  quality_check: 8,
+  packaging: 9,
+  ready_to_ship: 10,
+  shipped: 11,
+  delivered: 12,
 };
 
 // ============================================================================
@@ -271,12 +277,18 @@ export async function getTransitionHistory(
  */
 function getStageName(stage: string): string {
   const names: Record<string, string> = {
-    awaiting_choice: "Awaiting Choice",
-    design: "Design",
-    production: "Production",
-    quality_check: "Quality Check",
-    packaging: "Packaging",
-    shipped: "Shipped",
+    awaiting_payment: "Aguardando Pagamento",
+    payment_confirmed: "Pagamento Confirmado",
+    awaiting_choice: "Aguardando Escolha",
+    model_preparation: "Preparação do Modelo",
+    printing: "Em Impressão 3D",
+    post_processing: "Limpeza e Preparação",
+    painting: "Pintura Artesanal",
+    quality_check: "Controle de Qualidade",
+    packaging: "Embalagem",
+    ready_to_ship: "Pronto para Envio",
+    shipped: "Enviado",
+    delivered: "Entregue",
   };
   return names[stage] || stage;
 }

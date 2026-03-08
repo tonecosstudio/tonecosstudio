@@ -377,14 +377,10 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
     const items = queueData || [];
 
     // Calculate metrics manually
-    const stages: Record<ProductionStage, number> = {
-      awaiting_choice: 0,
-      design: 0,
-      production: 0,
-      quality_check: 0,
-      packaging: 0,
-      shipped: 0,
-    };
+    const stages: Record<string, number> = {};
+    for (const stage of STAGE_ORDER) {
+      stages[stage] = 0;
+    }
 
     const statuses: Record<ProductionStatus, number> = {
       awaiting_choice: 0,
@@ -413,6 +409,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
     let deadlineCritical = 0;
     let deadlineUrgent = 0;
     let blocked = 0;
+    let overdue = 0;
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -427,8 +424,12 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
 
     items.forEach((item) => {
       // Count by stage
-      if (item.current_stage && Object.prototype.hasOwnProperty.call(stages, item.current_stage)) {
-        stages[item.current_stage as ProductionStage]++;
+      if (item.current_stage) {
+        if (stages[item.current_stage] !== undefined) {
+          stages[item.current_stage]++;
+        } else {
+          stages[item.current_stage] = 1;
+        }
       }
 
       // Count by status
@@ -460,6 +461,14 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
 
       if (item.production_status === "on_hold") {
         blocked++;
+      }
+
+      // Check overdue: estimated completion date passed
+      if (item.estimated_completion_date) {
+        const estimatedDate = new Date(item.estimated_completion_date);
+        if (estimatedDate < now && item.production_status !== "completed" && item.production_status !== "cancelled") {
+          overdue++;
+        }
       }
 
       // Check scheduled dates
@@ -497,7 +506,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
       overall: {
         totalItems: items.length,
         avgProductionTimeHours: 0,
-        completionRate: items.length > 0 ? statuses.completed / items.length : 0,
+        completionRate: items.length > 0 ? (statuses.completed / items.length) * 100 : 0,
         avgPriorityScore: 0,
       },
       generatedAt: new Date().toISOString(),
@@ -543,13 +552,13 @@ export async function updateProductionStage(
   // Determinar novo status baseado no estágio
   let newStatus: ProductionStatus = currentItem.production_status;
 
-  if (newStage === "awaiting_choice") {
+  if (newStage === "awaiting_choice" || newStage === "awaiting_payment") {
     newStatus = "awaiting_choice";
-  } else if (newStage === "design" && currentItem.production_status === "awaiting_choice") {
+  } else if (newStage === "payment_confirmed" || newStage === "model_preparation") {
     newStatus = "ready_for_production";
-  } else if (["production", "quality_check", "packaging"].includes(newStage)) {
+  } else if (["printing", "post_processing", "painting", "quality_check", "packaging", "ready_to_ship"].includes(newStage)) {
     newStatus = "in_production";
-  } else if (newStage === "shipped") {
+  } else if (newStage === "shipped" || newStage === "delivered") {
     newStatus = "completed";
   }
 
@@ -775,11 +784,11 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
   // Determinar status baseado no estágio atual
   let newStatus: ProductionStatus = "ready_for_production";
 
-  if (currentItem.current_stage === "awaiting_choice") {
+  if (currentItem.current_stage === "awaiting_choice" || currentItem.current_stage === "awaiting_payment") {
     newStatus = "awaiting_choice";
-  } else if (["production", "quality_check", "packaging"].includes(currentItem.current_stage)) {
+  } else if (["printing", "post_processing", "painting", "quality_check", "packaging", "ready_to_ship"].includes(currentItem.current_stage)) {
     newStatus = "in_production";
-  } else if (currentItem.current_stage === "shipped") {
+  } else if (currentItem.current_stage === "shipped" || currentItem.current_stage === "delivered") {
     newStatus = "completed";
   }
 

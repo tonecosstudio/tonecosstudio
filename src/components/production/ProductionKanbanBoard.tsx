@@ -44,6 +44,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   fetchProductionQueue,
   updateProductionStage,
+  STAGE_LABELS,
+  STAGE_ORDER,
   type ProductionQueueItem,
   type ProductionStage,
   type ProductionFilters,
@@ -55,18 +57,28 @@ interface ProductionKanbanBoardProps {
 }
 
 // Stage configuration with labels and colors
-const STAGE_CONFIG: Array<{
-  key: ProductionStage;
-  label: string;
-  color: string;
-}> = [
-  { key: "awaiting_choice", label: "Aguardando Escolha", color: "bg-yellow-100 border-yellow-300" },
-  { key: "design", label: "Design", color: "bg-blue-100 border-blue-300" },
-  { key: "production", label: "Produção", color: "bg-purple-100 border-purple-300" },
-  { key: "quality_check", label: "Controle de Qualidade", color: "bg-green-100 border-green-300" },
-  { key: "packaging", label: "Embalagem", color: "bg-orange-100 border-orange-300" },
-  { key: "shipped", label: "Enviado", color: "bg-gray-100 border-gray-300" },
-];
+const STAGE_COLORS: Record<string, string> = {
+  awaiting_payment: "bg-slate-100 border-slate-300 dark:bg-slate-900/30 dark:border-slate-700",
+  payment_confirmed: "bg-emerald-100 border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-700",
+  awaiting_choice: "bg-yellow-100 border-yellow-300 dark:bg-yellow-900/30 dark:border-yellow-700",
+  model_preparation: "bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700",
+  printing: "bg-indigo-100 border-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-700",
+  post_processing: "bg-violet-100 border-violet-300 dark:bg-violet-900/30 dark:border-violet-700",
+  painting: "bg-pink-100 border-pink-300 dark:bg-pink-900/30 dark:border-pink-700",
+  quality_check: "bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700",
+  packaging: "bg-orange-100 border-orange-300 dark:bg-orange-900/30 dark:border-orange-700",
+  ready_to_ship: "bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700",
+  shipped: "bg-cyan-100 border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700",
+  delivered: "bg-gray-100 border-gray-300 dark:bg-gray-900/30 dark:border-gray-700",
+};
+
+const STAGE_CONFIG: Array<{ key: ProductionStage; label: string; color: string }> = STAGE_ORDER.map(
+  (stage) => ({
+    key: stage,
+    label: STAGE_LABELS[stage],
+    color: STAGE_COLORS[stage] || "bg-gray-100 border-gray-300",
+  })
+);
 
 export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
   const { toast } = useToast();

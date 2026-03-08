@@ -35,12 +35,18 @@ const STAGE_CONFIG: Record<
   StageType,
   { label: string; order: number; color: string }
 > = {
-  awaiting_choice: { label: "Aguardando Escolha", order: 1, color: "bg-gray-500" },
-  design: { label: "Design", order: 2, color: "bg-blue-500" },
-  production: { label: "Produção", order: 3, color: "bg-purple-500" },
-  quality_check: { label: "Controle de Qualidade", order: 4, color: "bg-yellow-500" },
-  packaging: { label: "Embalagem", order: 5, color: "bg-green-500" },
-  shipped: { label: "Enviado", order: 6, color: "bg-emerald-500" },
+  awaiting_payment: { label: "Aguardando Pagamento", order: 1, color: "bg-slate-500" },
+  payment_confirmed: { label: "Pagamento Confirmado", order: 2, color: "bg-emerald-500" },
+  awaiting_choice: { label: "Aguardando Escolha", order: 3, color: "bg-yellow-500" },
+  model_preparation: { label: "Preparação do Modelo", order: 4, color: "bg-blue-500" },
+  printing: { label: "Em Impressão 3D", order: 5, color: "bg-indigo-500" },
+  post_processing: { label: "Limpeza e Preparação", order: 6, color: "bg-violet-500" },
+  painting: { label: "Pintura Artesanal", order: 7, color: "bg-pink-500" },
+  quality_check: { label: "Controle de Qualidade", order: 8, color: "bg-green-500" },
+  packaging: { label: "Embalagem", order: 9, color: "bg-orange-500" },
+  ready_to_ship: { label: "Pronto para Envio", order: 10, color: "bg-amber-500" },
+  shipped: { label: "Enviado", order: 11, color: "bg-cyan-500" },
+  delivered: { label: "Entregue", order: 12, color: "bg-gray-500" },
 };
 
 // ============================================================================
