@@ -318,6 +318,14 @@ function AppContent() {
             path="/grupos"
             element={
               <RequireAuth>
+                <GroupsArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/grupos-old"
+            element={
+              <RequireAuth>
                 <MemberGroupsPage />
               </RequireAuth>
             }
