@@ -126,7 +126,7 @@ async function getLaunchUsers(
       return [];
     }
 
-    return [...new Set(data.map((o: any) => o.user_id))];
+      return [...new Set(data.map((o: any) => o.user_id))] as string[];
   }
 }
 
