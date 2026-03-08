@@ -383,17 +383,20 @@ export default function CollectionDetailsArcade() {
 
           {/* Characters Sections */}
           {collection.collection_characters && collection.collection_characters.length > 0 && (() => {
-            // Separar personagens por status (released = disponível, revealed = revelado mas não lançado, upcoming = em breve)
-            const releasedCharacters = collection.collection_characters.filter(c => c.status === 'released');
-            const upcomingCharacters = collection.collection_characters.filter(c => c.status === 'upcoming' || c.status === 'revealed');
-            
-            // Ordenar disponíveis por release_order (mais recente primeiro para pegar o destaque)
-            const sortedReleased = [...releasedCharacters].sort((a, b) => b.release_order - a.release_order);
-            const featuredCharacter = sortedReleased[0];
-            const otherReleased = sortedReleased.slice(1).sort((a, b) => a.release_order - b.release_order);
-            
-            // Ordenar próximos por release_order
-            const sortedUpcoming = [...upcomingCharacters].sort((a, b) => a.release_order - b.release_order);
+            const currentMonth = new Date().getMonth() + 1; // 1-12
+
+            // Personagem destaque = o do mês atual (release_month === currentMonth)
+            const allCharacters = collection.collection_characters;
+            const featuredCharacter = allCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
+              || allCharacters.find(c => c.release_month === currentMonth);
+
+            // Já lançados (exceto o destaque)
+            const releasedCharacters = allCharacters.filter(c => c.status === 'released' && c.id !== featuredCharacter?.id);
+            const sortedReleased = [...releasedCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
+
+            // Próximos lançamentos
+            const upcomingCharacters = allCharacters.filter(c => (c.status === 'upcoming' || c.status === 'revealed') && c.id !== featuredCharacter?.id);
+            const sortedUpcoming = [...upcomingCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
             return (
               <>
@@ -489,7 +492,7 @@ export default function CollectionDetailsArcade() {
                 )}
 
                 {/* Already Released Characters */}
-                {otherReleased.length > 0 && (
+                {sortedReleased.length > 0 && (
                   <div className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
@@ -497,13 +500,13 @@ export default function CollectionDetailsArcade() {
                           Já Lançados
                         </h2>
                         <Badge className="bg-green-500/20 text-green-500 font-mono uppercase tracking-wider px-3 py-1 border border-green-500/50">
-                          {otherReleased.length} Disponíveis
+                          {sortedReleased.length} Disponíveis
                         </Badge>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                      {otherReleased.map((character, index) => (
+                      {sortedReleased.map((character, index) => (
                         <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} />
                       ))}
                     </div>
