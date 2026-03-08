@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Check, Zap, Crown, Sparkles, Shield, ArrowRight } from "lucide-react";
+import { Check, Zap, Crown, Sparkles, Shield, ArrowRight, Coins } from "lucide-react";
 import { useContentSettings } from "@/hooks/useContentSettings";
 import { processContentVariables } from "@/lib/services/contentService";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
