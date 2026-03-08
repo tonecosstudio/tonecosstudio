@@ -506,7 +506,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
       overall: {
         totalItems: items.length,
         avgProductionTimeHours: 0,
-        completionRate: items.length > 0 ? statuses.completed / items.length : 0,
+        completionRate: items.length > 0 ? (statuses.completed / items.length) * 100 : 0,
         avgPriorityScore: 0,
       },
       generatedAt: new Date().toISOString(),
