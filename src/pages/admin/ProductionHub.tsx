@@ -29,6 +29,7 @@ import {
   AlertTriangle,
   Package,
   BarChart3,
+  Layers,
 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 
@@ -41,6 +42,7 @@ import { ProductionAnalytics } from "@/components/production/analytics/Productio
 // Componentes de Produção
 import { ProductionFilters } from "@/components/production/ProductionFilters";
 import { ProductionKanbanBoard } from "@/components/production/ProductionKanbanBoard";
+import { ProductionPipelineView } from "@/components/production/ProductionPipelineView";
 import { ProductionListView } from "@/components/production/ProductionListView";
 import { ProductionCalendarView } from "@/components/production/ProductionCalendarView";
 import { BulkActionsToolbar } from "@/components/production/BulkActionsToolbar";
@@ -66,7 +68,7 @@ function ProductionHub() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   
-  const [activeTab, setActiveTab] = useState<string>(tabParam || "kanban");
+  const [activeTab, setActiveTab] = useState<string>(tabParam || "pipeline");
   const [filters, setFilters] = useState<ProductionFiltersType>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<ProductionQueueItem | null>(null);
@@ -90,7 +92,7 @@ function ProductionHub() {
 
   // Sincronizar tab com URL
   useEffect(() => {
-    const validTabs = ["kanban", "list", "calendar", "analytics", "choices"];
+    const validTabs = ["pipeline", "kanban", "list", "calendar", "analytics", "choices"];
     if (tabParam && validTabs.includes(tabParam)) {
       setActiveTab(tabParam);
     }
@@ -112,7 +114,7 @@ function ProductionHub() {
   const { data: queueData, isLoading } = useQuery({
     queryKey: ["production-queue", filters],
     queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
-    enabled: ["kanban", "list", "calendar"].includes(activeTab),
+    enabled: ["pipeline", "kanban", "list", "calendar"].includes(activeTab),
   });
 
   const metrics = metricsQuery.data;
@@ -377,6 +379,13 @@ function ProductionHub() {
             <div className="border-b">
               <TabsList className="h-12 bg-transparent border-0 w-full justify-start gap-4">
                 <TabsTrigger 
+                  value="pipeline" 
+                  className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                >
+                  <Layers className="h-4 w-4" />
+                  <span className="hidden sm:inline">Pipeline</span>
+                </TabsTrigger>
+                <TabsTrigger 
                   value="kanban" 
                   className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                 >
@@ -426,6 +435,11 @@ function ProductionHub() {
                 />
               </div>
             )}
+
+            {/* Tab: Pipeline Visual */}
+            <TabsContent value="pipeline" className="mt-0">
+              <ProductionPipelineView filters={filters} />
+            </TabsContent>
 
             {/* Tab: Kanban */}
             <TabsContent value="kanban" className="mt-0">
