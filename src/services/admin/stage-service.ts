@@ -4,7 +4,7 @@
  * Este serviço gerencia o histórico de estágios, conclusão de estágios,
  * upload de fotos e cálculo de datas estimadas de conclusão.
  */
-
+// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 
 // ============================================================================

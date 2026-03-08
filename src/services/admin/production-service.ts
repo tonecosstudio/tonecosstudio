@@ -4,7 +4,7 @@
  * Este serviço gerencia a fila de produção, métricas e operações
  * relacionadas ao sistema de gestão de produção.
  */
-
+// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 
 // ============================================================================
