@@ -439,7 +439,7 @@ serve(async (req) => {
         console.log(`Email sent successfully on attempt ${attempt + 1}:`, emailId);
         break;
       } catch (error) {
-        lastError = error.message;
+        lastError = (error as Error).message;
         console.error(`Email send attempt ${attempt + 1} failed:`, error);
         
         if (attempt < maxRetries - 1) {
