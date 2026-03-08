@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Tipos TypeScript para o Sistema de Preços Contextuais
  * 
