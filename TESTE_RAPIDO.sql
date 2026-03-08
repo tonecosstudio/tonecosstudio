@@ -3,6 +3,36 @@
 -- Copie e cole este SQL no Supabase Studio
 -- ========================================
 
+-- PASSO 0: Criar dados necessários se não existirem
+DO $$
+DECLARE
+  v_method_count INTEGER;
+  v_subscription_count INTEGER;
+BEGIN
+  -- Verificar se há métodos de pagamento
+  SELECT COUNT(*) INTO v_method_count FROM admin_payment_methods;
+  
+  IF v_method_count = 0 THEN
+    RAISE NOTICE '📝 Criando método de pagamento de teste...';
+    INSERT INTO admin_payment_methods (name, type, is_active)
+    VALUES ('PIX - Teste', 'pix', true);
+    RAISE NOTICE '✅ Método de pagamento criado!';
+  END IF;
+  
+  -- Verificar se há subscriptions com collection
+  SELECT COUNT(*) INTO v_subscription_count 
+  FROM subscriptions 
+  WHERE active_collection_id IS NOT NULL;
+  
+  IF v_subscription_count = 0 THEN
+    RAISE NOTICE '📝 Atualizando subscription com collection...';
+    UPDATE subscriptions
+    SET active_collection_id = (SELECT id FROM collections LIMIT 1)
+    WHERE id = (SELECT id FROM subscriptions LIMIT 1);
+    RAISE NOTICE '✅ Subscription atualizada!';
+  END IF;
+END $$;
+
 -- PASSO 1: Verificar dados disponíveis
 SELECT 
   'VERIFICACAO_INICIAL' as fase,

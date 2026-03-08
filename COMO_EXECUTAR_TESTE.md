@@ -17,9 +17,19 @@ No menu lateral esquerdo, clique em "SQL Editor"
 
 ## ✅ RESULTADO ESPERADO
 
-Você deve ver 2 resultados:
+O script agora cria automaticamente os dados necessários se não existirem!
 
-### Resultado 1: VERIFICACAO_INICIAL
+Você deve ver 3 resultados:
+
+### Resultado 1: Notices de Preparação (se necessário)
+```
+NOTICE: 📝 Criando método de pagamento de teste...
+NOTICE: ✅ Método de pagamento criado!
+NOTICE: 📝 Atualizando subscription com collection...
+NOTICE: ✅ Subscription atualizada!
+```
+
+### Resultado 2: VERIFICACAO_INICIAL
 ```
 fase: VERIFICACAO_INICIAL
 usuarios: 9 (ou mais)
@@ -28,7 +38,7 @@ subscriptions_com_collection: 1 (ou mais)
 itens_na_fila_antes: 1 (ou mais)
 ```
 
-### Resultado 2: RESULTADO_FINAL
+### Resultado 3: RESULTADO_FINAL
 ```
 fase: RESULTADO_FINAL
 itens_na_fila_depois: 2 (aumentou em 1!)
@@ -38,7 +48,7 @@ ultimo_status: awaiting_choice ou ready_for_production
 ultimo_created_at: <timestamp recente>
 ```
 
-### Notices (na aba "Messages")
+### Notices do Teste (na aba "Messages")
 ```
 NOTICE: 💰 Pagamento criado: <uuid>
 NOTICE: ✅ Pagamento aprovado!
@@ -47,17 +57,13 @@ NOTICE: 🎉 SUCESSO! Trigger funcionou! Itens: 1 → 2
 
 ## ❌ SE DER ERRO
 
-### Erro: "Nenhuma subscription com collection ativa"
+### Erro: "Nenhum usuário encontrado"
 
-Execute este SQL ANTES do teste:
+Você precisa ter pelo menos um usuário cadastrado. Faça login na aplicação primeiro.
 
-```sql
-UPDATE subscriptions
-SET active_collection_id = (SELECT id FROM collections LIMIT 1)
-WHERE id = (SELECT id FROM subscriptions LIMIT 1);
-```
+### Outro erro
 
-Depois execute o teste novamente.
+Copie a mensagem de erro completa e me informe.
 
 ## 📞 DEPOIS DO TESTE
 
