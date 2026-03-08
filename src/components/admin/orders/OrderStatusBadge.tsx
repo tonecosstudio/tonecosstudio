@@ -1,15 +1,29 @@
 /**
  * Badge de Status de Pedido
  * 
- * Exibe o status do pedido com cores apropriadas
+ * Exibe o status do pedido com cores apropriadas e ícones
  */
 
 import { Badge } from '@/components/ui/badge';
 import type { OrderStatus } from '@/types/admin/orders';
+import { 
+  Clock, 
+  AlertCircle, 
+  CheckCircle, 
+  Package, 
+  Truck, 
+  Home,
+  Eye,
+  DollarSign,
+  FileText,
+  XCircle,
+  Loader2
+} from 'lucide-react';
 
 interface OrderStatusBadgeProps {
   status: OrderStatus;
   className?: string;
+  showIcon?: boolean;
 }
 
 /**
@@ -49,39 +63,30 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 /**
- * Mapeamento de status para variantes de cor
+ * Mapeamento de status para ícones
  */
-const STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  // Entregas de assinatura
-  scheduled: 'outline',
-  pending_choice: 'secondary',
-  confirmed: 'default',
-  in_production: 'default',
-  shipped: 'default',
-  delivered: 'default',
-  revealed: 'default',
-  
-  // Compras avulsas
-  awaiting_deposit: 'secondary',
-  deposit_paid: 'default',
-  awaiting_balance: 'secondary',
-  balance_paid: 'default',
-  completed: 'default',
-  
-  // Pagamentos manuais
-  pending: 'secondary',
-  under_review: 'default',
-  requires_info: 'secondary',
-  approved: 'default',
-  rejected: 'destructive',
-  
-  // Orçamentos
-  reviewing: 'default',
-  answered: 'default',
-  archived: 'outline',
-  
-  // Comum
-  cancelled: 'destructive'
+const STATUS_ICONS: Record<OrderStatus, React.ComponentType<{ className?: string }>> = {
+  scheduled: Clock,
+  pending_choice: AlertCircle,
+  confirmed: CheckCircle,
+  in_production: Package,
+  shipped: Truck,
+  delivered: Home,
+  revealed: Eye,
+  awaiting_deposit: DollarSign,
+  deposit_paid: CheckCircle,
+  awaiting_balance: DollarSign,
+  balance_paid: CheckCircle,
+  completed: CheckCircle,
+  pending: Clock,
+  under_review: Loader2,
+  requires_info: AlertCircle,
+  approved: CheckCircle,
+  rejected: XCircle,
+  reviewing: Loader2,
+  answered: CheckCircle,
+  archived: FileText,
+  cancelled: XCircle
 };
 
 /**
@@ -89,46 +94,48 @@ const STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary' | 'destructiv
  */
 const STATUS_COLORS: Record<OrderStatus, string> = {
   // Entregas de assinatura
-  scheduled: 'bg-slate-100 text-slate-700 hover:bg-slate-100',
-  pending_choice: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100',
-  confirmed: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
-  in_production: 'bg-purple-100 text-purple-700 hover:bg-purple-100',
-  shipped: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100',
-  delivered: 'bg-green-100 text-green-700 hover:bg-green-100',
-  revealed: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
+  scheduled: 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200',
+  pending_choice: 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200',
+  confirmed: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200',
+  in_production: 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200',
+  shipped: 'bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200',
+  delivered: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200',
+  revealed: 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200',
   
   // Compras avulsas
-  awaiting_deposit: 'bg-orange-100 text-orange-700 hover:bg-orange-100',
-  deposit_paid: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-100',
-  awaiting_balance: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
-  balance_paid: 'bg-teal-100 text-teal-700 hover:bg-teal-100',
-  completed: 'bg-green-100 text-green-700 hover:bg-green-100',
+  awaiting_deposit: 'bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200',
+  deposit_paid: 'bg-cyan-100 text-cyan-800 border-cyan-300 hover:bg-cyan-200',
+  awaiting_balance: 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200',
+  balance_paid: 'bg-teal-100 text-teal-800 border-teal-300 hover:bg-teal-200',
+  completed: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200',
   
   // Pagamentos manuais
-  pending: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
-  under_review: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
-  requires_info: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100',
-  approved: 'bg-green-100 text-green-700 hover:bg-green-100',
-  rejected: 'bg-red-100 text-red-700 hover:bg-red-100',
+  pending: 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200',
+  under_review: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200',
+  requires_info: 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200',
+  approved: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200',
+  rejected: 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200',
   
   // Orçamentos
-  reviewing: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
-  answered: 'bg-green-100 text-green-700 hover:bg-green-100',
-  archived: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
+  reviewing: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200',
+  answered: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200',
+  archived: 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200',
   
   // Comum
-  cancelled: 'bg-red-100 text-red-700 hover:bg-red-100'
+  cancelled: 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'
 };
 
-export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
+export function OrderStatusBadge({ status, className, showIcon = true }: OrderStatusBadgeProps) {
   const label = STATUS_LABELS[status] || status;
   const colorClass = STATUS_COLORS[status];
+  const Icon = STATUS_ICONS[status];
 
   return (
     <Badge 
       variant="outline" 
-      className={`${colorClass} ${className || ''}`}
+      className={`${colorClass} font-medium ${className || ''}`}
     >
+      {showIcon && Icon && <Icon className="h-3 w-3 mr-1" />}
       {label}
     </Badge>
   );
@@ -140,7 +147,7 @@ export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
 export function useStatusInfo(status: OrderStatus) {
   return {
     label: STATUS_LABELS[status] || status,
-    variant: STATUS_VARIANTS[status] || 'default',
-    colorClass: STATUS_COLORS[status]
+    colorClass: STATUS_COLORS[status],
+    Icon: STATUS_ICONS[status]
   };
 }
