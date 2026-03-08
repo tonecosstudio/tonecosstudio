@@ -74,7 +74,16 @@ import Contact from "./pages/Contact";
 import NotificationHistory from "./pages/NotificationHistory";
 import LandingPage from "./pages/LandingPage";
 import PreLaunch from "./pages/PreLaunch";
+import PreLaunchArcade from "./pages/PreLaunchArcade";
 import MigratePedido from "./pages/MigratePedido";
+import ProfileArcade from "./pages/ProfileArcade";
+import SubscriberDashboardArcade from "./pages/SubscriberDashboardArcade";
+import MyPaymentsArcade from "./pages/MyPaymentsArcade";
+import NotificationsArcade from "./pages/NotificationsArcade";
+import GroupsArcade from "./pages/GroupsArcade";
+import CoinsPurchaseArcade from "./pages/CoinsPurchaseArcade";
+import QuoteArcade from "./pages/QuoteArcade";
+import PublicProfileArcade from "./pages/PublicProfileArcade";
 import { ChatButton } from "@/components/customer/ChatButton";
 
 const queryClient = new QueryClient();
@@ -100,7 +109,7 @@ function AppContent() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/home-antiga" element={<Home />} />
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/pre-lancamento" element={<PreLaunch />} />
+          {/* pre-lancamento moved below */}
           <Route path="/migrar-pedido" element={<MigratePedido />} />
           <Route path="/catalogo" element={<CatalogArcade />} />
           <Route path="/catalogo-old" element={<Catalog />} />
@@ -124,10 +133,21 @@ function AppContent() {
           <Route path="/contato-old" element={<Contact />} />
           <Route path="/login" element={<LoginArcade />} />
           <Route path="/login-old" element={<Login />} />
-          <Route path="/collector/:username" element={<PublicProfile />} />
+          <Route path="/collector/:username" element={<PublicProfileArcade />} />
+          <Route path="/collector-old/:username" element={<PublicProfile />} />
+          <Route path="/pre-lancamento" element={<PreLaunchArcade />} />
+          <Route path="/pre-lancamento-old" element={<PreLaunch />} />
 
           <Route
             path="/perfil"
+            element={
+              <RequireAuth>
+                <ProfileArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/perfil-old"
             element={
               <RequireAuth>
                 <Profile />
@@ -137,6 +157,14 @@ function AppContent() {
 
           <Route
             path="/orcamento"
+            element={
+              <RequireAuth>
+                <QuoteArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/orcamento-old"
             element={
               <RequireAuth>
                 <Quote />
@@ -166,6 +194,14 @@ function AppContent() {
 
           <Route
             path="/pagamentos"
+            element={
+              <RequireAuth>
+                <MyPaymentsArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/pagamentos-old"
             element={
               <RequireAuth>
                 <MyPaymentsPage />
@@ -229,6 +265,14 @@ function AppContent() {
             path="/notificacoes"
             element={
               <RequireAuth>
+                <NotificationsArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/notificacoes-old"
+            element={
+              <RequireAuth>
                 <NotificationHistory />
               </RequireAuth>
             }
@@ -274,6 +318,14 @@ function AppContent() {
             path="/grupos"
             element={
               <RequireAuth>
+                <GroupsArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/grupos-old"
+            element={
+              <RequireAuth>
                 <MemberGroupsPage />
               </RequireAuth>
             }
@@ -292,6 +344,14 @@ function AppContent() {
           {/* Painel do Assinante */}
           <Route
             path="/painel-assinante"
+            element={
+              <RequireAuth>
+                <SubscriberDashboardArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/painel-assinante-old"
             element={
               <RequireAuth>
                 <SubscriberDashboard />
@@ -328,6 +388,14 @@ function AppContent() {
           />
           <Route
             path="/coins/purchase"
+            element={
+              <RequireAuth>
+                <CoinsPurchaseArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/coins/purchase-old"
             element={
               <RequireAuth>
                 <CoinsPurchase />
