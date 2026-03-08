@@ -648,7 +648,7 @@ function AppContent() {
             element={<Navigate to="/admin/comunicacao?tab=templates" replace />}
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFoundArcade />} />
         </Routes>
 
         {/* Floating chat button - disponível em todas as páginas para usuários autenticados */}
