@@ -23,11 +23,5 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
-    exclude: ["@sentry/react"],
-  },
-  build: {
-    rollupOptions: {
-      external: ["@sentry/react"],
-    },
   },
 }));
