@@ -1514,10 +1514,13 @@ export type Database = {
       }
       production_queue: {
         Row: {
+          assigned_at: string | null
           assigned_to: string | null
+          assigned_to_name: string | null
           character_id: string | null
           character_name: string | null
           choice_deadline: string | null
+          choice_made_at: string | null
           choice_status: string | null
           collection_id: string | null
           collection_name: string | null
@@ -1526,6 +1529,7 @@ export type Database = {
           customer_email: string | null
           customer_id: string | null
           customer_name: string | null
+          customer_notes: string | null
           estimated_completion_date: string | null
           id: string
           internal_flags: Json | null
@@ -1533,19 +1537,25 @@ export type Database = {
           order_id: string
           order_type: string
           priority: number | null
+          priority_score: number | null
           production_completed_at: string | null
+          production_notes: string | null
           production_started_at: string | null
           production_status: string | null
+          scheduled_production_date: string | null
           status: string
           tracking_code: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          assigned_at?: string | null
           assigned_to?: string | null
+          assigned_to_name?: string | null
           character_id?: string | null
           character_name?: string | null
           choice_deadline?: string | null
+          choice_made_at?: string | null
           choice_status?: string | null
           collection_id?: string | null
           collection_name?: string | null
@@ -1554,6 +1564,7 @@ export type Database = {
           customer_email?: string | null
           customer_id?: string | null
           customer_name?: string | null
+          customer_notes?: string | null
           estimated_completion_date?: string | null
           id?: string
           internal_flags?: Json | null
@@ -1561,19 +1572,25 @@ export type Database = {
           order_id: string
           order_type: string
           priority?: number | null
+          priority_score?: number | null
           production_completed_at?: string | null
+          production_notes?: string | null
           production_started_at?: string | null
           production_status?: string | null
+          scheduled_production_date?: string | null
           status?: string
           tracking_code?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          assigned_at?: string | null
           assigned_to?: string | null
+          assigned_to_name?: string | null
           character_id?: string | null
           character_name?: string | null
           choice_deadline?: string | null
+          choice_made_at?: string | null
           choice_status?: string | null
           collection_id?: string | null
           collection_name?: string | null
@@ -1582,6 +1599,7 @@ export type Database = {
           customer_email?: string | null
           customer_id?: string | null
           customer_name?: string | null
+          customer_notes?: string | null
           estimated_completion_date?: string | null
           id?: string
           internal_flags?: Json | null
@@ -1589,9 +1607,12 @@ export type Database = {
           order_id?: string
           order_type?: string
           priority?: number | null
+          priority_score?: number | null
           production_completed_at?: string | null
+          production_notes?: string | null
           production_started_at?: string | null
           production_status?: string | null
+          scheduled_production_date?: string | null
           status?: string
           tracking_code?: string | null
           updated_at?: string
