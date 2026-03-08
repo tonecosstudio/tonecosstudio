@@ -1,161 +1,43 @@
 /**
  * Audit Trail Service
  * 
- * Handles recording and retrieval of collection choice change history.
- * 
- * Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6
+ * Handles recording and retrieval of order status change history.
+ * Uses the existing order_status_history table.
  */
 
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Collection Choice History record
+ * Status History record from order_status_history table
  */
-export interface CollectionChoiceHistory {
+export interface AuditRecord {
   id: string;
-  delivery_id: string;
-  user_id: string;
-  previous_collection_id: string | null;
-  new_collection_id: string;
-  change_reason: 'manual' | 'automatic_maintenance' | 'admin_override';
-  changed_by_admin: boolean;
-  admin_user_id: string | null;
-  ip_address: string | null;
-  user_agent: string | null;
+  order_id: string;
+  order_type: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  changed_by_name: string | null;
+  notes: string | null;
   created_at: string;
 }
 
 /**
- * Parameters for recording a collection change
- */
-export interface RecordCollectionChangeParams {
-  deliveryId: string;
-  userId: string;
-  previousCollectionId: string | null;
-  newCollectionId: string;
-  changeReason: 'manual' | 'automatic_maintenance' | 'admin_override';
-  changedByAdmin?: boolean;
-  adminUserId?: string | null;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-}
-
-/**
- * Record a collection choice change in the audit trail
- * 
- * This function creates a record in the collection_choice_history table
- * to track all changes to delivery collection choices.
- * 
- * @param params - The change parameters
- * @returns Promise<CollectionChoiceHistory> - The created audit record
- * @throws Error if insert fails
- * 
- * Requirements: 8.1, 8.2, 8.3
- */
-export async function recordCollectionChange(
-  params: RecordCollectionChangeParams
-): Promise<CollectionChoiceHistory> {
-  const {
-    deliveryId,
-    userId,
-    previousCollectionId,
-    newCollectionId,
-    changeReason,
-    changedByAdmin = false,
-    adminUserId = null,
-    ipAddress = null,
-    userAgent = null,
-  } = params;
-
-  const { data, error } = await supabase
-    .from('collection_choice_history' as any)
-    .insert({
-      delivery_id: deliveryId,
-      user_id: userId,
-      previous_collection_id: previousCollectionId,
-      new_collection_id: newCollectionId,
-      change_reason: changeReason,
-      changed_by_admin: changedByAdmin,
-      admin_user_id: adminUserId,
-      ip_address: ipAddress,
-      user_agent: userAgent,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to record collection change: ${error.message}`);
-  }
-
-  return data as unknown as CollectionChoiceHistory;
-}
-
-/**
- * Get collection change history for a specific delivery
- * 
- * @param deliveryId - The ID of the delivery
- * @returns Promise<CollectionChoiceHistory[]> - Array of change records
- * 
- * Requirements: 8.4, 21.4
- */
-export async function getDeliveryChangeHistory(
-  deliveryId: string
-): Promise<CollectionChoiceHistory[]> {
-  const { data, error } = await supabase
-    .from('collection_choice_history' as any)
-    .select(`
-      *,
-      previous_collection:collections!collection_choice_history_previous_collection_id_fkey(id, name),
-      new_collection:collections!collection_choice_history_new_collection_id_fkey(id, name)
-    `)
-    .eq('delivery_id', deliveryId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    throw new Error(`Failed to get delivery change history: ${error.message}`);
-  }
-
-  return (data || []) as unknown as CollectionChoiceHistory[];
-}
-
-/**
- * Get all collection changes for admin review
- * 
- * @param filters - Optional filters for the query
- * @returns Promise<CollectionChoiceHistory[]> - Array of change records
- * 
- * Requirements: 8.5, 8.6
+ * Get all status changes for admin review (audit trail)
  */
 export async function getAllCollectionChanges(filters?: {
-  userId?: string;
-  collectionId?: string;
-  changeReason?: 'manual' | 'automatic_maintenance' | 'admin_override';
+  changeReason?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ data: CollectionChoiceHistory[]; count: number }> {
+}): Promise<{ data: AuditRecord[]; count: number }> {
   let query = supabase
-    .from('collection_choice_history' as any)
-    .select(`
-      *,
-      user:profiles!collection_choice_history_user_id_fkey(id, email, full_name),
-      previous_collection:collections!collection_choice_history_previous_collection_id_fkey(id, name),
-      new_collection:collections!collection_choice_history_new_collection_id_fkey(id, name),
-      admin_user:profiles!collection_choice_history_admin_user_id_fkey(id, email, full_name)
-    `, { count: 'exact' });
+    .from('order_status_history')
+    .select('*', { count: 'exact' });
 
-  // Apply filters
-  if (filters?.userId) {
-    query = query.eq('user_id', filters.userId);
-  }
-
-  if (filters?.collectionId) {
-    query = query.or(`previous_collection_id.eq.${filters.collectionId},new_collection_id.eq.${filters.collectionId}`);
-  }
-
-  if (filters?.changeReason) {
-    query = query.eq('change_reason', filters.changeReason);
+  if (filters?.changeReason && filters.changeReason !== 'all') {
+    query = query.eq('order_type', filters.changeReason);
   }
 
   if (filters?.startDate) {
@@ -166,58 +48,86 @@ export async function getAllCollectionChanges(filters?: {
     query = query.lte('created_at', filters.endDate);
   }
 
-  // Order by most recent first
   query = query.order('created_at', { ascending: false });
 
-  // Apply pagination
   if (filters?.limit) {
-    query = query.limit(filters.limit);
-  }
-
-  if (filters?.offset) {
-    query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1);
+    const offset = filters?.offset || 0;
+    query = query.range(offset, offset + filters.limit - 1);
   }
 
   const { data, error, count } = await query;
 
   if (error) {
-    throw new Error(`Failed to get collection changes: ${error.message}`);
+    console.error('Failed to get audit trail:', error.message);
+    return { data: [], count: 0 };
   }
 
   return {
-    data: (data || []) as unknown as CollectionChoiceHistory[],
+    data: (data || []) as AuditRecord[],
     count: count || 0,
   };
 }
 
 /**
- * Search collection changes by subscriber name or email
- * 
- * @param searchTerm - The search term
- * @param limit - Maximum number of results
- * @returns Promise<CollectionChoiceHistory[]> - Array of matching change records
- * 
- * Requirements: 8.6
+ * Search status changes by changed_by_name
  */
 export async function searchCollectionChangesBySubscriber(
   searchTerm: string,
   limit: number = 50
-): Promise<CollectionChoiceHistory[]> {
+): Promise<AuditRecord[]> {
   const { data, error } = await supabase
-    .from('collection_choice_history' as any)
-    .select(`
-      *,
-      user:profiles!collection_choice_history_user_id_fkey(id, email, full_name),
-      previous_collection:collections!collection_choice_history_previous_collection_id_fkey(id, name),
-      new_collection:collections!collection_choice_history_new_collection_id_fkey(id, name)
-    `)
-    .or(`user.email.ilike.%${searchTerm}%,user.full_name.ilike.%${searchTerm}%`)
+    .from('order_status_history')
+    .select('*')
+    .ilike('changed_by_name', `%${searchTerm}%`)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) {
-    throw new Error(`Failed to search collection changes: ${error.message}`);
+    console.error('Failed to search audit trail:', error.message);
+    return [];
   }
 
-  return (data || []) as unknown as CollectionChoiceHistory[];
+  return (data || []) as AuditRecord[];
 }
+
+/**
+ * Record a status change in the audit trail
+ */
+export async function recordStatusChange(params: {
+  orderId: string;
+  orderType: string;
+  oldStatus: string | null;
+  newStatus: string;
+  changedBy?: string | null;
+  changedByName?: string | null;
+  notes?: string | null;
+}): Promise<AuditRecord | null> {
+  const { data, error } = await supabase
+    .from('order_status_history')
+    .insert({
+      order_id: params.orderId,
+      order_type: params.orderType,
+      old_status: params.oldStatus,
+      new_status: params.newStatus,
+      changed_by: params.changedBy || null,
+      changed_by_name: params.changedByName || null,
+      notes: params.notes || null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to record status change:', error.message);
+    return null;
+  }
+
+  return data as AuditRecord;
+}
+
+// Legacy exports for backward compatibility
+export type CollectionChoiceHistory = AuditRecord;
+export type RecordCollectionChangeParams = Parameters<typeof recordStatusChange>[0];
+export const getDeliveryChangeHistory = async (deliveryId: string) => {
+  const { data } = await getAllCollectionChanges({ limit: 100 });
+  return data.filter(r => r.order_id === deliveryId);
+};
