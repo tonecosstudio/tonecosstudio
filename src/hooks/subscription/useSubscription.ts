@@ -11,16 +11,51 @@
  * 
  * @module hooks/subscription/useSubscription
  */
-// @ts-nocheck
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import type {
-  Subscription,
-  SubscriptionPlan,
-  UserId,
-  SubscriptionStatus,
-} from '@/types/subscription';
+
+// ============================================================================
+// TYPES (aligned with DB schema)
+// ============================================================================
+
+type UserId = string;
+
+interface DbSubscription {
+  id: string;
+  user_id: string;
+  plan_type: string | null;
+  plan_id: string | null;
+  status: string;
+  started_at: string | null;
+  cancelled_at: string | null;
+  completed_at: string | null;
+  payment_method: string | null;
+  deliveries_completed: number;
+  deliveries_total: number | null;
+  total_paid: number | null;
+  next_delivery_at: string | null;
+  collection_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DbSubscriptionPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  billing_interval: string;
+  deliveries_per_cycle: number;
+  is_active: boolean;
+  slug: string | null;
+  tier_id: string | null;
+  features: any;
+  created_at: string;
+  updated_at: string;
+}
 
 // ============================================================================
 // QUERY KEYS
@@ -37,9 +72,7 @@ export const subscriptionKeys = {
 // ============================================================================
 
 const CACHE_CONFIG = {
-  /** Tempo que dados são considerados "frescos" (30 segundos) */
   STALE_TIME: 30 * 1000,
-  /** Tempo que dados ficam em cache (5 minutos) */
   CACHE_TIME: 5 * 60 * 1000,
 };
 
@@ -47,45 +80,18 @@ const CACHE_CONFIG = {
 // HOOK PRINCIPAL
 // ============================================================================
 
-/**
- * Hook para buscar assinatura do usuário
- * 
- * @param userId - ID do usuário (opcional, usa usuário logado se não fornecido)
- * @returns Query com assinatura do usuário
- * 
- * @example
- * ```tsx
- * function MySubscription() {
- *   const { data: subscription, isLoading } = useSubscription();
- *   
- *   if (isLoading) return <Loading />;
- *   
- *   return (
- *     <div>
- *       {subscription ? `Plano: ${subscription.plan_type}` : 'Sem assinatura'}
- *     </div>
- *   );
- * }
- * ```
- */
 export function useSubscription(userId?: UserId | null) {
   return useQuery({
     queryKey: userId ? subscriptionKeys.user(userId) : subscriptionKeys.all,
-    queryFn: async (): Promise<Subscription | null> => {
-      // Se userId não foi fornecido, busca usuário logado
+    queryFn: async (): Promise<DbSubscription | null> => {
       let targetUserId = userId;
       
       if (!targetUserId) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          throw new Error('Usuário não autenticado');
-        }
-        
+        if (authError || !user) throw new Error('Usuário não autenticado');
         targetUserId = user.id;
       }
       
-      // Busca assinatura ativa
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -93,11 +99,8 @@ export function useSubscription(userId?: UserId | null) {
         .eq('status', 'active')
         .maybeSingle();
       
-      if (error) {
-        throw new Error(`Erro ao buscar assinatura: ${error.message}`);
-      }
-      
-      return data as Subscription | null;
+      if (error) throw new Error(`Erro ao buscar assinatura: ${error.message}`);
+      return data;
     },
     enabled: true,
     staleTime: CACHE_CONFIG.STALE_TIME,
@@ -106,25 +109,6 @@ export function useSubscription(userId?: UserId | null) {
   });
 }
 
-/**
- * Hook para verificar se usuário é assinante
- * 
- * @param userId - ID do usuário (opcional, usa usuário logado se não fornecido)
- * @returns Query com boolean indicando se usuário é assinante
- * 
- * @example
- * ```tsx
- * function PremiumContent() {
- *   const { data: isSubscriber } = useIsSubscriber();
- *   
- *   if (!isSubscriber) {
- *     return <UpgradePrompt />;
- *   }
- *   
- *   return <PremiumContent />;
- * }
- * ```
- */
 export function useIsSubscriber(userId?: UserId | null) {
   const { data: subscription } = useSubscription(userId);
   
@@ -138,41 +122,18 @@ export function useIsSubscriber(userId?: UserId | null) {
   });
 }
 
-/**
- * Hook para buscar plano de assinatura
- * 
- * @param userId - ID do usuário (opcional, usa usuário logado se não fornecido)
- * @returns Query com plano de assinatura
- * 
- * @example
- * ```tsx
- * function PlanDetails() {
- *   const { data: plan } = useSubscriptionPlan();
- *   
- *   if (!plan) return <NoPlan />;
- *   
- *   return (
- *     <div>
- *       <h3>{plan.name}</h3>
- *       <p>{plan.description}</p>
- *     </div>
- *   );
- * }
- * ```
- */
 export function useSubscriptionPlan(userId?: UserId | null) {
   const { data: subscription } = useSubscription(userId);
   
   return useQuery({
     queryKey: ['subscription', 'plan', userId],
-    queryFn: async (): Promise<SubscriptionPlan | null> => {
-      if (!subscription) return null;
+    queryFn: async (): Promise<DbSubscriptionPlan | null> => {
+      if (!subscription?.plan_id) return null;
       
-      // Busca detalhes do plano
       const { data: plan, error } = await supabase
         .from('subscription_plans')
         .select('*')
-        .eq('type', subscription.plan_type)
+        .eq('id', subscription.plan_id)
         .maybeSingle();
       
       if (error) {
@@ -180,75 +141,31 @@ export function useSubscriptionPlan(userId?: UserId | null) {
         return null;
       }
       
-      return plan as SubscriptionPlan | null;
+      return plan;
     },
-    enabled: !!subscription,
+    enabled: !!subscription?.plan_id,
     staleTime: CACHE_CONFIG.STALE_TIME,
   });
 }
 
-/**
- * Hook para listar planos disponíveis
- * 
- * @returns Query com lista de planos disponíveis
- * 
- * @example
- * ```tsx
- * function PlanSelector() {
- *   const { data: plans } = useAvailablePlans();
- *   
- *   return (
- *     <div>
- *       {plans?.map(plan => (
- *         <PlanCard key={plan.id} plan={plan} />
- *       ))}
- *     </div>
- *   );
- * }
- * ```
- */
 export function useAvailablePlans() {
   return useQuery({
     queryKey: ['subscription', 'available-plans'],
-    queryFn: async (): Promise<SubscriptionPlan[]> => {
+    queryFn: async (): Promise<DbSubscriptionPlan[]> => {
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
-        .order('price_monthly', { ascending: true });
+        .order('price', { ascending: true });
       
-      if (error) {
-        throw new Error(`Erro ao buscar planos: ${error.message}`);
-      }
-      
-      return (data as SubscriptionPlan[]) || [];
+      if (error) throw new Error(`Erro ao buscar planos: ${error.message}`);
+      return data || [];
     },
     staleTime: CACHE_CONFIG.STALE_TIME,
     gcTime: CACHE_CONFIG.CACHE_TIME,
   });
 }
 
-/**
- * Hook para criar nova assinatura
- * 
- * @returns Mutation para criar assinatura
- * 
- * @example
- * ```tsx
- * function SubscribeButton({ planId }: { planId: string }) {
- *   const createSubscription = useCreateSubscription();
- *   
- *   const handleSubscribe = () => {
- *     createSubscription.mutate({
- *       plan_type: 'mensal',
- *       payment_method: 'pix',
- *     });
- *   };
- *   
- *   return <button onClick={handleSubscribe}>Assinar</button>;
- * }
- * ```
- */
 export function useCreateSubscription() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -260,34 +177,28 @@ export function useCreateSubscription() {
     }) => {
       const { plan_type, payment_method } = params;
       
-      // Busca usuário logado
       const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error('Usuário não autenticado');
       
-      if (authError || !user) {
-        throw new Error('Usuário não autenticado');
-      }
-      
-      // Busca plano
+      // Find plan by billing_interval
       const { data: plan, error: planError } = await supabase
         .from('subscription_plans')
         .select('*')
-        .eq('type', plan_type)
+        .eq('billing_interval', plan_type)
         .eq('is_active', true)
-        .single();
+        .limit(1)
+        .maybeSingle();
       
-      if (planError || !plan) {
-        throw new Error('Plano não encontrado');
-      }
+      if (planError || !plan) throw new Error('Plano não encontrado');
       
-      // Cria assinatura
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .insert({
           user_id: user.id,
           plan_type,
-          status: 'pending_payment',
-          coins_per_month: plan.coins_per_month,
-          total_coins_received: 0,
+          plan_id: plan.id,
+          status: 'pending',
+          payment_method,
         })
         .select()
         .single();
@@ -298,12 +209,8 @@ export function useCreateSubscription() {
       
       return { success: true, subscription };
     },
-    onSuccess: (data) => {
-      // Invalida cache de assinatura
-      queryClient.invalidateQueries({
-        queryKey: subscriptionKeys.all,
-      });
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
       toast({
         title: 'Assinatura criada!',
         description: 'Agora realize o pagamento para ativar sua assinatura.',
@@ -319,24 +226,6 @@ export function useCreateSubscription() {
   });
 }
 
-/**
- * Hook para cancelar assinatura
- * 
- * @returns Mutation para cancelar assinatura
- * 
- * @example
- * ```tsx
- * function CancelSubscriptionButton({ subscriptionId }: { subscriptionId: string }) {
- *   const cancelSubscription = useCancelSubscription();
- *   
- *   const handleCancel = () => {
- *     cancelSubscription.mutate(subscriptionId);
- *   };
- *   
- *   return <button onClick={handleCancel}>Cancelar Assinatura</button>;
- * }
- * ```
- */
 export function useCancelSubscription() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -351,21 +240,12 @@ export function useCancelSubscription() {
         })
         .eq('id', subscriptionId);
       
-      if (error) {
-        throw new Error(`Erro ao cancelar assinatura: ${error.message}`);
-      }
-      
+      if (error) throw new Error(`Erro ao cancelar assinatura: ${error.message}`);
       return { success: true };
     },
     onSuccess: (data, subscriptionId) => {
-      // Invalida cache de assinatura
-      queryClient.invalidateQueries({
-        queryKey: subscriptionKeys.details(subscriptionId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: subscriptionKeys.all,
-      });
-      
+      queryClient.invalidateQueries({ queryKey: subscriptionKeys.details(subscriptionId) });
+      queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
       toast({
         title: 'Assinatura cancelada',
         description: 'Sua assinatura foi cancelada com sucesso.',
@@ -385,25 +265,13 @@ export function useCancelSubscription() {
 // UTILITÁRIOS
 // ============================================================================
 
-/**
- * Invalida cache de assinatura
- * 
- * Útil após operações que modificam assinatura
- * 
- * @param queryClient - Cliente do React Query
- * @param userId - ID do usuário (opcional, invalida todos se não fornecido)
- */
 export function invalidateSubscription(
   queryClient: ReturnType<typeof useQueryClient>,
   userId?: UserId
 ) {
   if (userId) {
-    queryClient.invalidateQueries({
-      queryKey: subscriptionKeys.user(userId),
-    });
+    queryClient.invalidateQueries({ queryKey: subscriptionKeys.user(userId) });
   } else {
-    queryClient.invalidateQueries({
-      queryKey: subscriptionKeys.all,
-    });
+    queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
   }
 }
