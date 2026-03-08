@@ -8,6 +8,7 @@ interface SEOHeadProps {
   url?: string;
   type?: "website" | "article" | "product";
   noindex?: boolean;
+  jsonLd?: Record<string, unknown>;
 }
 
 export default function SEOHead({
@@ -18,41 +19,44 @@ export default function SEOHead({
   url,
   type = "website",
   noindex = false,
+  jsonLd,
 }: SEOHeadProps) {
-  const siteTitle = "Tonecos Studios";
+  const siteTitle = "Ordax | Tonecos Studios";
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
-  const canonicalUrl = url || (typeof window !== "undefined" ? window.location.href : "");
-  const fullImageUrl = image.startsWith("http") ? image : `${window.location.origin}${image}`;
+  const canonicalUrl = url || (typeof window !== "undefined" ? window.location.href.split("?")[0] : "");
+  const fullImageUrl = image.startsWith("http") ? image : `${typeof window !== "undefined" ? window.location.origin : ""}${image}`;
 
   return (
     <Helmet>
-      {/* Basic Meta Tags */}
+      <html lang="pt-BR" />
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+      <meta name="description" content={description.slice(0, 160)} />
       <meta name="keywords" content={keywords.join(", ")} />
       {noindex && <meta name="robots" content="noindex,nofollow" />}
 
-      {/* Canonical URL */}
       <link rel="canonical" href={canonicalUrl} />
 
-      {/* Open Graph Tags */}
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
+      <meta property="og:description" content={description.slice(0, 160)} />
       <meta property="og:image" content={fullImageUrl} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:type" content={type} />
-      <meta property="og:site_name" content={siteTitle} />
+      <meta property="og:site_name" content="Ordax" />
+      <meta property="og:locale" content="pt_BR" />
 
-      {/* Twitter Card Tags */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
+      <meta name="twitter:description" content={description.slice(0, 160)} />
       <meta name="twitter:image" content={fullImageUrl} />
 
-      {/* Additional Meta */}
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
-      <meta name="language" content="Portuguese" />
+      <meta name="language" content="pt-BR" />
+      <meta name="theme-color" content="#0a0a0a" />
+
+      {jsonLd && (
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd)}
+        </script>
+      )}
     </Helmet>
   );
 }

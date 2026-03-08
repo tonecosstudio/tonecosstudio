@@ -8,10 +8,23 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <SEOHead
-        title="Ordax - Colecionáveis Premium Sob Encomenda"
-        description="Colecionáveis premium sob encomenda. Escolha, personalize e acompanhe em tempo real."
-        keywords={["colecionáveis", "premium", "sob encomenda"]}
+        title="Colecionáveis Premium Sob Encomenda"
+        description="Colecionáveis premium sob encomenda. Escolha, personalize e acompanhe em tempo real. Estatuetas artesanais feitas à mão."
+        keywords={["colecionáveis", "premium", "sob encomenda", "estatuetas", "artesanal", "tonecos studios"]}
         type="website"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Ordax - Tonecos Studios",
+          "description": "Colecionáveis premium artesanais feitos à mão sob encomenda.",
+          "url": typeof window !== "undefined" ? window.location.origin : "",
+          "sameAs": [],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": "Portuguese"
+          }
+        }}
       />
 
       {/* One Screen - No Scroll - No Header */}
