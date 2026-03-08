@@ -450,6 +450,11 @@ export default function CollectionDetailsArcade() {
                                 <Star className="w-4 h-4 mr-1" />
                                 Destaque
                               </Badge>
+                              {featuredCharacter.release_month && (
+                                <Badge variant="outline" className="font-mono uppercase tracking-wider px-3 py-1 text-xs border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]">
+                                  📅 {MONTHS[featuredCharacter.release_month - 1]}
+                                </Badge>
+                              )}
                             </div>
 
                             <h3 className="text-4xl md:text-6xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] mb-3 font-mono drop-shadow-[0_0_20px_hsl(var(--gold-accent))]">
