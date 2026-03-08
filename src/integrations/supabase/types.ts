@@ -442,6 +442,8 @@ export type Database = {
           name: string
           price_category_id: string | null
           product_line: string | null
+          release_month: number | null
+          release_order: number | null
           status: string
           stock_quantity: number
           theme_category: string | null
@@ -460,6 +462,8 @@ export type Database = {
           name: string
           price_category_id?: string | null
           product_line?: string | null
+          release_month?: number | null
+          release_order?: number | null
           status?: string
           stock_quantity?: number
           theme_category?: string | null
@@ -478,6 +482,8 @@ export type Database = {
           name?: string
           price_category_id?: string | null
           product_line?: string | null
+          release_month?: number | null
+          release_order?: number | null
           status?: string
           stock_quantity?: number
           theme_category?: string | null
