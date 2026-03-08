@@ -262,9 +262,9 @@ export default function CollectionDetailsArcade() {
               }}
             >
               {/* Background Image */}
-              {collection.image_url ? (
+              {collection.cover_image_url ? (
                 <img
-                  src={collection.image_url}
+                  src={collection.cover_image_url}
                   alt={collection.name}
                   className="w-full h-full object-cover"
                 />
