@@ -241,7 +241,13 @@ export default function CollectionDetailsArcade() {
     );
   }
 
-  const characterCount = collection.collection_characters?.length || 0;
+  const safeCharacters = Array.isArray(collection.collection_characters)
+    ? collection.collection_characters.filter((character): character is Character =>
+        Boolean(character && character.id && character.name)
+      )
+    : [];
+
+  const characterCount = safeCharacters.length;
 
   return (
     <AppShell>
