@@ -49,6 +49,7 @@ import AdminFinancialHub from "./pages/admin/AdminFinancialHub";
 import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
 import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import ProductionHub from "./pages/admin/ProductionHub";
 import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
@@ -396,6 +397,16 @@ function AppContent() {
               </RequireAdmin>
             }
           />
+          
+          <Route
+            path="/admin/assinaturas-gerenciar"
+            element={
+              <RequireAdmin>
+                <AdminSubscriptions />
+              </RequireAdmin>
+            }
+          />
+          
           {/* Hub de Produção (consolida produção + escolhas) */}
           <Route
             path="/admin/producao"
