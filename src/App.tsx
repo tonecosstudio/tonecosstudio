@@ -390,6 +390,14 @@ function AppContent() {
             path="/coins/purchase"
             element={
               <RequireAuth>
+                <CoinsPurchaseArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/coins/purchase-old"
+            element={
+              <RequireAuth>
                 <CoinsPurchase />
               </RequireAuth>
             }
