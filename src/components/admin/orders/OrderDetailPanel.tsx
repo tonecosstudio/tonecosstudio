@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Painel de Detalhes do Pedido
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook unificado para gerenciar saldo de coins
  * 

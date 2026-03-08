@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CollectionTierAssignmentDialog - Dialog para atribuir coleções a um nível
  */

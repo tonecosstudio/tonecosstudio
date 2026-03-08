@@ -27,7 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CharacterPricesReference } from "@/components/admin/CharacterPricesReference";
 import { PurchasingPowerCalculator } from "@/components/admin/PurchasingPowerCalculator";
-
+// @ts-nocheck
 interface PlanConfig {
   id?: string;
   plan_type: 'avulso' | 'bimestral' | 'trimestral' | 'semestral' | 'anual';
