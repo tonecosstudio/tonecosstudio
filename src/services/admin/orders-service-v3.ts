@@ -534,8 +534,8 @@ function transformSubscription(
 
     // Dados da próxima/última entrega
     trackingCode: nextDelivery?.tracking_code || null,
-    expectedDeliveryDate: nextDelivery?.expected_delivery_date || null,
-    actualDeliveryDate: nextDelivery?.actual_delivery_date || null,
+    expectedDeliveryDate: null,
+    actualDeliveryDate: nextDelivery?.actual_delivery_date || nextDelivery?.delivered_date || null,
 
     subscriptionDelivery: {
       subscriptionId: subscription.id,
