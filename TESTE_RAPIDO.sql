@@ -14,8 +14,24 @@ BEGIN
   
   IF v_method_count = 0 THEN
     RAISE NOTICE '📝 Criando método de pagamento de teste...';
-    INSERT INTO admin_payment_methods (name, type, is_active)
-    VALUES ('PIX - Teste', 'pix', true);
+    INSERT INTO admin_payment_methods (
+      name, 
+      type, 
+      instructions,
+      pix_key,
+      is_active,
+      is_default,
+      display_order
+    )
+    VALUES (
+      'PIX - Teste', 
+      'pix', 
+      'Chave PIX de teste para validação do sistema',
+      'teste@ordax.com.br',
+      true,
+      true,
+      0
+    );
     RAISE NOTICE '✅ Método de pagamento criado!';
   END IF;
   
