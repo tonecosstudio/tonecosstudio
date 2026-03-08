@@ -100,6 +100,16 @@ export default function OrdersPage() {
     activeFilterCount
   } = filterControls;
 
+  // Gerenciamento de paginação
+  const paginationControls = useOrderPagination();
+  const {
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize
+  } = paginationControls;
+
   // Sincronizar tab ativa com filtro de tipo
   useEffect(() => {
     const typeMap: Record<string, typeof filters.type> = {
@@ -120,16 +130,6 @@ export default function OrdersPage() {
     // Resetar paginação ao mudar de tab
     setPage(1);
   };
-
-  // Gerenciamento de paginação
-  const paginationControls = useOrderPagination();
-  const {
-    pagination,
-    page,
-    pageSize,
-    setPage,
-    setPageSize
-  } = paginationControls;
 
   // Debounce da busca para evitar chamadas excessivas
   const [debouncedSearchQuery, isSearching] = useDebouncedValue(filters.searchQuery, 300);
@@ -524,8 +524,8 @@ export default function OrdersPage() {
               <TabsTrigger value="standalone">Pedidos Avulsos</TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab} className="mt-6">
-              {/* Conteúdo das tabs (filtros, tabela, etc) */}
+            {/* Conteúdo para todas as tabs */}
+            <div className="mt-6">
               
               {/* Estado de erro */}
               {isError && (
@@ -623,7 +623,7 @@ export default function OrdersPage() {
               )}
                 </div>
               )}
-            </TabsContent>
+            </div>
           </Tabs>
         </div>
 
