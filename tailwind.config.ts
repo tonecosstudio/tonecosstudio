@@ -31,6 +31,8 @@ export default {
           "sans-serif",
         ],
         serif: ["Playfair Display", "Georgia", "serif"],
+        pixel: ["'Press Start 2P'", "monospace"],
+        military: ["'Bebas Neue'", "Impact", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

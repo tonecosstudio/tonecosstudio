@@ -197,6 +197,23 @@ All colors MUST be HSL.
   }
 }
 
+/* Metal Slug glitch effects */
+@keyframes glitch1 {
+  0%, 100% { clip-path: inset(0 0 95% 0); transform: translate(0); }
+  20% { clip-path: inset(30% 0 40% 0); transform: translate(-3px, 1px); }
+  40% { clip-path: inset(60% 0 10% 0); transform: translate(3px, -1px); }
+  60% { clip-path: inset(10% 0 70% 0); transform: translate(-2px, 2px); }
+  80% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+}
+
+@keyframes glitch2 {
+  0%, 100% { clip-path: inset(95% 0 0 0); transform: translate(0); }
+  20% { clip-path: inset(40% 0 30% 0); transform: translate(3px, -1px); }
+  40% { clip-path: inset(10% 0 60% 0); transform: translate(-3px, 1px); }
+  60% { clip-path: inset(70% 0 10% 0); transform: translate(2px, -2px); }
+  80% { clip-path: inset(5% 0 80% 0); transform: translate(-2px, 2px); }
+}
+
 @keyframes typewriter {
   from {
     width: 0;
