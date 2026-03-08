@@ -409,6 +409,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
     let deadlineCritical = 0;
     let deadlineUrgent = 0;
     let blocked = 0;
+    let overdue = 0;
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
