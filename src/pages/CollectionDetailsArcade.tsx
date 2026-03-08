@@ -37,6 +37,7 @@ type Character = {
   image_url: string | null;
   release_order: number;
   release_month: number | null;
+  is_catalog: boolean;
   status: string;
 };
 
@@ -184,7 +185,7 @@ export default function CollectionDetailsArcade() {
       // Buscar personagens da coleção
       const { data: charactersData, error: charactersError } = await supabase
         .from("collection_characters")
-        .select("id, name, description, image_url, release_order, release_month, status")
+        .select("id, name, description, image_url, release_order, release_month, is_catalog, status")
         .eq("collection_id", collectionData.id)
         .order("release_month", { ascending: true, nullsFirst: false });
 
@@ -385,17 +386,20 @@ export default function CollectionDetailsArcade() {
           {collection.collection_characters && collection.collection_characters.length > 0 && (() => {
             const currentMonth = new Date().getMonth() + 1; // 1-12
 
-            // Personagem destaque = o do mês atual (release_month === currentMonth)
-            const allCharacters = collection.collection_characters;
-            const featuredCharacter = allCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
-              || allCharacters.find(c => c.release_month === currentMonth);
+            // Separar catálogo dos personagens mensais
+            const catalogCharacters = allCharacters.filter(c => c.is_catalog);
+            const monthlyCharacters = allCharacters.filter(c => !c.is_catalog);
 
-            // Já lançados (exceto o destaque)
-            const releasedCharacters = allCharacters.filter(c => c.status === 'released' && c.id !== featuredCharacter?.id);
+            // Personagem destaque = o do mês atual
+            const featuredCharacter = monthlyCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
+              || monthlyCharacters.find(c => c.release_month === currentMonth);
+
+            // Já lançados (exceto o destaque e catálogo)
+            const releasedCharacters = monthlyCharacters.filter(c => c.status === 'released' && c.id !== featuredCharacter?.id);
             const sortedReleased = [...releasedCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
             // Próximos lançamentos
-            const upcomingCharacters = allCharacters.filter(c => (c.status === 'upcoming' || c.status === 'revealed') && c.id !== featuredCharacter?.id);
+            const upcomingCharacters = monthlyCharacters.filter(c => (c.status === 'upcoming' || c.status === 'revealed') && c.id !== featuredCharacter?.id);
             const sortedUpcoming = [...upcomingCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
             return (
@@ -548,6 +552,34 @@ export default function CollectionDetailsArcade() {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                       {sortedUpcoming.map((character, index) => (
                         <CharacterCard key={character.id} character={character} index={index} isUpcoming={true} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Catalog Characters */}
+                {catalogCharacters.length > 0 && (
+                  <div className="mb-12">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight font-mono text-[hsl(var(--foreground))]">
+                          Catálogo
+                        </h2>
+                        <Badge className="bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))] font-mono uppercase tracking-wider px-3 py-1 border border-[hsl(var(--primary)/0.5)]">
+                          {catalogCharacters.length} Disponíveis
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm p-4 mb-6">
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        Personagens do catálogo estão sempre disponíveis, independente do mês.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                      {catalogCharacters.map((character, index) => (
+                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} />
                       ))}
                     </div>
                   </div>
