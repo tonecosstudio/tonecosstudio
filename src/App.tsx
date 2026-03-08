@@ -346,6 +346,14 @@ function AppContent() {
             path="/painel-assinante"
             element={
               <RequireAuth>
+                <SubscriberDashboardArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/painel-assinante-old"
+            element={
+              <RequireAuth>
                 <SubscriberDashboard />
               </RequireAuth>
             }
