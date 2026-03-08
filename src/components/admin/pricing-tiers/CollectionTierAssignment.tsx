@@ -35,8 +35,9 @@ export function CollectionTierAssignment({
   const {
     data: currentAssignment,
     isLoading: loadingAssignment,
+    assignTier,
+    unassignTier,
   } = useCollectionTierAssignment(collectionId);
-  const { assignTier, unassignTier } = useCollectionTierAssignment(collectionId);
 
   const [selectedTierId, setSelectedTierId] = useState<string>("");
   const [hasChanges, setHasChanges] = useState(false);
