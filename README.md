@@ -109,6 +109,7 @@ VITE_SUPABASE_ANON_KEY=sua_chave_anonima
 - **[RESUMO_REFATORACAO_VISUAL.md](./RESUMO_REFATORACAO_VISUAL.md)** - Resumo visual
 
 ### Sistemas Específicos
+- **Sistema de Produção:** [docs/production/](./docs/production/) - Sistema completo testado e validado
 - **Sistema de Prazos:** [SINGLE_SOURCE_OF_TRUTH_PRAZOS.md](./SINGLE_SOURCE_OF_TRUTH_PRAZOS.md)
 - **Sistema de Preços:** [LIMPEZA_PRICING_MANAGEMENT.md](./LIMPEZA_PRICING_MANAGEMENT.md)
 - **Análise Admin:** [ANALISE_ADMIN_PROFISSIONAL.md](./ANALISE_ADMIN_PROFISSIONAL.md)
@@ -176,6 +177,7 @@ npm run seed
 - Painel administrativo (refatorado)
 - Sistema de créditos (coins)
 - Sistema de preços contextual
+- **Sistema de produção (100% testado)** ✨
 
 ### 🔄 Em Desenvolvimento
 - Melhorias de UX
