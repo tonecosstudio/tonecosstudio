@@ -1,0 +1,14 @@
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/lion-o.png' WHERE id = '949eaf15-04f5-488c-b1a1-18b179e99269';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/cheetara.png' WHERE id = '1d7ecf9e-9884-4ff9-841b-d5899d0f9ed0';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/panthro.png' WHERE id = 'f7180891-102e-4fff-aae1-14806cca3313';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/tygra.png' WHERE id = 'b9d6ec36-497f-4196-b79c-530b07a682e4';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/wilykit.png' WHERE id = 'c3d94ec4-3f4c-436a-80d3-8077bec66df3';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/wilykat.png' WHERE id = '9f5d555e-3f89-472e-bfb6-c81ed7fc7fa7';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/snarf.png' WHERE id = '3d74ce03-45ac-45ea-99f8-72ab7aba41f5';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/jaga.png' WHERE id = '51c04e1b-10e7-472b-a0c0-3cae5ec824fd';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/mumm-ra.png' WHERE id = 'bc158b42-6ad6-4774-aa0f-1940b06dea31';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/slithe.png' WHERE id = 'c8f4e619-f595-42be-acc3-fab00bc3c5d3';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/vultureman.png' WHERE id = '5e341d83-866c-49f8-9664-4c85bb7e4499';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/jackalman.png' WHERE id = '06ea1173-3be8-4a5c-9d46-ab37b4a2d526';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/lion-o.png' WHERE id = '8b66779b-dd44-4ec6-a500-cc17a55fcbe2';
+UPDATE collection_characters SET image_url = 'https://lprsvnwshfxhpnwrxfpy.supabase.co/storage/v1/object/public/models/characters/he-man.png' WHERE id = 'dd293d7d-3465-4490-81b0-e6a4dda68938';
