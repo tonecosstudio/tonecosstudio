@@ -9,6 +9,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+
+const MONTHS = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +36,7 @@ type Character = {
   description: string | null;
   image_url: string | null;
   release_order: number;
+  release_month: number | null;
   status: string;
 };
 
@@ -144,8 +150,13 @@ function CharacterCard({
                 : "text-[hsl(var(--foreground))]"
             }`}
           >
-            {character.name}
+            {isUpcoming ? "???" : character.name}
           </h4>
+          {character.release_month && (
+            <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-1">
+              📅 {MONTHS[character.release_month - 1]}
+            </p>
+          )}
         </div>
       </div>
     </Link>
@@ -173,9 +184,9 @@ export default function CollectionDetailsArcade() {
       // Buscar personagens da coleção
       const { data: charactersData, error: charactersError } = await supabase
         .from("collection_characters")
-        .select("id, name, description, image_url, release_order, status")
+        .select("id, name, description, image_url, release_order, release_month, status")
         .eq("collection_id", collectionData.id)
-        .order("release_order", { ascending: true });
+        .order("release_month", { ascending: true, nullsFirst: false });
 
       if (charactersError) throw charactersError;
 
@@ -439,6 +450,11 @@ export default function CollectionDetailsArcade() {
                                 <Star className="w-4 h-4 mr-1" />
                                 Destaque
                               </Badge>
+                              {featuredCharacter.release_month && (
+                                <Badge variant="outline" className="font-mono uppercase tracking-wider px-3 py-1 text-xs border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]">
+                                  📅 {MONTHS[featuredCharacter.release_month - 1]}
+                                </Badge>
+                              )}
                             </div>
 
                             <h3 className="text-4xl md:text-6xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] mb-3 font-mono drop-shadow-[0_0_20px_hsl(var(--gold-accent))]">
