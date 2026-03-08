@@ -524,9 +524,8 @@ export default function OrdersPage() {
               <TabsTrigger value="standalone">Pedidos Avulsos</TabsTrigger>
             </TabsList>
 
-            {/* Conteúdo para todas as tabs */}
-            <div className="mt-6">
-              
+            {/* Tab: Todos */}
+            <TabsContent value="all" className="mt-6">
               {/* Estado de erro */}
               {isError && (
                 <Alert variant="destructive" className="mb-6">
@@ -569,61 +568,261 @@ export default function OrdersPage() {
               {/* Conteúdo principal */}
               {!isLoading && !isError && (
                 <div className="space-y-6">
-            {/* Filtros */}
-            <OrderFilters
-              filters={filters}
-              onTypeChange={setType}
-              onStatusToggle={toggleStatus}
-              onDateRangeChange={setDateRange}
-              onReset={resetFilters}
-              activeFilterCount={activeFilterCount}
-            />
-            
-            {/* Busca */}
-            <OrderSearchBar
-              value={filters.searchQuery}
-              onChange={setSearchQuery}
-              onClear={() => setSearchQuery('')}
-              isSearching={isSearching}
-            />
-            
-            {/* Barra de Ações em Massa */}
-            <BulkActionsBar
-              selectedCount={selectionCount}
-              onUpdateStatus={handleUpdateStatus}
-              onGenerateLabels={handleGenerateLabels}
-              onExportCSV={handleExportCSV}
-              onClearSelection={handleClearSelection}
-              isExporting={isExporting}
-            />
-            
-            <OrdersTable
-              orders={orders}
-              isLoading={isLoading}
-              selectedIds={selectedIds}
-              onSelectAll={handleSelectAll}
-              onSelectOrder={handleSelectOrder}
-              onOrderClick={handleOrderClick}
-              isAllSelected={isAllSelected(orders)}
-              searchQuery={filters.searchQuery}
-            />
+                  {/* Filtros */}
+                  <OrderFilters
+                    filters={filters}
+                    onTypeChange={setType}
+                    onStatusToggle={toggleStatus}
+                    onDateRangeChange={setDateRange}
+                    onReset={resetFilters}
+                    activeFilterCount={activeFilterCount}
+                  />
+                  
+                  {/* Busca */}
+                  <OrderSearchBar
+                    value={filters.searchQuery}
+                    onChange={setSearchQuery}
+                    onClear={() => setSearchQuery('')}
+                    isSearching={isSearching}
+                  />
+                  
+                  {/* Barra de Ações em Massa */}
+                  <BulkActionsBar
+                    selectedCount={selectionCount}
+                    onUpdateStatus={handleUpdateStatus}
+                    onGenerateLabels={handleGenerateLabels}
+                    onExportCSV={handleExportCSV}
+                    onClearSelection={handleClearSelection}
+                    isExporting={isExporting}
+                  />
+                  
+                  <OrdersTable
+                    orders={orders}
+                    isLoading={isLoading}
+                    selectedIds={selectedIds}
+                    onSelectAll={handleSelectAll}
+                    onSelectOrder={handleSelectOrder}
+                    onOrderClick={handleOrderClick}
+                    isAllSelected={isAllSelected(orders)}
+                    searchQuery={filters.searchQuery}
+                  />
 
-              {/* Paginação */}
-              {orders.length > 0 && (
-                <OrdersPagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  pageSize={pageSize}
-                  totalItems={total}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                  isLoading={isLoading}
-                  onPrefetchNextPage={prefetchNextPage}
-                />
-              )}
+                  {/* Paginação */}
+                  {orders.length > 0 && (
+                    <OrdersPagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={total}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                      isLoading={isLoading}
+                      onPrefetchNextPage={prefetchNextPage}
+                    />
+                  )}
                 </div>
               )}
-            </div>
+            </TabsContent>
+
+            {/* Tab: Assinaturas */}
+            <TabsContent value="subscriptions" className="mt-6">
+              {/* Estado de erro */}
+              {isError && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Erro ao carregar assinaturas: {error instanceof Error ? error.message : 'Erro desconhecido'}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Estado de loading */}
+              {isLoading && (
+                <div className="text-center py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+                  <p className="text-muted-foreground mt-4">Carregando assinaturas...</p>
+                </div>
+              )}
+
+              {/* Estado vazio */}
+              {!isLoading && !isError && orders.length === 0 && (
+                <div className="text-center py-12">
+                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhuma assinatura encontrada</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {hasActiveFilters
+                      ? 'Tente ajustar os filtros para ver mais resultados'
+                      : 'Não há assinaturas cadastradas no sistema'}
+                  </p>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={resetFilters}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Conteúdo principal */}
+              {!isLoading && !isError && (
+                <div className="space-y-6">
+                  {/* Filtros */}
+                  <OrderFilters
+                    filters={filters}
+                    onTypeChange={setType}
+                    onStatusToggle={toggleStatus}
+                    onDateRangeChange={setDateRange}
+                    onReset={resetFilters}
+                    activeFilterCount={activeFilterCount}
+                  />
+                  
+                  {/* Busca */}
+                  <OrderSearchBar
+                    value={filters.searchQuery}
+                    onChange={setSearchQuery}
+                    onClear={() => setSearchQuery('')}
+                    isSearching={isSearching}
+                  />
+                  
+                  {/* Barra de Ações em Massa */}
+                  <BulkActionsBar
+                    selectedCount={selectionCount}
+                    onUpdateStatus={handleUpdateStatus}
+                    onGenerateLabels={handleGenerateLabels}
+                    onExportCSV={handleExportCSV}
+                    onClearSelection={handleClearSelection}
+                    isExporting={isExporting}
+                  />
+                  
+                  <OrdersTable
+                    orders={orders}
+                    isLoading={isLoading}
+                    selectedIds={selectedIds}
+                    onSelectAll={handleSelectAll}
+                    onSelectOrder={handleSelectOrder}
+                    onOrderClick={handleOrderClick}
+                    isAllSelected={isAllSelected(orders)}
+                    searchQuery={filters.searchQuery}
+                  />
+
+                  {/* Paginação */}
+                  {orders.length > 0 && (
+                    <OrdersPagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={total}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                      isLoading={isLoading}
+                      onPrefetchNextPage={prefetchNextPage}
+                    />
+                  )}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Tab: Pedidos Avulsos */}
+            <TabsContent value="standalone" className="mt-6">
+              {/* Estado de erro */}
+              {isError && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Erro ao carregar pedidos: {error instanceof Error ? error.message : 'Erro desconhecido'}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Estado de loading */}
+              {isLoading && (
+                <div className="text-center py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+                  <p className="text-muted-foreground mt-4">Carregando pedidos...</p>
+                </div>
+              )}
+
+              {/* Estado vazio */}
+              {!isLoading && !isError && orders.length === 0 && (
+                <div className="text-center py-12">
+                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhum pedido avulso encontrado</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {hasActiveFilters
+                      ? 'Tente ajustar os filtros para ver mais resultados'
+                      : 'Não há pedidos avulsos cadastrados no sistema'}
+                  </p>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={resetFilters}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Conteúdo principal */}
+              {!isLoading && !isError && (
+                <div className="space-y-6">
+                  {/* Filtros */}
+                  <OrderFilters
+                    filters={filters}
+                    onTypeChange={setType}
+                    onStatusToggle={toggleStatus}
+                    onDateRangeChange={setDateRange}
+                    onReset={resetFilters}
+                    activeFilterCount={activeFilterCount}
+                  />
+                  
+                  {/* Busca */}
+                  <OrderSearchBar
+                    value={filters.searchQuery}
+                    onChange={setSearchQuery}
+                    onClear={() => setSearchQuery('')}
+                    isSearching={isSearching}
+                  />
+                  
+                  {/* Barra de Ações em Massa */}
+                  <BulkActionsBar
+                    selectedCount={selectionCount}
+                    onUpdateStatus={handleUpdateStatus}
+                    onGenerateLabels={handleGenerateLabels}
+                    onExportCSV={handleExportCSV}
+                    onClearSelection={handleClearSelection}
+                    isExporting={isExporting}
+                  />
+                  
+                  <OrdersTable
+                    orders={orders}
+                    isLoading={isLoading}
+                    selectedIds={selectedIds}
+                    onSelectAll={handleSelectAll}
+                    onSelectOrder={handleSelectOrder}
+                    onOrderClick={handleOrderClick}
+                    isAllSelected={isAllSelected(orders)}
+                    searchQuery={filters.searchQuery}
+                  />
+
+                  {/* Paginação */}
+                  {orders.length > 0 && (
+                    <OrdersPagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={total}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                      isLoading={isLoading}
+                      onPrefetchNextPage={prefetchNextPage}
+                    />
+                  )}
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         </div>
 
