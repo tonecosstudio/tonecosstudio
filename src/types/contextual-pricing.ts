@@ -24,9 +24,9 @@ export type PricingContextMultiplier = Database['public']['Tables']['pricing_con
 export type PricingContextMultiplierInsert = Database['public']['Tables']['pricing_context_multipliers']['Insert'];
 export type PricingContextMultiplierUpdate = Database['public']['Tables']['pricing_context_multipliers']['Update'];
 
-export type ContextualPricingHistory = Database['public']['Tables']['contextual_pricing_history']['Row'];
-export type ContextualPricingHistoryInsert = Database['public']['Tables']['contextual_pricing_history']['Insert'];
-export type ContextualPricingHistoryUpdate = Database['public']['Tables']['contextual_pricing_history']['Update'];
+export type ContextualPricingHistory = Database['public']['Tables']['pricing_history']['Row'];
+export type ContextualPricingHistoryInsert = Database['public']['Tables']['pricing_history']['Insert'];
+export type ContextualPricingHistoryUpdate = Database['public']['Tables']['pricing_history']['Update'];
 
 // ============================================================================
 // TIPOS DE CONTEXTO DE USUÁRIO
