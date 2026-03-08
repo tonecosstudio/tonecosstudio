@@ -128,10 +128,13 @@ export default function OrdersPageV2() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Pedidos <span className="text-sm text-muted-foreground">(V2 - Nova)</span>
+              <h1
+                className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
+                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+              >
+                Pedidos
               </h1>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
                 Gerencie todos os pedidos: assinaturas, avulsos, pagamentos e orçamentos
               </p>
             </div>

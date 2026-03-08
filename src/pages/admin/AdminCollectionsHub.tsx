@@ -41,10 +41,13 @@ export default function AdminCollectionsHub() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
+          <h1
+            className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+          >
             Catálogo & Produtos
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
             Gerencie coleções e personagens de crédito
           </p>
         </div>

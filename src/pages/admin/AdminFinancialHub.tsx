@@ -123,10 +123,13 @@ export default function AdminFinancialHub() {
         {/* Header com Filtro de Período */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">
+            <h1
+              className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+            >
               Relatórios Financeiros
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
               Acompanhe vendas, receita e desempenho financeiro
             </p>
           </div>
