@@ -172,9 +172,9 @@ describe("usePaymentRealtime", () => {
 
   it("deve chamar onPaymentChange quando receber uma mudança", async () => {
     const onPaymentChange = vi.fn();
-    let changeCallback: Function;
+    let changeCallback: (payload: any) => void;
     
-    mockChannel.on.mockImplementation((event: string, config: any, callback: Function) => {
+    mockChannel.on.mockImplementation((event: string, config: any, callback: (payload: any) => void) => {
       if (event === "postgres_changes") {
         changeCallback = callback;
       }
@@ -211,8 +211,8 @@ describe("usePaymentRealtime", () => {
   it("deve lidar com erro de conexão e tentar reconectar", async () => {
     vi.useFakeTimers();
     
-    let subscribeCallback: Function;
-    mockChannel.subscribe.mockImplementation((callback: Function) => {
+    let subscribeCallback: (status: string) => void;
+    mockChannel.subscribe.mockImplementation((callback: (status: string) => void) => {
       subscribeCallback = callback;
       return mockChannel;
     });

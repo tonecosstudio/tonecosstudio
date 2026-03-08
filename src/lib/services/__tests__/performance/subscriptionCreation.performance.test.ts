@@ -101,6 +101,7 @@ describe('Performance: Subscription Creation Under Load', () => {
       
       // Simulate business day calculation
       let businessDays = 0;
+      // eslint-disable-next-line prefer-const -- currentDate is mutated with setDate()
       let currentDate = new Date(startDate);
       
       while (businessDays < 5) {

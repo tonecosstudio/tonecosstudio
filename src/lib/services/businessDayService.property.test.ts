@@ -162,6 +162,7 @@ describe('BusinessDayService - Property-Based Tests', () => {
             
             // Contar manualmente
             let manualCount = 0;
+            // eslint-disable-next-line prefer-const -- currentDate is mutated with setDate()
             let currentDate = new Date(startDate);
             
             while (currentDate <= endDate) {

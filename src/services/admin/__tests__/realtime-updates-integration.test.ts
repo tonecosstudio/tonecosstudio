@@ -123,7 +123,7 @@ describe("Real-Time Updates Integration Test", () => {
     const mockRealtimeCallback = vi.fn();
     
     // Configure channel to call callback when update is received
-    mockChannel.on.mockImplementation((event: string, callback: Function) => {
+    mockChannel.on.mockImplementation((event: string, callback: (payload: any) => void) => {
       if (event === "postgres_changes") {
         // Simulate receiving an update after a short delay
         setTimeout(() => {
@@ -474,11 +474,11 @@ describe("Real-Time Updates Integration Test", () => {
 
   it("should throttle rapid real-time updates to prevent UI flicker", async () => {
     // Test scenario with rapid successive updates
-    const mockCallbacks: Function[] = [];
+    const mockCallbacks: Array<(payload: any) => void> = [];
     const updateLog: any[] = [];
     
     const mockChannel = {
-      on: vi.fn().mockImplementation((event: string, callback: Function) => {
+      on: vi.fn().mockImplementation((event: string, callback: (payload: any) => void) => {
         if (event === "postgres_changes") {
           mockCallbacks.push(callback);
         }

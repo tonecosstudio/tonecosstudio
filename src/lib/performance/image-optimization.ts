@@ -262,7 +262,7 @@ export function getResponsiveImageProps(config: ResponsiveImageConfig): React.Im
     alt,
     className,
     loading: getLoadingAttribute(priority),
-    // @ts-ignore - fetchpriority is not in React types yet
+    // @ts-expect-error - fetchpriority is not in React types yet
     fetchpriority: getFetchPriority(priority),
   };
 

@@ -98,7 +98,7 @@ describe('cron-logger', () => {
       const { logCronError } = await import('./cron-logger.ts');
       
       await assertRejects(
-        // @ts-ignore - intentionally passing null to test validation
+        // @ts-expect-error - intentionally passing null to test validation
         async () => await logCronError('test-log-id', null),
         Error,
         'error is required'

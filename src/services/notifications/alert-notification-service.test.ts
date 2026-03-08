@@ -63,7 +63,7 @@ describe("Alert Notification Service", () => {
 
   describe("Browser Notification Permission", () => {
     it("should return false when Notification API is not supported", () => {
-      // @ts-ignore - Temporarily remove Notification for testing
+      // @ts-expect-error - Temporarily remove Notification for testing
       delete global.Notification;
       
       const canShow = canShowNotifications();

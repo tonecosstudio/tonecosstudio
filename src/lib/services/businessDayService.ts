@@ -148,6 +148,7 @@ class BusinessDayService {
     const holidayDates = new Set(allHolidays.map(h => h.holiday_date));
 
     let count = 0;
+    // eslint-disable-next-line prefer-const -- currentDate is mutated with setDate()
     let currentDate = new Date(start);
 
     while (currentDate <= end) {

@@ -258,7 +258,6 @@ describe("Bulk Operations Integration Test", () => {
     });
 
     // Mock update queries (only for valid transitions)
-    let updateCallCount = 0;
     const createMockUpdateQuery = (shouldSucceed: boolean) => ({
       eq: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),

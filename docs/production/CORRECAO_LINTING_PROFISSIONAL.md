@@ -109,16 +109,16 @@ const productionOrderType = order.type; // ✅ const (prefer-const)
 - Erros críticos: 15
 
 ### Depois
-- Total de erros: ~50 (principalmente Function type)
+- Total de erros: ~45 (principalmente Function type)
 - Arquivos com @ts-nocheck: 0 ✅
-- Erros críticos: ~15 (hooks em funções não-componentes)
+- Erros críticos: ~10 (Function type)
 
 ### Progresso
 - ✅ 361 arquivos corrigidos (@ts-nocheck removido)
 - ✅ 4 erros hasOwnProperty corrigidos
-- ✅ 3 erros React Hooks corrigidos
+- ✅ 5 erros React Hooks corrigidos (ProductionInfoSection, ChatButton, OrderRow, ProgressNotification, PaymentRealtimeExample)
 - ✅ 8 imports não utilizados removidos
-- ⚠️ 50 erros restantes (Function type, hooks em funções)
+- ⚠️ 45 erros restantes (principalmente Function type)
 
 ---
 

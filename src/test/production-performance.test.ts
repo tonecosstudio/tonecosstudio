@@ -118,7 +118,7 @@ async function createTestProductionData(count: number): Promise<string[]> {
       priority_score: 100 - (i + j) % 100,
     }));
 
-    // @ts-ignore - production_queue table exists at runtime
+    // @ts-expect-error - production_queue table exists at runtime
     const { data, error } = await supabase
       .from("production_queue")
       .insert(items)
@@ -147,7 +147,7 @@ async function cleanupTestProduction(productionIds: string[]) {
   const batchSize = 100;
   for (let i = 0; i < productionIds.length; i += batchSize) {
     const batch = productionIds.slice(i, i + batchSize);
-    // @ts-ignore - production_queue table exists at runtime
+    // @ts-expect-error - production_queue table exists at runtime
     await supabase.from("production_queue").delete().in("id", batch);
   }
 }
@@ -398,7 +398,7 @@ describePerformance("Performance: Real-Time Update Latency", () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Perform an update
-    // @ts-ignore - production_queue table exists at runtime
+    // @ts-expect-error - production_queue table exists at runtime
     await supabase
       .from("production_queue")
       .update({ production_notes: `Test update at ${Date.now()}` })
@@ -451,7 +451,7 @@ describePerformance("Performance: Database Queries with 50k Records", () => {
     const testId = testProductionIds[0];
 
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -469,7 +469,7 @@ describePerformance("Performance: Database Queries with 50k Records", () => {
 
   it("should query by priority efficiently with large dataset", async () => {
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -487,7 +487,7 @@ describePerformance("Performance: Database Queries with 50k Records", () => {
 
   it("should query by stage efficiently with large dataset", async () => {
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -505,7 +505,7 @@ describePerformance("Performance: Database Queries with 50k Records", () => {
 
   it("should count total items efficiently with large dataset", async () => {
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { count, error } = await supabase
         .from("production_queue")
         .select("*", { count: "exact", head: true });
@@ -521,7 +521,7 @@ describePerformance("Performance: Database Queries with 50k Records", () => {
 
   it("should perform complex filtered query efficiently", async () => {
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -575,7 +575,7 @@ describePerformance("Performance: Bulk Operations", () => {
     const itemsToUpdate = testProductionIds.slice(0, 100);
 
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { error } = await supabase
         .from("production_queue")
         .update({ production_status: "ready_for_production" })
@@ -591,7 +591,7 @@ describePerformance("Performance: Bulk Operations", () => {
 
   it("should perform bulk query efficiently", async () => {
     const { result, duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -614,7 +614,7 @@ describePerformance("Performance: Bulk Operations", () => {
     const tempIds = await createTestProductionData(50);
 
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { error } = await supabase.from("production_queue").delete().in("id", tempIds);
 
       if (error) throw error;
@@ -652,7 +652,7 @@ describePerformance("Performance: Database Indexes", () => {
     }
 
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -668,7 +668,7 @@ describePerformance("Performance: Database Indexes", () => {
   });
 
   it("should query by collection_id efficiently (indexed)", async () => {
-    // @ts-ignore - production_queue table exists at runtime
+    // @ts-expect-error - production_queue table exists at runtime
     const { data: sampleItem } = await supabase
       .from("production_queue")
       .select("collection_id")
@@ -681,7 +681,7 @@ describePerformance("Performance: Database Indexes", () => {
     }
 
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -698,7 +698,7 @@ describePerformance("Performance: Database Indexes", () => {
 
   it("should query by priority_score efficiently (indexed)", async () => {
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
@@ -717,7 +717,7 @@ describePerformance("Performance: Database Indexes", () => {
 
   it("should query by created_at efficiently (indexed)", async () => {
     const { duration } = await measureTime(async () => {
-      // @ts-ignore - production_queue table exists at runtime
+      // @ts-expect-error - production_queue table exists at runtime
       const { data, error } = await supabase
         .from("production_queue")
         .select("*")
