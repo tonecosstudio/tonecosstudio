@@ -47,6 +47,57 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          priority: string
+          read_at: string | null
+          recipient_user_id: string | null
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          priority?: string
+          read_at?: string | null
+          recipient_user_id?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          priority?: string
+          read_at?: string | null
+          recipient_user_id?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       bulk_operations: {
         Row: {
           admin_id: string
@@ -1387,45 +1438,84 @@ export type Database = {
         Row: {
           assigned_to: string | null
           character_id: string | null
+          character_name: string | null
           choice_deadline: string | null
+          choice_status: string | null
           collection_id: string | null
+          collection_name: string | null
           created_at: string
+          current_stage: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          estimated_completion_date: string | null
           id: string
+          internal_flags: Json | null
           notes: string | null
           order_id: string
           order_type: string
           priority: number | null
+          production_completed_at: string | null
+          production_started_at: string | null
+          production_status: string | null
           status: string
+          tracking_code: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           assigned_to?: string | null
           character_id?: string | null
+          character_name?: string | null
           choice_deadline?: string | null
+          choice_status?: string | null
           collection_id?: string | null
+          collection_name?: string | null
           created_at?: string
+          current_stage?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          estimated_completion_date?: string | null
           id?: string
+          internal_flags?: Json | null
           notes?: string | null
           order_id: string
           order_type: string
           priority?: number | null
+          production_completed_at?: string | null
+          production_started_at?: string | null
+          production_status?: string | null
           status?: string
+          tracking_code?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           assigned_to?: string | null
           character_id?: string | null
+          character_name?: string | null
           choice_deadline?: string | null
+          choice_status?: string | null
           collection_id?: string | null
+          collection_name?: string | null
           created_at?: string
+          current_stage?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          estimated_completion_date?: string | null
           id?: string
+          internal_flags?: Json | null
           notes?: string | null
           order_id?: string
           order_type?: string
           priority?: number | null
+          production_completed_at?: string | null
+          production_started_at?: string | null
+          production_status?: string | null
           status?: string
+          tracking_code?: string | null
           updated_at?: string
           user_id?: string
         }
