@@ -31,7 +31,7 @@ export function CollectionTierAssignment({
   collectionId,
   isCustomPricing = false,
 }: CollectionTierAssignmentProps) {
-  const { data: activeTiers, isLoading: loadingTiers } = usePricingTiers({ activeOnly: true });
+  const { data: activeTiers, isLoading: loadingTiers } = usePricingTiers();
   const {
     data: currentAssignment,
     isLoading: loadingAssignment,
