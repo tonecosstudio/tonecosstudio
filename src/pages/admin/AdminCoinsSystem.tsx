@@ -31,18 +31,25 @@ import { ContextualPricingManager } from "@/components/admin/contextual-pricing"
 import { EditStandalonePricingForm } from "@/components/admin/EditStandalonePricingForm";
 // @ts-nocheck
 export default function AdminCoinsSystem() {
-  // Buscar estatísticas de coins
+  // Buscar estatísticas de coins usando coin_transactions (tabela real)
   const { data: stats } = useQuery({
     queryKey: ["admin-coins-stats"],
     queryFn: async () => {
-      // Total de coins em circulação
-      const { data: userCoins } = await supabase
-        .from("user_coins")
-        .select("balance, total_earned, total_spent");
+      // Calcular saldos a partir de coin_transactions
+      const { data: allTx } = await supabase
+        .from("coin_transactions")
+        .select("amount, transaction_type, user_id");
 
-      const totalBalance = userCoins?.reduce((acc, u) => acc + (u.balance || 0), 0) || 0;
-      const totalEarned = userCoins?.reduce((acc, u) => acc + (u.total_earned || 0), 0) || 0;
-      const totalSpent = userCoins?.reduce((acc, u) => acc + (u.total_spent || 0), 0) || 0;
+      let totalEarned = 0;
+      let totalSpent = 0;
+      const userSet = new Set<string>();
+      (allTx || []).forEach(tx => {
+        userSet.add(tx.user_id);
+        if (tx.transaction_type === 'credit') totalEarned += tx.amount;
+        else totalSpent += tx.amount;
+      });
+
+      const totalBalance = totalEarned - totalSpent;
 
       // Transações recentes
       const { data: transactions } = await supabase
@@ -58,20 +65,21 @@ export default function AdminCoinsSystem() {
         .eq("is_active", true)
         .order("amount", { ascending: true });
 
-      // Personagens adquiridos com coins
-      const { data: purchases } = await supabase
-        .from("user_characters")
-        .select("*")
-        .eq("acquisition_type", "coins");
+      // Compras com coins (coin_transactions do tipo debit com reference_type = character_purchase)
+      const { count: purchaseCount } = await supabase
+        .from("coin_transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("transaction_type", "debit")
+        .eq("reference_type", "character_purchase");
 
       return {
         totalBalance,
         totalEarned,
         totalSpent,
-        totalUsers: userCoins?.length || 0,
+        totalUsers: userSet.size,
         transactions: transactions || [],
         packages: packages || [],
-        totalPurchases: purchases?.length || 0,
+        totalPurchases: purchaseCount || 0,
       };
     },
   });

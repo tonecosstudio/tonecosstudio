@@ -1,8 +1,8 @@
 /**
  * Credits Dashboard Component
  * 
- * Overview dashboard for the credits system showing key metrics,
- * charts, and quick actions.
+ * Overview dashboard for the credits system showing key metrics
+ * using real database tables: coin_transactions, cycles, pricing_tiers.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -46,41 +46,47 @@ function MetricCard({ title, value, description, icon, trend }: MetricCardProps)
 export function CreditsDashboard() {
   const navigate = useNavigate();
 
-  // Fetch total coins in circulation
+  // Fetch total coins from coin_transactions (credit - debit)
   const { data: coinsData } = useQuery({
     queryKey: ["credits-total-coins"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_coins")
-        .select("balance");
+        .from("coin_transactions")
+        .select("amount, transaction_type");
       
       if (error) throw error;
       
-      const total = data?.reduce((sum, user) => sum + (user.balance || 0), 0) || 0;
-      return { total };
+      let totalCredits = 0;
+      let totalDebits = 0;
+      (data || []).forEach(tx => {
+        if (tx.transaction_type === 'credit') totalCredits += tx.amount;
+        else totalDebits += tx.amount;
+      });
+      
+      return { total: totalCredits - totalDebits, credits: totalCredits, debits: totalDebits };
     },
   });
 
-  // Fetch active cycles count
+  // Fetch active cycles count from cycles table
   const { data: cyclesData } = useQuery({
     queryKey: ["credits-active-cycles"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("subscription_credit_production_cycles")
+        .from("cycles")
         .select("*", { count: "exact", head: true })
-        .eq("status", "open");
+        .eq("status", "active");
       
       if (error) throw error;
       return { count: count || 0 };
     },
   });
 
-  // Fetch active subscription plans
-  const { data: plansData } = useQuery({
-    queryKey: ["credits-active-plans"],
+  // Fetch active pricing tiers
+  const { data: tiersData } = useQuery({
+    queryKey: ["credits-active-tiers"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("subscription_plans")
+        .from("pricing_tiers")
         .select("*", { count: "exact", head: true })
         .eq("is_active", true);
       
@@ -89,14 +95,14 @@ export function CreditsDashboard() {
     },
   });
 
-  // Fetch active subscriptions
-  const { data: subscriptionsData } = useQuery({
-    queryKey: ["credits-active-subscriptions"],
+  // Fetch coin packages count
+  const { data: packagesData } = useQuery({
+    queryKey: ["credits-active-packages"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("subscriptions")
+        .from("coin_packages")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active");
+        .eq("is_active", true);
       
       if (error) throw error;
       return { count: count || 0 };
@@ -108,9 +114,9 @@ export function CreditsDashboard() {
       {/* Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Total de Coins"
+          title="Coins em Circulação"
           value={coinsData?.total?.toLocaleString() || "0"}
-          description="Em circulação"
+          description="Saldo líquido (créditos - débitos)"
           icon={<Coins className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
@@ -120,16 +126,16 @@ export function CreditsDashboard() {
           icon={<RefreshCw className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          title="Planos Ativos"
-          value={plansData?.count || 0}
-          description="Disponíveis"
+          title="Níveis de Preço"
+          value={tiersData?.count || 0}
+          description="Tiers ativos"
           icon={<Wallet className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          title="Assinaturas Ativas"
-          value={subscriptionsData?.count || 0}
-          description="Usuários ativos"
-          icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          title="Pacotes de Coins"
+          value={packagesData?.count || 0}
+          description="Disponíveis para venda"
+          icon={<Package className="h-4 w-4 text-muted-foreground" />}
         />
       </div>
 
@@ -169,7 +175,7 @@ export function CreditsDashboard() {
               onClick={() => navigate("/admin/pedidos?type=subscription")}
             >
               <Users className="mr-2 h-4 w-4" />
-              Ver Assinaturas
+              Ver Pedidos
             </Button>
           </div>
         </CardContent>
@@ -202,7 +208,7 @@ export function CreditsDashboard() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Planos de Assinatura</span>
+                <span className="text-sm">Níveis de Preço</span>
               </div>
               <span className="text-sm font-medium text-green-600">Operacional</span>
             </div>

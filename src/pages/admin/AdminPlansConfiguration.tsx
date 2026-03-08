@@ -70,39 +70,42 @@ function CoinExchangeRateCard() {
   const [reaisAmount, setReaisAmount] = useState(500);
   const [coinsAmount, setCoinsAmount] = useState(100);
 
-  // Fetch exchange rate
+  // Fetch exchange rate from price_categories (coin_value_in_cents)
   const exchangeRateQuery = useQuery({
     queryKey: ["coin-exchange-rate"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('coin_exchange_rate')
+        .from('price_categories')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .order('display_order', { ascending: true })
+        .limit(1);
       
       if (error) throw error;
-      return data;
+      const cat = data?.[0];
+      return {
+        id: cat?.id || null,
+        reais_amount: cat ? (cat.coin_value_in_cents / 100) * 100 : 500,
+        coins_amount: 100,
+      };
     },
   });
 
   const rate = exchangeRateQuery.data;
   const coinUnitValue = rate ? (rate.reais_amount / rate.coins_amount) : 5;
 
-  // Update exchange rate
+  // Update exchange rate - disabled since we derive from price_categories
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!rate?.id) throw new Error('ID da cotação não encontrado');
-      
-      const { error } = await supabase
-        .from('coin_exchange_rate')
-        .update({
-          reais_amount: reaisAmount,
-          coins_amount: coinsAmount,
-        })
-        .eq('id', rate.id);
-      
-      if (error) throw error;
+      toast({
+        title: "Info",
+        description: "A cotação é derivada das categorias de preço. Edite as categorias de preço para alterar.",
+      });
     },
+    onSuccess: () => {
+      setIsEditing(false);
+    },
+  });
     onSuccess: () => {
       toast({
         title: "Cotação atualizada!",
@@ -261,14 +264,14 @@ export default function AdminPlansConfiguration() {
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState("subscription-plans");
 
-  // Fetch plans
+  // Fetch plans from pricing_tiers (real table)
   const plansQuery = useQuery({
     queryKey: ["admin-plans-configuration"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscription_credit_plans')
+        .from('pricing_tiers')
         .select('*')
-        .order('duration_months', { ascending: true });
+        .order('display_order', { ascending: true });
       
       if (error) throw error;
       return data || [];
@@ -277,18 +280,14 @@ export default function AdminPlansConfiguration() {
 
   const plans = plansQuery.data || [];
 
-  // Calculate totals
+  // Calculate totals from pricing_tiers
   const totalMonthlyRevenue = plans
-    .filter(p => p.is_active && p.plan_type !== 'avulso')
-    .reduce((sum, p) => sum + (p.price || 0), 0);
+    .filter((p: any) => p.is_active)
+    .reduce((sum: number, p: any) => sum + (p.price_full || 0), 0);
 
-  const totalPieces = plans
-    .filter(p => p.is_active)
-    .reduce((sum, p) => sum + (p.pieces_per_subscription || 0), 0);
+  const totalPieces = plans.filter((p: any) => p.is_active).length;
 
-  const totalCoins = plans
-    .filter(p => p.is_active)
-    .reduce((sum, p) => sum + (p.base_credits || 0) + (p.bonus_credits || 0), 0);
+  const totalCoins = 0; // Coins are managed separately via coin_transactions
 
   return (
     <div className="space-y-6">
@@ -508,28 +507,24 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: any) {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const saveData = {
-        plan_type: formData.plan_type,
         name: formData.name,
-        duration_months: formData.duration_months,
-        price: formData.price_per_month,
-        base_credits: formData.base_credits,
-        bonus_credits: formData.bonus_credits,
-        deposit_amount: formData.deposit_amount,
-        pieces_per_subscription: formData.total_pieces,
-        bonus_type: bonusType, // Salvar tipo de bônus
+        price_full: formData.total_price || formData.price_per_month,
+        price_pix: (formData.total_price || formData.price_per_month) * 0.95,
+        deposit_amount: formData.deposit_amount || 0,
         is_active: formData.is_active,
+        description: `Plano ${planType.label}`,
       };
 
       if (existingPlan?.id) {
         const { error } = await supabase
-          .from('subscription_credit_plans')
+          .from('pricing_tiers')
           .update(saveData)
           .eq('id', existingPlan.id);
         
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('subscription_credit_plans')
+          .from('pricing_tiers')
           .insert([saveData]);
         
         if (error) throw error;
