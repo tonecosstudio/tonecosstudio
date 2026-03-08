@@ -31,9 +31,9 @@ export default function PlansArcade() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_plans")
-        .select("*")
+        .select("*, pricing_tiers(*)")
         .eq("is_active", true)
-        .order("display_order");
+        .order("slug");
       if (error) throw error;
       return data;
     },
@@ -41,8 +41,8 @@ export default function PlansArcade() {
 
   const plans = plansQuery.data || [];
 
-  const getPlanMeta = (planType: string) => {
-    switch (planType) {
+  const getPlanMeta = (billingInterval: string) => {
+    switch (billingInterval) {
       case "trimestral":
         return { icon: Sparkles, rarity: "ÉPICO", color: "hsl(var(--gold-accent))", badge: "Mais escolhido" };
       case "semestral":
@@ -144,11 +144,13 @@ export default function PlansArcade() {
 
             {/* Dynamic plans */}
             {plans.map((plan) => {
-              const meta = getPlanMeta(plan.plan_type);
+              const meta = getPlanMeta(plan.billing_interval);
               const Icon = meta.icon;
-              const priceFull = plan.price_full || settings?.default_price_full || 500;
-              const perUnit = (priceFull / plan.deliveries_total).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              const priceFull = plan.price || 500;
+              const deliveries = plan.deliveries_per_cycle || 1;
+              const perUnit = (priceFull / deliveries).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
               const isHovered = hoveredPlan === plan.id;
+              const isSemestral = plan.billing_interval === "semestral";
 
               return (
                 <ArcadeCard key={plan.id}>
@@ -188,13 +190,13 @@ export default function PlansArcade() {
                         R$ {perUnit}
                       </span>
                       <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider mt-1">
-                        por personagem • Total: R$ {priceFull.toLocaleString("pt-BR")}
+                        por personagem • Total: R$ {Number(priceFull).toLocaleString("pt-BR")}
                       </p>
                     </div>
 
                     <ul className="space-y-3 mb-6 flex-1">
                       {[
-                        `${plan.deliveries_total} peça${plan.deliveries_total > 1 ? "s" : ""}${plan.plan_type === "semestral" ? " (6 + 1 bônus)" : ""}`,
+                        `${deliveries} peça${deliveries > 1 ? "s" : ""}${isSemestral ? " (6 + 1 bônus)" : ""}`,
                         "Pintadas à mão",
                         "Produção limitada",
                         "Certificado",
@@ -218,7 +220,7 @@ export default function PlansArcade() {
                       Escolher Coleções <ArrowRight className="w-3.5 h-3.5" />
                     </button>
 
-                    {plan.plan_type === "semestral" && (
+                    {isSemestral && (
                       <p className="text-center font-mono text-[9px] text-[hsl(280,80%,65%)] tracking-wider mt-3">
                         ★ Inclui peça exclusiva para membros
                       </p>
