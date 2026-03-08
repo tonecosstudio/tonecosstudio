@@ -253,6 +253,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cycles: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          cutoff_date: string | null
+          id: string
+          month: number
+          name: string
+          reveal_date: string | null
+          shipping_start_date: string | null
+          status: string
+          updated_at: string
+          used_capacity: number | null
+          year: number
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          cutoff_date?: string | null
+          id?: string
+          month: number
+          name: string
+          reveal_date?: string | null
+          shipping_start_date?: string | null
+          status?: string
+          updated_at?: string
+          used_capacity?: number | null
+          year: number
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          cutoff_date?: string | null
+          id?: string
+          month?: number
+          name?: string
+          reveal_date?: string | null
+          shipping_start_date?: string | null
+          status?: string
+          updated_at?: string
+          used_capacity?: number | null
+          year?: number
+        }
+        Relationships: []
+      }
       pricing_tiers: {
         Row: {
           base_price: number
@@ -322,6 +367,151 @@ export type Database = {
         }
         Relationships: []
       }
+      quotes: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          customer_paid_notification_at: string | null
+          deposit_amount: number | null
+          id: string
+          is_preorder: boolean | null
+          notes: string | null
+          payment_instructions: string | null
+          payment_link: string | null
+          payment_link_sent_at: string | null
+          payment_status: string | null
+          pix_key: string | null
+          remaining_amount: number | null
+          status: string
+          total_amount: number | null
+          tracking_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          customer_paid_notification_at?: string | null
+          deposit_amount?: number | null
+          id?: string
+          is_preorder?: boolean | null
+          notes?: string | null
+          payment_instructions?: string | null
+          payment_link?: string | null
+          payment_link_sent_at?: string | null
+          payment_status?: string | null
+          pix_key?: string | null
+          remaining_amount?: number | null
+          status?: string
+          total_amount?: number | null
+          tracking_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          customer_paid_notification_at?: string | null
+          deposit_amount?: number | null
+          id?: string
+          is_preorder?: boolean | null
+          notes?: string | null
+          payment_instructions?: string | null
+          payment_link?: string | null
+          payment_link_sent_at?: string | null
+          payment_status?: string | null
+          pix_key?: string | null
+          remaining_amount?: number | null
+          status?: string
+          total_amount?: number | null
+          tracking_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_deliveries: {
+        Row: {
+          actual_delivery_date: string | null
+          character_id: string | null
+          created_at: string
+          cycle_id: string | null
+          delivered_date: string | null
+          delivery_number: number | null
+          delivery_order: number
+          id: string
+          production_start_date: string | null
+          progress_photos: Json | null
+          reveal_date: string | null
+          shipping_carrier: string | null
+          shipping_date: string | null
+          status: string
+          subscription_id: string
+          tracking_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_delivery_date?: string | null
+          character_id?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          delivered_date?: string | null
+          delivery_number?: number | null
+          delivery_order?: number
+          id?: string
+          production_start_date?: string | null
+          progress_photos?: Json | null
+          reveal_date?: string | null
+          shipping_carrier?: string | null
+          shipping_date?: string | null
+          status?: string
+          subscription_id: string
+          tracking_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_delivery_date?: string | null
+          character_id?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          delivered_date?: string | null
+          delivery_number?: number | null
+          delivery_order?: number
+          id?: string
+          production_start_date?: string | null
+          progress_photos?: Json | null
+          reveal_date?: string | null
+          shipping_carrier?: string | null
+          shipping_date?: string | null
+          status?: string
+          subscription_id?: string
+          tracking_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_deliveries_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_deliveries_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           billing_interval: string
@@ -371,6 +561,81 @@ export type Database = {
             columns: ["tier_id"]
             isOneToOne: false
             referencedRelation: "pricing_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          collection_id: string | null
+          completed_at: string | null
+          created_at: string
+          deliveries_completed: number
+          deliveries_total: number | null
+          id: string
+          next_delivery_at: string | null
+          notes: string | null
+          payment_method: string | null
+          plan_id: string | null
+          plan_type: string | null
+          started_at: string | null
+          status: string
+          total_paid: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          collection_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deliveries_completed?: number
+          deliveries_total?: number | null
+          id?: string
+          next_delivery_at?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_id?: string | null
+          plan_type?: string | null
+          started_at?: string | null
+          status?: string
+          total_paid?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          collection_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deliveries_completed?: number
+          deliveries_total?: number | null
+          id?: string
+          next_delivery_at?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_id?: string | null
+          plan_type?: string | null
+          started_at?: string | null
+          status?: string
+          total_paid?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
         ]
