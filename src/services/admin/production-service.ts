@@ -377,14 +377,10 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
     const items = queueData || [];
 
     // Calculate metrics manually
-    const stages: Record<ProductionStage, number> = {
-      awaiting_choice: 0,
-      design: 0,
-      production: 0,
-      quality_check: 0,
-      packaging: 0,
-      shipped: 0,
-    };
+    const stages: Record<string, number> = {};
+    for (const stage of STAGE_ORDER) {
+      stages[stage] = 0;
+    }
 
     const statuses: Record<ProductionStatus, number> = {
       awaiting_choice: 0,
