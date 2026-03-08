@@ -11,17 +11,14 @@ import { UserNotificationCenter } from "@/components/user/UserNotificationCenter
 type Props = {
   user: unknown | null;
   isAdmin: boolean;
-  cartCount: number;
   onSignOut: () => Promise<void>;
 };
 
-function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
+function AppHeaderComponent({ user, isAdmin, onSignOut }: Props) {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Memoizar valores para evitar re-renders desnecessários
   const hasUser = !!user;
-  const hasCartItems = cartCount > 0;
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-background backdrop-blur-xl will-change-transform">
@@ -38,7 +35,6 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
-          {/* SEÇÃO 1: NAVEGAÇÃO PRINCIPAL (Público) */}
           <NavLink
             to="/"
             className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
@@ -100,26 +96,7 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
               >
                 🪙 Coins
               </NavLink>
-
-              <NavLink
-                to="/orcamento/carrinho"
-                className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
-                activeClassName="text-background bg-background/15"
-              >
-                Carrinho{cartCount ? ` (${cartCount})` : ""}
-              </NavLink>
             </>
-          )}
-
-          {/* Carrinho para não autenticados */}
-          {!user && (
-            <NavLink
-              to="/orcamento/carrinho"
-              className="rounded-md px-3 py-2 text-xs font-medium text-background/70 transition-colors hover:text-background hover:bg-background/10"
-              activeClassName="text-background bg-background/15"
-            >
-              Carrinho{cartCount ? ` (${cartCount})` : ""}
-            </NavLink>
           )}
 
           <div className="mx-2 h-5 w-px bg-background/20" />
@@ -264,14 +241,6 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
                       🪙 Comprar Coins
                     </NavLink>
                     <NavLink
-                      to="/orcamento/carrinho"
-                      className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
-                      activeClassName="underline"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Carrinho {cartCount ? `(${cartCount})` : ""}
-                    </NavLink>
-                    <NavLink
                       to="/notificacoes"
                       className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
                       activeClassName="underline"
@@ -281,23 +250,6 @@ function AppHeaderComponent({ user, isAdmin, cartCount, onSignOut }: Props) {
                     </NavLink>
                   </div>
 
-                  <div className="h-px bg-background/20" />
-                </>
-              )}
-
-              {/* Carrinho para não autenticados */}
-              {!user && (
-                <>
-                  <div className="space-y-3">
-                    <NavLink
-                      to="/orcamento/carrinho"
-                      className="block text-base font-medium text-background hover:text-background/80 transition-colors px-2 py-1"
-                      activeClassName="underline"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Carrinho {cartCount ? `(${cartCount})` : ""}
-                    </NavLink>
-                  </div>
                   <div className="h-px bg-background/20" />
                 </>
               )}

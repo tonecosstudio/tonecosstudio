@@ -1,19 +1,17 @@
 /**
  * Catálogo Arcade — mesma estética gaming da página de coleções.
- * Preserva toda a lógica de busca, filtros, likes e orçamento do catálogo original.
+ * Preserva toda a lógica de busca, filtros e likes do catálogo original.
  */
 
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
-import { useQuoteCart } from "@/lib/quote-cart";
 import { useToast } from "@/hooks/use-toast";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   X,
-  ShoppingCart,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
@@ -44,7 +42,6 @@ export default function CatalogArcade() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { count } = useQuoteCart();
 
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -134,14 +131,6 @@ export default function CatalogArcade() {
             <SlidersHorizontal className="w-4 h-4" />
             <span className="hidden sm:inline">Filtros</span>
           </button>
-
-          <Link
-            to="/orcamento/carrinho"
-            className="h-12 px-4 border border-[hsl(0,0%,15%)] text-[hsl(0,0%,50%)] hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))] font-mono text-xs tracking-wider uppercase transition-all flex items-center gap-2"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            <span className="tabular-nums">{count}</span>
-          </Link>
         </div>
 
         {/* Filters panel */}
@@ -216,7 +205,6 @@ export default function CatalogArcade() {
                 model={m}
                 isLiked={getIsLiked(m.id)}
                 onToggleLike={() => handleToggleLike(m, getIsLiked(m.id))}
-                onQuote={() => navigate(`/orcamento?model=${encodeURIComponent(m.id)}`)}
               />
             ))}
           </div>
@@ -265,7 +253,6 @@ export default function CatalogArcade() {
                 model={m}
                 isLiked={getIsLiked(m.id)}
                 onToggleLike={() => handleToggleLike(m, getIsLiked(m.id))}
-                onQuote={() => navigate(`/orcamento?model=${encodeURIComponent(m.id)}`)}
               />
             ))}
           </div>
@@ -296,11 +283,11 @@ export default function CatalogArcade() {
       </section>
 
       <ArcadeCTA
-        badge="Produção Sob Encomenda"
-        title="PEÇA SEU ORÇAMENTO"
-        description="Escolha modelos do catálogo e solicite um orçamento personalizado."
-        primaryAction={{ label: "VER CARRINHO", href: "/orcamento/carrinho", icon: <ShoppingCart className="w-4 h-4" /> }}
-        secondaryAction={{ label: "VER COLEÇÕES", href: "/colecoes" }}
+        badge="Colecionáveis Sob Encomenda"
+        title="EXPLORE AS COLEÇÕES"
+        description="Veja as coleções disponíveis e escolha seus personagens favoritos."
+        primaryAction={{ label: "VER COLEÇÕES", href: "/colecoes", icon: <ArrowRight className="w-4 h-4" /> }}
+        secondaryAction={{ label: "VER PLANOS", href: "/planos" }}
       />
     </ArcadePage>
   );
@@ -308,13 +295,13 @@ export default function CatalogArcade() {
 
 // ─── MODEL CARD ──────────────────────────────────────────────────────
 
-function ModelArcadeCard({ model, isLiked, onToggleLike, onQuote }: {
+function ModelArcadeCard({ model, isLiked, onToggleLike }: {
   model: ModelRow;
   isLiked: boolean;
   onToggleLike: () => void;
-  onQuote: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
   const imageUrl = model.image_bucket && model.image_path
     ? supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl
     : null;
@@ -380,10 +367,10 @@ function ModelArcadeCard({ model, isLiked, onToggleLike, onQuote }: {
 
           {/* CTA */}
           <button
-            onClick={onQuote}
+            onClick={() => navigate(`/catalogo/${encodeURIComponent(model.id)}`)}
             className="mt-auto flex items-center justify-center gap-1.5 w-full py-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono text-[9px] tracking-[0.15em] uppercase transition-all"
           >
-            ORÇAR <ArrowRight className="w-3 h-3" />
+            VER DETALHES <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
