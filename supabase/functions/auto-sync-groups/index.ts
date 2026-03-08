@@ -88,7 +88,7 @@ async function getCollectionSubscribers(
     return [];
   }
 
-  return [...new Set(data.map((s: any) => s.user_id))];
+  return [...new Set(data.map((s: any) => s.user_id))] as string[];
 }
 
 /**
