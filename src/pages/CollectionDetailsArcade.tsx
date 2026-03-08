@@ -36,6 +36,7 @@ type Character = {
   description: string | null;
   image_url: string | null;
   release_order: number;
+  release_month: number | null;
   status: string;
 };
 
