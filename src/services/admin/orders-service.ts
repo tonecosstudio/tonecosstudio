@@ -694,8 +694,13 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       id,
       user_id,
       status,
-      deadline,
       notes,
+      admin_notes,
+      total_amount,
+      deposit_amount,
+      remaining_amount,
+      payment_status,
+      tracking_code,
       created_at,
       updated_at
     `
