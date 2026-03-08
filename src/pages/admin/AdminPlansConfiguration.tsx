@@ -264,14 +264,14 @@ export default function AdminPlansConfiguration() {
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState("subscription-plans");
 
-  // Fetch plans
+  // Fetch plans from pricing_tiers (real table)
   const plansQuery = useQuery({
     queryKey: ["admin-plans-configuration"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscription_credit_plans')
+        .from('pricing_tiers')
         .select('*')
-        .order('duration_months', { ascending: true });
+        .order('display_order', { ascending: true });
       
       if (error) throw error;
       return data || [];
