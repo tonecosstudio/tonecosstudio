@@ -545,13 +545,13 @@ export default function AdminUserDetails() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-green-600">
-                          {coinsBalance.total_allocated || 0}
+                          {coinsBalance.total_earned || 0}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">Total Inicial</div>
+                        <div className="text-xs text-muted-foreground mt-1">Total Ganho</div>
                       </div>
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-orange-600">
-                          {coinsBalance.used_credits || 0}
+                          {coinsBalance.total_spent || 0}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">Gastos</div>
                       </div>
