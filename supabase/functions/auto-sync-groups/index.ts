@@ -291,7 +291,7 @@ async function syncGroupMembership(
     return result;
   } catch (error) {
     console.error(`Error syncing group ${group.name}:`, error);
-    result.error = error.message;
+    result.error = (error as Error).message;
     return result;
   }
 }
