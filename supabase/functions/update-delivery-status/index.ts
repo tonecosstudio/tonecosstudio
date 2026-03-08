@@ -274,7 +274,7 @@ async function updateDeliveryStatus(
   const trackingCodeAdded = !previousTrackingCode && trackingCode;
 
   // Enviar notificação ao assinante
-  await notifySubscriber(service, deliveryId, newStatus, trackingCode, trackingCodeAdded);
+  await notifySubscriber(service, deliveryId, newStatus, trackingCode, !!trackingCodeAdded);
 
   return updatedDelivery;
 }

@@ -102,7 +102,7 @@ async function getTrackingStatus(trackingCode: string): Promise<TrackingStatus> 
  * @returns Number of deliveries updated
  */
 async function updateTrackingStatuses(
-  supabase: ReturnType<typeof createClient>
+  supabase: any
 ): Promise<number> {
   // Get all deliveries with tracking codes that are not delivered
   const { data: deliveries, error } = await supabase
