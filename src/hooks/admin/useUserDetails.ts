@@ -65,7 +65,7 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
     },
   });
 
-  // Arrange: Query para métodos de pagamento
+  // Arrange: Query para métodos de pagamento (manual_payments como histórico)
   const paymentMethodsQuery = useQuery({
     queryKey: ["admin-user-payment-methods", userId],
     enabled: Boolean(userId),
@@ -73,12 +73,16 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
       if (!userId) return [];
 
       const { data, error } = await supabase
-        .from("payment_methods")
-        .select("*")
+        .from("manual_payments")
+        .select("id, amount, status, payment_method, payment_date, created_at")
         .eq("user_id", userId)
-        .eq("is_active", true);
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching payment methods:", error);
+        return [];
+      }
       return data || [];
     },
   });
