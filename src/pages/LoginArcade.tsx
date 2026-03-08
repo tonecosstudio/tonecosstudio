@@ -61,9 +61,8 @@ export default function LoginArcade() {
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              email_confirm: false,
               full_name: sanitizedData.name,
-              phone: sanitizedData.phone,
+              ...(sanitizedData.phone ? { phone: sanitizedData.phone } : {}),
             },
           },
         });

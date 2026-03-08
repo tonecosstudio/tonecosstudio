@@ -88,9 +88,8 @@ export default function Login() {
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              email_confirm: false, // Desabilita confirmação por email para evitar rate limit
               full_name: sanitizedData.name,
-              phone: sanitizedData.phone
+              ...(sanitizedData.phone ? { phone: sanitizedData.phone } : {}),
             },
           },
         });
