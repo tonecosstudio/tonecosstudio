@@ -1324,27 +1324,37 @@ function CharacterCard({ character }: { character: Character }) {
 
 // Componente de Item de Lista
 function CharacterListItem({ character }: { character: Character }) {
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const statusConfig = {
     released: { label: 'Lançado', color: 'bg-slate-500' },
-    revealed: { label: 'Disponível', color: 'bg-green-500' },
-    upcoming: { label: 'Em Breve', color: 'bg-blue-500' }
+    revealed: { label: '🔥 Disponível Agora', color: 'bg-green-500 animate-pulse' },
+    upcoming: { label: 'Em Breve', color: 'bg-blue-500/70' }
   };
   const config = statusConfig[character.status];
   
-  // Show mystery placeholder if not revealed (Requirements 12.7, 28.4)
   const isRevealed = character.status === "revealed" || character.status === "released";
+  const isUpcoming = character.status === "upcoming";
   const displayImage = isRevealed ? character.image_url : null;
-  const displayName = isRevealed ? character.name : "Personagem Misterioso";
-  const displayDescription = isRevealed ? character.description : "Este personagem será revelado em breve. Aguarde a data de revelação!";
+  const displayName = isRevealed ? character.name : "???";
+  const displayDescription = isRevealed 
+    ? character.description 
+    : character.release_month 
+      ? `Será revelado em ${monthNames[(character.release_month - 1) % 12]}. Aguarde!`
+      : "Este personagem será revelado em breve.";
   
-  // Determine pricing display
   const isCatalog = character.is_catalog === true;
   const priceDisplay = isCatalog && character.price_coins 
     ? `${character.price_coins} coins`
-    : '200-300 coins'; // Collection contextual pricing
+    : '200-300 coins';
 
   return (
-    <Card className="overflow-hidden hover:shadow-xl transition-all bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500">
+    <Card className={`overflow-hidden transition-all ${
+      character.status === 'revealed'
+        ? 'border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.15)] hover:shadow-xl'
+        : isUpcoming
+          ? 'border-2 border-slate-300 dark:border-slate-700 opacity-75 hover:opacity-100'
+          : 'border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500 hover:shadow-xl'
+    } bg-white dark:bg-slate-900`}>
       <div className="flex gap-6 p-4">
         <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
           {displayImage ? (
@@ -1356,7 +1366,7 @@ function CharacterListItem({ character }: { character: Character }) {
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900">
               <Lock className="w-8 h-8 text-slate-400 dark:text-slate-600 mb-1" />
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-500">Mistério</span>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-500">?</span>
             </div>
           )}
           
@@ -1369,7 +1379,7 @@ function CharacterListItem({ character }: { character: Character }) {
           <div>
             <div className="flex items-start justify-between gap-4 mb-2">
               <div className="flex-1">
-                <h3 className="font-bold text-lg text-slate-950 dark:text-white mb-1">
+                <h3 className={`font-bold text-lg mb-1 ${isUpcoming ? 'text-slate-400 dark:text-slate-500' : 'text-slate-950 dark:text-white'}`}>
                   {displayName}
                 </h3>
                 {isCatalog && character.price_category_display_name && (
@@ -1391,7 +1401,7 @@ function CharacterListItem({ character }: { character: Character }) {
             </div>
             
             {displayDescription && (
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 line-clamp-2">
+              <p className={`text-sm mb-2 line-clamp-2 ${isUpcoming ? 'text-blue-500 dark:text-blue-400 italic' : 'text-slate-600 dark:text-slate-400'}`}>
                 {displayDescription}
               </p>
             )}
@@ -1399,15 +1409,15 @@ function CharacterListItem({ character }: { character: Character }) {
 
           <div className="flex items-center justify-between">
             {character.release_month && (
-              <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Mês {character.release_month}
+              <p className={`text-sm flex items-center gap-2 ${isUpcoming ? 'text-blue-500 dark:text-blue-400 font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
+                {isUpcoming ? <Clock className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+                {isUpcoming ? `Lançamento: ${monthNames[(character.release_month - 1) % 12]}` : `Mês ${character.release_month}`}
               </p>
             )}
             
             {character.status === "revealed" && (
-              <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white">
-                Ver Detalhes
+              <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white">
+                🎯 Garanta o Seu
               </Button>
             )}
           </div>
