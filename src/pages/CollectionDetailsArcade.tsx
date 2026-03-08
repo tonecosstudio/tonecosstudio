@@ -492,7 +492,7 @@ export default function CollectionDetailsArcade() {
                 )}
 
                 {/* Already Released Characters */}
-                {otherReleased.length > 0 && (
+                {sortedReleased.length > 0 && (
                   <div className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
@@ -500,13 +500,13 @@ export default function CollectionDetailsArcade() {
                           Já Lançados
                         </h2>
                         <Badge className="bg-green-500/20 text-green-500 font-mono uppercase tracking-wider px-3 py-1 border border-green-500/50">
-                          {otherReleased.length} Disponíveis
+                          {sortedReleased.length} Disponíveis
                         </Badge>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                      {otherReleased.map((character, index) => (
+                      {sortedReleased.map((character, index) => (
                         <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} />
                       ))}
                     </div>
