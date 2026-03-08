@@ -252,37 +252,10 @@ function AppContent() {
           />
 
           <Route
-            path="/orcamento/checkout"
-            element={
-              <RequireAuth>
-                <PreorderCheckout />
-              </RequireAuth>
-            }
-          />
-
-          <Route
-            path="/orcamento/acompanhar/:quoteId"
-            element={
-              <RequireAuth>
-                <PreorderTracking />
-              </RequireAuth>
-            }
-          />
-
-          <Route
             path="/pedido/:orderType/:orderId/progresso"
             element={
               <RequireAuth>
                 <CustomerOrderProgressPage />
-              </RequireAuth>
-            }
-          />
-
-          <Route
-            path="/orcamento/pagamento"
-            element={
-              <RequireAuth>
-                <PaymentPage />
               </RequireAuth>
             }
           />
