@@ -23,7 +23,7 @@ const DEBUG = true;
 interface SubscriptionWithDeliveries {
   id: string;
   user_id: string;
-  collection_id: string;
+  collection_id: string | null;
   plan_type: string;
   status: string;
   total_paid: number;
@@ -31,15 +31,19 @@ interface SubscriptionWithDeliveries {
   deliveries_completed: number;
   created_at: string;
   updated_at: string;
+  // Dados resolvidos via junction table
+  _collections: Array<{ id: string; name: string; slug: string }>;
   deliveries: Array<{
     id: string;
     delivery_number: number;
+    delivery_order: number;
     status: string;
     character_id: string | null;
     expected_delivery_date: string | null;
     actual_delivery_date: string | null;
     tracking_code: string | null;
     reveal_date: string | null;
+    _character?: any;
   }>;
 }
 
@@ -233,6 +237,25 @@ async function fetchSubscriptions(filters: OrderFilters) {
   // Buscar entregas para cada assinatura
   const subscriptionIds = subscriptions.map(s => s.id);
   
+  // Buscar coleções via junction table (subscription_collections)
+  const { data: subCollections } = await supabase
+    .from('subscription_collections')
+    .select('subscription_id, collection_id, collections(id, name, slug)')
+    .in('subscription_id', subscriptionIds);
+
+  const collectionsBySubscription = new Map<string, any[]>();
+  subCollections?.forEach((sc: any) => {
+    const subId = sc.subscription_id;
+    if (!collectionsBySubscription.has(subId)) {
+      collectionsBySubscription.set(subId, []);
+    }
+    if (sc.collections) {
+      collectionsBySubscription.get(subId)!.push(sc.collections);
+    }
+  });
+
+  console.log('📚 [OrdersV3] Subscription collections loaded:', subCollections?.length || 0);
+
   const { data: deliveries, error: delError } = await supabase
     .from('subscription_deliveries')
     .select('*')
@@ -272,14 +295,15 @@ async function fetchSubscriptions(filters: OrderFilters) {
     }
     // Attach character data to delivery
     if (delivery.character_id && charactersMap.has(delivery.character_id)) {
-      delivery._character = charactersMap.get(delivery.character_id);
+      (delivery as any)._character = charactersMap.get(delivery.character_id);
     }
     deliveriesBySubscription.get(subId)!.push(delivery);
   });
 
-  // Combinar assinaturas com suas entregas
+  // Combinar assinaturas com suas entregas e coleções
   const subscriptionsWithDeliveries = subscriptions.map(sub => ({
     ...sub,
+    _collections: collectionsBySubscription.get(sub.id) || [],
     deliveries: deliveriesBySubscription.get(sub.id) || []
   }));
 
@@ -399,7 +423,7 @@ async function fetchRelatedData(
 
   subscriptions.forEach(sub => {
     userIds.add(sub.user_id);
-    if (sub.collection_id) collectionIds.add(sub.collection_id);
+    // Collections now loaded via junction in fetchSubscriptions, no need here
   });
 
   payments.forEach(payment => {
@@ -444,7 +468,11 @@ function transformSubscription(
   collectionsMap: Map<string, any>
 ): UnifiedOrder {
   const profile = profilesMap.get(subscription.user_id);
-  const collection = collectionsMap.get(subscription.collection_id);
+  
+  // Use collections from junction table (_collections), fallback to collectionsMap
+  const junctionCollections = subscription._collections || [];
+  const primaryCollection = junctionCollections[0] || 
+    (subscription.collection_id ? collectionsMap.get(subscription.collection_id) : null);
 
   // Encontrar próxima entrega ou última entrega
   const sortedDeliveries = (subscription.deliveries || []).sort((a: any, b: any) => (a.delivery_number || a.delivery_order || 0) - (b.delivery_number || b.delivery_order || 0));
@@ -457,8 +485,11 @@ function transformSubscription(
     imageUrl: nextDelivery._character.image_url || null,
   } : undefined;
 
+  // Build collection names string for display
+  const allCollectionNames = junctionCollections.map((c: any) => c.name).join(', ');
+
   return {
-    id: subscription.id, // ID da assinatura, não da entrega
+    id: subscription.id,
     type: 'subscription_delivery',
     status: subscription.status as any,
     createdAt: subscription.created_at,
@@ -470,10 +501,10 @@ function transformSubscription(
       email: profile?.email || 'Email não disponível',
     },
 
-    collection: collection ? {
-      id: collection.id,
-      name: collection.name,
-      slug: collection.slug,
+    collection: primaryCollection ? {
+      id: primaryCollection.id,
+      name: junctionCollections.length > 1 ? allCollectionNames : primaryCollection.name,
+      slug: primaryCollection.slug,
     } : null,
 
     amount: subscription.total_paid || 0,
