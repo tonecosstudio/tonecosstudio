@@ -199,45 +199,11 @@ export function useProgressNotification() {
 // ============================================================================
 
 /**
- * Show a stage change notification
+ * NOTA: As funções helper showStageChangeNotification, showChoiceApprovedNotification,
+ * showChoiceRejectedNotification e showShippedNotification foram removidas.
  * 
- * @param stage - The new production stage
- * @param playSound - Whether to play a sound notification
- */
-export function showStageChangeNotification(stage: ProductionStage, playSound = false): void {
-  const { showNotification } = useProgressNotification();
-  showNotification({ type: "stage_change", stage, playSound });
-}
-
-/**
- * Show a choice approved notification
+ * Use o hook useProgressNotification() diretamente nos componentes:
  * 
- * @param characterName - The name of the approved character
- * @param playSound - Whether to play a sound notification
+ * const { showNotification } = useProgressNotification();
+ * showNotification({ type: "stage_change", stage, playSound });
  */
-export function showChoiceApprovedNotification(characterName: string, playSound = false): void {
-  const { showNotification } = useProgressNotification();
-  showNotification({ type: "choice_approved", characterName, playSound });
-}
-
-/**
- * Show a choice rejected notification
- * 
- * @param rejectionReason - The reason for rejection
- * @param playSound - Whether to play a sound notification
- */
-export function showChoiceRejectedNotification(rejectionReason?: string, playSound = false): void {
-  const { showNotification } = useProgressNotification();
-  showNotification({ type: "choice_rejected", rejectionReason, playSound });
-}
-
-/**
- * Show a shipped notification
- * 
- * @param trackingCode - The tracking code (optional)
- * @param playSound - Whether to play a sound notification
- */
-export function showShippedNotification(trackingCode?: string, playSound = false): void {
-  const { showNotification } = useProgressNotification();
-  showNotification({ type: "shipped", trackingCode, playSound });
-}

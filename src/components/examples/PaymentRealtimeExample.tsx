@@ -119,30 +119,46 @@ export function PaymentRealtimeExample({
   );
 
   // Hook 3: Hook combinado para dashboard admin ou visão do cliente
-  const dashboardRealtime =
-    mode === "admin"
-      ? useAdminDashboardRealtime(
-          (payment) => {
-            console.log(`Novo pagamento criado: ${payment.reference_number}`);
-          },
-          (paymentId, newStatus, oldStatus) => {
-            console.log(`Pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
-          },
-          (message) => {
-            console.log(`Nova mensagem: ${message.message.substring(0, 50)}...`);
-          }
-        )
-      : useUserPaymentsRealtime(
-          userId,
-          (payment) => {
-            console.log(`Novo pagamento criado para você: ${payment.reference_number}`);
-          },
-          (paymentId, newStatus, oldStatus) => {
-            console.log(`Seu pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
-          },
-          (message) => {
-            console.log(`Nova mensagem na sua conversa: ${message.message.substring(0, 50)}...`);
-          }
+  // Sempre chamar ambos os hooks (regra do React)
+  const adminDashboardRealtime = useAdminDashboardRealtime(
+    (payment) => {
+      if (mode === "admin") {
+        console.log(`Novo pagamento criado: ${payment.reference_number}`);
+      }
+    },
+    (paymentId, newStatus, oldStatus) => {
+      if (mode === "admin") {
+        console.log(`Pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
+      }
+    },
+    (message) => {
+      if (mode === "admin") {
+        console.log(`Nova mensagem: ${message.message.substring(0, 50)}...`);
+      }
+    }
+  );
+
+  const userPaymentsRealtime = useUserPaymentsRealtime(
+    userId,
+    (payment) => {
+      if (mode === "user") {
+        console.log(`Novo pagamento criado para você: ${payment.reference_number}`);
+      }
+    },
+    (paymentId, newStatus, oldStatus) => {
+      if (mode === "user") {
+        console.log(`Seu pagamento ${paymentId} mudou status: ${oldStatus} → ${newStatus}`);
+      }
+    },
+    (message) => {
+      if (mode === "user") {
+        console.log(`Nova mensagem na sua conversa: ${message.message.substring(0, 50)}...`);
+      }
+    }
+  );
+
+  // Usar o resultado apropriado baseado no modo
+  const dashboardRealtime = mode === "admin" ? adminDashboardRealtime : userPaymentsRealtime;
         );
 
   // Função para simular reconexão manual
