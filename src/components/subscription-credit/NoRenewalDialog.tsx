@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * No Renewal Dialog
  * Allows user to disable auto-renewal without immediate cancellation

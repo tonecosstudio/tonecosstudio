@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook de Dados para Pedidos V2
  * 

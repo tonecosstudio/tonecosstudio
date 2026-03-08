@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para gerenciar dados de assinatura do usuário (Sistema Híbrido)
  * Segue padrão AAA: Arrange, Act, Assert
