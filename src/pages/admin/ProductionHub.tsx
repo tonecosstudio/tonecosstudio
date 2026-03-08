@@ -379,6 +379,13 @@ function ProductionHub() {
             <div className="border-b">
               <TabsList className="h-12 bg-transparent border-0 w-full justify-start gap-4">
                 <TabsTrigger 
+                  value="pipeline" 
+                  className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                >
+                  <Layers className="h-4 w-4" />
+                  <span className="hidden sm:inline">Pipeline</span>
+                </TabsTrigger>
+                <TabsTrigger 
                   value="kanban" 
                   className="gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                 >
