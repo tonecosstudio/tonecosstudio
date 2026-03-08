@@ -35,10 +35,10 @@ type Character = {
   name: string;
   description: string | null;
   image_url: string | null;
-  release_order: number;
+  release_order: number | null;
   release_month: number | null;
-  is_catalog: boolean;
-  status: string;
+  is_catalog: boolean | null;
+  status: string | null;
 };
 
 type Collection = {
@@ -153,11 +153,18 @@ function CharacterCard({
           >
             {isUpcoming ? "???" : character.name}
           </h4>
-          {character.release_month && (
-            <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-1">
-              📅 {MONTHS[character.release_month - 1]}
-            </p>
-          )}
+          {(() => {
+            const month = character.release_month;
+            const monthLabel = typeof month === "number" && month >= 1 && month <= 12 ? MONTHS[month - 1] : null;
+
+            if (!monthLabel) return null;
+
+            return (
+              <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-1">
+                📅 {monthLabel}
+              </p>
+            );
+          })()}
         </div>
       </div>
     </Link>
@@ -234,7 +241,13 @@ export default function CollectionDetailsArcade() {
     );
   }
 
-  const characterCount = collection.collection_characters?.length || 0;
+  const safeCharacters = Array.isArray(collection.collection_characters)
+    ? collection.collection_characters.filter((character): character is Character =>
+        Boolean(character && character.id && character.name)
+      )
+    : [];
+
+  const characterCount = safeCharacters.length;
 
   return (
     <AppShell>
@@ -383,25 +396,33 @@ export default function CollectionDetailsArcade() {
           </div>
 
           {/* Characters Sections */}
-          {collection.collection_characters && collection.collection_characters.length > 0 && (() => {
+          {safeCharacters.length > 0 && (() => {
             const currentMonth = new Date().getMonth() + 1; // 1-12
 
             // Separar catálogo dos personagens mensais
-            const allChars = collection.collection_characters;
-            const catalogCharacters = allChars.filter(c => c.is_catalog);
-            const monthlyCharacters = allChars.filter(c => !c.is_catalog);
+            const catalogCharacters = safeCharacters.filter((c) => c.is_catalog === true);
+            const monthlyCharacters = safeCharacters.filter((c) => c.is_catalog !== true);
 
             // Personagem destaque = o do mês atual
-            const featuredCharacter = monthlyCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
-              || monthlyCharacters.find(c => c.release_month === currentMonth);
+            const featuredCharacter =
+              monthlyCharacters.find((c) => c.release_month === currentMonth && c.status === "released") ||
+              monthlyCharacters.find((c) => c.release_month === currentMonth);
 
             // Já lançados (exceto o destaque e catálogo)
-            const releasedCharacters = monthlyCharacters.filter(c => c.status === 'released' && c.id !== featuredCharacter?.id);
-            const sortedReleased = [...releasedCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
+            const releasedCharacters = monthlyCharacters.filter(
+              (c) => c.status === "released" && c.id !== featuredCharacter?.id
+            );
+            const sortedReleased = [...releasedCharacters].sort(
+              (a, b) => (a.release_month || 0) - (b.release_month || 0)
+            );
 
             // Próximos lançamentos
-            const upcomingCharacters = monthlyCharacters.filter(c => (c.status === 'upcoming' || c.status === 'revealed') && c.id !== featuredCharacter?.id);
-            const sortedUpcoming = [...upcomingCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
+            const upcomingCharacters = monthlyCharacters.filter(
+              (c) => (c.status === "upcoming" || c.status === "revealed") && c.id !== featuredCharacter?.id
+            );
+            const sortedUpcoming = [...upcomingCharacters].sort(
+              (a, b) => (a.release_month || 0) - (b.release_month || 0)
+            );
 
             return (
               <>
@@ -590,7 +611,7 @@ export default function CollectionDetailsArcade() {
           })()}
 
           {/* Empty State */}
-          {(!collection.collection_characters || collection.collection_characters.length === 0) && (
+          {safeCharacters.length === 0 && (
             <div className="text-center py-12 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm">
               <Package className="w-16 h-16 mx-auto mb-4 text-[hsl(var(--muted-foreground))]" />
               <p className="text-[hsl(var(--muted-foreground))] font-mono uppercase tracking-wider text-sm">
