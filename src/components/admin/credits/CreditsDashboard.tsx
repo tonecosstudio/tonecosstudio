@@ -109,15 +109,61 @@ export function CreditsDashboard() {
     },
   });
 
+  // Fetch active subscribers count from subscriptions table
+  const { data: subscribersData } = useQuery({
+    queryKey: ["credits-active-subscribers"],
+    queryFn: async () => {
+      const { count: activeCount, error: activeError } = await supabase
+        .from("subscriptions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "active");
+
+      if (activeError) throw activeError;
+
+      const { count: totalCount, error: totalError } = await supabase
+        .from("subscriptions")
+        .select("*", { count: "exact", head: true });
+
+      if (totalError) throw totalError;
+
+      return { active: activeCount || 0, total: totalCount || 0 };
+    },
+  });
+
+  // Fetch users with coins (from user_coins table)
+  const { data: coinUsersData } = useQuery({
+    queryKey: ["credits-coin-users"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("user_coins")
+        .select("*", { count: "exact", head: true });
+
+      if (error) throw error;
+      return { count: count || 0 };
+    },
+  });
+
   return (
     <div className="space-y-6">
       {/* Metrics Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricCard
           title="Coins em Circulação"
           value={coinsData?.total?.toLocaleString() || "0"}
           description="Saldo líquido (créditos - débitos)"
           icon={<Coins className="h-4 w-4 text-muted-foreground" />}
+        />
+        <MetricCard
+          title="Assinantes Ativos"
+          value={subscribersData?.active || 0}
+          description={`${subscribersData?.total || 0} total`}
+          icon={<Users className="h-4 w-4 text-muted-foreground" />}
+        />
+        <MetricCard
+          title="Usuários com Coins"
+          value={coinUsersData?.count || 0}
+          description="Possuem saldo de coins"
+          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           title="Ciclos Ativos"
