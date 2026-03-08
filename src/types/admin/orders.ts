@@ -123,6 +123,19 @@ export interface SubscriptionDeliveryData {
     name: string;
     imageUrl: string | null;
   };
+
+  // Lista de todas as entregas da assinatura
+  allDeliveries?: Array<{
+    id: string;
+    deliveryNumber: number;
+    status: string;
+    characterId: string | null;
+    characterName: string | null;
+    actualDeliveryDate: string | null;
+    shippingDate: string | null;
+    trackingCode: string | null;
+    revealDate: string | null;
+  }>;
 }
 
 /**
