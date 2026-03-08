@@ -168,6 +168,7 @@ export default function CollectionDetailsArcade() {
         .maybeSingle();
 
       if (collectionError) throw collectionError;
+      if (!collectionData) return null;
 
       // Buscar personagens da coleção
       const { data: charactersData, error: charactersError } = await supabase
