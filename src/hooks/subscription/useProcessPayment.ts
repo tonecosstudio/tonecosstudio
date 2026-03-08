@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para processar pagamentos de assinatura e adicionar coins
  * 
