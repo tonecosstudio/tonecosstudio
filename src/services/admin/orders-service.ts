@@ -630,34 +630,38 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     console.error("Error fetching user purchases:", purchasesError);
   }
 
+  // Enrich purchases with profile
+  if (purchasesData && purchasesData.length > 0) {
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", userId)
+      .single();
+
+    if (userProfile) {
+      purchasesData.forEach((p: any) => {
+        p.profiles = userProfile;
+      });
+    }
+  }
+
   // Buscar pagamentos manuais do usuário
   const { data: paymentsData, error: paymentsError } = await supabase
     .from("manual_payments")
     .select(
       `
       id,
-      reference_number,
       user_id,
-      payment_method_id,
-      quote_id,
-      subscription_id,
       amount,
-      currency,
-      payment_type,
       status,
-      rejection_reason,
-      created_at,
-      updated_at,
-      approved_at,
-      approved_by,
-      admin_payment_methods (
-        id,
-        name,
-        type,
-        instructions,
-        pix_key,
-        payment_link
-      )
+      payment_method,
+      payment_date,
+      reference_id,
+      reference_type,
+      notes,
+      confirmed_at,
+      confirmed_by,
+      created_at
     `
     )
     .eq("user_id", userId)
