@@ -111,7 +111,7 @@ async function exampleMultiStepCronJob() {
   } catch (error) {
     if (logId) {
       await logCronError(logId, error as Error, {
-        failedStep: determineFailedStep(error),
+        failedStep: determineFailedStep(error as Error),
       });
     }
     throw error;
