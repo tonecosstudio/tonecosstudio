@@ -463,6 +463,14 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
         blocked++;
       }
 
+      // Check overdue: estimated completion date passed
+      if (item.estimated_completion_date) {
+        const estimatedDate = new Date(item.estimated_completion_date);
+        if (estimatedDate < now && item.production_status !== "completed" && item.production_status !== "cancelled") {
+          overdue++;
+        }
+      }
+
       // Check scheduled dates
       if (item.scheduled_production_date) {
         const scheduledDate = new Date(item.scheduled_production_date);
