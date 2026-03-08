@@ -2898,12 +2898,192 @@ export type Database = {
       }
     }
     Functions: {
+      add_coins_to_user: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_reference_id?: string
+          p_reference_type?: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          confirmed_at: string
+          cpf: string
+          created_at: string
+          email: string
+          email_confirmed_at: string
+          full_name: string
+          id: string
+          last_sign_in_at: string
+          phone: string
+          profile_completion: number
+          profile_phone: string
+          roles: string[]
+          whatsapp: string
+        }[]
+      }
+      are_sales_open: { Args: never; Returns: boolean }
+      close_monthly_sales: { Args: { reason?: string }; Returns: undefined }
+      create_pricing_tier: {
+        Args: {
+          p_created_by?: string
+          p_deposit_amount?: number
+          p_description?: string
+          p_is_default?: boolean
+          p_name: string
+          p_pix_discount_percentage?: number
+          p_price_full?: number
+        }
+        Returns: string
+      }
+      delete_user_notification: {
+        Args: { p_notification_id: string }
+        Returns: undefined
+      }
+      generate_payment_reference: { Args: never; Returns: string }
+      get_collection_financial_analysis: {
+        Args: { p_collection_id: string }
+        Returns: Json
+      }
+      get_collection_price: {
+        Args: { p_collection_id: string; p_user_id?: string }
+        Returns: Json
+      }
+      get_collection_pricing: {
+        Args: { p_collection_id: string }
+        Returns: {
+          deposit_amount: number
+          is_custom: boolean
+          price_full: number
+          price_pix: number
+          pricing_source: string
+          remaining_full: number
+          remaining_pix: number
+          tier_id: string
+          tier_name: string
+        }[]
+      }
+      get_current_production_limit: {
+        Args: never
+        Returns: {
+          prod_available: number
+          prod_global_limit: number
+          prod_is_closed: boolean
+          prod_month: number
+          prod_percentage_sold: number
+          prod_units_sold: number
+          prod_year: number
+        }[]
+      }
+      get_system_settings: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_monthly_sales: {
+        Args: { quantity?: number }
+        Returns: undefined
+      }
+      mark_all_notifications_as_read: { Args: never; Returns: undefined }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
+      mark_all_user_notifications_read: { Args: never; Returns: number }
+      mark_notification_as_read: {
+        Args: { notification_id: string }
+        Returns: undefined
+      }
+      mark_notification_read: {
+        Args: { p_notification_id: string }
+        Returns: undefined
+      }
+      mark_user_notification_read: {
+        Args: { p_notification_id: string }
+        Returns: undefined
+      }
+      purchase_character_with_coins: {
+        Args: { p_character_id: string; p_user_id: string }
+        Returns: {
+          message: string
+          new_balance: number
+          success: boolean
+        }[]
+      }
+      reopen_monthly_sales: { Args: never; Returns: undefined }
+      search_unified_orders: {
+        Args: { order_type_filter?: string; search_query: string }
+        Returns: {
+          order_id: string
+          order_type: string
+          rank: number
+        }[]
+      }
+      update_chosen_discount_with_history: {
+        Args: {
+          p_changed_by: string
+          p_new_discount_percentage: number
+          p_reason?: string
+        }
+        Returns: {
+          message: string
+          new_discount: number
+          old_discount: number
+          success: boolean
+        }[]
+      }
+      update_multiplier_with_history: {
+        Args: {
+          p_changed_by: string
+          p_new_multiplier: number
+          p_reason?: string
+          p_user_context: string
+        }
+        Returns: {
+          message: string
+          new_multiplier: number
+          old_multiplier: number
+          success: boolean
+        }[]
+      }
+      update_pricing_tier: {
+        Args: {
+          p_deposit_amount?: number
+          p_description?: string
+          p_display_order?: number
+          p_is_active?: boolean
+          p_is_default?: boolean
+          p_name?: string
+          p_pix_discount_percentage?: number
+          p_price_full?: number
+          p_tier_id: string
+          p_updated_by?: string
+        }
+        Returns: undefined
+      }
+      update_tier_and_recalculate_plans: {
+        Args: {
+          p_deposit_amount?: number
+          p_pix_discount_percentage?: number
+          p_price_full?: number
+          p_tier_id: string
+          p_updated_by?: string
+        }
+        Returns: Json
+      }
+      validate_collection_limit: {
+        Args: { p_new_collection_id?: string; p_user_id: string }
+        Returns: {
+          can_add: boolean
+          current_count: number
+          is_unlimited: boolean
+          max_count: number
+          message: string
+        }[]
       }
     }
     Enums: {
