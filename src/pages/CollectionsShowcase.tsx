@@ -142,6 +142,7 @@ function RarityBadge({ characters }: { characters: number }) {
 
 export default function CollectionsShowcase() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
