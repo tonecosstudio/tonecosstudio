@@ -1,45 +1,25 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Crosshair, Shield, Zap, Eye, Trophy, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState, useRef } from 'react';
-import SEOHead from '@/components/SEOHead';
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Crosshair, Shield, Zap, Eye, Trophy, ChevronDown, Coins, Gamepad2, Flame, Star } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import {
+  ArcadePage,
+  ArcadeCard,
+  ArcadeHero,
+  ArcadeSectionTitle,
+  FloatingParticles,
+  GlitchText,
+  CoinCounter,
+  ArcadeCTA,
+} from "@/components/arcade/ArcadeLayout";
+import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
+import { useAuth } from "@/lib/auth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-// ─── Metal Slug–Inspired Arcade Landing ─────────────────────────────
-
-function ScanlineOverlay() {
-  return (
-    <div
-      className="pointer-events-none fixed inset-0 z-50 opacity-[0.03]"
-      style={{
-        background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0%) 2px, hsl(0 0% 0%) 4px)',
-      }}
-    />
-  );
-}
-
-function PixelBorder({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`relative ${className}`}>
-      <div className="absolute -inset-[2px] bg-gold-accent opacity-80" style={{ clipPath: 'polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px))' }} />
-      <div className="relative bg-background">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function GlitchText({ text, className = '' }: { text: string; className?: string }) {
-  return (
-    <span className={`relative inline-block ${className}`}>
-      <span className="absolute top-0 left-[2px] text-[hsl(0,100%,50%)] opacity-40 animate-[glitch1_3s_infinite]" aria-hidden="true">{text}</span>
-      <span className="absolute top-0 left-[-2px] text-[hsl(200,100%,50%)] opacity-40 animate-[glitch2_3s_infinite]" aria-hidden="true">{text}</span>
-      <span className="relative">{text}</span>
-    </span>
-  );
-}
+// ─── TYPEWRITER ──────────────────────────────────────────────────────
 
 function TypewriterText({ text, delay = 0 }: { text: string; delay?: number }) {
-  const [displayed, setDisplayed] = useState('');
+  const [displayed, setDisplayed] = useState("");
   const [started, setStarted] = useState(false);
 
   useEffect(() => {
@@ -61,143 +41,297 @@ function TypewriterText({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
     <span>
       {displayed}
-      <span className="animate-[blink_1s_step-end_infinite] border-r-2 border-gold-accent ml-0.5">&nbsp;</span>
+      <span className="animate-[blink_1s_step-end_infinite] border-r-2 border-[hsl(var(--gold-accent))] ml-0.5">
+        &nbsp;
+      </span>
     </span>
   );
 }
 
-function StatCounter({ value, label, icon: Icon }: { value: string; label: string; icon: React.ElementType }) {
+// ─── PARALLAX GRID ───────────────────────────────────────────────────
+
+function ParallaxGrid({ scrollY }: { scrollY: number }) {
+  return (
+    <div
+      className="absolute inset-0 opacity-[0.04] pointer-events-none"
+      style={{
+        backgroundImage: `
+          linear-gradient(hsl(var(--gold-accent) / 0.4) 1px, transparent 1px),
+          linear-gradient(90deg, hsl(var(--gold-accent) / 0.4) 1px, transparent 1px)
+        `,
+        backgroundSize: "60px 60px",
+        transform: `translateY(${scrollY * 0.1}px)`,
+      }}
+    />
+  );
+}
+
+// ─── STAT COUNTER ────────────────────────────────────────────────────
+
+function StatCounter({
+  value,
+  label,
+  icon: Icon,
+}: {
+  value: string;
+  label: string;
+  icon: React.ElementType;
+}) {
   return (
     <div className="text-center group">
-      <div className="w-16 h-16 mx-auto mb-3 border-2 border-gold-accent/50 bg-background/50 flex items-center justify-center group-hover:border-gold-accent group-hover:bg-gold-accent/10 transition-all duration-300">
-        <Icon className="h-7 w-7 text-gold-accent" />
+      <div className="w-16 h-16 mx-auto mb-3 border-2 border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.03)] flex items-center justify-center group-hover:border-[hsl(var(--gold-accent))] group-hover:bg-[hsl(var(--gold-accent)/0.08)] group-hover:shadow-[0_0_20px_hsl(var(--gold-accent)/0.15)] transition-all duration-500">
+        <Icon className="h-7 w-7 text-[hsl(var(--gold-accent))]" />
       </div>
-      <p className="font-military text-3xl tracking-wider text-foreground">{value}</p>
-      <p className="font-pixel text-[8px] text-muted-foreground mt-1 uppercase tracking-widest">{label}</p>
+      <p
+        className="text-3xl tracking-wider text-[hsl(0,0%,95%)] font-black"
+        style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+      >
+        {value}
+      </p>
+      <p
+        className="text-[8px] text-[hsl(0,0%,40%)] mt-1 uppercase tracking-[0.3em]"
+        style={{ fontFamily: "'Press Start 2P', monospace" }}
+      >
+        {label}
+      </p>
     </div>
   );
 }
 
-function MissionCard({ title, description, number, icon: Icon }: { title: string; description: string; number: string; icon: React.ElementType }) {
-  return (
-    <div className="group relative border border-border/50 bg-card/50 backdrop-blur-sm p-6 hover:border-gold-accent/60 transition-all duration-500 overflow-hidden">
-      {/* Corner accents */}
-      <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-gold-accent/40 group-hover:border-gold-accent transition-colors" />
-      <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-gold-accent/40 group-hover:border-gold-accent transition-colors" />
-      <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-gold-accent/40 group-hover:border-gold-accent transition-colors" />
-      <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-gold-accent/40 group-hover:border-gold-accent transition-colors" />
+// ─── MISSION CARD ────────────────────────────────────────────────────
 
-      <div className="flex items-start gap-4">
-        <span className="font-pixel text-[10px] text-gold-accent/60">{number}</span>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            <Icon className="h-5 w-5 text-gold-accent" />
-            <h3 className="font-military text-2xl tracking-wide text-foreground">{title}</h3>
+function MissionCard({
+  title,
+  description,
+  number,
+  icon: Icon,
+}: {
+  title: string;
+  description: string;
+  number: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <ArcadeCard>
+      <div className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">
+            <span
+              className="text-[10px] text-[hsl(var(--gold-accent))] font-bold"
+              style={{ fontFamily: "'Press Start 2P', monospace" }}
+            >
+              {number}
+            </span>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <Icon className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
+              <h3
+                className="text-2xl tracking-[0.1em] text-[hsl(0,0%,95%)]"
+                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+              >
+                {title}
+              </h3>
+            </div>
+            <p className="text-sm text-[hsl(0,0%,50%)] leading-relaxed font-mono tracking-wide">
+              {description}
+            </p>
+          </div>
         </div>
       </div>
-
-      {/* Hover scan line */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" 
-        style={{ background: 'linear-gradient(transparent 50%, hsl(var(--gold-accent) / 0.02) 50%)', backgroundSize: '100% 4px' }} 
-      />
-    </div>
+    </ArcadeCard>
   );
 }
+
+// ─── FEATURED COLLECTION CARD ────────────────────────────────────────
+
+function FeaturedCollectionCard({
+  name,
+  description,
+  totalCharacters,
+  coverUrl,
+  slug,
+}: {
+  name: string;
+  description: string | null;
+  totalCharacters: number;
+  coverUrl: string | null;
+  slug: string;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <ArcadeCard className="cursor-pointer" hover>
+      <div onClick={() => navigate(`/colecoes/${slug}`)} className="relative overflow-hidden">
+        {/* Image */}
+        <div className="h-48 bg-[hsl(0,0%,8%)] overflow-hidden">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={name}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Gamepad2 className="w-12 h-12 text-[hsl(0,0%,15%)]" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-transparent to-transparent" />
+        </div>
+
+        {/* Info */}
+        <div className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3
+              className="text-xl tracking-[0.1em] text-[hsl(0,0%,95%)] font-black"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
+              {name}
+            </h3>
+            <span className="font-mono text-[9px] text-[hsl(var(--gold-accent))] px-2 py-0.5 border border-[hsl(var(--gold-accent)/0.3)]">
+              {totalCharacters} PCS
+            </span>
+          </div>
+          {description && (
+            <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] line-clamp-2 tracking-wider">
+              {description}
+            </p>
+          )}
+        </div>
+
+        {/* Power bar on hover */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[hsl(0,0%,10%)]">
+          <div className="h-full w-0 group-hover:w-full bg-[hsl(var(--gold-accent))] transition-all duration-700" />
+        </div>
+      </div>
+    </ArcadeCard>
+  );
+}
+
+// ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Fetch featured collections
+  const collectionsQuery = useQuery({
+    queryKey: ["landing-featured-collections"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("collections")
+        .select("id, name, description, slug, cover_image_url, total_characters")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch recent models
+  const modelsQuery = useQuery({
+    queryKey: ["landing-recent-models"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("models")
+        .select("id, name, franchise, image_bucket, image_path")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const collections = collectionsQuery.data || [];
+  const models = modelsQuery.data || [];
+
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
-      <SEOHead
-        title="ORDAX — Colecionáveis Premium de Elite"
-        description="Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão."
-        keywords={["colecionáveis", "premium", "artesanal", "metal slug", "figuras", "estátuas"]}
-        type="website"
-      />
+    <ArcadePage
+      title="ORDAX — Colecionáveis Premium de Elite"
+      description="Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão."
+      keywords={["colecionáveis", "premium", "artesanal", "figuras", "estátuas", "ordax"]}
+    >
+      {/* ═══ HERO ═══ */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+        <ParallaxGrid scrollY={scrollY} />
+        <FloatingParticles />
 
-      <ScanlineOverlay />
-
-      {/* ═══ HERO SECTION ═══ */}
-      <section ref={heroRef} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-        {/* Animated grid background */}
-        <div 
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `
-              linear-gradient(hsl(var(--gold-accent) / 0.3) 1px, transparent 1px),
-              linear-gradient(90deg, hsl(var(--gold-accent) / 0.3) 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px',
-            transform: `translateY(${scrollY * 0.1}px)`,
-          }}
-        />
-
-        {/* Radial glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-[0.06]"
-          style={{ background: 'radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)' }}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-[0.06] pointer-events-none"
+          style={{ background: "radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)" }}
         />
 
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
-          {/* Mission badge */}
-          <div className="inline-flex items-center gap-2 border border-gold-accent/30 bg-gold-accent/5 px-4 py-2 mb-8 animate-fade-in">
-            <div className="w-2 h-2 bg-gold-accent rounded-full animate-pulse" />
-            <span className="font-pixel text-[9px] text-gold-accent tracking-[0.3em] uppercase">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-2 mb-8 animate-fade-in">
+            <div className="w-2 h-2 bg-[hsl(var(--gold-accent))] rounded-full animate-pulse" />
+            <span
+              className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
+              style={{ fontFamily: "'Press Start 2P', monospace" }}
+            >
               Mission Active • Squad Online
             </span>
           </div>
 
-          {/* Main title */}
+          {/* Title */}
           <h1 className="mb-6">
-            <span className="block font-military text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-[0.15em] leading-none text-foreground" style={{ textShadow: '0 0 60px hsl(var(--gold-accent) / 0.15)' }}>
+            <span
+              className="block text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black tracking-[0.15em] leading-none"
+              style={{
+                fontFamily: "'Bebas Neue', Impact, sans-serif",
+                textShadow: "0 0 60px hsl(var(--gold-accent) / 0.15)",
+              }}
+            >
               <GlitchText text="ORDAX" />
             </span>
-            <span className="block font-pixel text-[10px] sm:text-xs text-gold-accent tracking-[0.5em] mt-4 uppercase">
+            <span
+              className="block text-[10px] sm:text-xs text-[hsl(var(--gold-accent))] tracking-[0.5em] mt-4 uppercase"
+              style={{ fontFamily: "'Press Start 2P', monospace" }}
+            >
               Collectibles Arsenal
             </span>
           </h1>
 
-          {/* Subtitle typewriter */}
+          {/* Typewriter */}
           <div className="h-8 mb-10">
-            <p className="font-pixel text-[9px] sm:text-[10px] text-muted-foreground tracking-wider">
+            <p
+              className="text-[9px] sm:text-[10px] text-[hsl(0,0%,45%)] tracking-wider"
+              style={{ fontFamily: "'Press Start 2P', monospace" }}
+            >
               <TypewriterText text=">> PEÇAS PREMIUM ARTESANAIS. FEITAS À MÃO. SOB ENCOMENDA." delay={800} />
             </p>
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Button
-              onClick={() => navigate('/colecoes')}
-              size="lg"
-              className="group relative bg-gold-accent text-background hover:bg-gold-accent/90 font-military text-xl tracking-[0.15em] h-14 px-10 border-0 transition-all duration-300 hover:shadow-[0_0_30px_hsl(var(--gold-accent)/0.3)]"
+            <button
+              onClick={() => navigate("/colecoes")}
+              className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
             >
-              <Crosshair className="mr-3 h-5 w-5 group-hover:animate-spin" style={{ animationDuration: '3s' }} />
+              <Crosshair className="w-5 h-5 group-hover:animate-spin" style={{ animationDuration: "3s" }} />
               EXPLORAR COLEÇÕES
-              <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
 
-            <Button
-              onClick={() => navigate('/catalogo')}
-              variant="outline"
-              size="lg"
-              className="font-military text-xl tracking-[0.15em] h-14 px-10 border-gold-accent/30 text-gold-accent hover:bg-gold-accent/10 hover:border-gold-accent/60 transition-all duration-300"
+            <button
+              onClick={() => navigate("/catalogo")}
+              className="inline-flex items-center gap-3 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 transition-all"
             >
-              <Eye className="mr-3 h-5 w-5" />
+              <Eye className="w-5 h-5" />
               VER CATÁLOGO
-            </Button>
+            </button>
           </div>
 
-          {/* Stats bar */}
+          {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-3xl mx-auto">
             <StatCounter value="150+" label="Modelos" icon={Trophy} />
             <StatCounter value="100%" label="Artesanal" icon={Shield} />
@@ -208,25 +342,109 @@ export default function LandingPage() {
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-[bounce_2s_ease-in-out_infinite]">
-          <span className="font-pixel text-[7px] text-muted-foreground tracking-widest">SCROLL</span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <span
+            className="text-[7px] text-[hsl(0,0%,30%)] tracking-widest"
+            style={{ fontFamily: "'Press Start 2P', monospace" }}
+          >
+            SCROLL
+          </span>
+          <ChevronDown className="h-4 w-4 text-[hsl(0,0%,30%)]" />
         </div>
 
-        {/* Horizontal rule with pixel corners */}
-        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gold-accent/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
 
-      {/* ═══ MISSION BRIEFING ═══ */}
-      <section className="relative py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Section header */}
-          <div className="text-center mb-16">
-            <span className="font-pixel text-[9px] text-gold-accent tracking-[0.4em] uppercase">Mission Briefing</span>
-            <h2 className="font-military text-5xl sm:text-6xl tracking-[0.1em] text-foreground mt-4">
-              COMO FUNCIONA
-            </h2>
-            <div className="w-24 h-[2px] bg-gold-accent/40 mx-auto mt-4" />
+      {/* ═══ FEATURED COLLECTIONS ═══ */}
+      {collections.length > 0 && (
+        <section className="relative py-20 px-6">
+          <FloatingParticles />
+          <div className="max-w-6xl mx-auto">
+            <ArcadeSectionTitle>Coleções em Destaque</ArcadeSectionTitle>
+            <div className="grid md:grid-cols-3 gap-6">
+              {collections.map((c) => (
+                <FeaturedCollectionCard
+                  key={c.id}
+                  name={c.name}
+                  description={c.description}
+                  totalCharacters={c.total_characters}
+                  coverUrl={c.cover_image_url}
+                  slug={c.slug}
+                />
+              ))}
+            </div>
+            <div className="text-center mt-8">
+              <button
+                onClick={() => navigate("/colecoes")}
+                className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
+              >
+                VER TODAS AS COLEÇÕES
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
+        </section>
+      )}
+
+      {/* ═══ RECENT MODELS ═══ */}
+      {models.length > 0 && (
+        <section className="relative py-16 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
+          <div className="max-w-6xl mx-auto">
+            <ArcadeSectionTitle>Novos no Arsenal</ArcadeSectionTitle>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {models.map((m) => {
+                const imgUrl = m.image_bucket && m.image_path
+                  ? supabase.storage.from(m.image_bucket).getPublicUrl(m.image_path).data.publicUrl
+                  : null;
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => navigate(`/catalogo/${m.id}`)}
+                    className="group cursor-pointer"
+                  >
+                    <ArcadeCard>
+                      <div className="aspect-square bg-[hsl(0,0%,8%)] overflow-hidden">
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={m.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Star className="w-6 h-6 text-[hsl(0,0%,15%)]" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="font-mono text-[10px] text-[hsl(0,0%,70%)] line-clamp-1 tracking-wider uppercase">
+                          {m.name}
+                        </p>
+                        {m.franchise && (
+                          <p className="font-mono text-[8px] text-[hsl(0,0%,30%)] mt-0.5">{m.franchise}</p>
+                        )}
+                      </div>
+                    </ArcadeCard>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-center mt-8">
+              <button
+                onClick={() => navigate("/catalogo")}
+                className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
+              >
+                VER CATÁLOGO COMPLETO
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══ MISSION BRIEFING ═══ */}
+      <section className="relative py-20 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
+        <div className="max-w-5xl mx-auto">
+          <ArcadeSectionTitle>Mission Briefing</ArcadeSectionTitle>
 
           <div className="grid md:grid-cols-2 gap-6">
             <MissionCard
@@ -257,79 +475,63 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ CALL TO ACTION ═══ */}
-      <section className="relative py-24 px-6">
-        {/* Top border */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gold-accent/20 to-transparent" />
-
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 border border-destructive/30 bg-destructive/5 px-4 py-2 mb-8">
-            <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
-            <span className="font-pixel text-[8px] text-destructive tracking-[0.2em] uppercase">Vagas Limitadas</span>
-          </div>
-
-          <h2 className="font-military text-5xl sm:text-7xl tracking-[0.1em] text-foreground mb-6">
-            READY PLAYER?
-          </h2>
-
-          <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
-            Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e 
-            acompanhamento total do seu pedido.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              onClick={() => navigate('/login')}
-              size="lg"
-              className="group bg-gold-accent text-background hover:bg-gold-accent/90 font-military text-2xl tracking-[0.15em] h-16 px-12 transition-all duration-300 hover:shadow-[0_0_40px_hsl(var(--gold-accent)/0.4)]"
-            >
-              <Zap className="mr-3 h-6 w-6" />
-              INSERT COIN
-              <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-2 transition-transform" />
-            </Button>
-          </div>
-
-          {/* Bottom pixel art decoration */}
-          <div className="mt-16 flex items-center justify-center gap-1">
-            {Array.from({ length: 30 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-1 bg-gold-accent/20"
-                style={{ width: `${Math.sin(i * 0.4) * 8 + 10}px`, opacity: 0.1 + Math.sin(i * 0.3) * 0.15 }}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ═══ CTA ═══ */}
+      <ArcadeCTA
+        badge="Vagas Limitadas"
+        title="READY PLAYER?"
+        description="Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total."
+        primaryAction={{
+          label: "INSERT COIN",
+          href: user ? "/colecoes" : "/login",
+          icon: <Zap className="w-5 h-5" />,
+        }}
+        secondaryAction={{ label: "VER PLANOS", href: "/planos" }}
+      />
 
       {/* ═══ FOOTER ═══ */}
-      <footer className="border-t border-border/30 py-8 px-6">
+      <footer className="border-t border-[hsl(0,0%,10%)] py-8 px-6 bg-[hsl(0,0%,3%)]">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="font-military text-2xl tracking-[0.2em] text-foreground">ORDAX</span>
-            <span className="font-pixel text-[7px] text-muted-foreground">v2.0</span>
+            <span
+              className="text-2xl tracking-[0.2em] text-[hsl(var(--gold-accent))]"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
+              ORDAX
+            </span>
+            <span
+              className="text-[7px] text-[hsl(0,0%,25%)]"
+              style={{ fontFamily: "'Press Start 2P', monospace" }}
+            >
+              v2.0
+            </span>
           </div>
 
           <nav className="flex items-center gap-6">
-            <button onClick={() => navigate('/sobre')} className="font-pixel text-[8px] text-muted-foreground hover:text-gold-accent tracking-wider transition-colors uppercase">
-              Sobre
-            </button>
-            <button onClick={() => navigate('/contato')} className="font-pixel text-[8px] text-muted-foreground hover:text-gold-accent tracking-wider transition-colors uppercase">
-              Contato
-            </button>
-            <button onClick={() => navigate('/termos')} className="font-pixel text-[8px] text-muted-foreground hover:text-gold-accent tracking-wider transition-colors uppercase">
-              Termos
-            </button>
-            <button onClick={() => navigate('/privacidade')} className="font-pixel text-[8px] text-muted-foreground hover:text-gold-accent tracking-wider transition-colors uppercase">
-              Privacidade
-            </button>
+            {[
+              { label: "Sobre", href: "/sobre" },
+              { label: "Contato", href: "/contato" },
+              { label: "Termos", href: "/termos" },
+              { label: "Privacidade", href: "/privacidade" },
+            ].map((link) => (
+              <button
+                key={link.href}
+                onClick={() => navigate(link.href)}
+                className="text-[8px] text-[hsl(0,0%,35%)] hover:text-[hsl(var(--gold-accent))] tracking-wider transition-colors uppercase"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                {link.label}
+              </button>
+            ))}
           </nav>
 
-          <p className="font-pixel text-[7px] text-muted-foreground/50 tracking-wider">
+          <p
+            className="text-[7px] text-[hsl(0,0%,20%)] tracking-wider"
+            style={{ fontFamily: "'Press Start 2P', monospace" }}
+          >
             © {new Date().getFullYear()} TONECOS STUDIOS
           </p>
         </div>
       </footer>
-    </div>
+    </ArcadePage>
   );
 }
