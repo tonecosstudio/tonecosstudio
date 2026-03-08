@@ -3,11 +3,13 @@
  * Used across all public-facing pages for consistent Metal Slug aesthetic.
  */
 
-import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Coins } from "lucide-react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { Coins, Menu, Bell, X } from "lucide-react";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useEffect, useState, type PropsWithChildren } from "react";
 import SEOHead from "@/components/SEOHead";
+import { useAuth } from "@/lib/auth";
+import { useIsAdmin } from "@/lib/roles";
 
 // ─── SCANLINE OVERLAY ────────────────────────────────────────────────
 
