@@ -2358,6 +2358,7 @@ export type Database = {
       subscription_plans: {
         Row: {
           billing_interval: string
+          coins_included: number
           created_at: string
           deliveries_per_cycle: number
           description: string | null
@@ -2372,6 +2373,7 @@ export type Database = {
         }
         Insert: {
           billing_interval?: string
+          coins_included?: number
           created_at?: string
           deliveries_per_cycle?: number
           description?: string | null
@@ -2386,6 +2388,7 @@ export type Database = {
         }
         Update: {
           billing_interval?: string
+          coins_included?: number
           created_at?: string
           deliveries_per_cycle?: number
           description?: string | null
