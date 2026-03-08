@@ -245,12 +245,34 @@ async function fetchSubscriptions(filters: OrderFilters) {
 
   console.log('📦 [OrdersV3] Deliveries found:', deliveries?.length || 0);
 
+  // Buscar dados dos personagens das entregas
+  const characterIds = [...new Set(
+    (deliveries || [])
+      .map(d => d.character_id)
+      .filter(Boolean)
+  )] as string[];
+
+  let charactersMap = new Map<string, any>();
+  if (characterIds.length > 0) {
+    const { data: characters } = await supabase
+      .from('collection_characters')
+      .select('id, name, image_url, collection_id')
+      .in('id', characterIds);
+
+    characters?.forEach(c => charactersMap.set(c.id, c));
+    console.log('🎭 [OrdersV3] Characters found for deliveries:', characters?.length || 0);
+  }
+
   // Agrupar entregas por assinatura
   const deliveriesBySubscription = new Map<string, any[]>();
   deliveries?.forEach(delivery => {
     const subId = delivery.subscription_id;
     if (!deliveriesBySubscription.has(subId)) {
       deliveriesBySubscription.set(subId, []);
+    }
+    // Attach character data to delivery
+    if (delivery.character_id && charactersMap.has(delivery.character_id)) {
+      delivery._character = charactersMap.get(delivery.character_id);
     }
     deliveriesBySubscription.get(subId)!.push(delivery);
   });
@@ -425,8 +447,15 @@ function transformSubscription(
   const collection = collectionsMap.get(subscription.collection_id);
 
   // Encontrar próxima entrega ou última entrega
-  const sortedDeliveries = (subscription.deliveries || []).sort((a, b) => a.delivery_number - b.delivery_number);
-  const nextDelivery = sortedDeliveries.find(d => d.status === 'scheduled') || sortedDeliveries[sortedDeliveries.length - 1] || null;
+  const sortedDeliveries = (subscription.deliveries || []).sort((a: any, b: any) => (a.delivery_number || a.delivery_order || 0) - (b.delivery_number || b.delivery_order || 0));
+  const nextDelivery = sortedDeliveries.find((d: any) => d.status === 'scheduled') || sortedDeliveries[sortedDeliveries.length - 1] || null;
+
+  // Resolver dados do personagem da próxima entrega
+  const nextDeliveryCharacter = nextDelivery?._character ? {
+    id: nextDelivery._character.id,
+    name: nextDelivery._character.name,
+    imageUrl: nextDelivery._character.image_url || null,
+  } : undefined;
 
   return {
     id: subscription.id, // ID da assinatura, não da entrega
@@ -456,8 +485,8 @@ function transformSubscription(
 
     subscriptionDelivery: {
       subscriptionId: subscription.id,
-      deliveryNumber: nextDelivery?.delivery_number || 1,
-      cycleId: null,
+      deliveryNumber: nextDelivery?.delivery_number || nextDelivery?.delivery_order || 1,
+      cycleId: nextDelivery?.cycle_id || null,
       characterId: nextDelivery?.character_id || null,
       revealDate: nextDelivery?.reveal_date || null,
 
@@ -469,14 +498,15 @@ function transformSubscription(
         status: subscription.status,
       },
 
-      character: undefined,
+      character: nextDeliveryCharacter,
       
-      // NOVO: Lista de todas as entregas
-      allDeliveries: sortedDeliveries.map(d => ({
+      // Lista de todas as entregas com personagens
+      allDeliveries: sortedDeliveries.map((d: any) => ({
         id: d.id,
-        deliveryNumber: d.delivery_number,
+        deliveryNumber: d.delivery_number || d.delivery_order,
         status: d.status,
         characterId: d.character_id,
+        characterName: d._character?.name || null,
         expectedDeliveryDate: d.expected_delivery_date,
         actualDeliveryDate: d.actual_delivery_date,
         trackingCode: d.tracking_code,
