@@ -434,12 +434,17 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number | null
+          franchise: string | null
           id: string
           image_url: string | null
           image_urls: string[] | null
+          is_catalog: boolean
           name: string
+          price_category_id: string | null
+          product_line: string | null
           status: string
           stock_quantity: number
+          theme_category: string | null
           updated_at: string
         }
         Insert: {
@@ -447,12 +452,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number | null
+          franchise?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[] | null
+          is_catalog?: boolean
           name: string
+          price_category_id?: string | null
+          product_line?: string | null
           status?: string
           stock_quantity?: number
+          theme_category?: string | null
           updated_at?: string
         }
         Update: {
@@ -460,12 +470,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number | null
+          franchise?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[] | null
+          is_catalog?: boolean
           name?: string
+          price_category_id?: string | null
+          product_line?: string | null
           status?: string
           stock_quantity?: number
+          theme_category?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -475,6 +490,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "collections"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_characters_price_category_id_fkey"
+            columns: ["price_category_id"]
+            isOneToOne: false
+            referencedRelation: "price_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_tier_assignments: {
+        Row: {
+          collection_id: string
+          created_at: string
+          id: string
+          tier_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          id?: string
+          tier_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          id?: string
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_tier_assignments_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_tier_assignments_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tier_stats"
+            referencedColumns: ["tier_id"]
+          },
+          {
+            foreignKeyName: "collection_tier_assignments_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_tier_assignments_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers_with_plans"
+            referencedColumns: ["tier_id"]
           },
         ]
       }
@@ -1183,40 +1255,58 @@ export type Database = {
       pricing_history: {
         Row: {
           change_type: string
+          changed_at: string | null
           changed_by: string | null
+          collection_type_id: string | null
           created_at: string
           entity_id: string | null
           id: string
           new_value: Json | null
           old_value: Json | null
           reason: string | null
+          user_context: string | null
         }
         Insert: {
           change_type: string
+          changed_at?: string | null
           changed_by?: string | null
+          collection_type_id?: string | null
           created_at?: string
           entity_id?: string | null
           id?: string
           new_value?: Json | null
           old_value?: Json | null
           reason?: string | null
+          user_context?: string | null
         }
         Update: {
           change_type?: string
+          changed_at?: string | null
           changed_by?: string | null
+          collection_type_id?: string | null
           created_at?: string
           entity_id?: string | null
           id?: string
           new_value?: Json | null
           old_value?: Json | null
           reason?: string | null
+          user_context?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pricing_history_collection_type_id_fkey"
+            columns: ["collection_type_id"]
+            isOneToOne: false
+            referencedRelation: "collection_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pricing_tiers: {
         Row: {
           base_price: number
           created_at: string
+          deposit_amount: number
           description: string | null
           display_order: number
           features: Json | null
@@ -1224,11 +1314,14 @@ export type Database = {
           is_active: boolean
           is_default: boolean
           name: string
+          price_full: number
+          price_pix: number
           updated_at: string
         }
         Insert: {
           base_price?: number
           created_at?: string
+          deposit_amount?: number
           description?: string | null
           display_order?: number
           features?: Json | null
@@ -1236,11 +1329,14 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name: string
+          price_full?: number
+          price_pix?: number
           updated_at?: string
         }
         Update: {
           base_price?: number
           created_at?: string
+          deposit_amount?: number
           description?: string | null
           display_order?: number
           features?: Json | null
@@ -1248,6 +1344,8 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name?: string
+          price_full?: number
+          price_pix?: number
           updated_at?: string
         }
         Relationships: []
@@ -1315,30 +1413,54 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          collector_level: number
+          collector_xp: number
           created_at: string
+          display_name: string | null
           email: string | null
           full_name: string | null
           id: string
+          is_public: boolean
           phone: string | null
+          pieces_owned: number
+          total_spent: number
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          collector_level?: number
+          collector_xp?: number
           created_at?: string
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          is_public?: boolean
           phone?: string | null
+          pieces_owned?: number
+          total_spent?: number
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          collector_level?: number
+          collector_xp?: number
           created_at?: string
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          is_public?: boolean
           phone?: string | null
+          pieces_owned?: number
+          total_spent?: number
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
