@@ -29,6 +29,7 @@ import {
   AlertTriangle,
   Package,
   BarChart3,
+  Layers,
 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 
