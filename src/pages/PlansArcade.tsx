@@ -41,8 +41,8 @@ export default function PlansArcade() {
 
   const plans = plansQuery.data || [];
 
-  const getPlanMeta = (planType: string) => {
-    switch (planType) {
+  const getPlanMeta = (billingInterval: string) => {
+    switch (billingInterval) {
       case "trimestral":
         return { icon: Sparkles, rarity: "ÉPICO", color: "hsl(var(--gold-accent))", badge: "Mais escolhido" };
       case "semestral":
