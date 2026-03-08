@@ -74,7 +74,16 @@ import Contact from "./pages/Contact";
 import NotificationHistory from "./pages/NotificationHistory";
 import LandingPage from "./pages/LandingPage";
 import PreLaunch from "./pages/PreLaunch";
+import PreLaunchArcade from "./pages/PreLaunchArcade";
 import MigratePedido from "./pages/MigratePedido";
+import ProfileArcade from "./pages/ProfileArcade";
+import SubscriberDashboardArcade from "./pages/SubscriberDashboardArcade";
+import MyPaymentsArcade from "./pages/MyPaymentsArcade";
+import NotificationsArcade from "./pages/NotificationsArcade";
+import GroupsArcade from "./pages/GroupsArcade";
+import CoinsPurchaseArcade from "./pages/CoinsPurchaseArcade";
+import QuoteArcade from "./pages/QuoteArcade";
+import PublicProfileArcade from "./pages/PublicProfileArcade";
 import { ChatButton } from "@/components/customer/ChatButton";
 
 const queryClient = new QueryClient();
