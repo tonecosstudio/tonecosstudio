@@ -2,6 +2,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
+import { useAuth } from "@/lib/auth";
+import { LogIn, LogOut } from "lucide-react";
 import {
   ArrowRight,
   ArrowLeft,
