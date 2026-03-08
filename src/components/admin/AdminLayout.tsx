@@ -137,7 +137,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,90%)] relative">
+    <div className="dark min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,90%)] relative">
       <ScanlineOverlay />
 
       {/* Mobile Header */}
