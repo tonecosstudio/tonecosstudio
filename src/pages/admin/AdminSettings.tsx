@@ -31,8 +31,13 @@ export default function AdminSettings() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Configurações</h1>
-          <p className="text-muted-foreground">
+          <h1
+            className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+          >
+            Configurações
+          </h1>
+          <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
             Gerencie todas as configurações do sistema em um só lugar
           </p>
         </div>

@@ -39,9 +39,14 @@ export default function AdminCreditsHub() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Sistema de Créditos</h1>
-          <p className="text-muted-foreground mt-2">
-            Gerencie coins, ciclos de produção, planos de assinatura e análises
+          <h1
+            className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+          >
+            Sistema de Créditos
+          </h1>
+          <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
+            Gerencie coins, ciclos de produção, planos e análises
           </p>
         </div>
 

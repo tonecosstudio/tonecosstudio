@@ -315,8 +315,13 @@ function ProductionHub() {
           {/* Header Compacto */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Hub de Produção</h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <h1
+                className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
+                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+              >
+                Hub de Produção
+              </h1>
+              <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
                 Controle completo da produção em tempo real
               </p>
             </div>
