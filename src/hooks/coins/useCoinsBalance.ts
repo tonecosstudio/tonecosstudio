@@ -96,7 +96,7 @@ export function useCoinsBalance(userId?: UserId | null) {
       
       return {
         balance: data.balance,
-        last_updated: data.last_updated,
+        last_updated: data.updated_at,
       };
     },
     enabled: true,
