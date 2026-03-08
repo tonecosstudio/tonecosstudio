@@ -244,7 +244,7 @@ async function syncGroupMembership(
       (id) => !currentMemberIds.includes(id)
     );
     const toRemove = currentMemberIds.filter(
-      (id) => !expectedMemberIds.includes(id)
+      (id: string) => !expectedMemberIds.includes(id)
     );
 
     // Add new members
