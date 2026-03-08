@@ -507,28 +507,24 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: any) {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const saveData = {
-        plan_type: formData.plan_type,
         name: formData.name,
-        duration_months: formData.duration_months,
-        price: formData.price_per_month,
-        base_credits: formData.base_credits,
-        bonus_credits: formData.bonus_credits,
-        deposit_amount: formData.deposit_amount,
-        pieces_per_subscription: formData.total_pieces,
-        bonus_type: bonusType, // Salvar tipo de bônus
+        price_full: formData.total_price || formData.price_per_month,
+        price_pix: (formData.total_price || formData.price_per_month) * 0.95,
+        deposit_amount: formData.deposit_amount || 0,
         is_active: formData.is_active,
+        description: `Plano ${planType.label}`,
       };
 
       if (existingPlan?.id) {
         const { error } = await supabase
-          .from('subscription_credit_plans')
+          .from('pricing_tiers')
           .update(saveData)
           .eq('id', existingPlan.id);
         
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('subscription_credit_plans')
+          .from('pricing_tiers')
           .insert([saveData]);
         
         if (error) throw error;
