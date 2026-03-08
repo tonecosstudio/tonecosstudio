@@ -2,10 +2,12 @@
  * Detalhes de Compra Avulsa
  * 
  * Exibe informações específicas de compras avulsas
+ * Alinhado com a estrutura real da tabela standalone_purchases
  */
 
-import { DollarSign, Calendar, FileText, User as UserIcon, Image } from 'lucide-react';
+import { DollarSign, Calendar, User as UserIcon, Image, CreditCard } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import type { UnifiedOrder } from '@/types/admin/orders';
 import { isStandalonePurchase } from '@/types/admin/orders';
 import { formatCurrency } from '@/lib/utils';
@@ -13,6 +15,15 @@ import { formatCurrency } from '@/lib/utils';
 interface StandalonePurchaseDetailsProps {
   order: UnifiedOrder;
 }
+
+// Payment method labels
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  pix: "PIX",
+  cartao: "Cartão",
+  boleto: "Boleto",
+  transferencia: "Transferência",
+  bank_transfer: "Transferência Bancária",
+};
 
 export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsProps) {
   if (!isStandalonePurchase(order)) {
@@ -25,7 +36,7 @@ export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsPr
     <>
       <Separator />
 
-      {/* Informações Financeiras Detalhadas */}
+      {/* Informações Financeiras */}
       <section>
         <div className="flex items-center gap-2 mb-3">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -34,147 +45,42 @@ export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsPr
           </h3>
         </div>
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Valor do Depósito</span>
-            <span className="text-sm font-medium">
-              {formatCurrency(standalonePurchase.priceDeposit)}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Valor do Saldo</span>
-            <span className="text-sm font-medium">
-              {formatCurrency(standalonePurchase.priceBalance)}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between pt-2 border-t">
+          <div className="flex items-center justify-between pt-1 pb-1 border-b">
             <span className="text-sm font-medium">Valor Total</span>
             <span className="text-lg font-semibold">
               {formatCurrency(standalonePurchase.priceFull)}
             </span>
           </div>
-        </div>
-      </section>
 
-      {/* Datas de Pagamento */}
-      <Separator />
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Pagamentos
-          </h3>
-        </div>
-        <div className="space-y-3">
-          {standalonePurchase.depositPaidAt && (
+          {standalonePurchase.priceBalance > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Depósito Pago em</span>
-              <span className="text-sm font-medium">
-                {new Date(standalonePurchase.depositPaidAt).toLocaleDateString('pt-BR')}
+              <span className="text-sm text-muted-foreground">Saldo Pendente</span>
+              <span className="text-sm font-medium text-orange-600">
+                {formatCurrency(standalonePurchase.priceBalance)}
               </span>
             </div>
           )}
 
+          {/* Status de pagamento baseado no valor pago */}
           {standalonePurchase.balancePaidAt && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Saldo Pago em</span>
-              <span className="text-sm font-medium">
-                {new Date(standalonePurchase.balancePaidAt).toLocaleDateString('pt-BR')}
-              </span>
+              <span className="text-sm text-muted-foreground">Pagamento</span>
+              <Badge variant="default" className="bg-green-600">
+                Pago
+              </Badge>
             </div>
           )}
 
-          {standalonePurchase.balanceDueDate && !standalonePurchase.balancePaidAt && (
+          {!standalonePurchase.balancePaidAt && standalonePurchase.priceFull > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Vencimento do Saldo</span>
-              <span className="text-sm font-medium text-orange-600">
-                {new Date(standalonePurchase.balanceDueDate).toLocaleDateString('pt-BR')}
-              </span>
+              <span className="text-sm text-muted-foreground">Pagamento</span>
+              <Badge variant="outline" className="text-orange-600 border-orange-300">
+                Aguardando
+              </Badge>
             </div>
-          )}
-
-          {!standalonePurchase.depositPaidAt && !standalonePurchase.balancePaidAt && (
-            <p className="text-sm text-muted-foreground">
-              Nenhum pagamento registrado
-            </p>
           )}
         </div>
       </section>
-
-      {/* Comprovantes de Pagamento */}
-      {(standalonePurchase.depositVoucherUrl || standalonePurchase.balanceVoucherUrl) && (
-        <>
-          <Separator />
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Comprovantes
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {standalonePurchase.depositVoucherUrl && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Comprovante do Depósito</span>
-                  <a
-                    href={standalonePurchase.depositVoucherUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Ver comprovante
-                  </a>
-                </div>
-              )}
-
-              {standalonePurchase.balanceVoucherUrl && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Comprovante do Saldo</span>
-                  <a
-                    href={standalonePurchase.balanceVoucherUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Ver comprovante
-                  </a>
-                </div>
-              )}
-            </div>
-          </section>
-        </>
-      )}
-
-      {/* Informações do Ciclo */}
-      {standalonePurchase.cycle && (
-        <>
-          <Separator />
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Ciclo de Produção
-              </h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Número do Ciclo</span>
-                <span className="text-sm font-medium">
-                  #{standalonePurchase.cycle.cycleNumber}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Período</span>
-                <span className="text-sm font-medium">
-                  {standalonePurchase.cycle.month}/{standalonePurchase.cycle.year}
-                </span>
-              </div>
-            </div>
-          </section>
-        </>
-      )}
 
       {/* Informações do Personagem */}
       {standalonePurchase.character && (
@@ -187,30 +93,15 @@ export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsPr
                 Personagem
               </h3>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Nome</span>
-                <span className="text-sm font-medium">
-                  {standalonePurchase.character.name}
-                </span>
-              </div>
-
+            <div className="p-3 bg-muted/50 rounded-lg border flex items-center gap-3">
               {standalonePurchase.character.imageUrl && (
-                <div className="flex items-start justify-between">
-                  <span className="text-sm text-muted-foreground">Imagem</span>
-                  <div className="flex items-center gap-2">
-                    <Image className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={standalonePurchase.character.imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Ver imagem
-                    </a>
-                  </div>
-                </div>
+                <img
+                  src={standalonePurchase.character.imageUrl}
+                  alt={standalonePurchase.character.name}
+                  className="w-10 h-10 rounded object-cover"
+                />
               )}
+              <span className="text-sm font-semibold">{standalonePurchase.character.name}</span>
             </div>
           </section>
         </>
