@@ -163,9 +163,9 @@ export default function CollectionDetailsArcade() {
       // Buscar coleção
       const { data: collectionData, error: collectionError } = await supabase
         .from("collections")
-        .select("id, name, slug, description, image_url, is_active")
+        .select("id, name, slug, description, cover_image_url, is_active")
         .eq("slug", slug)
-        .single();
+        .maybeSingle();
 
       if (collectionError) throw collectionError;
 
