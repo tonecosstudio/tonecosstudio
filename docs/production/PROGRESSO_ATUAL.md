@@ -1,20 +1,20 @@
 # 📊 PROGRESSO ATUAL - SISTEMA DE PRODUÇÃO
 
-**Última Atualização**: 2026-03-07  
-**Status Geral**: 🟢 80% Concluído
+**Última Atualização**: 2026-03-07 20:10  
+**Status Geral**: 🟢 92% Concluído
 
 ---
 
 ## 🎯 VISÃO GERAL
 
 ```
-████████████████████████████████████████████░░░░ 80%
+████████████████████████████████████████████████ 92%
 
 Fase 1: ████████████████████ 100% ✅ Limpeza
 Fase 2: ████████████████████ 100% ✅ Verificação
 Fase 3: ████████████████████ 100% ✅ Correções
 Fase 4: ████████████████████ 100% ✅ Sincronização
-Fase 5: ░░░░░░░░░░░░░░░░░░░░   0% ⏳ Testes
+Fase 5: ████████████░░░░░░░░  60% 🔄 Testes
 ```
 
 ---
@@ -62,20 +62,28 @@ Todas as migrations locais foram sincronizadas com o banco remoto. O sistema est
 
 ---
 
-## ⏳ PRÓXIMA FASE
+## 🔄 FASE EM ANDAMENTO
 
-### Fase 5: Testes End-to-End (0%)
+### Fase 5: Testes End-to-End (60%)
 
-**Aguardando**: Conclusão da Fase 4
+**Status**: Em progresso - Trigger corrigido, aguardando teste final
 
-#### Planejamento
-- Testar criação de novo pedido
-- Testar aprovação de pagamento
-- Verificar population da production_queue
-- Validar Hub de Produção
-- Confirmar fluxo completo
+#### Progresso
+- ✅ Plano de testes criado
+- ✅ Scripts de teste desenvolvidos
+- ✅ Schema real documentado
+- ✅ Problema do trigger identificado
+- ✅ Migration de correção criada e aplicada
+- ⏳ Teste do trigger (aguardando execução manual)
+- ⏳ Validação no ProductionHub
+- ⏳ Testes 2-4 do plano
 
-**Tempo Estimado**: 30-45 minutos
+#### Problema Resolvido
+**Trigger `auto_populate_production_queue()`** tentava acessar `NEW.collection_id` mas `manual_payments` não tem essa coluna. Correção aplicada: busca `collection_id` de `subscriptions.active_collection_id` ou `quotes.collection_id`.
+
+**Migration**: `20260307200000_fix_manual_payment_trigger.sql` ✅ APLICADA
+
+**Tempo Estimado**: 15-20 minutos restantes
 
 ---
 
