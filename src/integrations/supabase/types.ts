@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      character_choices: {
+        Row: {
+          alternative_character_id: string | null
+          approved_at: string | null
+          character_id: string | null
+          chosen_at: string | null
+          collection_id: string | null
+          created_at: string
+          id: string
+          order_id: string
+          order_type: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alternative_character_id?: string | null
+          approved_at?: string | null
+          character_id?: string | null
+          chosen_at?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          order_type?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alternative_character_id?: string | null
+          approved_at?: string | null
+          character_id?: string | null
+          chosen_at?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          order_type?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_choices_alternative_character_id_fkey"
+            columns: ["alternative_character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_choices_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_choices_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_group_attachments: {
         Row: {
           created_at: string
@@ -253,6 +326,51 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          current_uses: number | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_amount: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_amount?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_amount?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       cycles: {
         Row: {
           capacity: number | null
@@ -295,6 +413,72 @@ export type Database = {
           updated_at?: string
           used_capacity?: number | null
           year?: number
+        }
+        Relationships: []
+      }
+      holidays: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      manual_payments: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          reference_id: string
+          reference_type: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          reference_id: string
+          reference_type: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          reference_id?: string
+          reference_type?: string
+          status?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -369,6 +553,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      production_queue: {
+        Row: {
+          character_id: string | null
+          choice_deadline: string | null
+          collection_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string
+          order_type: string
+          priority: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          character_id?: string | null
+          choice_deadline?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          order_type: string
+          priority?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          character_id?: string | null
+          choice_deadline?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          order_type?: string
+          priority?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_queue_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_queue_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -516,6 +760,75 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      standalone_purchases: {
+        Row: {
+          amount: number
+          balance_amount: number | null
+          character_id: string | null
+          collection_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          paid_amount: number | null
+          payment_link: string | null
+          payment_method: string | null
+          shipping_carrier: string | null
+          status: string
+          tracking_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          balance_amount?: number | null
+          character_id?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          payment_link?: string | null
+          payment_method?: string | null
+          shipping_carrier?: string | null
+          status?: string
+          tracking_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_amount?: number | null
+          character_id?: string | null
+          collection_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          payment_link?: string | null
+          payment_method?: string | null
+          shipping_carrier?: string | null
+          status?: string
+          tracking_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standalone_purchases_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standalone_purchases_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_deliveries: {
         Row: {
@@ -856,6 +1169,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      user_coins: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_earned: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_notification_settings: {
         Row: {
