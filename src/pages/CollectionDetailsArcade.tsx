@@ -556,6 +556,34 @@ export default function CollectionDetailsArcade() {
                     </div>
                   </div>
                 )}
+
+                {/* Catalog Characters */}
+                {catalogCharacters.length > 0 && (
+                  <div className="mb-12">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight font-mono text-[hsl(var(--foreground))]">
+                          Catálogo
+                        </h2>
+                        <Badge className="bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))] font-mono uppercase tracking-wider px-3 py-1 border border-[hsl(var(--primary)/0.5)]">
+                          {catalogCharacters.length} Disponíveis
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm p-4 mb-6">
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        Personagens do catálogo estão sempre disponíveis, independente do mês.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                      {catalogCharacters.map((character, index) => (
+                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             );
           })()}
