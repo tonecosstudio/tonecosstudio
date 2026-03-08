@@ -35,12 +35,18 @@ export interface StageTransitionLog {
 
 // Stage order mapping
 const STAGE_ORDER: Record<StageType, number> = {
-  awaiting_choice: 1,
-  design: 2,
-  production: 3,
-  quality_check: 4,
-  packaging: 5,
-  shipped: 6,
+  awaiting_payment: 1,
+  payment_confirmed: 2,
+  awaiting_choice: 3,
+  model_preparation: 4,
+  printing: 5,
+  post_processing: 6,
+  painting: 7,
+  quality_check: 8,
+  packaging: 9,
+  ready_to_ship: 10,
+  shipped: 11,
+  delivered: 12,
 };
 
 // ============================================================================
