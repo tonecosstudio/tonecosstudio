@@ -626,8 +626,10 @@ function transformPayment(payment: any, profilesMap: Map<string, any>): UnifiedO
       paymentMethod: payment.payment_method,
       paymentDate: payment.payment_date,
       referenceId: payment.reference_id,
+      referenceType: payment.reference_type,
       notes: payment.notes,
-      voucherUrl: payment.voucher_url,
+      confirmedAt: payment.confirmed_at,
+      confirmedBy: payment.confirmed_by,
     },
   };
 }
