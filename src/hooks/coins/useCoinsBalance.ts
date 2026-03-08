@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook unificado para gerenciar saldo de coins
  * 
@@ -62,7 +61,7 @@ const CACHE_CONFIG = {
 export function useCoinsBalance(userId?: UserId | null) {
   return useQuery({
     queryKey: userId ? coinsBalanceKeys.user(userId) : coinsBalanceKeys.all,
-    queryFn: async (): Promise<CoinsBalanceResponse> => {
+    queryFn: async (): Promise<{ balance: number; last_updated: string }> => {
       // Se userId não foi fornecido, busca usuário logado
       let targetUserId = userId;
       
@@ -97,7 +96,7 @@ export function useCoinsBalance(userId?: UserId | null) {
       
       return {
         balance: data.balance,
-        last_updated: data.last_updated,
+        last_updated: data.updated_at,
       };
     },
     enabled: true,
@@ -254,8 +253,7 @@ export function useInitializeBalance() {
         .insert({
           user_id: userId,
           balance: initialAmount,
-          last_updated: new Date().toISOString(),
-        });
+        } as any);
       
       if (insertError) {
         throw new Error(`Erro ao inicializar saldo: ${insertError.message}`);
@@ -267,7 +265,7 @@ export function useInitializeBalance() {
         .insert({
           user_id: userId,
           amount: initialAmount,
-          type: 'bonus',
+          transaction_type: 'bonus',
           description,
         });
       
@@ -339,7 +337,7 @@ export function updateCoinsBalanceCache(
   userId: UserId,
   newBalance: CoinsAmount
 ) {
-  queryClient.setQueryData<CoinsBalanceResponse>(
+  queryClient.setQueryData<{ balance: number; last_updated: string }>(
     coinsBalanceKeys.user(userId),
     (old) => {
       if (!old) return old;

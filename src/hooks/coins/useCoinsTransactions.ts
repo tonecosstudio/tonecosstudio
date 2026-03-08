@@ -6,7 +6,7 @@
  * 
  * @module hooks/coins/useCoinsTransactions
  */
-// @ts-nocheck
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type {
@@ -156,7 +156,7 @@ export function useCoinsTransactions(options: UseTransactionsOptions = {}) {
 
       // Aplicar filtros
       if (type) {
-        query = query.eq('type', type);
+        query = query.eq('transaction_type', type as string);
       }
 
       if (startDate) {

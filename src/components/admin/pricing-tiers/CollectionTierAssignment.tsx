@@ -31,12 +31,13 @@ export function CollectionTierAssignment({
   collectionId,
   isCustomPricing = false,
 }: CollectionTierAssignmentProps) {
-  const { data: activeTiers, isLoading: loadingTiers } = usePricingTiers({ activeOnly: true });
+  const { data: activeTiers, isLoading: loadingTiers } = usePricingTiers();
   const {
     data: currentAssignment,
     isLoading: loadingAssignment,
+    assignTier,
+    unassignTier,
   } = useCollectionTierAssignment(collectionId);
-  const { assignTier, unassignTier } = useCollectionTierAssignment(collectionId);
 
   const [selectedTierId, setSelectedTierId] = useState<string>("");
   const [hasChanges, setHasChanges] = useState(false);
