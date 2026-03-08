@@ -195,6 +195,14 @@ function AppContent() {
             path="/wishlist"
             element={
               <RequireAuth>
+                <WishlistArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/wishlist-old"
+            element={
+              <RequireAuth>
                 <Wishlist />
               </RequireAuth>
             }
@@ -202,6 +210,14 @@ function AppContent() {
 
           <Route
             path="/dashboard"
+            element={
+              <RequireAuth>
+                <DashboardArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/dashboard-old"
             element={
               <RequireAuth>
                 <Dashboard />
