@@ -179,9 +179,9 @@ export default function CollectionDetailsArcade() {
       // Buscar personagens da coleção
       const { data: charactersData, error: charactersError } = await supabase
         .from("collection_characters")
-        .select("id, name, description, image_url, release_order, status")
+        .select("id, name, description, image_url, release_order, release_month, status")
         .eq("collection_id", collectionData.id)
-        .order("release_order", { ascending: true });
+        .order("release_month", { ascending: true, nullsFirst: false });
 
       if (charactersError) throw charactersError;
 
