@@ -6,9 +6,11 @@
  * em uma única interface administrativa.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import SEOHead from '@/components/SEOHead';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOrderFilters } from '@/hooks/admin/useOrderFilters';
 import { useOrderPagination } from '@/hooks/admin/useOrderPagination';
 import { useOrdersQuery } from '@/hooks/admin/useOrdersQuery';
@@ -54,6 +56,10 @@ import {
 } from '@/components/ui/select';
 
 export default function OrdersPage() {
+  // Gerenciamento de tabs via URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'all';
+
   // Estado do painel de detalhes
   const [selectedOrder, setSelectedOrder] = useState<UnifiedOrder | null>(null);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -93,6 +99,27 @@ export default function OrdersPage() {
     hasActiveFilters,
     activeFilterCount
   } = filterControls;
+
+  // Sincronizar tab ativa com filtro de tipo
+  useEffect(() => {
+    const typeMap: Record<string, typeof filters.type> = {
+      'all': 'all',
+      'subscriptions': 'subscription_delivery',
+      'standalone': 'standalone_purchase'
+    };
+    
+    const newType = typeMap[activeTab] || 'all';
+    if (filters.type !== newType) {
+      setType(newType);
+    }
+  }, [activeTab, filters.type, setType]);
+
+  // Handler para mudança de tab
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+    // Resetar paginação ao mudar de tab
+    setPage(1);
+  };
 
   // Gerenciamento de paginação
   const paginationControls = useOrderPagination();
@@ -468,8 +495,8 @@ export default function OrdersPage() {
 
       <AdminLayout>
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Pedidos</h1>
               <p className="text-muted-foreground mt-2">
@@ -488,50 +515,60 @@ export default function OrdersPage() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Estado de erro */}
-        {isError && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Erro ao carregar pedidos: {error instanceof Error ? error.message : 'Erro desconhecido'}
-            </AlertDescription>
-          </Alert>
-        )}
+          {/* Tabs de Navegação */}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              <TabsTrigger value="subscriptions">Assinaturas</TabsTrigger>
+              <TabsTrigger value="standalone">Pedidos Avulsos</TabsTrigger>
+            </TabsList>
 
-        {/* Estado de loading */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-            <p className="text-muted-foreground mt-4">Carregando pedidos...</p>
-          </div>
-        )}
+            <TabsContent value={activeTab} className="mt-6">
+              {/* Conteúdo das tabs (filtros, tabela, etc) */}
+              
+              {/* Estado de erro */}
+              {isError && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Erro ao carregar pedidos: {error instanceof Error ? error.message : 'Erro desconhecido'}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-        {/* Estado vazio */}
-        {!isLoading && !isError && orders.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum pedido encontrado</h3>
-            <p className="text-muted-foreground mb-4">
-              {hasActiveFilters
-                ? 'Tente ajustar os filtros para ver mais resultados'
-                : 'Não há pedidos cadastrados no sistema'}
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={resetFilters}
-                className="text-sm text-primary hover:underline"
-              >
-                Limpar filtros
-              </button>
-            )}
-          </div>
-        )}
+              {/* Estado de loading */}
+              {isLoading && (
+                <div className="text-center py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+                  <p className="text-muted-foreground mt-4">Carregando pedidos...</p>
+                </div>
+              )}
 
-        {/* Conteúdo principal */}
-        {!isLoading && !isError && (
-          <div className="space-y-6">
+              {/* Estado vazio */}
+              {!isLoading && !isError && orders.length === 0 && (
+                <div className="text-center py-12">
+                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhum pedido encontrado</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {hasActiveFilters
+                      ? 'Tente ajustar os filtros para ver mais resultados'
+                      : 'Não há pedidos cadastrados no sistema'}
+                  </p>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={resetFilters}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Conteúdo principal */}
+              {!isLoading && !isError && (
+                <div className="space-y-6">
             {/* Filtros */}
             <OrderFilters
               filters={filters}
@@ -571,21 +608,24 @@ export default function OrdersPage() {
               searchQuery={filters.searchQuery}
             />
 
-            {/* Paginação */}
-            {orders.length > 0 && (
-              <OrdersPagination
-                currentPage={page}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={total}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-                isLoading={isLoading}
-                onPrefetchNextPage={prefetchNextPage}
-              />
-            )}
-          </div>
-        )}
+              {/* Paginação */}
+              {orders.length > 0 && (
+                <OrdersPagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalItems={total}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  isLoading={isLoading}
+                  onPrefetchNextPage={prefetchNextPage}
+                />
+              )}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
 
         {/* Painel de Detalhes */}
         <OrderDetailPanel
