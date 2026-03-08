@@ -253,8 +253,7 @@ export function useInitializeBalance() {
         .insert({
           user_id: userId,
           balance: initialAmount,
-          last_updated: new Date().toISOString(),
-        });
+        } as any);
       
       if (insertError) {
         throw new Error(`Erro ao inicializar saldo: ${insertError.message}`);
