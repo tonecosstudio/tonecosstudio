@@ -10,8 +10,6 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
 import { ChatButton } from "@/components/customer/ChatButton";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────────────
 const LandingPage = lazy(() => import("./pages/LandingPage"));
