@@ -80,7 +80,7 @@ import MyPaymentsArcade from "./pages/MyPaymentsArcade";
 import NotificationsArcade from "./pages/NotificationsArcade";
 import GroupsArcade from "./pages/GroupsArcade";
 import CoinsPurchaseArcade from "./pages/CoinsPurchaseArcade";
-import QuoteArcade from "./pages/QuoteArcade";
+
 import PublicProfileArcade from "./pages/PublicProfileArcade";
 import { ChatButton } from "@/components/customer/ChatButton";
 
