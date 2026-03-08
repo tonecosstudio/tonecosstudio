@@ -603,7 +603,7 @@ export default function CollectionDetailsArcade() {
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                       {catalogCharacters.map((character, index) => (
-                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} />
+                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} collectionSlug={collection.slug} />
                       ))}
                     </div>
                   </div>
