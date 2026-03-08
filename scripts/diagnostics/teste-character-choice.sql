@@ -50,14 +50,15 @@ SELECT
   cc.id,
   cc.name as character_name,
   cc.image_url,
-  cc.is_premium,
+  cc.status,
+  cc.release_order,
   c.name as collection_name
 FROM collection_characters cc
 JOIN collections c ON c.id = cc.collection_id
 WHERE cc.collection_id IN (
   SELECT collection_id FROM character_choices WHERE order_type = 'manual_payment' LIMIT 1
 )
-ORDER BY cc.display_order;
+ORDER BY cc.release_order;
 
 -- PASSO 5: Simular escolha de personagem
 DO $$
@@ -83,7 +84,7 @@ BEGIN
   FROM character_choices ch
   JOIN collection_characters cc ON cc.collection_id = ch.collection_id
   WHERE ch.id = v_choice_id
-  ORDER BY cc.display_order
+  ORDER BY cc.release_order
   LIMIT 1;
   
   IF v_character_id IS NULL THEN
