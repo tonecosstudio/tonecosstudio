@@ -142,6 +142,14 @@ function AppContent() {
             path="/perfil"
             element={
               <RequireAuth>
+                <ProfileArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/perfil-old"
+            element={
+              <RequireAuth>
                 <Profile />
               </RequireAuth>
             }
