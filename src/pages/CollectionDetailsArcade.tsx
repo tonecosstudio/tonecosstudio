@@ -611,7 +611,7 @@ export default function CollectionDetailsArcade() {
           })()}
 
           {/* Empty State */}
-          {(!collection.collection_characters || collection.collection_characters.length === 0) && (
+          {safeCharacters.length === 0 && (
             <div className="text-center py-12 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm">
               <Package className="w-16 h-16 mx-auto mb-4 text-[hsl(var(--muted-foreground))]" />
               <p className="text-[hsl(var(--muted-foreground))] font-mono uppercase tracking-wider text-sm">
