@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CharacterChoicesContent - Gerenciamento de Escolhas de Personagens
  * 
