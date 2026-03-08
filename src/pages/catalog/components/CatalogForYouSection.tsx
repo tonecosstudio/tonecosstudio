@@ -6,9 +6,8 @@ export function CatalogForYouSection(props: {
   models: ModelRow[];
   getIsLiked: (id: string) => boolean;
   onToggleLike: (model: ModelRow, isLiked: boolean) => void;
-  onQuote: (modelId: string) => void;
 }) {
-  const { models, getIsLiked, onToggleLike, onQuote } = props;
+  const { models, getIsLiked, onToggleLike } = props;
 
   return (
     <section className="container py-12 border-b border-border">
@@ -32,7 +31,6 @@ export function CatalogForYouSection(props: {
               variant="forYou"
               isLiked={isLiked}
               onToggleLike={() => onToggleLike(m, isLiked)}
-              onQuote={() => onQuote(m.id)}
             />
           );
         })}

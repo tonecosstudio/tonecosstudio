@@ -173,14 +173,13 @@ export default function ModelDetails() {
               <Card className="border-border">
                 <CardContent className="p-6 space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Produção artesanal sob encomenda. Você escolhe escala/tamanho e detalhes no
-                    orçamento.
+                    Produção artesanal sob encomenda. Explore as coleções disponíveis.
                   </p>
                   <Button
                     className="w-full h-12 bg-foreground text-background hover:bg-foreground/90"
-                    onClick={() => navigate(`/orcamento?model=${encodeURIComponent(model.id)}`)}
+                    onClick={() => navigate(`/colecoes`)}
                   >
-                    Solicitar Orçamento
+                    Ver Coleções
                   </Button>
                 </CardContent>
               </Card>
