@@ -109,7 +109,7 @@ function AppContent() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/home-antiga" element={<Home />} />
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/pre-lancamento" element={<PreLaunch />} />
+          {/* pre-lancamento moved below */}
           <Route path="/migrar-pedido" element={<MigratePedido />} />
           <Route path="/catalogo" element={<CatalogArcade />} />
           <Route path="/catalogo-old" element={<Catalog />} />
