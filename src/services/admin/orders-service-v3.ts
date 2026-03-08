@@ -468,7 +468,11 @@ function transformSubscription(
   collectionsMap: Map<string, any>
 ): UnifiedOrder {
   const profile = profilesMap.get(subscription.user_id);
-  const collection = collectionsMap.get(subscription.collection_id);
+  
+  // Use collections from junction table (_collections), fallback to collectionsMap
+  const junctionCollections = subscription._collections || [];
+  const primaryCollection = junctionCollections[0] || 
+    (subscription.collection_id ? collectionsMap.get(subscription.collection_id) : null);
 
   // Encontrar próxima entrega ou última entrega
   const sortedDeliveries = (subscription.deliveries || []).sort((a: any, b: any) => (a.delivery_number || a.delivery_order || 0) - (b.delivery_number || b.delivery_order || 0));
@@ -481,8 +485,11 @@ function transformSubscription(
     imageUrl: nextDelivery._character.image_url || null,
   } : undefined;
 
+  // Build collection names string for display
+  const allCollectionNames = junctionCollections.map((c: any) => c.name).join(', ');
+
   return {
-    id: subscription.id, // ID da assinatura, não da entrega
+    id: subscription.id,
     type: 'subscription_delivery',
     status: subscription.status as any,
     createdAt: subscription.created_at,
@@ -494,10 +501,10 @@ function transformSubscription(
       email: profile?.email || 'Email não disponível',
     },
 
-    collection: collection ? {
-      id: collection.id,
-      name: collection.name,
-      slug: collection.slug,
+    collection: primaryCollection ? {
+      id: primaryCollection.id,
+      name: junctionCollections.length > 1 ? allCollectionNames : primaryCollection.name,
+      slug: primaryCollection.slug,
     } : null,
 
     amount: subscription.total_paid || 0,
