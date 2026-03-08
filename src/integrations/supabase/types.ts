@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_logs: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          delivery_id: string | null
+          id: string
+          new_status: string | null
+          notes: string | null
+          previous_status: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          delivery_id?: string | null
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          previous_status?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          delivery_id?: string | null
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          previous_status?: string | null
+        }
+        Relationships: []
+      }
       character_choices: {
         Row: {
           alternative_character_id: string | null
@@ -371,6 +404,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_logs: {
+        Row: {
+          completed_at: string | null
+          details: Json | null
+          duration_ms: number | null
+          error_details: Json | null
+          error_message: string | null
+          id: string
+          job_name: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_details?: Json | null
+          error_message?: string | null
+          id?: string
+          job_name: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_details?: Json | null
+          error_message?: string | null
+          id?: string
+          job_name?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       cycles: {
         Row: {
           capacity: number | null
@@ -413,6 +482,42 @@ export type Database = {
           updated_at?: string
           used_capacity?: number | null
           year?: number
+        }
+        Relationships: []
+      }
+      email_notifications: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          recipient_user_id: string | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -960,8 +1065,22 @@ export type Database = {
             foreignKeyName: "subscription_plans_tier_id_fkey"
             columns: ["tier_id"]
             isOneToOne: false
+            referencedRelation: "pricing_tier_stats"
+            referencedColumns: ["tier_id"]
+          },
+          {
+            foreignKeyName: "subscription_plans_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
             referencedRelation: "pricing_tiers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_plans_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers_with_plans"
+            referencedColumns: ["tier_id"]
           },
         ]
       }
@@ -1030,6 +1149,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "collections"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers_with_plans"
+            referencedColumns: ["plan_id"]
           },
           {
             foreignKeyName: "subscriptions_plan_id_fkey"
@@ -1307,7 +1433,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pricing_tier_stats: {
+        Row: {
+          base_price: number | null
+          display_order: number | null
+          features: Json | null
+          is_active: boolean | null
+          is_default: boolean | null
+          plan_count: number | null
+          subscriber_count: number | null
+          tier_description: string | null
+          tier_id: string | null
+          tier_name: string | null
+        }
+        Relationships: []
+      }
+      pricing_tiers_with_plans: {
+        Row: {
+          billing_interval: string | null
+          deliveries_per_cycle: number | null
+          plan_description: string | null
+          plan_features: Json | null
+          plan_id: string | null
+          plan_is_active: boolean | null
+          plan_name: string | null
+          plan_price: number | null
+          plan_slug: string | null
+          tier_base_price: number | null
+          tier_description: string | null
+          tier_display_order: number | null
+          tier_features: Json | null
+          tier_id: string | null
+          tier_is_active: boolean | null
+          tier_is_default: boolean | null
+          tier_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
