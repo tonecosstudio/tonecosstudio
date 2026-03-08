@@ -63,7 +63,7 @@ async function getSubscriberUsers(
   }
 
   // Return unique user IDs
-  return [...new Set(data.map((s: any) => s.user_id))];
+  return [...new Set(data.map((s: any) => s.user_id))] as string[];
 }
 
 /**
@@ -88,7 +88,7 @@ async function getCollectionSubscribers(
     return [];
   }
 
-  return [...new Set(data.map((s: any) => s.user_id))];
+  return [...new Set(data.map((s: any) => s.user_id))] as string[];
 }
 
 /**
@@ -126,7 +126,7 @@ async function getLaunchUsers(
       return [];
     }
 
-    return [...new Set(data.map((o: any) => o.user_id))];
+      return [...new Set(data.map((o: any) => o.user_id))] as string[];
   }
 }
 
@@ -165,7 +165,7 @@ async function getOrderUsers(
     return [];
   }
 
-  return [...new Set(data.map((o: any) => o.user_id))];
+  return [...new Set(data.map((o: any) => o.user_id))] as string[];
 }
 
 /**
@@ -236,7 +236,7 @@ async function syncGroupMembership(
     // Get expected members based on criteria
     const expectedMemberIds = await getUsersMatchingCriteria(
       supabase,
-      group.membership_criteria
+      group.membership_criteria as MembershipCriteria
     );
 
     // Calculate additions and removals
@@ -244,7 +244,7 @@ async function syncGroupMembership(
       (id) => !currentMemberIds.includes(id)
     );
     const toRemove = currentMemberIds.filter(
-      (id) => !expectedMemberIds.includes(id)
+      (id: string) => !expectedMemberIds.includes(id)
     );
 
     // Add new members
@@ -291,7 +291,7 @@ async function syncGroupMembership(
     return result;
   } catch (error) {
     console.error(`Error syncing group ${group.name}:`, error);
-    result.error = error.message;
+    result.error = (error as Error).message;
     return result;
   }
 }
@@ -390,7 +390,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: (error as Error).message,
       }),
       {
         status: 500,

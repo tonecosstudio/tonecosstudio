@@ -439,7 +439,7 @@ serve(async (req) => {
         console.log(`Email sent successfully on attempt ${attempt + 1}:`, emailId);
         break;
       } catch (error) {
-        lastError = error.message;
+        lastError = (error as Error)r as Error).message;
         console.error(`Email send attempt ${attempt + 1} failed:`, error);
         
         if (attempt < maxRetries - 1) {
@@ -472,7 +472,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in send-email function:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: fal(error as Error)rror: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

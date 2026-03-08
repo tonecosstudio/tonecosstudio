@@ -60,7 +60,8 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    const { userId } = await getClaims(req);
+    const { claims, client } = await getClaims(req);
+    const userId = String(claims.sub);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

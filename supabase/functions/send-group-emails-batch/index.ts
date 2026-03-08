@@ -367,14 +367,14 @@ async function sendEmailWithRetry(
       console.log(`Email sent successfully on attempt ${attempt + 1}:`, result.id);
       return { success: true, emailId: result.id };
     } catch (error) {
-      console.error(`Email send attempt ${attempt + 1} failed:`, error.message);
+      console.error(`Email send attempt ${attempt + 1} failed:`, (error as Error)r as Error)r as Error)r as Error).message);
       
       if (attempt < maxRetries - 1) {
         // Wait before retrying (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
       } else {
         // Final attempt failed
-        return { success: false, error: error.message };
+       (error as Error)rn { s(error as Error)s: fal(error as Error)rror: error.message };
       }
     }
   }
@@ -505,7 +505,7 @@ serve(async (req) => {
         }
       } catch (error) {
         results.failed++;
-        results.errors.push(`${member.email}: ${error.message}`);
+    (error as Error)esults.errors.pus(error as Error)member.email}: ${error.message}`);
         console.error(`Error sending email to ${member.email}:`, error);
       }
     }
@@ -526,7 +526,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in send-group-emails-batch function:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.st(error as Error)fy({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

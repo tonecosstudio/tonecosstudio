@@ -87,8 +87,8 @@ Deno.test("Cycle should not transition before open_end", () => {
  * Test: Shipping date calculation for Cycle 1
  */
 Deno.test("Cycle 1 shipping date is in next month", () => {
-  const month = 3; // March
-  const year = 2026;
+  const month: number = 3; // March
+  const year: number = 2026;
   
   // Shipping date is 5th business day of next month
   const nextMonth = month === 12 ? 1 : month + 1;
@@ -104,8 +104,8 @@ Deno.test("Cycle 1 shipping date is in next month", () => {
  * Test: Shipping date calculation for Cycle 2
  */
 Deno.test("Cycle 2 shipping date is in second next month", () => {
-  const month = 3; // March
-  const year = 2026;
+  const month: number = 3; // March
+  const year: number = 2026;
   
   // Shipping date is 5th business day of second next month
   const nextMonth = month === 12 ? 1 : month + 1;
