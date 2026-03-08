@@ -3,6 +3,7 @@
  * Componente de Detalhes de Pagamento Manual
  *
  * Exibe informações detalhadas de um pagamento manual no painel lateral
+ * Alinhado com a estrutura real da tabela manual_payments
  */
 
 import { useState } from "react";
@@ -10,7 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileText, Download, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Download, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar, Hash } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,23 @@ interface ManualPaymentDetailsProps {
   order: UnifiedOrder;
   onClose?: () => void;
 }
+
+// Payment method labels
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  pix: "PIX",
+  cartao: "Cartão",
+  boleto: "Boleto",
+  transferencia: "Transferência",
+  bank_transfer: "Transferência Bancária",
+  cash: "Dinheiro",
+};
+
+// Reference type labels
+const REFERENCE_TYPE_LABELS: Record<string, string> = {
+  subscription: "Assinatura",
+  standalone_purchase: "Compra Avulsa",
+  quote: "Orçamento",
+};
 
 export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsProps) {
   const { toast } = useToast();
@@ -61,24 +80,17 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
   const handleApprove = async () => {
     try {
       await approveMutation.mutateAsync(order.id);
-
       toast({
         title: "✓ Pagamento aprovado",
         description: "O pagamento foi aprovado com sucesso.",
         variant: "default",
       });
-
       setShowApproveDialog(false);
-
-      // Fechar o painel após 500ms para dar tempo do usuário ver o toast
-      setTimeout(() => {
-        onClose?.();
-      }, 500);
+      setTimeout(() => { onClose?.(); }, 500);
     } catch (error) {
       toast({
         title: "✗ Erro ao aprovar",
-        description:
-          error instanceof Error ? error.message : "Não foi possível aprovar o pagamento.",
+        description: error instanceof Error ? error.message : "Não foi possível aprovar o pagamento.",
         variant: "destructive",
       });
     }
@@ -87,75 +99,33 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
   // Handler para rejeitar pagamento
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      toast({
-        title: "Motivo obrigatório",
-        description: "Por favor, informe o motivo da rejeição.",
-        variant: "destructive",
-      });
+      toast({ title: "Motivo obrigatório", description: "Por favor, informe o motivo da rejeição.", variant: "destructive" });
       return;
     }
-
     try {
-      await rejectMutation.mutateAsync({
-        paymentId: order.id,
-        reason: rejectionReason,
-      });
-
-      toast({
-        title: "✓ Pagamento rejeitado",
-        description: "O pagamento foi rejeitado.",
-        variant: "default",
-      });
-
+      await rejectMutation.mutateAsync({ paymentId: order.id, reason: rejectionReason });
+      toast({ title: "✓ Pagamento rejeitado", description: "O pagamento foi rejeitado.", variant: "default" });
       setShowRejectDialog(false);
       setRejectionReason("");
-
-      // Fechar o painel após 500ms
-      setTimeout(() => {
-        onClose?.();
-      }, 500);
+      setTimeout(() => { onClose?.(); }, 500);
     } catch (error) {
-      toast({
-        title: "✗ Erro ao rejeitar",
-        description:
-          error instanceof Error ? error.message : "Não foi possível rejeitar o pagamento.",
-        variant: "destructive",
-      });
+      toast({ title: "✗ Erro ao rejeitar", description: error instanceof Error ? error.message : "Não foi possível rejeitar o pagamento.", variant: "destructive" });
     }
   };
 
   // Handler para solicitar mais informações
   const handleRequestInfo = async () => {
     if (!infoRequest.trim()) {
-      toast({
-        title: "Mensagem obrigatória",
-        description: "Por favor, informe quais informações são necessárias.",
-        variant: "destructive",
-      });
+      toast({ title: "Mensagem obrigatória", description: "Por favor, informe quais informações são necessárias.", variant: "destructive" });
       return;
     }
-
     try {
-      await requestInfoMutation.mutateAsync({
-        paymentId: order.id,
-        message: infoRequest,
-      });
-
-      toast({
-        title: "✓ Solicitação enviada",
-        description: "O cliente foi notificado sobre as informações necessárias.",
-        variant: "default",
-      });
-
+      await requestInfoMutation.mutateAsync({ paymentId: order.id, message: infoRequest });
+      toast({ title: "✓ Solicitação enviada", description: "O cliente foi notificado sobre as informações necessárias.", variant: "default" });
       setShowInfoDialog(false);
       setInfoRequest("");
     } catch (error) {
-      toast({
-        title: "✗ Erro ao solicitar",
-        description:
-          error instanceof Error ? error.message : "Não foi possível enviar a solicitação.",
-        variant: "destructive",
-      });
+      toast({ title: "✗ Erro ao solicitar", description: error instanceof Error ? error.message : "Não foi possível enviar a solicitação.", variant: "destructive" });
     }
   };
 
@@ -167,46 +137,68 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
         </h3>
 
         <div className="space-y-3">
-          {/* Número de Referência */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Referência</span>
-            <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
-              {paymentData.referenceNumber}
-            </code>
-          </div>
-
-          {/* Método de Pagamento */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Método</span>
-            <span className="text-sm font-medium">{paymentData.paymentMethodName}</span>
-          </div>
-
-          {/* Tipo de Pagamento */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Tipo</span>
-            <span className="text-sm">
-              {paymentData.paymentType === "one_time" ? "Pagamento Único" : "Recorrente"}
-            </span>
-          </div>
-
           {/* Valor */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Valor</span>
+          <div className="flex items-center justify-between pt-1 pb-1">
+            <span className="text-sm font-medium">Valor</span>
             <span className="text-lg font-semibold">{formatCurrency(order.amount)}</span>
           </div>
 
-          {/* Motivo de Rejeição (se houver) */}
-          {paymentData.rejectionReason && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-              <div className="flex items-start gap-2">
-                <XCircle className="h-4 w-4 text-destructive mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-destructive">Motivo da Rejeição</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {paymentData.rejectionReason}
-                  </p>
-                </div>
-              </div>
+          {/* Método de Pagamento */}
+          {paymentData.paymentMethod && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Método</span>
+              <Badge variant="outline" className="capitalize">
+                <CreditCard className="h-3 w-3 mr-1" />
+                {PAYMENT_METHOD_LABELS[paymentData.paymentMethod] || paymentData.paymentMethod}
+              </Badge>
+            </div>
+          )}
+
+          {/* Data do Pagamento */}
+          {paymentData.paymentDate && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Data do Pagamento</span>
+              <span className="text-sm font-medium">
+                {new Date(paymentData.paymentDate).toLocaleDateString('pt-BR')}
+              </span>
+            </div>
+          )}
+
+          {/* Referência */}
+          {paymentData.referenceId && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Referência</span>
+              <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                {paymentData.referenceId.slice(0, 8)}
+              </code>
+            </div>
+          )}
+
+          {/* Tipo de Referência */}
+          {paymentData.referenceType && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Vinculado a</span>
+              <span className="text-sm font-medium">
+                {REFERENCE_TYPE_LABELS[paymentData.referenceType] || paymentData.referenceType}
+              </span>
+            </div>
+          )}
+
+          {/* Confirmação */}
+          {paymentData.confirmedAt && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Confirmado em</span>
+              <span className="text-sm font-medium text-green-600">
+                {new Date(paymentData.confirmedAt).toLocaleDateString('pt-BR')}
+              </span>
+            </div>
+          )}
+
+          {/* Notas */}
+          {paymentData.notes && (
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <p className="text-xs text-muted-foreground mb-1">Observações</p>
+              <p className="text-sm whitespace-pre-wrap">{paymentData.notes}</p>
             </div>
           )}
         </div>
@@ -214,233 +206,12 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
 
       <Separator />
 
-      {/* Informações do Método de Pagamento */}
-      {paymentData.paymentMethod && (
-        <>
-          <section>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">Dados para Pagamento</h3>
-
-            <div className="space-y-3">
-              {/* Tipo do Método */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Forma</span>
-                <span className="text-sm font-medium capitalize">
-                  {paymentData.paymentMethod.type === "pix"
-                    ? "PIX"
-                    : paymentData.paymentMethod.type === "bank_transfer"
-                      ? "Transferência Bancária"
-                      : paymentData.paymentMethod.type === "boleto"
-                        ? "Boleto"
-                        : paymentData.paymentMethod.type}
-                </span>
-              </div>
-
-              {/* Chave PIX */}
-              {paymentData.paymentMethod.pixKey && (
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground mb-1">Chave PIX</p>
-                  <code className="text-sm font-mono break-all">
-                    {paymentData.paymentMethod.pixKey}
-                  </code>
-                </div>
-              )}
-
-              {/* Link de Pagamento */}
-              {paymentData.paymentMethod.paymentLink && (
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground mb-1">Link de Pagamento</p>
-                  <a
-                    href={paymentData.paymentMethod.paymentLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline break-all"
-                  >
-                    {paymentData.paymentMethod.paymentLink}
-                  </a>
-                </div>
-              )}
-
-              {/* Instruções */}
-              {paymentData.paymentMethod.instructions && (
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground mb-1">Instruções</p>
-                  <p className="text-sm whitespace-pre-wrap">
-                    {paymentData.paymentMethod.instructions}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <Separator />
-        </>
-      )}
-
-      {/* O que foi comprado */}
-      {paymentData.linkedTo && (
-        <>
-          <section>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">Produto/Serviço</h3>
-
-            <div className="space-y-3">
-              {paymentData.linkedTo.type === "subscription" && paymentData.linkedTo.details && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Tipo</span>
-                    <span className="text-sm font-medium">Assinatura</span>
-                  </div>
-
-                  {paymentData.linkedTo.details.plan && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Plano</span>
-                        <span className="text-sm font-medium">
-                          {paymentData.linkedTo.details.plan.name}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Ciclo</span>
-                        <span className="text-sm">
-                          {paymentData.linkedTo.details.plan.billingCycle === "monthly"
-                            ? "Mensal"
-                            : paymentData.linkedTo.details.plan.billingCycle === "quarterly"
-                              ? "Trimestral"
-                              : paymentData.linkedTo.details.plan.billingCycle === "semiannual"
-                                ? "Semestral"
-                                : paymentData.linkedTo.details.plan.billingCycle === "annual"
-                                  ? "Anual"
-                                  : paymentData.linkedTo.details.plan.billingCycle}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Valor do Plano</span>
-                        <span className="text-sm font-medium">
-                          {formatCurrency(paymentData.linkedTo.details.plan.price)}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Status da Assinatura</span>
-                    <span className="text-sm capitalize">
-                      {paymentData.linkedTo.details.status}
-                    </span>
-                  </div>
-
-                  {paymentData.linkedTo.details.startDate && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Início</span>
-                      <span className="text-sm">
-                        {new Date(paymentData.linkedTo.details.startDate).toLocaleDateString(
-                          "pt-BR"
-                        )}
-                      </span>
-                    </div>
-                  )}
-
-                  {paymentData.linkedTo.details.endDate && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Término</span>
-                      <span className="text-sm">
-                        {new Date(paymentData.linkedTo.details.endDate).toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {paymentData.linkedTo.type === "quote" && paymentData.linkedTo.details && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Tipo</span>
-                    <span className="text-sm font-medium">Orçamento</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Status do Orçamento</span>
-                    <span className="text-sm capitalize">
-                      {paymentData.linkedTo.details.status}
-                    </span>
-                  </div>
-
-                  {paymentData.linkedTo.details.totalPrice && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Valor Total</span>
-                      <span className="text-sm font-medium">
-                        {formatCurrency(paymentData.linkedTo.details.totalPrice)}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </section>
-
-          <Separator />
-        </>
-      )}
-
-      {/* Comprovantes */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <FileText className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-muted-foreground">Comprovantes</h3>
-        </div>
-
-        {paymentData.files && paymentData.files.length > 0 ? (
-          <div className="space-y-2">
-            {paymentData.files.map(
-              (file: {
-                id: string;
-                fileName: string;
-                filePath: string;
-                fileSize: number;
-                fileType: string;
-              }) => (
-                <div
-                  key={file.id}
-                  className="flex items-center justify-between p-3 bg-muted rounded-md"
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{file.fileName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {(file.fileSize / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      // TODO: Implementar download do arquivo
-                      window.open(file.filePath, "_blank", "noopener,noreferrer");
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              )
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Nenhum comprovante enviado</p>
-        )}
-      </section>
-
-      <Separator />
-
       {/* Ações de Admin */}
-      {order.status !== "approved" && order.status !== "rejected" && (
+      {order.status !== "approved" && order.status !== "rejected" && order.status !== "confirmed" && (
         <section>
           <h3 className="text-sm font-medium text-muted-foreground mb-3">Ações</h3>
 
           <div className="space-y-2">
-            {/* Aprovar */}
             <Button
               variant="default"
               className="w-full bg-green-600 hover:bg-green-700"
@@ -451,7 +222,6 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
               Aprovar Pagamento
             </Button>
 
-            {/* Solicitar Informações */}
             <Button
               variant="outline"
               className="w-full"
@@ -462,7 +232,6 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
               Solicitar Mais Informações
             </Button>
 
-            {/* Rejeitar */}
             <Button
               variant="destructive"
               className="w-full"
@@ -489,7 +258,7 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
                 <p>Você está prestes a aprovar este pagamento manual. Esta ação irá:</p>
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Confirmar o recebimento do pagamento</li>
-                  <li>Atualizar o status do pedido/assinatura vinculado</li>
+                  <li>Atualizar o status do pedido vinculado</li>
                   <li>Notificar o cliente sobre a aprovação</li>
                 </ul>
               </div>
@@ -497,11 +266,7 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleApprove}
-              disabled={isProcessing}
-              className="bg-green-600 hover:bg-green-700"
-            >
+            <AlertDialogAction onClick={handleApprove} disabled={isProcessing} className="bg-green-600 hover:bg-green-700">
               {isProcessing ? "Processando..." : "Confirmar Aprovação"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -520,26 +285,13 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
               Por favor, informe o motivo da rejeição. O cliente será notificado.
             </AlertDialogDescription>
           </AlertDialogHeader>
-
           <div className="space-y-2">
             <Label htmlFor="rejection-reason">Motivo da Rejeição</Label>
-            <Textarea
-              id="rejection-reason"
-              placeholder="Ex: Comprovante ilegível, valor incorreto, etc."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              rows={4}
-              disabled={isProcessing}
-            />
+            <Textarea id="rejection-reason" placeholder="Ex: Comprovante ilegível, valor incorreto, etc." value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={4} disabled={isProcessing} />
           </div>
-
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleReject}
-              disabled={isProcessing}
-              className="bg-destructive hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleReject} disabled={isProcessing} className="bg-destructive hover:bg-destructive/90">
               {isProcessing ? "Processando..." : "Confirmar Rejeição"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -558,19 +310,10 @@ export function ManualPaymentDetails({ order, onClose }: ManualPaymentDetailsPro
               Descreva quais informações adicionais são necessárias. O cliente será notificado.
             </AlertDialogDescription>
           </AlertDialogHeader>
-
           <div className="space-y-2">
             <Label htmlFor="info-request">Informações Necessárias</Label>
-            <Textarea
-              id="info-request"
-              placeholder="Ex: Por favor, envie um comprovante mais nítido..."
-              value={infoRequest}
-              onChange={(e) => setInfoRequest(e.target.value)}
-              rows={4}
-              disabled={isProcessing}
-            />
+            <Textarea id="info-request" placeholder="Ex: Por favor, envie um comprovante mais nítido..." value={infoRequest} onChange={(e) => setInfoRequest(e.target.value)} rows={4} disabled={isProcessing} />
           </div>
-
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleRequestInfo} disabled={isProcessing}>
