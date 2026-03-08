@@ -271,8 +271,7 @@ async function fetchStandalonePurchases(filters: OrderFilters) {
     .from('standalone_purchases')
     .select(`
       *,
-      profiles!inner(id, full_name, email),
-      collections!inner(id, name, slug),
+      collections(id, name, slug),
       collection_characters(id, name, image_url)
     `);
 
@@ -292,11 +291,20 @@ async function fetchStandalonePurchases(filters: OrderFilters) {
     return { data: null, error };
   }
 
-  // SOLUÇÃO ALTERNATIVA: Se collection_characters não vier no join,
-  // buscar personagens separadamente
-  if (purchases) {
+  // Fetch profiles separately (no FK relationship)
+  if (purchases && purchases.length > 0) {
+    const userIds = [...new Set(purchases.map(p => p.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', userIds);
+
+    const profilesMap = new Map((profiles || []).map(p => [p.id, p]));
+
     for (const purchase of purchases) {
-      // Se character_id existe mas collection_characters não veio
+      (purchase as any).profiles = profilesMap.get(purchase.user_id) || { id: purchase.user_id, full_name: 'Desconhecido', email: '' };
+      
+      // Fallback: fetch character separately if needed
       if (purchase.character_id && !purchase.collection_characters) {
         const { data: character } = await supabase
           .from('collection_characters')
@@ -305,7 +313,7 @@ async function fetchStandalonePurchases(filters: OrderFilters) {
           .single();
         
         if (character) {
-          purchase.collection_characters = character;
+          (purchase as any).collection_characters = character;
         }
       }
     }
