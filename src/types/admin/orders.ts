@@ -159,59 +159,40 @@ export interface StandalonePurchaseData {
  * Dados específicos de um pagamento manual
  */
 export interface ManualPaymentData {
-  paymentId: string;
-  referenceNumber: string;
-  paymentMethodId: string;
-  paymentMethodName: string;
-  paymentType: 'one_time' | 'recurring';
-  currency: string;
-  linkedTo: {
-    type: 'quote' | 'subscription';
-    id: string;
-  } | null;
-  rejectionReason: string | null;
-  approvedAt: string | null;
-  approvedBy: string | null;
-  approvedByName: string | null;
-  
-  // Arquivos de comprovante
-  files: Array<{
-    id: string;
-    fileName: string;
-    filePath: string;
-    fileSize: number;
-    fileType: string;
-    thumbnailPath: string | null;
-    uploadedBy: string;
-    createdAt: string;
-  }>;
-  
-  // Método de pagamento
-  paymentMethod?: {
-    id: string;
-    name: string;
-    type: string;
-    instructions: string;
-    pixKey: string | null;
-    paymentLink: string | null;
-  };
+  paymentMethod: string | null;
+  paymentDate: string | null;
+  referenceId: string | null;
+  referenceType: string | null;
+  notes: string | null;
+  confirmedAt: string | null;
+  confirmedBy: string | null;
+  // Legacy fields (kept for backward compatibility, may be undefined)
+  paymentId?: string;
+  referenceNumber?: string;
+  paymentMethodId?: string;
+  paymentMethodName?: string;
+  paymentType?: string;
+  currency?: string;
+  linkedTo?: any;
+  rejectionReason?: string | null;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
+  approvedByName?: string | null;
+  files?: any[];
+  paymentMethod_detail?: any;
 }
 
 /**
  * Dados específicos de um orçamento
  */
 export interface QuoteData {
-  quoteId: string;
-  items: Array<{
-    id: string;
-    modelId: string;
-    modelName: string;
-    franchise: string | null;
-    quantity: number;
-    scale: string;
-  }>;
-  deadline: string | null;
+  items: any[];
+  totalAmount?: number | null;
+  validUntil?: string | null;
   notes: string | null;
+  // Legacy
+  quoteId?: string;
+  deadline?: string | null;
 }
 
 // ============================================================================

@@ -771,11 +771,21 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
   const { transformDeliveries, transformPurchases, transformManualPayments, transformQuotes } =
     await import("./orders-transformer");
 
+  // Build profilesMap for payments/quotes too
+  if (paymentsData && paymentsData.length > 0 && !profilesMap.has(userId)) {
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", userId)
+      .single();
+    if (userProfile) profilesMap.set(userProfile.id, userProfile);
+  }
+
   const unifiedOrders: UnifiedOrder[] = [
     ...transformDeliveries(deliveriesData || [], profilesMap, collectionsMap),
     ...transformPurchases(purchasesData || []),
-    ...transformManualPayments(paymentsData || []),
-    ...transformQuotes(quotesData || [], quoteItemsMap),
+    ...transformManualPayments(paymentsData || [], profilesMap),
+    ...transformQuotes(quotesData || [], quoteItemsMap, profilesMap),
   ];
 
   // Ordenar por data de criação (mais recente primeiro)
