@@ -386,17 +386,20 @@ export default function CollectionDetailsArcade() {
           {collection.collection_characters && collection.collection_characters.length > 0 && (() => {
             const currentMonth = new Date().getMonth() + 1; // 1-12
 
-            // Personagem destaque = o do mês atual (release_month === currentMonth)
-            const allCharacters = collection.collection_characters;
-            const featuredCharacter = allCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
-              || allCharacters.find(c => c.release_month === currentMonth);
+            // Separar catálogo dos personagens mensais
+            const catalogCharacters = allCharacters.filter(c => c.is_catalog);
+            const monthlyCharacters = allCharacters.filter(c => !c.is_catalog);
 
-            // Já lançados (exceto o destaque)
-            const releasedCharacters = allCharacters.filter(c => c.status === 'released' && c.id !== featuredCharacter?.id);
+            // Personagem destaque = o do mês atual
+            const featuredCharacter = monthlyCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
+              || monthlyCharacters.find(c => c.release_month === currentMonth);
+
+            // Já lançados (exceto o destaque e catálogo)
+            const releasedCharacters = monthlyCharacters.filter(c => c.status === 'released' && c.id !== featuredCharacter?.id);
             const sortedReleased = [...releasedCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
             // Próximos lançamentos
-            const upcomingCharacters = allCharacters.filter(c => (c.status === 'upcoming' || c.status === 'revealed') && c.id !== featuredCharacter?.id);
+            const upcomingCharacters = monthlyCharacters.filter(c => (c.status === 'upcoming' || c.status === 'revealed') && c.id !== featuredCharacter?.id);
             const sortedUpcoming = [...upcomingCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
             return (
