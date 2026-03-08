@@ -228,33 +228,29 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
     enabled: !!delivery?.subscriptions?.user_id && open,
   });
 
-  // Fetch collection change history
+  // Fetch status change history from order_status_history
   const { data: changeHistory } = useQuery({
     queryKey: ['collection-change-history', deliveryId],
     queryFn: async () => {
       if (!deliveryId) return [];
 
       const { data, error } = await supabase
-        .from('collection_choice_history' as any)
-        .select(`
-          id,
-          previous_collection_id,
-          new_collection_id,
-          change_reason,
-          changed_by_admin,
-          created_at,
-          previous_collection:collections!collection_choice_history_previous_collection_id_fkey (
-            name
-          ),
-          new_collection:collections!collection_choice_history_new_collection_id_fkey (
-            name
-          )
-        `)
-        .eq('delivery_id', deliveryId)
+        .from('order_status_history')
+        .select('*')
+        .eq('order_id', deliveryId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as unknown as CollectionChangeHistory[];
+      return (data || []).map((r: any) => ({
+        id: r.id,
+        previous_collection_id: null,
+        new_collection_id: null,
+        change_reason: r.order_type || 'manual',
+        changed_by_admin: !!r.changed_by,
+        created_at: r.created_at,
+        previous_collection: r.old_status ? { name: r.old_status } : null,
+        new_collection: { name: r.new_status },
+      })) as CollectionChangeHistory[];
     },
     enabled: !!deliveryId && open,
   });
