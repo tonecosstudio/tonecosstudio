@@ -150,8 +150,13 @@ function CharacterCard({
                 : "text-[hsl(var(--foreground))]"
             }`}
           >
-            {character.name}
+            {isUpcoming ? "???" : character.name}
           </h4>
+          {character.release_month && (
+            <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-1">
+              📅 {MONTHS[character.release_month - 1]}
+            </p>
+          )}
         </div>
       </div>
     </Link>
