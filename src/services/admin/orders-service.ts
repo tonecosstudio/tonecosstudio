@@ -491,26 +491,17 @@ export async function fetchOrderById(
         status,
         user_id,
         collection_id,
-        cycle_id,
         character_id,
-        price_deposit,
-        price_balance,
-        price_full,
-        deposit_paid_at,
-        balance_paid_at,
-        balance_due_date,
-        deposit_voucher_url,
-        balance_voucher_url,
+        amount,
+        paid_amount,
+        balance_amount,
+        payment_method,
+        payment_link,
         tracking_code,
-        expected_delivery_date,
-        actual_delivery_date,
+        shipping_carrier,
+        notes,
         created_at,
         updated_at,
-        profiles!inner (
-          id,
-          full_name,
-          email
-        ),
         collections (
           id,
           name,
@@ -528,8 +519,17 @@ export async function fetchOrderById(
 
     if (error || !data) return null;
 
+    // Fetch profile separately (no FK)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", data.user_id)
+      .single();
+
+    const enrichedData = { ...data, profiles: profile || { id: data.user_id, full_name: 'Desconhecido', email: '' } };
+
     const { transformPurchases } = await import("./orders-transformer");
-    const transformed = transformPurchases([data]);
+    const transformed = transformPurchases([enrichedData]);
     return transformed[0] || null;
   }
 }
