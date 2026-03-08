@@ -35,10 +35,10 @@ type Character = {
   name: string;
   description: string | null;
   image_url: string | null;
-  release_order: number;
+  release_order: number | null;
   release_month: number | null;
-  is_catalog: boolean;
-  status: string;
+  is_catalog: boolean | null;
+  status: string | null;
 };
 
 type Collection = {
