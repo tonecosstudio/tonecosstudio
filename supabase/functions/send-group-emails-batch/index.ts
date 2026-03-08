@@ -367,7 +367,7 @@ async function sendEmailWithRetry(
       console.log(`Email sent successfully on attempt ${attempt + 1}:`, result.id);
       return { success: true, emailId: result.id };
     } catch (error) {
-      console.error(`Email send attempt ${attempt + 1} failed:`, error.message);
+      console.error(`Email send attempt ${attempt + 1} failed:`, (error as Error).message);
       
       if (attempt < maxRetries - 1) {
         // Wait before retrying (exponential backoff)
