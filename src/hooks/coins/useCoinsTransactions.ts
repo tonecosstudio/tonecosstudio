@@ -156,7 +156,7 @@ export function useCoinsTransactions(options: UseTransactionsOptions = {}) {
 
       // Aplicar filtros
       if (type) {
-        query = query.eq('type', type);
+        query = query.eq('transaction_type', type as string);
       }
 
       if (startDate) {

@@ -337,7 +337,7 @@ export function updateCoinsBalanceCache(
   userId: UserId,
   newBalance: CoinsAmount
 ) {
-  queryClient.setQueryData<CoinsBalanceResponse>(
+  queryClient.setQueryData<{ balance: number; last_updated: string }>(
     coinsBalanceKeys.user(userId),
     (old) => {
       if (!old) return old;
