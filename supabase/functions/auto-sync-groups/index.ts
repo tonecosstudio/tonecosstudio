@@ -236,7 +236,7 @@ async function syncGroupMembership(
     // Get expected members based on criteria
     const expectedMemberIds = await getUsersMatchingCriteria(
       supabase,
-      group.membership_criteria
+      group.membership_criteria as MembershipCriteria
     );
 
     // Calculate additions and removals
