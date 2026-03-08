@@ -94,21 +94,18 @@ function CoinExchangeRateCard() {
   const rate = exchangeRateQuery.data;
   const coinUnitValue = rate ? (rate.reais_amount / rate.coins_amount) : 5;
 
-  // Update exchange rate
+  // Update exchange rate - disabled since we derive from price_categories
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!rate?.id) throw new Error('ID da cotação não encontrado');
-      
-      const { error } = await supabase
-        .from('coin_exchange_rate')
-        .update({
-          reais_amount: reaisAmount,
-          coins_amount: coinsAmount,
-        })
-        .eq('id', rate.id);
-      
-      if (error) throw error;
+      toast({
+        title: "Info",
+        description: "A cotação é derivada das categorias de preço. Edite as categorias de preço para alterar.",
+      });
     },
+    onSuccess: () => {
+      setIsEditing(false);
+    },
+  });
     onSuccess: () => {
       toast({
         title: "Cotação atualizada!",
