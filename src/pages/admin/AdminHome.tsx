@@ -467,10 +467,17 @@ export default function AdminHome() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+              <h1
+                className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
+                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+              >
+                Dashboard
+              </h1>
               <RealtimeIndicator isConnected lastUpdate={lastUpdate} />
             </div>
-            <p className="text-muted-foreground">Visão geral do sistema Ordax</p>
+            <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase">
+              Visão geral do sistema Ordax
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <PeriodFilter value={dateRange} onChange={setDateRange} />

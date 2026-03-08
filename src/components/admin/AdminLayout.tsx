@@ -1,9 +1,6 @@
 import { ReactNode, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { NotificationCenter } from "@/components/admin/NotificationCenter";
 import {
   LayoutDashboard,
@@ -39,10 +36,11 @@ import {
   Tag,
   Coins,
   Gift,
+  ChevronRight,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Separator } from "@/components/ui/separator";
 import { adminNavigationConfig } from "@/config/admin-navigation.config";
+import { ScanlineOverlay } from "@/components/arcade/ArcadeLayout";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -71,7 +69,6 @@ const iconMap: Record<string, any> = {
   Settings,
   Coins,
   Gift,
-  // Ícones adicionados para Sistema de Créditos
   Gauge,
   Wallet,
   BarChart3,
@@ -91,23 +88,24 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleNavigate = (path: string) => {
     navigate(path);
-    setSidebarOpen(false); // Fecha sidebar no mobile após navegação
+    setSidebarOpen(false);
   };
 
-  // Componente de navegação reutilizável
+  // Sidebar nav arcade-styled
   const SidebarNav = () => (
-    <nav className="space-y-6">
+    <nav className="space-y-5">
       {adminNavigationConfig.map((section) => (
         <div key={section.id}>
-          {/* Section Label */}
-          <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <h3
+            className="px-3 mb-2 text-[8px] tracking-[0.3em] uppercase text-[hsl(var(--gold-accent)/0.6)]"
+            style={{ fontFamily: "'Press Start 2P', monospace" }}
+          >
             {section.title}
           </h3>
 
-          {/* Section Items */}
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {section.items.map((item) => {
-              const Icon = iconMap[item.icon || 'Settings'];
+              const Icon = iconMap[item.icon || "Settings"];
               const active = isActive(item.path);
 
               return (
@@ -115,19 +113,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   key={item.id}
                   onClick={() => handleNavigate(item.path)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "w-full flex items-center gap-3 px-3 py-2 text-xs font-mono tracking-wider transition-all duration-200 border border-transparent",
                     active
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                      ? "bg-[hsl(var(--gold-accent)/0.15)] text-[hsl(var(--gold-accent))] border-[hsl(var(--gold-accent)/0.3)]"
+                      : "text-[hsl(0,0%,50%)] hover:text-[hsl(0,0%,80%)] hover:bg-[hsl(0,0%,12%)]"
                   )}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate">{item.label}</span>
                   {item.badge && (
-                    <span className="ml-auto text-xs bg-muted px-2 py-0.5 rounded-full">
+                    <span className="ml-auto text-[8px] tracking-wider px-1.5 py-0.5 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent)/0.7)] uppercase">
                       {item.badge}
                     </span>
                   )}
+                  {active && <ChevronRight className="ml-auto h-3 w-3 text-[hsl(var(--gold-accent)/0.5)]" />}
                 </button>
               );
             })}
@@ -138,55 +137,59 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   );
 
   return (
-    <div className="container py-4 sm:py-8 lg:py-12 max-w-7xl">
-      {/* Mobile Header com Menu Hamburguer */}
-      <div className="lg:hidden mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Admin</h1>
+    <div className="min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,90%)] relative">
+      <ScanlineOverlay />
+
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-12 border-b border-[hsl(var(--gold-accent)/0.15)] bg-[hsl(0,0%,5%)]/95 backdrop-blur-md">
+        <h1
+          className="text-[10px] tracking-[0.3em] uppercase text-[hsl(var(--gold-accent))]"
+          style={{ fontFamily: "'Press Start 2P', monospace" }}
+        >
+          ADMIN
+        </h1>
         <div className="flex items-center gap-2">
           <NotificationCenter />
-          <ThemeToggle />
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Abrir menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <div className="p-4 h-full overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Menu</h2>
-                  <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-                <Separator className="mb-4" />
-                <SidebarNav />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 
-      {/* Layout com Sidebar */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar Desktop */}
-        <aside className="hidden lg:block lg:w-64 flex-shrink-0">
-          <Card className="sticky top-4">
-            <CardContent className="p-4">
-              {/* Theme Toggle & Notifications */}
-              <div className="flex justify-end items-center gap-2 mb-4">
-                <NotificationCenter />
-                <ThemeToggle />
-              </div>
-              <Separator className="mb-4" />
-              <SidebarNav />
-            </CardContent>
-          </Card>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-72 bg-[hsl(0,0%,6%)] border-r border-[hsl(var(--gold-accent)/0.15)] p-4 pt-16 overflow-y-auto animate-fade-in">
+            <SidebarNav />
+          </div>
+        </div>
+      )}
+
+      {/* Layout */}
+      <div className="flex">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-0 h-screen overflow-y-auto border-r border-[hsl(var(--gold-accent)/0.1)] bg-[hsl(0,0%,6%)]">
+          <div className="p-4">
+            {/* Admin header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[hsl(var(--gold-accent)/0.15)]">
+              <h2
+                className="text-[10px] tracking-[0.3em] uppercase text-[hsl(var(--gold-accent))]"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                COMMAND
+              </h2>
+              <NotificationCenter />
+            </div>
+            <SidebarNav />
+          </div>
         </aside>
 
-        {/* Conteúdo Principal */}
-        <main className="flex-1 min-w-0">{children}</main>
+        {/* Main content */}
+        <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );
