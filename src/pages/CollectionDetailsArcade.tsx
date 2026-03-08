@@ -65,7 +65,7 @@ function CharacterCard({
 
   return (
     <Link
-      to={isUpcoming ? "#" : `/personagem/${character.id}`}
+      to={isUpcoming ? "#" : `/colecoes/${collectionSlug}/${character.id}`}
       onClick={(e) => isUpcoming && e.preventDefault()}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
