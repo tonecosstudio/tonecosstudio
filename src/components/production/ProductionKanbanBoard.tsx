@@ -44,6 +44,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   fetchProductionQueue,
   updateProductionStage,
+  STAGE_LABELS,
+  STAGE_ORDER,
   type ProductionQueueItem,
   type ProductionStage,
   type ProductionFilters,
