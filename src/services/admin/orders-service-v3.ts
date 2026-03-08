@@ -402,7 +402,29 @@ async function fetchQuotes(filters: OrderFilters) {
     query = query.lte('created_at', filters.dateTo);
   }
 
-  return await query;
+  const result = await query;
+
+  // Fetch quote_items for each quote
+  if (result.data && result.data.length > 0) {
+    const quoteIds = result.data.map((q: any) => q.id);
+    const { data: items } = await supabase
+      .from('quote_items')
+      .select('id, quote_id, name, description, quantity, unit_price, total_price, image_url, character_id')
+      .in('quote_id', quoteIds);
+
+    const itemsByQuote = new Map<string, any[]>();
+    items?.forEach((item: any) => {
+      const arr = itemsByQuote.get(item.quote_id) || [];
+      arr.push(item);
+      itemsByQuote.set(item.quote_id, arr);
+    });
+
+    result.data.forEach((quote: any) => {
+      quote._items = itemsByQuote.get(quote.id) || [];
+    });
+  }
+
+  return result;
 }
 
 // ============================================================================
