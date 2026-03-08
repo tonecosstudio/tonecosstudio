@@ -55,9 +55,7 @@ import SubscriptionPlans from "./pages/SubscriptionPlans";
 import CharacterCatalog from "./pages/CharacterCatalog";
 import CoinsPurchase from "./pages/CoinsPurchase";
 import AdminCoinsSystem from "./pages/admin/AdminCoinsSystem";
-import MonthlyCharacterSelection from "./pages/MonthlyCharacterSelection";
 import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
-import AdminMonthlyReleases from "./pages/admin/AdminMonthlyReleases";
 import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
 import CharacterSelect from "./pages/CharacterSelect";
 import CollectionsArcade from "./pages/CollectionsArcade";
@@ -275,15 +273,6 @@ function AppContent() {
             path="/assinaturas"
             element={<Navigate to="/painel-assinante" replace />}
           />
-          {/* Sistema Híbrido - Escolha Mensal */}
-          <Route
-            path="/escolher-personagem/:month"
-            element={
-              <RequireAuth>
-                <MonthlyCharacterSelection />
-              </RequireAuth>
-            }
-          />
           {/* Planos de Assinatura com Créditos (Deprecated - Redireciona para /assinar) */}
           <Route
             path="/planos-assinatura"
@@ -486,15 +475,6 @@ function AppContent() {
             element={<Navigate to="/admin/catalogo?tab=credit-characters" replace />}
           />
 
-          {/* Sistema Híbrido - Lançamentos Mensais */}
-          <Route
-            path="/admin/lancamentos-mensais"
-            element={
-              <RequireAdmin>
-                <AdminMonthlyReleases />
-              </RequireAdmin>
-            }
-          />
           <Route
             path="/admin/creditos/assinaturas"
             element={<Navigate to="/admin/assinaturas-gerenciar" replace />}
