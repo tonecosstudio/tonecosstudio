@@ -383,17 +383,20 @@ export default function CollectionDetailsArcade() {
 
           {/* Characters Sections */}
           {collection.collection_characters && collection.collection_characters.length > 0 && (() => {
-            // Separar personagens por status (released = disponível, revealed = revelado mas não lançado, upcoming = em breve)
-            const releasedCharacters = collection.collection_characters.filter(c => c.status === 'released');
-            const upcomingCharacters = collection.collection_characters.filter(c => c.status === 'upcoming' || c.status === 'revealed');
-            
-            // Ordenar disponíveis por release_order (mais recente primeiro para pegar o destaque)
-            const sortedReleased = [...releasedCharacters].sort((a, b) => b.release_order - a.release_order);
-            const featuredCharacter = sortedReleased[0];
-            const otherReleased = sortedReleased.slice(1).sort((a, b) => a.release_order - b.release_order);
-            
-            // Ordenar próximos por release_order
-            const sortedUpcoming = [...upcomingCharacters].sort((a, b) => a.release_order - b.release_order);
+            const currentMonth = new Date().getMonth() + 1; // 1-12
+
+            // Personagem destaque = o do mês atual (release_month === currentMonth)
+            const allCharacters = collection.collection_characters;
+            const featuredCharacter = allCharacters.find(c => c.release_month === currentMonth && c.status === 'released')
+              || allCharacters.find(c => c.release_month === currentMonth);
+
+            // Já lançados (exceto o destaque)
+            const releasedCharacters = allCharacters.filter(c => c.status === 'released' && c.id !== featuredCharacter?.id);
+            const sortedReleased = [...releasedCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
+
+            // Próximos lançamentos
+            const upcomingCharacters = allCharacters.filter(c => (c.status === 'upcoming' || c.status === 'revealed') && c.id !== featuredCharacter?.id);
+            const sortedUpcoming = [...upcomingCharacters].sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
             return (
               <>
