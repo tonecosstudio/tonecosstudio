@@ -237,6 +237,25 @@ async function fetchSubscriptions(filters: OrderFilters) {
   // Buscar entregas para cada assinatura
   const subscriptionIds = subscriptions.map(s => s.id);
   
+  // Buscar coleções via junction table (subscription_collections)
+  const { data: subCollections } = await supabase
+    .from('subscription_collections')
+    .select('subscription_id, collection_id, collections(id, name, slug)')
+    .in('subscription_id', subscriptionIds);
+
+  const collectionsBySubscription = new Map<string, any[]>();
+  subCollections?.forEach((sc: any) => {
+    const subId = sc.subscription_id;
+    if (!collectionsBySubscription.has(subId)) {
+      collectionsBySubscription.set(subId, []);
+    }
+    if (sc.collections) {
+      collectionsBySubscription.get(subId)!.push(sc.collections);
+    }
+  });
+
+  console.log('📚 [OrdersV3] Subscription collections loaded:', subCollections?.length || 0);
+
   const { data: deliveries, error: delError } = await supabase
     .from('subscription_deliveries')
     .select('*')
@@ -276,14 +295,15 @@ async function fetchSubscriptions(filters: OrderFilters) {
     }
     // Attach character data to delivery
     if (delivery.character_id && charactersMap.has(delivery.character_id)) {
-      delivery._character = charactersMap.get(delivery.character_id);
+      (delivery as any)._character = charactersMap.get(delivery.character_id);
     }
     deliveriesBySubscription.get(subId)!.push(delivery);
   });
 
-  // Combinar assinaturas com suas entregas
+  // Combinar assinaturas com suas entregas e coleções
   const subscriptionsWithDeliveries = subscriptions.map(sub => ({
     ...sub,
+    _collections: collectionsBySubscription.get(sub.id) || [],
     deliveries: deliveriesBySubscription.get(sub.id) || []
   }));
 
