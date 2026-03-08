@@ -424,8 +424,12 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
 
     items.forEach((item) => {
       // Count by stage
-      if (item.current_stage && Object.prototype.hasOwnProperty.call(stages, item.current_stage)) {
-        stages[item.current_stage as ProductionStage]++;
+      if (item.current_stage) {
+        if (stages[item.current_stage] !== undefined) {
+          stages[item.current_stage]++;
+        } else {
+          stages[item.current_stage] = 1;
+        }
       }
 
       // Count by status
