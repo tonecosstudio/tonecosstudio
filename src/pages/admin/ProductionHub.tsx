@@ -436,6 +436,11 @@ function ProductionHub() {
               </div>
             )}
 
+            {/* Tab: Pipeline Visual */}
+            <TabsContent value="pipeline" className="mt-0">
+              <ProductionPipelineView filters={filters} />
+            </TabsContent>
+
             {/* Tab: Kanban */}
             <TabsContent value="kanban" className="mt-0">
               <ProductionKanbanBoard filters={filters} />
