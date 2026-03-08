@@ -10,7 +10,9 @@ import Home from "./pages/Home";
 import Catalog from "./pages/Catalog";
 import CatalogArcade from "./pages/CatalogArcade";
 import NotFound from "./pages/NotFound";
+import NotFoundArcade from "./pages/NotFoundArcade";
 import Login from "./pages/Login";
+import LoginArcade from "./pages/LoginArcade";
 import Plans from "./pages/Plans";
 import PlansArcade from "./pages/PlansArcade";
 import AboutArcade from "./pages/AboutArcade";
@@ -36,9 +38,13 @@ import MyPaymentsPage from "./pages/MyPaymentsPage";
 import PaymentDetails from "./pages/PaymentDetails";
 import SubscribeCollection from "./pages/SubscribeCollection";
 import Wishlist from "./pages/Wishlist";
+import WishlistArcade from "./pages/WishlistArcade";
 import Dashboard from "./pages/Dashboard";
+import DashboardArcade from "./pages/DashboardArcade";
 import Terms from "./pages/Terms";
+import TermsArcade from "./pages/TermsArcade";
 import Privacy from "./pages/Privacy";
+import PrivacyArcade from "./pages/PrivacyArcade";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import PreorderCheckout from "./pages/PreorderCheckout";
 import PreorderTracking from "./pages/PreorderTracking";
@@ -110,11 +116,14 @@ function AppContent() {
           <Route path="/selecionar-personagem" element={<CharacterSelect />} />
           <Route path="/colecoes/:slug" element={<CollectionDetailsArcade />} />
           <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
-          <Route path="/termos" element={<Terms />} />
-          <Route path="/privacidade" element={<Privacy />} />
+          <Route path="/termos" element={<TermsArcade />} />
+          <Route path="/termos-old" element={<Terms />} />
+          <Route path="/privacidade" element={<PrivacyArcade />} />
+          <Route path="/privacidade-old" element={<Privacy />} />
           <Route path="/contato" element={<ContactArcade />} />
           <Route path="/contato-old" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginArcade />} />
+          <Route path="/login-old" element={<Login />} />
           <Route path="/collector/:username" element={<PublicProfile />} />
 
           <Route
@@ -186,6 +195,14 @@ function AppContent() {
             path="/wishlist"
             element={
               <RequireAuth>
+                <WishlistArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/wishlist-old"
+            element={
+              <RequireAuth>
                 <Wishlist />
               </RequireAuth>
             }
@@ -193,6 +210,14 @@ function AppContent() {
 
           <Route
             path="/dashboard"
+            element={
+              <RequireAuth>
+                <DashboardArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/dashboard-old"
             element={
               <RequireAuth>
                 <Dashboard />
@@ -623,7 +648,7 @@ function AppContent() {
             element={<Navigate to="/admin/comunicacao?tab=templates" replace />}
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFoundArcade />} />
         </Routes>
 
         {/* Floating chat button - disponível em todas as páginas para usuários autenticados */}
