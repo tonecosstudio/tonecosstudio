@@ -423,7 +423,7 @@ async function fetchRelatedData(
 
   subscriptions.forEach(sub => {
     userIds.add(sub.user_id);
-    if (sub.collection_id) collectionIds.add(sub.collection_id);
+    // Collections now loaded via junction in fetchSubscriptions, no need here
   });
 
   payments.forEach(payment => {
