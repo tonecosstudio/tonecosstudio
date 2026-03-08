@@ -42,6 +42,7 @@ import { ProductionAnalytics } from "@/components/production/analytics/Productio
 // Componentes de Produção
 import { ProductionFilters } from "@/components/production/ProductionFilters";
 import { ProductionKanbanBoard } from "@/components/production/ProductionKanbanBoard";
+import { ProductionPipelineView } from "@/components/production/ProductionPipelineView";
 import { ProductionListView } from "@/components/production/ProductionListView";
 import { ProductionCalendarView } from "@/components/production/ProductionCalendarView";
 import { BulkActionsToolbar } from "@/components/production/BulkActionsToolbar";
