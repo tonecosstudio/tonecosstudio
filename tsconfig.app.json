@@ -31,8 +31,6 @@
   },
   "include": [
     "src/integrations/**/*",
-    "src/App.tsx",
-    "src/main.tsx",
     "src/vite-env.d.ts"
   ],
   "exclude": [
