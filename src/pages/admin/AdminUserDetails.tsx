@@ -485,15 +485,9 @@ export default function AdminUserDetails() {
                       </Badge>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Coleção Ativa</div>
+                      <div className="text-sm font-medium text-muted-foreground">Coleção</div>
                       <div className="text-base mt-1">
                         {activeSubscription.collections?.name || 'Não definida'}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground">Coins Iniciais</div>
-                      <div className="text-base mt-1 font-semibold text-amber-600">
-                        {activeSubscription.coins_initial || 0} coins
                       </div>
                     </div>
                     <div>

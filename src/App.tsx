@@ -55,8 +55,7 @@ import SubscriptionPlans from "./pages/SubscriptionPlans";
 import CharacterCatalog from "./pages/CharacterCatalog";
 import CoinsPurchase from "./pages/CoinsPurchase";
 import AdminCoinsSystem from "./pages/admin/AdminCoinsSystem";
-import SubscriberDashboardHybrid from "./pages/SubscriberDashboardHybrid";
-import AdminSubscriptionsHybrid from "./pages/admin/AdminSubscriptionsHybrid";
+import SubscriberDashboard from "./pages/SubscriberDashboard";
 import CharacterSelect from "./pages/CharacterSelect";
 import CollectionsArcade from "./pages/CollectionsArcade";
 import CharacterDetails from "./pages/CharacterDetails";
@@ -259,12 +258,12 @@ function AppContent() {
           />
 
           {/* Sistema de Créditos - Usuário */}
-          {/* Sistema Híbrido - Painel do Assinante */}
+          {/* Painel do Assinante */}
           <Route
             path="/painel-assinante"
             element={
               <RequireAuth>
-                <SubscriberDashboardHybrid />
+                <SubscriberDashboard />
               </RequireAuth>
             }
           />
@@ -429,14 +428,10 @@ function AppContent() {
             path="/admin/planos"
             element={<Navigate to="/admin/creditos?tab=plans" replace />}
           />
-          {/* Nova Página de Gerenciamento de Assinaturas (Sistema Híbrido) */}
+          {/* Redirecionar gerenciamento de assinaturas para página de pedidos */}
           <Route
             path="/admin/assinaturas-gerenciar"
-            element={
-              <RequireAdmin>
-                <AdminSubscriptionsHybrid />
-              </RequireAdmin>
-            }
+            element={<Navigate to="/admin/pedidos?type=subscription" replace />}
           />
 
           {/* Sistema de Créditos - Hub Consolidado */}

@@ -117,9 +117,6 @@ export default function SubscribeCollection() {
           plan_type: selectedPlan.plan_type,
           status: "pending_payment",
           payment_voucher_url: paymentVoucherUrl,
-          active_collection_id: activeCollectionId,
-          coins_balance: coinsInitial,
-          coins_initial: coinsInitial,
         })
         .select()
         .single();

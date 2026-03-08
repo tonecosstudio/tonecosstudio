@@ -380,11 +380,8 @@ export function SubscriptionSection({ userId }: { userId: string }) {
           `
           id,
           user_id,
-          active_collection_id,
           plan_type,
           status,
-          coins_balance,
-          coins_initial,
           created_at,
           updated_at
         `
@@ -396,22 +393,7 @@ export function SubscriptionSection({ userId }: { userId: string }) {
       if (subError && subError.code !== "PGRST116") throw subError;
       if (!subscription) return null;
 
-      // Buscar coleção ativa se existir
-      let activeCollection = null;
-      if (subscription.active_collection_id) {
-        const { data: collection } = await supabase
-          .from("collections")
-          .select("id, name, slug")
-          .eq("id", subscription.active_collection_id)
-          .single();
-        
-        activeCollection = collection;
-      }
-
-      return {
-        ...subscription,
-        active_collection: activeCollection,
-      };
+      return subscription;
     },
   });
 
@@ -470,27 +452,6 @@ export function SubscriptionSection({ userId }: { userId: string }) {
             {sub.plan_type === "anual" && "Anual (12 meses)"}
           </p>
         </div>
-
-        {/* Saldo de Coins */}
-        <div>
-          <span className="text-xs text-muted-foreground">Saldo de Coins</span>
-          <div className="flex items-center gap-2 mt-1">
-            <Package className="h-4 w-4 text-amber-500" />
-            <p className="text-sm font-medium">
-              {sub.coins_balance} / {sub.coins_initial} coins
-            </p>
-          </div>
-        </div>
-
-        {/* Coleção Ativa */}
-        {sub.active_collection && (
-          <div>
-            <span className="text-xs text-muted-foreground">Coleção Ativa</span>
-            <p className="text-sm font-medium mt-1">
-              {sub.active_collection.name}
-            </p>
-          </div>
-        )}
 
         {/* Botão para página completa */}
         <Button asChild variant="outline" className="w-full mt-4">
