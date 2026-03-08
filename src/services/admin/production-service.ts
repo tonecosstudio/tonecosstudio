@@ -21,16 +21,159 @@ export type ProductionStatus =
   | "cancelled";
 
 export type ProductionStage =
-  | "awaiting_choice"
-  | "design"
-  | "production"
-  | "quality_check"
-  | "packaging"
-  | "shipped";
+  | "awaiting_payment"      // 1. Aguardando Pagamento
+  | "payment_confirmed"     // 2. Pagamento Confirmado
+  | "awaiting_choice"       // 3. Aguardando Escolha (assinaturas)
+  | "model_preparation"     // 4. Preparação do Modelo
+  | "printing"              // 5. Em Impressão 3D
+  | "post_processing"       // 6. Limpeza e Preparação
+  | "painting"              // 7. Pintura Artesanal
+  | "quality_check"         // 8. Controle de Qualidade
+  | "packaging"             // 9. Embalagem
+  | "ready_to_ship"         // 10. Pronto para Envio
+  | "shipped"               // 11. Enviado
+  | "delivered";            // 12. Entregue
 
 export type Priority = "critical" | "high" | "normal" | "low";
 
 export type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked";
+
+// ============================================================================
+// Constantes de Estágios
+// ============================================================================
+
+/**
+ * Labels legíveis para cada estágio de produção
+ */
+export const STAGE_LABELS: Record<ProductionStage, string> = {
+  awaiting_payment: 'Aguardando Pagamento',
+  payment_confirmed: 'Pagamento Confirmado',
+  awaiting_choice: 'Aguardando Escolha',
+  model_preparation: 'Preparação do Modelo',
+  printing: 'Em Impressão 3D',
+  post_processing: 'Limpeza e Preparação',
+  painting: 'Pintura Artesanal',
+  quality_check: 'Controle de Qualidade',
+  packaging: 'Embalagem',
+  ready_to_ship: 'Pronto para Envio',
+  shipped: 'Enviado',
+  delivered: 'Entregue',
+};
+
+/**
+ * Descrições detalhadas para cada estágio
+ */
+export const STAGE_DESCRIPTIONS: Record<ProductionStage, string> = {
+  awaiting_payment: 'Pedido criado, aguardando confirmação de pagamento',
+  payment_confirmed: 'Pagamento aprovado, pedido liberado para produção',
+  awaiting_choice: 'Cliente precisa escolher personagem do mês',
+  model_preparation: 'Conferência de arquivos e ajustes no modelo 3D',
+  printing: 'Estatueta sendo impressa camada por camada',
+  post_processing: 'Remoção de suportes e lixamento da peça',
+  painting: 'Aplicação de cores e detalhes à mão',
+  quality_check: 'Inspeção final e fotos da peça',
+  packaging: 'Caixa premium MDF + certificado de autenticidade',
+  ready_to_ship: 'Aguardando coleta da transportadora',
+  shipped: 'Despachado com código de rastreamento',
+  delivered: 'Cliente recebeu o pedido',
+};
+
+/**
+ * Ícones para cada estágio (para UI)
+ */
+export const STAGE_ICONS: Record<ProductionStage, string> = {
+  awaiting_payment: '💳',
+  payment_confirmed: '✅',
+  awaiting_choice: '🎭',
+  model_preparation: '📐',
+  printing: '🖨️',
+  post_processing: '🔧',
+  painting: '🎨',
+  quality_check: '🔍',
+  packaging: '📦',
+  ready_to_ship: '📮',
+  shipped: '🚚',
+  delivered: '🏠',
+};
+
+/**
+ * Estágios que devem gerar notificação ao cliente
+ */
+export const NOTIFICATION_STAGES: ProductionStage[] = [
+  'payment_confirmed',
+  'printing',
+  'painting',
+  'quality_check',
+  'shipped',
+  'delivered',
+];
+
+/**
+ * Ordem dos estágios para validação de transições
+ */
+export const STAGE_ORDER: ProductionStage[] = [
+  'awaiting_payment',
+  'payment_confirmed',
+  'awaiting_choice',
+  'model_preparation',
+  'printing',
+  'post_processing',
+  'painting',
+  'quality_check',
+  'packaging',
+  'ready_to_ship',
+  'shipped',
+  'delivered',
+];
+
+/**
+ * Retorna o próximo estágio válido
+ */
+export function getNextStage(currentStage: ProductionStage): ProductionStage | null {
+  const currentIndex = STAGE_ORDER.indexOf(currentStage);
+  if (currentIndex === -1 || currentIndex === STAGE_ORDER.length - 1) {
+    return null;
+  }
+  return STAGE_ORDER[currentIndex + 1];
+}
+
+/**
+ * Retorna o estágio anterior
+ */
+export function getPreviousStage(currentStage: ProductionStage): ProductionStage | null {
+  const currentIndex = STAGE_ORDER.indexOf(currentStage);
+  if (currentIndex <= 0) {
+    return null;
+  }
+  return STAGE_ORDER[currentIndex - 1];
+}
+
+/**
+ * Valida se uma transição de estágio é permitida
+ */
+export function isValidStageTransition(
+  from: ProductionStage,
+  to: ProductionStage
+): boolean {
+  const fromIndex = STAGE_ORDER.indexOf(from);
+  const toIndex = STAGE_ORDER.indexOf(to);
+  
+  if (fromIndex === -1 || toIndex === -1) {
+    return false;
+  }
+  
+  // Permite avançar para próximo estágio
+  if (toIndex === fromIndex + 1) {
+    return true;
+  }
+  
+  // Permite retroceder de quality_check para painting ou post_processing
+  if (from === 'quality_check' && (to === 'painting' || to === 'post_processing')) {
+    return true;
+  }
+  
+  return false;
+}
 
 export interface ProductionQueueItem {
   id: string;

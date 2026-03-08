@@ -40,12 +40,18 @@ const PRIORITY_OPTIONS: Array<{ value: Priority; label: string; variant: "defaul
 
 // Stage options with labels
 const STAGE_OPTIONS: Array<{ value: ProductionStage; label: string }> = [
+  { value: "awaiting_payment", label: "Aguardando Pagamento" },
+  { value: "payment_confirmed", label: "Pagamento Confirmado" },
   { value: "awaiting_choice", label: "Aguardando Escolha" },
-  { value: "design", label: "Design" },
-  { value: "production", label: "Produção" },
+  { value: "model_preparation", label: "Preparação do Modelo" },
+  { value: "printing", label: "Em Impressão 3D" },
+  { value: "post_processing", label: "Limpeza e Preparação" },
+  { value: "painting", label: "Pintura Artesanal" },
   { value: "quality_check", label: "Controle de Qualidade" },
   { value: "packaging", label: "Embalagem" },
+  { value: "ready_to_ship", label: "Pronto para Envio" },
   { value: "shipped", label: "Enviado" },
+  { value: "delivered", label: "Entregue" },
 ];
 
 export function ProductionFilters({

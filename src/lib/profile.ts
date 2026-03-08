@@ -10,9 +10,21 @@ export type AddressBR = {
   uf?: string;
 };
 
+export type DeliveryAddress = {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country?: string;
+};
+
 export type ProfileRow = {
   id: string;
   address: AddressBR | null;
+  delivery_address: DeliveryAddress | null;
   preferences_text: string | null;
   preference_tags: string[] | null;
   full_name?: string | null;
@@ -41,6 +53,7 @@ export async function getMyProfile(userId: string) {
 export async function upsertMyProfile(input: {
   id: string;
   address?: AddressBR | null;
+  delivery_address?: DeliveryAddress | null;
   preferences_text?: string | null;
   preference_tags?: string[] | null;
   full_name?: string | null;

@@ -1,18 +1,18 @@
-// @ts-nocheck
 /**
  * Componente de Tabela de Pedidos
  * 
  * Exibe uma tabela responsiva com todos os pedidos unificados,
  * incluindo entregas de assinatura e compras avulsas.
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
  */
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UnifiedOrder } from '@/types/admin/orders';
-import { Package, ArrowUpDown } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { OrderRow } from './OrderRow';
-import { Button } from '@/components/ui/button';
 
 interface OrdersTableProps {
   orders: UnifiedOrder[];

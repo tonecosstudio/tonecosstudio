@@ -30,6 +30,7 @@ import {
   FileText,
   Shield,
   MessageSquare,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery as useRQ } from "@tanstack/react-query";
@@ -197,8 +198,30 @@ export default function Profile() {
 
   const initial = useMemo(() => {
     const p = profileQuery.data;
+    // Usar delivery_address (novo formato JSONB) ou fallback para address (antigo)
+    const deliveryAddr = p?.delivery_address;
+    const legacyAddr = p?.address;
+    
+    let addressData: AddressBR = {};
+    
+    if (deliveryAddr && typeof deliveryAddr === 'object') {
+      // Novo formato: delivery_address (JSONB)
+      addressData = {
+        cep: deliveryAddr.zipCode || '',
+        rua: deliveryAddr.street || '',
+        numero: deliveryAddr.number || '',
+        complemento: deliveryAddr.complement || '',
+        bairro: deliveryAddr.neighborhood || '',
+        cidade: deliveryAddr.city || '',
+        uf: deliveryAddr.state || '',
+      };
+    } else if (legacyAddr && typeof legacyAddr === 'object') {
+      // Formato antigo: address
+      addressData = legacyAddr as AddressBR;
+    }
+    
     return {
-      address: (p?.address ?? {}) as AddressBR,
+      address: addressData,
       preferencesText: p?.preferences_text ?? "",
       tags: p?.preference_tags ?? [],
     };
@@ -324,9 +347,22 @@ export default function Profile() {
       const cleanText = (parsed.data.preferences_text || "").trim();
       const cleanTags = parsed.data.tags;
 
+      // Converter address para formato delivery_address (JSONB)
+      const deliveryAddress = Object.keys(cleanAddress).length ? {
+        street: cleanAddress.rua || '',
+        number: cleanAddress.numero || '',
+        complement: cleanAddress.complemento || '',
+        neighborhood: cleanAddress.bairro || '',
+        city: cleanAddress.cidade || '',
+        state: cleanAddress.uf || '',
+        zipCode: cleanAddress.cep || '',
+        country: 'Brasil'
+      } : null;
+
       return upsertMyProfile({
         id: user.id,
-        address: Object.keys(cleanAddress).length ? cleanAddress : null,
+        delivery_address: deliveryAddress,
+        address: Object.keys(cleanAddress).length ? cleanAddress : null, // Manter compatibilidade
         preferences_text: cleanText || null,
         preference_tags: cleanTags.length ? cleanTags : null,
         full_name: fullName.trim() || null,
@@ -411,7 +447,7 @@ export default function Profile() {
                                       subSection.icon === 'MapPin' ? MapPin :
                                       subSection.icon === 'CreditCard' ? CreditCard :
                                       subSection.icon === 'ShoppingBag' ? Package :
-                                      subSection.icon === 'RefreshCw' ? Package :
+                                      subSection.icon === 'RefreshCw' ? RefreshCw :
                                       subSection.icon === 'HelpCircle' ? MessageSquare :
                                       User;
                           
@@ -905,6 +941,18 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
   const { toast } = useToast();
   const [isSearchingCep, setIsSearchingCep] = useState(false);
 
+  // Validar se endereço está completo
+  const isAddressComplete = () => {
+    return Boolean(
+      address.cep &&
+      address.rua &&
+      address.numero &&
+      address.bairro &&
+      address.cidade &&
+      address.uf
+    );
+  };
+
   const searchCep = async (cep: string) => {
     // Remove caracteres não numéricos
     const cleanCep = cep.replace(/\D/g, "");
@@ -969,6 +1017,18 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
     }
   };
 
+  const handleSave = () => {
+    if (!isAddressComplete()) {
+      toast({
+        title: "Endereço incompleto",
+        description: "Preencha todos os campos obrigatórios (*)",
+        variant: "destructive",
+      });
+      return;
+    }
+    saveMutation.mutate();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -976,12 +1036,24 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
           <MapPin className="h-5 w-5" />
           Endereço de Entrega
         </CardTitle>
-        <CardDescription>Usado para calcular frete e facilitar futuros pedidos</CardDescription>
+        <CardDescription>
+          Obrigatório para realizar pedidos. Usado para calcular frete e envio.
+        </CardDescription>
+        {!isAddressComplete() && (
+          <div className="mt-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
+            <p className="text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <span>Complete seu endereço para poder fazer pedidos</span>
+            </p>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="cep">CEP</Label>
+            <Label htmlFor="cep">
+              CEP <span className="text-red-500">*</span>
+            </Label>
             <div className="flex gap-2 mt-2">
               <Input
                 id="cep"
@@ -990,6 +1062,7 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
                 placeholder="00000-000"
                 maxLength={9}
                 disabled={isSearchingCep}
+                required
               />
               <Button
                 type="button"
@@ -1011,20 +1084,25 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
             </p>
           </div>
           <div>
-            <Label htmlFor="uf">UF</Label>
+            <Label htmlFor="uf">
+              UF <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="uf"
               value={address.uf ?? ""}
-              onChange={(e) => setAddress({ ...address, uf: e.target.value })}
+              onChange={(e) => setAddress({ ...address, uf: e.target.value.toUpperCase() })}
               placeholder="SP"
               className="mt-2"
-              maxLength={10}
+              maxLength={2}
+              required
             />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="cidade">Cidade</Label>
+          <Label htmlFor="cidade">
+            Cidade <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="cidade"
             value={address.cidade ?? ""}
@@ -1032,11 +1110,14 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
             placeholder="São Paulo"
             className="mt-2"
             maxLength={80}
+            required
           />
         </div>
 
         <div>
-          <Label htmlFor="bairro">Bairro</Label>
+          <Label htmlFor="bairro">
+            Bairro <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="bairro"
             value={address.bairro ?? ""}
@@ -1044,11 +1125,14 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
             placeholder="Centro"
             className="mt-2"
             maxLength={80}
+            required
           />
         </div>
 
         <div>
-          <Label htmlFor="rua">Rua</Label>
+          <Label htmlFor="rua">
+            Rua <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="rua"
             value={address.rua ?? ""}
@@ -1056,12 +1140,15 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
             placeholder="Rua das Flores"
             className="mt-2"
             maxLength={120}
+            required
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="numero">Número</Label>
+            <Label htmlFor="numero">
+              Número <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="numero"
               value={address.numero ?? ""}
@@ -1069,6 +1156,7 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
               placeholder="123"
               className="mt-2"
               maxLength={30}
+              required
             />
           </div>
           <div>
@@ -1085,7 +1173,7 @@ function AddressSection({ address, setAddress, saveMutation }: any) {
         </div>
 
         <Button
-          onClick={() => saveMutation.mutate()}
+          onClick={handleSave}
           disabled={saveMutation.isPending}
           className="w-full"
         >

@@ -20,12 +20,18 @@ import { ptBR } from "date-fns/locale";
 // ============================================================================
 
 export type ProductionStage =
+  | "awaiting_payment"
+  | "payment_confirmed"
   | "awaiting_choice"
-  | "design"
-  | "production"
+  | "model_preparation"
+  | "printing"
+  | "post_processing"
+  | "painting"
   | "quality_check"
   | "packaging"
-  | "shipped";
+  | "ready_to_ship"
+  | "shipped"
+  | "delivered";
 
 export interface StageInfo {
   name: ProductionStage;
@@ -46,12 +52,18 @@ const STAGE_CONFIG: Record<
   ProductionStage,
   { label: string; emoji: string; order: number }
 > = {
-  awaiting_choice: { label: "Aguardando Escolha", emoji: "⏳", order: 1 },
-  design: { label: "Design", emoji: "🎨", order: 2 },
-  production: { label: "Produção", emoji: "🔨", order: 3 },
-  quality_check: { label: "Controle de Qualidade", emoji: "✅", order: 4 },
-  packaging: { label: "Embalagem", emoji: "📦", order: 5 },
-  shipped: { label: "Enviado", emoji: "🚚", order: 6 },
+  awaiting_payment: { label: "Aguardando Pagamento", emoji: "💳", order: 1 },
+  payment_confirmed: { label: "Pagamento Confirmado", emoji: "✅", order: 2 },
+  awaiting_choice: { label: "Aguardando Escolha", emoji: "🎭", order: 3 },
+  model_preparation: { label: "Preparação do Modelo", emoji: "📐", order: 4 },
+  printing: { label: "Em Impressão 3D", emoji: "🖨️", order: 5 },
+  post_processing: { label: "Limpeza e Preparação", emoji: "🔧", order: 6 },
+  painting: { label: "Pintura Artesanal", emoji: "🎨", order: 7 },
+  quality_check: { label: "Controle de Qualidade", emoji: "🔍", order: 8 },
+  packaging: { label: "Embalagem", emoji: "📦", order: 9 },
+  ready_to_ship: { label: "Pronto para Envio", emoji: "📮", order: 10 },
+  shipped: { label: "Enviado", emoji: "🚚", order: 11 },
+  delivered: { label: "Entregue", emoji: "🏠", order: 12 },
 };
 
 // ============================================================================

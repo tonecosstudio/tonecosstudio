@@ -32,6 +32,65 @@ export default function PreorderCheckout() {
   const [paymentOption, setPaymentOption] = useState<"full" | "preorder">("preorder");
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
 
+  // Buscar perfil do usuário para verificar campos obrigatórios
+  const profileQuery = useQuery({
+    queryKey: ["user-profile-checkout"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return null;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, email, cpf, phone, whatsapp, delivery_address")
+        .eq("id", userData.user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Verificar campos obrigatórios
+  const getMissingFields = () => {
+    const profile = profileQuery.data;
+    if (!profile) return ['Perfil não encontrado'];
+
+    const missing = [];
+
+    if (!profile.full_name || profile.full_name.trim() === '') {
+      missing.push('Nome completo');
+    }
+
+    if (!profile.cpf || profile.cpf.trim() === '') {
+      missing.push('CPF');
+    }
+
+    if ((!profile.phone || profile.phone.trim() === '') && 
+        (!profile.whatsapp || profile.whatsapp.trim() === '')) {
+      missing.push('Telefone ou WhatsApp');
+    }
+
+    if (!profile.email || profile.email.trim() === '') {
+      missing.push('Email');
+    }
+
+    const address = profile.delivery_address;
+    if (!address || 
+        !address.street || 
+        !address.number || 
+        !address.neighborhood || 
+        !address.city || 
+        !address.state || 
+        !address.zipCode) {
+      missing.push('Endereço de entrega completo');
+    }
+
+    return missing;
+  };
+
+  const missingFields = getMissingFields();
+  const canCheckout = missingFields.length === 0;
+
   // Buscar orçamento
   const quoteQuery = useQuery({
     queryKey: ["quote-checkout", quoteId],
@@ -113,6 +172,11 @@ export default function PreorderCheckout() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Não autenticado");
 
+      // Validar campos obrigatórios antes de processar
+      if (!canCheckout) {
+        throw new Error(`Complete seu perfil antes de finalizar a compra. Faltando: ${missingFields.join(', ')}`);
+      }
+
       // 1. Atualizar quote
       const { error: quoteError } = await supabase
         .from("quotes")
@@ -180,11 +244,23 @@ export default function PreorderCheckout() {
       }, 1500);
     },
     onError: (error: any) => {
-      toast({
-        title: "Erro ao processar",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Se erro for de perfil incompleto, redirecionar
+      if (error.message.includes("Complete seu perfil") || error.message.includes("Faltando")) {
+        toast({
+          title: "Perfil incompleto",
+          description: "Você será redirecionado para completar seu cadastro.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          navigate("/perfil?section=personal");
+        }, 2000);
+      } else {
+        toast({
+          title: "Erro ao processar",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -503,7 +579,7 @@ export default function PreorderCheckout() {
                     className="w-full"
                     size="lg"
                     onClick={() => processPaymentMutation.mutate()}
-                    disabled={processPaymentMutation.isPending}
+                    disabled={processPaymentMutation.isPending || !canCheckout}
                   >
                     {processPaymentMutation.isPending ? (
                       "Processando..."
@@ -514,6 +590,28 @@ export default function PreorderCheckout() {
                       </>
                     )}
                   </Button>
+
+                  {!canCheckout && (
+                    <Alert variant="destructive">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Perfil incompleto:</strong> Complete os seguintes campos antes de
+                        finalizar a compra:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          {missingFields.map((field) => (
+                            <li key={field}>{field}</li>
+                          ))}
+                        </ul>
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto text-destructive underline mt-2"
+                          onClick={() => navigate("/perfil?section=personal")}
+                        >
+                          Completar cadastro agora
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <p className="text-xs text-center text-muted-foreground">
                     Pagamento seguro e protegido

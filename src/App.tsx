@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,7 +23,6 @@ import About from "./pages/About";
 import Profile from "./pages/Profile";
 import ModelDetails from "./pages/catalog/ModelDetails";
 import Collections from "./pages/Collections";
-import CollectionDetails from "./pages/CollectionDetails";
 import BuyCharacter from "./pages/BuyCharacter";
 import AuditTrail from "./pages/admin/AuditTrail";
 import AdminCreditsHub from "./pages/admin/AdminCreditsHub";
@@ -47,15 +45,12 @@ import AdminCommunication from "./pages/admin/AdminCommunication";
 import AdminCollectionsHub from "./pages/admin/AdminCollectionsHub";
 import AdminFinancialHub from "./pages/admin/AdminFinancialHub";
 import AdminGroupDetailsPage from "./pages/admin/AdminGroupDetailsPage";
-import AdminHolidayManager from "./pages/admin/AdminHolidayManager";
 import OrdersPage from "./pages/admin/OrdersPage";
-import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import ProductionHub from "./pages/admin/ProductionHub";
 import CustomerOrderProgressPage from "./pages/CustomerOrderProgressPage";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
 import CharacterCatalog from "./pages/CharacterCatalog";
 import CoinsPurchase from "./pages/CoinsPurchase";
-import AdminCoinsSystem from "./pages/admin/AdminCoinsSystem";
 import SubscriberDashboard from "./pages/SubscriberDashboard";
 import CharacterSelect from "./pages/CharacterSelect";
 import CollectionsArcade from "./pages/CollectionsArcade";
@@ -398,15 +393,6 @@ function AppContent() {
             }
           />
           
-          <Route
-            path="/admin/assinaturas-gerenciar"
-            element={
-              <RequireAdmin>
-                <AdminSubscriptions />
-              </RequireAdmin>
-            }
-          />
-          
           {/* Hub de Produção (consolida produção + escolhas) */}
           <Route
             path="/admin/producao"
@@ -477,14 +463,13 @@ function AppContent() {
             element={<Navigate to="/admin/catalogo?tab=credit-characters" replace />}
           />
 
-          <Route
-            path="/admin/creditos/assinaturas"
-            element={<Navigate to="/admin/assinaturas-gerenciar" replace />}
-          />
-
-          {/* Redirects das páginas antigas para a nova página consolidada */}
+          {/* Redirects de páginas antigas para a nova página consolidada */}
           <Route
             path="/admin/assinaturas"
+            element={<Navigate to="/admin/pedidos?type=subscription" replace />}
+          />
+          <Route
+            path="/admin/assinaturas-gerenciar"
             element={<Navigate to="/admin/pedidos?type=subscription" replace />}
           />
           <Route
@@ -494,6 +479,10 @@ function AppContent() {
           <Route
             path="/admin/compras-avulsas"
             element={<Navigate to="/admin/pedidos?type=standalone" replace />}
+          />
+          <Route
+            path="/admin/creditos/assinaturas"
+            element={<Navigate to="/admin/pedidos?type=subscription" replace />}
           />
           <Route
             path="/admin/auditoria"

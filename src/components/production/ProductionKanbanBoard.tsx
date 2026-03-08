@@ -136,12 +136,18 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
   const validateStageTransition = (currentStage: ProductionStage, newStage: ProductionStage): { valid: boolean; error?: string } => {
     // Define valid stage order
     const stageOrder: ProductionStage[] = [
+      "awaiting_payment",
+      "payment_confirmed",
       "awaiting_choice",
-      "design",
-      "production",
+      "model_preparation",
+      "printing",
+      "post_processing",
+      "painting",
       "quality_check",
       "packaging",
+      "ready_to_ship",
       "shipped",
+      "delivered",
     ];
 
     const currentIndex = stageOrder.indexOf(currentStage);

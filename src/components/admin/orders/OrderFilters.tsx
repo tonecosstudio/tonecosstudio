@@ -1,8 +1,9 @@
-// @ts-nocheck
 /**
  * Componente de Filtros de Pedidos
  * 
  * Permite filtrar pedidos por tipo, status e intervalo de datas
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
  */
 
 import { useState, useEffect } from 'react';
@@ -21,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useOrderStatusCounts } from '@/hooks/admin/useOrderStatusCounts';
 import { validateDateRange } from '@/hooks/admin/useOrderFilters';
+import { PlanTypeFilter } from './PlanTypeFilter';
 import type { OrderFilters as OrderFiltersType, OrderStatus } from '@/types/admin/orders';
 
 interface OrderFiltersProps {
@@ -28,6 +30,7 @@ interface OrderFiltersProps {
   onTypeChange: (type: OrderFiltersType['type']) => void;
   onStatusToggle: (status: OrderStatus) => void;
   onDateRangeChange: (dateFrom: string | null, dateTo: string | null) => void;
+  onPlanTypeChange: (planType: 'trimestral' | 'semestral' | 'anual' | null) => void;
   onReset: () => void;
   activeFilterCount: number;
 }
@@ -95,6 +98,7 @@ export function OrderFilters({
   onTypeChange,
   onStatusToggle,
   onDateRangeChange,
+  onPlanTypeChange,
   onReset,
   activeFilterCount
 }: OrderFiltersProps) {
@@ -225,6 +229,14 @@ export function OrderFilters({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{dateError}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Filtro de Tipo de Plano (apenas para assinaturas) */}
+      {filters.type === 'subscription_delivery' && (
+        <PlanTypeFilter
+          value={filters.planType || null}
+          onChange={onPlanTypeChange}
+        />
       )}
 
       {/* Filtro de Status */}

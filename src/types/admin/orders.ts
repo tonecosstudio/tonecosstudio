@@ -1,14 +1,41 @@
-// @ts-nocheck
 /**
  * Tipos TypeScript para o Sistema de Pedidos Unificados
  * 
  * Este arquivo define os tipos para a consolidação das páginas de
  * assinaturas, entregas e compras avulsas em uma única interface.
+ * 
+ * IMPORTANTE: Este arquivo não usa @ts-nocheck para garantir segurança de tipos.
+ * Todos os tipos são explicitamente definidos e validados pelo TypeScript.
  */
 
 // ============================================================================
 // Status de Pedidos
 // ============================================================================
+
+/**
+ * Status de pagamento (separado de produção)
+ */
+export type PaymentStatus =
+  | 'pending'           // Aguardando pagamento inicial
+  | 'deposit_paid'      // Depósito pago, aguardando saldo
+  | 'balance_pending'   // Produto pronto, aguardando saldo
+  | 'paid'              // Pagamento completo
+  | 'overdue'           // Pagamento atrasado
+  | 'cancelled';        // Cancelado
+
+/**
+ * Status de produção (separado de pagamento)
+ */
+export type ProductionStatus =
+  | 'not_started'       // Não iniciado (aguardando pagamento)
+  | 'ready_to_start'    // Pronto para iniciar (pagamento OK)
+  | 'in_production'     // Em produção
+  | 'quality_check'     // Em controle de qualidade
+  | 'ready_to_ship'     // Pronto para envio
+  | 'shipped'           // Enviado
+  | 'delivered'         // Entregue
+  | 'on_hold'           // Pausado/Bloqueado
+  | 'cancelled';        // Cancelado
 
 /**
  * Status possíveis para entregas de assinatura
@@ -222,6 +249,10 @@ export interface UnifiedOrder {
   // Dados financeiros
   amount: number;
   
+  // Status separados (novo)
+  paymentStatus?: PaymentStatus;      // Status de pagamento
+  productionStatus?: ProductionStatus; // Status de produção
+  
   // Dados de entrega (não aplicável para pagamentos manuais)
   trackingCode: string | null;
   expectedDeliveryDate: string | null;
@@ -247,6 +278,7 @@ export interface OrderFilters {
   dateFrom: string | null;
   dateTo: string | null;
   searchQuery: string;
+  planType?: 'trimestral' | 'semestral' | 'anual' | null; // Filtro de tipo de plano para assinaturas
 }
 
 /**

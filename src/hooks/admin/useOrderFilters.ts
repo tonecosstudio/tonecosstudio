@@ -1,9 +1,10 @@
-// @ts-nocheck
 /**
  * Hook de Gerenciamento de Filtros de Pedidos
  * 
  * Este hook gerencia o estado dos filtros de pedidos e sincroniza
  * com URL query params para persistência entre navegações.
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';

@@ -18,6 +18,7 @@ const corsHeaders = {
 interface CreatePurchaseRequest {
   collectionId: string;
   cycleId: string;
+  characterId?: string; // Character chosen at purchase time (for standalone purchases)
   depositVoucherUrl?: string;
 }
 
@@ -57,7 +58,7 @@ serve(async (req) => {
 
     // Parse request body
     const body: CreatePurchaseRequest = await req.json();
-    const { collectionId, cycleId, depositVoucherUrl } = body;
+    const { collectionId, cycleId, characterId, depositVoucherUrl } = body;
 
     // Validate required fields
     if (!collectionId || !cycleId) {
@@ -193,6 +194,7 @@ serve(async (req) => {
         user_id: user.id,
         collection_id: collectionId,
         cycle_id: cycleId,
+        character_id: characterId || null, // Character chosen at purchase time
         status: 'deposit_paid',
         deposit_amount: depositAmount,
         balance_amount: balanceAmount,

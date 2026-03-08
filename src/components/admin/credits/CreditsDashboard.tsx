@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Credits Dashboard Component
  * 
@@ -167,7 +166,7 @@ export function CreditsDashboard() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate("/admin/assinaturas-gerenciar")}
+              onClick={() => navigate("/admin/pedidos?type=subscription")}
             >
               <Users className="mr-2 h-4 w-4" />
               Ver Assinaturas

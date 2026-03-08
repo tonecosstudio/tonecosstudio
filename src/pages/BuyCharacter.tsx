@@ -335,71 +335,72 @@ export default function BuyCharacter() {
                           className="w-full shadow-lg hover:shadow-xl transition-all"
                           size="lg"
                           onClick={async () => {
-                            // Sistema PLE (Pagamento Link Externo)
                             if (!user) {
                               navigate("/login");
                               return;
                             }
 
                             try {
-                              // Buscar método de pagamento padrão
-                              const { data: defaultPaymentMethod, error: paymentMethodError } = await supabase
-                                .from("admin_payment_methods")
+                              // Buscar ciclo atual aberto
+                              const { data: currentCycle, error: cycleError } = await supabase
+                                .from("cycles")
                                 .select("id")
-                                .eq("is_active", true)
-                                .eq("is_default", true)
+                                .eq("status", "open")
                                 .single();
 
-                              if (paymentMethodError || !defaultPaymentMethod) {
+                              if (cycleError || !currentCycle) {
                                 toast({
                                   title: "Erro",
-                                  description: "Nenhum método de pagamento disponível no momento.",
+                                  description: "Nenhum ciclo de produção aberto no momento.",
                                   variant: "destructive",
                                 });
                                 return;
                               }
 
-                              // Gerar número de referência único
-                              const referenceNumber = `BUY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-                              // Criar pedido manual
-                              const { data: payment, error } = await supabase
-                                .from("manual_payments")
-                                .insert({
-                                  user_id: user.id,
-                                  payment_method_id: defaultPaymentMethod.id,
-                                  amount: depositAmount,
-                                  payment_type: "one_time",
-                                  status: "pending",
-                                  reference_number: referenceNumber,
-                                })
-                                .select()
-                                .single();
+                              // Criar compra avulsa via edge function
+                              const { data, error } = await supabase.functions.invoke(
+                                'create-standalone-purchase',
+                                {
+                                  body: {
+                                    collectionId: collection.id,
+                                    cycleId: currentCycle.id,
+                                    characterId: currentMonthCharacter.id, // Personagem escolhido
+                                    depositVoucherUrl: null // Será enviado depois
+                                  }
+                                }
+                              );
 
                               if (error) throw error;
 
-                              // Criar conversa de suporte
-                              await supabase.from("support_conversations").insert({
-                                user_id: user.id,
-                                subject: `Compra - ${currentMonthCharacter.name}`,
-                                status: "waiting_admin",
-                                tags: ["pedido", "pagamento"],
-                              });
+                              if (!data.success) {
+                                throw new Error(data.error || 'Erro ao criar compra');
+                              }
 
                               toast({
-                                title: "Pedido criado!",
-                                description:
-                                  "Aguarde o link de pagamento. Você receberá uma notificação em breve.",
+                                title: "Compra criada!",
+                                description: `Sua reserva de ${currentMonthCharacter.name} foi criada com sucesso.`,
                               });
 
-                              // Redirecionar para acompanhamento
+                              // Redirecionar para página de acompanhamento
                               setTimeout(() => {
-                                navigate(`/pagamentos/${payment.id}`);
+                                navigate(`/meus-pedidos`);
                               }, 1500);
                             } catch (error: any) {
+                              console.error("Erro ao criar compra:", error);
+                              
+                              let errorMessage = "Ocorreu um erro ao criar sua compra.";
+                              
+                              if (error.message?.includes('CUTOFF_PASSED')) {
+                                errorMessage = "O prazo para compras deste ciclo já passou.";
+                              } else if (error.message?.includes('CAPACITY_EXCEEDED')) {
+                                errorMessage = "Capacidade esgotada para este ciclo.";
+                              } else if (error.message?.includes('CYCLE_NOT_OPEN')) {
+                                errorMessage = "Ciclo não está aberto para novas compras.";
+                              }
+                              
                               toast({
-                                title: "Erro ao criar pedido",
-                                description: error.message,
+                                title: "Erro ao criar compra",
+                                description: errorMessage,
                                 variant: "destructive",
                               });
                             }

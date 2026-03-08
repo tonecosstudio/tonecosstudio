@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Hook de Mutações de Pedidos
  *
@@ -17,6 +16,8 @@
  * - Timestamp da mudança
  *
  * Ver migration: 20260424000000_create_order_status_history.sql
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";

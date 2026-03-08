@@ -67,11 +67,23 @@ export function PersonalDataSection({
           <FileText className="h-5 w-5" />
           Dados Pessoais
         </CardTitle>
-        <CardDescription>Informações pessoais para identificação e contato</CardDescription>
+        <CardDescription>
+          Informações obrigatórias para realizar pedidos
+        </CardDescription>
+        {(!fullName || !cpf || (!phone && !whatsapp)) && (
+          <div className="mt-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
+            <p className="text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <span>Complete os campos obrigatórios (*) para poder fazer pedidos</span>
+            </p>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label htmlFor="fullName">Nome Completo</Label>
+          <Label htmlFor="fullName">
+            Nome Completo <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="fullName"
             value={fullName}
@@ -79,12 +91,15 @@ export function PersonalDataSection({
             placeholder="Seu nome completo"
             className="mt-2"
             maxLength={100}
+            required
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="phone">Telefone</Label>
+            <Label htmlFor="phone">
+              Telefone <span className="text-muted-foreground text-xs">(ou WhatsApp *)</span>
+            </Label>
             <Input
               id="phone"
               value={phone}
@@ -100,6 +115,7 @@ export function PersonalDataSection({
             <Label htmlFor="whatsapp" className="flex items-center gap-2">
               WhatsApp
               <span className="text-green-600">●</span>
+              <span className="text-muted-foreground text-xs">(ou Telefone *)</span>
             </Label>
             <Input
               id="whatsapp"
@@ -114,7 +130,9 @@ export function PersonalDataSection({
         </div>
 
         <div>
-          <Label htmlFor="cpf">CPF</Label>
+          <Label htmlFor="cpf">
+            CPF <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="cpf"
             value={cpf}
@@ -122,7 +140,9 @@ export function PersonalDataSection({
             placeholder="000.000.000-00"
             className="mt-2"
             maxLength={14}
+            required
           />
+          <p className="text-xs text-muted-foreground mt-1">Necessário para emissão de nota fiscal</p>
         </div>
 
         <div>

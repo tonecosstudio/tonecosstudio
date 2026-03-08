@@ -85,7 +85,7 @@ export function useCharacterChoice(orderId: string | null, orderType: 'subscript
         return null;
       }
 
-      // Buscar na character_choices
+      // Buscar na character_choices (usando campos desnormalizados)
       const { data, error } = await supabase
         .from('character_choices')
         .select(`
@@ -93,11 +93,9 @@ export function useCharacterChoice(orderId: string | null, orderType: 'subscript
           status,
           deadline,
           character_id,
+          character_name,
           submitted_at,
-          approved_at,
-          collection_characters!inner(
-            name
-          )
+          approved_at
         `)
         .eq('order_id', orderId)
         .eq('order_type', orderType)
@@ -117,7 +115,7 @@ export function useCharacterChoice(orderId: string | null, orderType: 'subscript
         status: data.status as ChoiceStatus,
         deadline: data.deadline,
         characterId: data.character_id,
-        characterName: (data.collection_characters as any)?.name || null,
+        characterName: data.character_name || null,
         submittedAt: data.submitted_at,
         approvedAt: data.approved_at
       } as CharacterChoiceInfo;

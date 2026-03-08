@@ -1,9 +1,11 @@
-// @ts-nocheck
 /**
  * Serviço de Pedidos Unificados
  *
  * Este serviço consolida a busca e manipulação de entregas de assinatura
  * e compras avulsas em uma única interface unificada.
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
+ * Todas as funções têm tipos de retorno explícitos e parâmetros tipados.
  */
 
 import { supabase } from "@/integrations/supabase/client";

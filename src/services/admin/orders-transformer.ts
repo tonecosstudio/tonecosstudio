@@ -103,6 +103,8 @@ export function transformDeliveries(
   profilesMap: Map<string, any>,
   collectionsMap: Map<string, any>
 ): UnifiedOrder[] {
+  const DEBUG = true;
+  
   return deliveries
     .filter((delivery) => delivery.subscriptions !== null) // Filtrar entregas sem subscription
     .map((delivery) => {
@@ -113,6 +115,20 @@ export function transformDeliveries(
       const collection = subscription.collection_id
         ? collectionsMap.get(subscription.collection_id)
         : null;
+
+      // Debug: Log quando collection não é encontrada
+      if (DEBUG && subscription.collection_id && !collection) {
+        console.warn(
+          `⚠️ [Transformer] Collection ${subscription.collection_id} not found in map for delivery ${delivery.id}`
+        );
+        console.log('Available collections in map:', Array.from(collectionsMap.keys()));
+      }
+
+      if (DEBUG && !subscription.collection_id) {
+        console.warn(
+          `⚠️ [Transformer] Subscription ${subscription.id} has no collection_id for delivery ${delivery.id}`
+        );
+      }
 
       // Construir objeto UnifiedOrder
       const unifiedOrder: UnifiedOrder = {
@@ -269,13 +285,11 @@ export function transformPurchases(purchases: RawStandalonePurchase[]): UnifiedO
  * buscar o valor real do plano da tabela de preços.
  */
 function calculateSubscriptionDeliveryAmount(planType: string): number {
-  // Mapeamento básico de planos para valores
-  // TODO: Buscar valores reais da tabela de preços
+  // Valores dos planos de assinatura
   const planPrices: Record<string, number> = {
-    monthly: 99.9,
-    quarterly: 89.9,
-    semiannual: 79.9,
-    annual: 69.9,
+    trimestral: 89.90,
+    semestral: 149.90,
+    anual: 249.90,
   };
 
   return planPrices[planType] || 0;
@@ -372,11 +386,13 @@ export function safeTransformPurchases(purchases: any[]): UnifiedOrder[] {
  * Transforma pagamentos manuais brutos em UnifiedOrder
  *
  * @param payments - Array de pagamentos brutos do Supabase
+ * @param profilesMap - Map de profiles por user_id
  * @param filesMap - Map opcional de arquivos por payment_id (para incluir comprovantes)
  * @returns Array de UnifiedOrder
  */
 export function transformManualPayments(
   payments: any[],
+  profilesMap: Map<string, any>,
   filesMap?: Map<
     string,
     Array<{
@@ -392,8 +408,8 @@ export function transformManualPayments(
   >
 ): UnifiedOrder[] {
   return payments.map((payment) => {
-    // Profile vem diretamente do join
-    const profile = payment.profiles;
+    // Profile vem do map
+    const profile = profilesMap.get(payment.user_id) || payment.profiles;
     const paymentMethod = payment.admin_payment_methods;
     const subscription = payment.subscriptions;
     const quote = payment.quotes;
@@ -500,11 +516,16 @@ export function transformManualPayments(
  *
  * @param quotes - Array de orçamentos brutos do Supabase
  * @param itemsMap - Map de itens por quote_id
+ * @param profilesMap - Map de profiles por user_id
  * @returns Array de UnifiedOrder
  */
-export function transformQuotes(quotes: any[], itemsMap: Map<string, any[]>): UnifiedOrder[] {
+export function transformQuotes(
+  quotes: any[], 
+  itemsMap: Map<string, any[]>,
+  profilesMap: Map<string, any>
+): UnifiedOrder[] {
   return quotes.map((quote) => {
-    const profile = quote.profiles;
+    const profile = profilesMap.get(quote.user_id) || quote.profiles;
     const items = itemsMap.get(quote.id) || [];
 
     const unifiedOrder: UnifiedOrder = {

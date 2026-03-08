@@ -30,34 +30,64 @@ interface BulkStageUpdateModalProps {
 
 const STAGES: { value: ProductionStage; label: string; description: string }[] = [
   {
+    value: 'awaiting_payment',
+    label: 'Aguardando Pagamento',
+    description: 'Pedido criado, aguardando confirmação de pagamento',
+  },
+  {
+    value: 'payment_confirmed',
+    label: 'Pagamento Confirmado',
+    description: 'Pagamento aprovado, pedido liberado para produção',
+  },
+  {
     value: 'awaiting_choice',
     label: 'Aguardando Escolha',
-    description: 'Cliente precisa escolher o personagem',
+    description: 'Cliente precisa escolher personagem do mês',
   },
   {
-    value: 'design',
-    label: 'Design',
-    description: 'Criação do design do produto',
+    value: 'model_preparation',
+    label: 'Preparação do Modelo',
+    description: 'Conferência de arquivos e ajustes no modelo 3D',
   },
   {
-    value: 'production',
-    label: 'Produção',
-    description: 'Fabricação do produto',
+    value: 'printing',
+    label: 'Em Impressão 3D',
+    description: 'Estatueta sendo impressa camada por camada',
+  },
+  {
+    value: 'post_processing',
+    label: 'Limpeza e Preparação',
+    description: 'Remoção de suportes e lixamento da peça',
+  },
+  {
+    value: 'painting',
+    label: 'Pintura Artesanal',
+    description: 'Aplicação de cores e detalhes à mão',
   },
   {
     value: 'quality_check',
     label: 'Controle de Qualidade',
-    description: 'Verificação de qualidade',
+    description: 'Inspeção final e fotos da peça',
   },
   {
     value: 'packaging',
     label: 'Embalagem',
-    description: 'Preparação para envio',
+    description: 'Caixa premium MDF + certificado de autenticidade',
+  },
+  {
+    value: 'ready_to_ship',
+    label: 'Pronto para Envio',
+    description: 'Aguardando coleta da transportadora',
   },
   {
     value: 'shipped',
     label: 'Enviado',
-    description: 'Produto enviado ao cliente',
+    description: 'Despachado com código de rastreamento',
+  },
+  {
+    value: 'delivered',
+    label: 'Entregue',
+    description: 'Cliente recebeu o pedido',
   },
 ];
 

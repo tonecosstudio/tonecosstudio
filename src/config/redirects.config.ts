@@ -31,9 +31,9 @@ export const activeRedirects: RedirectRule[] = [
   },
   {
     from: '/admin/subscriptions',
-    to: '/admin/assinaturas',
+    to: '/admin/pedidos?type=subscription',
     permanent: false,
-    reason: 'URL em inglês pode estar em favoritos',
+    reason: 'Assinaturas consolidadas na página de Pedidos',
   },
   {
     from: '/admin/users-list',

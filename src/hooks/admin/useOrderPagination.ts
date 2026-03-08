@@ -1,4 +1,8 @@
-// @ts-nocheck
+/**
+ * Hook de Gerenciamento de Paginação de Pedidos
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
+ */
 /**
  * Hook de Gerenciamento de Paginação de Pedidos
  * 

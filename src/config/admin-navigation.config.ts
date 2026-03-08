@@ -76,14 +76,6 @@ export const adminNavigationConfig: NavigationSection[] = [
         badge: 'Novo',
       },
       {
-        id: 'subscriptions-management',
-        label: 'Assinaturas',
-        path: '/admin/assinaturas-gerenciar',
-        icon: 'RefreshCw',
-        badge: 'Completo',
-      },
-
-      {
         id: 'audit',
         label: 'Trilha de Auditoria',
         path: '/admin/auditoria',

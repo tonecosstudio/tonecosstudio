@@ -1,9 +1,10 @@
-// @ts-nocheck
 /**
  * Hook de Query para Pedidos Unificados
  * 
  * Este hook usa TanStack Query para gerenciar o estado de busca de pedidos,
  * incluindo cache, prefetch e tratamento de erros.
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';

@@ -1,8 +1,9 @@
-// @ts-nocheck
 /**
  * Painel de Detalhes do Pedido
  *
  * Painel lateral deslizante que exibe informações detalhadas de um pedido
+ * 
+ * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
  */
 
 import {
@@ -312,6 +313,14 @@ export function OrderDetailPanel({
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Coleção</span>
                     <span className="text-sm font-medium">{order.collection.name}</span>
+                  </div>
+                )}
+
+                {/* Personagem (para compras avulsas) */}
+                {order.type === 'standalone_purchase' && order.standalonePurchase?.character && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Personagem</span>
+                    <span className="text-sm font-medium">{order.standalonePurchase.character.name}</span>
                   </div>
                 )}
               </div>

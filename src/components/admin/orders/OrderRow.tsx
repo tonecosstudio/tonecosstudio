@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Componente OrderRow
  * 
@@ -30,11 +29,25 @@ export function OrderRow({
   onClick,
   searchQuery = ''
 }: OrderRowProps) {
+  // Determinar o ID correto para buscar informações de produção
+  let productionOrderId = order.id;
+  let productionOrderType = order.type;
+
+  // Para assinaturas, usar o ID da próxima entrega (ou última)
+  if (order.type === 'subscription_delivery' && order.subscriptionDelivery?.allDeliveries) {
+    const deliveries = order.subscriptionDelivery.allDeliveries;
+    // Buscar próxima entrega agendada ou a última entrega
+    const nextDelivery = deliveries.find(d => d.status === 'scheduled') || deliveries[deliveries.length - 1];
+    if (nextDelivery) {
+      productionOrderId = nextDelivery.id;
+    }
+  }
+
   // Buscar informações de produção apenas para pedidos elegíveis
   const shouldFetchProduction = order.type === 'subscription_delivery' || order.type === 'standalone_purchase';
   const { data: productionInfo } = useProductionInfo(
-    shouldFetchProduction ? order.id : null,
-    shouldFetchProduction ? order.type : null
+    shouldFetchProduction ? productionOrderId : null,
+    shouldFetchProduction ? productionOrderType : null
   );
 
   return (

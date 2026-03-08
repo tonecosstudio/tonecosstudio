@@ -65,12 +65,18 @@ interface StageInfo {
 
 // Stage configuration
 const STAGE_CONFIG: Record<ProductionStage, { label: string; order: number }> = {
-  awaiting_choice: { label: "Aguardando Escolha", order: 1 },
-  design: { label: "Design", order: 2 },
-  production: { label: "Produção", order: 3 },
-  quality_check: { label: "Controle de Qualidade", order: 4 },
-  packaging: { label: "Embalagem", order: 5 },
-  shipped: { label: "Enviado", order: 6 },
+  awaiting_payment: { label: "Aguardando Pagamento", order: 1 },
+  payment_confirmed: { label: "Pagamento Confirmado", order: 2 },
+  awaiting_choice: { label: "Aguardando Escolha", order: 3 },
+  model_preparation: { label: "Preparação do Modelo", order: 4 },
+  printing: { label: "Em Impressão 3D", order: 5 },
+  post_processing: { label: "Limpeza e Preparação", order: 6 },
+  painting: { label: "Pintura Artesanal", order: 7 },
+  quality_check: { label: "Controle de Qualidade", order: 8 },
+  packaging: { label: "Embalagem", order: 9 },
+  ready_to_ship: { label: "Pronto para Envio", order: 10 },
+  shipped: { label: "Enviado", order: 11 },
+  delivered: { label: "Entregue", order: 12 },
 };
 
 // Database types (temporary until Supabase types are regenerated)
