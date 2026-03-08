@@ -1220,27 +1220,33 @@ export default function CollectionDetails() {
 
 // Componente de Card de Personagem
 function CharacterCard({ character }: { character: Character }) {
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const statusConfig = {
-    released: { label: 'Lançado', color: 'bg-slate-500' },
-    revealed: { label: 'Disponível', color: 'bg-green-500' },
-    upcoming: { label: 'Em Breve', color: 'bg-blue-500' }
+    released: { label: 'Lançado', color: 'bg-slate-500', textColor: 'text-slate-500' },
+    revealed: { label: '🔥 Disponível Agora', color: 'bg-green-500 animate-pulse', textColor: 'text-green-500' },
+    upcoming: { label: 'Em Breve', color: 'bg-blue-500/70', textColor: 'text-blue-400' }
   };
   const config = statusConfig[character.status];
   
-  // Show mystery placeholder if not revealed (Requirements 12.7, 28.4)
   const isRevealed = character.status === "revealed" || character.status === "released";
+  const isUpcoming = character.status === "upcoming";
   const displayImage = isRevealed ? character.image_url : null;
-  const displayName = isRevealed ? character.name : "Personagem Misterioso";
+  const displayName = isRevealed ? character.name : "???";
   
-  // Determine pricing display
   const isCatalog = character.is_catalog === true;
   const priceDisplay = isCatalog && character.price_coins 
     ? `${character.price_coins} coins`
-    : '200-300 coins'; // Collection contextual pricing
+    : '200-300 coins';
 
   return (
-    <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-300 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500">
-      <div className="relative aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden">
+    <Card className={`group overflow-hidden transition-all duration-300 bg-white dark:bg-slate-900 border-2 ${
+      character.status === 'revealed' 
+        ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.2)] hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]' 
+        : isUpcoming 
+          ? 'border-slate-300 dark:border-slate-700 opacity-80 hover:opacity-100 hover:border-blue-400' 
+          : 'border-slate-200 dark:border-slate-800 hover:border-amber-500 hover:shadow-2xl'
+    }`}>
+      <div className={`relative aspect-square overflow-hidden ${isUpcoming ? 'bg-slate-200 dark:bg-slate-800' : 'bg-slate-100 dark:bg-slate-800'}`}>
         {displayImage ? (
           <img 
             src={displayImage} 
@@ -1248,9 +1254,16 @@ function CharacterCard({ character }: { character: Character }) {
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900">
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900 relative">
             <Lock className="w-16 h-16 text-slate-400 dark:text-slate-600 mb-3" />
             <span className="text-sm font-semibold text-slate-500 dark:text-slate-500">Mistério</span>
+            {isUpcoming && character.release_month && (
+              <div className="absolute bottom-4 left-0 right-0 text-center">
+                <span className="bg-blue-500/90 text-white text-xs font-bold px-4 py-2 rounded-full">
+                  📅 {monthNames[(character.release_month - 1) % 12]}
+                </span>
+              </div>
+            )}
           </div>
         )}
         
@@ -1270,9 +1283,9 @@ function CharacterCard({ character }: { character: Character }) {
         </div>
 
         {character.status === "revealed" && (
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
-            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white font-bold">
-              Ver Detalhes
+          <div className="absolute inset-0 bg-gradient-to-t from-green-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
+            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white font-bold">
+              🎯 Garanta o Seu
             </Button>
           </div>
         )}
@@ -1280,7 +1293,7 @@ function CharacterCard({ character }: { character: Character }) {
 
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-bold text-lg text-slate-950 dark:text-white line-clamp-1 flex-1">
+          <h3 className={`font-bold text-lg line-clamp-1 flex-1 ${isUpcoming ? 'text-slate-400 dark:text-slate-500' : 'text-slate-950 dark:text-white'}`}>
             {displayName}
           </h3>
           {isCatalog && (
@@ -1292,9 +1305,9 @@ function CharacterCard({ character }: { character: Character }) {
         
         <div className="flex items-center justify-between">
           {character.release_month && (
-            <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Mês {character.release_month}
+            <p className={`text-sm flex items-center gap-2 ${isUpcoming ? 'text-blue-500 dark:text-blue-400 font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
+              {isUpcoming ? <Clock className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+              {isUpcoming ? `Lançamento: ${monthNames[(character.release_month - 1) % 12]}` : `Mês ${character.release_month}`}
             </p>
           )}
           
