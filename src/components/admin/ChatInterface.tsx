@@ -183,16 +183,13 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               file,
               conversationId,
               messageData.id,
-              user.id,
-              (progress) => {
-                updateOptimisticAttachment(messageData.id, tempId, { progress });
-              }
+              user.id
             );
 
             console.log(`Arquivo ${file.name} enviado com sucesso`);
             updateOptimisticAttachment(messageData.id, tempId, {
               status: "uploaded",
-              url: result.url,
+              url: result.public_url,
             });
           } catch (error) {
             console.error("Erro ao fazer upload do arquivo:", error);
