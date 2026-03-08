@@ -472,7 +472,9 @@ export default function AdminUserDetails() {
                   <div className="space-y-4">
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">Plano</div>
-                      <div className="text-base mt-1 capitalize">{activeSubscription.plan_type}</div>
+                      <div className="text-base mt-1 capitalize">
+                        {activeSubscription.plan?.name || activeSubscription.plan_type || '—'}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">Status</div>
@@ -484,15 +486,34 @@ export default function AdminUserDetails() {
                       </Badge>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Coleção</div>
+                      <div className="text-sm font-medium text-muted-foreground">Coleções</div>
                       <div className="text-base mt-1">
-                        {activeSubscription.collections?.name || 'Não definida'}
+                        {activeSubscription.collections_list?.length > 0
+                          ? activeSubscription.collections_list.map((c: any) => c.name).join(', ')
+                          : 'Nenhuma coleção vinculada'}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">Entregas</div>
+                        <div className="text-base mt-1">
+                          {activeSubscription.deliveries_completed || 0}
+                          {activeSubscription.deliveries_total ? ` / ${activeSubscription.deliveries_total}` : ''}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">Total Pago</div>
+                        <div className="text-base mt-1">
+                          {formatCurrency(activeSubscription.total_paid || 0)}
+                        </div>
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Data de Criação</div>
+                      <div className="text-sm font-medium text-muted-foreground">Início</div>
                       <div className="text-base mt-1">
-                        {new Date(activeSubscription.created_at).toLocaleDateString("pt-BR")}
+                        {activeSubscription.started_at
+                          ? new Date(activeSubscription.started_at).toLocaleDateString("pt-BR")
+                          : new Date(activeSubscription.created_at).toLocaleDateString("pt-BR")}
                       </div>
                     </div>
                   </div>
@@ -524,13 +545,13 @@ export default function AdminUserDetails() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-green-600">
-                          {coinsBalance.total_allocated || 0}
+                          {coinsBalance.total_earned || 0}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">Total Inicial</div>
+                        <div className="text-xs text-muted-foreground mt-1">Total Ganho</div>
                       </div>
                       <div className="text-center p-4 rounded-lg bg-muted/50">
                         <div className="text-2xl font-bold text-orange-600">
-                          {coinsBalance.used_credits || 0}
+                          {coinsBalance.total_spent || 0}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">Gastos</div>
                       </div>

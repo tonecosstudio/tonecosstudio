@@ -556,18 +556,22 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       id,
       status,
       delivery_number,
+      delivery_order,
       tracking_code,
-      expected_delivery_date,
+      shipping_carrier,
       actual_delivery_date,
+      delivered_date,
       reveal_date,
+      shipping_date,
+      production_start_date,
       created_at,
       updated_at,
       subscription_id,
       character_id,
+      cycle_id,
       subscriptions!inner (
         id,
         user_id,
-        collection_id,
         plan_type,
         deliveries_completed,
         deliveries_total,
@@ -596,26 +600,17 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       status,
       user_id,
       collection_id,
-      cycle_id,
       character_id,
-      price_deposit,
-      price_balance,
-      price_full,
-      deposit_paid_at,
-      balance_paid_at,
-      balance_due_date,
-      deposit_voucher_url,
-      balance_voucher_url,
+      amount,
+      paid_amount,
+      balance_amount,
+      payment_method,
+      payment_link,
       tracking_code,
-      expected_delivery_date,
-      actual_delivery_date,
+      shipping_carrier,
+      notes,
       created_at,
       updated_at,
-      profiles (
-        id,
-        full_name,
-        email
-      ),
       collections (
         id,
         name,
@@ -635,34 +630,38 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     console.error("Error fetching user purchases:", purchasesError);
   }
 
+  // Enrich purchases with profile
+  if (purchasesData && purchasesData.length > 0) {
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", userId)
+      .single();
+
+    if (userProfile) {
+      purchasesData.forEach((p: any) => {
+        p.profiles = userProfile;
+      });
+    }
+  }
+
   // Buscar pagamentos manuais do usuário
   const { data: paymentsData, error: paymentsError } = await supabase
     .from("manual_payments")
     .select(
       `
       id,
-      reference_number,
       user_id,
-      payment_method_id,
-      quote_id,
-      subscription_id,
       amount,
-      currency,
-      payment_type,
       status,
-      rejection_reason,
-      created_at,
-      updated_at,
-      approved_at,
-      approved_by,
-      admin_payment_methods (
-        id,
-        name,
-        type,
-        instructions,
-        pix_key,
-        payment_link
-      )
+      payment_method,
+      payment_date,
+      reference_id,
+      reference_type,
+      notes,
+      confirmed_at,
+      confirmed_by,
+      created_at
     `
     )
     .eq("user_id", userId)
@@ -695,8 +694,13 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       id,
       user_id,
       status,
-      deadline,
       notes,
+      admin_notes,
+      total_amount,
+      deposit_amount,
+      remaining_amount,
+      payment_status,
+      tracking_code,
       created_at,
       updated_at
     `
@@ -720,13 +724,6 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
           .filter((id): id is string => typeof id === "string")
       ),
     ];
-    const collectionIds = [
-      ...new Set(
-        deliveriesData
-          .map((d: any) => d.subscriptions?.collection_id)
-          .filter((id): id is string => typeof id === "string")
-      ),
-    ];
 
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
@@ -739,14 +736,20 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       }
     }
 
-    if (collectionIds.length > 0) {
-      const { data: collections } = await supabase
-        .from("collections")
-        .select("id, name, slug")
-        .in("id", collectionIds);
+    // Fetch collections via subscription_collections junction
+    const subIds = [...new Set(deliveriesData.map((d: any) => d.subscription_id).filter(Boolean))];
+    if (subIds.length > 0) {
+      const { data: subCols } = await supabase
+        .from("subscription_collections")
+        .select("subscription_id, collection_id, collections(id, name, slug)")
+        .in("subscription_id", subIds);
 
-      if (collections) {
-        collections.forEach((c: any) => collectionsMap.set(c.id, c));
+      if (subCols) {
+        subCols.forEach((sc: any) => {
+          if (sc.collections) {
+            collectionsMap.set(sc.collections.id, sc.collections);
+          }
+        });
       }
     }
   }
