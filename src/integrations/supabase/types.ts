@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notification_settings: {
+        Row: {
+          browser_enabled: boolean
+          created_at: string
+          email_enabled: boolean
+          id: string
+          sound_enabled: boolean
+          sound_volume: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          browser_enabled?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          sound_enabled?: boolean
+          sound_volume?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          browser_enabled?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          sound_enabled?: boolean
+          sound_volume?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           action_url: string | null
@@ -151,15 +184,18 @@ export type Database = {
           alternative_character_id: string | null
           approved_at: string | null
           character_id: string | null
+          character_name: string | null
           chosen_at: string | null
           collection_id: string | null
           created_at: string
+          deadline: string | null
           id: string
           order_id: string
           order_type: string | null
           rejected_at: string | null
           rejection_reason: string | null
           status: string
+          submitted_at: string | null
           updated_at: string
           user_id: string
         }
@@ -167,15 +203,18 @@ export type Database = {
           alternative_character_id?: string | null
           approved_at?: string | null
           character_id?: string | null
+          character_name?: string | null
           chosen_at?: string | null
           collection_id?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           order_id: string
           order_type?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
           status?: string
+          submitted_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -183,15 +222,18 @@ export type Database = {
           alternative_character_id?: string | null
           approved_at?: string | null
           character_id?: string | null
+          character_name?: string | null
           chosen_at?: string | null
           collection_id?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           order_id?: string
           order_type?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
           status?: string
+          submitted_at?: string | null
           updated_at?: string
           user_id?: string
         }
