@@ -96,22 +96,22 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
 
   // Subscrever a notificações em tempo real
   useEffect(() => {
-    const {
-      data: { user },
-    } = supabase.auth.getUser();
+    let userId: string | undefined;
 
-    if (!user) return;
+    const setup = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      userId = user.id;
 
-    const channel = supabase
-      .channel("admin-notifications-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "admin_notifications",
-          filter: `recipient_user_id=eq.${user.then((u) => u.user?.id)}`,
-        },
+      const channel = supabase
+        .channel("admin-notifications-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "admin_notifications",
+          },
         (payload) => {
           const newNotification = payload.new as AdminNotification;
 
