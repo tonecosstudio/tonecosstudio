@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Check, Zap, Crown, Sparkles, Shield, ArrowRight } from "lucide-react";
+import { Check, Zap, Crown, Sparkles, Shield, ArrowRight, Coins } from "lucide-react";
 import { useContentSettings } from "@/hooks/useContentSettings";
 import { processContentVariables } from "@/lib/services/contentService";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -194,14 +194,25 @@ export default function PlansArcade() {
                       </p>
                     </div>
 
+                    {/* Coins badge */}
+                    {plan.coins_included > 0 && (
+                      <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">
+                        <Coins className="w-4 h-4 text-[hsl(var(--gold-accent))]" />
+                        <span className="font-mono text-xs tracking-wider text-[hsl(var(--gold-accent))]">
+                          {plan.coins_included.toLocaleString("pt-BR")} coins inclusos
+                        </span>
+                      </div>
+                    )}
+
                     <ul className="space-y-3 mb-6 flex-1">
                       {[
                         `${deliveries} peça${deliveries > 1 ? "s" : ""}${isSemestral ? " (6 + 1 bônus)" : ""}`,
+                        `${plan.coins_included > 0 ? plan.coins_included.toLocaleString("pt-BR") + " coins para o catálogo" : ""}`,
                         "Pintadas à mão",
                         "Produção limitada",
                         "Certificado",
                         "Embalagem premium",
-                      ].map((f) => (
+                      ].filter(Boolean).map((f) => (
                         <li key={f} className="flex items-center gap-2 font-mono text-xs text-[hsl(0,0%,60%)]">
                           <Check className="w-3.5 h-3.5 shrink-0" style={{ color: meta.color }} />
                           {f}
