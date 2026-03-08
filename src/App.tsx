@@ -119,7 +119,8 @@ function AppContent() {
           <Route path="/colecoes" element={<CollectionsShowcase />} />
           <Route path="/colecoes-old" element={<Collections />} />
           <Route path="/colecoes-arcade" element={<CollectionsArcade />} />
-          <Route path="/personagem/:id" element={<CharacterDetails />} />
+          <Route path="/colecoes/:slug/:characterId" element={<CharacterDetails />} />
+          <Route path="/personagem/:characterId" element={<CharacterDetails />} />
           <Route path="/selecionar-personagem" element={<CharacterSelect />} />
           <Route path="/colecoes/:slug" element={<CollectionDetailsArcade />} />
           <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />

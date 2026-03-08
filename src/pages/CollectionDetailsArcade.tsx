@@ -55,17 +55,19 @@ type Collection = {
 function CharacterCard({ 
   character, 
   index, 
-  isUpcoming = false 
+  isUpcoming = false,
+  collectionSlug,
 }: { 
   character: Character; 
   index: number;
   isUpcoming?: boolean;
+  collectionSlug: string;
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <Link
-      to={isUpcoming ? "#" : `/personagem/${character.id}`}
+      to={isUpcoming ? "#" : `/colecoes/${collectionSlug}/${character.id}`}
       onClick={(e) => isUpcoming && e.preventDefault()}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -439,7 +441,7 @@ export default function CollectionDetailsArcade() {
                       </Badge>
                     </div>
 
-                    <Link to={`/personagem/${featuredCharacter.id}`}>
+                    <Link to={`/colecoes/${collection.slug}/${featuredCharacter.id}`}>
                       <div className="relative group">
                         <div
                           className="relative h-96 md:h-[500px] rounded-sm overflow-hidden border-4 border-[hsl(var(--gold-accent))] shadow-[0_0_50px_hsl(var(--gold-accent)/0.5)] transition-all duration-500 hover:shadow-[0_0_80px_hsl(var(--gold-accent)/0.7)] hover:scale-[1.02]"
@@ -533,7 +535,7 @@ export default function CollectionDetailsArcade() {
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                       {sortedReleased.map((character, index) => (
-                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} />
+                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} collectionSlug={collection.slug} />
                       ))}
                     </div>
                   </div>
@@ -573,7 +575,7 @@ export default function CollectionDetailsArcade() {
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                       {sortedUpcoming.map((character, index) => (
-                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={true} />
+                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={true} collectionSlug={collection.slug} />
                       ))}
                     </div>
                   </div>
@@ -601,7 +603,7 @@ export default function CollectionDetailsArcade() {
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                       {catalogCharacters.map((character, index) => (
-                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} />
+                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} collectionSlug={collection.slug} />
                       ))}
                     </div>
                   </div>
