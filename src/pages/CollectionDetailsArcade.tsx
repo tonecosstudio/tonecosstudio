@@ -55,11 +55,13 @@ type Collection = {
 function CharacterCard({ 
   character, 
   index, 
-  isUpcoming = false 
+  isUpcoming = false,
+  collectionSlug,
 }: { 
   character: Character; 
   index: number;
   isUpcoming?: boolean;
+  collectionSlug: string;
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
