@@ -39,7 +39,7 @@ type Collection = {
   name: string;
   slug: string;
   description: string | null;
-  image_url: string | null;
+  cover_image_url: string | null;
   is_active: boolean;
   collection_characters: Character[];
 };
@@ -163,11 +163,12 @@ export default function CollectionDetailsArcade() {
       // Buscar coleção
       const { data: collectionData, error: collectionError } = await supabase
         .from("collections")
-        .select("id, name, slug, description, image_url, is_active")
+        .select("id, name, slug, description, cover_image_url, is_active")
         .eq("slug", slug)
-        .single();
+        .maybeSingle();
 
       if (collectionError) throw collectionError;
+      if (!collectionData) return null;
 
       // Buscar personagens da coleção
       const { data: charactersData, error: charactersError } = await supabase
@@ -262,9 +263,9 @@ export default function CollectionDetailsArcade() {
               }}
             >
               {/* Background Image */}
-              {collection.image_url ? (
+              {collection.cover_image_url ? (
                 <img
-                  src={collection.image_url}
+                  src={collection.cover_image_url}
                   alt={collection.name}
                   className="w-full h-full object-cover"
                 />
