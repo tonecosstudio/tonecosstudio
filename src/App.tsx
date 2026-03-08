@@ -265,6 +265,14 @@ function AppContent() {
             path="/notificacoes"
             element={
               <RequireAuth>
+                <NotificationsArcade />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/notificacoes-old"
+            element={
+              <RequireAuth>
                 <NotificationHistory />
               </RequireAuth>
             }
