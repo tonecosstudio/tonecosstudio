@@ -61,7 +61,7 @@ const CACHE_CONFIG = {
 export function useCoinsBalance(userId?: UserId | null) {
   return useQuery({
     queryKey: userId ? coinsBalanceKeys.user(userId) : coinsBalanceKeys.all,
-    queryFn: async (): Promise<CoinsBalanceResponse> => {
+    queryFn: async (): Promise<{ balance: number; last_updated: string }> => {
       // Se userId não foi fornecido, busca usuário logado
       let targetUserId = userId;
       
