@@ -31,9 +31,9 @@ export default function PlansArcade() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_plans")
-        .select("*")
+        .select("*, pricing_tiers(*)")
         .eq("is_active", true)
-        .order("display_order");
+        .order("slug");
       if (error) throw error;
       return data;
     },
