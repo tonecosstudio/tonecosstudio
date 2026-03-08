@@ -40,6 +40,7 @@ describe('Property: Invariante de Saldo de Créditos', () => {
         fc.integer({ min: 100, max: 10000 }), // total_credits inicial
         fc.array(fc.integer({ min: 1, max: 100 }), { minLength: 1, maxLength: 20 }), // débitos
         (initialTotal, debits) => {
+          // eslint-disable-next-line prefer-const -- variables are reassigned in loop
           let totalCredits = initialTotal;
           let usedCredits = 0;
           let availableCredits = initialTotal;
@@ -74,7 +75,9 @@ describe('Property: Invariante de Saldo de Créditos', () => {
           const validUsed = Math.min(initialUsed, initialTotal);
           
           // Estado inicial
+          // eslint-disable-next-line prefer-const -- variables are reassigned below
           let totalCredits = initialTotal;
+          // eslint-disable-next-line prefer-const -- variables are reassigned below
           let usedCredits = validUsed;
           let availableCredits = totalCredits - usedCredits;
           

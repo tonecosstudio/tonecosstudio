@@ -449,7 +449,7 @@ export async function generateBulkLabels(
   const invalidOrders = orders.filter(order => !canGenerateLabel(order));
   invalidOrders.forEach(order => {
     let errorMessage = 'Pedido não pode ter etiqueta gerada.';
-    let errorCode = LabelErrorCode.INVALID_ORDER_STATUS;
+    const errorCode = LabelErrorCode.INVALID_ORDER_STATUS;
     
     if (order.trackingCode) {
       errorMessage = 'Pedido já possui código de rastreamento.';
