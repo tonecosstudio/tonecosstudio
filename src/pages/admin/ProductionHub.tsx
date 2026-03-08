@@ -92,7 +92,7 @@ function ProductionHub() {
 
   // Sincronizar tab com URL
   useEffect(() => {
-    const validTabs = ["kanban", "list", "calendar", "analytics", "choices"];
+    const validTabs = ["pipeline", "kanban", "list", "calendar", "analytics", "choices"];
     if (tabParam && validTabs.includes(tabParam)) {
       setActiveTab(tabParam);
     }
