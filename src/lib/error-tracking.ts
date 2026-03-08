@@ -43,13 +43,8 @@ interface SentryCaptureContext {
  * Returns null if Sentry is not installed
  */
 function getSentry() {
-  try {
-    // This will be tree-shaken out if @sentry/react is not installed
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('@sentry/react');
-  } catch {
-    return null;
-  }
+  // Sentry is optional and not installed - always return null
+  return null;
 }
 
 /**

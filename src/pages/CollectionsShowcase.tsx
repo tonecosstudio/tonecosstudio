@@ -142,7 +142,7 @@ function RarityBadge({ characters }: { characters: number }) {
 
 export default function CollectionsShowcase() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -215,7 +215,7 @@ export default function CollectionsShowcase() {
             <CoinCounter balance={userBalance} isLoading={balanceLoading} />
             {user ? (
               <button
-                onClick={() => signOut()}
+                onClick={async () => { await supabase.auth.signOut(); navigate("/"); }}
                 className="flex items-center gap-1.5 text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] transition-colors font-mono uppercase tracking-wider text-[10px]"
               >
                 <LogOut className="w-3.5 h-3.5" />
