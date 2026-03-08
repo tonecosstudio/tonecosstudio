@@ -2,14 +2,16 @@
  * Componente de Detalhes de Orçamento
  * 
  * Exibe informações detalhadas de um orçamento no painel lateral
+ * Alinhado com a estrutura real da tabela quotes + quote_items
  */
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Package, Calendar, FileText } from 'lucide-react';
+import { Package, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UnifiedOrder } from '@/types/admin/orders';
 import { useUpdateOrderStatus } from '@/hooks/admin/useOrderMutations';
+import { formatCurrency } from '@/lib/utils';
 
 interface QuoteDetailsProps {
   order: UnifiedOrder;
@@ -29,7 +31,7 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
     try {
       await updateStatusMutation.mutateAsync({
         orderId: order.id,
-        orderType: 'quote' as any, // Quote não está no tipo original, mas funciona
+        orderType: 'quote' as any,
         newStatus: newStatus as any
       });
 
@@ -65,14 +67,13 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
         </h3>
         
         <div className="space-y-3">
-          {/* Prazo Desejado */}
-          {quoteData.deadline && (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">Prazo Desejado</p>
-                <p className="text-sm font-medium">{quoteData.deadline}</p>
-              </div>
+          {/* Valor Total */}
+          {quoteData.totalAmount != null && quoteData.totalAmount > 0 && (
+            <div className="flex items-center justify-between pt-1 pb-1 border-b">
+              <span className="text-sm font-medium">Valor Total</span>
+              <span className="text-lg font-semibold">
+                {formatCurrency(quoteData.totalAmount)}
+              </span>
             </div>
           )}
 
@@ -82,7 +83,7 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
               <div className="flex items-start gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">Observações do Cliente</p>
+                  <p className="text-xs text-muted-foreground mb-1">Observações</p>
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">
                     {quoteData.notes}
                   </p>
@@ -116,15 +117,31 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
                 className="p-3 bg-muted rounded-md"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.modelName}</p>
-                    {item.franchise && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.franchise}</p>
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    {item.imageUrl && (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-10 h-10 rounded object-cover flex-shrink-0"
+                      />
                     )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-medium">{item.quantity}x</p>
-                    <p className="text-xs text-muted-foreground">{item.scale}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(item.unitPrice)}
+                    </p>
+                    {item.quantity > 1 && (
+                      <p className="text-xs font-medium mt-0.5">
+                        {formatCurrency(item.totalPrice)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

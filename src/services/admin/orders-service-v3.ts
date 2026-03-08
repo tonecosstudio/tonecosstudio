@@ -39,8 +39,9 @@ interface SubscriptionWithDeliveries {
     delivery_order: number;
     status: string;
     character_id: string | null;
-    expected_delivery_date: string | null;
     actual_delivery_date: string | null;
+    delivered_date: string | null;
+    shipping_date: string | null;
     tracking_code: string | null;
     reveal_date: string | null;
     _character?: any;
@@ -401,7 +402,29 @@ async function fetchQuotes(filters: OrderFilters) {
     query = query.lte('created_at', filters.dateTo);
   }
 
-  return await query;
+  const result = await query;
+
+  // Fetch quote_items for each quote
+  if (result.data && result.data.length > 0) {
+    const quoteIds = result.data.map((q: any) => q.id);
+    const { data: items } = await supabase
+      .from('quote_items')
+      .select('id, quote_id, name, description, quantity, unit_price, total_price, image_url, character_id')
+      .in('quote_id', quoteIds);
+
+    const itemsByQuote = new Map<string, any[]>();
+    items?.forEach((item: any) => {
+      const arr = itemsByQuote.get(item.quote_id) || [];
+      arr.push(item);
+      itemsByQuote.set(item.quote_id, arr);
+    });
+
+    result.data.forEach((quote: any) => {
+      quote._items = itemsByQuote.get(quote.id) || [];
+    });
+  }
+
+  return result;
 }
 
 // ============================================================================
@@ -511,8 +534,8 @@ function transformSubscription(
 
     // Dados da próxima/última entrega
     trackingCode: nextDelivery?.tracking_code || null,
-    expectedDeliveryDate: nextDelivery?.expected_delivery_date || null,
-    actualDeliveryDate: nextDelivery?.actual_delivery_date || null,
+    expectedDeliveryDate: null,
+    actualDeliveryDate: nextDelivery?.actual_delivery_date || nextDelivery?.delivered_date || null,
 
     subscriptionDelivery: {
       subscriptionId: subscription.id,
@@ -538,8 +561,8 @@ function transformSubscription(
         status: d.status,
         characterId: d.character_id,
         characterName: d._character?.name || null,
-        expectedDeliveryDate: d.expected_delivery_date,
-        actualDeliveryDate: d.actual_delivery_date,
+        actualDeliveryDate: d.actual_delivery_date || d.delivered_date,
+        shippingDate: d.shipping_date,
         trackingCode: d.tracking_code,
         revealDate: d.reveal_date,
       }))
@@ -668,9 +691,17 @@ function transformQuote(
     actualDeliveryDate: null,
 
     quote: {
-      items: quote.items || [],
+      items: (quote._items || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        totalPrice: item.total_price,
+        imageUrl: item.image_url,
+        characterId: item.character_id,
+      })),
       totalAmount: quote.total_amount,
-      validUntil: quote.valid_until,
       notes: quote.notes,
     },
   };

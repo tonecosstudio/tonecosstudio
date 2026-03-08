@@ -123,6 +123,19 @@ export interface SubscriptionDeliveryData {
     name: string;
     imageUrl: string | null;
   };
+
+  // Lista de todas as entregas da assinatura
+  allDeliveries?: Array<{
+    id: string;
+    deliveryNumber: number;
+    status: string;
+    characterId: string | null;
+    characterName: string | null;
+    actualDeliveryDate: string | null;
+    shippingDate: string | null;
+    trackingCode: string | null;
+    revealDate: string | null;
+  }>;
 }
 
 /**
@@ -185,14 +198,21 @@ export interface ManualPaymentData {
 /**
  * Dados específicos de um orçamento
  */
+export interface QuoteItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  imageUrl?: string | null;
+  characterId?: string | null;
+}
+
 export interface QuoteData {
-  items: any[];
+  items: QuoteItem[];
   totalAmount?: number | null;
-  validUntil?: string | null;
   notes: string | null;
-  // Legacy
-  quoteId?: string;
-  deadline?: string | null;
 }
 
 // ============================================================================
