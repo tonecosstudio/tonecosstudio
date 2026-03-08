@@ -106,22 +106,6 @@ function CoinExchangeRateCard() {
       setIsEditing(false);
     },
   });
-    onSuccess: () => {
-      toast({
-        title: "Cotação atualizada!",
-        description: "A nova cotação do coin foi salva com sucesso.",
-      });
-      setIsEditing(false);
-      qc.invalidateQueries({ queryKey: ["coin-exchange-rate"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao atualizar cotação",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   // Set initial values when data loads
   useEffect(() => {
