@@ -114,7 +114,7 @@ function ProductionHub() {
   const { data: queueData, isLoading } = useQuery({
     queryKey: ["production-queue", filters],
     queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
-    enabled: ["kanban", "list", "calendar"].includes(activeTab),
+    enabled: ["pipeline", "kanban", "list", "calendar"].includes(activeTab),
   });
 
   const metrics = metricsQuery.data;
