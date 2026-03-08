@@ -96,7 +96,8 @@ function AppContent() {
           <Route path="/catalogo/:id" element={<ModelDetails />} />
           <Route path="/sobre" element={<About />} />
           <Route path="/planos" element={<Plans />} />
-          <Route path="/colecoes" element={<Collections />} />
+          <Route path="/colecoes" element={<CollectionsShowcase />} />
+          <Route path="/colecoes-old" element={<Collections />} />
           <Route path="/colecoes-arcade" element={<CollectionsArcade />} />
           <Route path="/personagem/:id" element={<CharacterDetails />} />
           <Route path="/selecionar-personagem" element={<CharacterSelect />} />
