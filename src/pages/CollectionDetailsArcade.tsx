@@ -153,11 +153,18 @@ function CharacterCard({
           >
             {isUpcoming ? "???" : character.name}
           </h4>
-          {character.release_month && (
-            <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-1">
-              📅 {MONTHS[character.release_month - 1]}
-            </p>
-          )}
+          {(() => {
+            const month = character.release_month;
+            const monthLabel = typeof month === "number" && month >= 1 && month <= 12 ? MONTHS[month - 1] : null;
+
+            if (!monthLabel) return null;
+
+            return (
+              <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-1">
+                📅 {monthLabel}
+              </p>
+            );
+          })()}
         </div>
       </div>
     </Link>
