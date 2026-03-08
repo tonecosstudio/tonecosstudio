@@ -359,7 +359,7 @@ export interface CoinsBalanceResponse {
   /** Saldo atual */
   balance: CoinsAmount;
   /** Última atualização */
-  updated_at: string;
+  last_updated: string;
 }
 
 /**
