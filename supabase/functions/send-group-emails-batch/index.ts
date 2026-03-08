@@ -367,14 +367,14 @@ async function sendEmailWithRetry(
       console.log(`Email sent successfully on attempt ${attempt + 1}:`, result.id);
       return { success: true, emailId: result.id };
     } catch (error) {
-      console.error(`Email send attempt ${attempt + 1} failed:`, (error as Error).message);
+      console.error(`Email send attempt ${attempt + 1} failed:`, (error as Error)r as Error).message);
       
       if (attempt < maxRetries - 1) {
         // Wait before retrying (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
       } else {
         // Final attempt failed
-        return { success: false, error: error.message };
+        return { success: fal(error as Error)rror: error.message };
       }
     }
   }
