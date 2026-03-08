@@ -68,7 +68,7 @@ function ProductionHub() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   
-  const [activeTab, setActiveTab] = useState<string>(tabParam || "kanban");
+  const [activeTab, setActiveTab] = useState<string>(tabParam || "pipeline");
   const [filters, setFilters] = useState<ProductionFiltersType>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<ProductionQueueItem | null>(null);
