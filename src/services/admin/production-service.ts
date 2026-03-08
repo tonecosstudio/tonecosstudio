@@ -552,13 +552,13 @@ export async function updateProductionStage(
   // Determinar novo status baseado no estágio
   let newStatus: ProductionStatus = currentItem.production_status;
 
-  if (newStage === "awaiting_choice") {
+  if (newStage === "awaiting_choice" || newStage === "awaiting_payment") {
     newStatus = "awaiting_choice";
-  } else if (newStage === "design" && currentItem.production_status === "awaiting_choice") {
+  } else if (newStage === "payment_confirmed" || newStage === "model_preparation") {
     newStatus = "ready_for_production";
-  } else if (["production", "quality_check", "packaging"].includes(newStage)) {
+  } else if (["printing", "post_processing", "painting", "quality_check", "packaging", "ready_to_ship"].includes(newStage)) {
     newStatus = "in_production";
-  } else if (newStage === "shipped") {
+  } else if (newStage === "shipped" || newStage === "delivered") {
     newStatus = "completed";
   }
 
