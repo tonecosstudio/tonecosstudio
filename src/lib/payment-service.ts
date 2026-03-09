@@ -475,22 +475,7 @@ export async function rejectPayment(id: string, adminId: string, reason: string)
     // Don't throw - audit log failure shouldn't block rejection
   }
 
-  // Send message to conversation if it exists
-  if (payment.conversation) {
-    try {
-      const { sendMessage } = await import("./conversation-service");
-      await sendMessage(
-        payment.conversation.id,
-        adminId,
-        `Seu pagamento foi rejeitado. Motivo: ${reason.trim()}\n\nVocê pode enviar um novo comprovante se desejar.`,
-        [],
-        false
-      );
-    } catch (error) {
-      console.error("Failed to send rejection message:", error);
-      // Don't throw - message failure shouldn't block rejection
-    }
-  }
+  // Note: conversation messages are handled via Edge Functions
 
   // Send payment rejection notification
   try {
