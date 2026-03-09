@@ -7,6 +7,7 @@
 
 import { getServiceClient } from "./supabase.ts";
 import { corsHeaders } from "./cors.ts";
+import { logRateLimitHit } from "./security-logger.ts";
 
 /**
  * Rate limit configuration presets
