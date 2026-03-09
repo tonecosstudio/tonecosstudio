@@ -5,11 +5,10 @@
  * Requirements: 4.5
  */
 
-import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-const supabaseUrl = Deno.env.get("VITE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
-const supabaseKey = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
 
 const functionUrl = `${supabaseUrl}/functions/v1/pay-standalone-balance`;
 
