@@ -85,6 +85,7 @@ export async function checkRateLimit(
 
     if (!allowed) {
       console.warn(`Rate limit exceeded: ${key} on ${endpoint}`);
+      logRateLimitHit(req, endpoint, key);
       return new Response(
         JSON.stringify({
           error: "Too many requests. Please try again later.",
