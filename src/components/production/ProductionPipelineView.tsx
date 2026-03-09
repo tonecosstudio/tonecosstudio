@@ -475,28 +475,41 @@ function CharacterCardStatic({ group }: { group: GroupedCharacter }) {
 
 // Shared card visual content
 function CardContent({ group }: { group: GroupedCharacter }) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <>
-      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-        <span className="text-2xl font-bold text-muted-foreground/50">
-          {group.characterName?.charAt(0)?.toUpperCase() || "?"}
-        </span>
-      </div>
+      {/* Imagem real ou fallback com inicial */}
+      {group.imageUrl && !imgError ? (
+        <img
+          src={group.imageUrl}
+          alt={group.characterName || "Personagem"}
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={() => setImgError(true)}
+          loading="lazy"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+          <span className="text-2xl font-bold text-muted-foreground/50">
+            {group.characterName?.charAt(0)?.toUpperCase() || "?"}
+          </span>
+        </div>
+      )}
 
       {group.count > 1 && (
-        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-md">
           {group.count}×
         </div>
       )}
 
       {group.hasCritical && (
-        <div className="absolute top-1 left-1">
+        <div className="absolute top-1 left-1 drop-shadow-md">
           <AlertTriangle className="h-4 w-4 text-red-500" />
         </div>
       )}
 
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5">
-        <p className="text-[10px] text-white font-medium truncate leading-tight">
+        <p className="text-[10px] text-white font-medium truncate leading-tight drop-shadow-sm">
           {group.characterName || "N/A"}
         </p>
       </div>
