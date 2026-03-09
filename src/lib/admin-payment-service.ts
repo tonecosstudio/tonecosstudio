@@ -805,7 +805,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
           .update({
             success_count: result.success_count,
             failure_count: result.failure_count,
-            errors: result.errors,
+            error_details: result.errors,
           })
           .eq("id", operationId);
       }
@@ -821,10 +821,9 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "completed",
-        completed_at: new Date().toISOString(),
         success_count: result.success_count,
         failure_count: result.failure_count,
-        errors: result.errors,
+        error_details: result.errors,
       })
       .eq("id", operationId);
   } catch (error) {
@@ -833,8 +832,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "failed",
-        completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
+        error_details: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
       .eq("id", operationId);
   }
