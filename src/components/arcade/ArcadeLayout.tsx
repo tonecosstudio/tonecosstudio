@@ -8,6 +8,7 @@ import { Coins, Menu, Bell, X } from "lucide-react";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useEffect, useState, type PropsWithChildren } from "react";
 import SEOHead from "@/components/SEOHead";
+import { ArcadeFooter } from "@/components/arcade/ArcadeFooter";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/lib/roles";
 
