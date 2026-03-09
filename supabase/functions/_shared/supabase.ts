@@ -67,7 +67,10 @@ export async function assertAdmin(req: Request) {
   console.log("assertAdmin: Query result - roles:", roles, "error:", error);
 
   if (error) throw new Error(`Role check failed: ${error.message}`);
-  if (!roles) throw new Error("Forbidden: admin only");
+  if (!roles) {
+    logPermissionDenied(req, new URL(req.url).pathname, userId, "admin role required");
+    throw new Error("Forbidden: admin only");
+  }
 
   console.log("assertAdmin: User is admin, proceeding");
   return { userId };
