@@ -4,6 +4,7 @@ import { classifyImageWithVision } from "../_shared/ai-vision.ts";
 import { assertAdmin, getClaims } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { logAdminAction } from "../_shared/security-logger.ts";
 
 type VisionModel = "gpt-4o-mini" | "gpt-4o";
 
