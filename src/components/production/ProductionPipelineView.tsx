@@ -131,6 +131,36 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
     queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
   });
 
+  // Extrair IDs de personagens únicos para buscar imagens
+  const characterIds = useMemo(() => {
+    if (!queueData?.data) return [];
+    const ids = new Set<string>();
+    queueData.data.forEach((item) => {
+      if (item.characterId) ids.add(item.characterId);
+    });
+    return Array.from(ids);
+  }, [queueData]);
+
+  // Fetch character images
+  const { data: characterImages } = useQuery({
+    queryKey: ["character-images", characterIds],
+    queryFn: async () => {
+      if (characterIds.length === 0) return new Map<string, string>();
+      const { data, error } = await supabase
+        .from("collection_characters")
+        .select("id, image_url")
+        .in("id", characterIds);
+      if (error) throw error;
+      const map = new Map<string, string>();
+      data?.forEach((c: { id: string; image_url: string | null }) => {
+        if (c.image_url) map.set(c.id, c.image_url);
+      });
+      return map;
+    },
+    enabled: characterIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Agrupar itens por estágio e depois por personagem
   const stageGroups = useMemo(() => {
     if (!queueData?.data) return new Map<ProductionStage, GroupedCharacter[]>();
