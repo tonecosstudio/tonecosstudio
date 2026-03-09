@@ -489,12 +489,51 @@ export function validateFileUpload(
     };
   }
 
+  // Check file extension against dangerous blocklist FIRST
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  if ((DANGEROUS_EXTENSIONS as readonly string[]).includes(extension)) {
+    return {
+      valid: false,
+      error: `Tipo de arquivo potencialmente perigoso (.${extension}) não é permitido.`
+    };
+  }
+
+  // Check for double extensions (e.g. image.jpg.exe, file.pdf.html)
+  const nameParts = file.name.split('.');
+  if (nameParts.length > 2) {
+    for (let i = 1; i < nameParts.length - 1; i++) {
+      const midExt = nameParts[i].toLowerCase();
+      if ((DANGEROUS_EXTENSIONS as readonly string[]).includes(midExt)) {
+        return {
+          valid: false,
+          error: `Arquivo com extensão oculta perigosa (.${midExt}) não é permitido.`
+        };
+      }
+    }
+  }
+
+  // Reject files with no extension
+  if (!extension || extension === file.name.toLowerCase()) {
+    return {
+      valid: false,
+      error: 'Arquivo sem extensão não é permitido.'
+    };
+  }
+
   // Check file size
   if (file.size > maxSize) {
     const maxSizeMB = (maxSize / (1024 * 1024)).toFixed(2);
     return {
       valid: false,
       error: `Arquivo muito grande. Tamanho máximo: ${maxSizeMB}MB.`
+    };
+  }
+
+  // Check file size > 0 (empty files)
+  if (file.size === 0) {
+    return {
+      valid: false,
+      error: 'Arquivo vazio não é permitido.'
     };
   }
 
@@ -507,7 +546,6 @@ export function validateFileUpload(
   }
 
   // Check file extension matches MIME type
-  const extension = file.name.split('.').pop()?.toLowerCase();
   const expectedExtensions: Record<string, string[]> = {
     'image/jpeg': ['jpg', 'jpeg'],
     'image/png': ['png'],
@@ -522,7 +560,7 @@ export function validateFileUpload(
   if (expected && extension && !expected.includes(extension)) {
     return {
       valid: false,
-      error: 'Extensão do arquivo não corresponde ao tipo.'
+      error: 'Extensão do arquivo não corresponde ao tipo MIME declarado.'
     };
   }
 
