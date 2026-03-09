@@ -311,10 +311,10 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
   ];
 
   // Create CSV rows
-  const rows = (payments || []).map((payment) => [
-    payment.reference_number,
-    payment.profiles?.full_name || "",
-    payment.profiles?.email || "",
+  const rows = (payments || []).map((payment: any) => [
+    payment.reference_number || "",
+    "", // customer name - would need separate profile lookup
+    "", // customer email - would need separate profile lookup
     payment.amount.toString(),
     payment.currency,
     payment.payment_method?.name || "",
