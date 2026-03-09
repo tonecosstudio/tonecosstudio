@@ -3,6 +3,7 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { classifyImageWithVision } from "../_shared/ai-vision.ts";
 import { assertAdmin, getClaims } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
+import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
 
 type VisionModel = "gpt-4o-mini" | "gpt-4o";
 
@@ -42,6 +43,10 @@ serve(async (req) => {
     // Rate limit: AI strict (vision is expensive)
     const rateLimited = await checkRateLimit(req, "classify-image-vision", RATE_LIMITS.AI_STRICT, userId);
     if (rateLimited) return rateLimited;
+
+    // Payload size guard (AI endpoints: 32 KB)
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.AI_TEXT);
+    if (tooLarge) return tooLarge;
 
     const body = await req.json().catch(() => ({}));
     const queueId = String(body?.queue_id ?? "").trim();

@@ -11,6 +11,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient, errorToStatus } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
+import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
 
 interface CreatePurchaseRequest {
   collectionId: string;
@@ -31,6 +32,10 @@ serve(async (req) => {
     // Rate limit: purchase operations
     const rateLimited = await checkRateLimit(req, "create-standalone-purchase", RATE_LIMITS.PURCHASE, userId);
     if (rateLimited) return rateLimited;
+
+    // Payload size guard (standard: 64 KB)
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.STANDARD);
+    if (tooLarge) return tooLarge;
 
     const service = getServiceClient();
 

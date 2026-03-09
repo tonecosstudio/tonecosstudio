@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
+import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -31,6 +32,10 @@ serve(async (req) => {
     // Rate limit: AI operations (per authenticated user)
     const rateLimited = await checkRateLimit(req, "analyze-preferences", RATE_LIMITS.AI, userId);
     if (rateLimited) return rateLimited;
+
+    // Payload size guard (AI text: 32 KB)
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.AI_TEXT);
+    if (tooLarge) return tooLarge;
 
     const payload = await req.json().catch(() => ({}));
     const text = typeof payload?.text === "string" ? payload.text.trim() : "";
