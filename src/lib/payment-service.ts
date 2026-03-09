@@ -412,22 +412,7 @@ export async function approvePayment(id: string, adminId: string): Promise<void>
 
   // Note: quote/subscription integration is handled via Edge Functions
 
-  // Send message to conversation if it exists
-  if (payment.conversation) {
-    try {
-      const { sendMessage } = await import("./conversation-service");
-      await sendMessage(
-        payment.conversation.id,
-        adminId,
-        "Seu pagamento foi aprovado! O pedido será processado em breve.",
-        [],
-        false
-      );
-    } catch (error) {
-      console.error("Failed to send approval message:", error);
-      // Don't throw - message failure shouldn't block approval
-    }
-  }
+  // Note: conversation messages are handled via Edge Functions
 
   // Send payment approval notification
   try {
