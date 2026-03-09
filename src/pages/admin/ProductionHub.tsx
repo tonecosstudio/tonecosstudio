@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useProductionQueueRealtime } from "@/hooks/useProductionQueueRealtime";
 import { useSearchParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
