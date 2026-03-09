@@ -133,23 +133,8 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
   // ============================================================================
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
-    // Check file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return {
-        valid: false,
-        error: `Tipo de arquivo inválido. Aceitos: ${ALLOWED_TYPES.map((t) => t.split("/")[1].toUpperCase()).join(", ")}`,
-      };
-    }
-
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      return {
-        valid: false,
-        error: `Arquivo muito grande. Tamanho máximo: ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
-      };
-    }
-
-    return { valid: true };
+    // Use centralized validation with dangerous file blocklist
+    return validateFileUpload(file, ALLOWED_TYPES as readonly string[], MAX_FILE_SIZE);
   };
 
   // ============================================================================
