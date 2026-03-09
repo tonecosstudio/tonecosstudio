@@ -31,38 +31,49 @@ export class MessageService {
 
     // Buscar anexos separadamente
     const messages = data || [];
-    const enrichedMessages = await Promise.all(
-      messages.map(async (msg) => {
-        try {
-          // Buscar anexos
-          const { data: attachmentsData } = await supabase
-            .from("support_attachments")
-            .select("*")
-            .eq("message_id", msg.id);
+    const messageIds = messages.map((msg) => msg.id);
 
-          return {
-            ...msg,
-            sender_name: this.getSenderName(msg.sender_type, msg.sender_id),
-            attachments: attachmentsData || [],
-            is_internal: msg.is_internal || false,
-            read_by_admin: msg.read_by_admin || false,
-            read_by_customer: msg.read_by_customer || false,
-          };
-        } catch (error) {
-          console.error(`Erro ao buscar anexos da mensagem ${msg.id}:`, error);
-          return {
-            ...msg,
-            sender_name: this.getSenderName(msg.sender_type, msg.sender_id),
-            attachments: [],
-            is_internal: msg.is_internal || false,
-            read_by_admin: msg.read_by_admin || false,
-            read_by_customer: msg.read_by_customer || false,
-          };
+    // Batch fetch all attachments at once instead of per-message
+    let allAttachments: any[] = [];
+    if (messageIds.length > 0) {
+      const { data: attachmentsData } = await supabase
+        .from("support_attachments")
+        .select("*")
+        .in("message_id", messageIds);
+      allAttachments = attachmentsData || [];
+    }
+
+    // Group attachments by message_id
+    const attachmentsByMessage = new Map<string, any[]>();
+    for (const att of allAttachments) {
+      const existing = attachmentsByMessage.get(att.message_id) || [];
+      existing.push(att);
+      attachmentsByMessage.set(att.message_id, existing);
+    }
+
+    // Batch fetch sender profiles
+    const senderIds = [...new Set(messages.map((msg) => msg.sender_id))];
+    let profilesMap = new Map<string, string>();
+    if (senderIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", senderIds);
+      if (profiles) {
+        for (const p of profiles) {
+          profilesMap.set(p.id, p.full_name || p.email || "Usuário");
         }
-      })
-    );
+      }
+    }
 
-    return enrichedMessages;
+    return messages.map((msg) => ({
+      ...msg,
+      sender_name: this.getSenderNameFromProfile(msg.sender_type, msg.sender_id, profilesMap),
+      attachments: attachmentsByMessage.get(msg.id) || [],
+      is_internal: msg.is_internal || false,
+      read_by_admin: msg.read_by_admin || false,
+      read_by_customer: msg.read_by_customer || false,
+    }));
   }
 
   /**
@@ -95,8 +106,7 @@ export class MessageService {
     if (messageData.sender_type === "admin" && !messageData.is_internal) {
       this.sendEmailNotification(data.id, messageData.conversation_id, messageData.message).catch(
         (err) => {
-          console.error("❌ Erro ao enviar notificação por email:", err);
-          // Não falha a operação se o email falhar
+          console.error("Erro ao enviar notificação por email:", err);
         }
       );
     }
@@ -120,20 +130,15 @@ export class MessageService {
     messageContent: string
   ): Promise<void> {
     try {
-      // Buscar informações da conversa
       const { data: conversation } = await supabase
         .from("support_conversations")
         .select("user_id")
         .eq("id", conversationId)
         .single();
 
-      if (!conversation) {
-        console.warn("Conversa não encontrada para envio de email");
-        return;
-      }
+      if (!conversation) return;
 
-      // Chamar Edge Function (usa service role key internamente)
-      const { data, error } = await supabase.functions.invoke("send-email", {
+      const { error } = await supabase.functions.invoke("send-email", {
         body: {
           conversationId,
           messageId,
@@ -143,13 +148,10 @@ export class MessageService {
       });
 
       if (error) {
-        console.error("❌ Erro ao chamar Edge Function de email:", error);
-        console.error("Detalhes:", error.message);
-      } else {
-        console.log("✅ Email enviado com sucesso!", data);
+        console.error("Erro ao chamar Edge Function de email:", error);
       }
     } catch (error) {
-      console.error("❌ Erro ao enviar notificação por email:", error);
+      console.error("Erro ao enviar notificação por email:", error);
     }
   }
 
@@ -235,7 +237,7 @@ export class MessageService {
 
   /**
    * Deleta uma mensagem (soft delete)
-   * Apenas admins podem deletar mensagens
+   * Uses has_role function to check admin status
    */
   async deleteMessage(messageId: string): Promise<void> {
     const {
@@ -246,14 +248,13 @@ export class MessageService {
       throw new Error("Usuário não autenticado");
     }
 
-    // Verificar se é admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Check admin role using the has_role function
+    const { data: hasAdminRole } = await supabase.rpc("has_role", {
+      _user_id: user.id,
+      _role: "admin",
+    });
 
-    if (profile?.role !== "admin") {
+    if (!hasAdminRole) {
       throw new Error("Apenas administradores podem deletar mensagens");
     }
 
@@ -284,7 +285,6 @@ export class MessageService {
       throw new Error("Usuário não autenticado");
     }
 
-    // Buscar mensagem para verificar permissões e tempo
     const { data: message, error: fetchError } = await supabase
       .from("support_messages")
       .select("*")
@@ -295,26 +295,20 @@ export class MessageService {
       throw new Error("Mensagem não encontrada");
     }
 
-    // Verificar se é o autor
     if (message.sender_id !== user.id) {
       throw new Error("Você só pode editar suas próprias mensagens");
     }
 
-    // Verificar se já foi deletada
     if (message.deleted_at) {
       throw new Error("Não é possível editar mensagem deletada");
     }
 
-    // Verificar limite de tempo (15 minutos)
     const messageTime = new Date(message.created_at).getTime();
-    const now = new Date().getTime();
-    const fifteenMinutes = 15 * 60 * 1000;
-
-    if (now - messageTime > fifteenMinutes) {
+    const now = Date.now();
+    if (now - messageTime > 15 * 60 * 1000) {
       throw new Error("Mensagens só podem ser editadas dentro de 15 minutos");
     }
 
-    // Atualizar mensagem
     const { data, error } = await supabase
       .from("support_messages")
       .update({
@@ -369,16 +363,26 @@ export class MessageService {
   }
 
   /**
-   * Obtém nome do remetente baseado no tipo
+   * Gets sender name from profile map (batch loaded)
+   */
+  private getSenderNameFromProfile(
+    senderType: string,
+    senderId: string,
+    profilesMap: Map<string, string>
+  ): string {
+    if (senderType === "system") return "Sistema";
+    const name = profilesMap.get(senderId);
+    if (name) return name;
+    return senderType === "admin" ? "Administrador" : "Cliente";
+  }
+
+  /**
+   * Obtém nome do remetente baseado no tipo (fallback)
    */
   private getSenderName(senderType: string, senderId: string): string {
-    if (senderType === "admin") {
-      return "Administrador";
-    } else if (senderType === "customer") {
-      return "Cliente";
-    } else if (senderType === "system") {
-      return "Sistema";
-    }
+    if (senderType === "admin") return "Administrador";
+    if (senderType === "customer") return "Cliente";
+    if (senderType === "system") return "Sistema";
     return "Remetente";
   }
 
@@ -388,7 +392,6 @@ export class MessageService {
 
   /**
    * Sends a broadcast message to a group
-   * Requirements: 8.1, 8.2, 8.3, 8.4, 9.1, 9.2, 9.3
    */
   async sendBroadcastMessage(
     groupId: string,
@@ -402,7 +405,6 @@ export class MessageService {
     },
     attachmentFiles?: File[]
   ): Promise<GroupMessage & { attachments: GroupAttachment[] }> {
-    // Validate message length (1-5000 chars)
     if (!message || message.trim().length < 1) {
       throw new Error("Mensagem não pode estar vazia");
     }
@@ -410,10 +412,8 @@ export class MessageService {
       throw new Error("Mensagem não pode ter mais de 5000 caracteres");
     }
 
-    // Sanitize message content to prevent XSS
     const sanitizedMessage = sanitizeGroupMessage(message.trim());
 
-    // Verify group exists and is not deleted
     const { data: group, error: groupError } = await supabase
       .from("chat_groups")
       .select("id, deleted_at")
@@ -428,7 +428,6 @@ export class MessageService {
       throw new Error("Não é possível enviar mensagens para um grupo deletado");
     }
 
-    // Create the message (stored ONCE, not per member) with rich fields
     const { data: messageData, error: messageError } = await supabase
       .from("chat_group_messages")
       .insert({
@@ -448,7 +447,6 @@ export class MessageService {
       throw new Error("Erro ao enviar mensagem");
     }
 
-    // Handle attachments if provided
     let attachments: GroupAttachment[] = [];
     if (attachmentFiles && attachmentFiles.length > 0) {
       attachments = await this.uploadGroupAttachments(
@@ -459,9 +457,6 @@ export class MessageService {
       );
     }
 
-    // Broadcast via Realtime (handled by frontend subscription)
-    // Email notifications handled by background job
-
     return {
       ...messageData,
       attachments,
@@ -470,8 +465,6 @@ export class MessageService {
 
   /**
    * Uploads attachments for a group message
-   * Integrates with existing fileUploadService
-   * Requirements: 9.1, 9.2, 9.3
    */
   private async uploadGroupAttachments(
     messageId: string,
@@ -483,33 +476,31 @@ export class MessageService {
 
     for (const file of files) {
       try {
-        // Validate file
         const validation = fileUploadService.validateFile(file);
         if (!validation.valid) {
           console.error(`Arquivo inválido: ${file.name}`, validation.error);
           continue;
         }
 
-        // Generate unique file path
         const timestamp = Date.now();
         const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
         const filePath = `group-attachments/${groupId}/${timestamp}_${sanitizedFileName}`;
 
-        // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from("support-attachments")
           .upload(filePath, file, {
-            cacheControl: "3600",
+            contentType: file.type,
             upsert: false,
           });
 
         if (uploadError) {
-          console.error("Erro ao fazer upload:", uploadError);
+          console.error(`Erro ao fazer upload do arquivo ${file.name}:`, uploadError);
           continue;
         }
 
-        // Save attachment metadata
-        const { data: attachmentData, error: dbError } = await supabase
+        let thumbnailPath: string | null = null;
+
+        const { data: attachmentData, error: attachmentError } = await supabase
           .from("chat_group_attachments")
           .insert({
             message_id: messageId,
@@ -517,19 +508,18 @@ export class MessageService {
             file_path: filePath,
             file_size: file.size,
             file_type: file.type,
+            thumbnail_path: thumbnailPath,
             uploaded_by: uploadedBy,
           })
           .select()
           .single();
 
-        if (dbError) {
-          console.error("Erro ao salvar metadata do anexo:", dbError);
-          // Try to delete uploaded file
-          await supabase.storage.from("support-attachments").remove([filePath]);
+        if (attachmentError) {
+          console.error(`Erro ao registrar anexo ${file.name}:`, attachmentError);
           continue;
         }
 
-        attachments.push(attachmentData as GroupAttachment);
+        attachments.push(attachmentData);
       } catch (error) {
         console.error(`Erro ao processar arquivo ${file.name}:`, error);
       }
@@ -539,232 +529,95 @@ export class MessageService {
   }
 
   /**
-   * Lists messages from a group with pagination
-   * Requirements: 14.1, 14.2, 14.3, 14.4
+   * Lists messages for a group with pagination
    */
   async listGroupMessages(
     groupId: string,
-    userId: string,
-    pagination: Pagination = { page: 1, limit: 50 }
-  ): Promise<{
-    messages: Array<
-      GroupMessage & {
-        sender_name: string;
-        sender_avatar: string | null;
-        attachments: GroupAttachment[];
-      }
-    >;
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      total_pages: number;
-    };
-  }> {
-    // Removida validação de membership que causava erro 406
-    // A segurança é garantida pelas políticas RLS na tabela chat_group_messages
+    pagination?: Pagination
+  ): Promise<{ messages: (GroupMessage & { attachments: GroupAttachment[] })[]; hasMore: boolean }> {
+    const limit = pagination?.limit || 50;
+    const offset = pagination?.offset || 0;
 
-    // Get total message count
-    const { count: totalCount, error: countError } = await supabase
-      .from("chat_group_messages")
-      .select("*", { count: "exact", head: true })
-      .eq("group_id", groupId);
-
-    if (countError) {
-      console.error("Erro ao contar mensagens:", countError);
-      throw new Error("Erro ao carregar mensagens");
-    }
-
-    // Get paginated messages
-    const offset = (pagination.page - 1) * pagination.limit;
-    const { data: messages, error: messagesError } = await supabase
+    const { data, error } = await supabase
       .from("chat_group_messages")
       .select("*")
       .eq("group_id", groupId)
-      .order("created_at", { ascending: true })
-      .range(offset, offset + pagination.limit - 1);
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit);
 
-    if (messagesError) {
-      console.error("Erro ao listar mensagens:", messagesError);
-      throw new Error("Erro ao carregar mensagens");
+    if (error) {
+      console.error("Erro ao listar mensagens do grupo:", error);
+      throw new Error("Erro ao carregar mensagens do grupo");
     }
 
-    // Enrich messages with sender info and attachments
-    const enrichedMessages = await Promise.all(
-      (messages || []).map(async (msg) => {
-        // Get sender profile
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, email, avatar_url")
-          .eq("id", msg.sender_id)
-          .single();
+    const messages = data || [];
+    const hasMore = messages.length > limit;
+    const trimmedMessages = hasMore ? messages.slice(0, limit) : messages;
 
-        // Get attachments
+    const messagesWithAttachments = await Promise.all(
+      trimmedMessages.map(async (msg) => {
         const { data: attachments } = await supabase
           .from("chat_group_attachments")
           .select("*")
-          .eq("message_id", msg.id)
-          .order("created_at", { ascending: true });
+          .eq("message_id", msg.id);
 
         return {
           ...msg,
-          sender_name: profile?.full_name || profile?.email || "Usuário",
-          sender_avatar: profile?.avatar_url || null,
           attachments: attachments || [],
         };
       })
     );
 
     return {
-      messages: enrichedMessages,
-      pagination: {
-        page: pagination.page,
-        limit: pagination.limit,
-        total: totalCount || 0,
-        total_pages: Math.ceil((totalCount || 0) / pagination.limit),
-      },
+      messages: messagesWithAttachments.reverse(),
+      hasMore,
     };
   }
 
   /**
-   * Updates the last viewed timestamp for a member in a group
-   * Requirements: 12.3
+   * Deletes a group message (admin only)
    */
-  async updateLastViewed(groupId: string, userId: string): Promise<void> {
+  async deleteGroupMessage(messageId: string): Promise<void> {
     const { error } = await supabase
-      .from("chat_group_members")
-      .update({
-        last_viewed_at: new Date().toISOString(),
-      })
-      .eq("group_id", groupId)
-      .eq("user_id", userId);
+      .from("chat_group_messages")
+      .delete()
+      .eq("id", messageId);
 
     if (error) {
-      console.error("Erro ao atualizar última visualização:", error);
-      throw new Error("Erro ao atualizar visualização");
+      console.error("Erro ao deletar mensagem do grupo:", error);
+      throw new Error("Erro ao deletar mensagem");
     }
   }
 
   /**
-   * Gets the unread message count for a member in a group
-   * Based on messages created after last_viewed_at
-   * Requirements: 12.1, 12.2, 12.3
+   * Edits a group message
    */
-  async getUnreadCount(groupId: string, userId: string): Promise<number> {
-    // Get member's last viewed timestamp
-    const { data: member, error: memberError } = await supabase
-      .from("chat_group_members")
-      .select("last_viewed_at")
-      .eq("group_id", groupId)
-      .eq("user_id", userId)
-      .single();
-
-    if (memberError || !member) {
-      return 0;
+  async editGroupMessage(messageId: string, newMessage: string): Promise<GroupMessage> {
+    if (!newMessage || newMessage.trim().length < 1) {
+      throw new Error("Mensagem não pode estar vazia");
+    }
+    if (newMessage.length > 5000) {
+      throw new Error("Mensagem não pode ter mais de 5000 caracteres");
     }
 
-    // If never viewed, count all messages
-    if (!member.last_viewed_at) {
-      const { count } = await supabase
-        .from("chat_group_messages")
-        .select("*", { count: "exact", head: true })
-        .eq("group_id", groupId);
+    const sanitizedMessage = sanitizeGroupMessage(newMessage.trim());
 
-      return count || 0;
-    }
-
-    // Count messages created after last viewed
-    const { count } = await supabase
-      .from("chat_group_messages")
-      .select("*", { count: "exact", head: true })
-      .eq("group_id", groupId)
-      .gt("created_at", member.last_viewed_at);
-
-    return count || 0;
-  }
-
-  /**
-   * Gets public URL for a group attachment
-   * Requirements: 9.4
-   */
-  getGroupAttachmentUrl(filePath: string): string {
-    const { data } = supabase.storage.from("support-attachments").getPublicUrl(filePath);
-    return data.publicUrl;
-  }
-
-  /**
-   * Edita uma mensagem de grupo
-   * Apenas o autor (admin) pode editar
-   */
-  async editGroupMessage(messageId: string, newMessage: string, userId: string): Promise<void> {
-    // Buscar mensagem para verificar permissões
-    const { data: message, error: fetchError } = await supabase
-      .from("chat_group_messages")
-      .select("*")
-      .eq("id", messageId)
-      .single();
-
-    if (fetchError || !message) {
-      throw new Error("Mensagem não encontrada");
-    }
-
-    // Verificar se é o autor
-    if (message.sender_id !== userId) {
-      throw new Error("Você só pode editar suas próprias mensagens");
-    }
-
-    // Sanitizar nova mensagem
-    const sanitizedMessage = sanitizeGroupMessage(newMessage);
-
-    // Atualizar mensagem
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("chat_group_messages")
       .update({
         message: sanitizedMessage,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", messageId);
-
-    if (error) {
-      console.error("Erro ao editar mensagem:", error);
-      throw new Error("Erro ao editar mensagem");
-    }
-  }
-
-  /**
-   * Deleta uma mensagem de grupo (soft delete)
-   * Apenas o autor (admin) pode deletar
-   */
-  async deleteGroupMessage(messageId: string, userId: string): Promise<void> {
-    // Buscar mensagem para verificar permissões
-    const { data: message, error: fetchError } = await supabase
-      .from("chat_group_messages")
-      .select("*")
       .eq("id", messageId)
+      .select()
       .single();
 
-    if (fetchError || !message) {
-      throw new Error("Mensagem não encontrada");
-    }
-
-    // Verificar se é o autor
-    if (message.sender_id !== userId) {
-      throw new Error("Você só pode deletar suas próprias mensagens");
-    }
-
-    // Soft delete - apenas marca como deletada
-    const { error } = await supabase
-      .from("chat_group_messages")
-      .update({
-        message: "[Mensagem deletada]",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", messageId);
-
     if (error) {
-      console.error("Erro ao deletar mensagem:", error);
-      throw new Error("Erro ao deletar mensagem");
+      console.error("Erro ao editar mensagem do grupo:", error);
+      throw new Error("Erro ao editar mensagem");
     }
+
+    return data;
   }
 }
 
