@@ -187,7 +187,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
           characterName: item.characterName || "Personagem não definido",
           collectionId: item.collectionId,
           collectionName: item.collectionName,
-          imageUrl: null,
+          imageUrl: item.characterId ? characterImages?.get(item.characterId) || null : null,
           count: 0,
           items: [],
           hasCritical: false,
