@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { classifyImageWithVision } from "../_shared/ai-vision.ts";
 import { assertAdmin, getClaims } from "../_shared/supabase.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 
 type VisionModel = "gpt-4o-mini" | "gpt-4o";
 
