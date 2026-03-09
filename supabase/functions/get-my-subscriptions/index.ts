@@ -17,6 +17,10 @@ serve(async (req) => {
       });
     }
 
+    // Rate limit: standard read operations
+    const rateLimited = await checkRateLimit(req, "get-my-subscriptions", RATE_LIMITS.STANDARD, userId);
+    if (rateLimited) return rateLimited;
+
     // Busca assinaturas do usuário com dados da coleção
     const { data: subscriptions, error: subscriptionsError } = await client
       .from("subscriptions")
