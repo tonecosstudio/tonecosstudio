@@ -2087,6 +2087,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          key: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          key: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          key?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       scheduled_messages: {
         Row: {
           created_at: string
@@ -2891,6 +2918,15 @@ export type Database = {
         }[]
       }
       are_sales_open: { Args: never; Returns: boolean }
+      check_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_key: string
+          p_max_requests: number
+          p_window_seconds?: number
+        }
+        Returns: boolean
+      }
       close_monthly_sales: { Args: { reason?: string }; Returns: undefined }
       create_pricing_tier: {
         Args: {
