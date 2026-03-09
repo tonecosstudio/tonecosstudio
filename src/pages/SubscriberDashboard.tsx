@@ -256,12 +256,12 @@ function ActiveSubscriptionCard({ subscription }: any) {
           </div>
         </div>
 
-        {/* Pause Count */}
+        {/* Subscription Info */}
         <div className="pt-4 border-t">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Pausas disponíveis</span>
-            <span className="font-medium text-sm">
-              {2 - (subscription.pause_count || 0)} de 2
+            <span className="text-sm text-muted-foreground">Método de pagamento</span>
+            <span className="font-medium text-sm capitalize">
+              {subscription.payment_method || "Não informado"}
             </span>
           </div>
         </div>
