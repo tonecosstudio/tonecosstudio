@@ -31,6 +31,7 @@ export async function getClaims(req: Request) {
   // Important: validates JWT with signing keys, avoids "Invalid JWT" issues when verify_jwt is true.
   const { data, error } = await client.auth.getClaims(token);
   if (error || !data?.claims?.sub) {
+    logAuthFailure(req, new URL(req.url).pathname, error?.message ?? "missing sub claim");
     throw new Error("Unauthorized");
   }
   return { client, claims: data.claims };
