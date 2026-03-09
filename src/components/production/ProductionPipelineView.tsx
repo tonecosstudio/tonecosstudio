@@ -415,22 +415,16 @@ function DraggableCharacterCard({
   return (
     <div
       ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       className={cn(
-        "relative",
-        isDragging && "opacity-30",
+        "relative cursor-grab active:cursor-grabbing touch-none",
+        isDragging && "opacity-30 scale-105",
         isMoving && "opacity-50 pointer-events-none animate-pulse"
       )}
+      style={{ touchAction: "none" }}
     >
-      {/* Drag handle */}
-      <div
-        {...listeners}
-        {...attributes}
-        className="absolute -top-1 -left-1 z-10 p-1 rounded-full bg-muted/80 backdrop-blur cursor-grab active:cursor-grabbing opacity-0 group-hover/card:opacity-100 hover:opacity-100 transition-opacity"
-        style={{ touchAction: "none" }}
-      >
-        <GripVertical className="h-3 w-3 text-muted-foreground" />
-      </div>
-      <CharacterCardInteractive group={group} onClick={onClick} />
+      <CharacterCardInteractive group={group} onClick={onClick} isDragging={isDragging} />
     </div>
   );
 }
