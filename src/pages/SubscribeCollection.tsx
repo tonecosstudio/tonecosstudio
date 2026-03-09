@@ -115,7 +115,9 @@ export default function SubscribeCollection() {
           plan_id: selectedPlan.id,
           plan_type: selectedPlan.plan_type,
           status: "pending_payment",
-          payment_voucher_url: paymentVoucherUrl,
+          collection_id: activeCollectionId,
+          payment_method: paymentMethod,
+          notes: paymentVoucherUrl ? `Comprovante: ${paymentVoucherUrl}` : null,
         })
         .select()
         .single();
@@ -131,10 +133,11 @@ export default function SubscribeCollection() {
         .insert({
           user_id: user.id,
           amount: Number(amount),
-          payment_type: "subscription",
+          reference_type: "subscription",
+          reference_id: subscription.id,
           status: paymentStatus,
-          reference_number: `SUB-${Date.now()}`,
-          subscription_id: subscription.id,
+          payment_method: paymentMethod,
+          notes: paymentVoucherUrl ? `Comprovante: ${paymentVoucherUrl}` : null,
         })
         .select()
         .single();
