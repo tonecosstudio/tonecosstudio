@@ -616,7 +616,6 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "processing",
-        started_at: new Date().toISOString(),
       })
       .eq("id", operationId);
 
