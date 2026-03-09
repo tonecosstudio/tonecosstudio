@@ -262,8 +262,9 @@ serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error creating subscription:", msg);
+    const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
     return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
+      status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
