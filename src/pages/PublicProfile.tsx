@@ -19,7 +19,7 @@ type PublicProfileData = {
   collector_xp: number;
   pieces_owned: number;
   total_spent: number;
-  joined_at: string;
+  joined_at: string; // maps to created_at
 };
 
 type BadgeData = {
