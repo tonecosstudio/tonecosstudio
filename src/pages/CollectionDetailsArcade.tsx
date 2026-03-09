@@ -1,21 +1,23 @@
 /**
- * Collection Details Page - Metal Slug Style
+ * Collection Details Page - Metal Slug Arcade Style
  * 
- * Página interna da coleção com estética arcade
+ * Uses ArcadePage shell for consistent aesthetic with Home, Collections, Plans.
+ * Route: /colecoes/:slug
  */
 
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import AppShell from "@/components/AppShell";
-
-const MONTHS = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-];
-import SEOHead from "@/components/SEOHead";
-import { Button } from "@/components/ui/button";
+import {
+  ArcadePage,
+  ArcadeHero,
+  ArcadeCard,
+  ArcadeSectionTitle,
+  ArcadeCTA,
+  FloatingParticles,
+  GlitchText,
+} from "@/components/arcade/ArcadeLayout";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -24,10 +26,18 @@ import {
   Star,
   Package,
   Coins,
-  ShoppingCart,
   Crown,
   Sparkles,
+  Calendar,
+  Eye,
+  Lock,
+  Zap,
 } from "lucide-react";
+
+const MONTHS = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
 
 // ─── Types ───────────────────────────────────────────────────
 type Character = {
@@ -51,14 +61,14 @@ type Collection = {
   collection_characters: Character[];
 };
 
-// ─── Character Card Component ────────────────────────────────
-function CharacterCard({ 
-  character, 
-  index, 
+// ─── Character Card ──────────────────────────────────────────
+function CharacterCard({
+  character,
+  index,
   isUpcoming = false,
   collectionSlug,
-}: { 
-  character: Character; 
+}: {
+  character: Character;
   index: number;
   isUpcoming?: boolean;
   collectionSlug: string;
@@ -71,117 +81,233 @@ function CharacterCard({
       onClick={(e) => isUpcoming && e.preventDefault()}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group block ${isUpcoming ? 'cursor-not-allowed' : ''}`}
+      className={`group block ${isUpcoming ? "cursor-not-allowed" : ""}`}
     >
-      <div
-        className={`
-          relative overflow-hidden rounded-sm border-2 transition-all duration-500
-          ${
-            isUpcoming
-              ? "border-[hsl(var(--border))] opacity-60"
-              : isHovered
-              ? "border-[hsl(var(--gold-accent))] shadow-[0_0_20px_hsl(var(--gold-accent)/0.3)] scale-105"
-              : "border-[hsl(var(--border))]"
-          }
-        `}
-        style={{
-          clipPath: "polygon(0 0, 100% 0, 100% 85%, 90% 100%, 0 100%)",
-        }}
-      >
-        {/* Image Container */}
-        <div className="relative aspect-[3/4] bg-[hsl(var(--muted))] overflow-hidden">
+      <ArcadeCard hover={!isUpcoming}>
+        {/* Image */}
+        <div className="relative aspect-[3/4] bg-[hsl(0,0%,8%)] overflow-hidden">
           {character.image_url ? (
             <img
               src={character.image_url}
               alt={character.name}
-              className={`w-full h-full object-cover transition-all duration-500 ${
-                isUpcoming 
-                  ? "grayscale blur-sm" 
-                  : isHovered 
-                  ? "grayscale-0 scale-110" 
-                  : "grayscale scale-100"
+              className={`w-full h-full object-cover transition-all duration-700 ${
+                isUpcoming
+                  ? "grayscale blur-sm scale-100"
+                  : isHovered
+                  ? "grayscale-0 scale-110"
+                  : "grayscale-[0.6] scale-100"
               }`}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Package className="w-16 h-16 text-[hsl(var(--muted-foreground))]" />
+              <Package className="w-12 h-12 text-[hsl(0,0%,25%)]" />
             </div>
           )}
 
-          {/* Upcoming Overlay */}
+          {/* Scanline */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.06]"
+            style={{
+              background:
+                "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0%) 2px, hsl(0 0% 0%) 4px)",
+            }}
+          />
+
+          {/* Hover glow */}
+          {isHovered && !isUpcoming && (
+            <div className="absolute inset-0 bg-[hsl(var(--gold-accent)/0.12)] pointer-events-none transition-opacity" />
+          )}
+
+          {/* Index tag */}
+          <div className="absolute top-2 left-2 bg-[hsl(0,0%,95%)/0.9] text-[hsl(0,0%,5%)] px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider">
+            #{String(index + 1).padStart(2, "0")}
+          </div>
+
+          {/* Month badge */}
+          {character.release_month && !isUpcoming && (
+            <div className="absolute top-2 right-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {MONTHS[character.release_month - 1]?.substring(0, 3)}
+            </div>
+          )}
+
+          {/* Upcoming overlay */}
           {isUpcoming && (
-            <div className="absolute inset-0 bg-[hsl(var(--background)/0.8)] flex items-center justify-center">
+            <div className="absolute inset-0 bg-[hsl(0,0%,5%)/0.85] flex items-center justify-center">
               <div className="text-center">
-                <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center">
-                  <svg className="w-6 h-6 text-[hsl(var(--muted-foreground))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                <Lock className="w-8 h-8 text-[hsl(0,0%,30%)] mx-auto mb-2" />
+                <p
+                  className="text-[8px] tracking-[0.2em] uppercase text-[hsl(0,0%,40%)]"
+                  style={{ fontFamily: "'Press Start 2P', monospace" }}
+                >
                   Em Breve
                 </p>
               </div>
             </div>
           )}
-
-          {/* Scanlines */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--foreground)) 2px, hsl(var(--foreground)) 4px)",
-            }}
-          />
-
-          {/* Corner Accents */}
-          {!isUpcoming && (
-            <>
-              <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[hsl(var(--gold-accent))] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[hsl(var(--gold-accent))] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </>
-          )}
         </div>
 
-        {/* Info Panel */}
-        <div className="relative p-3 bg-[hsl(var(--card))]">
+        {/* Info */}
+        <div className="p-3 border-t border-[hsl(0,0%,12%)]">
           <h4
             className={`text-sm font-bold uppercase tracking-tight transition-colors duration-300 line-clamp-1 ${
               isUpcoming
-                ? "text-[hsl(var(--muted-foreground))]"
-                : isHovered 
-                ? "text-[hsl(var(--gold-accent))]" 
-                : "text-[hsl(var(--foreground))]"
+                ? "text-[hsl(0,0%,35%)]"
+                : isHovered
+                ? "text-[hsl(var(--gold-accent))]"
+                : "text-[hsl(0,0%,85%)]"
             }`}
           >
             {isUpcoming ? "???" : character.name}
           </h4>
-          {(() => {
-            const month = character.release_month;
-            const monthLabel = typeof month === "number" && month >= 1 && month <= 12 ? MONTHS[month - 1] : null;
-
-            if (!monthLabel) return null;
-
-            return (
-              <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-1">
-                📅 {monthLabel}
-              </p>
-            );
-          })()}
         </div>
+      </ArcadeCard>
+    </Link>
+  );
+}
+
+// ─── Featured Character (Hero Style) ─────────────────────────
+function FeaturedCharacterHero({
+  character,
+  collectionSlug,
+}: {
+  character: Character;
+  collectionSlug: string;
+}) {
+  return (
+    <Link to={`/colecoes/${collectionSlug}/${character.id}`} className="group block">
+      <div className="relative h-80 md:h-[480px] overflow-hidden border-2 border-[hsl(var(--gold-accent)/0.6)] group-hover:border-[hsl(var(--gold-accent))] transition-all duration-500 group-hover:shadow-[0_0_60px_hsl(var(--gold-accent)/0.3)]">
+        {/* Corner brackets */}
+        <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
+        <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[hsl(var(--gold-accent))] z-20" />
+        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
+        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[hsl(var(--gold-accent))] z-20" />
+
+        {/* Image */}
+        {character.image_url ? (
+          <img
+            src={character.image_url}
+            alt={character.name}
+            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--gold-accent)/0.15)] to-[hsl(0,0%,5%)] flex items-center justify-center">
+            <Package className="w-24 h-24 text-[hsl(var(--gold-accent)/0.3)]" />
+          </div>
+        )}
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-[hsl(0,0%,5%)/0.4] to-transparent" />
+
+        {/* Scanline */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={{
+            background:
+              "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0%) 2px, hsl(0 0% 0%) 4px)",
+          }}
+        />
+
+        {/* Content */}
+        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10 z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.15)]">
+              <Star className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
+              <span
+                className="text-[8px] text-[hsl(var(--gold-accent))] tracking-[0.2em] uppercase"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                Destaque do Mês
+              </span>
+            </div>
+            {character.release_month && (
+              <span className="text-[10px] font-mono text-[hsl(0,0%,50%)] tracking-wider uppercase">
+                📅 {MONTHS[character.release_month - 1]}
+              </span>
+            )}
+          </div>
+
+          <h3
+            className="text-4xl md:text-6xl font-black tracking-[0.1em] mb-3 leading-none"
+            style={{
+              fontFamily: "'Bebas Neue', Impact, sans-serif",
+              textShadow: "0 0 30px hsl(var(--gold-accent) / 0.3)",
+            }}
+          >
+            <GlitchText text={character.name} />
+          </h3>
+
+          {character.description && (
+            <p className="text-[hsl(0,0%,50%)] max-w-2xl text-sm mb-4 line-clamp-2">
+              {character.description}
+            </p>
+          )}
+
+          <div className="inline-flex items-center gap-2 text-[hsl(var(--gold-accent))] font-mono text-xs tracking-wider uppercase group-hover:gap-3 transition-all">
+            <Eye className="w-4 h-4" />
+            Ver Detalhes
+            <span className="transition-transform group-hover:translate-x-1">→</span>
+          </div>
+        </div>
+
+        {/* Hover glow */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[hsl(var(--gold-accent)/0.06)] pointer-events-none" />
       </div>
     </Link>
   );
 }
 
+// ─── Section Header ──────────────────────────────────────────
+function SectionHeader({
+  title,
+  count,
+  variant = "default",
+}: {
+  title: string;
+  count: number;
+  variant?: "default" | "muted" | "accent";
+}) {
+  const colors = {
+    default: {
+      title: "text-[hsl(0,0%,90%)]",
+      badge: "border-[hsl(var(--gold-accent)/0.4)] text-[hsl(var(--gold-accent))]",
+    },
+    muted: {
+      title: "text-[hsl(0,0%,45%)]",
+      badge: "border-[hsl(0,0%,20%)] text-[hsl(0,0%,45%)]",
+    },
+    accent: {
+      title: "text-[hsl(var(--gold-accent))]",
+      badge: "border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))]",
+    },
+  };
+
+  const c = colors[variant];
+
+  return (
+    <div className="flex items-center gap-4 mb-6">
+      <h2
+        className={`text-xl md:text-2xl font-black tracking-[0.1em] uppercase ${c.title}`}
+        style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+      >
+        {title}
+      </h2>
+      <span className={`text-[10px] font-mono tracking-wider px-2 py-0.5 border ${c.badge}`}>
+        {count}
+      </span>
+      <div className="flex-1 h-px bg-gradient-to-r from-[hsl(var(--gold-accent)/0.2)] to-transparent" />
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────
 export default function CollectionDetailsArcade() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
-  // Buscar dados da coleção
   const { data: collection, isLoading } = useQuery({
     queryKey: ["collection-details-arcade", slug],
     queryFn: async () => {
-      // Buscar coleção
       const { data: collectionData, error: collectionError } = await supabase
         .from("collections")
         .select("id, name, slug, description, cover_image_url, is_active")
@@ -191,7 +317,6 @@ export default function CollectionDetailsArcade() {
       if (collectionError) throw collectionError;
       if (!collectionData) return null;
 
-      // Buscar personagens da coleção
       const { data: charactersData, error: charactersError } = await supabase
         .from("collection_characters")
         .select("id, name, description, image_url, release_order, release_month, is_catalog, status")
@@ -202,447 +327,283 @@ export default function CollectionDetailsArcade() {
 
       return {
         ...collectionData,
-        collection_characters: charactersData || []
+        collection_characters: charactersData || [],
       } as Collection;
     },
     enabled: !!slug,
   });
 
+  // Loading state
   if (isLoading) {
     return (
-      <AppShell>
-        <SEOHead title="Carregando..." />
-        <div className="min-h-screen bg-[hsl(var(--background))] py-12">
-          <div className="container max-w-7xl mx-auto px-4">
-            <Skeleton className="h-12 w-48 mb-8" />
-            <Skeleton className="h-64 w-full mb-8 rounded-lg" />
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <Skeleton key={i} className="aspect-[3/4] rounded-lg" />
-              ))}
-            </div>
+      <ArcadePage title="Carregando..." description="Carregando coleção">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-16">
+          <Skeleton className="h-10 w-48 mb-8 bg-[hsl(0,0%,10%)]" />
+          <Skeleton className="h-80 w-full mb-8 bg-[hsl(0,0%,10%)]" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <Skeleton key={i} className="aspect-[3/4] bg-[hsl(0,0%,10%)]" />
+            ))}
           </div>
         </div>
-      </AppShell>
+      </ArcadePage>
     );
   }
 
+  // Not found
   if (!collection) {
     return (
-      <AppShell>
-        <SEOHead title="Coleção não encontrada" />
-        <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
+      <ArcadePage title="Coleção não encontrada" description="Coleção não encontrada">
+        <div className="min-h-[60vh] flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Coleção não encontrada</h1>
-            <Button onClick={() => navigate("/colecoes-arcade")}>
-              Voltar para Coleções
-            </Button>
+            <Package className="w-16 h-16 text-[hsl(0,0%,25%)] mx-auto mb-4" />
+            <h1
+              className="text-3xl font-black tracking-[0.1em] uppercase mb-4"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
+              Coleção não encontrada
+            </h1>
+            <button
+              onClick={() => navigate("/colecoes")}
+              className="font-mono text-xs tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))] border border-[hsl(var(--gold-accent)/0.4)] px-6 py-2 hover:bg-[hsl(var(--gold-accent)/0.1)] transition-colors"
+            >
+              ← Voltar para Coleções
+            </button>
           </div>
         </div>
-      </AppShell>
+      </ArcadePage>
     );
   }
 
   const safeCharacters = Array.isArray(collection.collection_characters)
-    ? collection.collection_characters.filter((character): character is Character =>
-        Boolean(character && character.id && character.name)
+    ? collection.collection_characters.filter(
+        (c): c is Character => Boolean(c && c.id && c.name)
       )
     : [];
 
-  const characterCount = safeCharacters.length;
+  const currentMonth = new Date().getMonth() + 1;
+  const catalogCharacters = safeCharacters.filter((c) => c.is_catalog === true);
+  const monthlyCharacters = safeCharacters.filter((c) => c.is_catalog !== true);
+
+  const featuredCharacter =
+    monthlyCharacters.find((c) => c.release_month === currentMonth && c.status === "released") ||
+    monthlyCharacters.find((c) => c.release_month === currentMonth);
+
+  const releasedCharacters = monthlyCharacters
+    .filter((c) => c.status === "released" && c.id !== featuredCharacter?.id)
+    .sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
+
+  const upcomingCharacters = monthlyCharacters
+    .filter((c) => (c.status === "upcoming" || c.status === "revealed") && c.id !== featuredCharacter?.id)
+    .sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
   return (
-    <AppShell>
-      <SEOHead
-        title={collection.name}
-        description={collection.description || `Coleção ${collection.name}`}
-      />
+    <ArcadePage
+      title={`${collection.name} | Coleção`}
+      description={collection.description || `Coleção ${collection.name} - Personagens exclusivos`}
+    >
+      {/* Hero Section */}
+      <section className="relative py-16 md:py-24 px-6 overflow-hidden">
+        <FloatingParticles />
 
-      {/* Scanlines Effect */}
-      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]">
+        {/* Cover image background */}
+        {collection.cover_image_url && (
+          <div className="absolute inset-0 z-0">
+            <img
+              src={collection.cover_image_url}
+              alt=""
+              className="w-full h-full object-cover opacity-[0.08] blur-sm"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[hsl(0,0%,5%)/0.6] via-[hsl(0,0%,5%)/0.8] to-[hsl(0,0%,5%)]" />
+          </div>
+        )}
+
         <div
-          className="w-full h-full"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--foreground)) 2px, hsl(var(--foreground)) 4px)",
-          }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.04] pointer-events-none"
+          style={{ background: "radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)" }}
         />
-      </div>
 
-      <div className="min-h-screen bg-[hsl(var(--background))] py-8 md:py-12">
-        <div className="container max-w-7xl mx-auto px-4">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/colecoes-arcade")}
-            className="mb-6 font-mono uppercase tracking-wider text-xs hover:text-[hsl(var(--gold-accent))]"
+        <div className="relative max-w-5xl mx-auto z-10">
+          {/* Back button */}
+          <button
+            onClick={() => navigate("/colecoes")}
+            className="flex items-center gap-2 mb-8 font-mono text-[10px] tracking-[0.2em] uppercase text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar para Coleções
-          </Button>
+            <ArrowLeft className="w-3 h-3" />
+            Coleções
+          </button>
 
-          {/* Hero Section */}
-          <div className="relative mb-12">
-            <div
-              className="relative h-64 md:h-80 rounded-sm overflow-hidden border-2 border-[hsl(var(--gold-accent))] shadow-[0_0_40px_hsl(var(--gold-accent)/0.3)]"
+          {/* Title */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.05)]">
+              <Crown className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
+              <span
+                className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                Coleção Exclusiva
+              </span>
+            </div>
+
+            <h1
+              className="text-5xl md:text-7xl lg:text-8xl font-black tracking-[0.15em] mb-4 leading-none"
               style={{
-                clipPath: "polygon(0 0, 100% 0, 100% 90%, 95% 100%, 0 100%)",
+                fontFamily: "'Bebas Neue', Impact, sans-serif",
+                textShadow: "0 0 40px hsl(var(--gold-accent) / 0.15)",
               }}
             >
-              {/* Background Image */}
-              {collection.cover_image_url ? (
-                <img
-                  src={collection.cover_image_url}
-                  alt={collection.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[hsl(var(--background))]" />
-              )}
+              <GlitchText text={collection.name} />
+            </h1>
 
-              {/* Overlay Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--background))] via-[hsl(var(--background)/0.5)] to-transparent" />
-
-              {/* Content */}
-              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                <div className="flex items-center gap-3 mb-3">
-                  <Badge className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] font-mono uppercase tracking-wider px-3 py-1 text-xs border-2 border-[hsl(var(--foreground))]">
-                    <Crown className="w-3 h-3 mr-1" />
-                    Coleção Exclusiva
-                  </Badge>
-                  <Badge variant="outline" className="font-mono uppercase tracking-wider px-3 py-1 text-xs border-[hsl(var(--gold-accent))]">
-                    <Users className="w-3 h-3 mr-1" />
-                    {characterCount} Personagens
-                  </Badge>
-                </div>
-
-                <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] mb-2 font-mono drop-shadow-[0_0_10px_hsl(var(--gold-accent))]">
-                  {collection.name}
-                </h1>
-
-                {collection.description && (
-                  <p className="text-[hsl(var(--muted-foreground))] max-w-2xl text-sm md:text-base">
-                    {collection.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Corner Accents */}
-              <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-[hsl(var(--gold-accent))]" />
-              <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-[hsl(var(--gold-accent))]" />
-              <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-[hsl(var(--gold-accent))]" />
-            </div>
-          </div>
-
-          {/* Pricing Info Card */}
-          <div className="mb-12 bg-[hsl(var(--card))] border-2 border-[hsl(var(--gold-accent)/0.3)] rounded-sm p-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="flex-1">
-                <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-2 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5" />
-                  Sistema de Preços Contextuais
-                </h3>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  Os preços variam de acordo com sua assinatura e coleção ativa
-                </p>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 p-3 bg-[hsl(var(--background))] rounded-sm border border-[hsl(var(--border))]">
-                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--gold-accent)/0.2)] flex items-center justify-center">
-                      <Coins className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                        Coleção Ativa
-                      </p>
-                      <p className="text-lg font-bold text-[hsl(var(--gold-accent))] font-mono">
-                        200 coins
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 bg-[hsl(var(--background))] rounded-sm border border-[hsl(var(--border))]">
-                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center">
-                      <Coins className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                        Outra Coleção
-                      </p>
-                      <p className="text-lg font-bold text-[hsl(var(--foreground))] font-mono">
-                        300 coins
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  size="lg"
-                  className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm"
-                >
-                  <Crown className="w-5 h-5 mr-2" />
-                  Assinar Coleção
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-wider text-sm"
-                >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Ver Planos
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Characters Sections */}
-          {safeCharacters.length > 0 && (() => {
-            const currentMonth = new Date().getMonth() + 1; // 1-12
-
-            // Separar catálogo dos personagens mensais
-            const catalogCharacters = safeCharacters.filter((c) => c.is_catalog === true);
-            const monthlyCharacters = safeCharacters.filter((c) => c.is_catalog !== true);
-
-            // Personagem destaque = o do mês atual
-            const featuredCharacter =
-              monthlyCharacters.find((c) => c.release_month === currentMonth && c.status === "released") ||
-              monthlyCharacters.find((c) => c.release_month === currentMonth);
-
-            // Já lançados (exceto o destaque e catálogo)
-            const releasedCharacters = monthlyCharacters.filter(
-              (c) => c.status === "released" && c.id !== featuredCharacter?.id
-            );
-            const sortedReleased = [...releasedCharacters].sort(
-              (a, b) => (a.release_month || 0) - (b.release_month || 0)
-            );
-
-            // Próximos lançamentos
-            const upcomingCharacters = monthlyCharacters.filter(
-              (c) => (c.status === "upcoming" || c.status === "revealed") && c.id !== featuredCharacter?.id
-            );
-            const sortedUpcoming = [...upcomingCharacters].sort(
-              (a, b) => (a.release_month || 0) - (b.release_month || 0)
-            );
-
-            return (
-              <>
-                {/* Featured Character of the Month */}
-                {featuredCharacter && (
-                  <div className="mb-12">
-                    <div className="flex items-center gap-3 mb-6">
-                      <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight font-mono text-[hsl(var(--gold-accent))]">
-                        Lançamento do Mês
-                      </h2>
-                      <Badge className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] font-mono uppercase tracking-wider px-3 py-1 text-xs border-2 border-[hsl(var(--foreground))] animate-pulse">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Disponível Agora
-                      </Badge>
-                    </div>
-
-                    <Link to={`/colecoes/${collection.slug}/${featuredCharacter.id}`}>
-                      <div className="relative group">
-                        <div
-                          className="relative h-96 md:h-[500px] rounded-sm overflow-hidden border-4 border-[hsl(var(--gold-accent))] shadow-[0_0_50px_hsl(var(--gold-accent)/0.5)] transition-all duration-500 hover:shadow-[0_0_80px_hsl(var(--gold-accent)/0.7)] hover:scale-[1.02]"
-                          style={{
-                            clipPath: "polygon(0 0, 100% 0, 100% 92%, 90% 100%, 0 100%)",
-                          }}
-                        >
-                          {/* Background Image */}
-                          {featuredCharacter.image_url ? (
-                            <img
-                              src={featuredCharacter.image_url}
-                              alt={featuredCharacter.name}
-                              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[hsl(var(--background))] flex items-center justify-center">
-                              <Package className="w-32 h-32 text-[hsl(var(--gold-accent))]" />
-                            </div>
-                          )}
-
-                          {/* Overlay Gradient */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--background))] via-[hsl(var(--background)/0.3)] to-transparent" />
-
-                          {/* Scanlines */}
-                          <div
-                            className="absolute inset-0 pointer-events-none opacity-[0.05]"
-                            style={{
-                              backgroundImage:
-                                "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--foreground)) 2px, hsl(var(--foreground)) 4px)",
-                            }}
-                          />
-
-                          {/* Content */}
-                          <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                            <div className="flex items-center gap-3 mb-3">
-                              <Badge className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] font-mono uppercase tracking-wider px-4 py-2 text-sm border-2 border-[hsl(var(--foreground))]">
-                                <Star className="w-4 h-4 mr-1" />
-                                Destaque
-                              </Badge>
-                              {featuredCharacter.release_month && (
-                                <Badge variant="outline" className="font-mono uppercase tracking-wider px-3 py-1 text-xs border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]">
-                                  📅 {MONTHS[featuredCharacter.release_month - 1]}
-                                </Badge>
-                              )}
-                            </div>
-
-                            <h3 className="text-4xl md:text-6xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] mb-3 font-mono drop-shadow-[0_0_20px_hsl(var(--gold-accent))]">
-                              {featuredCharacter.name}
-                            </h3>
-
-                            {featuredCharacter.description && (
-                              <p className="text-[hsl(var(--muted-foreground))] max-w-3xl text-sm md:text-base mb-4">
-                                {featuredCharacter.description}
-                              </p>
-                            )}
-
-                            <Button
-                              size="lg"
-                              className="w-fit bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm"
-                            >
-                              Ver Detalhes
-                            </Button>
-                          </div>
-
-                          {/* Corner Accents */}
-                          <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-[hsl(var(--gold-accent))]" />
-                          <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-[hsl(var(--gold-accent))]" />
-                          <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-[hsl(var(--gold-accent))]" />
-
-                          {/* Glow Effect */}
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[hsl(var(--gold-accent)/0.1)]" />
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                )}
-
-                {/* Already Released Characters */}
-                {sortedReleased.length > 0 && (
-                  <div className="mb-12">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight font-mono text-[hsl(var(--foreground))]">
-                          Já Lançados
-                        </h2>
-                        <Badge className="bg-green-500/20 text-green-500 font-mono uppercase tracking-wider px-3 py-1 border border-green-500/50">
-                          {sortedReleased.length} Disponíveis
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                      {sortedReleased.map((character, index) => (
-                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} collectionSlug={collection.slug} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Upcoming Characters */}
-                {sortedUpcoming.length > 0 && (
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight font-mono text-[hsl(var(--muted-foreground))]">
-                          Próximos Lançamentos
-                        </h2>
-                        <Badge className="bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-mono uppercase tracking-wider px-3 py-1 border border-[hsl(var(--border))]">
-                          {sortedUpcoming.length} Em Breve
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm p-4 mb-6">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-[hsl(var(--muted-foreground))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-sm font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
-                            Lançamentos Mensais
-                          </p>
-                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                            Novos personagens são lançados todo mês para assinantes. Assine para ter acesso prioritário!
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                      {sortedUpcoming.map((character, index) => (
-                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={true} collectionSlug={collection.slug} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Catalog Characters */}
-                {catalogCharacters.length > 0 && (
-                  <div className="mb-12">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight font-mono text-[hsl(var(--foreground))]">
-                          Catálogo
-                        </h2>
-                        <Badge className="bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))] font-mono uppercase tracking-wider px-3 py-1 border border-[hsl(var(--primary)/0.5)]">
-                          {catalogCharacters.length} Disponíveis
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm p-4 mb-6">
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        Personagens do catálogo estão sempre disponíveis, independente do mês.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                      {catalogCharacters.map((character, index) => (
-                        <CharacterCard key={character.id} character={character} index={index} isUpcoming={false} collectionSlug={collection.slug} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-
-          {/* Empty State */}
-          {safeCharacters.length === 0 && (
-            <div className="text-center py-12 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm">
-              <Package className="w-16 h-16 mx-auto mb-4 text-[hsl(var(--muted-foreground))]" />
-              <p className="text-[hsl(var(--muted-foreground))] font-mono uppercase tracking-wider text-sm">
-                Nenhum personagem disponível
-              </p>
-            </div>
-          )}
-
-          {/* Bottom CTA */}
-          <div className="mt-12 bg-gradient-to-r from-[hsl(var(--gold-accent)/0.1)] to-transparent border-l-4 border-[hsl(var(--gold-accent))] rounded-sm p-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-2">
-                  Pronto para começar?
-                </h3>
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Assine agora e tenha acesso a todos os personagens desta coleção com preços especiais
-                </p>
-              </div>
-              <Button
-                size="lg"
-                className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm whitespace-nowrap"
+            {collection.description && (
+              <p
+                className="text-[hsl(0,0%,50%)] text-[10px] md:text-xs max-w-lg mx-auto tracking-[0.15em] mb-8"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
-                Ver Planos de Assinatura
-              </Button>
+                {collection.description}
+              </p>
+            )}
+
+            {/* Stats */}
+            <div className="flex items-center justify-center gap-6 md:gap-10 font-mono text-xs">
+              {[
+                { value: safeCharacters.length, label: "Personagens" },
+                { value: releasedCharacters.length + (featuredCharacter ? 1 : 0), label: "Disponíveis" },
+                { value: upcomingCharacters.length, label: "Em Breve" },
+              ].map((stat, i) => (
+                <div key={i} className="flex items-center gap-6 md:gap-10">
+                  {i > 0 && <div className="w-px h-10 bg-[hsl(0,0%,20%)]" />}
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">
+                      {stat.value}
+                    </p>
+                    <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">
+                      {stat.label}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 pb-16 space-y-16">
+        {/* Featured Character */}
+        {featuredCharacter && (
+          <section>
+            <ArcadeSectionTitle>Lançamento do Mês</ArcadeSectionTitle>
+            <FeaturedCharacterHero character={featuredCharacter} collectionSlug={collection.slug} />
+          </section>
+        )}
+
+        {/* Released Characters */}
+        {releasedCharacters.length > 0 && (
+          <section>
+            <SectionHeader title="Já Lançados" count={releasedCharacters.length} variant="default" />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
+              {releasedCharacters.map((character, index) => (
+                <CharacterCard
+                  key={character.id}
+                  character={character}
+                  index={index}
+                  isUpcoming={false}
+                  collectionSlug={collection.slug}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Upcoming Characters */}
+        {upcomingCharacters.length > 0 && (
+          <section>
+            <SectionHeader title="Próximos Lançamentos" count={upcomingCharacters.length} variant="muted" />
+
+            {/* Info banner */}
+            <ArcadeCard hover={false} className="mb-6 p-4">
+              <div className="flex items-center gap-3">
+                <Zap className="w-5 h-5 text-[hsl(var(--gold-accent)/0.6)] flex-shrink-0" />
+                <p className="text-[10px] font-mono text-[hsl(0,0%,45%)] tracking-wider">
+                  Novos personagens são lançados todo mês. Assine para ter acesso prioritário!
+                </p>
+              </div>
+            </ArcadeCard>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
+              {upcomingCharacters.map((character, index) => (
+                <CharacterCard
+                  key={character.id}
+                  character={character}
+                  index={index}
+                  isUpcoming={true}
+                  collectionSlug={collection.slug}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Catalog Characters */}
+        {catalogCharacters.length > 0 && (
+          <section>
+            <SectionHeader title="Catálogo Permanente" count={catalogCharacters.length} variant="accent" />
+
+            <ArcadeCard hover={false} className="mb-6 p-4">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-[hsl(var(--gold-accent)/0.6)] flex-shrink-0" />
+                <p className="text-[10px] font-mono text-[hsl(0,0%,45%)] tracking-wider">
+                  Personagens do catálogo estão sempre disponíveis, independente do mês.
+                </p>
+              </div>
+            </ArcadeCard>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
+              {catalogCharacters.map((character, index) => (
+                <CharacterCard
+                  key={character.id}
+                  character={character}
+                  index={index}
+                  isUpcoming={false}
+                  collectionSlug={collection.slug}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state */}
+        {safeCharacters.length === 0 && (
+          <ArcadeCard hover={false} className="p-12">
+            <div className="text-center">
+              <Package className="w-16 h-16 text-[hsl(0,0%,20%)] mx-auto mb-4" />
+              <p
+                className="text-[10px] tracking-[0.2em] uppercase text-[hsl(0,0%,40%)]"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                Nenhum personagem disponível
+              </p>
+            </div>
+          </ArcadeCard>
+        )}
       </div>
-    </AppShell>
+
+      {/* Bottom CTA */}
+      <ArcadeCTA
+        badge="Assine Agora"
+        title="JUNTE-SE AO CLUBE"
+        description="Assine e tenha acesso exclusivo a todos os personagens desta coleção com preços especiais."
+        primaryAction={{
+          label: "Ver Planos",
+          href: "/planos",
+          icon: <Crown className="w-4 h-4" />,
+        }}
+        secondaryAction={{
+          label: "Ver Coleções",
+          href: "/colecoes",
+        }}
+      />
+    </ArcadePage>
   );
 }

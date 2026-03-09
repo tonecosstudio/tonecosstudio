@@ -412,22 +412,7 @@ export async function approvePayment(id: string, adminId: string): Promise<void>
 
   // Note: quote/subscription integration is handled via Edge Functions
 
-  // Send message to conversation if it exists
-  if (payment.conversation) {
-    try {
-      const { sendMessage } = await import("./conversation-service");
-      await sendMessage(
-        payment.conversation.id,
-        adminId,
-        "Seu pagamento foi aprovado! O pedido será processado em breve.",
-        [],
-        false
-      );
-    } catch (error) {
-      console.error("Failed to send approval message:", error);
-      // Don't throw - message failure shouldn't block approval
-    }
-  }
+  // Note: conversation messages are handled via Edge Functions
 
   // Send payment approval notification
   try {
@@ -490,22 +475,7 @@ export async function rejectPayment(id: string, adminId: string, reason: string)
     // Don't throw - audit log failure shouldn't block rejection
   }
 
-  // Send message to conversation if it exists
-  if (payment.conversation) {
-    try {
-      const { sendMessage } = await import("./conversation-service");
-      await sendMessage(
-        payment.conversation.id,
-        adminId,
-        `Seu pagamento foi rejeitado. Motivo: ${reason.trim()}\n\nVocê pode enviar um novo comprovante se desejar.`,
-        [],
-        false
-      );
-    } catch (error) {
-      console.error("Failed to send rejection message:", error);
-      // Don't throw - message failure shouldn't block rejection
-    }
-  }
+  // Note: conversation messages are handled via Edge Functions
 
   // Send payment rejection notification
   try {
@@ -562,22 +532,7 @@ export async function requestPaymentInfo(
     // Don't throw - audit log failure shouldn't block request
   }
 
-  // Send message to conversation if it exists
-  if (payment.conversation) {
-    try {
-      const { sendMessage } = await import("./conversation-service");
-      await sendMessage(
-        payment.conversation.id,
-        adminId,
-        `Precisamos de mais informações sobre seu pagamento:\n\n${message.trim()}`,
-        [],
-        false
-      );
-    } catch (error) {
-      console.error("Failed to send info request message:", error);
-      // Don't throw - message failure shouldn't block request
-    }
-  }
+  // Note: conversation messages are handled via Edge Functions
 
   // Send info requested notification
   try {

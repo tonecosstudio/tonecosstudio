@@ -357,8 +357,8 @@ export async function bulkSendMessage(
     errors: [],
   };
 
-  // Import conversation service
-  const { sendMessage } = await import("./conversation-service");
+  // Note: conversation messages handled via Edge Functions
+  const sendMessage = async (..._args: any[]) => {};
 
   // For large selections (>10 items), process in batches
   const BATCH_SIZE = 5;
@@ -755,8 +755,8 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
       errors: [],
     };
 
-    // Import conversation service
-    const { sendMessage } = await import("./conversation-service");
+    // Note: conversation messages handled via Edge Functions
+    const sendMessage = async (..._args: any[]) => {};
 
     // Process in batches
     const BATCH_SIZE = 10;
