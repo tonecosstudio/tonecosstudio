@@ -40,6 +40,7 @@ serve(async (req) => {
   try {
     const { userId } = await assertAdmin(req);
     const { client } = await getClaims(req);
+    logAdminAction(req, "classify-image-vision", userId, "ai_vision_classify");
 
     // Rate limit: AI strict (vision is expensive)
     const rateLimited = await checkRateLimit(req, "classify-image-vision", RATE_LIMITS.AI_STRICT, userId);
