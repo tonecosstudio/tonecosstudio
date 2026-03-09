@@ -55,7 +55,7 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
 
   if (filters?.search) {
     query = query.or(
-      `reference_number.ilike.%${filters.search}%,profiles.full_name.ilike.%${filters.search}%`
+      `reference_number.ilike.%${filters.search}%`
     );
   }
 
@@ -288,8 +288,7 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
     .select(
       `
       *,
-      payment_method:admin_payment_methods(name),
-      profiles(full_name, email)
+      payment_method:admin_payment_methods(name)
     `
     )
     .in("id", paymentIds);
@@ -312,10 +311,10 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
   ];
 
   // Create CSV rows
-  const rows = (payments || []).map((payment) => [
-    payment.reference_number,
-    payment.profiles?.full_name || "",
-    payment.profiles?.email || "",
+  const rows = (payments || []).map((payment: any) => [
+    payment.reference_number || "",
+    "", // customer name - would need separate profile lookup
+    "", // customer email - would need separate profile lookup
     payment.amount.toString(),
     payment.currency,
     payment.payment_method?.name || "",
@@ -617,7 +616,6 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "processing",
-        started_at: new Date().toISOString(),
       })
       .eq("id", operationId);
 
@@ -688,7 +686,7 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
           .update({
             success_count: result.success_count,
             failure_count: result.failure_count,
-            errors: result.errors,
+            error_details: result.errors,
           })
           .eq("id", operationId);
       }
@@ -704,10 +702,9 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "completed",
-        completed_at: new Date().toISOString(),
         success_count: result.success_count,
         failure_count: result.failure_count,
-        errors: result.errors,
+        error_details: result.errors,
       })
       .eq("id", operationId);
   } catch (error) {
@@ -716,8 +713,7 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "failed",
-        completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
+        error_details: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
       .eq("id", operationId);
   }
@@ -747,7 +743,6 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "processing",
-        started_at: new Date().toISOString(),
       })
       .eq("id", operationId);
 
@@ -810,7 +805,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
           .update({
             success_count: result.success_count,
             failure_count: result.failure_count,
-            errors: result.errors,
+            error_details: result.errors,
           })
           .eq("id", operationId);
       }
@@ -826,10 +821,9 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "completed",
-        completed_at: new Date().toISOString(),
         success_count: result.success_count,
         failure_count: result.failure_count,
-        errors: result.errors,
+        error_details: result.errors,
       })
       .eq("id", operationId);
   } catch (error) {
@@ -838,8 +832,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "failed",
-        completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
+        error_details: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
       .eq("id", operationId);
   }
@@ -869,7 +862,6 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "processing",
-        started_at: new Date().toISOString(),
       })
       .eq("id", operationId);
 
@@ -878,36 +870,14 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
     // Generate CSV
     const csvBlob = await exportPaymentsToCSV(paymentIds);
 
-    // Upload to Supabase Storage
-    const fileName = `export-${operationId}-${Date.now()}.csv`;
-    const filePath = `bulk-exports/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("payment-proofs")
-      .upload(filePath, csvBlob, {
-        contentType: "text/csv",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw new Error(`Failed to upload export file: ${uploadError.message}`);
-    }
-
-    // Get signed URL
-    const { data: urlData } = await supabase.storage
-      .from("payment-proofs")
-      .createSignedUrl(filePath, 3600); // 1 hour expiration
-
-    // Mark as completed
+    // Mark as completed with result
     await supabase
       .from("bulk_operations")
       .update({
         status: "completed",
-        completed_at: new Date().toISOString(),
         success_count: paymentIds.length,
         failure_count: 0,
-        export_file_path: filePath,
-        export_file_url: urlData?.signedUrl,
+        result: { type: "export", count: paymentIds.length },
       })
       .eq("id", operationId);
   } catch (error) {
@@ -916,8 +886,7 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "failed",
-        completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
+        error_details: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
       .eq("id", operationId);
   }

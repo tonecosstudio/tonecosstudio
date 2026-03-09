@@ -172,12 +172,10 @@ export async function getOrderProductionStages(orderId: string): Promise<OrderPr
 export async function updateOrderStatus(
   orderId: string,
   status: string,
-  trackingCode?: string
+  _trackingCode?: string
 ): Promise<void> {
   const updateData: any = { status };
-  if (trackingCode) {
-    updateData.tracking_code = trackingCode;
-  }
+  // Note: tracking_code is not a column on manual_payments; tracking is handled via production_queue
 
   const { error } = await supabase.from("manual_payments").update(updateData).eq("id", orderId);
 

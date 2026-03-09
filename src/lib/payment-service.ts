@@ -249,21 +249,13 @@ export async function getPaymentById(id: string): Promise<PaymentDetails | null>
   const { data: profileData } = await supabase
     .from("profiles")
     .select("full_name, email")
-    .eq("id", data.user_id)
-    .maybeSingle();
-
-  // Fetch conversation if exists
-  const { data: conversationData } = await supabase
-    .from("support_conversations")
-    .select("*")
-    .eq("payment_id", id)
+    .eq("id", result.user_id)
     .maybeSingle();
 
   return {
-    ...data,
+    ...result,
     customer_name: profileData?.full_name,
     customer_email: profileData?.email,
-    conversation: conversationData || undefined,
   } as PaymentDetails;
 }
 
