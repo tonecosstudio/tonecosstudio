@@ -2,59 +2,32 @@
  * Create Standalone Purchase Edge Function
  * 
  * Handles creation of standalone purchases with deposit model.
- * Enforces cutoff rules and capacity limits.
+ * Enforces cutoff rules, capacity limits, and authenticated ownership.
  * 
  * Requirements: 3.3, 4.1, 4.2, 7.6, 22.1
  */
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { getClaims, getServiceClient, errorToStatus } from "../_shared/supabase.ts";
 
 interface CreatePurchaseRequest {
   collectionId: string;
   cycleId: string;
-  characterId?: string; // Character chosen at purchase time (for standalone purchases)
+  characterId?: string;
   depositVoucherUrl?: string;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const opt = handleOptions(req);
+  if (opt) return opt;
 
   try {
-    // Get Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
+    // Authenticate user via shared middleware
+    const { claims } = await getClaims(req);
+    const userId = String(claims.sub);
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    const service = getServiceClient();
 
     // Parse request body
     const body: CreatePurchaseRequest = await req.json();
@@ -64,15 +37,27 @@ serve(async (req) => {
     if (!collectionId || !cycleId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: collectionId, cycleId' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(collectionId) || !uuidRegex.test(cycleId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid UUID format for collectionId or cycleId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (characterId && !uuidRegex.test(characterId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid UUID format for characterId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // 1. Check if before cutoff (Requirement 7.6)
-    const { data: beforeCutoff, error: cutoffError } = await supabaseClient
+    const { data: beforeCutoff, error: cutoffError } = await service
       .rpc('is_before_cutoff');
 
     if (cutoffError) {
@@ -82,119 +67,89 @@ serve(async (req) => {
     if (!beforeCutoff) {
       return new Response(
         JSON.stringify({
-          error: 'Cannot create standalone purchase - cutoff has passed. Production has started.',
+          error: 'Cannot create standalone purchase - cutoff has passed.',
           code: 'CUTOFF_PASSED'
         }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 2. Check if cycle is still open (Requirement 7.6)
-    const { data: cycle, error: cycleError } = await supabaseClient
+    // 2. Check if cycle is still open
+    const { data: cycle, error: cycleError } = await service
       .from('cycles')
-      .select('status, capacity_max, capacity_current')
+      .select('status, capacity, used_capacity')
       .eq('id', cycleId)
       .single();
 
     if (cycleError || !cycle) {
       return new Response(
-        JSON.stringify({
-          error: `Failed to get cycle: ${cycleError?.message || 'Cycle not found'}`,
-          code: 'CYCLE_NOT_FOUND'
-        }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Cycle not found', code: 'CYCLE_NOT_FOUND' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (cycle.status !== 'open') {
+    if (cycle.status !== 'active' && cycle.status !== 'open') {
       return new Response(
         JSON.stringify({
-          error: `Cannot create standalone purchase - cycle is ${cycle.status}. Only open cycles accept new purchases.`,
+          error: `Cannot create standalone purchase - cycle is ${cycle.status}.`,
           code: 'CYCLE_NOT_OPEN'
         }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 3. Get collection details
-    const { data: collection, error: collectionError } = await supabaseClient
+    // 3. Get collection details and pricing
+    const { data: collection, error: collectionError } = await service
       .from('collections')
-      .select('price_full, name, is_active')
+      .select('name, is_active')
       .eq('id', collectionId)
       .single();
 
     if (collectionError || !collection) {
       return new Response(
-        JSON.stringify({
-          error: `Failed to get collection: ${collectionError?.message || 'Collection not found'}`,
-          code: 'COLLECTION_NOT_FOUND'
-        }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Collection not found', code: 'COLLECTION_NOT_FOUND' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!collection.is_active) {
       return new Response(
-        JSON.stringify({
-          error: 'Collection is not active',
-          code: 'COLLECTION_INACTIVE'
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Collection is not active', code: 'COLLECTION_INACTIVE' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 4. Check capacity availability (Requirements 3.3, 22.1)
-    const { data: capacityAvailable, error: capacityError } = await supabaseClient
-      .rpc('check_capacity_available', {
-        p_cycle_id: cycleId,
-        p_quantity: 1
-      });
+    // Get pricing from tier
+    const { data: pricing, error: pricingError } = await service
+      .rpc('get_collection_pricing', { p_collection_id: collectionId });
 
-    if (capacityError) {
-      throw new Error(`Failed to check capacity: ${capacityError.message}`);
+    if (pricingError) {
+      throw new Error(`Failed to get pricing: ${pricingError.message}`);
     }
 
-    if (!capacityAvailable) {
+    const priceRow = Array.isArray(pricing) ? pricing[0] : pricing;
+    const totalAmount = priceRow?.price_full ?? 350;
+    const depositAmount = priceRow?.deposit_amount ?? 50;
+    const balanceAmount = totalAmount - depositAmount;
+
+    // 4. Check capacity
+    const currentUsed = cycle.used_capacity ?? 0;
+    const maxCapacity = cycle.capacity ?? 100;
+    if (currentUsed >= maxCapacity) {
       return new Response(
-        JSON.stringify({
-          error: 'Capacity limit exceeded for this cycle. Cannot create standalone purchase.',
-          code: 'CAPACITY_EXCEEDED'
-        }),
-        {
-          status: 409,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Capacity limit exceeded.', code: 'CAPACITY_EXCEEDED' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 5. Calculate amounts (Requirement 4.1, 4.3)
-    const depositAmount = 100.00; // Fixed deposit amount
-    const balanceAmount = collection.price_full - depositAmount;
-    const totalAmount = collection.price_full;
-
-    // 6. Create standalone purchase record
-    const { data: purchase, error: createError } = await supabaseClient
+    // 5. Create standalone purchase - user_id is ALWAYS set to authenticated user
+    const { data: purchase, error: createError } = await service
       .from('standalone_purchases')
       .insert({
-        user_id: user.id,
+        user_id: userId, // Server-enforced: always the authenticated user
         collection_id: collectionId,
         cycle_id: cycleId,
-        character_id: characterId || null, // Character chosen at purchase time
+        character_id: characterId || null,
         status: 'deposit_paid',
         deposit_amount: depositAmount,
         balance_amount: balanceAmount,
@@ -209,47 +164,27 @@ serve(async (req) => {
       throw new Error(`Failed to create standalone purchase: ${createError?.message || 'Unknown error'}`);
     }
 
-    // 7. Reserve capacity (Requirements 3.3, 22.1)
-    const { error: reserveError } = await supabaseClient
-      .rpc('reserve_capacity', {
-        p_cycle_id: cycleId,
-        p_quantity: 1
-      });
+    // 6. Increment capacity
+    const { error: incrementError } = await service
+      .rpc('increment_monthly_sales', { quantity: 1 });
 
-    if (reserveError) {
-      // Rollback: delete the purchase if capacity reservation fails
-      await supabaseClient
-        .from('standalone_purchases')
-        .delete()
-        .eq('id', purchase.id);
-      
-      throw new Error(`Failed to reserve capacity: ${reserveError.message}`);
+    if (incrementError) {
+      // Rollback: delete the purchase if capacity increment fails
+      await service.from('standalone_purchases').delete().eq('id', purchase.id);
+      throw new Error(`Failed to increment capacity: ${incrementError.message}`);
     }
 
-    // Return success response
     return new Response(
-      JSON.stringify({
-        success: true,
-        purchase: purchase,
-        message: 'Standalone purchase created successfully'
-      }),
-      {
-        status: 201,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ success: true, purchase, message: 'Standalone purchase created successfully' }),
+      { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error creating standalone purchase:', error);
+    const msg = (error as Error).message || 'Internal server error';
+    console.error('Error creating standalone purchase:', msg);
     return new Response(
-      JSON.stringify({
-        error: (error as Error).message || 'Internal server error',
-        code: 'INTERNAL_ERROR'
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: msg, code: 'INTERNAL_ERROR' }),
+      { status: errorToStatus(msg), headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
