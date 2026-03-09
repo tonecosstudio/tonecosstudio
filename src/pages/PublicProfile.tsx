@@ -53,7 +53,7 @@ export default function PublicProfile() {
       const { data, error } = await (supabase as any)
         .from("profiles")
         .select(
-          "id, username, display_name, bio, avatar_url, collector_level, collector_xp, pieces_owned, total_spent, joined_at"
+          "id, username, display_name, bio, avatar_url, collector_level, collector_xp, pieces_owned, total_spent, created_at"
         )
         .eq("username", username)
         .eq("is_public", true)
@@ -61,7 +61,8 @@ export default function PublicProfile() {
 
       if (error) throw error;
       if (!data) throw new Error("Perfil não encontrado ou privado");
-      return data as PublicProfileData;
+      // Map created_at to joined_at for display
+      return { ...data, joined_at: data.created_at } as PublicProfileData;
     },
   });
 
