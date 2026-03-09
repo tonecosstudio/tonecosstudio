@@ -70,6 +70,10 @@ serve(async (req) => {
       });
     }
 
+    // Rate limit: purchase operations
+    const rateLimited = await checkRateLimit(req, "create-subscription", RATE_LIMITS.PURCHASE, userId);
+    if (rateLimited) return rateLimited;
+
     const service = getServiceClient();
     const body = (await req.json().catch(() => ({}))) as CreateSubscriptionRequest;
 
