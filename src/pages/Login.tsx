@@ -38,7 +38,12 @@ export default function Login() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = useMemo(() => params.get("next") || "/", [params]);
+  const next = useMemo(() => {
+    const raw = params.get("next") || "/";
+    // Prevent open redirect: only allow relative paths starting with /
+    if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
+    return "/";
+  }, [params]);
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [password, setPassword] = useState("");
