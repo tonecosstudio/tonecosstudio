@@ -4,11 +4,19 @@ import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { nowInBahia, addDays, toUTC } from "../_shared/timezone.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 type PlanType = "trimestral" | "semestral" | "anual";
 
+const CREATE_SUB_SCHEMA: Schema = {
+  collectionIds: { type: "array", required: true, maxItems: 20, itemType: "uuid" },
+  planType:      { type: "string", required: true, maxLength: 20 },
+  paymentMethod: { type: "string", required: true, maxLength: 20 },
+  paymentId:     { type: "string", maxLength: 100 },
+};
+
 interface CreateSubscriptionRequest {
-  collectionIds: string[];  // Mudado de collectionId para collectionIds
+  collectionIds: string[];
   planType: PlanType;
   paymentMethod: "pix" | "credit_card" | "boleto";
   paymentId?: string;
@@ -21,7 +29,7 @@ function getRequiredCollections(planType: PlanType, totalCollections: number): n
     case "semestral":
       return 3;
     case "anual":
-      return totalCollections; // Todas as coleções
+      return totalCollections;
     default:
       return 1;
   }
@@ -32,7 +40,7 @@ function getDeliveriesTotal(planType: PlanType): number {
     case "trimestral":
       return 3;
     case "semestral":
-      return 7; // 6 + 1 grátis
+      return 7;
     case "anual":
       return 12;
     default:
@@ -47,9 +55,9 @@ function calculateTotalPrice(
 ): number {
   switch (planType) {
     case "trimestral":
-      return priceBimonthly * 1.5; // 3 meses = 1.5 bimestres
+      return priceBimonthly * 1.5;
     case "semestral":
-      return priceBimonthly * 3; // 6 meses = 3 bimestres
+      return priceBimonthly * 3;
     case "anual":
       return priceYearly;
     default:
@@ -80,17 +88,26 @@ serve(async (req) => {
     if (tooLarge) return tooLarge;
 
     const service = getServiceClient();
-    const body = (await req.json().catch(() => ({}))) as CreateSubscriptionRequest;
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, CREATE_SUB_SCHEMA);
+    if ("error" in validation) return validation.error;
 
+    const body = validation.data as unknown as CreateSubscriptionRequest;
     const { collectionIds, planType, paymentMethod, paymentId } = body;
 
-    if (!collectionIds || !Array.isArray(collectionIds) || collectionIds.length === 0 || !planType || !paymentMethod) {
+    // Validate planType enum
+    if (!["trimestral", "semestral", "anual"].includes(planType)) {
       return new Response(
-        JSON.stringify({ error: "collectionIds (array), planType e paymentMethod são obrigatórios" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        JSON.stringify({ error: "planType inválido. Use: trimestral, semestral ou anual" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Validate paymentMethod enum
+    if (!["pix", "credit_card", "boleto"].includes(paymentMethod)) {
+      return new Response(
+        JSON.stringify({ error: "paymentMethod inválido. Use: pix, credit_card ou boleto" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 

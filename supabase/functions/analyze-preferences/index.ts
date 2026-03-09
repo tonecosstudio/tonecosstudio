@@ -40,6 +40,14 @@ serve(async (req) => {
     const payload = await req.json().catch(() => ({}));
     const text = typeof payload?.text === "string" ? payload.text.trim() : "";
 
+    // Reject unknown fields
+    const knownFields = new Set(["text"]);
+    for (const key of Object.keys(payload)) {
+      if (!knownFields.has(key)) {
+        return json(400, { error: `Campo desconhecido: '${key}'` });
+      }
+    }
+
     if (!text) return json(200, { tags: [] });
     if (text.length > 1000) return json(400, { error: "Texto muito longo (máx 1000 caracteres)." });
 

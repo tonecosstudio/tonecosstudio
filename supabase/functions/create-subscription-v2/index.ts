@@ -4,6 +4,7 @@ import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { scheduleConsecutiveDeliveries } from "../_shared/delivery-scheduling.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 /**
  * Edge Function: create-subscription-v2
@@ -19,6 +20,13 @@ import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts"
  */
 
 type PlanType = "trimestral" | "semestral";
+
+const CREATE_SUB_V2_SCHEMA: Schema = {
+  planId:        { type: "uuid", required: true },
+  collectionId:  { type: "uuid", required: true },
+  paymentMethod: { type: "string", required: true, maxLength: 20 },
+  paymentId:     { type: "string", maxLength: 100 },
+};
 
 interface CreateSubscriptionV2Request {
   planId: string;
@@ -50,17 +58,9 @@ interface PlanData {
  * Obtém ou cria o ciclo atual
  */
 async function getCurrentCycle(service: any): Promise<CycleData> {
-  // Chamar função do banco de dados que implementa a lógica de ciclo
   const { data, error } = await service.rpc('get_or_create_current_cycle');
-  
-  if (error) {
-    throw new Error(`Erro ao obter ciclo atual: ${error.message}`);
-  }
-  
-  if (!data) {
-    throw new Error('Não foi possível obter ou criar o ciclo atual');
-  }
-  
+  if (error) throw new Error(`Erro ao obter ciclo atual: ${error.message}`);
+  if (!data) throw new Error('Não foi possível obter ou criar o ciclo atual');
   return data as CycleData;
 }
 
@@ -78,62 +78,40 @@ function checkCycleCapacity(cycle: CycleData): void {
 
 /**
  * Calcula os ciclos que serão usados para as entregas
- * Retorna array de objetos com informações dos ciclos consecutivos
  */
 function calculateDeliveryCycles(
   entryCycle: CycleData,
   deliveryCount: number
 ): Array<{ cycleNumber: 1 | 2; month: number; year: number }> {
   const cycles: Array<{ cycleNumber: 1 | 2; month: number; year: number }> = [];
-  
   let currentCycleNumber = entryCycle.cycle_number;
   let currentMonth = entryCycle.month;
   let currentYear = entryCycle.year;
-  
+
   for (let i = 0; i < deliveryCount; i++) {
-    // Avançar para o próximo ciclo
     if (currentCycleNumber === 1) {
-      // Ciclo 1 -> Ciclo 2 (mesmo mês)
       currentCycleNumber = 2;
     } else {
-      // Ciclo 2 -> Ciclo 1 (próximo mês)
       currentCycleNumber = 1;
       currentMonth = currentMonth + 1;
-      
-      // Virar o ano se necessário
       if (currentMonth > 12) {
         currentMonth = 1;
         currentYear = currentYear + 1;
       }
     }
-    
-    cycles.push({
-      cycleNumber: currentCycleNumber,
-      month: currentMonth,
-      year: currentYear
-    });
+    cycles.push({ cycleNumber: currentCycleNumber, month: currentMonth, year: currentYear });
   }
-  
   return cycles;
 }
 
-/**
- * Verifica capacidade disponível para todos os ciclos de entrega
- * Lança erro se qualquer ciclo não tiver capacidade disponível
- */
 async function checkAllDeliveryCyclesCapacity(
   service: any,
   entryCycle: CycleData,
   deliveryCount: number
 ): Promise<void> {
-  // Calcular quais ciclos serão usados
   const deliveryCycles = calculateDeliveryCycles(entryCycle, deliveryCount);
-  
-  // Verificar capacidade para cada ciclo
   for (let i = 0; i < deliveryCycles.length; i++) {
     const cycleInfo = deliveryCycles[i];
-    
-    // Buscar ou criar o ciclo
     const { data: existingCycle } = await service
       .from('cycles')
       .select('id, capacity_current, capacity_max, capacity_limit')
@@ -141,33 +119,23 @@ async function checkAllDeliveryCyclesCapacity(
       .eq('month', cycleInfo.month)
       .eq('year', cycleInfo.year)
       .maybeSingle();
-    
+
     if (existingCycle) {
-      // Verificar capacidade usando a função do banco
       const { data: hasCapacity, error } = await service.rpc('check_capacity_available', {
         p_cycle_id: existingCycle.id,
         p_quantity: 1
       });
-      
-      if (error) {
-        throw new Error(`Erro ao verificar capacidade: ${error.message}`);
-      }
-      
+      if (error) throw new Error(`Erro ao verificar capacidade: ${error.message}`);
       if (!hasCapacity) {
         throw new Error(
           `Capacidade esgotada para o Ciclo ${cycleInfo.cycleNumber} de ` +
-          `${cycleInfo.month}/${cycleInfo.year} (entrega ${i + 1} de ${deliveryCount}). ` +
-          `Não é possível criar a assinatura.`
+          `${cycleInfo.month}/${cycleInfo.year} (entrega ${i + 1} de ${deliveryCount}).`
         );
       }
     }
-    // Se o ciclo não existe ainda, será criado com capacidade disponível
   }
 }
 
-/**
- * Reserva capacidade para todos os ciclos de entrega
- */
 async function reserveAllDeliveryCyclesCapacity(
   service: any,
   deliveries: any[],
@@ -179,40 +147,22 @@ async function reserveAllDeliveryCyclesCapacity(
         p_cycle_id: delivery.cycle_id,
         p_quantity: 1
       });
-      
       if (error) {
         console.error(`Erro ao reservar capacidade para ciclo ${delivery.cycle_id}:`, error);
-        // Continuar mesmo com erro, pois a entrega já foi criada
       }
     }
   }
 }
 
-/**
- * Agenda entregas consecutivas usando o serviço compartilhado
- * 
- * Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.7
- */
 async function scheduleDeliveries(
   service: any,
   subscriptionId: string,
   planType: PlanType,
   entryCycleId: string
 ): Promise<any[]> {
-  // Call the shared delivery scheduling service from task 18.1
-  const deliveries = await scheduleConsecutiveDeliveries(
-    service,
-    subscriptionId,
-    entryCycleId,
-    planType
-  );
-  
-  return deliveries;
+  return await scheduleConsecutiveDeliveries(service, subscriptionId, entryCycleId, planType);
 }
 
-/**
- * Cria peça bônus para plano semestral
- */
 async function createBonusPiece(
   service: any,
   subscriptionId: string,
@@ -226,10 +176,7 @@ async function createBonusPiece(
       status: 'pending',
       description: 'Peça bônus exclusiva do plano semestral'
     });
-  
-  if (error) {
-    throw new Error(`Erro ao criar peça bônus: ${error.message}`);
-  }
+  if (error) throw new Error(`Erro ao criar peça bônus: ${error.message}`);
 }
 
 serve(async (req) => {
@@ -256,18 +203,17 @@ serve(async (req) => {
     if (tooLarge) return tooLarge;
 
     const service = getServiceClient();
-    const body = (await req.json().catch(() => ({}))) as CreateSubscriptionV2Request;
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, CREATE_SUB_V2_SCHEMA);
+    if ("error" in validation) return validation.error;
 
-    const { planId, collectionId, paymentMethod, paymentId } = body;
+    const { planId, collectionId, paymentMethod, paymentId } = validation.data as unknown as CreateSubscriptionV2Request;
 
-    // Validar entrada
-    if (!planId || !collectionId || !paymentMethod) {
+    // Validate paymentMethod enum
+    if (!["pix", "credit_card", "boleto"].includes(paymentMethod)) {
       return new Response(
-        JSON.stringify({ error: "planId, collectionId e paymentMethod são obrigatórios" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        JSON.stringify({ error: "paymentMethod inválido. Use: pix, credit_card ou boleto" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 

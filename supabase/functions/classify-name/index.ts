@@ -48,9 +48,21 @@ serve(async (req) => {
     if (tooLarge) return tooLarge;
 
     const body = await req.json().catch(() => ({}));
-    const name = String(body?.name ?? "").trim();
+
+    // Reject unknown fields
+    const knownFields = new Set(["name"]);
+    for (const key of Object.keys(body)) {
+      if (!knownFields.has(key)) {
+        return new Response(JSON.stringify({ error: `Unknown field: '${key}'` }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const name = typeof body?.name === "string" ? body.name.trim().slice(0, 500) : "";
     if (!name) {
-      return new Response(JSON.stringify({ error: "name is required" }), {
+      return new Response(JSON.stringify({ error: "name is required (max 500 chars)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
