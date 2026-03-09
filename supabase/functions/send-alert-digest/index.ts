@@ -102,7 +102,7 @@ serve(async (req) => {
         return { email: subscriber.email, success: true };
       } catch (error) {
         console.error(`Failed to send email to ${subscriber.email}:`, error);
-        return { email: subscriber.email, success: false, error: (error as Error)
+        return { email: subscriber.email, success: false, error: (error as Error).message };
       }
     });
 
