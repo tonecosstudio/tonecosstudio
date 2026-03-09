@@ -261,7 +261,7 @@ async function fetchRevenueChartData() {
 async function fetchSubscriptionMetrics(subscriptionsCount: number) {
   const { data: allPlans } = await supabase
     .from("subscription_plans")
-    .select("id, name, price_pix");
+    .select("id, name, price");
 
   const activeCount = subscriptionsCount;
   const previousActiveCount = Math.floor(activeCount * 0.9);
