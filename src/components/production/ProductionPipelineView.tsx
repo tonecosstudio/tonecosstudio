@@ -210,7 +210,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
     });
 
     return result;
-  }, [queueData]);
+  }, [queueData, characterImages]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const group = event.active.data.current?.group as GroupedCharacter | undefined;
