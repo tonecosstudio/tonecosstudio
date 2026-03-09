@@ -52,6 +52,30 @@ export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 export const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024; // 20MB
 
 /**
+ * Dangerous file extensions that should ALWAYS be rejected,
+ * regardless of MIME type. These can execute code in the browser
+ * or on the server.
+ */
+export const DANGEROUS_EXTENSIONS = [
+  // Executables
+  'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'pif', 'gadget',
+  // Scripts
+  'js', 'jsx', 'ts', 'tsx', 'vbs', 'vbe', 'wsf', 'wsh', 'ps1', 'psm1',
+  'sh', 'bash', 'csh', 'ksh', 'py', 'pyw', 'rb', 'pl', 'php', 'php3',
+  'php4', 'php5', 'phtml', 'asp', 'aspx', 'jsp', 'jspx', 'cgi',
+  // Web content that can execute scripts
+  'html', 'htm', 'xhtml', 'svg', 'xml', 'xsl', 'xslt', 'mhtml', 'mht',
+  'shtml', 'hta',
+  // Archives that may contain executables
+  'jar', 'war', 'ear',
+  // Office macros
+  'docm', 'xlsm', 'pptm', 'dotm', 'xltm', 'potm',
+  // Other dangerous
+  'reg', 'inf', 'lnk', 'url', 'iso', 'dmg', 'app', 'action', 'command',
+  'workflow', 'cpl', 'msc', 'apk', 'deb', 'rpm',
+] as const;
+
+/**
  * Sanitize HTML content to prevent XSS attacks
  * 
  * @param html - Raw HTML string
