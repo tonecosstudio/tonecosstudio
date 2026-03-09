@@ -1,8 +1,7 @@
-// No dotenv import — env vars are injected by the test runner
-import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "https://lprsvnwshfxhpnwrxfpy.supabase.co";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwcnN2bndzaGZ4aHBud3J4ZnB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4Mzg1NDgsImV4cCI6MjA4NzQxNDU0OH0.NLZHitXQF76J-P05hgMwLDtXZv811UmJOCY4bsY-zLU";
 
 function endpoint(fn: string) {
   return `${SUPABASE_URL}/functions/v1/${fn}`;
