@@ -43,6 +43,10 @@ serve(async (req) => {
     const rateLimited = await checkRateLimit(req, "classify-name", RATE_LIMITS.AI, userId);
     if (rateLimited) return rateLimited;
 
+    // Payload size guard (AI text: 32 KB)
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.AI_TEXT);
+    if (tooLarge) return tooLarge;
+
     const body = await req.json().catch(() => ({}));
     const name = String(body?.name ?? "").trim();
     if (!name) {

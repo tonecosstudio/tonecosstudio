@@ -33,6 +33,10 @@ serve(async (req) => {
     const rateLimited = await checkRateLimit(req, "analyze-preferences", RATE_LIMITS.AI, userId);
     if (rateLimited) return rateLimited;
 
+    // Payload size guard (AI text: 32 KB)
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.AI_TEXT);
+    if (tooLarge) return tooLarge;
+
     const payload = await req.json().catch(() => ({}));
     const text = typeof payload?.text === "string" ? payload.text.trim() : "";
 

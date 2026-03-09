@@ -75,6 +75,10 @@ serve(async (req) => {
     const rateLimited = await checkRateLimit(req, "create-subscription", RATE_LIMITS.PURCHASE, userId);
     if (rateLimited) return rateLimited;
 
+    // Payload size guard (standard: 64 KB)
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.STANDARD);
+    if (tooLarge) return tooLarge;
+
     const service = getServiceClient();
     const body = (await req.json().catch(() => ({}))) as CreateSubscriptionRequest;
 

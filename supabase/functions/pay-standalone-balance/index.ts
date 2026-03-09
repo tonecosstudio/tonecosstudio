@@ -31,6 +31,10 @@ serve(async (req) => {
     const rateLimited = await checkRateLimit(req, "pay-standalone-balance", RATE_LIMITS.PURCHASE, userId);
     if (rateLimited) return rateLimited;
 
+    // Payload size guard (standard: 64 KB)
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.STANDARD);
+    if (tooLarge) return tooLarge;
+
     const service = getServiceClient();
 
     // Parse request body
