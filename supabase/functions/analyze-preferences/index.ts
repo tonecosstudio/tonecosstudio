@@ -25,7 +25,12 @@ serve(async (req) => {
 
   try {
     // Auth (verify_jwt=true já valida, mas ainda garantimos que há usuário)
-    await getClaims(req);
+    const { claims } = await getClaims(req);
+    const userId = String(claims.sub);
+
+    // Rate limit: AI operations (per authenticated user)
+    const rateLimited = await checkRateLimit(req, "analyze-preferences", RATE_LIMITS.AI, userId);
+    if (rateLimited) return rateLimited;
 
     const payload = await req.json().catch(() => ({}));
     const text = typeof payload?.text === "string" ? payload.text.trim() : "";

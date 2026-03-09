@@ -35,8 +35,12 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    await assertAdmin(req);
+    const { userId } = await assertAdmin(req);
     const { client } = await getClaims(req);
+
+    // Rate limit: AI operations
+    const rateLimited = await checkRateLimit(req, "classify-name", RATE_LIMITS.AI, userId);
+    if (rateLimited) return rateLimited;
 
     const body = await req.json().catch(() => ({}));
     const name = String(body?.name ?? "").trim();

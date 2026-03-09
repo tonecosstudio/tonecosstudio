@@ -36,8 +36,12 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    await assertAdmin(req);
+    const { userId } = await assertAdmin(req);
     const { client } = await getClaims(req);
+
+    // Rate limit: AI strict (vision is expensive)
+    const rateLimited = await checkRateLimit(req, "classify-image-vision", RATE_LIMITS.AI_STRICT, userId);
+    if (rateLimited) return rateLimited;
 
     const body = await req.json().catch(() => ({}));
     const queueId = String(body?.queue_id ?? "").trim();
