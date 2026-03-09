@@ -157,10 +157,11 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
   // ============================================================================
 
   const uploadToStorage = async (file: File): Promise<string> => {
-    // Generate unique filename
+    // Generate unique filename with sanitization
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 9);
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const sanitizedName = sanitizeFilename(file.name);
+    const extension = sanitizedName.split(".").pop()?.toLowerCase() || "jpg";
     const fileName = `${timestamp}-${randomId}.${extension}`;
     const filePath = `${folder}/${fileName}`;
 
