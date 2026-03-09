@@ -288,8 +288,7 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
     .select(
       `
       *,
-      payment_method:admin_payment_methods(name),
-      profiles(full_name, email)
+      payment_method:admin_payment_methods(name)
     `
     )
     .in("id", paymentIds);
