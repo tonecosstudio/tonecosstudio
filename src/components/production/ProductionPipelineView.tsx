@@ -1,23 +1,37 @@
 // @ts-nocheck
 /**
- * ProductionPipelineView - Visual Pipeline Layout
+ * ProductionPipelineView - Visual Pipeline Layout with Drag & Drop
  * 
  * Layout visual com:
  * - Cada estágio como uma linha horizontal
  * - Imagens de personagens agrupadas com badge de quantidade
+ * - Drag & drop de cards entre estágios para mover rapidamente
  * - Modal com lista de clientes ao clicar na imagem
  */
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Package, User, Calendar, AlertTriangle } from "lucide-react";
+import { Package, User, Calendar, AlertTriangle, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import {
   fetchProductionQueue,
+  updateProductionStage,
   STAGE_LABELS,
   type ProductionFilters,
   type ProductionStage,
@@ -37,6 +51,7 @@ interface GroupedCharacter {
   count: number;
   items: ProductionQueueItem[];
   hasCritical: boolean;
+  groupKey: string;
 }
 
 // Estágios de produção ativos (excluindo pagamento e entrega final)
@@ -82,8 +97,33 @@ const STAGE_BG_COLORS: Record<ProductionStage, string> = {
   delivered: "bg-muted/30",
 };
 
+const STAGE_DROP_HIGHLIGHT: Record<ProductionStage, string> = {
+  awaiting_payment: "ring-muted-foreground/50",
+  payment_confirmed: "ring-muted-foreground/50",
+  awaiting_choice: "ring-amber-500",
+  model_preparation: "ring-blue-500",
+  printing: "ring-purple-500",
+  post_processing: "ring-cyan-500",
+  painting: "ring-pink-500",
+  quality_check: "ring-orange-500",
+  packaging: "ring-emerald-500",
+  ready_to_ship: "ring-green-500",
+  shipped: "ring-muted-foreground/50",
+  delivered: "ring-muted-foreground/50",
+};
+
 export function ProductionPipelineView({ filters }: ProductionPipelineViewProps) {
   const [selectedGroup, setSelectedGroup] = useState<GroupedCharacter | null>(null);
+  const [activeGroup, setActiveGroup] = useState<GroupedCharacter | null>(null);
+  const [movingItems, setMovingItems] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
 
   // Fetch production queue
   const { data: queueData, isLoading } = useQuery({
@@ -97,20 +137,18 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
 
     const groups = new Map<ProductionStage, Map<string, GroupedCharacter>>();
 
-    // Inicializar todos os estágios
     PIPELINE_STAGES.forEach((stage) => {
       groups.set(stage, new Map());
     });
 
-    // Processar itens
     queueData.data.forEach((item) => {
       if (!PIPELINE_STAGES.includes(item.currentStage)) return;
 
       const stageMap = groups.get(item.currentStage);
       if (!stageMap) return;
 
-      // Chave única: personagem + coleção
       const key = `${item.characterId || "no-char"}_${item.collectionId || "no-collection"}`;
+      const groupKey = `${item.currentStage}__${key}`;
 
       if (!stageMap.has(key)) {
         stageMap.set(key, {
@@ -118,10 +156,11 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
           characterName: item.characterName || "Personagem não definido",
           collectionId: item.collectionId,
           collectionName: item.collectionName,
-          imageUrl: null, // Podemos adicionar depois
+          imageUrl: null,
           count: 0,
           items: [],
           hasCritical: false,
+          groupKey,
         });
       }
 
@@ -133,7 +172,6 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
       }
     });
 
-    // Converter para array ordenado por quantidade (maior primeiro)
     const result = new Map<ProductionStage, GroupedCharacter[]>();
     groups.forEach((charMap, stage) => {
       const chars = Array.from(charMap.values()).sort((a, b) => b.count - a.count);
@@ -142,6 +180,55 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
 
     return result;
   }, [queueData]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const group = event.active.data.current?.group as GroupedCharacter | undefined;
+    if (group) {
+      setActiveGroup(group);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveGroup(null);
+
+    const { active, over } = event;
+    if (!over) return;
+
+    const group = active.data.current?.group as GroupedCharacter | undefined;
+    const targetStage = over.id as ProductionStage;
+
+    if (!group || !PIPELINE_STAGES.includes(targetStage)) return;
+
+    // Get source stage from the groupKey
+    const sourceStage = group.groupKey.split("__")[0] as ProductionStage;
+    if (sourceStage === targetStage) return;
+
+    const itemIds = group.items.map((i) => i.id);
+    setMovingItems(new Set(itemIds));
+
+    try {
+      // Move all items in the group
+      await Promise.all(
+        itemIds.map((id) => updateProductionStage(id, targetStage))
+      );
+
+      toast({
+        title: "Estágio atualizado",
+        description: `${group.count} ${group.count === 1 ? "item movido" : "itens movidos"} para ${STAGE_LABELS[targetStage]}`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["production-queue"] });
+    } catch (error) {
+      console.error("Erro ao mover itens:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível mover os itens. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setMovingItems(new Set());
+    }
+  };
 
   if (isLoading) {
     return (
@@ -161,67 +248,164 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
   }
 
   return (
-    <div className="space-y-4">
-      {PIPELINE_STAGES.map((stage) => {
-        const characters = stageGroups.get(stage) || [];
-        const totalItems = characters.reduce((sum, c) => sum + c.count, 0);
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-4">
+        {PIPELINE_STAGES.map((stage) => {
+          const characters = stageGroups.get(stage) || [];
+          const totalItems = characters.reduce((sum, c) => sum + c.count, 0);
 
-        return (
-          <div
-            key={stage}
-            className={cn(
-              "rounded-lg border-2 p-4 transition-colors",
-              STAGE_COLORS[stage],
-              STAGE_BG_COLORS[stage]
-            )}
-          >
-            {/* Header do estágio */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-sm uppercase tracking-wider">
-                  {STAGE_LABELS[stage]}
-                </h3>
-                <Badge variant="secondary" className="text-xs">
-                  {totalItems} {totalItems === 1 ? "item" : "itens"}
-                </Badge>
-              </div>
-            </div>
+          return (
+            <StageRow
+              key={stage}
+              stage={stage}
+              characters={characters}
+              totalItems={totalItems}
+              onCardClick={setSelectedGroup}
+              isDragging={!!activeGroup}
+              movingItems={movingItems}
+            />
+          );
+        })}
+      </div>
 
-            {/* Grid de personagens */}
-            {characters.length > 0 ? (
-              <ScrollArea className="w-full">
-                <div className="flex gap-3 pb-2">
-                  {characters.map((group, idx) => (
-                    <CharacterCard
-                      key={`${group.characterId}-${group.collectionId}-${idx}`}
-                      group={group}
-                      onClick={() => setSelectedGroup(group)}
-                    />
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            ) : (
-              <div className="flex items-center justify-center h-16 text-muted-foreground text-sm">
-                <Package className="h-4 w-4 mr-2 opacity-50" />
-                Nenhum item neste estágio
-              </div>
-            )}
+      {/* Drag Overlay */}
+      <DragOverlay dropAnimation={null}>
+        {activeGroup && (
+          <div className="opacity-90 scale-105">
+            <CharacterCardStatic group={activeGroup} />
           </div>
-        );
-      })}
+        )}
+      </DragOverlay>
 
       {/* Modal de detalhes */}
       <CustomerListModal
         group={selectedGroup}
         onClose={() => setSelectedGroup(null)}
       />
+    </DndContext>
+  );
+}
+
+// Droppable stage row
+function StageRow({
+  stage,
+  characters,
+  totalItems,
+  onCardClick,
+  isDragging,
+  movingItems,
+}: {
+  stage: ProductionStage;
+  characters: GroupedCharacter[];
+  totalItems: number;
+  onCardClick: (g: GroupedCharacter) => void;
+  isDragging: boolean;
+  movingItems: Set<string>;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "rounded-lg border-2 p-4 transition-all duration-200",
+        STAGE_COLORS[stage],
+        STAGE_BG_COLORS[stage],
+        isDragging && "ring-2 ring-offset-2 ring-offset-background ring-dashed",
+        isDragging && STAGE_DROP_HIGHLIGHT[stage],
+        isOver && "ring-4 scale-[1.01] shadow-lg",
+        isOver && "bg-opacity-30"
+      )}
+    >
+      {/* Header do estágio */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-sm uppercase tracking-wider">
+            {STAGE_LABELS[stage]}
+          </h3>
+          <Badge variant="secondary" className="text-xs">
+            {totalItems} {totalItems === 1 ? "item" : "itens"}
+          </Badge>
+        </div>
+        {isOver && (
+          <Badge className="bg-primary text-primary-foreground text-xs animate-pulse">
+            Soltar aqui
+          </Badge>
+        )}
+      </div>
+
+      {/* Grid de personagens */}
+      {characters.length > 0 ? (
+        <ScrollArea className="w-full">
+          <div className="flex gap-3 pb-2">
+            {characters.map((group, idx) => (
+              <DraggableCharacterCard
+                key={`${group.groupKey}-${idx}`}
+                group={group}
+                onClick={() => onCardClick(group)}
+                isMoving={group.items.some((i) => movingItems.has(i.id))}
+              />
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      ) : (
+        <div className={cn(
+          "flex items-center justify-center h-16 text-muted-foreground text-sm rounded-md transition-colors",
+          isOver && "bg-primary/10 border-2 border-dashed border-primary/30"
+        )}>
+          <Package className="h-4 w-4 mr-2 opacity-50" />
+          {isOver ? "Solte para mover para este estágio" : "Nenhum item neste estágio"}
+        </div>
+      )}
     </div>
   );
 }
 
-// Card de personagem agrupado
-function CharacterCard({
+// Draggable character card wrapper
+function DraggableCharacterCard({
+  group,
+  onClick,
+  isMoving,
+}: {
+  group: GroupedCharacter;
+  onClick: () => void;
+  isMoving: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: group.groupKey,
+    data: { group },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "relative",
+        isDragging && "opacity-30",
+        isMoving && "opacity-50 pointer-events-none animate-pulse"
+      )}
+    >
+      {/* Drag handle */}
+      <div
+        {...listeners}
+        {...attributes}
+        className="absolute -top-1 -left-1 z-10 p-1 rounded-full bg-muted/80 backdrop-blur cursor-grab active:cursor-grabbing opacity-0 group-hover/card:opacity-100 hover:opacity-100 transition-opacity"
+        style={{ touchAction: "none" }}
+      >
+        <GripVertical className="h-3 w-3 text-muted-foreground" />
+      </div>
+      <CharacterCardInteractive group={group} onClick={onClick} />
+    </div>
+  );
+}
+
+// Interactive card (click to open modal)
+function CharacterCardInteractive({
   group,
   onClick,
 }: {
@@ -232,40 +416,60 @@ function CharacterCard({
     <button
       onClick={onClick}
       className={cn(
-        "relative flex-shrink-0 w-20 h-24 rounded-lg border-2 overflow-hidden",
+        "group/card relative flex-shrink-0 w-20 h-24 rounded-lg border-2 overflow-hidden",
         "transition-all hover:scale-105 hover:shadow-lg",
         "bg-card hover:border-primary/50",
         group.hasCritical && "ring-2 ring-red-500 ring-offset-2 ring-offset-background"
       )}
     >
-      {/* Imagem placeholder ou inicial do nome */}
+      <CardContent group={group} />
+    </button>
+  );
+}
+
+// Static card for DragOverlay
+function CharacterCardStatic({ group }: { group: GroupedCharacter }) {
+  return (
+    <div
+      className={cn(
+        "relative flex-shrink-0 w-20 h-24 rounded-lg border-2 overflow-hidden shadow-2xl",
+        "bg-card border-primary",
+        group.hasCritical && "ring-2 ring-red-500 ring-offset-2 ring-offset-background"
+      )}
+    >
+      <CardContent group={group} />
+    </div>
+  );
+}
+
+// Shared card visual content
+function CardContent({ group }: { group: GroupedCharacter }) {
+  return (
+    <>
       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
         <span className="text-2xl font-bold text-muted-foreground/50">
           {group.characterName?.charAt(0)?.toUpperCase() || "?"}
         </span>
       </div>
 
-      {/* Badge de quantidade */}
       {group.count > 1 && (
         <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
           {group.count}×
         </div>
       )}
 
-      {/* Indicador de urgência */}
       {group.hasCritical && (
         <div className="absolute top-1 left-1">
           <AlertTriangle className="h-4 w-4 text-red-500" />
         </div>
       )}
 
-      {/* Nome do personagem */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5">
         <p className="text-[10px] text-white font-medium truncate leading-tight">
           {group.characterName || "N/A"}
         </p>
       </div>
-    </button>
+    </>
   );
 }
 
@@ -279,7 +483,6 @@ function CustomerListModal({
 }) {
   if (!group) return null;
 
-  // Ordenar por prioridade
   const sortedItems = [...group.items].sort((a, b) => {
     const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
     return (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2);
