@@ -415,22 +415,16 @@ function DraggableCharacterCard({
   return (
     <div
       ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       className={cn(
-        "relative",
-        isDragging && "opacity-30",
+        "relative cursor-grab active:cursor-grabbing touch-none",
+        isDragging && "opacity-30 scale-105",
         isMoving && "opacity-50 pointer-events-none animate-pulse"
       )}
+      style={{ touchAction: "none" }}
     >
-      {/* Drag handle */}
-      <div
-        {...listeners}
-        {...attributes}
-        className="absolute -top-1 -left-1 z-10 p-1 rounded-full bg-muted/80 backdrop-blur cursor-grab active:cursor-grabbing opacity-0 group-hover/card:opacity-100 hover:opacity-100 transition-opacity"
-        style={{ touchAction: "none" }}
-      >
-        <GripVertical className="h-3 w-3 text-muted-foreground" />
-      </div>
-      <CharacterCardInteractive group={group} onClick={onClick} />
+      <CharacterCardInteractive group={group} onClick={onClick} isDragging={isDragging} />
     </div>
   );
 }
@@ -439,22 +433,34 @@ function DraggableCharacterCard({
 function CharacterCardInteractive({
   group,
   onClick,
+  isDragging,
 }: {
   group: GroupedCharacter;
   onClick: () => void;
+  isDragging?: boolean;
 }) {
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent click when dragging
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClick();
+  };
+
   return (
-    <button
-      onClick={onClick}
+    <div
+      onClick={handleClick}
       className={cn(
         "group/card relative flex-shrink-0 w-20 h-24 rounded-lg border-2 overflow-hidden",
-        "transition-all hover:scale-105 hover:shadow-lg",
+        "transition-all hover:scale-105 hover:shadow-lg select-none",
         "bg-card hover:border-primary/50",
         group.hasCritical && "ring-2 ring-red-500 ring-offset-2 ring-offset-background"
       )}
     >
       <CardContent group={group} />
-    </button>
+    </div>
   );
 }
 
