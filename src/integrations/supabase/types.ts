@@ -1698,9 +1698,12 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          birth_date: string | null
           collector_level: number
           collector_xp: number
+          cpf: string | null
           created_at: string
+          delivery_address: Json | null
           display_name: string | null
           email: string | null
           full_name: string | null
@@ -1708,16 +1711,23 @@ export type Database = {
           is_public: boolean
           phone: string | null
           pieces_owned: number
+          preference_tags: string[] | null
+          preferences_text: string | null
+          profile_completion: number | null
           total_spent: number
           updated_at: string
           username: string | null
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          birth_date?: string | null
           collector_level?: number
           collector_xp?: number
+          cpf?: string | null
           created_at?: string
+          delivery_address?: Json | null
           display_name?: string | null
           email?: string | null
           full_name?: string | null
@@ -1725,16 +1735,23 @@ export type Database = {
           is_public?: boolean
           phone?: string | null
           pieces_owned?: number
+          preference_tags?: string[] | null
+          preferences_text?: string | null
+          profile_completion?: number | null
           total_spent?: number
           updated_at?: string
           username?: string | null
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          birth_date?: string | null
           collector_level?: number
           collector_xp?: number
+          cpf?: string | null
           created_at?: string
+          delivery_address?: Json | null
           display_name?: string | null
           email?: string | null
           full_name?: string | null
@@ -1742,9 +1759,13 @@ export type Database = {
           is_public?: boolean
           phone?: string | null
           pieces_owned?: number
+          preference_tags?: string[] | null
+          preferences_text?: string | null
+          profile_completion?: number | null
           total_spent?: number
           updated_at?: string
           username?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
