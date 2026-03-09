@@ -313,6 +313,7 @@ export function ArcadePage({ title, description, keywords, children }: ArcadePag
       <AnimatedGridBg scrollY={scrollY} />
       <ArcadeNav />
       {children}
+      <ArcadeFooter />
       <ArcadeAnimationStyles />
     </div>
   );
