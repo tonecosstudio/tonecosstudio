@@ -11,6 +11,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient, assertOwnership, errorToStatus } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
+import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
 
 interface PayBalanceRequest {
   purchaseId: string;
