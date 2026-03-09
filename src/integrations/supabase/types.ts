@@ -131,6 +131,51 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_payment_methods: {
+        Row: {
+          account_details: Json | null
+          created_at: string
+          display_order: number
+          id: string
+          instructions: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          payment_link: string | null
+          pix_key: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          account_details?: Json | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          instructions?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          payment_link?: string | null
+          pix_key?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          account_details?: Json | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          instructions?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          payment_link?: string | null
+          pix_key?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bulk_operations: {
         Row: {
           admin_id: string
@@ -1039,47 +1084,85 @@ export type Database = {
       manual_payments: {
         Row: {
           amount: number
+          approved_at: string | null
+          approved_by: string | null
           confirmed_at: string | null
           confirmed_by: string | null
           created_at: string
+          currency: string
           id: string
           notes: string | null
           payment_date: string | null
           payment_method: string | null
+          payment_method_id: string | null
+          payment_type: string
+          quote_id: string | null
           reference_id: string
+          reference_number: string | null
           reference_type: string
+          rejection_reason: string | null
           status: string | null
+          subscription_id: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           amount: number
+          approved_at?: string | null
+          approved_by?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           created_at?: string
+          currency?: string
           id?: string
           notes?: string | null
           payment_date?: string | null
           payment_method?: string | null
+          payment_method_id?: string | null
+          payment_type?: string
+          quote_id?: string | null
           reference_id: string
+          reference_number?: string | null
           reference_type: string
+          rejection_reason?: string | null
           status?: string | null
+          subscription_id?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           created_at?: string
+          currency?: string
           id?: string
           notes?: string | null
           payment_date?: string | null
           payment_method?: string | null
+          payment_method_id?: string | null
+          payment_type?: string
+          quote_id?: string | null
           reference_id?: string
+          reference_number?: string | null
           reference_type?: string
+          rejection_reason?: string | null
           status?: string | null
+          subscription_id?: string | null
+          updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "manual_payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_templates: {
         Row: {
@@ -1251,6 +1334,47 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_audit_log: {
+        Row: {
+          action_type: string
+          admin_id: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          notes: string | null
+          old_status: string | null
+          payment_id: string
+        }
+        Insert: {
+          action_type: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          payment_id: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_audit_log_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "manual_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_files: {
         Row: {
           created_at: string
@@ -1260,6 +1384,7 @@ export type Database = {
           file_type: string | null
           id: string
           payment_id: string
+          thumbnail_path: string | null
           uploaded_by: string
         }
         Insert: {
@@ -1270,6 +1395,7 @@ export type Database = {
           file_type?: string | null
           id?: string
           payment_id: string
+          thumbnail_path?: string | null
           uploaded_by: string
         }
         Update: {
@@ -1280,6 +1406,7 @@ export type Database = {
           file_type?: string | null
           id?: string
           payment_id?: string
+          thumbnail_path?: string | null
           uploaded_by?: string
         }
         Relationships: [
@@ -2386,6 +2513,7 @@ export type Database = {
           first_response_at: string | null
           id: string
           last_message_at: string | null
+          payment_id: string | null
           priority: string | null
           resolved_at: string | null
           status: string
@@ -2399,6 +2527,7 @@ export type Database = {
           first_response_at?: string | null
           id?: string
           last_message_at?: string | null
+          payment_id?: string | null
           priority?: string | null
           resolved_at?: string | null
           status?: string
@@ -2412,6 +2541,7 @@ export type Database = {
           first_response_at?: string | null
           id?: string
           last_message_at?: string | null
+          payment_id?: string | null
           priority?: string | null
           resolved_at?: string | null
           status?: string
