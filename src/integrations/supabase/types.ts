@@ -2147,6 +2147,42 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          created_at: string
+          details: Json | null
+          endpoint: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          severity: string
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          endpoint?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          endpoint?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       standalone_purchases: {
         Row: {
           amount: number
@@ -2927,6 +2963,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_old_security_events: { Args: never; Returns: number }
       close_monthly_sales: { Args: { reason?: string }; Returns: undefined }
       create_pricing_tier: {
         Args: {
