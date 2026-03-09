@@ -86,8 +86,15 @@ export async function uploadProductionPhoto(params: {
 }) {
   const { quoteId, updateId, file, caption } = params;
 
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const safeExt = ext.replace(/[^a-z0-9]/g, "") || "jpg";
+  // Validate file before upload
+  const { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } = await import('./security/input-sanitizer');
+  const validation = validateFileUpload(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
+  if (!validation.valid) {
+    throw new Error(validation.error || 'Arquivo inválido');
+  }
+
+  const sanitizedName = sanitizeFilename(file.name);
+  const safeExt = (sanitizedName.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const key = `${quoteId}/${updateId}/${crypto.randomUUID()}.${safeExt}`;
 
   // Bucket is expected to exist as public bucket named "production".
