@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { classifyNameWithAI } from "../_shared/ai.ts";
 import { assertAdmin, getClaims } from "../_shared/supabase.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 
 function modelForCache() {
   const env = (Deno.env.get("AI_CLASSIFY_MODELS") || "").trim();
@@ -34,8 +35,12 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    await assertAdmin(req);
+    const { userId } = await assertAdmin(req);
     const { client } = await getClaims(req);
+
+    // Rate limit: AI operations
+    const rateLimited = await checkRateLimit(req, "classify-name", RATE_LIMITS.AI, userId);
+    if (rateLimited) return rateLimited;
 
     const body = await req.json().catch(() => ({}));
     const name = String(body?.name ?? "").trim();

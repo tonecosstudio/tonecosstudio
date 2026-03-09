@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { classifyImageWithVision } from "../_shared/ai-vision.ts";
 import { assertAdmin, getClaims } from "../_shared/supabase.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 
 type VisionModel = "gpt-4o-mini" | "gpt-4o";
 
@@ -35,8 +36,12 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    await assertAdmin(req);
+    const { userId } = await assertAdmin(req);
     const { client } = await getClaims(req);
+
+    // Rate limit: AI strict (vision is expensive)
+    const rateLimited = await checkRateLimit(req, "classify-image-vision", RATE_LIMITS.AI_STRICT, userId);
+    if (rateLimited) return rateLimited;
 
     const body = await req.json().catch(() => ({}));
     const queueId = String(body?.queue_id ?? "").trim();

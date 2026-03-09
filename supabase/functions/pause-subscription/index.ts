@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { nowInBahia, isBeforeCutoff } from "../_shared/timezone.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 
 interface PauseSubscriptionRequest {
   subscriptionId: string;
@@ -38,6 +39,10 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Rate limit: standard operations
+    const rateLimited = await checkRateLimit(req, "pause-subscription", RATE_LIMITS.STANDARD, userId);
+    if (rateLimited) return rateLimited;
 
     const service = getServiceClient();
     const body = (await req.json().catch(() => ({}))) as PauseSubscriptionRequest;
