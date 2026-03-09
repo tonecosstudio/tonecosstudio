@@ -23,6 +23,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -131,6 +132,36 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
     queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
   });
 
+  // Extrair IDs de personagens únicos para buscar imagens
+  const characterIds = useMemo(() => {
+    if (!queueData?.data) return [];
+    const ids = new Set<string>();
+    queueData.data.forEach((item) => {
+      if (item.characterId) ids.add(item.characterId);
+    });
+    return Array.from(ids);
+  }, [queueData]);
+
+  // Fetch character images
+  const { data: characterImages } = useQuery({
+    queryKey: ["character-images", characterIds],
+    queryFn: async () => {
+      if (characterIds.length === 0) return new Map<string, string>();
+      const { data, error } = await supabase
+        .from("collection_characters")
+        .select("id, image_url")
+        .in("id", characterIds);
+      if (error) throw error;
+      const map = new Map<string, string>();
+      data?.forEach((c: { id: string; image_url: string | null }) => {
+        if (c.image_url) map.set(c.id, c.image_url);
+      });
+      return map;
+    },
+    enabled: characterIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Agrupar itens por estágio e depois por personagem
   const stageGroups = useMemo(() => {
     if (!queueData?.data) return new Map<ProductionStage, GroupedCharacter[]>();
@@ -156,7 +187,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
           characterName: item.characterName || "Personagem não definido",
           collectionId: item.collectionId,
           collectionName: item.collectionName,
-          imageUrl: null,
+          imageUrl: item.characterId ? characterImages?.get(item.characterId) || null : null,
           count: 0,
           items: [],
           hasCritical: false,
@@ -179,7 +210,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
     });
 
     return result;
-  }, [queueData]);
+  }, [queueData, characterImages]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const group = event.active.data.current?.group as GroupedCharacter | undefined;
@@ -444,28 +475,41 @@ function CharacterCardStatic({ group }: { group: GroupedCharacter }) {
 
 // Shared card visual content
 function CardContent({ group }: { group: GroupedCharacter }) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <>
-      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-        <span className="text-2xl font-bold text-muted-foreground/50">
-          {group.characterName?.charAt(0)?.toUpperCase() || "?"}
-        </span>
-      </div>
+      {/* Imagem real ou fallback com inicial */}
+      {group.imageUrl && !imgError ? (
+        <img
+          src={group.imageUrl}
+          alt={group.characterName || "Personagem"}
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={() => setImgError(true)}
+          loading="lazy"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+          <span className="text-2xl font-bold text-muted-foreground/50">
+            {group.characterName?.charAt(0)?.toUpperCase() || "?"}
+          </span>
+        </div>
+      )}
 
       {group.count > 1 && (
-        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-md">
           {group.count}×
         </div>
       )}
 
       {group.hasCritical && (
-        <div className="absolute top-1 left-1">
+        <div className="absolute top-1 left-1 drop-shadow-md">
           <AlertTriangle className="h-4 w-4 text-red-500" />
         </div>
       )}
 
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5">
-        <p className="text-[10px] text-white font-medium truncate leading-tight">
+        <p className="text-[10px] text-white font-medium truncate leading-tight drop-shadow-sm">
           {group.characterName || "N/A"}
         </p>
       </div>
