@@ -23,6 +23,10 @@ serve(async (req) => {
       });
     }
 
+    // Rate limit: standard operations
+    const rateLimited = await checkRateLimit(req, "cancel-subscription", RATE_LIMITS.STANDARD, userId);
+    if (rateLimited) return rateLimited;
+
     const service = getServiceClient();
     const body = (await req.json().catch(() => ({}))) as CancelSubscriptionRequest;
 

@@ -28,6 +28,10 @@ serve(async (req) => {
     const { claims } = await getClaims(req);
     const userId = String(claims.sub);
 
+    // Rate limit: purchase operations
+    const rateLimited = await checkRateLimit(req, "create-standalone-purchase", RATE_LIMITS.PURCHASE, userId);
+    if (rateLimited) return rateLimited;
+
     const service = getServiceClient();
 
     // Parse request body

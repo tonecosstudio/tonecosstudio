@@ -40,6 +40,10 @@ serve(async (req: Request) => {
       });
     }
 
+    // Rate limit: standard operations
+    const rateLimited = await checkRateLimit(req, "pause-subscription", RATE_LIMITS.STANDARD, userId);
+    if (rateLimited) return rateLimited;
+
     const service = getServiceClient();
     const body = (await req.json().catch(() => ({}))) as PauseSubscriptionRequest;
 
