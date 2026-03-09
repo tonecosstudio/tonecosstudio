@@ -269,7 +269,7 @@ async function fetchSubscriptionMetrics(subscriptionsCount: number) {
   const canceledSubscriptions = Math.floor(activeCount * 0.05);
 
   const averagePrice = allPlans && allPlans.length > 0
-    ? allPlans.reduce((acc, s) => acc + (s.price_pix || 0), 0) / allPlans.length
+    ? allPlans.reduce((acc, s) => acc + (s.price || 0), 0) / allPlans.length
     : 0;
 
   const mrr = activeCount * averagePrice;
