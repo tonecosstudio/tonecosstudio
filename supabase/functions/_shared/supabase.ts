@@ -70,3 +70,49 @@ export async function assertAdmin(req: Request) {
   console.log("assertAdmin: User is admin, proceeding");
   return { userId };
 }
+
+/**
+ * Verifies that the authenticated user owns a specific resource.
+ * Prevents Insecure Direct Object Reference (IDOR) attacks.
+ * 
+ * @param service - Supabase service client
+ * @param table - Table name to check
+ * @param resourceId - ID of the resource
+ * @param userId - Authenticated user's ID
+ * @param userIdColumn - Column name that holds the owner's user_id (default: 'user_id')
+ * @returns The resource row if ownership is confirmed
+ * @throws Error with "Forbidden" message if ownership check fails
+ */
+export async function assertOwnership(
+  service: ReturnType<typeof getServiceClient>,
+  table: string,
+  resourceId: string,
+  userId: string,
+  userIdColumn = "user_id",
+) {
+  const { data, error } = await service
+    .from(table)
+    .select("*")
+    .eq("id", resourceId)
+    .single();
+
+  if (error || !data) {
+    throw new Error("Not found");
+  }
+
+  if ((data as Record<string, unknown>)[userIdColumn] !== userId) {
+    throw new Error("Forbidden: you do not own this resource");
+  }
+
+  return data;
+}
+
+/**
+ * Maps known error messages to appropriate HTTP status codes.
+ */
+export function errorToStatus(msg: string): number {
+  if (msg === "Unauthorized") return 401;
+  if (msg.startsWith("Forbidden")) return 403;
+  if (msg === "Not found") return 404;
+  return 500;
+}
