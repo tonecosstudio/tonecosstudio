@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { logAuthFailure, logPermissionDenied } from "./security-logger.ts";
 
 function getAnonClientWithAuth(req: Request) {
   const url = Deno.env.get("SUPABASE_URL");
@@ -30,6 +31,7 @@ export async function getClaims(req: Request) {
   // Important: validates JWT with signing keys, avoids "Invalid JWT" issues when verify_jwt is true.
   const { data, error } = await client.auth.getClaims(token);
   if (error || !data?.claims?.sub) {
+    logAuthFailure(req, new URL(req.url).pathname, error?.message ?? "missing sub claim");
     throw new Error("Unauthorized");
   }
   return { client, claims: data.claims };
@@ -65,7 +67,10 @@ export async function assertAdmin(req: Request) {
   console.log("assertAdmin: Query result - roles:", roles, "error:", error);
 
   if (error) throw new Error(`Role check failed: ${error.message}`);
-  if (!roles) throw new Error("Forbidden: admin only");
+  if (!roles) {
+    logPermissionDenied(req, new URL(req.url).pathname, userId, "admin role required");
+    throw new Error("Forbidden: admin only");
+  }
 
   console.log("assertAdmin: User is admin, proceeding");
   return { userId };

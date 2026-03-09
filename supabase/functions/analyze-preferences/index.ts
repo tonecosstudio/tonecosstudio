@@ -3,6 +3,7 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { logSecurityEvent } from "../_shared/security-logger.ts";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -28,6 +29,16 @@ serve(async (req) => {
     // Auth (verify_jwt=true já valida, mas ainda garantimos que há usuário)
     const { claims } = await getClaims(req);
     const userId = String(claims.sub);
+
+    // Log AI usage for monitoring
+    logSecurityEvent({
+      event_type: "admin_action",
+      severity: "info",
+      source: "edge-function",
+      endpoint: "analyze-preferences",
+      user_id: userId,
+      details: { action: "ai_preference_analysis" },
+    }, req);
 
     // Rate limit: AI operations (per authenticated user)
     const rateLimited = await checkRateLimit(req, "analyze-preferences", RATE_LIMITS.AI, userId);

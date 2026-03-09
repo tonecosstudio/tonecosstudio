@@ -7,6 +7,7 @@
 
 import { getServiceClient } from "./supabase.ts";
 import { corsHeaders } from "./cors.ts";
+import { logRateLimitHit } from "./security-logger.ts";
 
 /**
  * Rate limit configuration presets
@@ -84,6 +85,7 @@ export async function checkRateLimit(
 
     if (!allowed) {
       console.warn(`Rate limit exceeded: ${key} on ${endpoint}`);
+      logRateLimitHit(req, endpoint, key);
       return new Response(
         JSON.stringify({
           error: "Too many requests. Please try again later.",
