@@ -532,22 +532,7 @@ export async function requestPaymentInfo(
     // Don't throw - audit log failure shouldn't block request
   }
 
-  // Send message to conversation if it exists
-  if (payment.conversation) {
-    try {
-      const { sendMessage } = await import("./conversation-service");
-      await sendMessage(
-        payment.conversation.id,
-        adminId,
-        `Precisamos de mais informações sobre seu pagamento:\n\n${message.trim()}`,
-        [],
-        false
-      );
-    } catch (error) {
-      console.error("Failed to send info request message:", error);
-      // Don't throw - message failure shouldn't block request
-    }
-  }
+  // Note: conversation messages are handled via Edge Functions
 
   // Send info requested notification
   try {
