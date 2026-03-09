@@ -102,7 +102,7 @@ serve(async (req) => {
         return { email: subscriber.email, success: true };
       } catch (error) {
         console.error(`Failed to send email to ${subscriber.email}:`, error);
-        return { email: subscriber.email, success: false, error: (error as Error).message };
+        return { email: subscriber.email, success: false, error: (error as Error)
       }
     });
 
@@ -126,7 +126,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in send-alert-digest function:", error);
     return new Response(
-      JSON.stringif(error as Error)rror: error.message }),
+      JSON.stringif(error as Ey({ error: (error as Error),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
