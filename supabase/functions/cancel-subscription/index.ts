@@ -3,11 +3,13 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { nowInBahia, toUTC } from "../_shared/timezone.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
+import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
-interface CancelSubscriptionRequest {
-  subscriptionId: string;
-  reason?: string;
-}
+const CANCEL_SCHEMA: Schema = {
+  subscriptionId: { type: "uuid", required: true },
+  reason:         { type: "string", maxLength: 500, sanitize: true },
+};
 
 serve(async (req) => {
   const opt = handleOptions(req);
@@ -27,20 +29,16 @@ serve(async (req) => {
     const rateLimited = await checkRateLimit(req, "cancel-subscription", RATE_LIMITS.STANDARD, userId);
     if (rateLimited) return rateLimited;
 
+    // Payload size guard
+    const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.MINIMAL);
+    if (tooLarge) return tooLarge;
+
     const service = getServiceClient();
-    const body = (await req.json().catch(() => ({}))) as CancelSubscriptionRequest;
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, CANCEL_SCHEMA);
+    if ("error" in validation) return validation.error;
 
-    const { subscriptionId, reason } = body;
-
-    if (!subscriptionId) {
-      return new Response(
-        JSON.stringify({ error: "subscriptionId é obrigatório" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
+    const { subscriptionId, reason } = validation.data as { subscriptionId: string; reason?: string };
 
     // Busca assinatura
     const { data: subscription, error: subscriptionError } = await service

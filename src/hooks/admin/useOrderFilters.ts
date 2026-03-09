@@ -223,10 +223,13 @@ function parseFiltersFromURL(searchParams: URLSearchParams): OrderFilters {
     filters.dateTo = dateTo;
   }
 
-  // Parse search query
+  // Parse search query (sanitize: limit length, strip control chars)
   const searchQuery = searchParams.get(URL_PARAMS.SEARCH);
   if (searchQuery) {
-    filters.searchQuery = searchQuery;
+    filters.searchQuery = searchQuery
+      .replace(/[\x00-\x1F]/g, "")
+      .trim()
+      .slice(0, 200);
   }
 
   return filters;

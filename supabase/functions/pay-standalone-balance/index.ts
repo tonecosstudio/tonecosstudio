@@ -12,6 +12,12 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient, assertOwnership, errorToStatus } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
+
+const PAY_BALANCE_SCHEMA: Schema = {
+  purchaseId:       { type: "uuid", required: true },
+  balanceVoucherUrl: { type: "url", required: true },
+};
 
 interface PayBalanceRequest {
   purchaseId: string;
@@ -37,26 +43,12 @@ serve(async (req) => {
 
     const service = getServiceClient();
 
-    // Parse request body
-    const body: PayBalanceRequest = await req.json();
-    const { purchaseId, balanceVoucherUrl } = body;
+    // Parse and validate request body
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, PAY_BALANCE_SCHEMA);
+    if ("error" in validation) return validation.error;
 
-    // Validate required fields
-    if (!purchaseId || !balanceVoucherUrl) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: purchaseId, balanceVoucherUrl' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(purchaseId)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid UUID format for purchaseId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const { purchaseId, balanceVoucherUrl } = validation.data as unknown as PayBalanceRequest;
 
     // 1. Verify ownership - prevents IDOR attacks
     const purchase = await assertOwnership(

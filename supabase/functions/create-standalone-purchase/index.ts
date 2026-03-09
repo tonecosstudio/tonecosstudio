@@ -12,6 +12,14 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient, errorToStatus } from "../_shared/supabase.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
+
+const CREATE_PURCHASE_SCHEMA: Schema = {
+  collectionId:      { type: "uuid", required: true },
+  cycleId:           { type: "uuid", required: true },
+  characterId:       { type: "uuid" },
+  depositVoucherUrl: { type: "url" },
+};
 
 interface CreatePurchaseRequest {
   collectionId: string;
@@ -39,32 +47,12 @@ serve(async (req) => {
 
     const service = getServiceClient();
 
-    // Parse request body
-    const body: CreatePurchaseRequest = await req.json();
-    const { collectionId, cycleId, characterId, depositVoucherUrl } = body;
+    // Parse and validate request body
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, CREATE_PURCHASE_SCHEMA);
+    if ("error" in validation) return validation.error;
 
-    // Validate required fields
-    if (!collectionId || !cycleId) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: collectionId, cycleId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(collectionId) || !uuidRegex.test(cycleId)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid UUID format for collectionId or cycleId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    if (characterId && !uuidRegex.test(characterId)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid UUID format for characterId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const { collectionId, cycleId, characterId, depositVoucherUrl } = validation.data as unknown as CreatePurchaseRequest;
 
     // 1. Check if before cutoff (Requirement 7.6)
     const { data: beforeCutoff, error: cutoffError } = await service
