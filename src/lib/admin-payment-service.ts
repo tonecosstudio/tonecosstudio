@@ -55,7 +55,7 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
 
   if (filters?.search) {
     query = query.or(
-      `reference_number.ilike.%${filters.search}%,profiles.full_name.ilike.%${filters.search}%`
+      `reference_number.ilike.%${filters.search}%`
     );
   }
 
