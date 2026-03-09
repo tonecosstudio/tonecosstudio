@@ -19,6 +19,7 @@ import { Upload, X, Loader2, Image as ImageIcon, AlertCircle, Eye, EyeOff } from
 import { cn } from "@/lib/utils";
 import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
+import { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/security/input-sanitizer";
 
 // ============================================================================
 // Types
