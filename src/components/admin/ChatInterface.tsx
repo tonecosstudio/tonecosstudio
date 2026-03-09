@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { fileUploadService } from "@/lib/services/fileUploadService";
 import { supabase } from "@/integrations/supabase/client";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { sanitizeURL } from "@/lib/security/input-sanitizer";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
+import { checkRateLimit } from "@/lib/security/rate-limiter";
 import type { Message, Conversation } from "@/types/support";
 
 interface ChatInterfaceProps {
@@ -47,9 +47,9 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   const [isUploading, setIsUploading] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
 
-  // Get current user for typing indicator
+  // Get current user once
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -78,7 +78,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     currentUserName: currentUser?.name || "Admin",
   });
 
-  // Carregar dados da conversa
+  // Load conversation data
   useEffect(() => {
     const loadConversation = async () => {
       try {
@@ -92,37 +92,33 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   }, [conversationId]);
 
   const handleSend = async () => {
-    // Check rate limit (60 messages/minute for chat)
     const rateLimit = checkRateLimit(`chat-${conversationId}`, { maxRequests: 60, windowMs: 60000 });
     if (!rateLimit.allowed) {
       toast.error(`Limite de mensagens excedido. Aguarde ${rateLimit.retryAfter} segundos.`);
       return;
     }
-    
-    // Precisa ter mensagem ou anexos
+
     if (!newMessageSanitized.trim() && !selectedFiles.length) {
       toast.error("Digite uma mensagem ou anexe um arquivo");
       return;
     }
 
-    // Validar mensagem se houver texto
     if (newMessageSanitized.trim()) {
       const validation = validateMessage(newMessageSanitized);
       if (!validation.valid) {
         toast.error(validation.error);
         return;
       }
-      
-      // Sanitize URLs in the message
+
       try {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const urls = newMessageSanitized.match(urlRegex);
         if (urls) {
           for (const url of urls) {
-            sanitizeURL(url); // This will throw if URL is invalid
+            sanitizeURL(url);
           }
         }
-      } catch (error) {
+      } catch {
         toast.error("A mensagem contém URLs inválidas");
         return;
       }
@@ -131,26 +127,15 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     try {
       setIsSending(true);
       setIsUploading(selectedFiles.length > 0);
-
-      // Stop typing indicator immediately
       stopTyping();
 
-      console.log("Iniciando envio de mensagem...");
-
-      // Obter usuário atual
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
+      if (!user) throw new Error("Usuário não autenticado");
 
-      console.log("Usuário autenticado:", user.id);
-
-      // Texto da mensagem (se vazio e houver anexos, usar placeholder)
       const messageText = newMessageSanitized.trim() || (selectedFiles.length > 0 ? "(anexo)" : "");
 
-      // Enviar mensagem diretamente via messageService para obter o ID
       const messageData = await messageService.sendMessage({
         conversation_id: conversationId,
         sender_id: user.id,
@@ -159,40 +144,26 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
         is_internal: isInternal,
       });
 
-      console.log("Mensagem criada:", messageData);
-
-      // Limpar input imediatamente
       setNewMessageRaw("");
       setIsInternal(false);
       const filesToUpload = [...selectedFiles];
       setSelectedFiles([]);
 
-      // Upload de anexos com optimistic updates
       if (filesToUpload.length > 0 && addOptimisticAttachment && updateOptimisticAttachment) {
-        console.log(
-          `Fazendo upload de ${filesToUpload.length} arquivo(s) com optimistic updates...`
-        );
-
-        for (let i = 0; i < filesToUpload.length; i++) {
-          const file = filesToUpload[i];
+        for (const file of filesToUpload) {
           const tempId = addOptimisticAttachment(messageData.id, file);
-
           try {
-            console.log(`Uploading arquivo ${i + 1}/${filesToUpload.length}: ${file.name}`);
             const result = await fileUploadService.uploadFile(
               file,
               conversationId,
               messageData.id,
               user.id
             );
-
-            console.log(`Arquivo ${file.name} enviado com sucesso`);
             updateOptimisticAttachment(messageData.id, tempId, {
               status: "uploaded",
               url: result.public_url,
             });
           } catch (error) {
-            console.error("Erro ao fazer upload do arquivo:", error);
             updateOptimisticAttachment(messageData.id, tempId, {
               status: "error",
               error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -201,22 +172,17 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
           }
         }
       } else if (filesToUpload.length > 0) {
-        // Fallback sem optimistic updates
-        console.log(`Fazendo upload de ${filesToUpload.length} arquivo(s)...`);
         for (const file of filesToUpload) {
           try {
             await fileUploadService.uploadFile(file, conversationId, messageData.id, user.id);
           } catch (error) {
-            console.error("Erro ao fazer upload do arquivo:", error);
             toast.error(`Erro ao enviar ${file.name}`);
           }
         }
       }
 
-      console.log("Mensagem enviada com sucesso!");
       toast.success("Mensagem enviada");
-    } catch (error) {
-      console.error("Erro completo ao enviar mensagem:", error);
+    } catch (error: any) {
       toast.error(`Erro ao enviar mensagem: ${error.message || "Erro desconhecido"}`);
     } finally {
       setIsSending(false);
@@ -225,15 +191,11 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!confirm("Tem certeza que deseja deletar esta mensagem?")) {
-      return;
-    }
-
+    if (!confirm("Tem certeza que deseja deletar esta mensagem?")) return;
     try {
       await messageService.deleteMessage(messageId);
       toast.success("Mensagem deletada");
-    } catch (error) {
-      console.error("Erro ao deletar mensagem:", error);
+    } catch (error: any) {
       toast.error(error.message || "Erro ao deletar mensagem");
     }
   };
@@ -253,14 +215,12 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       toast.error("Mensagem não pode estar vazia");
       return;
     }
-
     try {
       await messageService.editMessage(messageId, editingText.trim());
       toast.success("Mensagem editada");
       setEditingMessageId(null);
       setEditingText("");
-    } catch (error) {
-      console.error("Erro ao editar mensagem:", error);
+    } catch (error: any) {
       toast.error(error.message || "Erro ao editar mensagem");
     }
   };
@@ -305,6 +265,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   };
 
   const isClosed = conversation?.status === "closed";
+  const currentUserId = currentUser?.id || null;
 
   return (
     <div className="flex flex-col h-full">
@@ -340,8 +301,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                   await conversationService.updateStatus(conversationId, "waiting_admin");
                   await reloadConversation();
                   toast.success("Conversa reaberta com sucesso");
-                } catch (error) {
-                  console.error("Erro ao reabrir conversa:", error);
+                } catch {
                   toast.error("Erro ao reabrir conversa");
                 }
               }}
@@ -354,7 +314,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Load More Button */}
         {hasMore && (
           <div className="text-center">
             <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
@@ -363,11 +322,11 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
           </div>
         )}
 
-        {/* Messages */}
         {messages.map((message) => (
           <MessageBubble
             key={message.id}
             message={message}
+            currentUserId={currentUserId}
             formatTimestamp={formatTimestamp}
             onDelete={handleDeleteMessage}
             onEdit={handleStartEdit}
@@ -379,24 +338,19 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
           />
         ))}
 
-        {/* Empty state */}
         {!loading && messages.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             Nenhuma mensagem ainda. Envie a primeira mensagem!
           </div>
         )}
 
-        {/* Typing indicator */}
         <TypingIndicator typingText={typingText} />
-
-        {/* Auto-scroll anchor */}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
       <div className="border-t p-4 space-y-3">
         {isClosed ? (
-          /* Closed conversation message */
           <div className="text-center py-6 text-muted-foreground">
             <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="font-medium">Atendimento Encerrado</p>
@@ -410,8 +364,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                   await conversationService.updateStatus(conversationId, "waiting_admin");
                   await reloadConversation();
                   toast.success("Conversa reaberta com sucesso");
-                } catch (error) {
-                  console.error("Erro ao reabrir conversa:", error);
+                } catch {
                   toast.error("Erro ao reabrir conversa");
                 }
               }}
@@ -421,7 +374,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
           </div>
         ) : (
           <>
-            {/* Internal note toggle and Quick Replies */}
             <div className="flex items-center gap-2">
               <Button
                 variant={isInternal ? "default" : "outline"}
@@ -437,7 +389,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               />
             </div>
 
-            {/* Attachment Upload */}
             <AttachmentUpload
               compact
               onFilesSelected={handleFilesSelected}
@@ -446,7 +397,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               disabled={isSending}
             />
 
-            {/* Text input */}
             <div className="flex gap-2">
               <Textarea
                 placeholder={
@@ -458,8 +408,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
                 onChange={(e) => {
                   const value = e.target.value;
                   setNewMessageRaw(value);
-
-                  // Start typing indicator if text is not empty and not internal note
                   if (value.trim() && !isInternal) {
                     startTyping();
                   } else {
@@ -483,7 +431,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               </div>
             </div>
 
-            {/* Character count and status */}
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>
                 {newMessageRaw.length}/2000 caracteres
@@ -503,8 +450,13 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   );
 }
 
+// =====================================================
+// MessageBubble - receives currentUserId from parent
+// =====================================================
+
 interface MessageBubbleProps {
   message: Message;
+  currentUserId: string | null;
   formatTimestamp: (timestamp: string) => string;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, currentText: string) => void;
@@ -517,6 +469,7 @@ interface MessageBubbleProps {
 
 function MessageBubble({
   message,
+  currentUserId,
   formatTimestamp,
   onDelete,
   onEdit,
@@ -526,39 +479,27 @@ function MessageBubble({
   onSaveEdit,
   onCancelEdit,
 }: MessageBubbleProps) {
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
   const isAdmin = message.sender_type === "admin";
   const isSystem = message.sender_type === "system";
   const isInternal = message.is_internal;
   const isDeleted = !!message.deleted_at;
   const hasAttachments = message.attachments && message.attachments.length > 0;
 
-  // Verificar se pode editar (dentro de 15 minutos)
-  const canEdit = () => {
-    if (!currentUser || message.sender_id !== currentUser || isDeleted) return false;
+  const canEdit = useMemo(() => {
+    if (!currentUserId || message.sender_id !== currentUserId || isDeleted) return false;
     const messageTime = new Date(message.created_at).getTime();
-    const now = new Date().getTime();
-    const fifteenMinutes = 15 * 60 * 1000;
-    return now - messageTime <= fifteenMinutes;
-  };
-
-  // Obter usuário atual
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setCurrentUser(user?.id || null);
-    });
-  }, []);
+    const now = Date.now();
+    return now - messageTime <= 15 * 60 * 1000;
+  }, [currentUserId, message.sender_id, message.created_at, isDeleted]);
 
   const getPublicUrl = (filePath: string) => {
     const { data } = supabase.storage.from("support-attachments").getPublicUrl(filePath);
     return data.publicUrl;
   };
 
-  const isImage = (fileType: string) => {
-    return fileType.startsWith("image/");
-  };
+  const isImage = (fileType: string) => fileType.startsWith("image/");
 
-  // Mensagem deletada
+  // Deleted message
   if (isDeleted) {
     return (
       <div className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
@@ -572,6 +513,7 @@ function MessageBubble({
     );
   }
 
+  // System message
   if (isSystem) {
     return (
       <div className="flex justify-center">
@@ -585,6 +527,7 @@ function MessageBubble({
     );
   }
 
+  // Internal note
   if (isInternal) {
     return (
       <div className="bg-yellow-50 dark:bg-yellow-950 border-l-4 border-yellow-500 p-4 rounded group relative">
@@ -598,18 +541,12 @@ function MessageBubble({
               </Badge>
             </div>
 
-            {/* Modo de edição */}
             {isEditing ? (
-              <div className="space-y-2 p-2 bg-white rounded">
+              <div className="space-y-2 p-2 bg-background rounded">
                 <textarea
                   value={editingText}
                   onChange={(e) => onEditTextChange(e.target.value)}
-                  className="w-full min-h-[60px] text-sm p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{
-                    backgroundColor: "#ffffff",
-                    color: "#000000",
-                    fontFamily: "inherit",
-                  }}
+                  className="w-full min-h-[60px] text-sm p-2 border border-border rounded resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                   autoFocus
                 />
                 <div className="flex gap-2">
@@ -626,8 +563,6 @@ function MessageBubble({
             ) : (
               <>
                 <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-
-                {/* Attachments */}
                 {hasAttachments && (
                   <div className="mt-3 space-y-2">
                     {message.attachments!.map((attachment, idx) => (
@@ -649,9 +584,9 @@ function MessageBubble({
             {formatTimestamp(message.created_at)}
             {message.edited_at && " (editada)"}
           </span>
-          {!isEditing && currentUser === message.sender_id && (
+          {!isEditing && currentUserId === message.sender_id && (
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {canEdit() && (
+              {canEdit && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -678,6 +613,7 @@ function MessageBubble({
     );
   }
 
+  // Regular message
   return (
     <div className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
       <div
@@ -693,18 +629,12 @@ function MessageBubble({
           </span>
         </div>
 
-        {/* Modo de edição */}
         {isEditing ? (
-          <div className="space-y-2 p-2 bg-white rounded">
+          <div className="space-y-2 p-2 bg-background rounded">
             <textarea
               value={editingText}
               onChange={(e) => onEditTextChange(e.target.value)}
-              className="w-full min-h-[60px] text-sm p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{
-                backgroundColor: "#ffffff",
-                color: "#000000",
-                fontFamily: "inherit",
-              }}
+              className="w-full min-h-[60px] text-sm p-2 border border-border rounded resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               autoFocus
             />
             <div className="flex gap-2">
@@ -721,8 +651,6 @@ function MessageBubble({
         ) : (
           <>
             <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-
-            {/* Attachments */}
             {hasAttachments && (
               <div className="mt-3 space-y-2">
                 {message.attachments!.map((attachment, idx) => (
@@ -739,10 +667,10 @@ function MessageBubble({
           </>
         )}
 
-        {/* Botões de ação - apenas para o autor */}
-        {!isEditing && currentUser === message.sender_id && (
+        {/* Action buttons */}
+        {!isEditing && currentUserId === message.sender_id && (
           <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {canEdit() && (
+            {canEdit && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -769,6 +697,10 @@ function MessageBubble({
   );
 }
 
+// =====================================================
+// AttachmentDisplay
+// =====================================================
+
 interface AttachmentDisplayProps {
   attachment: any;
   getPublicUrl: (filePath: string) => string;
@@ -787,7 +719,6 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
   };
 
   if (fileIsImage) {
-    // Se houve erro ao carregar a imagem, mostrar como arquivo
     if (imageError) {
       return (
         <div
@@ -817,11 +748,9 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
             alt={attachment.file_name}
             className="max-w-[200px] max-h-[200px] rounded border-2 border-border hover:border-primary transition-colors cursor-pointer"
             onError={(e) => {
-              // Tentar carregar a imagem original se o thumbnail falhar
               if (thumbnailUrl && e.currentTarget.src === thumbnailUrl) {
                 e.currentTarget.src = publicUrl;
               } else {
-                // Se a imagem original também falhar, marcar como erro
                 setImageError(true);
               }
             }}
@@ -840,7 +769,7 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
     );
   }
 
-  // PDF ou outro arquivo
+  // PDF or other file
   return (
     <div
       className={`flex items-center gap-2 p-2 rounded border ${
