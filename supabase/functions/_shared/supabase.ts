@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { logAuthFailure, logPermissionDenied } from "./security-logger.ts";
 
 function getAnonClientWithAuth(req: Request) {
   const url = Deno.env.get("SUPABASE_URL");
