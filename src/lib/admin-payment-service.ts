@@ -862,7 +862,6 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "processing",
-        started_at: new Date().toISOString(),
       })
       .eq("id", operationId);
 
@@ -871,36 +870,14 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
     // Generate CSV
     const csvBlob = await exportPaymentsToCSV(paymentIds);
 
-    // Upload to Supabase Storage
-    const fileName = `export-${operationId}-${Date.now()}.csv`;
-    const filePath = `bulk-exports/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("payment-proofs")
-      .upload(filePath, csvBlob, {
-        contentType: "text/csv",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw new Error(`Failed to upload export file: ${uploadError.message}`);
-    }
-
-    // Get signed URL
-    const { data: urlData } = await supabase.storage
-      .from("payment-proofs")
-      .createSignedUrl(filePath, 3600); // 1 hour expiration
-
-    // Mark as completed
+    // Mark as completed with result
     await supabase
       .from("bulk_operations")
       .update({
         status: "completed",
-        completed_at: new Date().toISOString(),
         success_count: paymentIds.length,
         failure_count: 0,
-        export_file_path: filePath,
-        export_file_url: urlData?.signedUrl,
+        result: { type: "export", count: paymentIds.length },
       })
       .eq("id", operationId);
   } catch (error) {
@@ -909,8 +886,7 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
       .from("bulk_operations")
       .update({
         status: "failed",
-        completed_at: new Date().toISOString(),
-        errors: [{ error: error instanceof Error ? error.message : "Unknown error" }],
+        error_details: [{ error: error instanceof Error ? error.message : "Unknown error" }],
       })
       .eq("id", operationId);
   }

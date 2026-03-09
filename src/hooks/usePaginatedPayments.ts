@@ -42,7 +42,7 @@ async function fetchPayments(
 
   if (filters.search) {
     query = query.or(
-      `reference_number.ilike.%${filters.search}%,customer_name.ilike.%${filters.search}%`
+      `reference_number.ilike.%${filters.search}%`
     );
   }
 
