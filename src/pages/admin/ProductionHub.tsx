@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useProductionQueueRealtime } from "@/hooks/useProductionQueueRealtime";
 import { useSearchParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -70,6 +71,9 @@ function ProductionHub() {
   
   const [activeTab, setActiveTab] = useState<string>(tabParam || "pipeline");
   const [filters, setFilters] = useState<ProductionFiltersType>({});
+
+  // Realtime: atualiza automaticamente quando production_queue muda
+  useProductionQueueRealtime(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<ProductionQueueItem | null>(null);
   
