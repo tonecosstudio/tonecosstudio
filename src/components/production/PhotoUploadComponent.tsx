@@ -19,6 +19,7 @@ import { Upload, X, Loader2, Image as ImageIcon, AlertCircle, Eye, EyeOff } from
 import { cn } from "@/lib/utils";
 import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
+import { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/security/input-sanitizer";
 
 // ============================================================================
 // Types
@@ -132,23 +133,8 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
   // ============================================================================
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
-    // Check file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return {
-        valid: false,
-        error: `Tipo de arquivo inválido. Aceitos: ${ALLOWED_TYPES.map((t) => t.split("/")[1].toUpperCase()).join(", ")}`,
-      };
-    }
-
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      return {
-        valid: false,
-        error: `Arquivo muito grande. Tamanho máximo: ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
-      };
-    }
-
-    return { valid: true };
+    // Use centralized validation with dangerous file blocklist
+    return validateFileUpload(file, ALLOWED_TYPES as readonly string[], MAX_FILE_SIZE);
   };
 
   // ============================================================================
@@ -171,10 +157,11 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
   // ============================================================================
 
   const uploadToStorage = async (file: File): Promise<string> => {
-    // Generate unique filename
+    // Generate unique filename with sanitization
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 9);
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const sanitizedName = sanitizeFilename(file.name);
+    const extension = sanitizedName.split(".").pop()?.toLowerCase() || "jpg";
     const fileName = `${timestamp}-${randomId}.${extension}`;
     const filePath = `${folder}/${fileName}`;
 
