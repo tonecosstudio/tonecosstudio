@@ -30,6 +30,16 @@ serve(async (req) => {
     const { claims } = await getClaims(req);
     const userId = String(claims.sub);
 
+    // Log AI usage for monitoring
+    logSecurityEvent({
+      event_type: "admin_action",
+      severity: "info",
+      source: "edge-function",
+      endpoint: "analyze-preferences",
+      user_id: userId,
+      details: { action: "ai_preference_analysis" },
+    }, req);
+
     // Rate limit: AI operations (per authenticated user)
     const rateLimited = await checkRateLimit(req, "analyze-preferences", RATE_LIMITS.AI, userId);
     if (rateLimited) return rateLimited;
