@@ -686,7 +686,7 @@ async function processBulkApproveAsync(operationId: string): Promise<void> {
           .update({
             success_count: result.success_count,
             failure_count: result.failure_count,
-            errors: result.errors,
+            error_details: result.errors,
           })
           .eq("id", operationId);
       }
