@@ -433,22 +433,34 @@ function DraggableCharacterCard({
 function CharacterCardInteractive({
   group,
   onClick,
+  isDragging,
 }: {
   group: GroupedCharacter;
   onClick: () => void;
+  isDragging?: boolean;
 }) {
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent click when dragging
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClick();
+  };
+
   return (
-    <button
-      onClick={onClick}
+    <div
+      onClick={handleClick}
       className={cn(
         "group/card relative flex-shrink-0 w-20 h-24 rounded-lg border-2 overflow-hidden",
-        "transition-all hover:scale-105 hover:shadow-lg",
+        "transition-all hover:scale-105 hover:shadow-lg select-none",
         "bg-card hover:border-primary/50",
         group.hasCritical && "ring-2 ring-red-500 ring-offset-2 ring-offset-background"
       )}
     >
       <CardContent group={group} />
-    </button>
+    </div>
   );
 }
 
