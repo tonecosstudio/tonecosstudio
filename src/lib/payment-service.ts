@@ -410,15 +410,7 @@ export async function approvePayment(id: string, adminId: string): Promise<void>
     // Don't throw - audit log failure shouldn't block approval
   }
 
-  // Integrate with quote/subscription systems
-  try {
-    const { handlePaymentApproval } = await import("./integration-service");
-    await handlePaymentApproval(id);
-  } catch (error) {
-    console.error("Failed to integrate payment approval:", error);
-    // Log but don't throw - integration failure shouldn't block approval
-    // The payment is already approved, integration can be retried manually
-  }
+  // Note: quote/subscription integration is handled via Edge Functions
 
   // Send message to conversation if it exists
   if (payment.conversation) {
