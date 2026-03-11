@@ -2,7 +2,7 @@
  * API Service for Subscription Credit System
  * Uses Supabase directly instead of external API
  */
-// @ts-nocheck
+
 import { supabase } from '@/integrations/supabase/client';
 import {
   Subscription,
