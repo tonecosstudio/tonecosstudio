@@ -9,15 +9,14 @@ import { Check, Zap, Crown, Sparkles, Shield, ArrowRight, Coins } from "lucide-r
 import { useContentSettings } from "@/hooks/useContentSettings";
 import { processContentVariables } from "@/lib/services/contentService";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeSectionTitle,
   ArcadeCard,
   ArcadeCTA,
-  FloatingParticles,
-  GlitchText,
 } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 import { useState } from "react";
 
 export default function PlansArcade() {
@@ -33,7 +32,7 @@ export default function PlansArcade() {
         .from("subscription_plans")
         .select("*, pricing_tiers(*)")
         .eq("is_active", true)
-        .order("slug");
+        .order("display_order");
       if (error) throw error;
       return data;
     },
@@ -41,8 +40,8 @@ export default function PlansArcade() {
 
   const plans = plansQuery.data || [];
 
-  const getPlanMeta = (billingInterval: string) => {
-    switch (billingInterval) {
+  const getPlanMeta = (planType: string) => {
+    switch (planType) {
       case "trimestral":
         return { icon: Sparkles, rarity: "ÉPICO", color: "hsl(var(--gold-accent))", badge: "Mais escolhido" };
       case "semestral":
@@ -61,7 +60,7 @@ export default function PlansArcade() {
   ];
 
   return (
-    <ArcadePage
+    <Page
       title="Planos | ORDAX Command Center"
       description="Escolha seu plano de assinatura e colecione peças premium todo mês."
       keywords={["planos", "assinatura", "colecionáveis", "mensal"]}
@@ -144,13 +143,13 @@ export default function PlansArcade() {
 
             {/* Dynamic plans */}
             {plans.map((plan) => {
-              const meta = getPlanMeta(plan.billing_interval);
+              const meta = getPlanMeta(plan.plan_type);
               const Icon = meta.icon;
-              const priceFull = plan.price || 500;
-              const deliveries = plan.deliveries_per_cycle || 1;
+              const priceFull = Number(plan.price_full) || 500;
+              const deliveries = plan.deliveries_total || 1;
               const perUnit = (priceFull / deliveries).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
               const isHovered = hoveredPlan === plan.id;
-              const isSemestral = plan.billing_interval === "semestral";
+              const isSemestral = plan.plan_type === "semestral";
 
               return (
                 <ArcadeCard key={plan.id}>
@@ -195,11 +194,11 @@ export default function PlansArcade() {
                     </div>
 
                     {/* Coins badge */}
-                    {plan.coins_included > 0 && (
+                    {plan.total_credits > 0 && (
                       <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">
                         <Coins className="w-4 h-4 text-[hsl(var(--gold-accent))]" />
                         <span className="font-mono text-xs tracking-wider text-[hsl(var(--gold-accent))]">
-                          {plan.coins_included.toLocaleString("pt-BR")} coins inclusos
+                          {plan.total_credits.toLocaleString("pt-BR")} coins inclusos
                         </span>
                       </div>
                     )}
@@ -207,7 +206,7 @@ export default function PlansArcade() {
                     <ul className="space-y-3 mb-6 flex-1">
                       {[
                         `${deliveries} peça${deliveries > 1 ? "s" : ""}${isSemestral ? " (6 + 1 bônus)" : ""}`,
-                        `${plan.coins_included > 0 ? plan.coins_included.toLocaleString("pt-BR") + " coins para o catálogo" : ""}`,
+                        `${plan.total_credits > 0 ? plan.total_credits.toLocaleString("pt-BR") + " coins para o catálogo" : ""}`,
                         "Pintadas à mão",
                         "Produção limitada",
                         "Certificado",
@@ -266,7 +265,7 @@ export default function PlansArcade() {
         description="Escolha suas coleções favoritas e inicie sua jornada de colecionador."
         primaryAction={{ label: "VER COLEÇÕES", href: "/colecoes", icon: <ArrowRight className="w-4 h-4" /> }}
       />
-    </ArcadePage>
+    </Page>
   );
 }
 

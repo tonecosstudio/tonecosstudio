@@ -1,4 +1,5 @@
-import { ArcadePage, ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -56,7 +57,7 @@ export default function MyPaymentsArcade() {
   const approvedCount = payments.filter((p: any) => p.status === "approved").length;
 
   return (
-    <ArcadePage title="Meus Pagamentos | ORDAX" description="Acompanhe seus pagamentos">
+    <Page title="Meus Pagamentos | ORDAX" description="Acompanhe seus pagamentos">
       <ArcadeHero
         badge="PAYMENT LOG"
         title="PAGAMENTOS"
@@ -142,6 +143,6 @@ export default function MyPaymentsArcade() {
           </div>
         )}
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

@@ -9,8 +9,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import AppShell from "@/components/AppShell";
-import SEOHead from "@/components/SEOHead";
+import { Page } from "@/components/layouts/Page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -582,13 +581,11 @@ export default function CollectionsArcade() {
   });
 
   return (
-    <AppShell>
-      <SEOHead
-        title="Coleções - Arcade Gallery"
-        description="Explore nossas coleções exclusivas de personagens artesanais no estilo arcade clássico."
-        keywords={["coleções", "personagens", "arcade", "exclusivo"]}
-      />
-
+    <Page
+      title="Coleções - Arcade Gallery"
+      description="Explore nossas coleções exclusivas de personagens artesanais no estilo arcade clássico."
+      keywords={["coleções", "personagens", "arcade", "exclusivo"]}
+    >
       <div className="min-h-screen bg-[hsl(var(--background))] relative overflow-hidden">
         {/* Global Scanlines */}
         <div
@@ -803,6 +800,6 @@ export default function CollectionsArcade() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </Page>
   );
 }

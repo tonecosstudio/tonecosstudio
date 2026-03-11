@@ -1,15 +1,26 @@
 // @ts-nocheck
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Clock, User, Package, AlertCircle } from "lucide-react";
 import type { ProductionQueueItem } from "@/services/admin/production-service";
+import { BlockProductionModal } from "./BlockProductionModal";
+import { UnblockProductionModal } from "./UnblockProductionModal";
+import { EditProductionModal } from "./EditProductionModal";
+import { ProductionHistoryModal } from "./ProductionHistoryModal";
 
 interface ProductionItemDetailsProps {
   item: ProductionQueueItem | null;
+  onUpdate?: () => void;
 }
 
-export function ProductionItemDetails({ item }: ProductionItemDetailsProps) {
+export function ProductionItemDetails({ item, onUpdate }: ProductionItemDetailsProps) {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showUnblockModal, setShowUnblockModal] = useState(false);
+
   if (!item) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -17,6 +28,12 @@ export function ProductionItemDetails({ item }: ProductionItemDetailsProps) {
       </div>
     );
   }
+
+  const handleModalSuccess = () => {
+    if (onUpdate) {
+      onUpdate();
+    }
+  };
 
   const priorityColors = {
     critical: "bg-red-500",
@@ -137,22 +154,66 @@ export function ProductionItemDetails({ item }: ProductionItemDetailsProps) {
 
       {/* Ações */}
       <div className="space-y-2">
-        <Button className="w-full" variant="default">
+        <Button 
+          className="w-full" 
+          variant="default"
+          onClick={() => setShowEditModal(true)}
+        >
           Editar Item
         </Button>
-        <Button className="w-full" variant="outline">
+        <Button 
+          className="w-full" 
+          variant="outline"
+          onClick={() => setShowHistoryModal(true)}
+        >
           Ver Histórico
         </Button>
         {item.isBlocked ? (
-          <Button className="w-full" variant="destructive">
+          <Button 
+            className="w-full" 
+            variant="destructive"
+            onClick={() => setShowUnblockModal(true)}
+          >
             Desbloquear
           </Button>
         ) : (
-          <Button className="w-full" variant="secondary">
+          <Button 
+            className="w-full" 
+            variant="secondary"
+            onClick={() => setShowBlockModal(true)}
+          >
             Bloquear
           </Button>
         )}
       </div>
+
+      {/* Modals */}
+      <EditProductionModal
+        isOpen={showEditModal}
+        onOpenChange={setShowEditModal}
+        item={item}
+        onSuccess={handleModalSuccess}
+      />
+
+      <ProductionHistoryModal
+        isOpen={showHistoryModal}
+        onOpenChange={setShowHistoryModal}
+        productionQueueId={item.id}
+      />
+
+      <BlockProductionModal
+        isOpen={showBlockModal}
+        onOpenChange={setShowBlockModal}
+        productionQueueId={item.id}
+        onBlock={handleModalSuccess}
+      />
+
+      <UnblockProductionModal
+        isOpen={showUnblockModal}
+        onOpenChange={setShowUnblockModal}
+        productionQueueId={item.id}
+        onUnblock={handleModalSuccess}
+      />
     </div>
   );
 }

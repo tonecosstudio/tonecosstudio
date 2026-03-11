@@ -13,6 +13,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { logInfo, logError, logDebug } from '@/lib/logger';
 import { emailService } from '../email-service';
 
 // ============================================================================
@@ -55,7 +56,7 @@ class NotificationQueue {
     };
 
     this.queue.push(queueItem);
-    console.log(`Added notification to queue: ${queueItem.type} for ${queueItem.recipientEmail}`);
+    logDebug('Added notification to queue', { type: queueItem.type, recipient: queueItem.recipientEmail }, 'notifications');
 
     // Start processing if not already running
     if (!this.processing) {
@@ -72,7 +73,7 @@ class NotificationQueue {
     }
 
     this.processing = true;
-    console.log(`Processing notification queue: ${this.queue.length} items`);
+    logDebug('Processing notification queue', { queueLength: this.queue.length }, 'notifications');
 
     while (this.queue.length > 0) {
       // Get next batch of notifications
@@ -101,7 +102,7 @@ class NotificationQueue {
     }
 
     this.processing = false;
-    console.log('Notification queue processing completed');
+    logDebug('Notification queue processing completed', null, 'notifications');
   }
 
   /**
@@ -109,7 +110,7 @@ class NotificationQueue {
    */
   private async processNotification(item: NotificationQueueItem): Promise<void> {
     try {
-      console.log(`Processing notification: ${item.type} for ${item.recipientEmail}`);
+      logDebug('Processing notification', { type: item.type, recipient: item.recipientEmail }, 'notifications');
 
       // Send notification based on type using internal handlers
       const html = this.generateEmailHTML(item.type, item.data);
@@ -127,20 +128,22 @@ class NotificationQueue {
       // Mark as sent
       item.status = 'sent';
       this.removeFromQueue(item.id);
-      console.log(`Notification sent successfully: ${item.id}`);
+      logInfo('Notification sent successfully', { notificationId: item.id, type: item.type }, 'notifications');
     } catch (error) {
-      console.error(`Failed to send notification ${item.id}:`, error);
+      logError('Failed to send notification', { notificationId: item.id, error }, 'notifications');
       
       // Retry logic
       item.retryCount++;
       if (item.retryCount >= 3) {
         item.status = 'failed';
         this.removeFromQueue(item.id);
-        console.error(`Notification failed after 3 retries: ${item.id}`);
+        logError(`Notification failed after 3 retries: ${item.id}`, null, 'notifications');
       } else {
         // Reschedule for retry with exponential backoff
         item.scheduledFor = new Date(Date.now() + Math.pow(2, item.retryCount) * 60000);
-        console.log(`Rescheduling notification ${item.id} for retry ${item.retryCount}`);
+        logDebug('Rescheduling notification for retry', 
+          { notificationId: item.id, retryCount: item.retryCount }, 
+          'notifications');
       }
     }
   }
@@ -1002,9 +1005,9 @@ class ProductionNotificationService {
         scheduledFor: new Date(),
       });
 
-      console.log(`Character choice reminder queued for ${profile.email}`);
+      logInfo('Character choice reminder queued', { email: profile.email }, 'notifications');
     } catch (error) {
-      console.error('Failed to send choice reminder:', error);
+      logError('Failed to send choice reminder', error, 'notifications');
       throw error;
     }
   }
@@ -1062,9 +1065,9 @@ class ProductionNotificationService {
         scheduledFor: new Date(),
       });
 
-      console.log(`Character choice approval notification queued for ${profile.email}`);
+      logInfo('Character choice approval notification queued', { email: profile.email }, 'notifications');
     } catch (error) {
-      console.error('Failed to send choice approval:', error);
+      logError('Failed to send choice approval', error, 'notifications');
       throw error;
     }
   }
@@ -1123,9 +1126,9 @@ class ProductionNotificationService {
         scheduledFor: new Date(),
       });
 
-      console.log(`Character choice rejection notification queued for ${profile.email}`);
+      logInfo('Character choice rejection notification queued', { email: profile.email }, 'notifications');
     } catch (error) {
-      console.error('Failed to send choice rejection:', error);
+      logError('Failed to send choice rejection', error, 'notifications');
       throw error;
     }
   }
@@ -1173,7 +1176,7 @@ class ProductionNotificationService {
       });
 
       if (!shouldSend) {
-        console.log(`User ${queueItem.customer_id} has opted out of stage updates`);
+        logDebug('User opted out of stage updates', { customerId: queueItem.customer_id }, 'notifications');
         return;
       }
 
@@ -1209,7 +1212,7 @@ class ProductionNotificationService {
           notification_type: 'item_shipped',
         });
         if (!shouldSendShipped) {
-          console.log(`User ${queueItem.customer_id} has opted out of shipped notifications`);
+          logDebug('User opted out of shipped notifications', { customerId: queueItem.customer_id }, 'notifications');
           return;
         }
       } else {
@@ -1235,9 +1238,9 @@ class ProductionNotificationService {
         scheduledFor: new Date(),
       });
 
-      console.log(`Stage update notification queued for ${profile.email}`);
+      logInfo('Stage update notification queued', { email: profile.email }, 'notifications');
     } catch (error) {
-      console.error('Failed to send stage update:', error);
+      logError('Failed to send stage update', error, 'notifications');
       throw error;
     }
   }
@@ -1304,9 +1307,9 @@ class ProductionNotificationService {
         scheduledFor: new Date(),
       });
 
-      console.log(`Delay notification queued for ${profile.email}`);
+      logInfo('Delay notification queued', { email: profile.email }, 'notifications');
     } catch (error) {
-      console.error('Failed to send delay notification:', error);
+      logError('Failed to send delay notification', error, 'notifications');
       throw error;
     }
   }
@@ -1387,9 +1390,9 @@ class ProductionNotificationService {
         },
       });
 
-      console.log(`Assignment notification queued for ${profile.email}`);
+      logInfo('Assignment notification queued', { email: profile.email }, 'notifications');
     } catch (error) {
-      console.error('Failed to send assignment notification:', error);
+      logError('Failed to send assignment notification', error, 'notifications');
       throw error;
     }
   }

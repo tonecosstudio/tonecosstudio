@@ -12,6 +12,7 @@ import { CustomerPaymentDetails } from "@/components/customer/CustomerPaymentDet
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { Page } from "@/components/layouts/Page";
 
 export default function PaymentDetails() {
   const { paymentId } = useParams<{ paymentId: string }>();
@@ -25,8 +26,9 @@ export default function PaymentDetails() {
 
   if (!paymentId) {
     return (
-      <div className="container mx-auto p-4 md:p-6">
-        <div className="text-center py-12">
+      <Page title="Pagamento não encontrado | ORDAX" description="Detalhes do pagamento">
+        <div className="container mx-auto p-4 md:p-6">
+          <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-destructive">Pagamento não encontrado</h1>
           <p className="text-muted-foreground mt-2">
             O ID do pagamento não foi fornecido ou é inválido.
@@ -37,11 +39,13 @@ export default function PaymentDetails() {
           </Button>
         </div>
       </div>
+      </Page>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6">
+    <Page title="Detalhes do Pagamento | ORDAX" description="Visualize os detalhes do seu pagamento">
+      <div className="container mx-auto p-4 md:p-6">
       <div className="mb-6">
         <Button variant="outline" onClick={handleBackToMyPayments} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -60,5 +64,6 @@ export default function PaymentDetails() {
         onBack={handleBackToMyPayments}
       />
     </div>
+    </Page>
   );
 }

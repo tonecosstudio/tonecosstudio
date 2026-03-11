@@ -1,6 +1,6 @@
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeCard,
   ArcadeSectionTitle,
@@ -76,7 +76,7 @@ export default function TermsArcade() {
   ];
 
   return (
-    <ArcadePage
+    <Page
       title="Termos de Uso"
       description="Termos e condições de uso da plataforma Ordax"
       keywords={["termos", "condições", "uso", "legal"]}
@@ -140,6 +140,6 @@ export default function TermsArcade() {
         primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo" }}
         secondaryAction={{ label: "INÍCIO", href: "/" }}
       />
-    </ArcadePage>
+    </Page>
   );
 }

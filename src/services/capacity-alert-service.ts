@@ -8,6 +8,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { emailService } from "./email-service";
+import { logInfo, logError } from "@/lib/logger";
 
 /**
  * Alert configuration for a cycle
@@ -74,7 +76,11 @@ export async function configureAlert(
     throw new Error(`Failed to configure alert: ${error.message}`);
   }
 
-  console.log(`Configured alert for cycle ${cycleId}: threshold=${config.threshold}%, email=${config.email}, sms=${config.sms}`);
+  logInfo(`Configured alert for cycle ${cycleId}`, { 
+    threshold: config.threshold, 
+    email: config.email, 
+    sms: config.sms 
+  }, 'capacity-alert');
 }
 
 /**
@@ -187,7 +193,7 @@ export async function resetAlert(cycleId: string): Promise<void> {
     throw new Error(`Failed to reset alert: ${error.message}`);
   }
 
-  console.log(`Reset alert for cycle ${cycleId}`);
+  logInfo(`Reset alert for cycle ${cycleId}`, undefined, 'capacity-alert');
 }
 
 /**
@@ -231,31 +237,112 @@ Acesse o painel administrativo para gerenciar a capacidade.
   // Send email if configured
   if (config.email) {
     try {
-      // Call email service (to be implemented)
-      console.log(`Sending email alert to ${config.email}`);
-      // TODO: Integrate with email service
-      // await sendEmail({
-      //   to: config.email,
-      //   subject: `Alerta de Capacidade - Ciclo ${cycleInfo.cycleNumber}`,
-      //   body: message
-      // });
+      const availableCapacity = cycleInfo.maxCapacity - cycleInfo.currentCapacity;
+      
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #dc2626; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background: #f9fafb; }
+    .alert { background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 15px 0; }
+    .metrics { background: white; padding: 15px; margin: 15px 0; border-radius: 8px; }
+    .metric-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-label { font-weight: 600; color: #4b5563; }
+    .metric-value { color: #111827; }
+    .cta-button { display: inline-block; background: #dc2626; color: white; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚠️ Alerta de Capacidade</h1>
+      <p>Ciclo ${cycleInfo.cycleNumber} - ${cycleInfo.month}/${cycleInfo.year}</p>
+    </div>
+    <div class="content">
+      <div class="alert">
+        <h3>⚠️ Limite de Capacidade Atingido</h3>
+        <p>O ciclo ${cycleInfo.cycleNumber} atingiu <strong>${cycleInfo.percentage}%</strong> da capacidade máxima.</p>
+        <p>Limite configurado: <strong>${config.threshold}%</strong></p>
+      </div>
+      <div class="metrics">
+        <h3>📊 Métricas do Ciclo</h3>
+        <div class="metric-row">
+          <span class="metric-label">Capacidade Total:</span>
+          <span class="metric-value">${cycleInfo.maxCapacity} unidades</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Capacidade Usada:</span>
+          <span class="metric-value">${cycleInfo.currentCapacity} unidades</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Capacidade Disponível:</span>
+          <span class="metric-value">${availableCapacity} unidades</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Utilização:</span>
+          <span class="metric-value">${cycleInfo.percentage}%</span>
+        </div>
+      </div>
+      <p><strong>Ação Recomendada:</strong> Revise a capacidade do ciclo e considere:</p>
+      <ul>
+        <li>Aumentar a capacidade máxima do ciclo</li>
+        <li>Pausar novas assinaturas temporariamente</li>
+        <li>Ajustar o cronograma de produção</li>
+      </ul>
+      <div style="text-align: center;">
+        <a href="${typeof window !== 'undefined' ? window.location.origin : ''}/admin/cycles" class="cta-button">
+          Gerenciar Capacidade
+        </a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
+      <p>Este é um alerta automático do sistema de gerenciamento de capacidade.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      await emailService.sendEmail(
+        config.email,
+        `⚠️ Alerta de Capacidade - Ciclo ${cycleInfo.cycleNumber}`,
+        html,
+        'capacity_alert',
+        undefined,
+        { 
+          cycle_id: cycleId,
+          alert_type: 'capacity',
+          current_capacity: cycleInfo.currentCapacity,
+          max_capacity: cycleInfo.maxCapacity,
+          percentage: cycleInfo.percentage,
+          threshold: config.threshold
+        }
+      );
+
+      logInfo('Capacity alert email sent', { email: config.email, cycle: cycleInfo.cycleNumber }, 'capacity-alert');
     } catch (error) {
-      console.error('Failed to send email alert:', error);
+      logError('Failed to send capacity alert email', error, 'capacity-alert');
     }
   }
 
   // Send SMS if configured
   if (config.sms) {
     try {
-      // Call SMS service (to be implemented)
-      console.log(`Sending SMS alert to ${config.sms}`);
-      // TODO: Integrate with SMS service
+      logInfo('SMS alert configured but not implemented', { sms: config.sms }, 'capacity-alert');
+      // TODO: Integrate with SMS service (Twilio, AWS SNS, etc)
       // await sendSMS({
       //   to: config.sms,
       //   message: message
       // });
     } catch (error) {
-      console.error('Failed to send SMS alert:', error);
+      logError('Failed to send SMS alert', error, 'capacity-alert');
     }
   }
 }

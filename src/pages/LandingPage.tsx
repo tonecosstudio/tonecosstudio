@@ -1,16 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Crosshair, Shield, Zap, Eye, Trophy, ChevronDown, Coins, Gamepad2, Flame, Star } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeCard,
   ArcadeHero,
   ArcadeSectionTitle,
-  FloatingParticles,
-  GlitchText,
-  CoinCounter,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
+import { CoinCounter } from "@/components/arcade/CoinCounter";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
@@ -255,7 +254,7 @@ export default function LandingPage() {
   const models = modelsQuery.data || [];
 
   return (
-    <ArcadePage
+    <Page
       title="ORDAX — Colecionáveis Premium de Elite"
       description="Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão."
       keywords={["colecionáveis", "premium", "artesanal", "figuras", "estátuas", "ordax"]}
@@ -532,6 +531,6 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
-    </ArcadePage>
+    </Page>
   );
 }

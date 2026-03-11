@@ -15,14 +15,14 @@ import { contactFormSchema } from "@/lib/validations/support";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeSectionTitle,
   ArcadeCard,
   ArcadeCTA,
-  FloatingParticles,
 } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
@@ -87,7 +87,7 @@ export default function ContactArcade() {
   };
 
   return (
-    <ArcadePage
+    <Page
       title="Contato | ORDAX Comms"
       description="Entre em contato conosco. Canal direto para dúvidas e solicitações."
     >
@@ -214,6 +214,6 @@ export default function ContactArcade() {
         primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo" }}
         secondaryAction={{ label: "VER COLEÇÕES", href: "/colecoes" }}
       />
-    </ArcadePage>
+    </Page>
   );
 }

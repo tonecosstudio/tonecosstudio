@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeCard,
   ArcadeSectionTitle,
@@ -65,7 +65,7 @@ export default function WishlistArcade() {
   const inputClass = "w-full bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,18%)] text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] font-mono text-xs px-3 py-2 focus:outline-none focus:border-[hsl(var(--gold-accent))] transition-all";
 
   return (
-    <ArcadePage title="Lista de Desejos" description="Gerencie sua lista de desejos de colecionáveis">
+    <Page title="Lista de Desejos" description="Gerencie sua lista de desejos de colecionáveis">
       <ArcadeHero
         badge="Inventário"
         title="WISHLIST"
@@ -223,6 +223,6 @@ export default function WishlistArcade() {
         description="Descubra modelos incríveis no catálogo"
         primaryAction={{ label: "CATÁLOGO", href: "/catalogo" }}
       />
-    </ArcadePage>
+    </Page>
   );
 }

@@ -12,8 +12,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import AppShell from "@/components/AppShell";
-import SEOHead from "@/components/SEOHead";
+import { Page } from "@/components/layouts/Page";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -286,7 +285,7 @@ export default function CustomerOrderProgressPage() {
   // Loading state
   if (isLoading) {
     return (
-      <AppShell>
+      <Page title="Carregando..." description="Carregando informações do pedido">
         <div className="container py-12 max-w-5xl">
           <Skeleton className="h-12 w-64 mb-4" />
           <Skeleton className="h-6 w-96 mb-8" />
@@ -301,14 +300,14 @@ export default function CustomerOrderProgressPage() {
             </div>
           </div>
         </div>
-      </AppShell>
+      </Page>
     );
   }
 
   // Error state
   if (error || !orderProgress) {
     return (
-      <AppShell>
+      <Page title="Erro" description="Erro ao carregar informações do pedido">
         <div className="container py-12 max-w-5xl text-center">
           <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Pedido Não Encontrado</h1>
@@ -319,19 +318,16 @@ export default function CustomerOrderProgressPage() {
             Voltar ao Dashboard
           </Button>
         </div>
-      </AppShell>
+      </Page>
     );
   }
 
   return (
-    <>
-      <SEOHead
-        title={`Pedido #${orderProgress.orderNumber} - Acompanhamento`}
-        description="Acompanhe o progresso do seu pedido em tempo real"
-      />
-
-      <AppShell>
-        <div className="container py-12 max-w-5xl">
+    <Page
+      title={`Pedido #${orderProgress.orderNumber} - Acompanhamento`}
+      description="Acompanhe o progresso do seu pedido em tempo real"
+    >
+      <div className="container py-12 max-w-5xl">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">
@@ -442,7 +438,6 @@ export default function CustomerOrderProgressPage() {
             </div>
           </div>
         </div>
-      </AppShell>
-    </>
-  );
-}
+      </Page>
+    );
+  }

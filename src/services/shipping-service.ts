@@ -38,6 +38,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { logDebug, logError } from '@/lib/logger';
 
 /**
  * Address information for shipping
@@ -297,7 +298,7 @@ export class ShippingService {
             updatedCount++;
           }
         } catch (error) {
-          console.error(`Failed to update tracking for delivery ${delivery.id}:`, error);
+          logError(`Failed to update tracking for delivery ${delivery.id}`, error, 'shipping');
           // Continue with other deliveries
         }
       }
@@ -505,9 +506,7 @@ export class ShippingService {
     // Mock implementation - generates fake tracking code
     // In production, replace with actual Correios API call
     
-    console.log('[MOCK] Generating Correios label for delivery:', deliveryId);
-    console.log('[MOCK] Destination:', address);
-    console.log('[MOCK] Cost:', cost);
+    logDebug('Generating Correios label for delivery', { deliveryId, address, cost }, 'shipping');
 
     // Generate mock tracking code (Correios format: BR123456789BR)
     const trackingCode = `BR${Math.random().toString().slice(2, 11)}BR`;
@@ -534,7 +533,7 @@ export class ShippingService {
    */
   private async getCorreiosTracking(trackingCode: string): Promise<TrackingStatus> {
     // Mock implementation
-    console.log('[MOCK] Getting Correios tracking for:', trackingCode);
+    logDebug('Getting Correios tracking', { trackingCode }, 'shipping');
 
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
@@ -578,7 +577,7 @@ export class ShippingService {
     cost: number
   ): Promise<LabelResult> {
     // Mock implementation for private carriers
-    console.log('[MOCK] Generating private carrier label for delivery:', deliveryId);
+    logDebug('Generating private carrier label', { deliveryId }, 'shipping');
 
     const trackingCode = `PC${Math.random().toString().slice(2, 11)}`;
     const labelUrl = `https://mock-carrier.com/labels/${trackingCode}.pdf`;
@@ -598,7 +597,7 @@ export class ShippingService {
    * @private
    */
   private async getPrivateCarrierTracking(trackingCode: string): Promise<TrackingStatus> {
-    console.log('[MOCK] Getting private carrier tracking for:', trackingCode);
+    logDebug('Getting private carrier tracking', { trackingCode }, 'shipping');
 
     await new Promise(resolve => setTimeout(resolve, 300));
 

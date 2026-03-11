@@ -1,7 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArcadePage, ArcadeCard, ArcadeSectionTitle, GlitchText, FloatingParticles } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { Trophy, Star, Heart, Calendar, TrendingUp } from "lucide-react";
 
 export default function PublicProfileArcade() {
@@ -55,24 +57,24 @@ export default function PublicProfileArcade() {
 
   if (profileQuery.isLoading) {
     return (
-      <ArcadePage title="Carregando..." description="">
+      <Page title="Carregando..." description="">
         <div className="flex items-center justify-center py-32">
           <div className="w-8 h-8 border-2 border-[hsl(var(--gold-accent))] border-t-transparent rounded-full animate-spin" />
         </div>
-      </ArcadePage>
+      </Page>
     );
   }
 
   if (!profile) {
     return (
-      <ArcadePage title="Perfil não encontrado" description="">
+      <Page title="Perfil não encontrado" description="">
         <div className="text-center py-32">
           <h1 className="text-3xl font-bold tracking-wider mb-2" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
             SOLDIER NOT FOUND
           </h1>
           <p className="font-mono text-xs text-[hsl(0,0%,45%)] tracking-wider">Este perfil não existe ou é privado</p>
         </div>
-      </ArcadePage>
+      </Page>
     );
   }
 
@@ -80,7 +82,7 @@ export default function PublicProfileArcade() {
   const xpProgress = Math.min(100, (profile.collector_xp / xpForNextLevel) * 100);
 
   return (
-    <ArcadePage title={`${profile.display_name || profile.username} | ORDAX`} description={profile.bio || ""}>
+    <Page title={`${profile.display_name || profile.username} | ORDAX`} description={profile.bio || ""}>
       {/* Hero */}
       <section className="relative py-16 px-6 overflow-hidden">
         <FloatingParticles />
@@ -183,6 +185,6 @@ export default function PublicProfileArcade() {
           </div>
         )}
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

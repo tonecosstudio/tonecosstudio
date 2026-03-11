@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { logError } from '@/lib/logger';
 
 export interface NotificationPreferences {
   id: string;
@@ -40,7 +41,7 @@ class NotificationPreferencesService {
       .single();
 
     if (error) {
-      console.error('Error fetching notification preferences:', error);
+      logError('Error fetching notification preferences', error, 'notification-preferences');
       return null;
     }
 
@@ -66,7 +67,7 @@ class NotificationPreferencesService {
       .single();
 
     if (error) {
-      console.error('Error updating notification preferences:', error);
+      logError('Error updating notification preferences', error, 'notification-preferences');
       return null;
     }
 
@@ -94,7 +95,7 @@ class NotificationPreferencesService {
       .single();
 
     if (error) {
-      console.error('Error creating notification preferences:', error);
+      logError('Error creating notification preferences', error, 'notification-preferences');
       return null;
     }
 

@@ -180,6 +180,7 @@ export function PaymentSection({ userId }: { userId: string }) {
 
   const paymentMethodsQuery = useQuery({
     queryKey: ["payment-methods", userId],
+    enabled: Boolean(userId), // Só executa quando userId estiver disponível
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payment_methods")
@@ -391,6 +392,7 @@ import { Link } from "react-router-dom";
 export function SubscriptionSection({ userId }: { userId: string }) {
   const subscriptionQuery = useQuery({
     queryKey: ["user-subscription", userId],
+    enabled: Boolean(userId), // Só executa quando userId estiver disponível
     queryFn: async () => {
       // Buscar assinatura
       const { data: subscription, error: subError } = await supabase
@@ -498,6 +500,7 @@ export function SupportSection({ userId }: { userId: string }) {
 
   const conversationsQuery = useQuery({
     queryKey: ["user-conversations", userId],
+    enabled: Boolean(userId), // Só executa quando userId estiver disponível
     queryFn: async () => {
       const { data, error } = await supabase
         .from("support_conversations")

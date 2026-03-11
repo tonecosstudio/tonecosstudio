@@ -14,6 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { PaymentFile, FileValidationResult } from "@/types/manual-payment";
 import { getNotificationService } from "./notification-service";
 import { compressImage } from "./image-compression";
+import { removeExifData, validateImage } from "./image-processor";
+import { malwareScanner, MalwareScannerError } from "./malware-scanner";
+import { logInfo, logError, logWarn } from "./logger";
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -262,17 +265,82 @@ export class FileUploadService {
     // Check max files (Requirement 3.6)
     await this.checkMaxFiles(paymentId);
 
+    // Scan for malware (Requirements 14.3, 14.4)
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const scanResult = await malwareScanner.scanFile(arrayBuffer, file.name);
+
+      if (!scanResult.safe) {
+        logWarn('Malware detected in upload', {
+          fileName: file.name,
+          threats: scanResult.threats,
+          scanner: scanResult.scanner
+        }, 'file-upload');
+
+        // Log security incident
+        await this.logSecurityIncident({
+          type: 'MALWARE_DETECTED',
+          file_name: file.name,
+          user_id: user.id,
+          payment_id: paymentId,
+          threats: scanResult.threats,
+          scanner: scanResult.scanner,
+        });
+
+        throw new FileUploadError(
+          'MALWARE_DETECTED',
+          'Security threat detected in file. Upload rejected for your protection.',
+          403,
+          {
+            threats: scanResult.threats,
+            scanner: scanResult.scanner,
+          }
+        );
+      }
+
+      logInfo('File passed malware scan', {
+        fileName: file.name,
+        scanner: scanResult.scanner,
+        scanTime: scanResult.scanTime
+      }, 'file-upload');
+    } catch (error) {
+      if (error instanceof FileUploadError) {
+        throw error; // Re-throw malware detection errors
+      }
+
+      // Log scan failure but don't block upload (fail-open for availability)
+      logError('Malware scan failed, allowing upload', error, 'file-upload');
+      
+      // In production, you might want to fail-closed instead:
+      // throw new FileUploadError('SCAN_FAILED', 'Security scan failed. Please try again.', 500);
+    }
+
     // Compress image before upload (Requirement 18.6, 18.7)
     let fileToUpload = file;
     if (file.type.startsWith("image/")) {
       try {
-        fileToUpload = await compressImage(file);
-        console.log(
-          `Image compressed: ${(file.size / 1024).toFixed(2)}KB -> ${(fileToUpload.size / 1024).toFixed(2)}KB`
+        // Convert File to Buffer for processing
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Remove EXIF data for privacy (strips GPS, camera info, etc)
+        const cleanBuffer = await removeExifData(buffer);
+
+        // Compress the cleaned image
+        const compressedBlob = await compressImage(
+          new File([cleanBuffer], file.name, { type: file.type })
         );
+
+        fileToUpload = compressedBlob;
+        
+        logInfo('Image processed successfully', {
+          originalSize: `${(file.size / 1024).toFixed(2)}KB`,
+          newSize: `${(fileToUpload.size / 1024).toFixed(2)}KB`,
+          reduction: `${((1 - fileToUpload.size / file.size) * 100).toFixed(1)}%`
+        }, 'file-upload');
       } catch (error) {
-        console.warn("Image compression failed, uploading original:", error);
-        // Continue with original file if compression fails
+        logWarn('Image processing failed, uploading original', error, 'file-upload');
+        // Continue with original file if processing fails
       }
     }
 
@@ -362,7 +430,7 @@ export class FileUploadService {
       }
     } catch (error) {
       // Don't fail file upload if notification fails
-      console.error("Failed to send under review notification:", error);
+      logError('Failed to send under review notification', error, 'file-upload');
     }
 
     return fileRecord as PaymentFile;
@@ -444,6 +512,41 @@ export class FileUploadService {
       throw new FileUploadError("DATABASE_ERROR", "Failed to delete file record", 500, {
         originalError: dbError,
       });
+    }
+  }
+
+  /**
+   * Log security incident
+   * Requirement: 14.4
+   */
+  private async logSecurityIncident(incident: {
+    type: string;
+    file_name: string;
+    user_id: string;
+    payment_id: string;
+    threats: string[];
+    scanner: string;
+  }): Promise<void> {
+    try {
+      await supabase.from('security_incidents').insert({
+        incident_type: incident.type,
+        file_name: incident.file_name,
+        user_id: incident.user_id,
+        payment_id: incident.payment_id,
+        details: {
+          threats: incident.threats,
+          scanner: incident.scanner,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      logInfo('Security incident logged', {
+        type: incident.type,
+        fileName: incident.file_name
+      }, 'file-upload');
+    } catch (error) {
+      // Don't fail upload if logging fails
+      logError('Failed to log security incident', error, 'file-upload');
     }
   }
 }

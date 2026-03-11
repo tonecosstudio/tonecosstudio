@@ -6,6 +6,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { logInfo, logError, logWarn } from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 
 // ============================================================================
 // Types
@@ -35,7 +37,7 @@ export interface AlertNotification {
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!("Notification" in window)) {
-    console.warn("This browser does not support notifications");
+    logWarn("This browser does not support notifications", null, 'alerts');
     return false;
   }
 
@@ -67,7 +69,7 @@ export function canShowNotifications(): boolean {
  */
 export function showBrowserNotification(notification: AlertNotification): void {
   if (!canShowNotifications()) {
-    console.warn("Cannot show notification: permission not granted");
+    logWarn("Cannot show notification: permission not granted", null, 'alerts');
     return;
   }
 
@@ -166,7 +168,7 @@ export function playNotificationSound(frequency: number = 800, duration: number 
     initAudioContext();
     
     if (!audioContext) {
-      console.warn("AudioContext not available");
+      logWarn("AudioContext not available", null, 'alerts');
       return;
     }
 
@@ -185,7 +187,7 @@ export function playNotificationSound(frequency: number = 800, duration: number 
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + duration / 1000);
   } catch (error) {
-    console.error("Error playing notification sound:", error);
+    logError("Error playing notification sound", error, 'alerts');
   }
 }
 
@@ -227,7 +229,7 @@ export function getNotificationPreferences(): NotificationPreferences {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Error reading notification preferences:", error);
+    logError("Error reading notification preferences", error, 'alerts');
   }
 
   // Default preferences
@@ -245,7 +247,7 @@ export function saveNotificationPreferences(preferences: NotificationPreferences
   try {
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
   } catch (error) {
-    console.error("Error saving notification preferences:", error);
+    logError("Error saving notification preferences", error, 'alerts');
   }
 }
 
@@ -268,9 +270,9 @@ export async function sendDailyAlertDigest(): Promise<void> {
       throw error;
     }
 
-    console.log("Daily alert digest sent successfully:", data);
+    logInfo("Daily alert digest sent successfully", data, 'alerts');
   } catch (error) {
-    console.error("Error sending daily alert digest:", error);
+    logError("Error sending daily alert digest", error, 'alerts');
     throw error;
   }
 }
@@ -293,7 +295,7 @@ export async function subscribeToEmailDigest(userId: string, email: string): Pro
       throw error;
     }
   } catch (error) {
-    console.error("Error subscribing to email digest:", error);
+    logError("Error subscribing to email digest", error, 'alerts');
     throw error;
   }
 }
@@ -315,7 +317,7 @@ export async function unsubscribeFromEmailDigest(userId: string): Promise<void> 
       throw error;
     }
   } catch (error) {
-    console.error("Error unsubscribing from email digest:", error);
+    logError("Error unsubscribing from email digest", error, 'alerts');
     throw error;
   }
 }

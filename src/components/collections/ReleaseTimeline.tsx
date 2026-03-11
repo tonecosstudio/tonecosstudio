@@ -144,11 +144,10 @@ export function ReleaseTimeline() {
         {/* Nota Importante */}
         <div className="mt-6 p-4 bg-muted/50 rounded-lg border">
           <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">📅 Modelo Recorrente:</strong> Operamos com 2 ciclos
-            por mês. Ciclo 1 (dia 01-15) e Ciclo 2 (dia 16-último dia). Cada ciclo tem seu próprio
-            cronograma de produção e envio. Envio em até {currentBatch.shippingDeadline} dias úteis
-            (considera feriados). Prazo médio:{" "}
-            <strong className="text-foreground">~{currentBatch.avgDeliveryDays} dias</strong>.
+            <strong className="text-foreground">📅 Modelo Mensal:</strong> Vendas abertas durante todo o mês (30 dias). 
+            Produção no mês seguinte (30 dias). Envio na segunda quinzena do terceiro mês. 
+            Prazo total: <strong className="text-foreground">~90 dias (3 meses)</strong>. 
+            Envio em até {currentBatch.shippingDeadline} dias úteis (considera feriados).
           </p>
         </div>
       </CardContent>

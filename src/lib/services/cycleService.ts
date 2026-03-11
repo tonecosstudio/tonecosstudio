@@ -1,8 +1,11 @@
 /**
  * CycleService
  * 
- * Serviço para gerenciamento de ciclos quinzenais de produção.
+ * Serviço para gerenciamento de ciclos mensais de produção.
  * Responsável por identificar, criar e gerenciar ciclos de produção e envio.
+ * 
+ * MODELO: Vendas (30 dias) → Produção (30 dias) → Envio (segunda quinzena do 3º mês)
+ * Prazo total: ~90 dias (3 meses)
  * 
  * @module cycleService
  */
@@ -45,30 +48,23 @@ export interface CycleCapacity {
  */
 class CycleService {
   /**
-   * Identifica o número do ciclo (1 ou 2) baseado na data
+   * Identifica o número do ciclo (sempre 1 no modelo mensal)
    * 
-   * Ciclo 1: dias 1-15 do mês
-   * Ciclo 2: dias 16-fim do mês
+   * NOTA: Este método mantém compatibilidade com código legado que espera
+   * valores 1 ou 2, mas no modelo mensal atual sempre retorna 1.
+   * 
+   * Modelo Mensal: Todo o mês é um único ciclo de vendas (dias 1-31)
    * 
    * @param date - Data para identificar o ciclo (em America/Bahia timezone)
-   * @returns 1 ou 2
+   * @returns 1 (sempre, no modelo mensal)
    * 
-   * @example
-   * const cycleNum = cycleService.identifyCycleNumber(new Date('2026-03-10'));
-   * // 1 (dia 10 está no Ciclo 1)
-   * 
-   * const cycleNum2 = cycleService.identifyCycleNumber(new Date('2026-03-20'));
-   * // 2 (dia 20 está no Ciclo 2)
+   * @deprecated Este método é mantido para compatibilidade. No modelo mensal,
+   * não há divisão quinzenal - todo o mês é um único ciclo.
    */
   identifyCycleNumber(date: Date): 1 | 2 {
-    // Converter para timezone do sistema
-    const systemDate = timezoneService.toSystemTimezone(date);
-    
-    // Obter dia do mês
-    const day = timezoneService.getDayOfMonth(systemDate);
-    
-    // Ciclo 1: dias 1-15, Ciclo 2: dias 16-fim
-    return day <= 15 ? 1 : 2;
+    // No modelo mensal, sempre retorna 1 (todo o mês é um único ciclo)
+    // Mantido como 1|2 para compatibilidade com código legado
+    return 1;
   }
 
   /**
@@ -190,9 +186,14 @@ class CycleService {
   }
 
   /**
-   * Calcula as datas de um ciclo
+   * Calcula as datas de um ciclo mensal
    * 
-   * @param cycleNumber - Número do ciclo (1 ou 2)
+   * MODELO MENSAL:
+   * - Vendas: Todo o mês (dias 1-31)
+   * - Produção: Mês seguinte completo (dias 1-31)
+   * - Envio: Segunda quinzena do terceiro mês (dias 15-31)
+   * 
+   * @param cycleNumber - Número do ciclo (mantido para compatibilidade, sempre usa modelo mensal)
    * @param month - Mês (1-12)
    * @param year - Ano
    * @returns Datas do ciclo
@@ -207,63 +208,54 @@ class CycleService {
     productionStart: Date;
     productionEnd: Date;
   } {
-    if (cycleNumber === 1) {
-      // Ciclo 1: dias 1-15 (pedidos) → 16-fim (produção)
-      const openStart = timezoneService.createDate(year, month, 1, 0, 0, 0);
-      const openEnd = timezoneService.createDate(year, month, 15, 23, 59, 59);
-      const productionStart = timezoneService.createDate(year, month, 16, 0, 0, 0);
-      
-      // Fim da produção = último dia do mês às 23:59:59
-      const lastDay = new Date(year, month, 0).getDate(); // Último dia do mês
-      const productionEnd = timezoneService.createDate(year, month, lastDay, 23, 59, 59);
-      
-      return { openStart, openEnd, productionStart, productionEnd };
-    } else {
-      // Ciclo 2: dias 16-fim (pedidos) → mês seguinte (produção)
-      const openStart = timezoneService.createDate(year, month, 16, 0, 0, 0);
-      
-      // Fim do período de pedidos = último dia do mês às 23:59:59
-      const lastDay = new Date(year, month, 0).getDate();
-      const openEnd = timezoneService.createDate(year, month, lastDay, 23, 59, 59);
-      
-      // Produção no mês seguinte
-      const nextMonth = month === 12 ? 1 : month + 1;
-      const nextYear = month === 12 ? year + 1 : year;
-      const productionStart = timezoneService.createDate(nextYear, nextMonth, 1, 0, 0, 0);
-      
-      // Fim da produção = último dia do mês seguinte às 23:59:59
-      const lastDayNextMonth = new Date(nextYear, nextMonth, 0).getDate();
-      const productionEnd = timezoneService.createDate(nextYear, nextMonth, lastDayNextMonth, 23, 59, 59);
-      
-      return { openStart, openEnd, productionStart, productionEnd };
-    }
+    // MODELO MENSAL: Vendas durante todo o mês
+    const openStart = timezoneService.createDate(year, month, 1, 0, 0, 0);
+    
+    // Fim das vendas = último dia do mês às 23:59:59
+    const lastDay = new Date(year, month, 0).getDate();
+    const openEnd = timezoneService.createDate(year, month, lastDay, 23, 59, 59);
+    
+    // Produção no mês seguinte (completo)
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const productionStart = timezoneService.createDate(nextYear, nextMonth, 1, 0, 0, 0);
+    
+    // Fim da produção = último dia do mês seguinte às 23:59:59
+    const lastDayNextMonth = new Date(nextYear, nextMonth, 0).getDate();
+    const productionEnd = timezoneService.createDate(nextYear, nextMonth, lastDayNextMonth, 23, 59, 59);
+    
+    return { openStart, openEnd, productionStart, productionEnd };
   }
 
   /**
-   * Calcula a data de envio (5º dia útil do mês seguinte ao de produção)
+   * Calcula a data de envio (segunda quinzena do terceiro mês)
    * 
-   * @param month - Mês do ciclo
-   * @param year - Ano do ciclo
-   * @returns Data de envio
+   * MODELO MENSAL:
+   * - Vendas: Mês 1 (ex: Março)
+   * - Produção: Mês 2 (ex: Abril)
+   * - Envio: Segunda quinzena do Mês 3 (ex: 15-31 de Maio)
+   * 
+   * @param month - Mês do ciclo de vendas
+   * @param year - Ano do ciclo de vendas
+   * @returns Data de envio (dia 15 do terceiro mês)
    */
   private async calculateShippingDate(month: number, year: number): Promise<Date> {
-    // Envio é no mês seguinte ao de produção
-    // Para Ciclo 1: produção em month, envio em month+1
-    // Para Ciclo 2: produção em month+1, envio em month+2
+    // Envio é na segunda quinzena do terceiro mês
+    // Vendas em month → Produção em month+1 → Envio em month+2 (a partir do dia 15)
     
-    // Como esta função é chamada durante criação do ciclo,
-    // vamos calcular para o mês seguinte ao mês do ciclo
-    const shippingMonth = month === 12 ? 1 : month + 1;
-    const shippingYear = month === 12 ? year + 1 : year;
+    let shippingMonth = month + 2;
+    let shippingYear = year;
     
-    // 5º dia útil do mês de envio
-    const fifthBusinessDay = await businessDayService.calculateNthBusinessDay(
-      shippingMonth,
-      shippingYear,
-      5
-    );
+    // Ajustar ano se necessário
+    if (shippingMonth > 12) {
+      shippingMonth = shippingMonth - 12;
+      shippingYear = year + 1;
+    }
     
-    return fifthBusinessDay;
+    // Retornar dia 15 do mês de envio (início da segunda quinzena)
+    const shippingDate = timezoneService.createDate(shippingYear, shippingMonth, 15, 0, 0, 0);
+    
+    return shippingDate;
   }
 
   /**

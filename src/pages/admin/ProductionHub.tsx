@@ -540,7 +540,13 @@ function ProductionHub() {
                 <SheetTitle>Detalhes do Item</SheetTitle>
               </SheetHeader>
               <div className="mt-6">
-                <ProductionItemDetails item={selectedItem} />
+                <ProductionItemDetails 
+                  item={selectedItem} 
+                  onUpdate={() => {
+                    queryClient.invalidateQueries({ queryKey: ['production-queue'] });
+                    queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
+                  }}
+                />
               </div>
             </SheetContent>
           </Sheet>

@@ -1,6 +1,6 @@
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeCard,
   ArcadeSectionTitle,
@@ -25,7 +25,7 @@ export default function PrivacyArcade() {
   ];
 
   return (
-    <ArcadePage
+    <Page
       title="Política de Privacidade"
       description="Política de privacidade e proteção de dados da plataforma Ordax"
       keywords={["privacidade", "dados", "lgpd", "proteção"]}
@@ -78,6 +78,6 @@ export default function PrivacyArcade() {
         primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo" }}
         secondaryAction={{ label: "INÍCIO", href: "/" }}
       />
-    </ArcadePage>
+    </Page>
   );
 }

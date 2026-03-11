@@ -21,6 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { isCollectionActive } from "./collection-service";
 import { nowInBahia } from "@/lib/timezone";
 import { recordCollectionChange } from "./audit-trail-service";
+import { emailService } from "./email-service";
+import { logInfo, logError } from "@/lib/logger";
 
 /**
  * Apply automatic maintenance to a delivery
@@ -71,7 +73,9 @@ export async function applyAutomaticMaintenance(
   if (previousDeliveryError || !previousDelivery) {
     // No previous delivery found - this is the first delivery
     // No automatic maintenance needed, subscriber must make manual selection
-    console.log(`No previous delivery found for subscription ${subscriptionId}, skipping automatic maintenance`);
+    logInfo(`No previous delivery found for subscription ${subscriptionId}, skipping automatic maintenance`, 
+      { subscriptionId, deliveryId }, 
+      'automatic-maintenance');
     return;
   }
 
@@ -79,7 +83,9 @@ export async function applyAutomaticMaintenance(
   if (!prevDelivery.collection_id) {
     // Previous delivery has no collection choice yet
     // Cannot apply automatic maintenance
-    console.log(`Previous delivery ${prevDelivery.id} has no collection choice, skipping automatic maintenance`);
+    logInfo(`Previous delivery ${prevDelivery.id} has no collection choice, skipping automatic maintenance`, 
+      { previousDeliveryId: prevDelivery.id, subscriptionId }, 
+      'automatic-maintenance');
     return;
   }
 
@@ -137,10 +143,12 @@ export async function applyAutomaticMaintenance(
       });
     } catch (auditError) {
       // Log the error but don't fail the operation
-      console.error(`Failed to create audit trail record:`, auditError);
+      logError('Failed to create audit trail record', auditError, 'automatic-maintenance');
     }
 
-    console.log(`Automatic maintenance applied: copied collection ${prevDelivery.collection_id} to delivery ${deliveryId}`);
+    logInfo(`Automatic maintenance applied: copied collection ${prevDelivery.collection_id} to delivery ${deliveryId}`, 
+      { deliveryId, collectionId: prevDelivery.collection_id, subscriptionId }, 
+      'automatic-maintenance');
   } else {
     // Collection is not active in current month - send notification
     // Get the user_id and email for notification
@@ -154,12 +162,90 @@ export async function applyAutomaticMaintenance(
       throw new Error(`Failed to get subscription for notification: ${subscriptionError?.message || 'Subscription not found'}`);
     }
 
-    // TODO: Send email notification to subscriber
-    // For now, just log the notification need
-    console.log(`Collection ${prevDelivery.collection_id} is not active in month ${month}/${year}`);
-    console.log(`Notification needed for user ${subscription.user_id} to make new selection for delivery ${deliveryId}`);
-    
-    // In a future task, this will call the email service:
-    // await emailService.sendCollectionChoiceReminder(subscription.user_id, deliveryId, 'collection_not_available');
+    // Send email notification to subscriber
+    try {
+      // Get user email
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', subscription.user_id)
+        .single();
+
+      if (userData?.email) {
+        const userName = userData.full_name || userData.email.split('@')[0];
+        
+        // Get collection info
+        const { data: collectionData } = await supabase
+          .from('collections')
+          .select('name')
+          .eq('id', prevDelivery.collection_id)
+          .single();
+
+        const collectionName = collectionData?.name || 'Coleção anterior';
+
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #f59e0b; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background: #f9fafb; }
+    .notice { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0; }
+    .cta-button { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📦 Atualização de Coleção</h1>
+      <p>Manutenção Automática</p>
+    </div>
+    <div class="content">
+      <p>Olá, ${userName}!</p>
+      <div class="notice">
+        <h3>Mudança de Coleção Necessária</h3>
+        <p>A coleção <strong>${collectionName}</strong> não está mais disponível para o mês ${month}/${year}.</p>
+      </div>
+      <p>Para garantir que você receba sua entrega, uma nova coleção ativa foi automaticamente selecionada para você.</p>
+      <p>Você pode revisar e alterar sua seleção no painel de assinaturas.</p>
+      <div style="text-align: center;">
+        <a href="${window.location.origin}/my-subscriptions" class="cta-button">
+          Ver Minha Assinatura
+        </a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+        await emailService.sendEmail(
+          userData.email,
+          '📦 Atualização de Coleção - ORDAX',
+          html,
+          'collection_maintenance',
+          subscription.user_id,
+          { 
+            delivery_id: deliveryId,
+            old_collection_id: prevDelivery.collection_id,
+            month,
+            year
+          }
+        );
+
+        logInfo('Collection maintenance notification sent', 
+          { userId: subscription.user_id, deliveryId, month, year }, 
+          'automatic-maintenance');
+      }
+    } catch (emailError) {
+      logError('Failed to send collection maintenance email', emailError, 'automatic-maintenance');
+      // Don't fail the maintenance operation if email fails
+    }
   }
 }

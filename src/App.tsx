@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useSentry } from "@/hooks/use-sentry";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { MainLayout } from "@/components/layouts/MainLayout";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
 import { ChatButton } from "@/components/customer/ChatButton";
@@ -88,8 +89,9 @@ function AppContent() {
           v7_relativeSplatPath: true,
         }}
       >
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+        <MainLayout>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
@@ -194,6 +196,7 @@ function AppContent() {
             <Route path="*" element={<NotFoundArcade />} />
           </Routes>
         </Suspense>
+        </MainLayout>
 
         <ChatButton />
       </BrowserRouter>

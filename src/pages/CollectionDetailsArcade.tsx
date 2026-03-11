@@ -1,7 +1,7 @@
 /**
  * Collection Details Page - Metal Slug Arcade Style
  * 
- * Uses ArcadePage shell for consistent aesthetic with Home, Collections, Plans.
+ * Uses Page shell for consistent aesthetic with Home, Collections, Plans.
  * Route: /colecoes/:slug
  */
 
@@ -9,15 +9,14 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeCard,
   ArcadeSectionTitle,
   ArcadeCTA,
-  FloatingParticles,
-  GlitchText,
 } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -336,7 +335,7 @@ export default function CollectionDetailsArcade() {
   // Loading state
   if (isLoading) {
     return (
-      <ArcadePage title="Carregando..." description="Carregando coleção">
+      <Page title="Carregando..." description="Carregando coleção">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-16">
           <Skeleton className="h-10 w-48 mb-8 bg-[hsl(0,0%,10%)]" />
           <Skeleton className="h-80 w-full mb-8 bg-[hsl(0,0%,10%)]" />
@@ -346,14 +345,14 @@ export default function CollectionDetailsArcade() {
             ))}
           </div>
         </div>
-      </ArcadePage>
+      </Page>
     );
   }
 
   // Not found
   if (!collection) {
     return (
-      <ArcadePage title="Coleção não encontrada" description="Coleção não encontrada">
+      <Page title="Coleção não encontrada" description="Coleção não encontrada">
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="text-center">
             <Package className="w-16 h-16 text-[hsl(0,0%,25%)] mx-auto mb-4" />
@@ -371,7 +370,7 @@ export default function CollectionDetailsArcade() {
             </button>
           </div>
         </div>
-      </ArcadePage>
+      </Page>
     );
   }
 
@@ -398,7 +397,7 @@ export default function CollectionDetailsArcade() {
     .sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
 
   return (
-    <ArcadePage
+    <Page
       title={`${collection.name} | Coleção`}
       description={collection.description || `Coleção ${collection.name} - Personagens exclusivos`}
     >
@@ -604,6 +603,6 @@ export default function CollectionDetailsArcade() {
           href: "/colecoes",
         }}
       />
-    </ArcadePage>
+    </Page>
   );
 }

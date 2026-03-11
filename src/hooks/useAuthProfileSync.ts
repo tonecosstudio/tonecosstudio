@@ -6,8 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
  * IMPORTANTE: Adicione aqui os emails dos administradores do sistema
  */
 const ADMIN_EMAILS = [
+  'washingtonmsdj@gmail.com',
   'admin@ordax.com.br',
-  // Adicione outros emails de admin aqui
 ];
 
 /**
@@ -30,112 +30,29 @@ export function useAuthProfileSync() {
             const userId = session.user.id;
             const userEmail = session.user.email;
 
-            console.log('Auth state changed: SIGNED_IN', userId);
-
-          // 1. Criar profile (ignorar erros se já existe)
-          try {
-            console.log('1/3 Verificando profile...');
-            const { data: existingProfile } = await supabase
+            // Profile verification happens via database trigger
+            // This is just a safety check for OAuth edge cases
+            
+            const { data: profile } = await supabase
               .from('profiles')
-              .select('id')
+              .select('id, role')
               .eq('id', userId)
               .maybeSingle();
 
-            if (!existingProfile) {
-              console.log('Creating profile for user:', userId);
-              
+            if (!profile) {
+              console.warn('Profile not found after auth - trigger may have failed');
+              return;
+            }
+
+            // Auto-promote to admin if email is in ADMIN_EMAILS
+            if (userEmail && ADMIN_EMAILS.includes(userEmail) && profile.role === 'customer') {
               await supabase
                 .from('profiles')
-                .insert({
-                  id: userId,
-                  email: userEmail,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                });
-
-              console.log('✓ Profile created successfully');
-            } else {
-              console.log('✓ Profile already exists');
+                .update({ role: 'admin' })
+                .eq('id', userId);
             }
-          } catch (error) {
-            console.warn('Profile creation skipped:', error);
-          }
-
-          // 2. Verificar e criar role de admin se necessário
-          if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
-            try {
-              console.log('2/3 Verificando role de admin...');
-              const { data: existingRole } = await supabase
-                .from('user_roles')
-                .select('id')
-                .eq('user_id', userId)
-                .eq('role', 'admin')
-                .maybeSingle();
-
-              if (!existingRole) {
-                console.log('Creating admin role for user:', userId);
-                
-                await supabase
-                  .from('user_roles')
-                  .insert({
-                    user_id: userId,
-                    role: 'admin'
-                  });
-
-                console.log('✓ Admin role created successfully');
-              } else {
-                console.log('✓ Admin role already exists');
-              }
-            } catch (error) {
-              console.warn('Admin role creation skipped:', error);
-            }
-          } else {
-            console.log('2/3 User is not admin (email not in ADMIN_EMAILS)');
-          }
-
-          // 3. Adicionar ao grupo de boas-vindas (opcional)
-          try {
-            console.log('3/3 Verificando grupo de boas-vindas...');
-            const { data: welcomeGroup } = await supabase
-              .from('chat_groups')
-              .select('id')
-              .eq('name', 'Boas-vindas')
-              .maybeSingle();
-
-            if (welcomeGroup) {
-              const { data: existingMember } = await supabase
-                .from('chat_group_members')
-                .select('id')
-                .eq('group_id', welcomeGroup.id)
-                .eq('user_id', userId)
-                .maybeSingle();
-
-              if (!existingMember) {
-                console.log('Adding user to welcome group');
-                
-                await supabase
-                  .from('chat_group_members')
-                  .insert({
-                    group_id: welcomeGroup.id,
-                    user_id: userId,
-                    role: 'member',
-                  });
-
-                console.log('✓ Added to welcome group');
-              } else {
-                console.log('✓ Already in welcome group');
-              }
-            } else {
-              console.log('✓ Welcome group not found (skipping)');
-            }
-          } catch (error) {
-            console.warn('Welcome group addition skipped:', error);
-          }
-
-          console.log('✓ Auth profile sync completed');
         } catch (error) {
-          console.error('❌ FATAL ERROR in profile sync:', error);
-          // Não bloquear a aplicação mesmo se houver erro
+          console.error('Auth sync error:', error);
         }
         })(); // Executar imediatamente em background
       }

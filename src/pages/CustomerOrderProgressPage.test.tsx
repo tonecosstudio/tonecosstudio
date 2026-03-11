@@ -35,9 +35,9 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-// Mock AppShell
-vi.mock("@/components/AppShell", () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+// Mock Page component
+vi.mock("@/components/layouts/Page", () => ({
+  Page: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 // Mock SEOHead

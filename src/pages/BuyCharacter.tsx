@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import AppShell from "@/components/AppShell";
-import SEOHead from "@/components/SEOHead";
+import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,20 +54,20 @@ export default function BuyCharacter() {
 
   if (isLoading || isPricingLoading) {
     return (
-      <AppShell>
+      <Page title="Carregando..." description="Carregando informações da coleção">
         <div className="container max-w-4xl py-16 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Carregando informações...</p>
           </div>
         </div>
-      </AppShell>
+      </Page>
     );
   }
 
   if (!collection) {
     return (
-      <AppShell>
+      <Page title="Coleção não encontrada" description="A coleção solicitada não foi encontrada">
         <div className="container max-w-4xl py-16 text-center">
           <h1 className="text-3xl font-bold mb-4">Coleção não encontrada</h1>
           <p className="text-muted-foreground mb-6">
@@ -78,7 +77,7 @@ export default function BuyCharacter() {
             <Link to="/colecoes">Ver todas as coleções</Link>
           </Button>
         </div>
-      </AppShell>
+      </Page>
     );
   }
 
@@ -105,13 +104,11 @@ export default function BuyCharacter() {
     globalSettings?.pix_discount_percentage || settings?.pix_discount_percentage || 5;
 
   return (
-    <AppShell>
-      <SEOHead
-        title={`Comprar Peça Avulsa - ${collection.name}`}
-        description={`Compre uma peça avulsa da coleção ${collection.name}`}
-        keywords={["compra avulsa", "peça única", collection.name]}
-      />
-
+    <Page
+      title={`Comprar Peça Avulsa - ${collection.name}`}
+      description={`Compre uma peça avulsa da coleção ${collection.name}`}
+      keywords={["compra avulsa", "peça única", collection.name]}
+    >
       <div className="container max-w-5xl py-12">
         {/* Header */}
         <div className="mb-8">
@@ -459,6 +456,6 @@ export default function BuyCharacter() {
           </div>
         )}
       </div>
-    </AppShell>
+    </Page>
   );
 }

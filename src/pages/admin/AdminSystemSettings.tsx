@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import AppShell from "@/components/AppShell";
-import SEOHead from "@/components/SEOHead";
+import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -129,20 +128,19 @@ export default function AdminSystemSettings() {
 
   if (isLoading) {
     return (
-      <AppShell>
+      <Page title="Configurações do Sistema - Admin" description="Carregando configurações">
         <div className="container max-w-6xl py-16 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </AppShell>
+      </Page>
     );
   }
 
   return (
-    <AppShell>
-      <SEOHead
-        title="Configurações do Sistema - Admin"
-        description="Gerenciar configurações do sistema"
-      />
+    <Page
+      title="Configurações do Sistema - Admin"
+      description="Gerenciar configurações do sistema"
+    >
 
       <div className="container max-w-6xl py-8">
         {/* Header */}
@@ -754,6 +752,6 @@ export default function AdminSystemSettings() {
           </Card>
         )}
       </div>
-    </AppShell>
+    </Page>
   );
 }

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useAuth } from "@/lib/auth";
-import { LogIn, LogOut } from "lucide-react";
+import { Page } from "@/components/layouts/Page";
 import {
   ArrowRight,
   ArrowLeft,
@@ -19,7 +19,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import SEOHead from "@/components/SEOHead";
 import { useEffect, useState, useRef } from "react";
 
 // ─── ARCADE EFFECTS ──────────────────────────────────────────────────
@@ -53,48 +52,6 @@ function GlitchText({ text, className = "" }: { text: string; className?: string
       </span>
       <span className="relative">{text}</span>
     </span>
-  );
-}
-
-function CoinCounter({ balance, isLoading }: { balance: number; isLoading: boolean }) {
-  const [displayed, setDisplayed] = useState(0);
-  const [sparkle, setSparkle] = useState(false);
-
-  useEffect(() => {
-    if (isLoading || balance === displayed) return;
-    const step = Math.max(1, Math.floor(Math.abs(balance - displayed) / 20));
-    const timer = setInterval(() => {
-      setDisplayed((prev) => {
-        if (prev < balance) return Math.min(prev + step, balance);
-        if (prev > balance) return Math.max(prev - step, balance);
-        return prev;
-      });
-    }, 30);
-    return () => clearInterval(timer);
-  }, [balance, isLoading, displayed]);
-
-  useEffect(() => {
-    if (displayed === balance && balance > 0) {
-      setSparkle(true);
-      const t = setTimeout(() => setSparkle(false), 600);
-      return () => clearTimeout(t);
-    }
-  }, [displayed, balance]);
-
-  return (
-    <div
-      className={`flex items-center gap-2 px-4 py-2 border border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(var(--gold-accent)/0.08)] transition-all duration-300 ${
-        sparkle ? "shadow-[0_0_20px_hsl(var(--gold-accent)/0.4)] scale-105" : ""
-      }`}
-    >
-      <Coins className={`w-5 h-5 text-[hsl(var(--gold-accent))] ${sparkle ? "animate-bounce" : ""}`} />
-      <span className="font-mono text-lg font-bold text-[hsl(var(--gold-accent))] tracking-wider tabular-nums">
-        {isLoading ? "---" : displayed.toLocaleString("pt-BR")}
-      </span>
-      <span className="font-mono text-[10px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase">
-        coins
-      </span>
-    </div>
   );
 }
 
@@ -171,13 +128,12 @@ export default function CollectionsShowcase() {
   const userBalance = balanceData?.balance ?? 0;
 
   return (
-    <div className="min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,98%)] relative overflow-x-hidden">
-      <SEOHead
-        title="Coleções | ORDAX Collectibles Arsenal"
-        description="Explore nossas coleções exclusivas de peças artesanais feitas à mão. Edição limitada."
-      />
-
-      <ScanlineOverlay />
+    <Page
+      title="Coleções | ORDAX Collectibles Arsenal"
+      description="Explore nossas coleções exclusivas de peças artesanais feitas à mão. Edição limitada."
+    >
+      <div className="min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,98%)] relative overflow-x-hidden">
+        <ScanlineOverlay />
 
       {/* ═══ ANIMATED GRID BACKGROUND ═══ */}
       <div
@@ -191,48 +147,6 @@ export default function CollectionsShowcase() {
           transform: `translateY(${scrollY * 0.05}px)`,
         }}
       />
-
-      {/* ═══ TOP HUD BAR ═══ */}
-      <nav className="sticky top-0 z-40 border-b border-[hsl(var(--gold-accent)/0.15)] bg-[hsl(0,0%,5%)]/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 h-14">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-[hsl(0,0%,70%)] hover:text-[hsl(var(--gold-accent))] transition-colors font-mono uppercase tracking-wider text-xs"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">BASE</span>
-          </button>
-
-          <Link
-            to="/"
-            className="font-black text-xl tracking-[0.3em] text-[hsl(var(--gold-accent))]"
-            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.3)" }}
-          >
-            ORDAX
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <CoinCounter balance={userBalance} isLoading={balanceLoading} />
-            {user ? (
-              <button
-                onClick={async () => { await supabase.auth.signOut(); navigate("/"); }}
-                className="flex items-center gap-1.5 text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] transition-colors font-mono uppercase tracking-wider text-[10px]"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sair</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate("/login")}
-                className="flex items-center gap-1.5 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] hover:brightness-110 font-mono uppercase tracking-[0.1em] text-[10px] px-3 py-1.5 transition-all"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                Entrar
-              </button>
-            )}
-          </div>
-        </div>
-      </nav>
 
       {/* ═══ HERO SECTION ═══ */}
       <section className="relative py-16 md:py-24 px-6 overflow-hidden">
@@ -581,6 +495,7 @@ export default function CollectionsShowcase() {
           80% { clip-path: inset(70% 0 10% 0); transform: translateX(-2px); }
         }
       `}</style>
-    </div>
+      </div>
+    </Page>
   );
 }

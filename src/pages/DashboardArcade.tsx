@@ -3,14 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { Link } from "react-router-dom";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeCard,
   ArcadeSectionTitle,
-  CoinCounter,
-  FloatingParticles,
 } from "@/components/arcade/ArcadeLayout";
+import { CoinCounter } from "@/components/arcade/CoinCounter";
+import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import {
   Package,
   Heart,
@@ -84,7 +84,7 @@ export default function DashboardArcade() {
   ];
 
   return (
-    <ArcadePage title="Dashboard" description="Painel do colecionador">
+    <Page title="Dashboard" description="Painel do colecionador">
       <ArcadeHero
         badge="Painel de Comando"
         title="DASHBOARD"
@@ -236,6 +236,6 @@ export default function DashboardArcade() {
           </div>
         </div>
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

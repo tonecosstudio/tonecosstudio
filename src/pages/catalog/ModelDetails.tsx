@@ -7,8 +7,7 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import AppShell from "@/components/AppShell";
-import SEOHead from "@/components/SEOHead";
+import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,8 +111,7 @@ export default function ModelDetails() {
   // ─── Loading ────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <AppShell>
-        <SEOHead title="Carregando..." />
+      <Page title="Carregando..." description="Carregando informações do modelo">
         <div className="min-h-screen bg-[hsl(var(--background))] py-12">
           <div className="container max-w-6xl mx-auto px-4">
             <Skeleton className="h-12 w-48 mb-8" />
@@ -127,15 +125,14 @@ export default function ModelDetails() {
             </div>
           </div>
         </div>
-      </AppShell>
+      </Page>
     );
   }
 
   // ─── Not Found ──────────────────────────────────────────────
   if (!model) {
     return (
-      <AppShell>
-        <SEOHead title="Modelo não encontrado" />
+      <Page title="Modelo não encontrado" description="O modelo solicitado não foi encontrado">
         <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
           <div className="text-center">
             <Package className="w-16 h-16 mx-auto mb-4 text-[hsl(var(--muted-foreground))]" />
@@ -150,15 +147,13 @@ export default function ModelDetails() {
             </Button>
           </div>
         </div>
-      </AppShell>
+      </Page>
     );
   }
 
   // ─── Render ─────────────────────────────────────────────────
   return (
-    <AppShell>
-      <SEOHead title={title} description={seoDescription} type="product" />
-
+    <Page title={title} description={seoDescription} keywords={["modelo", "catálogo", model.name]}>
       {/* Scanlines Effect */}
       <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]">
         <div
@@ -370,6 +365,6 @@ export default function ModelDetails() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </Page>
   );
 }

@@ -1,33 +1,21 @@
 /**
- * 📦 CALCULADORA AUTOMÁTICA DE LOTES - MODELO RECORRENTE MENSAL
+ * 📦 CALCULADORA AUTOMÁTICA DE LOTES - MODELO MENSAL
  *
- * REGRA FIXA: 2 CICLOS POR MÊS
+ * REGRA FIXA: 1 CICLO POR MÊS (90 DIAS TOTAIS)
  *
- * 🔹 CICLO 1 (Primeira Quinzena)
- * - Abertura: Dia 01 às 00:00
- * - Fechamento: Dia 15 às 23:59
- * - Produção: Dia 16 até último dia do mês
- * - Envio: Até o 5º dia útil do mês seguinte
- *
- * 🔹 CICLO 2 (Segunda Quinzena)
- * - Abertura: Dia 16 às 00:00
- * - Fechamento: Último dia do mês às 23:59
- * - Produção: Dia 01 até último dia do mês seguinte
- * - Envio: Até o 5º dia útil do mês subsequente
+ * 🔹 MODELO MENSAL
+ * - Vendas: Todo o mês (dias 1-31) - 30 dias
+ * - Produção: Mês seguinte completo (dias 1-31) - 30 dias
+ * - Envio: Segunda quinzena do terceiro mês (dias 15-31) - 30 dias
+ * - PRAZO TOTAL: ~90 dias (3 meses)
  *
  * 📅 EXEMPLO REAL – MARÇO 2026
  *
- * Ciclo 1 – Março 2026:
- * - Abertura: 01/03/2026
- * - Fechamento: 15/03/2026
- * - Produção: 16/03/2026 a 31/03/2026
- * - Envio: Até 07/04/2026 (5º dia útil de abril)
- *
- * Ciclo 2 – Março 2026:
- * - Abertura: 16/03/2026
- * - Fechamento: 31/03/2026
- * - Produção: 01/04/2026 a 30/04/2026
- * - Envio: Até 07/05/2026 (5º dia útil de maio)
+ * Ciclo Março 2026:
+ * - Vendas: 01/03/2026 a 31/03/2026 (30 dias)
+ * - Produção: 01/04/2026 a 30/04/2026 (30 dias)
+ * - Envio: 15/05/2026 a 31/05/2026 (segunda quinzena de maio)
+ * - Prazo Total: ~90 dias (3 meses)
  */
 
 import { format, endOfMonth, addMonths, differenceInDays, addDays, getDay } from "date-fns";

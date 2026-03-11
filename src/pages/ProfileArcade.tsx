@@ -1,4 +1,5 @@
-import { ArcadePage, ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +148,7 @@ export default function ProfileArcade() {
   };
 
   return (
-    <ArcadePage title="Minha Conta | ORDAX" description="Gerencie seu perfil e preferências">
+    <Page title="Minha Conta | ORDAX" description="Gerencie seu perfil e preferências">
       {/* Hero */}
       <section className="relative py-12 md:py-16 px-6">
         <div className="relative max-w-5xl mx-auto">
@@ -331,6 +332,6 @@ export default function ProfileArcade() {
           </div>
         </div>
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

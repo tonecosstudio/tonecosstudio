@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Page } from '@/components/layouts/Page';
 
 export default function MigratePedido() {
   const navigate = useNavigate();
@@ -70,9 +71,10 @@ export default function MigratePedido() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white flex items-center justify-center px-4">
-        <Card className="max-w-2xl w-full bg-gray-800/50 border-amber-600/30 p-8 text-center">
-          <CheckCircle2 className="w-20 h-20 text-amber-400 mx-auto mb-6" />
+      <Page title="Migração Concluída | ORDAX" description="Sua solicitação de migração foi recebida">
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <Card className="max-w-2xl w-full bg-gray-800/50 border-amber-600/30 p-8 text-center">
+            <CheckCircle2 className="w-20 h-20 text-amber-400 mx-auto mb-6" />
           
           <h1 className="text-3xl font-bold mb-4">
             Solicitação Recebida!
@@ -124,20 +126,22 @@ export default function MigratePedido() {
           </div>
         </Card>
       </div>
+      </Page>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <Button
-          onClick={() => navigate('/landing')}
-          variant="ghost"
-          className="mb-6 text-amber-400 hover:text-amber-300"
-        >
-          <ArrowLeft className="mr-2" />
-          Voltar
-        </Button>
+    <Page title="Migrar Pedido | ORDAX" description="Integre seu pedido anterior à nova estrutura ORDAX">
+      <div className="py-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          <Button
+            onClick={() => navigate('/landing')}
+            variant="ghost"
+            className="mb-6 text-amber-400 hover:text-amber-300"
+          >
+            <ArrowLeft className="mr-2" />
+            Voltar
+          </Button>
 
         <Card className="bg-gray-800/50 border-amber-600/30 p-8">
           <div className="text-center mb-8">
@@ -278,7 +282,8 @@ export default function MigratePedido() {
             </a>
           </p>
         </div>
+        </div>
       </div>
-    </div>
+    </Page>
   );
 }

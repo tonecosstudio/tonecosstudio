@@ -9,8 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
-import AppShell from "@/components/AppShell";
-import SEOHead from "@/components/SEOHead";
+import { Page } from "@/components/layouts/Page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -388,13 +387,11 @@ export default function CharacterSelect() {
   });
 
   return (
-    <AppShell>
-      <SEOHead
-        title="Selecionar Personagem - Arcade Select"
-        description="Escolha seu personagem favorito no estilo arcade clássico. Explore coleções exclusivas de personagens artesanais."
-        keywords={["personagens", "coleção", "arcade", "seleção"]}
-      />
-
+    <Page
+      title="Selecionar Personagem - Arcade Select"
+      description="Escolha seu personagem favorito no estilo arcade clássico. Explore coleções exclusivas de personagens artesanais."
+      keywords={["personagens", "coleção", "arcade", "seleção"]}
+    >
       <div className="min-h-screen bg-[hsl(var(--background))] relative overflow-hidden">
         {/* Global Scanlines */}
         <div
@@ -501,6 +498,6 @@ export default function CharacterSelect() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </Page>
   );
 }

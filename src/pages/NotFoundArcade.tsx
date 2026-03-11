@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArcadePage, FloatingParticles, GlitchText, ArcadeCard } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
+import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
 import { AlertTriangle, Home, ArrowLeft, RotateCcw } from "lucide-react";
 
 export default function NotFoundArcade() {
@@ -21,7 +23,7 @@ export default function NotFoundArcade() {
   }, []);
 
   return (
-    <ArcadePage title="404 - Não Encontrado" description="Página não encontrada">
+    <Page title="404 - Não Encontrado" description="Página não encontrada">
       <section className="relative min-h-[80vh] flex items-center justify-center px-6 overflow-hidden">
         <FloatingParticles />
 
@@ -100,7 +102,7 @@ export default function NotFoundArcade() {
           </ArcadeCard>
         </div>
       </section>
-    </ArcadePage>
+    </Page>
   );
 }
 

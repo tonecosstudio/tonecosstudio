@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { ArcadePage, ArcadeHero, ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeHero, ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
@@ -49,7 +50,7 @@ export default function CoinsPurchaseArcade() {
   const isLoading = coinsLoading || packagesLoading;
 
   return (
-    <ArcadePage title="Comprar Coins | ORDAX" description="Adquira pacotes de coins">
+    <Page title="Comprar Coins | ORDAX" description="Adquira pacotes de coins">
       <ArcadeHero
         badge="COIN DEPOT"
         title="COMPRAR COINS"
@@ -178,6 +179,6 @@ export default function CoinsPurchaseArcade() {
           ))}
         </div>
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

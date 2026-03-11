@@ -1,7 +1,6 @@
 import { PropsWithChildren, useMemo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
-import AppShell from "@/components/AppShell";
 
 export default function RequireAuth({ children }: PropsWithChildren) {
   const location = useLocation();
@@ -18,5 +17,5 @@ export default function RequireAuth({ children }: PropsWithChildren) {
   }
 
   if (!user) return <Navigate to={`/login?next=${redirectTo}`} replace />;
-  return <AppShell>{children}</AppShell>;
+  return <>{children}</>;
 }

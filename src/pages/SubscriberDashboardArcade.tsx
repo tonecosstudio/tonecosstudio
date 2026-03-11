@@ -1,4 +1,5 @@
-import { ArcadePage, ArcadeHero, ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeHero, ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +68,7 @@ export default function SubscriberDashboardArcade() {
   const progress = sub ? Math.round((sub.deliveries_completed / (sub.deliveries_total || 1)) * 100) : 0;
 
   return (
-    <ArcadePage title="Painel do Assinante | ORDAX" description="Gerencie sua assinatura e acompanhe entregas">
+    <Page title="Painel do Assinante | ORDAX" description="Gerencie sua assinatura e acompanhe entregas">
       <ArcadeHero
         badge="SUBSCRIBER PANEL"
         title="MEU PAINEL"
@@ -221,6 +222,6 @@ export default function SubscriberDashboardArcade() {
           </div>
         )}
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

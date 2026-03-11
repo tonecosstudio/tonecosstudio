@@ -6,6 +6,7 @@
  */
 // @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
+import { calculateEstimatedCompletion } from "./stage-service";
 
 // ============================================================================
 // Tipos
@@ -728,7 +729,6 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
 
   // 4. Recalculate estimated completion date
   try {
-    const { calculateEstimatedCompletion } = await import("./stage-service");
     const newEstimatedDate = await calculateEstimatedCompletion(id);
     
     // Update the estimated completion date in production_queue

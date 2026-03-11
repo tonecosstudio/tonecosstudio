@@ -13,9 +13,9 @@ import {
   ArrowRight, Star, Shield, Truck, Calendar, ChevronRight,
   Info, TrendingDown, Lock
 } from "lucide-react";
-import SEOHead from "@/components/SEOHead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PaymentVoucherUpload } from "@/components/PaymentVoucherUpload";
+import { Page } from "@/components/layouts/Page";
 
 export default function SubscribeCollection() {
   const { slug } = useParams();
@@ -164,12 +164,14 @@ export default function SubscribeCollection() {
 
   if (plansLoading || collectionsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
+      <Page title="Carregando..." description="Carregando planos de assinatura">
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-slate-600 dark:text-slate-400">Carregando planos...</p>
         </div>
       </div>
+      </Page>
     );
   }
 
@@ -188,15 +190,12 @@ export default function SubscribeCollection() {
     : 0;
 
   return (
-    <>
-      <SEOHead
-        title="Assinar Coleção - Planos Premium"
-        description="Escolha seu plano e receba personagens exclusivos todo mês"
-        keywords={["assinatura", "coleção", "planos", "premium"]}
-      />
-
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="container max-w-7xl px-6 py-12">
+    <Page
+      title="Assinar Coleção - Planos Premium"
+      description="Escolha seu plano e receba personagens exclusivos todo mês"
+      keywords={["assinatura", "coleção", "planos", "premium"]}
+    >
+      <div className="container max-w-7xl px-6 py-12">
           {/* Header */}
           <div className="mb-12 text-center">
             <Badge className="mb-4 bg-amber-500 text-white px-4 py-2">
@@ -645,7 +644,6 @@ export default function SubscribeCollection() {
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </Page>
   );
 }

@@ -1,17 +1,15 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useToast } from "@/hooks/use-toast";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { Mail, Lock, ArrowRight, User, Phone, Shield, Zap } from "lucide-react";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeCard,
-  FloatingParticles,
-  GlitchText,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -99,8 +97,11 @@ export default function LoginArcade() {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}${next}`,
+        },
       });
       if (error) throw error;
     } catch (e) {
@@ -114,7 +115,7 @@ export default function LoginArcade() {
     "w-full h-12 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,18%)] text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] font-mono text-sm px-4 focus:outline-none focus:border-[hsl(var(--gold-accent))] focus:shadow-[0_0_10px_hsl(var(--gold-accent)/0.15)] transition-all";
 
   return (
-    <ArcadePage
+    <Page
       title={mode === "login" ? "Entrar" : "Criar Conta"}
       description="Entre na sua conta Ordax para acessar o sistema."
       keywords={["login", "entrar", "criar conta", "cadastro"]}
@@ -288,6 +289,6 @@ export default function LoginArcade() {
           </ArcadeCard>
         </div>
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

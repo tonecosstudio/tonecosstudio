@@ -9,14 +9,12 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeCard,
   ArcadeSectionTitle,
-  FloatingParticles,
-  GlitchText,
 } from "@/components/arcade/ArcadeLayout";
-import SEOHead from "@/components/SEOHead";
+import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -290,7 +288,7 @@ export default function CharacterDetailsArcade() {
   // ─── Loading ─────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <ArcadePage>
+      <Page>
         <SEOHead title="Carregando..." />
         <div className="container max-w-6xl mx-auto px-4 py-12">
           <Skeleton className="h-10 w-48 mb-8" />
@@ -304,14 +302,14 @@ export default function CharacterDetailsArcade() {
             </div>
           </div>
         </div>
-      </ArcadePage>
+      </Page>
     );
   }
 
   // ─── Not Found ───────────────────────────────────────────────
   if (!character) {
     return (
-      <ArcadePage>
+      <Page>
         <SEOHead title="Personagem não encontrado" />
         <div className="flex items-center justify-center py-32">
           <div className="text-center space-y-6">
@@ -332,13 +330,13 @@ export default function CharacterDetailsArcade() {
             </Button>
           </div>
         </div>
-      </ArcadePage>
+      </Page>
     );
   }
 
   // ─── Main Render ─────────────────────────────────────────────
   return (
-    <ArcadePage>
+    <Page>
       <SEOHead
         title={`${character.name} | ${collectionName}`}
         description={character.description || `Detalhes do personagem ${character.name} da coleção ${collectionName}`}
@@ -573,6 +571,6 @@ export default function CharacterDetailsArcade() {
           </section>
         )}
       </div>
-    </ArcadePage>
+    </Page>
   );
 }

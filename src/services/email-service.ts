@@ -26,6 +26,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { logInfo, logError, logDebug, logWarn } from '@/lib/logger';
 import { notificationPreferencesService, EmailType } from './notification-preferences-service';
 
 interface EmailOptions {
@@ -181,7 +182,7 @@ export class EmailService {
     while (attempt <= this.config.maxRetries) {
       try {
         await this.sendEmailAttempt(options);
-        console.log(`Email sent successfully to ${to} (attempt ${attempt + 1})`);
+        logInfo('Email sent successfully', { to, attempt: attempt + 1 }, 'email');
         
         // Update log entry to sent
         await this.updateEmailLog(logId, {
@@ -204,10 +205,11 @@ export class EmailService {
 
         // Wait before retrying with exponential backoff
         const delay = this.config.retryDelay * Math.pow(2, attempt - 1);
-        console.warn(
+        logWarn(
           `Email send failed (attempt ${attempt}/${this.config.maxRetries + 1}). ` +
           `Retrying in ${delay}ms...`,
-          error
+          error,
+          'email'
         );
         await this.sleep(delay);
       }
@@ -255,14 +257,14 @@ export class EmailService {
         .single();
 
       if (error) {
-        console.error('Failed to create email log:', error);
+        logError('Failed to create email log', error, 'email');
         // Return a dummy ID if logging fails - don't block email sending
         return 'log-failed';
       }
 
       return log.id;
     } catch (error) {
-      console.error('Failed to create email log:', error);
+      logError('Failed to create email log', error, 'email');
       return 'log-failed';
     }
   }
@@ -296,10 +298,10 @@ export class EmailService {
         .eq('id', logId);
 
       if (error) {
-        console.error('Failed to update email log:', error);
+        logError('Failed to update email log', error, 'email');
       }
     } catch (error) {
-      console.error('Failed to update email log:', error);
+      logError('Failed to update email log', error, 'email');
     }
   }
 
@@ -480,7 +482,7 @@ export class EmailService {
       return await notificationPreferencesService.shouldSendEmail(userId, emailType);
     } catch (error) {
       // If preference check fails, default to sending (fail-open)
-      console.warn(`Failed to check email preference for user ${userId}:`, error);
+      logWarn(`Failed to check email preference for user ${userId}`, error, 'email');
       return true;
     }
   }
@@ -566,7 +568,7 @@ export class EmailService {
       // Check if user wants to receive welcome emails
       const shouldSend = await this.checkEmailPreference(user.id, 'welcome');
       if (!shouldSend) {
-        console.log(`User ${user.email} has disabled welcome emails, skipping`);
+        logDebug('User disabled welcome emails, skipping', { email: user.email }, 'email');
         return;
       }
 
@@ -640,7 +642,7 @@ export class EmailService {
         { subscription_id: subscriptionId }
       );
 
-      console.log(`Welcome email sent successfully to ${user.email}`);
+      logInfo('Welcome email sent successfully', { email: user.email }, 'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
@@ -716,7 +718,7 @@ export class EmailService {
           // Check email preferences first
           const shouldSend = await this.checkEmailPreference(email, 'revelation');
           if (!shouldSend) {
-            console.log(`Skipping character revelation email to ${email} - user preference disabled`);
+            logDebug('Skipping character revelation email - user preference disabled', { email }, 'email');
             return;
           }
 
@@ -783,9 +785,9 @@ export class EmailService {
             { collection_id: collectionId, delivery_number: deliveryNumber }
           );
 
-          console.log(`Character revelation email sent successfully to ${email}`);
+          logInfo('Character revelation email sent successfully', { email }, 'email');
         } catch (error) {
-          console.error(`Failed to send character revelation email to ${email}:`, error);
+          logError('Failed to send character revelation email', { email, error }, 'email');
           // Continue with other emails even if one fails
         }
       });
@@ -793,7 +795,7 @@ export class EmailService {
       // Wait for all emails to be sent
       await Promise.all(emailPromises);
 
-      console.log(`Character revelation emails sent to ${subscriberEmails.length} subscribers`);
+      logInfo('Character revelation emails sent', { count: subscriberEmails.length }, 'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
@@ -928,7 +930,9 @@ export class EmailService {
         { delivery_id: deliveryId, days_until_cutoff: daysUntilCutoff }
       );
 
-      console.log(`Choice reminder email sent successfully to ${user.email} (${daysUntilCutoff} days until cutoff)`);
+      logInfo('Choice reminder email sent successfully', 
+        { email: user.email, daysUntilCutoff }, 
+        'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
@@ -1001,7 +1005,7 @@ export class EmailService {
       // Check email preferences
       const shouldSend = await this.checkEmailPreference(user.email, 'shipping');
       if (!shouldSend) {
-        console.log(`Skipping production started email to ${user.email} - user preference disabled`);
+        logDebug(`Skipping production started email - user preference disabled`, { email: user.email }, 'email');
         return;
       }
 
@@ -1060,7 +1064,7 @@ export class EmailService {
         { delivery_id: deliveryId, collection_id: collectionData.id }
       );
 
-      console.log(`Production started email sent successfully to ${user.email}`);
+      logInfo('Production started email sent successfully', { email: user.email }, 'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
@@ -1134,7 +1138,7 @@ export class EmailService {
       // Check email preferences
       const shouldSend = await this.checkEmailPreference(user.email, 'shipping');
       if (!shouldSend) {
-        console.log(`Skipping shipping notification email to ${user.email} - user preference disabled`);
+        logDebug(`Skipping shipping notification email - user preference disabled`, { email: user.email }, 'email');
         return;
       }
 
@@ -1223,7 +1227,7 @@ export class EmailService {
         { delivery_id: deliveryId, tracking_code: trackingCode }
       );
 
-      console.log(`Shipping notification email sent successfully to ${user.email}`);
+      logInfo('Shipping notification email sent successfully', { email: user.email }, 'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
@@ -1296,7 +1300,7 @@ export class EmailService {
       // Check email preferences
       const shouldSend = await this.checkEmailPreference(user.email, 'payment');
       if (!shouldSend) {
-        console.log(`Skipping balance reminder email to ${user.email} - user preference disabled`);
+        logDebug('Skipping balance reminder email - user preference disabled', { email: user.email }, 'email');
         return;
       }
 
@@ -1365,7 +1369,9 @@ export class EmailService {
         { purchase_id: purchaseId, days_remaining: daysRemaining }
       );
 
-      console.log(`Balance reminder email sent successfully to ${user.email} (${daysRemaining} days remaining)`);
+      logInfo('Balance reminder email sent successfully', 
+        { email: user.email, daysRemaining }, 
+        'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
@@ -1433,7 +1439,7 @@ export class EmailService {
       // Check email preferences
       const shouldSend = await this.checkEmailPreference(user.email, 'payment');
       if (!shouldSend) {
-        console.log(`Skipping cancellation notice email to ${user.email} - user preference disabled`);
+        logDebug('Skipping cancellation notice email - user preference disabled', { email: user.email }, 'email');
         return;
       }
 
@@ -1516,7 +1522,7 @@ export class EmailService {
         { purchase_id: purchaseId, cancellation_reason: reason }
       );
 
-      console.log(`Cancellation notice email sent successfully to ${user.email}`);
+      logInfo('Cancellation notice email sent successfully', { email: user.email }, 'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;

@@ -8,6 +8,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { logInfo, logError } from "@/lib/logger";
+import { emailService } from "./email-service";
 import { StandalonePurchase } from "@/types/database";
 import { validateBeforeCutoff, CutoffPassedError } from "@/lib/cutoff-middleware";
 
@@ -328,7 +330,7 @@ export async function cancelStandalonePurchase(
         .rpc('is_before_cutoff');
 
       if (cutoffError) {
-        console.error('Error checking cutoff:', cutoffError);
+        logError('Error checking cutoff', cutoffError, 'standalone-purchase');
       } else if (beforeCutoff) {
         // Release capacity
         const { error: releaseError } = await supabase
@@ -338,16 +340,16 @@ export async function cancelStandalonePurchase(
           });
 
         if (releaseError) {
-          console.error(`Error releasing capacity for purchase ${purchaseId}:`, releaseError);
+          logError(`Error releasing capacity for purchase ${purchaseId}`, releaseError, 'standalone-purchase');
         } else {
-          console.log(`Released capacity for standalone purchase ${purchaseId} in cycle ${purchase.cycle_id}`);
+          logInfo(`Released capacity for standalone purchase ${purchaseId} in cycle ${purchase.cycle_id}`, null, 'standalone-purchase');
           capacityReleased = true;
         }
       } else {
-        console.log(`Cutoff has passed - capacity not released for standalone purchase ${purchaseId}`);
+        logInfo(`Cutoff has passed - capacity not released for standalone purchase ${purchaseId}`, null, 'standalone-purchase');
       }
     } catch (error) {
-      console.error(`Exception releasing capacity for purchase ${purchaseId}:`, error);
+      logError(`Exception releasing capacity for purchase ${purchaseId}`, error, 'standalone-purchase');
       // Don't fail the cancellation if capacity release fails
     }
   }
@@ -369,11 +371,11 @@ export async function cancelStandalonePurchase(
       });
 
       if (logError) {
-        console.error('Failed to log admin action:', logError);
+        logError('Failed to log admin action', logError, 'standalone-purchase');
         // Don't fail the operation if logging fails
       }
     } catch (error) {
-      console.error('Exception logging admin action:', error);
+      logError('Exception logging admin action', error, 'standalone-purchase');
       // Don't fail the operation if logging fails
     }
   }
@@ -529,20 +531,25 @@ export async function markProductionComplete(
       });
 
       if (logError) {
-        console.error('Failed to log admin action:', logError);
+        logError('Failed to log admin action', logError, 'standalone-purchase');
         // Don't fail the operation if logging fails
       }
     } catch (error) {
-      console.error('Exception logging admin action:', error);
+      logError('Exception logging admin action', error, 'standalone-purchase');
       // Don't fail the operation if logging fails
     }
   }
 
   // 6. Send email notification to customer (Requirement 4.4)
-  // TODO: Implement email notification service integration
-  // For now, log the notification
-  console.log(`Email notification sent to user ${purchase.user_id} for purchase ${purchaseId}`);
-  console.log(`Balance due date: ${balanceDueDate.toISOString()}`);
+  try {
+    await emailService.sendProductionStarted(purchaseId);
+    logInfo(`Production complete email sent to user ${purchase.user_id}`, 
+      { purchaseId, balanceDueDate: balanceDueDate.toISOString() }, 
+      'standalone-purchase');
+  } catch (emailError) {
+    logError('Failed to send production complete email', emailError, 'standalone-purchase');
+    // Don't fail the operation if email fails
+  }
 }
 
 /**
@@ -610,23 +617,79 @@ export async function cancelForNonPayment(
         });
 
       if (releaseError) {
-        console.error(`Error releasing capacity for purchase ${purchaseId}:`, releaseError);
+        logError(`Error releasing capacity for purchase ${purchaseId}`, releaseError, 'standalone-purchase');
         // Log but don't fail the cancellation
       } else {
-        console.log(`Released capacity for cancelled standalone purchase ${purchaseId} in cycle ${purchase.cycle_id}`);
+        logInfo(`Released capacity for cancelled standalone purchase ${purchaseId} in cycle ${purchase.cycle_id}`, null, 'standalone-purchase');
       }
     } catch (error) {
-      console.error(`Exception releasing capacity for purchase ${purchaseId}:`, error);
+      logError(`Exception releasing capacity for purchase ${purchaseId}`, error, 'standalone-purchase');
       // Don't fail the cancellation if capacity release fails
     }
   }
 
   // 5. Send cancellation email notification (Requirement 4.6)
-  // TODO: Implement email notification service integration
-  // For now, log the notification
-  console.log(`Cancellation email sent to user ${purchase.user_id} for purchase ${purchaseId}`);
-  console.log(`Reason: ${cancellationReason}`);
-  console.log(`Deposit retained as Arras Confirmatórias (non-refundable)`);
+  try {
+    // Get user email
+    const { data: userData } = await supabase
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', purchase.user_id)
+      .single();
+
+    if (userData?.email) {
+      const userName = userData.full_name || userData.email.split('@')[0];
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #dc2626; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background: #f9fafb; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Pedido Cancelado</h1>
+    </div>
+    <div class="content">
+      <p>Olá, ${userName}!</p>
+      <p>Informamos que seu pedido foi cancelado devido ao não pagamento do saldo dentro do prazo estabelecido.</p>
+      <p><strong>Motivo:</strong> ${cancellationReason}</p>
+      <p>Conforme os termos de compra, o valor do depósito foi retido como arras confirmatórias.</p>
+      <p>Se tiver dúvidas, entre em contato conosco.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      await emailService.sendEmail(
+        userData.email,
+        'Pedido Cancelado - ORDAX',
+        html,
+        'cancellation',
+        purchase.user_id,
+        { purchase_id: purchaseId, reason: cancellationReason }
+      );
+
+      logInfo(`Cancellation email sent to user ${purchase.user_id}`, 
+        { purchaseId, reason: cancellationReason }, 
+        'standalone-purchase');
+    }
+  } catch (emailError) {
+    logError('Failed to send cancellation email', emailError, 'standalone-purchase');
+    // Don't fail the operation if email fails
+  }
+} 
+    'standalone-purchase');
 }
 
 
@@ -714,12 +777,13 @@ export async function getAllStandalonePurchases(filters?: {
   const { data, error, count } = await query;
 
   if (error) {
-    console.error('❌ Error fetching standalone purchases:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Error hint:', error.hint);
-    console.error('Error details:', error.details);
+    logError('Error fetching standalone purchases', {
+      error,
+      code: error.code,
+      message: error.message,
+      hint: error.hint,
+      details: error.details
+    }, 'standalone-purchase');
     throw new Error(`Failed to fetch standalone purchases: ${error.message} (code: ${error.code})`);
   }
 
@@ -750,7 +814,7 @@ export async function searchStandalonePurchasesByCustomer(
     .limit(100);
 
   if (userError) {
-    console.error('Error searching users:', userError);
+    logError('Error searching users', userError, 'standalone-purchase');
     throw new Error(`Failed to search users: ${userError.message}`);
   }
 
@@ -774,7 +838,7 @@ export async function searchStandalonePurchasesByCustomer(
     .limit(limit);
 
   if (error) {
-    console.error('Error fetching purchases:', error);
+    logError('Error fetching purchases', error, 'standalone-purchase');
     throw new Error(`Failed to fetch purchases: ${error.message}`);
   }
 
@@ -901,9 +965,72 @@ export async function rejectPaymentVoucher(
   }
 
   // 3. Send notification to customer (Requirement 25.8)
-  // TODO: Implement email notification service integration
-  // For now, log the notification
-  console.log(`Voucher rejection notification sent to user ${purchase.user_id} for purchase ${purchaseId}`);
-  console.log(`Voucher type: ${voucherType}`);
-  console.log(`Rejection reason: ${rejectionReason}`);
+  try {
+    // Get user email
+    const { data: userData } = await supabase
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', purchase.user_id)
+      .single();
+
+    if (userData?.email) {
+      const userName = userData.full_name || userData.email.split('@')[0];
+      const voucherTypeName = voucherType === 'deposit' ? 'Depósito' : 'Saldo';
+      
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #f59e0b; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background: #f9fafb; }
+    .reason { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚠️ Comprovante Rejeitado</h1>
+    </div>
+    <div class="content">
+      <p>Olá, ${userName}!</p>
+      <p>Infelizmente, o comprovante de pagamento do <strong>${voucherTypeName}</strong> foi rejeitado.</p>
+      <div class="reason">
+        <strong>Motivo:</strong><br>
+        ${rejectionReason}
+      </div>
+      <p>Por favor, envie um novo comprovante válido para prosseguir com seu pedido.</p>
+      <p>Se tiver dúvidas, entre em contato conosco.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      await emailService.sendEmail(
+        userData.email,
+        `Comprovante de ${voucherTypeName} Rejeitado - ORDAX`,
+        html,
+        'voucher_rejection',
+        purchase.user_id,
+        { purchase_id: purchaseId, voucher_type: voucherType, reason: rejectionReason }
+      );
+
+      logInfo(`Voucher rejection notification sent to user ${purchase.user_id}`, 
+        { purchaseId, voucherType, reason: rejectionReason }, 
+        'standalone-purchase');
+    }
+  } catch (emailError) {
+    logError('Failed to send voucher rejection email', emailError, 'standalone-purchase');
+    // Don't fail the operation if email fails
+  }
+} 
+    { voucherType, rejectionReason }, 
+    'standalone-purchase');
 }

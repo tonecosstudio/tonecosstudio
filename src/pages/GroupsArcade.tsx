@@ -1,9 +1,10 @@
-import { ArcadePage, ArcadeHero } from "@/components/arcade/ArcadeLayout";
+import { ArcadeHero } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
 import { MemberGroupList } from "@/components/groups/MemberGroupList";
 
 export default function GroupsArcade() {
   return (
-    <ArcadePage title="Meus Grupos | ORDAX" description="Acompanhe seus grupos e mensagens">
+    <Page title="Meus Grupos | ORDAX" description="Acompanhe seus grupos e mensagens">
       <ArcadeHero
         badge="SQUAD COMMS"
         title="MEUS GRUPOS"
@@ -12,6 +13,6 @@ export default function GroupsArcade() {
       <section className="max-w-4xl mx-auto px-6 pb-16">
         <MemberGroupList />
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

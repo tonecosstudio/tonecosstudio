@@ -7,7 +7,6 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Coins, Menu, Bell, X } from "lucide-react";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useEffect, useState, type PropsWithChildren } from "react";
-import SEOHead from "@/components/SEOHead";
 import { ArcadeFooter } from "@/components/arcade/ArcadeFooter";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/lib/roles";
@@ -285,36 +284,6 @@ export function ArcadeSectionTitle({ children }: { children: string }) {
         {children}
       </h2>
       <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[hsl(var(--gold-accent)/0.3)]" />
-    </div>
-  );
-}
-
-// ─── ARCADE PAGE SHELL ───────────────────────────────────────────────
-
-interface ArcadePageProps extends PropsWithChildren {
-  title: string;
-  description: string;
-  keywords?: string[];
-}
-
-export function ArcadePage({ title, description, keywords, children }: ArcadePageProps) {
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,98%)] relative overflow-x-hidden">
-      <SEOHead title={title} description={description} keywords={keywords} />
-      <ScanlineOverlay />
-      <AnimatedGridBg scrollY={scrollY} />
-      <ArcadeNav />
-      {children}
-      <ArcadeFooter />
-      <ArcadeAnimationStyles />
     </div>
   );
 }

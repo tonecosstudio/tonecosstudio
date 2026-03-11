@@ -490,10 +490,15 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: any) {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const totalPrice = formData.total_price || formData.price_per_month;
+      
       const saveData = {
         name: formData.name,
-        price_full: formData.total_price || formData.price_per_month,
-        price_pix: (formData.total_price || formData.price_per_month) * 0.95,
+        display_name: formData.name, // Adicionar display_name obrigatório
+        price_coins: Math.round(totalPrice / 5), // Calcular coins baseado no preço (R$5 por coin)
+        price_brl: totalPrice, // Adicionar price_brl obrigatório
+        price_full: totalPrice,
+        price_pix: totalPrice * 0.95,
         deposit_amount: formData.deposit_amount || 0,
         is_active: formData.is_active,
         description: `Plano ${planType.label}`,

@@ -1,4 +1,6 @@
-import { ArcadePage, ArcadeCard, ArcadeSectionTitle, GlitchText, FloatingParticles } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +28,7 @@ export default function PreLaunchArcade() {
   ];
 
   return (
-    <ArcadePage
+    <Page
       title="Pré-Lançamento ORDAX - Voucher R$ 100"
       description="Garanta seu voucher e acesso prioritário às coleções exclusivas"
       keywords={["pré-lançamento", "voucher", "coleções", "ordax"]}
@@ -136,6 +138,6 @@ export default function PreLaunchArcade() {
           </>
         )}
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

@@ -1,4 +1,5 @@
-import { ArcadePage, ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
+import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,7 +88,7 @@ export default function NotificationsArcade() {
   };
 
   return (
-    <ArcadePage title="Notificações | ORDAX" description="Histórico de notificações">
+    <Page title="Notificações | ORDAX" description="Histórico de notificações">
       <ArcadeHero
         badge="COMMS CENTER"
         title="NOTIFICAÇÕES"
@@ -191,6 +192,6 @@ export default function NotificationsArcade() {
           </div>
         )}
       </section>
-    </ArcadePage>
+    </Page>
   );
 }

@@ -26,15 +26,14 @@ import { useCatalogModels, type CatalogSort } from "@/pages/catalog/hooks/useCat
 import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
 import { useProfileQuery } from "@/pages/catalog/hooks/useProfileQuery";
 import { useForYouModels } from "@/pages/catalog/hooks/useForYouModels";
+import { Page } from "@/components/layouts/Page";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeSectionTitle,
   ArcadeCard,
   ArcadeCTA,
-  FloatingParticles,
-  GlitchText,
 } from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 
 // ─── MAIN ────────────────────────────────────────────────────────────
 
@@ -90,7 +89,7 @@ export default function CatalogArcade() {
   const categories = ["animes", "filmes", "series", "jogos", "quadrinhos", "outros"];
 
   return (
-    <ArcadePage
+    <Page
       title="Catálogo | ORDAX Arsenal"
       description="Explore o catálogo completo de estatuetas artesanais. Produção sob encomenda com pintura artística."
       keywords={["catálogo", "estatuetas", "colecionáveis", "premium"]}
@@ -289,7 +288,7 @@ export default function CatalogArcade() {
         primaryAction={{ label: "VER COLEÇÕES", href: "/colecoes", icon: <ArrowRight className="w-4 h-4" /> }}
         secondaryAction={{ label: "VER PLANOS", href: "/planos" }}
       />
-    </ArcadePage>
+    </Page>
   );
 }
 

@@ -1,5 +1,4 @@
-﻿import AppShell from "@/components/AppShell";
-import SEOHead from "@/components/SEOHead";
+﻿import { Page } from "@/components/layouts/Page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +8,10 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 
 export default function LegalCompliance() {
   return (
-    <AppShell>
-      <SEOHead
-        title="Conformidade Legal CDC - Admin"
-        description="Diretrizes legais sobre precificação e CDC"
-      />
+    <Page
+      title="Conformidade Legal CDC - Admin"
+      description="Diretrizes legais sobre precificação e CDC"
+    >
       <AdminLayout>
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight mb-2">Conformidade Legal - CDC</h1>
@@ -62,6 +60,6 @@ export default function LegalCompliance() {
           </AlertDescription>
         </Alert>
       </AdminLayout>
-    </AppShell>
+    </Page>
   );
 }

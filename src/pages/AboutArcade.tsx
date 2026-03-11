@@ -16,7 +16,6 @@ import {
   Crosshair,
 } from "lucide-react";
 import {
-  ArcadePage,
   ArcadeHero,
   ArcadeSectionTitle,
   ArcadeCard,
@@ -24,6 +23,7 @@ import {
   FloatingParticles,
   GlitchText,
 } from "@/components/arcade/ArcadeLayout";
+import { Page } from "@/components/layouts/Page";
 import { useState } from "react";
 
 const VALUES = [
@@ -51,7 +51,7 @@ const FAQS = [
 
 export default function AboutArcade() {
   return (
-    <ArcadePage
+    <Page
       title="Sobre | ORDAX Intel"
       description="Ordax é a plataforma brasileira de colecionáveis premium sob encomenda."
       keywords={["sobre", "ordax", "colecionáveis", "impressão 3d"]}
@@ -216,7 +216,7 @@ export default function AboutArcade() {
         primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo", icon: <ArrowRight className="w-4 h-4" /> }}
         secondaryAction={{ label: "FAZER ORÇAMENTO", href: "/orcamento/carrinho" }}
       />
-    </ArcadePage>
+    </Page>
   );
 }
 

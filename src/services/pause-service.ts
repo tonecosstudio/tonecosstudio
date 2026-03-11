@@ -8,6 +8,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { logInfo, logError } from "@/lib/logger";
 import { isBeforeCutoff, nowInBahia } from "@/lib/timezone";
 import { releaseCapacity } from "./capacity-service";
 
@@ -86,9 +87,11 @@ export async function requestPause(
   if (nextDelivery.cycle_id) {
     try {
       await releaseCapacity(nextDelivery.cycle_id, 1, subscriptionId);
-      console.log(`Successfully released capacity for delivery ${nextDelivery.id} in cycle ${nextDelivery.cycle_id}`);
+      logInfo('Successfully released capacity for paused delivery', 
+        { deliveryId: nextDelivery.id, cycleId: nextDelivery.cycle_id }, 
+        'pause-service');
     } catch (capacityError) {
-      console.error(`CRITICAL: Failed to release capacity for paused delivery:`, capacityError);
+      logError('CRITICAL: Failed to release capacity for paused delivery', capacityError, 'pause-service');
       throw new Error(`CAPACITY_RELEASE_FAILED: Unable to release capacity. ${capacityError instanceof Error ? capacityError.message : 'Unknown error'}`);
     }
   }
@@ -124,7 +127,7 @@ export async function requestPause(
           .eq('id', delivery.id);
 
         if (shiftError) {
-          console.error(`Failed to shift delivery ${delivery.id}:`, shiftError);
+          logError(`Failed to shift delivery ${delivery.id}`, shiftError, 'pause-service');
           // Continue with other deliveries
         }
       }
@@ -156,5 +159,7 @@ export async function requestPause(
     throw new Error(`Failed to increment pause count: ${incrementError.message}`);
   }
 
-  console.log(`Successfully paused subscription ${subscriptionId}. Pause count: ${pauseCount + 1}/2`);
+  logInfo('Successfully paused subscription', 
+    { subscriptionId, pauseCount: pauseCount + 1, maxPauses: 2 }, 
+    'pause-service');
 }
