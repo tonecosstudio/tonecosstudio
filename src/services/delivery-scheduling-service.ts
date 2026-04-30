@@ -1,13 +1,16 @@
 /**
  * Delivery Scheduling Service
- * 
+ *
  * Handles automatic scheduling of consecutive deliveries for subscriptions.
  * Determines delivery months based on entry cycle and creates delivery records
  * with appropriate cycle associations and shipping deadlines.
- * 
+ *
  * Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7
  */
 
+import { supabase } from "@/integrations/supabase/client";
+import log from "@/lib/logger";
+import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { calculate5thBusinessDay } from "@/lib/business-days";
 import { getHolidayDates } from "./holiday-service";
@@ -43,7 +46,7 @@ interface EntryCycle {
 
 /**
  * Schedule consecutive deliveries for a subscription
- * 
+ *
  * This function implements the core delivery scheduling logic:
  * - First delivery starts in the month following subscription creation (Req 9.1)
  * - Creates delivery records for consecutive months (Req 9.3, 9.4, 9.5)
@@ -51,22 +54,22 @@ interface EntryCycle {
  * - Calculates shipping deadline for each delivery (Req 9.7)
  * - Checks capacity for all months (Req 9.9)
  * - Assigns bonus piece to 6th delivery for Semestral subscriptions (Req 11.1, 11.3)
- * 
+ *
  * Monthly cycle rules:
  * - First delivery: next month after subscription creation
  * - Subsequent deliveries: consecutive months
- * 
+ *
  * Bonus piece rules:
  * - Only Semestral subscriptions receive bonus pieces
  * - Bonus piece is automatically assigned to the 6th delivery
  * - Bonus piece is created and linked during delivery scheduling
- * 
+ *
  * @param subscriptionId - The ID of the subscription
  * @param entryCycleId - The ID of the cycle when subscription was created
  * @param planType - The subscription plan type ('trimestral' or 'semestral')
  * @returns Promise<Array> - Array of created delivery records
  * @throws Error if capacity unavailable or database operation fails
- * 
+ *
  * @example
  * // Schedule deliveries for a Trimestral subscription
  * const deliveries = await scheduleConsecutiveDeliveries(
@@ -75,7 +78,7 @@ interface EntryCycle {
  *   'trimestral'
  * );
  * // Creates 3 consecutive delivery records
- * 
+ *
  * @example
  * // Schedule deliveries for a Semestral subscription
  * const deliveries = await scheduleConsecutiveDeliveries(
@@ -84,7 +87,7 @@ interface EntryCycle {
  *   'semestral'
  * );
  * // Creates 6 consecutive delivery records with bonus piece assigned to 6th delivery
- * 
+ *
  * Requirements: 9.1, 9.3, 9.4, 9.5, 9.6, 9.7, 9.9, 11.1, 11.3
  */
 export async function scheduleConsecutiveDeliveries(
@@ -96,11 +99,11 @@ export async function scheduleConsecutiveDeliveries(
   if (!subscriptionId || typeof subscriptionId !== 'string') {
     throw new Error('subscriptionId is required and must be a string');
   }
-  
+
   if (!entryCycleId || typeof entryCycleId !== 'string') {
     throw new Error('entryCycleId is required and must be a string');
   }
-  
+
   if (planType !== 'trimestral' && planType !== 'semestral') {
     throw new Error('planType must be either "trimestral" or "semestral"');
   }
@@ -138,7 +141,7 @@ export async function scheduleConsecutiveDeliveries(
 
   // Create delivery records
   const deliveries = [];
-  
+
   for (const scheduledDelivery of schedule) {
     // Calculate shipping deadline (5th business day of delivery month)
     const shippingDeadline = calculate5thBusinessDay(
@@ -172,12 +175,14 @@ export async function scheduleConsecutiveDeliveries(
     }
 
     deliveries.push(delivery);
-    
-    console.log(
-      `Created delivery ${scheduledDelivery.deliveryNumber} for subscription ${subscriptionId}: ` +
-      `${scheduledDelivery.month}/${scheduledDelivery.year}, ` +
-      `shipping deadline: ${shippingDeadline.toISOString().split('T')[0]}`
-    );
+
+    log.info('Delivery created', {
+      deliveryNumber: scheduledDelivery.deliveryNumber,
+      subscriptionId,
+      month: scheduledDelivery.month,
+      year: scheduledDelivery.year,
+      shippingDeadline: shippingDeadline.toISOString().split('T')[0]
+    });
   }
 
   // Bonus piece assignment for Semestral subscriptions (Requirement 11.1, 11.3)
@@ -188,28 +193,33 @@ export async function scheduleConsecutiveDeliveries(
         subscriptionId,
         'Exclusive bonus piece for Semestral plan'
       );
-      
+
       // Link bonus piece to the 6th delivery
       const sixthDelivery = deliveries[5]; // Index 5 = 6th delivery
       await bonusPieceService.linkBonusToDelivery(bonusPiece.id, sixthDelivery.id);
-      
+
       // Update the 6th delivery record to reference the bonus piece
       const { error: updateError } = await supabase
         .from('subscription_deliveries')
         .update({ bonus_piece_id: bonusPiece.id })
         .eq('id', sixthDelivery.id);
-      
+
       if (updateError) {
-        console.error(`Failed to update 6th delivery with bonus_piece_id: ${updateError.message}`);
+        log.error('Failed to update 6th delivery with bonus_piece_id', {
+          error: updateError.message,
+          deliveryId: sixthDelivery.id,
+          bonusPieceId: bonusPiece.id
+        });
         // Don't throw - bonus piece is created and linked, just the reference update failed
       }
-      
-      console.log(
-        `Assigned bonus piece ${bonusPiece.id} to 6th delivery ${sixthDelivery.id} ` +
-        `for Semestral subscription ${subscriptionId}`
-      );
+
+      log.info('Bonus piece assigned', {
+        bonusPieceId: bonusPiece.id,
+        deliveryId: sixthDelivery.id,
+        subscriptionId
+      });
     } catch (error) {
-      console.error(`Failed to assign bonus piece for subscription ${subscriptionId}:`, error);
+      log.error('Failed to assign bonus piece', { subscriptionId, error });
       // Don't throw - deliveries are created, bonus piece assignment can be done manually
     }
   }
@@ -219,15 +229,15 @@ export async function scheduleConsecutiveDeliveries(
 
 /**
  * Calculate delivery schedule based on entry cycle (monthly)
- * 
+ *
  * Implements the delivery scheduling rules:
  * - First delivery: next month after subscription creation
  * - Subsequent deliveries: consecutive months
- * 
+ *
  * @param entryCycle - The cycle when subscription was created
  * @param deliveryCount - Number of deliveries to schedule (3 or 6)
  * @returns Array of scheduled delivery information
- * 
+ *
  * @private
  */
 function calculateDeliverySchedule(
@@ -235,16 +245,16 @@ function calculateDeliverySchedule(
   deliveryCount: number
 ): ScheduledDelivery[] {
   const schedule: ScheduledDelivery[] = [];
-  
+
   // First delivery starts in the next month after subscription creation
   let currentMonth = entryCycle.month + 1;
   let currentYear = entryCycle.year;
-  
+
   if (currentMonth > 12) {
     currentMonth = 1;
     currentYear += 1;
   }
-  
+
   // Schedule consecutive monthly deliveries (Requirement 9.3)
   for (let i = 0; i < deliveryCount; i++) {
     schedule.push({
@@ -255,7 +265,7 @@ function calculateDeliverySchedule(
       expectedDeliveryDate: new Date(currentYear, currentMonth - 1, 1), // Placeholder
       shippingDeadline: new Date(currentYear, currentMonth - 1, 1), // Placeholder
     });
-    
+
     // Move to next month for next delivery (Requirement 9.3)
     currentMonth += 1;
     if (currentMonth > 12) {
@@ -263,19 +273,19 @@ function calculateDeliverySchedule(
       currentYear += 1;
     }
   }
-  
+
   return schedule;
 }
 
 /**
  * Check capacity availability for all scheduled deliveries
- * 
+ *
  * Verifies that capacity is available for all months in the delivery schedule.
  * Throws an error if any month exceeds capacity.
- * 
+ *
  * @param schedule - Array of scheduled deliveries
  * @throws Error if capacity unavailable for any month
- * 
+ *
  * @private
  * Requirements: 9.9
  */
@@ -294,7 +304,7 @@ async function checkCapacityForSchedule(
     if (existingCycle) {
       // Check capacity using capacity service
       const hasCapacity = await checkAvailability(existingCycle.id, 1);
-      
+
       if (!hasCapacity) {
         throw new Error(
           `Capacity unavailable for delivery ${scheduledDelivery.deliveryNumber} ` +
@@ -308,15 +318,15 @@ async function checkCapacityForSchedule(
 
 /**
  * Get or create a monthly cycle
- * 
+ *
  * Looks up an existing cycle or creates a new one if it doesn't exist.
  * Uses the SSOT (system_settings) to calculate cycle dates automatically.
- * 
+ *
  * @param month - Month (1-12)
  * @param year - Year
  * @returns Promise<string> - Cycle ID
  * @throws Error if cycle creation fails
- * 
+ *
  * @private
  */
 async function getOrCreateCycle(
@@ -361,7 +371,7 @@ async function getOrCreateCycle(
     throw new Error(`Failed to fetch created cycle: ${fetchError?.message || 'Unknown error'}`);
   }
 
-  console.log(`Created new monthly cycle: ${month}/${year} (ID: ${createdCycle.id})`);
-  
+  log.info('Monthly cycle created', { month, year, cycleId: createdCycle.id });
+
   return createdCycle.id;
 }

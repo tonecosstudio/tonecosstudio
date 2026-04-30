@@ -1,12 +1,11 @@
-// @ts-nocheck
 /**
  * Hook de Dados para Pedidos V2
- * 
+ *
  * Gerencia o estado de busca de pedidos com TanStack Query
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchAllOrders } from '@/services/admin/orders-service-v3';
+import { fetchUnifiedOrders } from '@/services/admin/orders-service';
 import type {
   OrderFilters,
   PaginationParams,
@@ -56,7 +55,7 @@ export function useOrdersData({
 
   const query = useQuery({
     queryKey: [QUERY_KEY, filters, pagination],
-    queryFn: () => fetchAllOrders(filters, pagination),
+    queryFn: () => fetchUnifiedOrders(filters, pagination),
     enabled,
     ...CACHE_CONFIG,
   });
@@ -70,16 +69,16 @@ export function useOrdersData({
 
       queryClient.prefetchQuery({
         queryKey: [QUERY_KEY, filters, nextPagination],
-        queryFn: () => fetchAllOrders(filters, nextPagination),
+        queryFn: () => fetchUnifiedOrders(filters, nextPagination),
         staleTime: CACHE_CONFIG.staleTime,
       });
     }
   };
 
   return {
-    orders: query.data?.orders || [],
+    orders: query.data?.data || [],
     total: query.data?.total || 0,
-    totalPages: Math.ceil((query.data?.total || 0) / pagination.pageSize),
+    totalPages: query.data?.totalPages || 0,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

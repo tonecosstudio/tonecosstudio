@@ -1,33 +1,34 @@
 /**
  * Delivery Service
- * 
+ *
  * Handles delivery lifecycle operations including activation and automatic maintenance.
- * 
+ *
  * Requirements: 6.2, 9.6, 10.4
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import log from "@/lib/logger";
 import { applyAutomaticMaintenance } from "./automatic-maintenance-service";
 import { recordCollectionChange } from "./audit-trail-service";
 
 /**
  * Activate a delivery and apply automatic maintenance
- * 
+ *
  * This function transitions a delivery from 'scheduled' to 'pending_choice' status
  * and applies automatic maintenance if applicable (not first delivery and previous
  * delivery has a collection choice).
- * 
+ *
  * The function uses the database function activate_delivery_with_auto_maintenance
  * which handles the entire workflow atomically.
- * 
+ *
  * @param deliveryId - The ID of the delivery to activate
  * @returns Promise<void>
  * @throws Error if delivery not found or activation fails
- * 
+ *
  * @example
  * // Activate a delivery when its month arrives
  * await activateDelivery(deliveryId);
- * 
+ *
  * Requirements: 6.2, 10.4
  */
 export async function activateDelivery(deliveryId: string): Promise<void> {
@@ -42,16 +43,16 @@ export async function activateDelivery(deliveryId: string): Promise<void> {
 
 /**
  * Activate a delivery using the TypeScript automatic maintenance service
- * 
+ *
  * This is an alternative implementation that uses the TypeScript service
  * instead of the database function. Use this when you need more control
  * or want to handle the workflow in application code.
- * 
+ *
  * @param deliveryId - The ID of the delivery to activate
  * @param subscriptionId - The ID of the subscription
  * @returns Promise<void>
  * @throws Error if delivery not found or activation fails
- * 
+ *
  * Requirements: 6.2, 10.4
  */
 export async function activateDeliveryWithService(
@@ -71,7 +72,10 @@ export async function activateDeliveryWithService(
 
   // Only activate if status is 'scheduled'
   if (delivery.status !== 'scheduled') {
-    console.log(`Delivery ${deliveryId} is not in scheduled status (current: ${delivery.status}), skipping activation`);
+    log.info('Delivery not in scheduled status, skipping activation', {
+      deliveryId,
+      currentStatus: delivery.status
+    });
     return;
   }
 
@@ -90,7 +94,7 @@ export async function activateDeliveryWithService(
 
   // Skip automatic maintenance if this is the first delivery
   if (delivery.delivery_number === 1) {
-    console.log(`Delivery ${deliveryId} is first delivery, skipping automatic maintenance`);
+    log.info('First delivery, skipping automatic maintenance', { deliveryId });
     return;
   }
 
@@ -99,21 +103,21 @@ export async function activateDeliveryWithService(
     await applyAutomaticMaintenance(deliveryId, subscriptionId);
   } catch (error) {
     // Log error but don't fail the activation
-    console.error(`Failed to apply automatic maintenance to delivery ${deliveryId}:`, error);
+    log.error('Failed to apply automatic maintenance', { deliveryId, error });
     // The delivery is still in pending_choice status, subscriber can make manual selection
   }
 }
 
 /**
  * Batch activate deliveries for a specific month
- * 
+ *
  * This function is typically called by a cron job at the start of each month
  * to activate all deliveries scheduled for that month.
- * 
+ *
  * @param month - Month number (1-12)
  * @param year - Year (e.g., 2026)
  * @returns Promise<{ activated: number, failed: number }>
- * 
+ *
  * Requirements: 10.1, 10.2, 10.3
  */
 export async function batchActivateDeliveriesForMonth(
@@ -133,7 +137,7 @@ export async function batchActivateDeliveriesForMonth(
   }
 
   if (!deliveries || deliveries.length === 0) {
-    console.log(`No scheduled deliveries found for ${month}/${year}`);
+    log.info('No scheduled deliveries found', { month, year });
     return { activated: 0, failed: 0 };
   }
 
@@ -145,10 +149,13 @@ export async function batchActivateDeliveriesForMonth(
     try {
       await activateDelivery(delivery.id);
       activated++;
-      console.log(`Activated delivery ${delivery.id} (${delivery.delivery_number})`);
+      log.info('Delivery activated', {
+        deliveryId: delivery.id,
+        deliveryNumber: delivery.delivery_number
+      });
     } catch (error) {
       failed++;
-      console.error(`Failed to activate delivery ${delivery.id}:`, error);
+      log.error('Failed to activate delivery', { deliveryId: delivery.id, error });
     }
   }
 
@@ -157,14 +164,14 @@ export async function batchActivateDeliveriesForMonth(
 
 /**
  * Check if a delivery can have its collection changed
- * 
+ *
  * A delivery can be changed if:
  * 1. Current time is before the cutoff (day 15 at 23:59:59 Bahia time)
  * 2. Delivery status is 'pending_choice' or 'confirmed'
- * 
+ *
  * @param deliveryId - The ID of the delivery to check
  * @returns Promise<boolean> - True if changes are allowed
- * 
+ *
  * Requirements: 6.6, 7.1, 7.2
  */
 export async function canChangeCollection(deliveryId: string): Promise<boolean> {
@@ -197,13 +204,13 @@ export async function canChangeCollection(deliveryId: string): Promise<boolean> 
 
 /**
  * Change the collection choice for a delivery
- * 
+ *
  * This function:
  * 1. Validates that changes are allowed (before cutoff)
  * 2. Updates the delivery's collection_id
  * 3. Sets auto_maintained to false if it was true
  * 4. Creates an audit trail record
- * 
+ *
  * @param deliveryId - The ID of the delivery to update
  * @param newCollectionId - The ID of the new collection
  * @param userId - The ID of the user making the change
@@ -211,7 +218,7 @@ export async function canChangeCollection(deliveryId: string): Promise<boolean> 
  * @param userAgent - The user agent of the request (optional)
  * @returns Promise<void>
  * @throws Error if changes not allowed or update fails
- * 
+ *
  * Requirements: 6.6, 8.1, 8.2, 8.3, 21.1, 21.2
  */
 export async function changeCollectionChoice(
@@ -268,6 +275,6 @@ export async function changeCollectionChoice(
     });
   } catch (auditError) {
     // Log error but don't fail the operation
-    console.error(`Failed to create audit trail record:`, auditError);
+    log.error('Failed to create audit trail record', { error: auditError });
   }
 }

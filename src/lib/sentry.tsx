@@ -30,9 +30,7 @@ const SENTRY_ENABLED = false; // Mude para true após instalar @sentry/react
  */
 export function initSentry() {
   if (!SENTRY_ENABLED || !SENTRY_DSN) {
-    if (!SENTRY_DSN) {
-      console.log("ℹ️ Sentry DSN não configurado. Error tracking desabilitado.");
-    }
+    // Sentry desabilitado - funcionalidade opcional
     return;
   }
 }

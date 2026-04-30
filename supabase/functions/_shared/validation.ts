@@ -11,7 +11,8 @@ import { corsHeaders } from "./cors.ts";
 
 // ─── UUID / URL helpers ────────────────────────────────────────────
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const URL_RE = /^https?:\/\/.{1,2048}$/i;
 
 export function isUUID(v: unknown): v is string {
@@ -28,8 +29,13 @@ export function isURL(v: unknown): v is string {
 export function sanitizeString(v: unknown, maxLen = 1000): string {
   if (typeof v !== "string") return "";
   return v
-    .replace(/<[^>]*>/g, "")  // strip HTML
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "") // strip control chars
+    .replace(/<[^>]*>/g, "") // strip HTML
+    .split("")
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code > 31 || code === 9 || code === 10 || code === 13;
+    })
+    .join("")
     .trim()
     .slice(0, maxLen);
 }
@@ -41,18 +47,25 @@ export function escapeSQL(v: string): string {
 
 // ─── Schema definition types ──────────────────────────────────────
 
-type FieldType = "string" | "number" | "boolean" | "uuid" | "url" | "array" | "object";
+type FieldType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "uuid"
+  | "url"
+  | "array"
+  | "object";
 
 interface FieldDef {
   type: FieldType;
   required?: boolean;
-  maxLength?: number;       // strings
-  minLength?: number;       // strings
-  min?: number;             // numbers
-  max?: number;             // numbers
-  maxItems?: number;        // arrays
-  itemType?: FieldType;     // array item type
-  sanitize?: boolean;       // auto-sanitize string (default false)
+  maxLength?: number; // strings
+  minLength?: number; // strings
+  min?: number; // numbers
+  max?: number; // numbers
+  maxItems?: number; // arrays
+  itemType?: FieldType; // array item type
+  sanitize?: boolean; // auto-sanitize string (default false)
 }
 
 export type Schema = Record<string, FieldDef>;
@@ -72,15 +85,16 @@ interface ValidationResult {
  * - Enforces type, length, range constraints
  * - Auto-strips HTML from string fields when `sanitize: true`
  */
-export function validateBody(
-  body: unknown,
-  schema: Schema,
-): ValidationResult {
+export function validateBody(body: unknown, schema: Schema): ValidationResult {
   const errors: string[] = [];
   const sanitized: Record<string, unknown> = {};
 
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return { valid: false, errors: ["Request body must be a JSON object"], sanitized: {} };
+    return {
+      valid: false,
+      errors: ["Request body must be a JSON object"],
+      sanitized: {},
+    };
   }
 
   const obj = body as Record<string, unknown>;
@@ -98,7 +112,10 @@ export function validateBody(
     const value = obj[key];
 
     // Required check
-    if (def.required && (value === undefined || value === null || value === "")) {
+    if (
+      def.required &&
+      (value === undefined || value === null || value === "")
+    ) {
       errors.push(`'${key}' is required`);
       continue;
     }

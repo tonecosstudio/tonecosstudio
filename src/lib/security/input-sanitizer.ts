@@ -1,9 +1,9 @@
 /**
  * Input Sanitization Service
- * 
+ *
  * Provides comprehensive input sanitization to prevent XSS, SQL injection,
  * and other security vulnerabilities.
- * 
+ *
  * Features:
  * - HTML sanitization with DOMPurify
  * - SQL injection prevention
@@ -77,7 +77,7 @@ export const DANGEROUS_EXTENSIONS = [
 
 /**
  * Sanitize HTML content to prevent XSS attacks
- * 
+ *
  * @param html - Raw HTML string
  * @param allowedTags - Optional array of allowed HTML tags
  * @returns Sanitized HTML string
@@ -89,7 +89,7 @@ export function sanitizeHTML(html: string, allowedTags?: string[]): string {
 
 /**
  * Sanitize HTML content with detailed result
- * 
+ *
  * @param html - Raw HTML string
  * @param allowedTags - Optional array of allowed HTML tags
  * @returns SanitizationResult with sanitized value and modifications
@@ -115,43 +115,43 @@ export function sanitizeHTMLWithResult(html: string, allowedTags?: string[]): Sa
 
   const sanitized = DOMPurify.sanitize(html, config);
   const modifications: string[] = [];
-  
+
   // Check if content was modified
   if (html !== sanitized) {
     // Detect removed tags
     const originalTags = html.match(/<[^>]+>/g) || [];
     const sanitizedTags = sanitized.match(/<[^>]+>/g) || [];
-    
+
     if (originalTags.length > sanitizedTags.length) {
       const removed = originalTags.length - sanitizedTags.length;
       modifications.push(`Removed ${removed} disallowed HTML tag(s)`);
     }
-    
+
     // Detect removed attributes
     const originalAttrs = html.match(/\s+\w+=/g) || [];
     const sanitizedAttrs = sanitized.match(/\s+\w+=/g) || [];
-    
+
     if (originalAttrs.length > sanitizedAttrs.length) {
       const removed = originalAttrs.length - sanitizedAttrs.length;
       modifications.push(`Removed ${removed} disallowed attribute(s)`);
     }
-    
+
     // Check for script tags specifically
     if (/<script/i.test(html)) {
       modifications.push('Removed script tag(s)');
     }
-    
+
     // Check for event handlers
     if (/on\w+\s*=/i.test(html)) {
       modifications.push('Removed event handler(s)');
     }
-    
+
     // Check for javascript: URLs
     if (/javascript:/i.test(html)) {
       modifications.push('Removed javascript: URL(s)');
     }
   }
-  
+
   return {
     value: sanitized,
     wasModified: modifications.length > 0,
@@ -163,7 +163,7 @@ export function sanitizeHTMLWithResult(html: string, allowedTags?: string[]): Sa
  * Sanitize plain text to prevent XSS
  * Removes all HTML tags and encodes special characters
  * Idempotent: sanitizeText(sanitizeText(x)) === sanitizeText(x)
- * 
+ *
  * @param text - Raw text string
  * @returns Sanitized text string
  */
@@ -175,7 +175,7 @@ export function sanitizeText(text: string): string {
 /**
  * Sanitize plain text with detailed result
  * Removes all HTML tags and encodes special characters
- * 
+ *
  * @param text - Raw text string
  * @returns SanitizationResult with sanitized value and modifications
  */
@@ -189,25 +189,25 @@ export function sanitizeTextWithResult(text: string): SanitizationResult {
   }
 
   const modifications: string[] = [];
-  
+
   // Remove all HTML tags
   const htmlTagRegex = /<[^>]*>/g;
   const htmlTags = text.match(htmlTagRegex);
   const withoutTags = text.replace(htmlTagRegex, '');
-  
+
   if (htmlTags && htmlTags.length > 0) {
     modifications.push(`Removed ${htmlTags.length} HTML tag(s): ${htmlTags.slice(0, 3).join(', ')}${htmlTags.length > 3 ? '...' : ''}`);
   }
-  
+
   // Only encode if not already encoded (check for existing entities)
   // This ensures idempotence
-  const needsEncoding = !withoutTags.includes('&amp;') && 
-                        !withoutTags.includes('&lt;') && 
+  const needsEncoding = !withoutTags.includes('&amp;') &&
+                        !withoutTags.includes('&lt;') &&
                         !withoutTags.includes('&gt;') &&
                         !withoutTags.includes('&quot;') &&
                         !withoutTags.includes('&#x27;') &&
                         !withoutTags.includes('&#x2F;');
-  
+
   if (!needsEncoding) {
     return {
       value: withoutTags,
@@ -215,7 +215,7 @@ export function sanitizeTextWithResult(text: string): SanitizationResult {
       modifications: modifications.length > 0 ? modifications : undefined
     };
   }
-  
+
   // Track special characters that need encoding
   const specialChars: string[] = [];
   if (withoutTags.includes('&')) specialChars.push('&');
@@ -224,11 +224,11 @@ export function sanitizeTextWithResult(text: string): SanitizationResult {
   if (withoutTags.includes('"')) specialChars.push('"');
   if (withoutTags.includes("'")) specialChars.push("'");
   if (withoutTags.includes('/')) specialChars.push('/');
-  
+
   if (specialChars.length > 0) {
     modifications.push(`Encoded special characters: ${specialChars.join(', ')}`);
   }
-  
+
   // Encode special characters
   const encoded = withoutTags
     .replace(/&/g, '&amp;')
@@ -237,7 +237,7 @@ export function sanitizeTextWithResult(text: string): SanitizationResult {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;');
-  
+
   return {
     value: encoded,
     wasModified: modifications.length > 0,
@@ -247,7 +247,7 @@ export function sanitizeTextWithResult(text: string): SanitizationResult {
 
 /**
  * Validate and sanitize email address
- * 
+ *
  * @param email - Email address to validate
  * @returns Sanitized email or throws ValidationError
  */
@@ -266,7 +266,7 @@ export function sanitizeEmail(email: string): string {
 
 /**
  * Validate and sanitize email address with detailed result
- * 
+ *
  * @param email - Email address to validate
  * @returns SanitizationResult with sanitized value, modifications, and errors
  */
@@ -281,11 +281,11 @@ export function sanitizeEmailWithResult(email: string): SanitizationResult {
 
   const modifications: string[] = [];
   const errors: string[] = [];
-  
+
   // Remove whitespace and convert to lowercase
   const original = email;
   const trimmed = email.trim().toLowerCase();
-  
+
   if (original !== trimmed) {
     if (original.trim() !== original) {
       modifications.push('Removed whitespace');
@@ -297,7 +297,7 @@ export function sanitizeEmailWithResult(email: string): SanitizationResult {
 
   // Validate email format
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  
+
   if (!emailRegex.test(trimmed)) {
     errors.push('Invalid email format');
     return {
@@ -317,7 +317,7 @@ export function sanitizeEmailWithResult(email: string): SanitizationResult {
 
 /**
  * Validate and sanitize URL
- * 
+ *
  * @param url - URL to validate
  * @param allowedProtocols - Allowed protocols (default: http, https)
  * @returns Sanitized URL or throws ValidationError
@@ -340,7 +340,7 @@ export function sanitizeURL(
 
 /**
  * Validate and sanitize URL with detailed result
- * 
+ *
  * @param url - URL to validate
  * @param allowedProtocols - Allowed protocols (default: http, https)
  * @returns SanitizationResult with sanitized value, modifications, and errors
@@ -362,7 +362,7 @@ export function sanitizeURLWithResult(
 
   try {
     const parsed = new URL(url);
-    
+
     // Check protocol
     const protocol = parsed.protocol.replace(':', '');
     if (!allowedProtocols.includes(protocol)) {
@@ -375,12 +375,12 @@ export function sanitizeURLWithResult(
     }
 
     const sanitized = parsed.toString();
-    
+
     // Check if URL was normalized
     if (url !== sanitized) {
       modifications.push('URL normalized');
     }
-    
+
     return {
       value: sanitized,
       wasModified: modifications.length > 0,
@@ -399,7 +399,7 @@ export function sanitizeURLWithResult(
 /**
  * Prevent path traversal attacks
  * Idempotent: sanitizePath(sanitizePath(x)) === sanitizePath(x)
- * 
+ *
  * @param path - File path to validate
  * @returns Sanitized path (empty string if invalid)
  */
@@ -410,7 +410,7 @@ export function sanitizePath(path: string): string {
 
 /**
  * Prevent path traversal attacks with detailed result
- * 
+ *
  * @param path - File path to validate
  * @returns SanitizationResult with sanitized value and modifications
  */
@@ -470,7 +470,7 @@ export function sanitizePathWithResult(path: string): SanitizationResult {
 
 /**
  * Validate file upload
- * 
+ *
  * @param file - File object to validate
  * @param allowedTypes - Allowed MIME types
  * @param maxSize - Maximum file size in bytes
@@ -494,7 +494,7 @@ export function validateFileUpload(
   if ((DANGEROUS_EXTENSIONS as readonly string[]).includes(extension)) {
     return {
       valid: false,
-      error: `Tipo de arquivo potencialmente perigoso (.${extension}) não é permitido.`
+      error: `Tipo de arquivo potencialmente perigoso (.${extension}) não permitido.`
     };
   }
 
@@ -570,7 +570,7 @@ export function validateFileUpload(
 /**
  * Sanitize filename for safe storage
  * Idempotent: sanitizeFilename(sanitizeFilename(x)) === sanitizeFilename(x)
- * 
+ *
  * @param filename - Original filename
  * @returns Sanitized filename (empty string if invalid)
  */
@@ -581,7 +581,7 @@ export function sanitizeFilename(filename: string): string {
 
 /**
  * Sanitize filename with detailed result
- * 
+ *
  * @param filename - Original filename
  * @returns SanitizationResult with sanitized value and modifications
  */
@@ -595,7 +595,7 @@ export function sanitizeFilenameWithResult(filename: string): SanitizationResult
   }
 
   const modifications: string[] = [];
-  
+
   // Remove path components (handle both / and \ separators)
   const basename = filename.split(/[/\\]/).pop() || filename;
   if (basename !== filename) {
@@ -657,7 +657,7 @@ export function sanitizeFilenameWithResult(filename: string): SanitizationResult
 /**
  * Prevent SQL injection by validating input
  * Note: This is a secondary defense. Always use parameterized queries!
- * 
+ *
  * @param input - User input to validate
  * @returns true if input appears safe
  */
@@ -682,7 +682,7 @@ export function detectSQLInjection(input: string): boolean {
 /**
  * Sanitize search query with SQL injection pattern detection
  * Idempotent: sanitizeSearchQuery(sanitizeSearchQuery(x)) === sanitizeSearchQuery(x)
- * 
+ *
  * @param query - Search query string
  * @returns Sanitized query (empty string if contains SQL injection patterns)
  */
@@ -693,7 +693,7 @@ export function sanitizeSearchQuery(query: string): string {
 
 /**
  * Sanitize search query with detailed result
- * 
+ *
  * @param query - Search query string
  * @returns SanitizationResult with sanitized value, modifications, and errors
  */
@@ -712,7 +712,7 @@ export function sanitizeSearchQueryWithResult(query: string): SanitizationResult
   // Trim and limit length first
   const original = query;
   let sanitized = query.trim().substring(0, 200);
-  
+
   if (original !== sanitized) {
     if (original.trim() !== original) {
       modifications.push('Trimmed whitespace');
@@ -757,7 +757,7 @@ export function sanitizeSearchQueryWithResult(query: string): SanitizationResult
 
 /**
  * Generate secure random token
- * 
+ *
  * @param length - Token length (default: 32)
  * @returns Random token string
  */
@@ -769,7 +769,7 @@ export function generateSecureToken(length: number = 32): string {
 
 /**
  * Validate and sanitize phone number (Brazilian format)
- * 
+ *
  * @param phone - Phone number to validate
  * @returns Sanitized phone number
  */
@@ -788,7 +788,7 @@ export function sanitizePhoneNumber(phone: string): string {
 
 /**
  * Validate and sanitize phone number with detailed result
- * 
+ *
  * @param phone - Phone number to validate
  * @returns SanitizationResult with sanitized value, modifications, and errors
  */
@@ -807,7 +807,7 @@ export function sanitizePhoneNumberWithResult(phone: string): SanitizationResult
   // Remove all non-numeric characters
   const original = phone;
   const numbers = phone.replace(/\D/g, '');
-  
+
   if (original !== numbers) {
     modifications.push('Removed non-numeric characters');
   }
@@ -832,10 +832,10 @@ export function sanitizePhoneNumberWithResult(phone: string): SanitizationResult
 
 /**
  * Log sanitization event for security monitoring
- * 
+ *
  * This function logs when sanitization modifies user input, which helps
  * detect potential attack attempts and monitor security events.
- * 
+ *
  * @param fieldName - Name of the field being sanitized
  * @param sanitizationType - Type of sanitization applied (text, html, email, etc.)
  * @param result - Result of the sanitization operation
@@ -853,8 +853,8 @@ export function logSanitizationEvent(
   }
 
   // Determine severity based on modifications
-  const severity = result.errors && result.errors.length > 0 
-    ? ErrorSeverity.WARNING 
+  const severity = result.errors && result.errors.length > 0
+    ? ErrorSeverity.WARNING
     : ErrorSeverity.INFO;
 
   // Build log message

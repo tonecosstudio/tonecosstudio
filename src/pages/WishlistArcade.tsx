@@ -104,7 +104,7 @@ export default function WishlistArcade() {
                     {/* Image */}
                     <div className="w-full sm:w-36 h-36 flex-shrink-0 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] overflow-hidden">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={model?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <img src={imageUrl} alt={model?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" decoding="async" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[hsl(0,0%,20%)] font-mono text-[9px]">NO IMG</div>
                       )}

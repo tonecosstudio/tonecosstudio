@@ -25,7 +25,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 // Mock AdminLayout
-vi.mock('@/components/admin/AdminLayout', () => ({
+vi.mock('@/components/admin/shared/AdminLayout', () => ({
   AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 

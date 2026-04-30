@@ -30,35 +30,35 @@ export function CharacterCard({
   onPurchase,
 }: CharacterCardProps) {
   const { user } = useAuth();
-  
+
   // Get contextual price for the character (includes multiplier - RN008)
   const { data: contextualPrice, isLoading: priceLoading } = useCharacterPrice({
     characterId: character.id,
     userId: user?.id
   });
-  
+
   // Get price details for breakdown display
   const { data: priceDetails } = useCharacterPriceDetails(character.id, user?.id);
-  
+
   // Use contextual price if available, fallback to character.price_credits
   const priceInCoins = contextualPrice || character.price_credits;
   const hasEnoughCredits = availableCredits >= priceInCoins;
-  
+
   // Check if price is discounted (contextual price is lower than base price)
   const hasDiscount = contextualPrice && contextualPrice < character.price_credits;
   const discountAmount = hasDiscount ? character.price_credits - contextualPrice : 0;
-  const discountPercentage = hasDiscount 
+  const discountPercentage = hasDiscount
     ? Math.round((discountAmount / character.price_credits) * 100)
     : 0;
-  
+
   // Check if character has price multiplier (RN008)
   const hasMultiplier = priceDetails?.has_multiplier || false;
   const multiplier = priceDetails?.price_multiplier || 1.0;
-  
+
   // Get multiplier badge info (RN008)
   const getMultiplierBadge = () => {
     if (!hasMultiplier) return null;
-    
+
     if (multiplier >= 2.0) {
       return { label: 'Raro', icon: Crown, color: 'bg-purple-500' };
     } else if (multiplier >= 1.5) {
@@ -70,9 +70,9 @@ export function CharacterCard({
     }
     return null;
   };
-  
+
   const multiplierBadge = getMultiplierBadge();
-  
+
   // Calculate savings percentage when using credits
   const savingsPercentage = character.price_cash > 0
     ? Math.round(((character.price_cash - (priceInCoins * 0.1)) / character.price_cash) * 100)
@@ -80,8 +80,8 @@ export function CharacterCard({
 
   return (
     <Card className={`group flex flex-col overflow-hidden bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium ${
-      hasDiscount 
-        ? 'border-2 border-green-500/50' 
+      hasDiscount
+        ? 'border-2 border-green-500/50'
         : 'border border-border'
     }`}>
       {/* Image */}
@@ -91,8 +91,9 @@ export function CharacterCard({
           alt={character.name}
           className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02]"
           loading="lazy"
+          decoding="async"
         />
-        
+
         {/* Exclusive badge */}
         {character.is_exclusive_semestral && (
           <div className="absolute top-3 left-3 z-10">
@@ -259,14 +260,14 @@ export function CharacterCard({
                   </div>
                 )}
               </div>
-              
+
               {/* Discount breakdown - Task 9.12 */}
               {hasDiscount && !priceLoading && (
                 <div className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-2 rounded">
                   💰 Economize {discountAmount} 🪙 ({discountPercentage}% de desconto)
                 </div>
               )}
-              
+
               {/* Multiplier info - RN008 */}
               {hasMultiplier && !priceLoading && priceDetails && (
                 <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 p-2 rounded">

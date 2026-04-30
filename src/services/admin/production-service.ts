@@ -4,9 +4,9 @@
  * Este serviço gerencia a fila de produção, métricas e operações
  * relacionadas ao sistema de gestão de produção.
  */
-// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import { calculateEstimatedCompletion } from "./stage-service";
+import log from "@/lib/logger";
 
 // ============================================================================
 // Tipos
@@ -157,21 +157,21 @@ export function isValidStageTransition(
 ): boolean {
   const fromIndex = STAGE_ORDER.indexOf(from);
   const toIndex = STAGE_ORDER.indexOf(to);
-  
+
   if (fromIndex === -1 || toIndex === -1) {
     return false;
   }
-  
+
   // Permite avançar para próximo estágio
   if (toIndex === fromIndex + 1) {
     return true;
   }
-  
+
   // Permite retroceder de quality_check para painting ou post_processing
   if (from === 'quality_check' && (to === 'painting' || to === 'post_processing')) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -337,7 +337,7 @@ export async function fetchProductionQueue(
   const { data, error, count } = await query;
 
   if (error) {
-    console.error("Erro ao buscar fila de produção:", error);
+    log.error("Erro ao buscar fila de produção", { error: error.message });
     throw new Error(`Erro ao buscar fila de produção: ${error.message}`);
   }
 
@@ -513,7 +513,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
       generatedAt: new Date().toISOString(),
     };
   } catch (error) {
-    console.error("Erro ao buscar métricas de produção:", error);
+    log.error("Erro ao buscar métricas de produção", { error });
     throw new Error(`Erro ao buscar métricas de produção: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
   }
 }
@@ -594,8 +594,8 @@ export async function updateProductionStage(
  * @returns Item atualizado
  */
 export async function assignProduction(
-  id: string, 
-  userId: string, 
+  id: string,
+  userId: string,
   reason?: string
 ): Promise<ProductionQueueItem> {
   // Get current assignment info for logging
@@ -651,7 +651,7 @@ export async function assignProduction(
       assigned_at: new Date().toISOString(),
     });
   } catch (logError) {
-    console.error("Erro ao registrar log de atribuição:", logError);
+    log.error("Erro ao registrar log de atribuição", { logError });
     // Don't fail the assignment if logging fails
   }
 
@@ -660,11 +660,11 @@ export async function assignProduction(
     // Import notification service dynamically to avoid circular dependencies
     const { ProductionNotificationService } = await import("@/services/notifications/production-notification-service");
     const notificationService = new ProductionNotificationService();
-    
+
     // Send assignment notification
     await notificationService.sendAssignmentNotification(id, userId, isReassignment);
   } catch (notifError) {
-    console.error("Erro ao enviar notificação de atribuição:", notifError);
+    log.error("Erro ao enviar notificação de atribuição", { notifError });
     // Don't fail the assignment if notification fails
   }
 
@@ -730,7 +730,7 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
   // 4. Recalculate estimated completion date
   try {
     const newEstimatedDate = await calculateEstimatedCompletion(id);
-    
+
     // Update the estimated completion date in production_queue
     await supabase
       .from("production_queue")
@@ -739,7 +739,7 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
       })
       .eq("id", id);
   } catch (calcError) {
-    console.error("Erro ao recalcular data estimada:", calcError);
+    log.error("Erro ao recalcular data estimada", { calcError });
     // Don't throw - blocking should still succeed even if date calculation fails
   }
 
@@ -749,7 +749,7 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
     const notificationService = new ProductionNotificationService();
     await notificationService.sendDelayNotification(id, reason);
   } catch (notifError) {
-    console.error("Erro ao enviar notificação de atraso:", notifError);
+    log.error("Erro ao enviar notificação de atraso", { notifError });
     // Don't throw - blocking should still succeed even if notification fails
   }
 

@@ -15,7 +15,9 @@ export async function compressImage(file: File): Promise<File> {
   try {
     const compressed = await imageCompression(file, options);
     return new File([compressed], file.name, { type: file.type });
-  } catch {
-    return file;
+  } catch (error) {
+    throw new Error(
+      `Image compression failed: ${error instanceof Error ? error.message : "unknown error"}`
+    );
   }
 }

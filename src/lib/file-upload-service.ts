@@ -14,9 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { PaymentFile, FileValidationResult } from "@/types/manual-payment";
 import { getNotificationService } from "./notification-service";
 import { compressImage } from "./image-compression";
-import { removeExifData, validateImage } from "./image-processor";
-import { malwareScanner, MalwareScannerError } from "./malware-scanner";
-import { logInfo, logError, logWarn } from "./logger";
+import { malwareScanner } from "./malware-scanner";
+import { logError, logInfo, logWarn } from "./logger";
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -30,6 +29,8 @@ const RATE_LIMIT_MAX_UPLOADS = 10;
 const THUMBNAIL_MAX_WIDTH = 300;
 const THUMBNAIL_MAX_HEIGHT = 300;
 const THUMBNAIL_QUALITY = 0.8;
+const FAIL_CLOSED_UPLOAD_SECURITY =
+  import.meta.env.PROD || import.meta.env.VITE_UPLOAD_SECURITY_FAIL_CLOSED === "true";
 
 // Rate limiting storage (in-memory, per session)
 const uploadTimestamps = new Map<string, number[]>();
@@ -308,39 +309,39 @@ export class FileUploadService {
         throw error; // Re-throw malware detection errors
       }
 
-      // Log scan failure but don't block upload (fail-open for availability)
-      logError('Malware scan failed, allowing upload', error, 'file-upload');
-      
-      // In production, you might want to fail-closed instead:
-      // throw new FileUploadError('SCAN_FAILED', 'Security scan failed. Please try again.', 500);
+      logError('Malware scan failed', error, 'file-upload');
+
+      if (FAIL_CLOSED_UPLOAD_SECURITY) {
+        throw new FileUploadError(
+          'SCAN_FAILED',
+          'Security scan failed. Please try again later.',
+          503
+        );
+      }
     }
 
     // Compress image before upload (Requirement 18.6, 18.7)
     let fileToUpload = file;
     if (file.type.startsWith("image/")) {
       try {
-        // Convert File to Buffer for processing
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        // Browser re-encoding strips metadata such as GPS EXIF before storage.
+        fileToUpload = await compressImage(file);
 
-        // Remove EXIF data for privacy (strips GPS, camera info, etc)
-        const cleanBuffer = await removeExifData(buffer);
-
-        // Compress the cleaned image
-        const compressedBlob = await compressImage(
-          new File([cleanBuffer], file.name, { type: file.type })
-        );
-
-        fileToUpload = compressedBlob;
-        
         logInfo('Image processed successfully', {
           originalSize: `${(file.size / 1024).toFixed(2)}KB`,
           newSize: `${(fileToUpload.size / 1024).toFixed(2)}KB`,
           reduction: `${((1 - fileToUpload.size / file.size) * 100).toFixed(1)}%`
         }, 'file-upload');
       } catch (error) {
-        logWarn('Image processing failed, uploading original', error, 'file-upload');
-        // Continue with original file if processing fails
+        logWarn('Image processing failed', error, 'file-upload');
+
+        if (FAIL_CLOSED_UPLOAD_SECURITY) {
+          throw new FileUploadError(
+            'IMAGE_PROCESSING_FAILED',
+            'Image could not be sanitized. Please try another file.',
+            400
+          );
+        }
       }
     }
 

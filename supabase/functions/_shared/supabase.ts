@@ -48,15 +48,12 @@ export function getServiceClient() {
 }
 
 export async function assertAdmin(req: Request) {
-  console.log("assertAdmin: Starting admin check");
   const { claims } = await getClaims(req);
   const userId = String(claims.sub);
-  console.log("assertAdmin: User ID:", userId);
 
   // Use service client to bypass RLS when checking user_roles
   const service = getServiceClient();
 
-  console.log("assertAdmin: Checking user_roles for user:", userId);
   const { data: roles, error } = await service
     .from("user_roles")
     .select("role")
@@ -64,22 +61,19 @@ export async function assertAdmin(req: Request) {
     .eq("role", "admin")
     .maybeSingle();
 
-  console.log("assertAdmin: Query result - roles:", roles, "error:", error);
-
   if (error) throw new Error(`Role check failed: ${error.message}`);
   if (!roles) {
     logPermissionDenied(req, new URL(req.url).pathname, userId, "admin role required");
     throw new Error("Forbidden: admin only");
   }
 
-  console.log("assertAdmin: User is admin, proceeding");
   return { userId };
 }
 
 /**
  * Verifies that the authenticated user owns a specific resource.
  * Prevents Insecure Direct Object Reference (IDOR) attacks.
- * 
+ *
  * @param service - Supabase service client
  * @param table - Table name to check
  * @param resourceId - ID of the resource

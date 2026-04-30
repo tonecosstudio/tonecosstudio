@@ -1,6 +1,6 @@
 /**
  * Metal Slug-style Character Select Screen
- * 
+ *
  * Arcade aesthetic with military typography, CRT scanlines,
  * neon accents and pixel-art inspired UI elements.
  */
@@ -94,6 +94,8 @@ function CharacterSlot({
             src={character.image_url}
             alt={character.name}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full bg-[hsl(var(--muted))] flex items-center justify-center">
@@ -280,6 +282,8 @@ function CollectionSection({ collection }: { collection: Collection }) {
                       src={selected.image_url}
                       alt={selected.name}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

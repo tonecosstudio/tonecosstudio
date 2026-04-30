@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { corsHeaders, getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 
 serve(async (req) => {
@@ -9,6 +9,15 @@ serve(async (req) => {
   try {
     const { claims } = await getClaims(req);
     const userId = String(claims.sub);
+    const bootstrapSecret = Deno.env.get("BOOTSTRAP_ADMIN_SECRET");
+    const providedSecret = req.headers.get("x-bootstrap-admin-secret");
+
+    if (!bootstrapSecret || providedSecret !== bootstrapSecret) {
+      return new Response(JSON.stringify({ ok: false, error: "Bootstrap is disabled" }), {
+        status: 403,
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
 
     const service = getServiceClient();
     const { count, error: cErr } = await service.from("user_roles").select("id", { count: "exact", head: true });

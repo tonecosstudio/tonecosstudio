@@ -1,9 +1,11 @@
 /**
  * Utilitário de Sanitização de Inputs
- * 
- * Fornece funções para sanitizar inputs de usuário, prevenindo
- * ataques de SQL injection e XSS.
- * 
+ *
+ * Fornece funções para sanitizar inputs de usuário, prevenindo XSS.
+ *
+ * IMPORTANTE: SQL Injection é prevenido pelo Supabase RLS (Row Level Security)
+ * e pelo uso de queries parametrizadas. Este módulo foca apenas em XSS.
+ *
  * @module lib/sanitizer
  */
 
@@ -12,18 +14,6 @@ import DOMPurify from 'dompurify';
 // ============================================================================
 // Constantes
 // ============================================================================
-
-/**
- * Padrões de SQL injection comuns que devem ser removidos
- */
-const SQL_INJECTION_PATTERNS = [
-  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|DECLARE|TABLE|FROM|WHERE|INTO)\b)/gi,
-  /(--|\/\*|\*\/|;|'|"|\bOR\b|\bAND\b)/gi,
-  /(\bxp_|\bsp_)/gi,
-  /(\b1=1\b|\b1='1'\b|\b'=')/gi,
-  /(\bSLEEP\(|\bBENCHMARK\()/gi,
-  /(javascript:)/gi,
-];
 
 /**
  * Comprimento máximo permitido para inputs de busca
@@ -35,22 +25,24 @@ const MAX_SEARCH_LENGTH = 100;
 // ============================================================================
 
 /**
- * Sanitiza input de busca removendo padrões perigosos
- * 
+ * Sanitiza input de busca removendo tags HTML/scripts
+ *
  * Esta função:
- * 1. Remove tags HTML/script usando DOMPurify
- * 2. Remove padrões de SQL injection
- * 3. Remove espaços em branco extras
- * 4. Limita o comprimento a um máximo razoável
- * 
+ * 1. Remove tags HTML/script usando DOMPurify (proteção XSS)
+ * 2. Remove espaços em branco extras
+ * 3. Limita o comprimento a um máximo razoável
+ *
+ * NOTA: SQL Injection é prevenido pelo Supabase RLS e queries parametrizadas.
+ * Não é necessário filtrar palavras SQL como SELECT, DROP, etc.
+ *
  * @param input - String de entrada a ser sanitizada
  * @returns String sanitizada e segura
- * 
+ *
  * @example
  * ```ts
- * const userInput = "<script>alert('xss')</script>João'; DROP TABLE users--";
+ * const userInput = "<script>alert('xss')</script>João Silva";
  * const safe = sanitizeSearchInput(userInput);
- * // Resultado: "João"
+ * // Resultado: "João Silva"
  * ```
  */
 export function sanitizeSearchInput(input: string): string {
@@ -58,44 +50,22 @@ export function sanitizeSearchInput(input: string): string {
     return '';
   }
 
-  // 1. Remover tags HTML e scripts usando DOMPurify
+  // 1. Remover tags HTML e scripts usando DOMPurify (proteção XSS)
   let sanitized = DOMPurify.sanitize(input, {
     ALLOWED_TAGS: [], // Não permitir nenhuma tag HTML
     ALLOWED_ATTR: [], // Não permitir nenhum atributo
     KEEP_CONTENT: true, // Manter o conteúdo de texto
   });
 
-  // 2. Remover padrões de SQL injection
-  sanitized = removeSQLInjectionPatterns(sanitized);
-
-  // 3. Remover espaços em branco extras
+  // 2. Remover espaços em branco extras
   sanitized = sanitized.trim().replace(/\s+/g, ' ');
 
-  // 4. Limitar comprimento
+  // 3. Limitar comprimento
   if (sanitized.length > MAX_SEARCH_LENGTH) {
     sanitized = sanitized.substring(0, MAX_SEARCH_LENGTH);
   }
 
   return sanitized;
-}
-
-/**
- * Remove padrões comuns de SQL injection de uma string
- * 
- * @param input - String a ser limpa
- * @returns String sem padrões de SQL injection
- * 
- * @internal
- */
-function removeSQLInjectionPatterns(input: string): string {
-  let cleaned = input;
-
-  // Aplicar cada padrão de SQL injection
-  for (const pattern of SQL_INJECTION_PATTERNS) {
-    cleaned = cleaned.replace(pattern, '');
-  }
-
-  return cleaned;
 }
 
 // ============================================================================
@@ -104,17 +74,17 @@ function removeSQLInjectionPatterns(input: string): string {
 
 /**
  * Valida se um input de busca é seguro após sanitização
- * 
+ *
  * @param input - String original
  * @param sanitized - String sanitizada
  * @returns Objeto com resultado da validação
- * 
+ *
  * @example
  * ```ts
  * const input = "João Silva";
  * const sanitized = sanitizeSearchInput(input);
  * const validation = validateSanitizedInput(input, sanitized);
- * 
+ *
  * if (!validation.safe) {
  *   console.warn(validation.reason);
  * }
@@ -156,10 +126,10 @@ export function validateSanitizedInput(
 
 /**
  * Sanitiza múltiplos inputs de uma vez
- * 
+ *
  * @param inputs - Array de strings a serem sanitizadas
  * @returns Array de strings sanitizadas
- * 
+ *
  * @example
  * ```ts
  * const inputs = ['João', '<script>alert(1)</script>', 'Maria'];
@@ -173,12 +143,12 @@ export function sanitizeMultipleInputs(inputs: string[]): string[] {
 
 /**
  * Escapa caracteres especiais para uso em regex
- * 
+ *
  * Útil quando o input sanitizado será usado em uma expressão regular
- * 
+ *
  * @param input - String a ser escapada
  * @returns String com caracteres especiais escapados
- * 
+ *
  * @example
  * ```ts
  * const input = "user@example.com";
@@ -192,10 +162,10 @@ export function escapeRegexCharacters(input: string): string {
 
 /**
  * Sanitiza input e prepara para uso em busca case-insensitive
- * 
+ *
  * @param input - String de busca
  * @returns String sanitizada e normalizada
- * 
+ *
  * @example
  * ```ts
  * const query = sanitizeForSearch("  João  Silva  ");
@@ -222,12 +192,6 @@ export interface SanitizeOptions {
   maxLength?: number;
 
   /**
-   * Se deve remover padrões de SQL injection
-   * @default true
-   */
-  removeSQLPatterns?: boolean;
-
-  /**
    * Se deve remover tags HTML
    * @default true
    */
@@ -242,16 +206,15 @@ export interface SanitizeOptions {
 
 /**
  * Sanitiza input com opções customizadas
- * 
+ *
  * @param input - String a ser sanitizada
  * @param options - Opções de sanitização
  * @returns String sanitizada
- * 
+ *
  * @example
  * ```ts
  * const sanitized = sanitizeWithOptions(input, {
  *   maxLength: 50,
- *   removeSQLPatterns: true,
  *   removeHTML: true
  * });
  * ```
@@ -262,7 +225,6 @@ export function sanitizeWithOptions(
 ): string {
   const {
     maxLength = MAX_SEARCH_LENGTH,
-    removeSQLPatterns = true,
     removeHTML = true,
     normalizeWhitespace = true,
   } = options;
@@ -280,11 +242,6 @@ export function sanitizeWithOptions(
       ALLOWED_ATTR: [],
       KEEP_CONTENT: true,
     });
-  }
-
-  // Remover padrões SQL se solicitado
-  if (removeSQLPatterns) {
-    sanitized = removeSQLInjectionPatterns(sanitized);
   }
 
   // Normalizar espaços em branco se solicitado

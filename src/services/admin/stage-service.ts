@@ -4,8 +4,8 @@
  * Este serviço gerencia o histórico de estágios, conclusão de estágios,
  * upload de fotos e cálculo de datas estimadas de conclusão.
  */
-// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
+import log from "@/lib/logger";
 
 // ============================================================================
 // Tipos
@@ -130,7 +130,7 @@ export async function completeStage(
   if (!isOverride) {
     const { validateStageTransition } = await import("./stage-validation");
     const validation = await validateStageTransition(currentStage.production_queue_id, stageId);
-    
+
     if (!validation.isValid) {
       throw new Error(validation.error || "Stage transition validation failed");
     }
@@ -217,7 +217,7 @@ export async function completeStage(
     }
   } catch (logError) {
     // Log error but don't fail the operation
-    console.error("Failed to log stage transition:", logError);
+    log.error("Failed to log stage transition", { logError });
   }
 
   return transformStageRecord(updatedStage);

@@ -7,7 +7,6 @@ import { ShippingService, Address } from '../shipping-service';
 
 // Mock environment variables
 vi.stubEnv('VITE_SHIPPING_CARRIER', 'correios');
-vi.stubEnv('VITE_SHIPPING_API_KEY', 'test-api-key');
 vi.stubEnv('VITE_SHIPPING_SERVICE_CODE', '04014');
 
 // Mock Supabase
@@ -280,27 +279,27 @@ describe('ShippingService', () => {
   describe('Mock Implementation Indicators', () => {
     it('should log mock implementation warnings', async () => {
       const consoleSpy = vi.spyOn(console, 'log');
-      
+
       await shippingService.generateLabel('test-delivery-id', validAddress);
-      
+
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('[MOCK]'),
         expect.anything()
       );
-      
+
       consoleSpy.mockRestore();
     });
 
     it('should generate mock tracking codes in Correios format', async () => {
       const result = await shippingService.generateLabel('test-delivery-id', validAddress);
-      
+
       // Correios format: BR + 9 digits + BR
       expect(result.trackingCode).toMatch(/^BR\d{9}BR$/);
     });
 
     it('should generate mock label URLs', async () => {
       const result = await shippingService.generateLabel('test-delivery-id', validAddress);
-      
+
       expect(result.labelUrl).toContain('mock');
       expect(result.labelUrl).toContain(result.trackingCode);
       expect(result.labelUrl).toContain('.pdf');

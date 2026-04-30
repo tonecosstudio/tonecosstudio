@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
  * CharacterChoicesContent - Gerenciamento de Escolhas de Personagens
- * 
+ *
  * Componente extraído de CharacterChoiceManagerPage para ser usado
  * como uma aba dentro do ProductionHub
  */
@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { ChoiceApprovalModal } from "@/components/admin/ChoiceApprovalModal";
+import { ChoiceApprovalModal } from "@/components/admin/collections/ChoiceApprovalModal";
 import { Search, Filter, X, Clock, User, Package, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import type { ChoiceStatus } from "@/services/admin/production-service";
 import { formatDistanceToNow } from "date-fns";

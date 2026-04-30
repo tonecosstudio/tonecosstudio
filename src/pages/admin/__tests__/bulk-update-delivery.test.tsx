@@ -1,6 +1,6 @@
 /**
  * Tests for bulk delivery status update functionality
- * 
+ *
  * Requirements: 15.9
  * Task: 21.7
  */
@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BulkUpdateModal } from '@/components/admin/BulkUpdateModal';
+import { BulkUpdateModal } from '@/components/admin/operations/BulkUpdateModal';
 
 // Mock supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -51,7 +51,7 @@ describe('Bulk Update Delivery Status', () => {
 
   it('should display selected delivery count', () => {
     const selectedIds = ['id1', 'id2', 'id3'];
-    
+
     renderWithProviders(
       <BulkUpdateModal
         open={true}
@@ -65,7 +65,7 @@ describe('Bulk Update Delivery Status', () => {
 
   it('should render status selection dropdown', () => {
     const selectedIds = ['id1', 'id2'];
-    
+
     renderWithProviders(
       <BulkUpdateModal
         open={true}
@@ -80,7 +80,7 @@ describe('Bulk Update Delivery Status', () => {
 
   it('should render notes textarea', () => {
     const selectedIds = ['id1'];
-    
+
     renderWithProviders(
       <BulkUpdateModal
         open={true}
@@ -94,7 +94,7 @@ describe('Bulk Update Delivery Status', () => {
 
   it('should have update button disabled when no status selected', () => {
     const selectedIds = ['id1'];
-    
+
     renderWithProviders(
       <BulkUpdateModal
         open={true}
@@ -109,7 +109,7 @@ describe('Bulk Update Delivery Status', () => {
 
   it('should render cancel button', () => {
     const selectedIds = ['id1'];
-    
+
     renderWithProviders(
       <BulkUpdateModal
         open={true}

@@ -1,6 +1,6 @@
 /**
  * Metal Slug-style Collections Gallery
- * 
+ *
  * Arcade aesthetic with military typography, CRT scanlines,
  * neon accents and pixel-art inspired UI elements.
  */
@@ -89,10 +89,12 @@ function CollectionCard({ collection, index }: { collection: Collection; index: 
               src={collection.image_url}
               alt={collection.name}
               className={`w-full h-full object-cover transition-all duration-500 ${
-                isHovered 
-                  ? "scale-110 grayscale-0" 
+                isHovered
+                  ? "scale-110 grayscale-0"
                   : "scale-100 grayscale"
               }`}
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--muted))] to-[hsl(var(--muted)/0.5)]">
@@ -277,10 +279,12 @@ function CatalogCharacterCard({ character, index }: { character: CatalogCharacte
               src={character.image_url}
               alt={character.name}
               className={`w-full h-full object-cover transition-all duration-500 ${
-                isHovered 
-                  ? "scale-110 grayscale-0" 
+                isHovered
+                  ? "scale-110 grayscale-0"
                   : "scale-100 grayscale"
               }`}
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--muted))] to-[hsl(var(--muted)/0.5)]">
@@ -323,7 +327,7 @@ function CatalogCharacterCard({ character, index }: { character: CatalogCharacte
                 {character.price_coins}
               </div>
             )}
-            
+
             {/* Standalone price */}
             {character.price_standalone && (
               <div className="bg-[hsl(var(--foreground)/0.9)] text-[hsl(var(--background))] px-2 py-1 text-xs font-mono font-bold rounded-sm">

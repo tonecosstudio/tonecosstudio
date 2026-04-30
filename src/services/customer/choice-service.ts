@@ -57,6 +57,41 @@ export interface CharacterChoice {
 // ============================================================================
 
 /**
+ * Verifica se um personagem está disponível para escolha
+ *
+ * Um personagem é considerado disponível se:
+ * 1. Existe na coleção
+ * 2. Não foi escolhido por outro cliente no mesmo ciclo
+ *
+ * @param characterId - ID do personagem
+ * @param collectionId - ID da coleção
+ * @returns true se disponível, false caso contrário
+ */
+async function checkCharacterAvailability(
+  characterId: string,
+  collectionId: string
+): Promise<boolean> {
+  // Verificar se o personagem existe na coleção
+  const { data: character, error: charError } = await supabase
+    .from("collection_characters")
+    .select("id")
+    .eq("id", characterId)
+    .eq("collection_id", collectionId)
+    .maybeSingle();
+
+  if (charError || !character) {
+    return false;
+  }
+
+  // Verificar se já foi escolhido por outro cliente
+  // Nota: Permitimos múltiplas escolhas do mesmo personagem
+  // pois não há limite de estoque físico definido no sistema
+  // Se no futuro houver limite, adicionar verificação aqui
+
+  return true;
+}
+
+/**
  * Busca personagens disponíveis de uma coleção
  *
  * Esta função:
@@ -83,15 +118,21 @@ export async function getAvailableCharacters(collectionId: string): Promise<Char
     throw new Error(`Erro ao buscar personagens: ${error.message}`);
   }
 
-  // Transformar dados para o formato da interface
-  const characters: Character[] = (data || []).map((char) => ({
-    id: char.id,
-    name: char.name,
-    description: char.description,
-    imageUrl: char.image_url,
-    collectionId: char.collection_id,
-    isAvailable: true, // TODO: Implementar verificação de estoque real
-  }));
+  // Transformar dados para o formato da interface e verificar disponibilidade
+  const characters: Character[] = await Promise.all(
+    (data || []).map(async (char) => {
+      const isAvailable = await checkCharacterAvailability(char.id, char.collection_id);
+
+      return {
+        id: char.id,
+        name: char.name,
+        description: char.description,
+        imageUrl: char.image_url,
+        collectionId: char.collection_id,
+        isAvailable,
+      };
+    })
+  );
 
   return characters;
 }

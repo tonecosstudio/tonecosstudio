@@ -3,16 +3,24 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { nowInBahia, addDays, toUTC } from "../_shared/timezone.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
-import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import {
+  checkContentLength,
+  PAYLOAD_LIMITS,
+} from "../_shared/payload-guard.ts";
 import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 type PlanType = "trimestral" | "semestral" | "anual";
 
 const CREATE_SUB_SCHEMA: Schema = {
-  collectionIds: { type: "array", required: true, maxItems: 20, itemType: "uuid" },
-  planType:      { type: "string", required: true, maxLength: 20 },
+  collectionIds: {
+    type: "array",
+    required: true,
+    maxItems: 20,
+    itemType: "uuid",
+  },
+  planType: { type: "string", required: true, maxLength: 20 },
   paymentMethod: { type: "string", required: true, maxLength: 20 },
-  paymentId:     { type: "string", maxLength: 100 },
+  paymentId: { type: "string", maxLength: 100 },
 };
 
 interface CreateSubscriptionRequest {
@@ -22,7 +30,10 @@ interface CreateSubscriptionRequest {
   paymentId?: string;
 }
 
-function getRequiredCollections(planType: PlanType, totalCollections: number): number {
+function getRequiredCollections(
+  planType: PlanType,
+  totalCollections: number,
+): number {
   switch (planType) {
     case "trimestral":
       return 2;
@@ -70,7 +81,7 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    const { claims, client } = await getClaims(req);
+    const { claims } = await getClaims(req);
     const userId = String(claims.sub);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -80,7 +91,12 @@ serve(async (req) => {
     }
 
     // Rate limit: purchase operations
-    const rateLimited = await checkRateLimit(req, "create-subscription", RATE_LIMITS.PURCHASE, userId);
+    const rateLimited = await checkRateLimit(
+      req,
+      "create-subscription",
+      RATE_LIMITS.PURCHASE,
+      userId,
+    );
     if (rateLimited) return rateLimited;
 
     // Payload size guard (standard: 64 KB)
@@ -98,16 +114,26 @@ serve(async (req) => {
     // Validate planType enum
     if (!["trimestral", "semestral", "anual"].includes(planType)) {
       return new Response(
-        JSON.stringify({ error: "planType inválido. Use: trimestral, semestral ou anual" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: "planType inválido. Use: trimestral, semestral ou anual",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     // Validate paymentMethod enum
     if (!["pix", "credit_card", "boleto"].includes(paymentMethod)) {
       return new Response(
-        JSON.stringify({ error: "paymentMethod inválido. Use: pix, credit_card ou boleto" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: "paymentMethod inválido. Use: pix, credit_card ou boleto",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -118,11 +144,14 @@ serve(async (req) => {
       .eq("is_active", true);
 
     // Validar número de coleções por plano
-    const requiredCollections = getRequiredCollections(planType, totalCollections || 0);
+    const requiredCollections = getRequiredCollections(
+      planType,
+      totalCollections || 0,
+    );
     if (collectionIds.length !== requiredCollections) {
       return new Response(
-        JSON.stringify({ 
-          error: `Plano ${planType} requer exatamente ${requiredCollections} ${requiredCollections === 1 ? 'coleção' : 'coleções'}` 
+        JSON.stringify({
+          error: `Plano ${planType} requer exatamente ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`,
         }),
         {
           status: 400,
@@ -158,7 +187,9 @@ serve(async (req) => {
     if (allCollectionsError) throw allCollectionsError;
     if (!allCollections || allCollections.length !== collectionIds.length) {
       return new Response(
-        JSON.stringify({ error: "Uma ou mais coleções não foram encontradas ou estão inativas" }),
+        JSON.stringify({
+          error: "Uma ou mais coleções não foram encontradas ou estão inativas",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -211,7 +242,7 @@ serve(async (req) => {
     if (subscriptionError) throw subscriptionError;
 
     // Criar registros em subscription_collections para cada coleção
-    const subscriptionCollections = collectionIds.map(collectionId => ({
+    const subscriptionCollections = collectionIds.map((collectionId) => ({
       subscription_id: subscription.id,
       collection_id: collectionId,
     }));
@@ -254,9 +285,10 @@ serve(async (req) => {
       character_id: char.id,
       delivery_order: index + 1,
       status: "scheduled" as const,
-      reveal_date: index === 0
-        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Primeira revelação em 30 dias
-        : null,
+      reveal_date:
+        index === 0
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Primeira revelação em 30 dias
+          : null,
     }));
 
     const { error: deliveriesError } = await service
@@ -289,7 +321,8 @@ serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error creating subscription:", msg);
-    const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
+    const status =
+      msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
     return new Response(JSON.stringify({ error: msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

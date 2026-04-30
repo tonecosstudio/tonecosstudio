@@ -1,9 +1,9 @@
 /**
  * Cron Job: Character Revelation
- * 
+ *
  * Runs daily at 10:00 Bahia Time to reveal characters for collections
  * whose revelation date has been reached.
- * 
+ *
  * Requirements:
  * - 12.1: Store character revelation date and character details
  * - 12.2: Execute cron job daily at 10:00 Bahia Time
@@ -12,8 +12,13 @@
  */
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { logCronStart, logCronSuccess, logCronError } from "../_shared/cron-logger.ts";
+import {
+  logCronStart,
+  logCronSuccess,
+  logCronError,
+} from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
+import { requireSharedSecret } from "../_shared/secrets.ts";
 
 interface Collection {
   id: string;
@@ -40,27 +45,27 @@ async function sendRevelationEmail(params: {
   characterName: string | null;
   characterImageUrl: string | null;
 }): Promise<void> {
-  const emailProvider = Deno.env.get('EMAIL_PROVIDER') || 'resend';
-  const emailApiKey = Deno.env.get('EMAIL_API_KEY');
-  const emailFrom = Deno.env.get('EMAIL_FROM') || 'noreply@ordax.com.br';
-  const emailFromName = Deno.env.get('EMAIL_FROM_NAME') || 'ORDAX';
+  const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
+  const emailApiKey = Deno.env.get("EMAIL_API_KEY");
+  const emailFrom = Deno.env.get("EMAIL_FROM") || "noreply@ordax.com.br";
+  const emailFromName = Deno.env.get("EMAIL_FROM_NAME") || "ORDAX";
 
   if (!emailApiKey) {
-    console.warn('EMAIL_API_KEY not configured, skipping revelation email');
+    console.warn("EMAIL_API_KEY not configured, skipping revelation email");
     return;
   }
 
   const subject = `🎉 Revelação de Personagem: ${params.collectionName}`;
   const htmlContent = generateRevelationEmailHTML({
-    subscriberName: params.subscriberName || 'Colecionador',
+    subscriberName: params.subscriberName || "Colecionador",
     collectionName: params.collectionName,
-    characterName: params.characterName || 'Personagem Misterioso',
+    characterName: params.characterName || "Personagem Misterioso",
     characterImageUrl: params.characterImageUrl,
   });
 
   try {
     await sendEmail({
-      provider: emailProvider as 'resend' | 'sendgrid',
+      provider: emailProvider as "resend" | "sendgrid",
       apiKey: emailApiKey,
       from: emailFrom,
       fromName: emailFromName,
@@ -88,14 +93,14 @@ function generateRevelationEmailHTML(params: {
   const characterImageSection = params.characterImageUrl
     ? `
       <div style="text-align: center; margin: 32px 0;">
-        <img 
-          src="${params.characterImageUrl}" 
+        <img
+          src="${params.characterImageUrl}"
           alt="${params.characterName}"
           style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
         />
       </div>
     `
-    : '';
+    : "";
 
   return `
 <!DOCTYPE html>
@@ -197,33 +202,33 @@ function generateRevelationEmailHTML(params: {
     </div>
     <div class="content">
       <p class="greeting">Olá, ${params.subscriberName}!</p>
-      
+
       <p>
-        O momento que você esperava chegou! O personagem da coleção 
+        O momento que você esperava chegou! O personagem da coleção
         <strong>${params.collectionName}</strong> foi revelado:
       </p>
-      
+
       <div class="reveal-box">
         <h2>Apresentamos:</h2>
         <div class="character-name">${params.characterName}</div>
       </div>
-      
+
       ${characterImageSection}
-      
+
       <p style="margin-top: 24px;">
-        Sua peça exclusiva está sendo preparada com todo o cuidado e atenção aos detalhes 
-        que você merece. Em breve, você receberá atualizações sobre o status de produção 
+        Sua peça exclusiva está sendo preparada com todo o cuidado e atenção aos detalhes
+        que você merece. Em breve, você receberá atualizações sobre o status de produção
         e envio.
       </p>
-      
+
       <div style="text-align: center;">
-        <a href="${Deno.env.get('FRONTEND_URL') || 'https://ordax.com.br'}/minhas-assinaturas" class="cta-button">
+        <a href="${Deno.env.get("FRONTEND_URL") || "https://ordax.com.br"}/minhas-assinaturas" class="cta-button">
           Ver Minhas Entregas
         </a>
       </div>
-      
+
       <p style="margin-top: 32px; font-size: 14px; color: #64748b;">
-        Obrigado por fazer parte da comunidade ORDAX! Estamos animados para você receber 
+        Obrigado por fazer parte da comunidade ORDAX! Estamos animados para você receber
         esta peça incrível.
       </p>
     </div>
@@ -241,7 +246,7 @@ function generateRevelationEmailHTML(params: {
  * Sends an email using the configured email provider
  */
 async function sendEmail(params: {
-  provider: 'resend' | 'sendgrid';
+  provider: "resend" | "sendgrid";
   apiKey: string;
   from: string;
   fromName: string;
@@ -249,12 +254,12 @@ async function sendEmail(params: {
   subject: string;
   html: string;
 }): Promise<void> {
-  if (params.provider === 'resend') {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
+  if (params.provider === "resend") {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${params.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         from: `${params.fromName} <${params.from}>`,
@@ -269,25 +274,29 @@ async function sendEmail(params: {
       throw new Error(`Resend API error: ${error}`);
     }
   } else {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${params.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        personalizations: [{
-          to: [{ email: params.to }],
-        }],
+        personalizations: [
+          {
+            to: [{ email: params.to }],
+          },
+        ],
         from: {
           email: params.from,
           name: params.fromName,
         },
         subject: params.subject,
-        content: [{
-          type: 'text/html',
-          value: params.html,
-        }],
+        content: [
+          {
+            type: "text/html",
+            value: params.html,
+          },
+        ],
       }),
     });
 
@@ -302,40 +311,48 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    // Start logging
-    logId = await logCronStart('cron-reveal-characters');
+    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    if (forbidden) return forbidden;
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Start logging
+    logId = await logCronStart("cron-reveal-characters");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase environment variables not configured');
+      throw new Error("Supabase environment variables not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();
-    const currentDate = bahiaTime.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const currentDate = bahiaTime.toISOString().split("T")[0]; // YYYY-MM-DD format
 
     console.log(`Cron job running at ${bahiaTime.toISOString()} (Bahia time)`);
     console.log(`Checking for revelations on or before: ${currentDate}`);
 
     // Query collections where character_revelation_date <= today AND revealed = false
-    const { data: collectionsToReveal, error: collectionsError } = await supabase
-      .from('collections')
-      .select('id, name, character_revelation_date, character_name, character_image_url')
-      .eq('revealed', false)
-      .not('character_revelation_date', 'is', null)
-      .lte('character_revelation_date', bahiaTime.toISOString());
+    const { data: collectionsToReveal, error: collectionsError } =
+      await supabase
+        .from("collections")
+        .select(
+          "id, name, character_revelation_date, character_name, character_image_url",
+        )
+        .eq("revealed", false)
+        .not("character_revelation_date", "is", null)
+        .lte("character_revelation_date", bahiaTime.toISOString());
 
     if (collectionsError) {
-      throw new Error(`Failed to fetch collections: ${collectionsError.message}`);
+      throw new Error(
+        `Failed to fetch collections: ${collectionsError.message}`,
+      );
     }
 
     if (!collectionsToReveal || collectionsToReveal.length === 0) {
-      console.log('No collections to reveal');
-      
+      console.log("No collections to reveal");
+
       await logCronSuccess(logId, {
         collectionsRevealed: 0,
         subscribersNotified: 0,
@@ -347,9 +364,9 @@ Deno.serve(async (req) => {
           success: true,
           collectionsRevealed: 0,
           subscribersNotified: 0,
-          message: 'No collections to reveal',
+          message: "No collections to reveal",
         }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -362,16 +379,20 @@ Deno.serve(async (req) => {
     // Process each collection
     for (const collection of collectionsToReveal as Collection[]) {
       try {
-        console.log(`Processing collection: ${collection.name} (${collection.id})`);
+        console.log(
+          `Processing collection: ${collection.name} (${collection.id})`,
+        );
 
         // Update collection to revealed = true
         const { error: updateError } = await supabase
-          .from('collections')
+          .from("collections")
           .update({ revealed: true })
-          .eq('id', collection.id);
+          .eq("id", collection.id);
 
         if (updateError) {
-          throw new Error(`Failed to update collection: ${updateError.message}`);
+          throw new Error(
+            `Failed to update collection: ${updateError.message}`,
+          );
         }
 
         console.log(`Collection ${collection.name} marked as revealed`);
@@ -380,12 +401,14 @@ Deno.serve(async (req) => {
         // Find all subscribers who chose this collection
         // First, get all deliveries with this collection
         const { data: deliveries, error: deliveriesError } = await supabase
-          .from('subscription_deliveries')
-          .select('id, subscription_id, collection_id')
-          .eq('collection_id', collection.id);
+          .from("subscription_deliveries")
+          .select("id, subscription_id, collection_id")
+          .eq("collection_id", collection.id);
 
         if (deliveriesError) {
-          throw new Error(`Failed to fetch deliveries: ${deliveriesError.message}`);
+          throw new Error(
+            `Failed to fetch deliveries: ${deliveriesError.message}`,
+          );
         }
 
         if (!deliveries || deliveries.length === 0) {
@@ -394,45 +417,54 @@ Deno.serve(async (req) => {
         }
 
         // Get unique subscription IDs
-        const subscriptionIds = [...new Set(deliveries.map(d => d.subscription_id))];
+        const subscriptionIds = [
+          ...new Set(deliveries.map((d) => d.subscription_id)),
+        ];
 
         // Get user IDs from subscriptions
-        const { data: subscriptions, error: subscriptionsError } = await supabase
-          .from('subscriptions')
-          .select('id, user_id')
-          .in('id', subscriptionIds);
+        const { data: subscriptions, error: subscriptionsError } =
+          await supabase
+            .from("subscriptions")
+            .select("id, user_id")
+            .in("id", subscriptionIds);
 
         if (subscriptionsError) {
-          throw new Error(`Failed to fetch subscriptions: ${subscriptionsError.message}`);
+          throw new Error(
+            `Failed to fetch subscriptions: ${subscriptionsError.message}`,
+          );
         }
 
         if (!subscriptions || subscriptions.length === 0) {
-          console.log(`No subscriptions found for collection ${collection.name}`);
+          console.log(
+            `No subscriptions found for collection ${collection.name}`,
+          );
           continue;
         }
 
         // Get unique user IDs
-        const userIds = [...new Set(subscriptions.map(s => s.user_id))];
+        const userIds = [...new Set(subscriptions.map((s) => s.user_id))];
 
         // Get user profiles with email
         const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, email, full_name')
-          .in('id', userIds)
-          .not('email', 'is', null);
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", userIds)
+          .not("email", "is", null);
 
         if (profilesError) {
           throw new Error(`Failed to fetch profiles: ${profilesError.message}`);
         }
 
         if (!profiles || profiles.length === 0) {
-          console.log(`No profiles with email found for collection ${collection.name}`);
+          console.log(
+            `No profiles with email found for collection ${collection.name}`,
+          );
           continue;
         }
 
         // Create unique subscribers map
         const uniqueSubscribers = new Map<string, Subscriber>();
-        
+
         for (const profile of profiles) {
           uniqueSubscribers.set(profile.id, {
             user_id: profile.id,
@@ -442,7 +474,9 @@ Deno.serve(async (req) => {
           });
         }
 
-        console.log(`Found ${uniqueSubscribers.size} unique subscriber(s) for collection ${collection.name}`);
+        console.log(
+          `Found ${uniqueSubscribers.size} unique subscriber(s) for collection ${collection.name}`,
+        );
 
         // Send revelation email to each subscriber
         for (const subscriber of uniqueSubscribers.values()) {
@@ -457,16 +491,22 @@ Deno.serve(async (req) => {
 
             subscribersNotified++;
           } catch (emailError) {
-            console.error(`Failed to send email to ${subscriber.email}:`, emailError);
+            console.error(
+              `Failed to send email to ${subscriber.email}:`,
+              emailError,
+            );
             // Continue sending to other subscribers
           }
         }
 
-        console.log(`Sent ${uniqueSubscribers.size} revelation email(s) for collection ${collection.name}`);
+        console.log(
+          `Sent ${uniqueSubscribers.size} revelation email(s) for collection ${collection.name}`,
+        );
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.error(`Error processing collection ${collection.id}:`, error);
-        
+
         errors.push({
           collectionId: collection.id,
           error: errorMessage,
@@ -483,7 +523,9 @@ Deno.serve(async (req) => {
       currentDate,
     });
 
-    console.log(`Cron job completed: ${collectionsRevealed} collection(s) revealed, ${subscribersNotified} subscriber(s) notified`);
+    console.log(
+      `Cron job completed: ${collectionsRevealed} collection(s) revealed, ${subscribersNotified} subscriber(s) notified`,
+    );
     if (errors.length > 0) {
       console.warn(`${errors.length} collection(s) failed to process`);
     }
@@ -496,17 +538,20 @@ Deno.serve(async (req) => {
         errors: errors.length > 0 ? errors : undefined,
         currentDate,
       }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error('Cron job failed:', error);
+    console.error("Cron job failed:", error);
 
     // Log error if we have a log ID
     if (logId) {
       try {
-        await logCronError(logId, error instanceof Error ? error : new Error(String(error)));
+        await logCronError(
+          logId,
+          error instanceof Error ? error : new Error(String(error)),
+        );
       } catch (logError) {
-        console.error('Failed to log error:', logError);
+        console.error("Failed to log error:", logError);
       }
     }
 
@@ -515,10 +560,10 @@ Deno.serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       }),
-      { 
+      {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { "Content-Type": "application/json" },
+      },
     );
   }
 });

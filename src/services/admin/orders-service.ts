@@ -3,12 +3,13 @@
  *
  * Este serviço consolida a busca e manipulação de entregas de assinatura
  * e compras avulsas em uma única interface unificada.
- * 
+ *
  * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
  * Todas as funções têm tipos de retorno explícitos e parâmetros tipados.
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import log from "@/lib/logger";
 import type {
   UnifiedOrder,
   OrderFilters,
@@ -36,7 +37,9 @@ import type {
  *
  * **Segurança**: O campo `filters.searchQuery` deve ser sanitizado antes de
  * chamar esta função. A sanitização é feita no componente OrderSearchBar
- * usando a função `sanitizeSearchInput()` de `@/lib/sanitizer`.
+ * usando a função `sanitizeSearchInput()` de `@/lib/sanitizer`, que remove
+ * tags HTML/scripts (proteção XSS). SQL Injection é prevenido pelo Supabase
+ * RLS e queries parametrizadas.
  *
  * @param filters - Filtros a serem aplicados (searchQuery deve estar sanitizado)
  * @param pagination - Parâmetros de paginação
@@ -192,7 +195,7 @@ export async function fetchUnifiedOrders(
       }
     } catch (error) {
       // Fallback to client-side search if full-text search fails
-      console.warn("Full-text search failed, falling back to client-side search:", error);
+      log.warn("Full-text search failed, falling back to client-side search", { error });
       const query = filters.searchQuery.toLowerCase().trim();
       filteredOrders = unifiedOrders.filter(
         (order) =>
@@ -337,10 +340,9 @@ async function fetchStandalonePurchases(filters: OrderFilters) {
   }
 
   const result = await query;
-  
+
   if (result.error) {
-    console.error('❌ Error fetching standalone purchases (orders-service):', result.error);
-    console.error('Error details:', JSON.stringify(result.error, null, 2));
+    log.error('Error fetching standalone purchases (orders-service)', { error: result.error });
   }
 
   return result;
@@ -594,7 +596,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     .order("created_at", { ascending: false });
 
   if (deliveriesError) {
-    console.error("Error fetching user deliveries:", deliveriesError);
+    log.error("Error fetching user deliveries", { error: deliveriesError });
   }
 
   // Buscar compras avulsas do usuário
@@ -633,7 +635,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     .order("created_at", { ascending: false });
 
   if (purchasesError) {
-    console.error("Error fetching user purchases:", purchasesError);
+    log.error("Error fetching user purchases", { error: purchasesError });
   }
 
   // Enrich purchases with profile
@@ -674,9 +676,9 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     .order("created_at", { ascending: false });
 
   if (paymentsError) {
-    console.error("Error fetching user payments:", paymentsError);
+    log.error("Error fetching user payments", { error: paymentsError });
   }
-  
+
   // Fetch profile for manual payments
   if (paymentsData && paymentsData.length > 0) {
     const { data: userProfile } = await supabase
@@ -684,7 +686,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       .select("id, full_name, email")
       .eq("id", userId)
       .single();
-    
+
     if (userProfile) {
       paymentsData.forEach((payment: any) => {
         payment.profiles = userProfile;
@@ -715,7 +717,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     .order("created_at", { ascending: false });
 
   if (quotesError) {
-    console.error("Error fetching user quotes:", quotesError);
+    log.error('Error fetching user quotes', { quotesError });
   }
 
   // Buscar profiles e collections para entregas de assinatura
@@ -840,7 +842,7 @@ export async function fetchOrderStatusHistory(
   };
 
   if (error) {
-    console.error("Error fetching order status history:", error);
+    log.error('Error fetching order status history', { error });
     throw new Error(`Erro ao buscar histórico de status: ${error.message}`);
   }
 
@@ -975,7 +977,7 @@ export async function bulkUpdateStatus(
           created_at: new Date().toISOString(),
         });
       } catch (historyError) {
-        console.warn("Falha ao registrar histórico de status:", historyError);
+        log.warn('Failed to register status history', { historyError });
         // Não falhar a operação se o histórico não puder ser registrado
       }
     } catch (error) {
@@ -1031,7 +1033,7 @@ async function searchOrdersWithFullText(
   })) as { data: Array<{ order_id: string; order_type: string; rank: number }> | null; error: any };
 
   if (error) {
-    console.error("Error in full-text search:", error);
+    log.error('Error in full-text search', { error });
     throw error;
   }
 
@@ -1095,19 +1097,19 @@ async function fetchManualPayments(filters: OrderFilters) {
   }
 
   const result = await query;
-  
+
   // Fetch related data separately
   if (result.data && result.data.length > 0) {
     const userIds = [...new Set(result.data.map((p: any) => p.user_id))];
     const subscriptionIds = result.data.filter((p: any) => p.subscription_id).map((p: any) => p.subscription_id);
     const quoteIds = result.data.filter((p: any) => p.quote_id).map((p: any) => p.quote_id);
-    
+
     // Fetch profiles
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, full_name, email")
       .in("id", userIds);
-    
+
     // Fetch subscriptions with plans
     let subscriptions: any[] = [];
     if (subscriptionIds.length > 0) {
@@ -1115,7 +1117,7 @@ async function fetchManualPayments(filters: OrderFilters) {
         .from("subscriptions")
         .select("id, status, plan_type, created_at, updated_at")
         .in("id", subscriptionIds);
-      
+
       if (subsData && subsData.length > 0) {
         // Fetch subscription plans separately
         const planTypes = [...new Set(subsData.map((s: any) => s.plan_type))];
@@ -1123,9 +1125,9 @@ async function fetchManualPayments(filters: OrderFilters) {
           .from("subscription_plans")
           .select("id, name, plan_type, price_full, price_pix")
           .in("plan_type", planTypes);
-        
+
         const plansMap = new Map(plansData?.map((p: any) => [p.plan_type, p]) || []);
-        
+
         // Merge plans into subscriptions and map to expected format
         subscriptions = subsData.map((sub: any) => {
           const plan = plansMap.get(sub.plan_type);
@@ -1144,7 +1146,7 @@ async function fetchManualPayments(filters: OrderFilters) {
         });
       }
     }
-    
+
     // Fetch quotes
     let quotes: any[] = [];
     if (quoteIds.length > 0) {
@@ -1154,12 +1156,12 @@ async function fetchManualPayments(filters: OrderFilters) {
         .in("id", quoteIds);
       quotes = quotesData || [];
     }
-    
+
     // Create maps for easy lookup
     const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
     const subscriptionsMap = new Map(subscriptions.map((s: any) => [s.id, s]));
     const quotesMap = new Map(quotes.map((q: any) => [q.id, q]));
-    
+
     // Merge data
     result.data = result.data.map((payment: any) => ({
       ...payment,
@@ -1168,7 +1170,7 @@ async function fetchManualPayments(filters: OrderFilters) {
       quotes: payment.quote_id ? quotesMap.get(payment.quote_id) || null : null,
     }));
   }
-  
+
   return result;
 }
 
@@ -1324,7 +1326,7 @@ export async function requestManualPaymentInfo(paymentId: string, message: strin
   });
 
   if (notificationError) {
-    console.error("Erro ao criar notificação:", notificationError);
+    log.error('Error creating notification', { notificationError });
     // Não falhar a operação se a notificação não puder ser criada
     // A solicitação já foi registrada com sucesso
   }
@@ -1339,7 +1341,7 @@ export async function requestManualPaymentInfo(paymentId: string, message: strin
     .eq("id", paymentId);
 
   if (updateError) {
-    console.error("Erro ao atualizar status do pagamento:", updateError);
+    log.error('Error updating payment status', { updateError });
     // Não falhar a operação - a solicitação e notificação já foram criadas
   }
 }
@@ -1413,7 +1415,7 @@ export async function approveManualPayment(paymentId: string): Promise<void> {
   });
 
   if (notificationError) {
-    console.error("Erro ao criar notificação:", notificationError);
+    log.error('Error creating approval notification', { notificationError });
     // Não falhar a operação - o pagamento já foi aprovado
   }
 }
@@ -1478,7 +1480,7 @@ export async function rejectManualPayment(paymentId: string, reason: string): Pr
   });
 
   if (notificationError) {
-    console.error("Erro ao criar notificação:", notificationError);
+    log.error('Error creating rejection notification', { notificationError });
     // Não falhar a operação - o pagamento já foi rejeitado
   }
 }

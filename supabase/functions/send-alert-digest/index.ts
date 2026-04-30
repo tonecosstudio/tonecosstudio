@@ -4,11 +4,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireSharedSecret } from "../_shared/secrets.ts";
 
 interface AlertDigestData {
   deadlineCritical: number;
@@ -20,28 +17,39 @@ interface AlertDigestData {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    if (forbidden) {
+      return new Response(forbidden.body, {
+        status: forbidden.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     // Get production metrics
     const { data: metricsData, error: metricsError } = await supabaseClient.rpc(
-      "get_production_metrics"
+      "get_production_metrics",
     );
 
     if (metricsError) {
       throw new Error(`Failed to fetch metrics: ${metricsError.message}`);
     }
 
-    const metrics = typeof metricsData === "string" ? JSON.parse(metricsData) : metricsData;
+    const metrics =
+      typeof metricsData === "string" ? JSON.parse(metricsData) : metricsData;
 
     const alertData: AlertDigestData = {
       deadlineCritical: metrics.urgent?.deadline_critical || 0,
@@ -59,17 +67,16 @@ serve(async (req) => {
       .eq("email_digest_enabled", true);
 
     if (subscribersError) {
-      throw new Error(`Failed to fetch subscribers: ${subscribersError.message}`);
+      throw new Error(
+        `Failed to fetch subscribers: ${subscribersError.message}`,
+      );
     }
 
     if (!subscribers || subscribers.length === 0) {
-      return new Response(
-        JSON.stringify({ message: "No subscribers found" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
+      return new Response(JSON.stringify({ message: "No subscribers found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     // Generate email content
@@ -81,8 +88,10 @@ serve(async (req) => {
       try {
         // In a real implementation, you would use a service like SendGrid, Resend, or AWS SES
         // For now, we'll just log the email
-        console.log(`Sending email to ${subscriber.email}:`, emailSubject);
-        
+        console.log(`Sending email to ${subscriber.email}:`, emailSubject, {
+          htmlBytes: emailBody.length,
+        });
+
         // TODO: Integrate with actual email service
         // Example with Resend:
         // const response = await fetch('https://api.resend.com/emails', {
@@ -98,11 +107,15 @@ serve(async (req) => {
         //     html: emailBody,
         //   }),
         // });
-        
+
         return { email: subscriber.email, success: true };
       } catch (error) {
         console.error(`Failed to send email to ${subscriber.email}:`, error);
-        return { email: subscriber.email, success: false, error: (error as Error).message };
+        return {
+          email: subscriber.email,
+          success: false,
+          error: (error as Error).message,
+        };
       }
     });
 
@@ -121,17 +134,15 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
   } catch (error) {
-    console.error("Error in send-alert-digest function:", error);
-    return new Response(
-      JSON.stringif(error as Ey({ error: (error as Error),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Error in send-alert-digest function:", message);
+    return new Response(JSON.stringify({ error: message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
 
@@ -229,13 +240,13 @@ function generateEmailBody(data: AlertDigestData): string {
   <div class="container">
     <h1>📊 Resumo Diário de Produção</h1>
     <p>Olá! Aqui está o resumo dos alertas e atividades de produção de hoje, ${new Date().toLocaleDateString("pt-BR")}.</p>
-    
+
     ${
       hasUrgentAlerts
         ? `
     <div class="alert-section">
       <h2 style="margin-top: 0; font-size: 18px;">⚠️ Alertas Urgentes</h2>
-      
+
       ${
         data.deadlineCritical > 0
           ? `
@@ -246,7 +257,7 @@ function generateEmailBody(data: AlertDigestData): string {
       `
           : ""
       }
-      
+
       ${
         data.deadlineUrgent > 0
           ? `
@@ -257,7 +268,7 @@ function generateEmailBody(data: AlertDigestData): string {
       `
           : ""
       }
-      
+
       ${
         data.blocked > 0
           ? `
@@ -268,7 +279,7 @@ function generateEmailBody(data: AlertDigestData): string {
       `
           : ""
       }
-      
+
       ${
         data.overdue > 0
           ? `
@@ -288,7 +299,7 @@ function generateEmailBody(data: AlertDigestData): string {
     </div>
     `
     }
-    
+
     <div class="stats-section">
       <h2 style="margin-top: 0; font-size: 18px;">📈 Estatísticas</h2>
       <div class="alert-item">
@@ -300,11 +311,11 @@ function generateEmailBody(data: AlertDigestData): string {
         <span class="alert-value">${data.scheduledToday}</span>
       </div>
     </div>
-    
+
     <a href="${Deno.env.get("SITE_URL") || "http://localhost:5173"}/admin/production" class="button">
       Ver Dashboard de Produção
     </a>
-    
+
     <div class="footer">
       <p>Você está recebendo este email porque está inscrito no resumo diário de alertas de produção.</p>
       <p>Para alterar suas preferências de notificação, acesse o Dashboard de Produção.</p>

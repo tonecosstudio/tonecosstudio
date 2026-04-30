@@ -1,6 +1,6 @@
 /**
  * Stripe Checkout Component
- * 
+ *
  * Componente profissional de checkout com Stripe:
  * - Formulário de pagamento seguro
  * - Validação de cartão
@@ -8,7 +8,7 @@
  * - Loading states
  * - Error handling
  * - Confirmação de pagamento
- * 
+ *
  * @example
  * ```tsx
  * <StripeCheckout
@@ -19,10 +19,10 @@
  * ```
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { stripePromise } from '@/lib/stripe/stripe-client';
-import { stripeService } from '@/lib/stripe/stripe-service';
+import { supabase } from '@/integrations/supabase/client';
 import { logInfo, logError } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -131,8 +131,10 @@ export function StripeCheckout(props: StripeCheckoutProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Criar Payment Intent ao montar o componente
-  useState(() => {
+  // Criar Payment Intent no servidor ao montar o componente.
+  useEffect(() => {
+    let isMounted = true;
+
     const createPaymentIntent = async () => {
       try {
         logInfo('Creating payment intent', {
@@ -140,16 +142,28 @@ export function StripeCheckout(props: StripeCheckoutProps) {
           currency: props.currency
         }, 'stripe-checkout');
 
-        const paymentIntent = await stripeService.createPaymentIntent({
-          amount: props.amount,
-          currency: props.currency || 'brl',
-          description: props.description,
-          metadata: props.metadata,
+        const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+          body: {
+            amount: props.amount,
+            currency: props.currency || 'brl',
+            description: props.description,
+            metadata: props.metadata,
+          },
         });
 
-        setClientSecret(paymentIntent.client_secret);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (!data?.clientSecret) {
+          throw new Error('Resposta de pagamento invalida');
+        }
+
+        if (!isMounted) return;
+        setClientSecret(data.clientSecret);
         setIsLoading(false);
       } catch (error: any) {
+        if (!isMounted) return;
         logError('Failed to create payment intent', error, 'stripe-checkout');
         setError(error.message || 'Erro ao inicializar pagamento');
         setIsLoading(false);
@@ -158,7 +172,10 @@ export function StripeCheckout(props: StripeCheckoutProps) {
     };
 
     createPaymentIntent();
-  });
+    return () => {
+      isMounted = false;
+    };
+  }, [props.amount, props.currency, props.description, props.metadata, props.onError]);
 
   if (isLoading) {
     return (

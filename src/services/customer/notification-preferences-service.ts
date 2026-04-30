@@ -1,10 +1,11 @@
 /**
  * Notification Preferences Service
- * 
+ *
  * Handles fetching and updating customer notification preferences.
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import log from '@/lib/logger';
 import type { NotificationPreferences } from '@/types/notification-preferences';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/types/notification-preferences';
 
@@ -13,7 +14,7 @@ import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/types/notification-preferenc
  */
 export async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('User not authenticated');
   }
@@ -25,7 +26,7 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
     .single();
 
   if (error) {
-    console.error('Failed to fetch notification preferences:', error);
+    log.error('Failed to fetch notification preferences', { error });
     throw error;
   }
 
@@ -40,7 +41,7 @@ export async function updateNotificationPreferences(
   preferences: Partial<NotificationPreferences>
 ): Promise<NotificationPreferences> {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('User not authenticated');
   }
@@ -63,7 +64,7 @@ export async function updateNotificationPreferences(
     .single();
 
   if (error) {
-    console.error('Failed to update notification preferences:', error);
+    log.error('Failed to update notification preferences', { error });
     throw error;
   }
 
@@ -85,7 +86,7 @@ export async function shouldSendNotification(
   });
 
   if (error) {
-    console.error('Failed to check notification preference:', error);
+    log.error('Failed to check notification preference', { error });
     // Default to true on error (send notification)
     return true;
   }

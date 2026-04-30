@@ -1,7 +1,6 @@
-// @ts-nocheck
 /**
  * Hook para buscar informações de produção de um pedido
- * 
+ *
  * Busca dados da production_queue e character_choices para exibir
  * status de produção e escolha de personagem.
  */

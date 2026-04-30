@@ -1,9 +1,9 @@
 /**
  * useOrderProgressRealtime Hook
- * 
+ *
  * Manages real-time updates for customer order progress view.
  * Subscribes to production_queue and character_choices changes via Supabase Realtime.
- * 
+ *
  * Features:
  * - Subscribe to production_queue changes for user's orders
  * - Subscribe to character_choices changes
@@ -11,11 +11,10 @@
  * - Show toast notifications for important events (stage changes, choice approvals)
  * - Handle connection errors and reconnection gracefully
  * - Clean up subscriptions on unmount
- * 
+ *
  * Requirements: 2.4.5 Progress Notifications
  * Task: 5.2.1 Implement Supabase Realtime subscription
  */
-// @ts-nocheck
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,7 +73,7 @@ const STAGE_NAMES: Record<ProductionStage, string> = {
 
 /**
  * Hook to manage real-time updates for customer order progress
- * 
+ *
  * @param options - Configuration options
  * @returns void - Updates are handled via query invalidation and toasts
  */
@@ -82,11 +81,11 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
   const { orderId, orderType, enabled = true, enableToast = true } = options;
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Track previous stage to detect changes
   const previousStageRef = useRef<ProductionStage | null>(null);
   const previousChoiceStatusRef = useRef<ChoiceStatus | null>(null);
-  
+
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
 
@@ -106,7 +105,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
     // ========================================================================
     // Production Queue Subscription
     // ========================================================================
-    
+
     const productionChannelName = `production-queue:${orderId}:${orderType}`;
     const productionChannel = supabase
       .channel(productionChannelName)
@@ -122,7 +121,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
           if (!isMountedRef.current) return;
 
           const newData = payload.new as ProductionQueueUpdate;
-          
+
           // Check if this update is for the correct order type
           if (newData.order_type !== orderType) {
             return;
@@ -131,14 +130,14 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
           console.log("[useOrderProgressRealtime] Production queue updated:", newData);
 
           // Invalidate queries to refresh UI
-          queryClient.invalidateQueries({ 
-            queryKey: ["customer-order-progress", orderId, orderType] 
+          queryClient.invalidateQueries({
+            queryKey: ["customer-order-progress", orderId, orderType]
           });
 
           // Show toast notification for stage changes
           if (enableToast && previousStageRef.current && previousStageRef.current !== newData.current_stage) {
             const stageName = STAGE_NAMES[newData.current_stage] || newData.current_stage;
-            
+
             toast({
               title: "Pedido Atualizado",
               description: `Seu pedido avançou para: ${stageName}`,
@@ -166,7 +165,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
           console.log("[useOrderProgressRealtime] Subscribed to production queue updates");
         } else if (status === "CHANNEL_ERROR") {
           console.error("[useOrderProgressRealtime] Channel error:", error);
-          
+
           if (enableToast) {
             toast({
               title: "Erro de Conexão",
@@ -185,7 +184,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
     // ========================================================================
     // Character Choices Subscription
     // ========================================================================
-    
+
     const choiceChannelName = `character-choices:${orderId}:${orderType}`;
     const choiceChannel = supabase
       .channel(choiceChannelName)
@@ -201,7 +200,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
           if (!isMountedRef.current) return;
 
           const newData = payload.new as CharacterChoiceUpdate;
-          
+
           // Check if this update is for the correct order type
           if (newData.order_type !== orderType) {
             return;
@@ -210,8 +209,8 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
           console.log("[useOrderProgressRealtime] Character choice updated:", newData);
 
           // Invalidate queries to refresh UI
-          queryClient.invalidateQueries({ 
-            queryKey: ["customer-order-progress", orderId, orderType] 
+          queryClient.invalidateQueries({
+            queryKey: ["customer-order-progress", orderId, orderType]
           });
 
           // Show toast notification for choice status changes
@@ -224,7 +223,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
                 duration: 8000,
               });
             }
-            
+
             // Choice rejected
             else if (newData.status === "rejected") {
               const reason = newData.rejection_reason || "Motivo não especificado";
@@ -235,7 +234,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
                 duration: 10000,
               });
             }
-            
+
             // Choice locked (production started)
             else if (newData.status === "locked") {
               toast({
@@ -262,7 +261,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
           if (!isMountedRef.current) return;
 
           const newData = payload.new as CharacterChoiceUpdate;
-          
+
           // Check if this insert is for the correct order type
           if (newData.order_type !== orderType) {
             return;
@@ -271,8 +270,8 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
           console.log("[useOrderProgressRealtime] Character choice created:", newData);
 
           // Invalidate queries to refresh UI
-          queryClient.invalidateQueries({ 
-            queryKey: ["customer-order-progress", orderId, orderType] 
+          queryClient.invalidateQueries({
+            queryKey: ["customer-order-progress", orderId, orderType]
           });
         }
       )
@@ -293,7 +292,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
     // ========================================================================
     // Cleanup
     // ========================================================================
-    
+
     return () => {
       console.log("[useOrderProgressRealtime] Cleaning up subscriptions");
       supabase.removeChannel(productionChannel);

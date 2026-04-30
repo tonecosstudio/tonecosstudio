@@ -6,31 +6,22 @@ import { nowInBahia, toUTC } from "../_shared/timezone.ts";
 
 /**
  * Edge Function: admin-verify-payment
- * 
+ *
  * Allows admins to approve or reject payment vouchers uploaded by customers.
  * When approved, the order status is updated to 'paid'.
  * When rejected, a notification is sent to the customer with the rejection reason.
  * All verification actions are logged with the admin user ID and timestamp for audit purposes.
- * 
+ *
  * Requirements: 25.7, 25.8, 33.6
  * Task: 25.5
  */
 
 interface VerifyPaymentRequest {
   orderId: string;
-  orderType: 'subscription' | 'standalone_purchase';
+  orderType: "subscription" | "standalone_purchase";
   approved: boolean;
   rejectionReason?: string;
   notes?: string;
-}
-
-interface AdminActionLog {
-  admin_user_id: string;
-  action_type: string;
-  previous_status: string;
-  new_status: string;
-  notes: string | null;
-  created_at: string;
 }
 
 /**
@@ -39,21 +30,25 @@ interface AdminActionLog {
 async function logVerificationAction(
   service: any,
   orderId: string,
-  orderType: 'subscription' | 'standalone_purchase',
+  orderType: "subscription" | "standalone_purchase",
   adminUserId: string,
   approved: boolean,
   previousStatus: string,
   newStatus: string,
-  notes: string | null
+  notes: string | null,
 ): Promise<void> {
-  const actionType = approved ? 
-    (orderType === 'subscription' ? 'approve_payment_voucher' : 'approve_deposit_voucher') :
-    (orderType === 'subscription' ? 'reject_payment_voucher' : 'reject_deposit_voucher');
+  const actionType = approved
+    ? orderType === "subscription"
+      ? "approve_payment_voucher"
+      : "approve_deposit_voucher"
+    : orderType === "subscription"
+      ? "reject_payment_voucher"
+      : "reject_deposit_voucher";
 
-  if (orderType === 'standalone_purchase') {
+  if (orderType === "standalone_purchase") {
     // Log to standalone_purchase_admin_log
     const { error } = await service
-      .from('standalone_purchase_admin_log')
+      .from("standalone_purchase_admin_log")
       .insert({
         purchase_id: orderId,
         admin_user_id: adminUserId,
@@ -65,7 +60,7 @@ async function logVerificationAction(
       });
 
     if (error) {
-      console.error('Error logging standalone purchase admin action:', error);
+      console.error("Error logging standalone purchase admin action:", error);
     }
   } else {
     // For subscriptions, we could create a similar log table or use a general admin_action_logs
@@ -87,19 +82,20 @@ async function logVerificationAction(
 async function notifyCustomer(
   service: any,
   orderId: string,
-  orderType: 'subscription' | 'standalone_purchase',
+  orderType: "subscription" | "standalone_purchase",
   approved: boolean,
-  rejectionReason?: string
+  rejectionReason?: string,
 ): Promise<void> {
   let customerEmail: string | null = null;
   let customerName: string | null = null;
   let orderDetails: string | null = null;
 
   // Fetch customer information based on order type
-  if (orderType === 'standalone_purchase') {
+  if (orderType === "standalone_purchase") {
     const { data: purchase, error } = await service
-      .from('standalone_purchases')
-      .select(`
+      .from("standalone_purchases")
+      .select(
+        `
         id,
         total_amount,
         collections (name),
@@ -107,12 +103,16 @@ async function notifyCustomer(
           email,
           full_name
         )
-      `)
-      .eq('id', orderId)
+      `,
+      )
+      .eq("id", orderId)
       .single();
 
     if (error || !purchase) {
-      console.error('Error fetching standalone purchase for notification:', error);
+      console.error(
+        "Error fetching standalone purchase for notification:",
+        error,
+      );
       return;
     }
 
@@ -121,8 +121,9 @@ async function notifyCustomer(
     orderDetails = `Compra avulsa - ${purchase.collections?.name} (R$ ${purchase.total_amount})`;
   } else {
     const { data: subscription, error } = await service
-      .from('subscriptions')
-      .select(`
+      .from("subscriptions")
+      .select(
+        `
         id,
         plan_type,
         total_paid,
@@ -130,12 +131,13 @@ async function notifyCustomer(
           email,
           full_name
         )
-      `)
-      .eq('id', orderId)
+      `,
+      )
+      .eq("id", orderId)
       .single();
 
     if (error || !subscription) {
-      console.error('Error fetching subscription for notification:', error);
+      console.error("Error fetching subscription for notification:", error);
       return;
     }
 
@@ -145,7 +147,7 @@ async function notifyCustomer(
   }
 
   if (!customerEmail) {
-    console.error('Customer email not found for notification');
+    console.error("Customer email not found for notification");
     return;
   }
 
@@ -154,11 +156,11 @@ async function notifyCustomer(
   let message: string;
 
   if (approved) {
-    subject = 'Pagamento Aprovado! ✅';
-    message = `Olá ${customerName || 'Cliente'},\n\nSeu pagamento foi aprovado com sucesso!\n\nDetalhes do pedido:\n${orderDetails}\n\nSeu pedido está sendo processado e você receberá atualizações em breve.\n\nObrigado por escolher a Ordax!`;
+    subject = "Pagamento Aprovado! ✅";
+    message = `Olá ${customerName || "Cliente"},\n\nSeu pagamento foi aprovado com sucesso!\n\nDetalhes do pedido:\n${orderDetails}\n\nSeu pedido está sendo processado e você receberá atualizações em breve.\n\nObrigado por escolher a Ordax!`;
   } else {
-    subject = 'Pagamento Rejeitado ❌';
-    message = `Olá ${customerName || 'Cliente'},\n\nInfelizmente, seu comprovante de pagamento foi rejeitado.\n\nDetalhes do pedido:\n${orderDetails}\n\nMotivo da rejeição:\n${rejectionReason || 'Comprovante inválido ou ilegível'}\n\nPor favor, faça o upload de um novo comprovante válido através do seu painel.\n\nSe tiver dúvidas, entre em contato com nosso suporte.`;
+    subject = "Pagamento Rejeitado ❌";
+    message = `Olá ${customerName || "Cliente"},\n\nInfelizmente, seu comprovante de pagamento foi rejeitado.\n\nDetalhes do pedido:\n${orderDetails}\n\nMotivo da rejeição:\n${rejectionReason || "Comprovante inválido ou ilegível"}\n\nPor favor, faça o upload de um novo comprovante válido através do seu painel.\n\nSe tiver dúvidas, entre em contato com nosso suporte.`;
   }
 
   // Log notification (actual email sending would be implemented via email service)
@@ -176,32 +178,34 @@ async function notifyCustomer(
 async function approvePayment(
   service: any,
   orderId: string,
-  orderType: 'subscription' | 'standalone_purchase',
+  orderType: "subscription" | "standalone_purchase",
   adminUserId: string,
-  notes?: string
+  notes?: string,
 ): Promise<any> {
-  if (orderType === 'standalone_purchase') {
+  if (orderType === "standalone_purchase") {
     // Fetch current purchase
     const { data: purchase, error: fetchError } = await service
-      .from('standalone_purchases')
-      .select('id, status')
-      .eq('id', orderId)
+      .from("standalone_purchases")
+      .select("id, status")
+      .eq("id", orderId)
       .single();
 
     if (fetchError || !purchase) {
-      throw new Error('Compra avulsa não encontrada');
+      throw new Error("Compra avulsa não encontrada");
     }
 
     const previousStatus = purchase.status;
     let newStatus: string;
 
     // Determine new status based on current status
-    if (previousStatus === 'deposit_paid') {
-      newStatus = 'awaiting_balance';
-    } else if (previousStatus === 'awaiting_balance') {
-      newStatus = 'balance_paid';
+    if (previousStatus === "deposit_paid") {
+      newStatus = "awaiting_balance";
+    } else if (previousStatus === "awaiting_balance") {
+      newStatus = "balance_paid";
     } else {
-      throw new Error(`Status inválido para aprovação de pagamento: ${previousStatus}`);
+      throw new Error(
+        `Status inválido para aprovação de pagamento: ${previousStatus}`,
+      );
     }
 
     // Update purchase status and clear rejection reason
@@ -211,17 +215,17 @@ async function approvePayment(
     };
 
     // Clear rejection reason on approval
-    if (previousStatus === 'deposit_paid') {
+    if (previousStatus === "deposit_paid") {
       updateData.deposit_rejection_reason = null;
-    } else if (previousStatus === 'awaiting_balance') {
+    } else if (previousStatus === "awaiting_balance") {
       updateData.balance_rejection_reason = null;
       updateData.balance_paid_at = toUTC(nowInBahia()).toISOString();
     }
 
     const { data: updatedPurchase, error: updateError } = await service
-      .from('standalone_purchases')
+      .from("standalone_purchases")
       .update(updateData)
-      .eq('id', orderId)
+      .eq("id", orderId)
       .select()
       .single();
 
@@ -238,7 +242,7 @@ async function approvePayment(
       true,
       previousStatus,
       newStatus,
-      notes || null
+      notes || null,
     );
 
     // Send notification to customer
@@ -248,27 +252,27 @@ async function approvePayment(
   } else {
     // Handle subscription payment approval
     const { data: subscription, error: fetchError } = await service
-      .from('subscriptions')
-      .select('id, status')
-      .eq('id', orderId)
+      .from("subscriptions")
+      .select("id, status")
+      .eq("id", orderId)
       .single();
 
     if (fetchError || !subscription) {
-      throw new Error('Assinatura não encontrada');
+      throw new Error("Assinatura não encontrada");
     }
 
     const previousStatus = subscription.status;
-    const newStatus = 'active';
+    const newStatus = "active";
 
     // Update subscription status to active and clear rejection reason
     const { data: updatedSubscription, error: updateError } = await service
-      .from('subscriptions')
+      .from("subscriptions")
       .update({
         status: newStatus,
         payment_rejection_reason: null,
         updated_at: toUTC(nowInBahia()).toISOString(),
       })
-      .eq('id', orderId)
+      .eq("id", orderId)
       .select()
       .single();
 
@@ -285,7 +289,7 @@ async function approvePayment(
       true,
       previousStatus,
       newStatus,
-      notes || null
+      notes || null,
     );
 
     // Send notification to customer
@@ -301,21 +305,21 @@ async function approvePayment(
 async function rejectPayment(
   service: any,
   orderId: string,
-  orderType: 'subscription' | 'standalone_purchase',
+  orderType: "subscription" | "standalone_purchase",
   adminUserId: string,
   rejectionReason: string,
-  notes?: string
+  notes?: string,
 ): Promise<any> {
-  if (orderType === 'standalone_purchase') {
+  if (orderType === "standalone_purchase") {
     // Fetch current purchase
     const { data: purchase, error: fetchError } = await service
-      .from('standalone_purchases')
-      .select('id, status')
-      .eq('id', orderId)
+      .from("standalone_purchases")
+      .select("id, status")
+      .eq("id", orderId)
       .single();
 
     if (fetchError || !purchase) {
-      throw new Error('Compra avulsa não encontrada');
+      throw new Error("Compra avulsa não encontrada");
     }
 
     const previousStatus = purchase.status;
@@ -327,18 +331,18 @@ async function rejectPayment(
       updated_at: toUTC(nowInBahia()).toISOString(),
     };
 
-    if (previousStatus === 'deposit_paid') {
+    if (previousStatus === "deposit_paid") {
       updateData.payment_voucher_deposit_url = null;
       updateData.deposit_rejection_reason = rejectionReason;
-    } else if (previousStatus === 'awaiting_balance') {
+    } else if (previousStatus === "awaiting_balance") {
       updateData.payment_voucher_balance_url = null;
       updateData.balance_rejection_reason = rejectionReason;
     }
 
     const { data: updatedPurchase, error: updateError } = await service
-      .from('standalone_purchases')
+      .from("standalone_purchases")
       .update(updateData)
-      .eq('id', orderId)
+      .eq("id", orderId)
       .select()
       .single();
 
@@ -355,7 +359,7 @@ async function rejectPayment(
       false,
       previousStatus,
       previousStatus, // Status doesn't change on rejection
-      `Rejeitado: ${rejectionReason}${notes ? ` | ${notes}` : ''}`
+      `Rejeitado: ${rejectionReason}${notes ? ` | ${notes}` : ""}`,
     );
 
     // Send notification to customer with rejection reason
@@ -365,26 +369,26 @@ async function rejectPayment(
   } else {
     // Handle subscription payment rejection
     const { data: subscription, error: fetchError } = await service
-      .from('subscriptions')
-      .select('id, status')
-      .eq('id', orderId)
+      .from("subscriptions")
+      .select("id, status")
+      .eq("id", orderId)
       .single();
 
     if (fetchError || !subscription) {
-      throw new Error('Assinatura não encontrada');
+      throw new Error("Assinatura não encontrada");
     }
 
     const previousStatus = subscription.status;
 
     // Clear payment voucher URL and store rejection reason to allow re-upload
     const { data: updatedSubscription, error: updateError } = await service
-      .from('subscriptions')
+      .from("subscriptions")
       .update({
         payment_voucher_url: null,
         payment_rejection_reason: rejectionReason,
         updated_at: toUTC(nowInBahia()).toISOString(),
       })
-      .eq('id', orderId)
+      .eq("id", orderId)
       .select()
       .single();
 
@@ -401,7 +405,7 @@ async function rejectPayment(
       false,
       previousStatus,
       previousStatus, // Status doesn't change on rejection
-      `Rejeitado: ${rejectionReason}${notes ? ` | ${notes}` : ''}`
+      `Rejeitado: ${rejectionReason}${notes ? ` | ${notes}` : ""}`,
     );
 
     // Send notification to customer with rejection reason
@@ -436,7 +440,7 @@ serve(async (req: Request) => {
       );
     }
 
-    if (typeof approved !== 'boolean') {
+    if (typeof approved !== "boolean") {
       return new Response(
         JSON.stringify({ error: "approved deve ser um valor booleano" }),
         {
@@ -447,10 +451,11 @@ serve(async (req: Request) => {
     }
 
     // Validate order type
-    if (!['subscription', 'standalone_purchase'].includes(orderType)) {
+    if (!["subscription", "standalone_purchase"].includes(orderType)) {
       return new Response(
-        JSON.stringify({ 
-          error: "orderType inválido. Use 'subscription' ou 'standalone_purchase'" 
+        JSON.stringify({
+          error:
+            "orderType inválido. Use 'subscription' ou 'standalone_purchase'",
         }),
         {
           status: 400,
@@ -463,8 +468,9 @@ serve(async (req: Request) => {
     if (!approved) {
       if (!rejectionReason) {
         return new Response(
-          JSON.stringify({ 
-            error: "rejectionReason é obrigatório quando o pagamento é rejeitado" 
+          JSON.stringify({
+            error:
+              "rejectionReason é obrigatório quando o pagamento é rejeitado",
           }),
           {
             status: 400,
@@ -477,8 +483,8 @@ serve(async (req: Request) => {
       const trimmedReason = rejectionReason.trim();
       if (trimmedReason.length === 0) {
         return new Response(
-          JSON.stringify({ 
-            error: "rejectionReason não pode estar vazio" 
+          JSON.stringify({
+            error: "rejectionReason não pode estar vazio",
           }),
           {
             status: 400,
@@ -489,8 +495,8 @@ serve(async (req: Request) => {
 
       if (trimmedReason.length > 500) {
         return new Response(
-          JSON.stringify({ 
-            error: "rejectionReason não pode exceder 500 caracteres" 
+          JSON.stringify({
+            error: "rejectionReason não pode exceder 500 caracteres",
           }),
           {
             status: 400,
@@ -502,8 +508,8 @@ serve(async (req: Request) => {
       // Basic XSS prevention - reject if contains HTML tags
       if (/<[^>]*>/g.test(trimmedReason)) {
         return new Response(
-          JSON.stringify({ 
-            error: "rejectionReason não pode conter tags HTML" 
+          JSON.stringify({
+            error: "rejectionReason não pode conter tags HTML",
           }),
           {
             status: 400,
@@ -518,8 +524,8 @@ serve(async (req: Request) => {
       const trimmedNotes = notes.trim();
       if (trimmedNotes.length > 1000) {
         return new Response(
-          JSON.stringify({ 
-            error: "notes não pode exceder 1000 caracteres" 
+          JSON.stringify({
+            error: "notes não pode exceder 1000 caracteres",
           }),
           {
             status: 400,
@@ -531,8 +537,8 @@ serve(async (req: Request) => {
       // Basic XSS prevention
       if (/<[^>]*>/g.test(trimmedNotes)) {
         return new Response(
-          JSON.stringify({ 
-            error: "notes não pode conter tags HTML" 
+          JSON.stringify({
+            error: "notes não pode conter tags HTML",
           }),
           {
             status: 400,
@@ -545,24 +551,30 @@ serve(async (req: Request) => {
     // Process verification
     let result;
     if (approved) {
-      result = await approvePayment(service, orderId, orderType, adminUserId, notes);
+      result = await approvePayment(
+        service,
+        orderId,
+        orderType,
+        adminUserId,
+        notes,
+      );
     } else {
       result = await rejectPayment(
-        service, 
-        orderId, 
-        orderType, 
-        adminUserId, 
-        rejectionReason!, 
-        notes
+        service,
+        orderId,
+        orderType,
+        adminUserId,
+        rejectionReason!,
+        notes,
       );
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: approved 
-          ? 'Pagamento aprovado com sucesso' 
-          : 'Pagamento rejeitado. Cliente notificado.',
+        message: approved
+          ? "Pagamento aprovado com sucesso"
+          : "Pagamento rejeitado. Cliente notificado.",
         order: result,
       }),
       {

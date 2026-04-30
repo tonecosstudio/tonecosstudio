@@ -1,21 +1,21 @@
 /**
  * Image Processing Service
- * 
+ *
  * Provides image processing capabilities including:
  * - EXIF metadata removal (privacy protection)
  * - Image optimization (compression, resizing)
  * - Format conversion
  * - Validation
- * 
+ *
  * Uses Sharp library for high-performance image processing.
- * 
+ *
  * @example
  * ```typescript
  * import { removeExifData, processImage } from '@/lib/image-processor';
- * 
+ *
  * // Remove EXIF data from image
  * const cleanImage = await removeExifData(imageBuffer);
- * 
+ *
  * // Process and optimize image
  * const optimized = await processImage(imageBuffer, {
  *   maxWidth: 1920,
@@ -24,8 +24,7 @@
  * ```
  */
 
-import sharp from 'sharp';
-import { logInfo, logError, logWarn } from './logger';
+import log from './logger';
 
 /**
  * Image processing options
@@ -78,19 +77,21 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
  */
 const ALLOWED_FORMATS = ['jpeg', 'jpg', 'png', 'webp', 'avif', 'gif'];
 
+const SHARP_MODULE = 'sharp';
+
 /**
  * Remove EXIF metadata from image
- * 
+ *
  * EXIF data can contain sensitive information:
  * - GPS coordinates (location where photo was taken)
  * - Camera make and model
  * - Date and time
  * - Software used
  * - Copyright information
- * 
+ *
  * @param imageBuffer - Image buffer
  * @returns Image buffer without EXIF data
- * 
+ *
  * @example
  * ```typescript
  * const imageFile = await fetch('/image.jpg').then(r => r.arrayBuffer());
@@ -99,7 +100,8 @@ const ALLOWED_FORMATS = ['jpeg', 'jpg', 'png', 'webp', 'avif', 'gif'];
  */
 export async function removeExifData(imageBuffer: Buffer): Promise<Buffer> {
   try {
-    logInfo('Removing EXIF data from image', { size: imageBuffer.length }, 'image-processor');
+    const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
+    log.info('Removing EXIF data from image');
 
     // Process image and strip all metadata
     const processed = await sharp(imageBuffer)
@@ -113,24 +115,22 @@ export async function removeExifData(imageBuffer: Buffer): Promise<Buffer> {
       })
       .toBuffer();
 
-    logInfo('EXIF data removed successfully', 
-      { originalSize: imageBuffer.length, newSize: processed.length }, 
-      'image-processor');
+    log.info('EXIF data removed successfully');
 
     return processed;
   } catch (error) {
-    logError('Failed to remove EXIF data', error, 'image-processor');
+    log.error('Failed to remove EXIF data', { error });
     throw new Error(`Failed to remove EXIF data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
  * Process and optimize image
- * 
+ *
  * @param imageBuffer - Image buffer
  * @param options - Processing options
  * @returns Processed image buffer
- * 
+ *
  * @example
  * ```typescript
  * const optimized = await processImage(imageBuffer, {
@@ -146,12 +146,10 @@ export async function processImage(
   options: ImageProcessingOptions = {}
 ): Promise<Buffer> {
   try {
+    const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
     const opts = { ...DEFAULT_OPTIONS, ...options };
 
-    logInfo('Processing image', { 
-      size: imageBuffer.length, 
-      options: opts 
-    }, 'image-processor');
+    log.info('Processing image');
 
     // Validate file size
     if (imageBuffer.length > MAX_FILE_SIZE) {
@@ -223,26 +221,21 @@ export async function processImage(
     // Process image
     const processed = await pipeline.toBuffer();
 
-    logInfo('Image processed successfully', {
-      originalSize: imageBuffer.length,
-      newSize: processed.length,
-      reduction: `${((1 - processed.length / imageBuffer.length) * 100).toFixed(1)}%`,
-      format: opts.format,
-    }, 'image-processor');
+    log.info('Image processed successfully');
 
     return processed;
   } catch (error) {
-    logError('Failed to process image', error, 'image-processor');
+    log.error('Failed to process image', { error });
     throw new Error(`Failed to process image: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
  * Get safe image metadata (without sensitive EXIF data)
- * 
+ *
  * @param imageBuffer - Image buffer
  * @returns Safe metadata
- * 
+ *
  * @example
  * ```typescript
  * const metadata = await getSafeMetadata(imageBuffer);
@@ -251,6 +244,7 @@ export async function processImage(
  */
 export async function getSafeMetadata(imageBuffer: Buffer): Promise<SafeImageMetadata> {
   try {
+    const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
     const metadata = await sharp(imageBuffer).metadata();
 
     return {
@@ -261,17 +255,17 @@ export async function getSafeMetadata(imageBuffer: Buffer): Promise<SafeImageMet
       hasAlpha: metadata.hasAlpha || false,
     };
   } catch (error) {
-    logError('Failed to get image metadata', error, 'image-processor');
+    log.error('Failed to get image metadata', { error });
     throw new Error(`Failed to get metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
  * Validate image file
- * 
+ *
  * @param imageBuffer - Image buffer
  * @returns Validation result
- * 
+ *
  * @example
  * ```typescript
  * const validation = await validateImage(imageBuffer);
@@ -336,11 +330,11 @@ export async function validateImage(imageBuffer: Buffer): Promise<{
 
 /**
  * Create thumbnail from image
- * 
+ *
  * @param imageBuffer - Image buffer
  * @param size - Thumbnail size (width and height)
  * @returns Thumbnail buffer
- * 
+ *
  * @example
  * ```typescript
  * const thumbnail = await createThumbnail(imageBuffer, 200);
@@ -351,7 +345,8 @@ export async function createThumbnail(
   size: number = 200
 ): Promise<Buffer> {
   try {
-    logInfo('Creating thumbnail', { size }, 'image-processor');
+    const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
+    log.info('Creating thumbnail');
 
     const thumbnail = await sharp(imageBuffer)
       .rotate()
@@ -371,14 +366,11 @@ export async function createThumbnail(
       })
       .toBuffer();
 
-    logInfo('Thumbnail created', {
-      originalSize: imageBuffer.length,
-      thumbnailSize: thumbnail.length,
-    }, 'image-processor');
+    log.info('Thumbnail created');
 
     return thumbnail;
   } catch (error) {
-    logError('Failed to create thumbnail', error, 'image-processor');
+    log.error('Failed to create thumbnail', { error });
     throw new Error(`Failed to create thumbnail: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -386,11 +378,11 @@ export async function createThumbnail(
 /**
  * Convert image to WebP format
  * WebP provides better compression than JPEG/PNG
- * 
+ *
  * @param imageBuffer - Image buffer
  * @param quality - Quality (1-100)
  * @returns WebP image buffer
- * 
+ *
  * @example
  * ```typescript
  * const webp = await convertToWebP(imageBuffer, 85);
@@ -409,11 +401,11 @@ export async function convertToWebP(
 
 /**
  * Batch process multiple images
- * 
+ *
  * @param images - Array of image buffers
  * @param options - Processing options
  * @returns Array of processed images
- * 
+ *
  * @example
  * ```typescript
  * const processed = await batchProcessImages(imageBuffers, {
@@ -426,7 +418,7 @@ export async function batchProcessImages(
   images: Buffer[],
   options: ImageProcessingOptions = {}
 ): Promise<Buffer[]> {
-  logInfo('Batch processing images', { count: images.length }, 'image-processor');
+  log.info('Batch processing images');
 
   const results = await Promise.allSettled(
     images.map(img => processImage(img, options))
@@ -440,19 +432,15 @@ export async function batchProcessImages(
       processed.push(result.value);
     } else {
       errors.push(`Image ${index}: ${result.reason}`);
-      logWarn(`Failed to process image ${index}`, result.reason, 'image-processor');
+      log.warn(`Failed to process image ${index}`);
     }
   });
 
   if (errors.length > 0) {
-    logWarn('Some images failed to process', { errors }, 'image-processor');
+    log.warn('Some images failed to process', { errors });
   }
 
-  logInfo('Batch processing completed', {
-    total: images.length,
-    successful: processed.length,
-    failed: errors.length,
-  }, 'image-processor');
+  log.info('Batch processing completed');
 
   return processed;
 }

@@ -194,6 +194,7 @@ export default function ModelDetails() {
                       alt={model.name}
                       className="h-full w-full object-contain p-4"
                       loading="eager"
+                      fetchpriority="high"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[hsl(var(--background))]">

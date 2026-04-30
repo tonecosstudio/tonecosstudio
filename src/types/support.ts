@@ -2,6 +2,9 @@
 // Types for Advanced Chat Support System
 // =====================================================
 
+// Import unified types from admin/orders
+import type { OrderStatus as UnifiedOrderStatus } from '@/types/admin/orders';
+
 // Enums
 export type ConversationStatus =
   | "new"
@@ -19,7 +22,11 @@ export type ConversationTag =
   | "urgente";
 export type RiskFlag = "cliente_conflito" | "atraso_critico" | "pagamento_problema";
 export type SenderType = "admin" | "customer" | "system";
+
+// DEPRECATED: Use UnifiedOrderStatus from @/types/admin/orders instead
+// This is kept for backward compatibility but will be removed
 export type OrderStatus = "aguardando_pagamento" | "em_producao" | "enviado" | "entregue";
+
 export type ProductionStage =
   | "molde_pronto"
   | "impressao_iniciada"
@@ -123,7 +130,7 @@ export interface ConversationReminder {
 
 export interface OrderStatusTemplate {
   id: string;
-  status: OrderStatus;
+  status: string; // Generic status string for templates
   message_template: string;
   is_active: boolean;
   created_at: string;
@@ -131,12 +138,14 @@ export interface OrderStatusTemplate {
 }
 
 // Integration Types
+// NOTE: This Order interface is for the support system context
+// For unified order management, use UnifiedOrder from @/types/admin/orders
 export interface Order {
   id: string;
   reference_number: string;
   user_id: string;
   amount: number;
-  status: string;
+  status: string; // Generic status string
   payment_type: string;
   created_at: string;
   tracking_code?: string;

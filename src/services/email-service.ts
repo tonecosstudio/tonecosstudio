@@ -1,32 +1,18 @@
 /**
  * Email Service
- * 
+ *
  * Provides email sending functionality with retry logic and error handling.
- * Supports multiple email providers (SendGrid, AWS SES, SMTP).
- * 
+ * Sends through the Supabase Edge Function `send-email`.
+ *
  * Environment Variables Required:
- * - VITE_EMAIL_PROVIDER: 'sendgrid' | 'ses' | 'smtp' (default: 'smtp')
  * - VITE_EMAIL_FROM: Sender email address
  * - VITE_EMAIL_FROM_NAME: Sender name
- * 
- * For SendGrid:
- * - VITE_SENDGRID_API_KEY: SendGrid API key
- * 
- * For AWS SES:
- * - VITE_AWS_SES_REGION: AWS region (e.g., 'us-east-1')
- * - VITE_AWS_SES_ACCESS_KEY_ID: AWS access key
- * - VITE_AWS_SES_SECRET_ACCESS_KEY: AWS secret key
- * 
- * For SMTP:
- * - VITE_SMTP_HOST: SMTP server host
- * - VITE_SMTP_PORT: SMTP server port
- * - VITE_SMTP_USER: SMTP username
- * - VITE_SMTP_PASSWORD: SMTP password
- * - VITE_SMTP_SECURE: Use TLS (true/false)
+ *
+ * Provider credentials must stay server-side in Supabase function secrets.
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { logInfo, logError, logDebug, logWarn } from '@/lib/logger';
+import { logDebug, logError, logInfo, logWarn } from '@/lib/logger';
 import { notificationPreferencesService, EmailType } from './notification-preferences-service';
 
 interface EmailOptions {
@@ -38,7 +24,7 @@ interface EmailOptions {
 }
 
 interface EmailConfig {
-  provider: 'sendgrid' | 'ses' | 'smtp';
+  provider: 'edge-function';
   from: string;
   fromName: string;
   maxRetries: number;
@@ -80,25 +66,22 @@ class EmailServiceError extends Error {
  */
 export class EmailService {
   private config: EmailConfig;
-  private providerConfig: SendGridConfig | SESConfig | SMTPConfig | null = null;
 
   constructor() {
     this.config = this.loadConfig();
-    this.providerConfig = this.loadProviderConfig();
   }
 
   /**
    * Load email configuration from environment variables
    */
   private loadConfig(): EmailConfig {
-    const provider = (import.meta.env.VITE_EMAIL_PROVIDER || 'smtp') as EmailConfig['provider'];
     const from = import.meta.env.VITE_EMAIL_FROM || import.meta.env.VITE_SUPPORT_EMAIL || 'noreply@ordax.com.br';
     const fromName = import.meta.env.VITE_EMAIL_FROM_NAME || import.meta.env.VITE_COMPANY_NAME || 'ORDAX';
     const maxRetries = parseInt(import.meta.env.VITE_EMAIL_MAX_RETRIES || '3', 10);
     const retryDelay = parseInt(import.meta.env.VITE_EMAIL_RETRY_DELAY || '2000', 10);
 
     return {
-      provider,
+      provider: 'edge-function',
       from,
       fromName,
       maxRetries,
@@ -107,39 +90,8 @@ export class EmailService {
   }
 
   /**
-   * Load provider-specific configuration
-   */
-  private loadProviderConfig(): SendGridConfig | SESConfig | SMTPConfig | null {
-    switch (this.config.provider) {
-      case 'sendgrid':
-        return {
-          apiKey: import.meta.env.VITE_SENDGRID_API_KEY || '',
-        } as SendGridConfig;
-
-      case 'ses':
-        return {
-          region: import.meta.env.VITE_AWS_SES_REGION || 'us-east-1',
-          accessKeyId: import.meta.env.VITE_AWS_SES_ACCESS_KEY_ID || '',
-          secretAccessKey: import.meta.env.VITE_AWS_SES_SECRET_ACCESS_KEY || '',
-        } as SESConfig;
-
-      case 'smtp':
-        return {
-          host: import.meta.env.VITE_SMTP_HOST || '',
-          port: parseInt(import.meta.env.VITE_SMTP_PORT || '587', 10),
-          user: import.meta.env.VITE_SMTP_USER || '',
-          password: import.meta.env.VITE_SMTP_PASSWORD || '',
-          secure: import.meta.env.VITE_SMTP_SECURE === 'true',
-        } as SMTPConfig;
-
-      default:
-        return null;
-    }
-  }
-
-  /**
    * Send an email with retry logic and tracking
-   * 
+   *
    * @param to - Recipient email address
    * @param subject - Email subject
    * @param html - Email HTML content
@@ -150,8 +102,8 @@ export class EmailService {
    * @throws EmailServiceError if sending fails after all retries
    */
   async sendEmail(
-    to: string, 
-    subject: string, 
+    to: string,
+    subject: string,
     html: string,
     emailType: string = 'other',
     userId?: string,
@@ -183,14 +135,14 @@ export class EmailService {
       try {
         await this.sendEmailAttempt(options);
         logInfo('Email sent successfully', { to, attempt: attempt + 1 }, 'email');
-        
+
         // Update log entry to sent
         await this.updateEmailLog(logId, {
           status: 'sent',
           sentAt: new Date().toISOString(),
           retryCount: attempt
         });
-        
+
         return;
       } catch (error) {
         lastError = error as Error;
@@ -198,7 +150,7 @@ export class EmailService {
 
         // Check if error is retryable
         const isRetryable = this.isRetryableError(error as Error);
-        
+
         if (!isRetryable || attempt > this.config.maxRetries) {
           break;
         }
@@ -285,7 +237,7 @@ export class EmailService {
 
     try {
       const updateData: any = {};
-      
+
       if (updates.status) updateData.status = updates.status;
       if (updates.sentAt) updateData.sent_at = updates.sentAt;
       if (updates.errorMessage) updateData.error_message = updates.errorMessage;
@@ -318,28 +270,30 @@ export class EmailService {
       );
     }
 
-    // Check if provider is configured
-    if (!this.providerConfig) {
+    if (!supabase.functions?.invoke) {
       throw new EmailServiceError(
-        `Email provider ${this.config.provider} is not configured`,
-        'PROVIDER_NOT_CONFIGURED',
+        'Email function client is not available',
+        'EMAIL_FUNCTION_UNAVAILABLE',
         false
       );
     }
 
-    switch (this.config.provider) {
-      case 'sendgrid':
-        return this.sendViaSendGrid(options);
-      case 'ses':
-        return this.sendViaSES(options);
-      case 'smtp':
-        return this.sendViaSMTP(options);
-      default:
-        throw new EmailServiceError(
-          `Unsupported email provider: ${this.config.provider}`,
-          'UNSUPPORTED_PROVIDER',
-          false
-        );
+    const { error } = await supabase.functions.invoke('send-email', {
+      body: {
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        from: options.from || this.config.from,
+        fromName: options.fromName || this.config.fromName,
+      },
+    });
+
+    if (error) {
+      throw new EmailServiceError(
+        `Email function failed: ${error.message}`,
+        'EMAIL_FUNCTION_FAILED',
+        false
+      );
     }
   }
 
@@ -472,7 +426,7 @@ export class EmailService {
 
   /**
    * Check if user wants to receive a specific email type
-   * 
+   *
    * @param userId - User ID
    * @param emailType - Type of email
    * @returns True if email should be sent
@@ -481,9 +435,8 @@ export class EmailService {
     try {
       return await notificationPreferencesService.shouldSendEmail(userId, emailType);
     } catch (error) {
-      // If preference check fails, default to sending (fail-open)
       logWarn(`Failed to check email preference for user ${userId}`, error, 'email');
-      return true;
+      return false;
     }
   }
 
@@ -498,22 +451,7 @@ export class EmailService {
    * Check if email service is properly configured
    */
   isConfigured(): boolean {
-    if (!this.providerConfig) {
-      return false;
-    }
-
-    switch (this.config.provider) {
-      case 'sendgrid':
-        return !!(this.providerConfig as SendGridConfig).apiKey;
-      case 'ses':
-        const sesConfig = this.providerConfig as SESConfig;
-        return !!(sesConfig.accessKeyId && sesConfig.secretAccessKey);
-      case 'smtp':
-        const smtpConfig = this.providerConfig as SMTPConfig;
-        return !!(smtpConfig.host && smtpConfig.user && smtpConfig.password);
-      default:
-        return false;
-    }
+    return true;
   }
 
   /**
@@ -922,16 +860,16 @@ export class EmailService {
 
       // Send email
       await this.sendEmail(
-        user.email, 
-        subject, 
+        user.email,
+        subject,
         html,
         'choice_reminder',
         user.id,
         { delivery_id: deliveryId, days_until_cutoff: daysUntilCutoff }
       );
 
-      logInfo('Choice reminder email sent successfully', 
-        { email: user.email, daysUntilCutoff }, 
+      logInfo('Choice reminder email sent successfully',
+        { email: user.email, daysUntilCutoff },
         'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {
@@ -1361,16 +1299,16 @@ export class EmailService {
 
       // Send email
       await this.sendEmail(
-        user.email, 
-        subject, 
+        user.email,
+        subject,
         html,
         'balance_reminder',
         user.id,
         { purchase_id: purchaseId, days_remaining: daysRemaining }
       );
 
-      logInfo('Balance reminder email sent successfully', 
-        { email: user.email, daysRemaining }, 
+      logInfo('Balance reminder email sent successfully',
+        { email: user.email, daysRemaining },
         'email');
     } catch (error) {
       if (error instanceof EmailServiceError) {

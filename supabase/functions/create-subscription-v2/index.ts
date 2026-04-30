@@ -3,18 +3,21 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { scheduleConsecutiveDeliveries } from "../_shared/delivery-scheduling.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
-import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import {
+  checkContentLength,
+  PAYLOAD_LIMITS,
+} from "../_shared/payload-guard.ts";
 import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 /**
  * Edge Function: create-subscription-v2
- * 
+ *
  * Cria uma assinatura no novo modelo Premium Club v2.0 com:
  * - Preço fixo por plano (não por coleção)
  * - Entregas consecutivas automáticas
  * - Peça bônus para plano semestral
  * - Vinculação ao ciclo atual
- * 
+ *
  * Feature: premium-club-fixed-price-model
  * Task: 3.9
  */
@@ -22,10 +25,10 @@ import { validateOrReject, type Schema } from "../_shared/validation.ts";
 type PlanType = "trimestral" | "semestral";
 
 const CREATE_SUB_V2_SCHEMA: Schema = {
-  planId:        { type: "uuid", required: true },
-  collectionId:  { type: "uuid", required: true },
+  planId: { type: "uuid", required: true },
+  collectionId: { type: "uuid", required: true },
   paymentMethod: { type: "string", required: true, maxLength: 20 },
-  paymentId:     { type: "string", maxLength: 100 },
+  paymentId: { type: "string", maxLength: 100 },
 };
 
 interface CreateSubscriptionV2Request {
@@ -46,21 +49,13 @@ interface CycleData {
   capacity_max: number;
 }
 
-interface PlanData {
-  id: string;
-  plan_type: PlanType;
-  deliveries_total: number;
-  includes_bonus: boolean;
-  price: number;
-}
-
 /**
  * Obtém ou cria o ciclo atual
  */
 async function getCurrentCycle(service: any): Promise<CycleData> {
-  const { data, error } = await service.rpc('get_or_create_current_cycle');
+  const { data, error } = await service.rpc("get_or_create_current_cycle");
   if (error) throw new Error(`Erro ao obter ciclo atual: ${error.message}`);
-  if (!data) throw new Error('Não foi possível obter ou criar o ciclo atual');
+  if (!data) throw new Error("Não foi possível obter ou criar o ciclo atual");
   return data as CycleData;
 }
 
@@ -71,7 +66,7 @@ function checkCycleCapacity(cycle: CycleData): void {
   if (cycle.capacity_current >= cycle.capacity_max) {
     throw new Error(
       `Ciclo ${cycle.cycle_number} de ${cycle.month}/${cycle.year} está com capacidade máxima. ` +
-      `Você será alocado no próximo ciclo disponível.`
+        `Você será alocado no próximo ciclo disponível.`,
     );
   }
 }
@@ -81,7 +76,7 @@ function checkCycleCapacity(cycle: CycleData): void {
  */
 function calculateDeliveryCycles(
   entryCycle: CycleData,
-  deliveryCount: number
+  deliveryCount: number,
 ): Array<{ cycleNumber: 1 | 2; month: number; year: number }> {
   const cycles: Array<{ cycleNumber: 1 | 2; month: number; year: number }> = [];
   let currentCycleNumber = entryCycle.cycle_number;
@@ -99,7 +94,11 @@ function calculateDeliveryCycles(
         currentYear = currentYear + 1;
       }
     }
-    cycles.push({ cycleNumber: currentCycleNumber, month: currentMonth, year: currentYear });
+    cycles.push({
+      cycleNumber: currentCycleNumber,
+      month: currentMonth,
+      year: currentYear,
+    });
   }
   return cycles;
 }
@@ -107,29 +106,33 @@ function calculateDeliveryCycles(
 async function checkAllDeliveryCyclesCapacity(
   service: any,
   entryCycle: CycleData,
-  deliveryCount: number
+  deliveryCount: number,
 ): Promise<void> {
   const deliveryCycles = calculateDeliveryCycles(entryCycle, deliveryCount);
   for (let i = 0; i < deliveryCycles.length; i++) {
     const cycleInfo = deliveryCycles[i];
     const { data: existingCycle } = await service
-      .from('cycles')
-      .select('id, capacity_current, capacity_max, capacity_limit')
-      .eq('cycle_number', cycleInfo.cycleNumber)
-      .eq('month', cycleInfo.month)
-      .eq('year', cycleInfo.year)
+      .from("cycles")
+      .select("id, capacity_current, capacity_max, capacity_limit")
+      .eq("cycle_number", cycleInfo.cycleNumber)
+      .eq("month", cycleInfo.month)
+      .eq("year", cycleInfo.year)
       .maybeSingle();
 
     if (existingCycle) {
-      const { data: hasCapacity, error } = await service.rpc('check_capacity_available', {
-        p_cycle_id: existingCycle.id,
-        p_quantity: 1
-      });
-      if (error) throw new Error(`Erro ao verificar capacidade: ${error.message}`);
+      const { data: hasCapacity, error } = await service.rpc(
+        "check_capacity_available",
+        {
+          p_cycle_id: existingCycle.id,
+          p_quantity: 1,
+        },
+      );
+      if (error)
+        throw new Error(`Erro ao verificar capacidade: ${error.message}`);
       if (!hasCapacity) {
         throw new Error(
           `Capacidade esgotada para o Ciclo ${cycleInfo.cycleNumber} de ` +
-          `${cycleInfo.month}/${cycleInfo.year} (entrega ${i + 1} de ${deliveryCount}).`
+            `${cycleInfo.month}/${cycleInfo.year} (entrega ${i + 1} de ${deliveryCount}).`,
         );
       }
     }
@@ -139,16 +142,19 @@ async function checkAllDeliveryCyclesCapacity(
 async function reserveAllDeliveryCyclesCapacity(
   service: any,
   deliveries: any[],
-  subscriptionId: string
+  _subscriptionId: string,
 ): Promise<void> {
   for (const delivery of deliveries) {
     if (delivery.cycle_id) {
-      const { error } = await service.rpc('reserve_capacity', {
+      const { error } = await service.rpc("reserve_capacity", {
         p_cycle_id: delivery.cycle_id,
-        p_quantity: 1
+        p_quantity: 1,
       });
       if (error) {
-        console.error(`Erro ao reservar capacidade para ciclo ${delivery.cycle_id}:`, error);
+        console.error(
+          `Erro ao reservar capacidade para ciclo ${delivery.cycle_id}:`,
+          error,
+        );
       }
     }
   }
@@ -158,24 +164,27 @@ async function scheduleDeliveries(
   service: any,
   subscriptionId: string,
   planType: PlanType,
-  entryCycleId: string
+  entryCycleId: string,
 ): Promise<any[]> {
-  return await scheduleConsecutiveDeliveries(service, subscriptionId, entryCycleId, planType);
+  return await scheduleConsecutiveDeliveries(
+    service,
+    subscriptionId,
+    entryCycleId,
+    planType,
+  );
 }
 
 async function createBonusPiece(
   service: any,
   subscriptionId: string,
-  lastDeliveryId: string
+  lastDeliveryId: string,
 ): Promise<void> {
-  const { error } = await service
-    .from('bonus_pieces')
-    .insert({
-      subscription_id: subscriptionId,
-      delivery_id: lastDeliveryId,
-      status: 'pending',
-      description: 'Peça bônus exclusiva do plano semestral'
-    });
+  const { error } = await service.from("bonus_pieces").insert({
+    subscription_id: subscriptionId,
+    delivery_id: lastDeliveryId,
+    status: "pending",
+    description: "Peça bônus exclusiva do plano semestral",
+  });
   if (error) throw new Error(`Erro ao criar peça bônus: ${error.message}`);
 }
 
@@ -186,7 +195,7 @@ serve(async (req) => {
   try {
     const { claims } = await getClaims(req);
     const userId = String(claims.sub);
-    
+
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -195,7 +204,12 @@ serve(async (req) => {
     }
 
     // Rate limit: purchase operations
-    const rateLimited = await checkRateLimit(req, "create-subscription-v2", RATE_LIMITS.PURCHASE, userId);
+    const rateLimited = await checkRateLimit(
+      req,
+      "create-subscription-v2",
+      RATE_LIMITS.PURCHASE,
+      userId,
+    );
     if (rateLimited) return rateLimited;
 
     // Payload size guard (standard: 64 KB)
@@ -207,13 +221,19 @@ serve(async (req) => {
     const validation = validateOrReject(rawBody, CREATE_SUB_V2_SCHEMA);
     if ("error" in validation) return validation.error;
 
-    const { planId, collectionId, paymentMethod, paymentId } = validation.data as unknown as CreateSubscriptionV2Request;
+    const { planId, collectionId, paymentMethod, paymentId } =
+      validation.data as unknown as CreateSubscriptionV2Request;
 
     // Validate paymentMethod enum
     if (!["pix", "credit_card", "boleto"].includes(paymentMethod)) {
       return new Response(
-        JSON.stringify({ error: "paymentMethod inválido. Use: pix, credit_card ou boleto" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: "paymentMethod inválido. Use: pix, credit_card ou boleto",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -250,9 +270,11 @@ serve(async (req) => {
     }
 
     // Validar disponibilidade da coleção para o plano
-    if (collection.is_semestral_exclusive && plan.plan_type === 'trimestral') {
+    if (collection.is_semestral_exclusive && plan.plan_type === "trimestral") {
       return new Response(
-        JSON.stringify({ error: "Esta coleção está disponível apenas para o plano semestral" }),
+        JSON.stringify({
+          error: "Esta coleção está disponível apenas para o plano semestral",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -271,7 +293,9 @@ serve(async (req) => {
 
     if (existingSubscription) {
       return new Response(
-        JSON.stringify({ error: "Você já tem uma assinatura ativa no modelo Premium Club" }),
+        JSON.stringify({
+          error: "Você já tem uma assinatura ativa no modelo Premium Club",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -281,13 +305,13 @@ serve(async (req) => {
 
     // Obter ciclo atual
     const currentCycle = await getCurrentCycle(service);
-    
+
     // Verificar capacidade do ciclo de entrada
     checkCycleCapacity(currentCycle);
 
     // Calcular número de entregas baseado no plano
-    const deliveryCount = plan.plan_type === 'trimestral' ? 3 : 6;
-    
+    const deliveryCount = plan.plan_type === "trimestral" ? 3 : 6;
+
     // Verificar capacidade disponível para TODOS os ciclos de entrega
     // Isso garante que a assinatura só será criada se houver capacidade
     // para todas as entregas (Requirements 3.2, 9.9, 22.1)
@@ -320,7 +344,7 @@ serve(async (req) => {
       service,
       subscription.id,
       plan.plan_type,
-      currentCycle.id
+      currentCycle.id,
     );
 
     // Criar peça bônus se for plano semestral
@@ -331,7 +355,11 @@ serve(async (req) => {
 
     // Reservar capacidade para todos os ciclos de entrega (Requirement 20.7)
     // This increments capacity_current for each cycle used
-    await reserveAllDeliveryCyclesCapacity(service, deliveries, subscription.id);
+    await reserveAllDeliveryCyclesCapacity(
+      service,
+      deliveries,
+      subscription.id,
+    );
 
     return new Response(
       JSON.stringify({
@@ -359,7 +387,8 @@ serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error creating subscription v2:", msg);
-    const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
+    const status =
+      msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
     return new Response(JSON.stringify({ error: msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

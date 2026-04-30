@@ -121,7 +121,7 @@ export default function PreLaunchArcade() {
                 <ArcadeCard key={c.id} className="overflow-hidden cursor-pointer" hover>
                   <div className="aspect-video bg-[hsl(0,0%,8%)]">
                     {c.cover_image_url ? (
-                      <img src={c.cover_image_url} alt={c.name} className="w-full h-full object-cover" />
+                      <img src={c.cover_image_url} alt={c.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="w-8 h-8 text-[hsl(0,0%,15%)]" />

@@ -6,8 +6,8 @@
  * - No stage skipping without admin override
  * - All transitions are logged
  */
-// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
+import log from "@/lib/logger";
 import type { StageType, ProductionStageRecord } from "./stage-service";
 
 // ============================================================================
@@ -221,11 +221,11 @@ export async function logStageTransition(
     });
 
     if (error) {
-      console.error("Failed to log stage transition:", error);
+      log.error("Failed to log stage transition", { error });
       // Don't throw - logging failure shouldn't block the transition
     }
   } catch (error) {
-    console.error("Failed to log stage transition:", error);
+    log.error("Failed to log stage transition", { error });
     // Don't throw - logging failure shouldn't block the transition
   }
 }

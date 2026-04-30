@@ -1,13 +1,13 @@
 /**
  * Stripe Webhooks Handler
- * 
+ *
  * Professional webhook handling with:
  * - Signature verification
  * - Event processing
  * - Error handling
  * - Logging
  * - Database updates
- * 
+ *
  * Supported Events:
  * - payment_intent.succeeded
  * - payment_intent.payment_failed
@@ -15,18 +15,18 @@
  * - customer.subscription.updated
  * - customer.subscription.deleted
  * - charge.refunded
- * 
+ *
  * @example
  * ```typescript
  * import { handleStripeWebhook } from '@/lib/stripe/stripe-webhooks';
- * 
+ *
  * // In your API route
  * const event = await handleStripeWebhook(request);
  * ```
  */
 
 import Stripe from 'stripe';
-import { stripe, getWebhookSecret } from './stripe-client';
+import { stripe, getWebhookSecret } from './stripe-server';
 import { logInfo, logError, logWarn } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -52,7 +52,7 @@ const webhookHandlers: Record<string, WebhookHandler> = {
 
 /**
  * Verify and construct Stripe webhook event
- * 
+ *
  * @param payload - Raw request body
  * @param signature - Stripe signature header
  * @returns Stripe Event
@@ -63,7 +63,7 @@ export function constructWebhookEvent(
 ): Stripe.Event {
   try {
     const webhookSecret = getWebhookSecret();
-    
+
     if (!webhookSecret) {
       throw new Error('Webhook secret not configured');
     }
@@ -88,7 +88,7 @@ export function constructWebhookEvent(
 
 /**
  * Handle Stripe webhook event
- * 
+ *
  * @param event - Stripe Event
  */
 export async function handleStripeWebhook(event: Stripe.Event): Promise<void> {
@@ -329,7 +329,7 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
   // Save refund to database
   if (charge.refunds && charge.refunds.data.length > 0) {
     const refund = charge.refunds.data[0];
-    
+
     await supabase.from('stripe_refunds').upsert({
       stripe_refund_id: refund.id,
       payment_intent_id: charge.payment_intent as string,

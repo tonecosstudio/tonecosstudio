@@ -7,7 +7,7 @@ import { ptBR } from "date-fns/locale";
 import { useGroupMessages } from "@/hooks/useGroupMessages";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { sanitizeGroupMessage, sanitizeText } from "@/lib/utils/sanitize";
+import { sanitizeText } from "@/lib/utils/sanitize";
 import { GroupErrorBoundary } from "./GroupErrorBoundary";
 
 interface MemberGroupMessagesProps {
@@ -77,12 +77,9 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
                     </span>
                   </div>
 
-                  <p
-                    className="text-sm whitespace-pre-wrap break-words"
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeGroupMessage(message.message),
-                    }}
-                  />
+                  <p className="text-sm whitespace-pre-wrap break-words">
+                    {sanitizeText(message.message)}
+                  </p>
 
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-2 space-y-1">

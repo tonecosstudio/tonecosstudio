@@ -1,123 +1,99 @@
 /**
- * Logger Service
- * 
- * Serviço centralizado de logging para substituir console.log em produção.
- * Usa diferentes níveis de log e pode ser integrado com serviços externos.
+ * Professional Logger Service
+ *
+ * Provides structured logging with different levels and environment-aware behavior.
+ * In production, only errors and warnings are logged.
+ * In development, all levels are logged including debug information.
  */
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+// Define log levels
+const levels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
+};
 
-interface LogEntry {
-  level: LogLevel;
-  message: string;
-  data?: any;
-  timestamp: Date;
-  context?: string;
-}
+// Determine if we're in production
+const isProduction = import.meta.env.PROD;
 
-class Logger {
-  private isDevelopment = import.meta.env.DEV;
-  private isTest = import.meta.env.MODE === 'test';
+type LogLevel = keyof typeof levels;
 
-  /**
-   * Log de debug - apenas em desenvolvimento
-   */
-  debug(message: string, data?: any, context?: string): void {
-    if (this.isDevelopment) {
-      this.log('debug', message, data, context);
-    }
-  }
+function normalizeMeta(meta?: Record<string, unknown>) {
+  if (!meta) return undefined;
 
-  /**
-   * Log de informação
-   */
-  info(message: string, data?: any, context?: string): void {
-    this.log('info', message, data, context);
-  }
-
-  /**
-   * Log de aviso
-   */
-  warn(message: string, data?: any, context?: string): void {
-    this.log('warn', message, data, context);
-  }
-
-  /**
-   * Log de erro
-   */
-  error(message: string, error?: any, context?: string): void {
-    this.log('error', message, error, context);
-  }
-
-  /**
-   * Método interno de log
-   */
-  private log(level: LogLevel, message: string, data?: any, context?: string): void {
-    const entry: LogEntry = {
-      level,
-      message,
-      data,
-      timestamp: new Date(),
-      context,
-    };
-
-    // Em testes, não logar nada
-    if (this.isTest) {
-      return;
-    }
-
-    // Em desenvolvimento, usar console
-    if (this.isDevelopment) {
-      const prefix = context ? `[${context}]` : '';
-      const timestamp = entry.timestamp.toISOString();
-      
-      switch (level) {
-        case 'debug':
-          console.debug(`${timestamp} ${prefix} ${message}`, data || '');
-          break;
-        case 'info':
-          console.info(`${timestamp} ${prefix} ${message}`, data || '');
-          break;
-        case 'warn':
-          console.warn(`${timestamp} ${prefix} ${message}`, data || '');
-          break;
-        case 'error':
-          console.error(`${timestamp} ${prefix} ${message}`, data || '');
-          break;
+  return Object.fromEntries(
+    Object.entries(meta).map(([key, value]) => {
+      if (value instanceof Error) {
+        return [key, { name: value.name, message: value.message, stack: value.stack }];
       }
-      return;
-    }
+      return [key, value];
+    }),
+  );
+}
 
-    // Em produção, enviar para serviço externo (Sentry, LogRocket, etc)
-    this.sendToExternalService(entry);
-  }
+function write(level: LogLevel, message: string, meta?: Record<string, unknown>) {
+  if (isProduction && levels[level] > levels.warn) return;
 
-  /**
-   * Enviar logs para serviço externo em produção
-   */
-  private sendToExternalService(entry: LogEntry): void {
-    // TODO: Integrar com serviço de logging externo
-    // Exemplos: Sentry, LogRocket, Datadog, CloudWatch
-    
-    // Por enquanto, apenas logar erros críticos no console em produção
-    if (entry.level === 'error') {
-      console.error(`[${entry.level.toUpperCase()}] ${entry.message}`, entry.data);
-    }
+  const payload = normalizeMeta(meta);
+  const prefix = `[${level}] ${message}`;
+
+  if (level === 'error') {
+    console.error(prefix, payload);
+  } else if (level === 'warn') {
+    console.warn(prefix, payload);
+  } else if (!isProduction) {
+    console.info(prefix, payload);
   }
 }
 
-// Exportar instância singleton
-export const logger = new Logger();
+// Export a simplified interface
+export const log = {
+  /**
+   * Log error messages (always logged, even in production)
+   */
+  error: (message: string, meta?: Record<string, unknown>) => {
+    write('error', message, meta);
+  },
 
-// Exportar funções de conveniência
-export const logDebug = (message: string, data?: any, context?: string) => 
-  logger.debug(message, data, context);
+  /**
+   * Log warning messages (logged in production)
+   */
+  warn: (message: string, meta?: Record<string, unknown>) => {
+    write('warn', message, meta);
+  },
 
-export const logInfo = (message: string, data?: any, context?: string) => 
-  logger.info(message, data, context);
+  /**
+   * Log info messages (only in development)
+   */
+  info: (message: string, meta?: Record<string, unknown>) => {
+    write('info', message, meta);
+  },
 
-export const logWarn = (message: string, data?: any, context?: string) => 
-  logger.warn(message, data, context);
+  /**
+   * Log debug messages (only in development)
+   */
+  debug: (message: string, meta?: Record<string, unknown>) => {
+    write('debug', message, meta);
+  },
+};
 
-export const logError = (message: string, error?: any, context?: string) => 
-  logger.error(message, error, context);
+// Legacy API support (deprecated - use log.error(), log.warn(), etc instead)
+// These are kept for backward compatibility during migration
+export const logError = (message: string, error?: unknown, context?: string) => {
+  log.error(message, { error, context });
+};
+
+export const logWarn = (message: string, meta?: unknown, context?: string) => {
+  log.warn(message, { meta, context });
+};
+
+export const logInfo = (message: string, meta?: unknown, context?: string) => {
+  log.info(message, { meta, context });
+};
+
+export const logDebug = (message: string, meta?: unknown, context?: string) => {
+  log.debug(message, { meta, context });
+};
+
+export default log;

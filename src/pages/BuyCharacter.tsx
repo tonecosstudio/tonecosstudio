@@ -314,6 +314,8 @@ export default function BuyCharacter() {
                             src={currentMonthCharacter.image_url}
                             alt={currentMonthCharacter.name}
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            loading="eager"
+                            fetchpriority="high"
                           />
                         </div>
                       )}
@@ -383,9 +385,9 @@ export default function BuyCharacter() {
                               }, 1500);
                             } catch (error: any) {
                               console.error("Erro ao criar compra:", error);
-                              
+
                               let errorMessage = "Ocorreu um erro ao criar sua compra.";
-                              
+
                               if (error.message?.includes('CUTOFF_PASSED')) {
                                 errorMessage = "O prazo para compras deste ciclo já passou.";
                               } else if (error.message?.includes('CAPACITY_EXCEEDED')) {
@@ -393,7 +395,7 @@ export default function BuyCharacter() {
                               } else if (error.message?.includes('CYCLE_NOT_OPEN')) {
                                 errorMessage = "Ciclo não está aberto para novas compras.";
                               }
-                              
+
                               toast({
                                 title: "Erro ao criar compra",
                                 description: errorMessage,

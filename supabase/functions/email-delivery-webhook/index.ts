@@ -3,11 +3,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders } from '../_shared/cors.ts';
+import { requireSharedSecret } from '../_shared/secrets.ts';
 
 interface SendGridEvent {
   email: string;
@@ -37,12 +34,22 @@ interface SESEvent {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const forbidden = requireSharedSecret(req, 'EMAIL_WEBHOOK_SECRET', 'x-webhook-secret');
+    if (forbidden) {
+      return new Response(forbidden.body, {
+        status: forbidden.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -82,7 +89,7 @@ async function handleSendGridWebhook(supabaseClient: any, events: SendGridEvent[
   for (const event of events) {
     try {
       const messageId = event.sg_message_id || event['smtp-id'];
-      
+
       if (!messageId) {
         console.warn('No message ID in SendGrid event:', event);
         continue;
@@ -164,8 +171,8 @@ async function handleSendGridWebhook(supabaseClient: any, events: SendGridEvent[
 async function handleSESWebhook(supabaseClient: any, notification: any) {
   try {
     // SES sends notifications wrapped in SNS
-    const message = typeof notification.Message === 'string' 
-      ? JSON.parse(notification.Message) 
+    const message = typeof notification.Message === 'string'
+      ? JSON.parse(notification.Message)
       : notification.Message;
 
     const event: SESEvent = message;

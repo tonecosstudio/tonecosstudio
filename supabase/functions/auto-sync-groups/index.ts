@@ -4,6 +4,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { getCorsHeaders } from '../_shared/cors.ts';
+import { requireSharedSecret } from '../_shared/secrets.ts';
 
 // Types
 interface Group {
@@ -303,10 +305,7 @@ async function syncGroupMembership(
  */
 serve(async (req) => {
   // CORS headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     // CORS preflight
@@ -316,6 +315,14 @@ serve(async (req) => {
           ...corsHeaders,
           'Access-Control-Allow-Methods': 'POST',
         },
+      });
+    }
+
+    const forbidden = requireSharedSecret(req, 'CRON_SECRET', 'x-cron-secret');
+    if (forbidden) {
+      return new Response(forbidden.body, {
+        status: forbidden.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 

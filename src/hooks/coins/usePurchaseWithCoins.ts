@@ -1,12 +1,11 @@
 /**
  * Hook para compras com coins
- * 
+ *
  * Fornece funcionalidade para comprar personagens e coleções
  * usando coins, com validação de saldo e tratamento de erros.
- * 
+ *
  * @module hooks/coins/usePurchaseWithCoins
  */
-// @ts-nocheck
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -73,20 +72,20 @@ export interface PurchaseValidation {
 
 /**
  * Hook para comprar personagem com coins
- * 
+ *
  * Executa compra atômica:
  * 1. Valida saldo
  * 2. Debita coins
  * 3. Adiciona personagem ao usuário
  * 4. Registra transação
- * 
+ *
  * @returns Mutation para comprar personagem
- * 
+ *
  * @example
  * ```tsx
  * function CharacterCard({ character }: { character: Character }) {
  *   const purchaseCharacter = usePurchaseCharacter();
- *   
+ *
  *   const handlePurchase = () => {
  *     purchaseCharacter.mutate({
  *       user_id: user.id,
@@ -94,9 +93,9 @@ export interface PurchaseValidation {
  *       coins_amount: character.price
  *     });
  *   };
- *   
+ *
  *   return (
- *     <button 
+ *     <button
  *       onClick={handlePurchase}
  *       disabled={purchaseCharacter.isPending}
  *     >
@@ -186,16 +185,16 @@ export function usePurchaseCharacter() {
 
 /**
  * Hook para comprar coleção com coins
- * 
+ *
  * Similar ao purchase_character, mas para coleções completas
- * 
+ *
  * @returns Mutation para comprar coleção
- * 
+ *
  * @example
  * ```tsx
  * function CollectionCard({ collection }: { collection: Collection }) {
  *   const purchaseCollection = usePurchaseCollection();
- *   
+ *
  *   const handlePurchase = () => {
  *     purchaseCollection.mutate({
  *       user_id: user.id,
@@ -203,7 +202,7 @@ export function usePurchaseCharacter() {
  *       coins_amount: collection.price
  *     });
  *   };
- *   
+ *
  *   return (
  *     <button onClick={handlePurchase}>
  *       Comprar Coleção
@@ -289,31 +288,31 @@ export function usePurchaseCollection() {
 
 /**
  * Hook para validar se compra pode ser realizada
- * 
+ *
  * Verifica saldo e retorna informações detalhadas
- * 
+ *
  * @param userId - ID do usuário
  * @param itemPrice - Preço do item
  * @returns Mutation para validar compra
- * 
+ *
  * @example
  * ```tsx
  * function PurchaseButton({ price }: { price: number }) {
  *   const validatePurchase = useValidatePurchase();
- *   
+ *
  *   const handleClick = async () => {
  *     const validation = await validatePurchase.mutateAsync({
  *       userId: user.id,
  *       itemPrice: price
  *     });
- *     
+ *
  *     if (validation.is_valid) {
  *       // Prosseguir com compra
  *     } else {
  *       alert(validation.error_message);
  *     }
  *   };
- *   
+ *
  *   return <button onClick={handleClick}>Validar Compra</button>;
  * }
  * ```
@@ -361,16 +360,16 @@ export function useValidatePurchase() {
 
 /**
  * Hook para reembolsar compra
- * 
+ *
  * Reverte compra e devolve coins ao usuário
- * 
+ *
  * @returns Mutation para reembolsar
- * 
+ *
  * @example
  * ```tsx
  * function RefundButton({ purchaseId }: { purchaseId: string }) {
  *   const refund = useRefundPurchase();
- *   
+ *
  *   const handleRefund = () => {
  *     refund.mutate({
  *       user_id: user.id,
@@ -379,7 +378,7 @@ export function useValidatePurchase() {
  *       reason: 'Cliente solicitou reembolso'
  *     });
  *   };
- *   
+ *
  *   return <button onClick={handleRefund}>Solicitar Reembolso</button>;
  * }
  * ```
@@ -396,7 +395,7 @@ export function useRefundPurchase() {
 
       // Buscar compra original para saber quanto reembolsar
       const table = item_type === 'character' ? 'user_characters' : 'user_collections';
-      
+
       const { data: purchaseData, error: fetchError } = await supabase
         .from(table)
         .select('price_paid')
@@ -491,16 +490,16 @@ export function useRefundPurchase() {
 
 /**
  * Hook genérico para comprar qualquer item com coins
- * 
+ *
  * Detecta automaticamente o tipo de item e chama a função apropriada
- * 
+ *
  * @returns Mutation para comprar item
- * 
+ *
  * @example
  * ```tsx
  * function BuyButton({ item }: { item: Character | Collection }) {
  *   const purchase = usePurchaseItem();
- *   
+ *
  *   const handlePurchase = () => {
  *     purchase.mutate({
  *       userId: user.id,
@@ -509,7 +508,7 @@ export function useRefundPurchase() {
  *       price: item.price
  *     });
  *   };
- *   
+ *
  *   return <button onClick={handlePurchase}>Comprar</button>;
  * }
  * ```

@@ -291,6 +291,7 @@ export default function CollectionsShowcase() {
                         alt={collection.name}
                         className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 ease-out"
                         loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center relative">

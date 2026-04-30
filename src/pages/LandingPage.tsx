@@ -169,6 +169,8 @@ function FeaturedCollectionCard({
               src={coverUrl}
               alt={name}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80"
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -407,6 +409,8 @@ export default function LandingPage() {
                             src={imgUrl}
                             alt={m.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                            loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

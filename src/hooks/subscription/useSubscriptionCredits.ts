@@ -1,12 +1,11 @@
 /**
  * Hook para gerenciar créditos de assinatura
- * 
+ *
  * Integra com sistema de coins e assinaturas
- * 
+ *
  * Spec: subscription-credit-system
  * Task: 1.0 (Subscription Credit System Integration)
  */
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -76,7 +75,7 @@ export const subscriptionCreditKeys = {
   all: ["subscription-credits"] as const,
   plans: () => [...subscriptionCreditKeys.all, "plans"] as const,
   activePlans: () => [...subscriptionCreditKeys.plans(), "active"] as const,
-  userSummary: (userId?: string) => 
+  userSummary: (userId?: string) =>
     [...subscriptionCreditKeys.all, "summary", userId || "anonymous"] as const,
   validation: (userId?: string, requiredCredits?: number) =>
     [...subscriptionCreditKeys.all, "validation", userId || "anonymous", requiredCredits || 0] as const,
@@ -88,7 +87,7 @@ export const subscriptionCreditKeys = {
 
 /**
  * Hook para buscar planos de assinatura baseados em créditos
- * 
+ *
  * @returns Lista de planos ativos com créditos
  */
 export function useSubscriptionCreditPlans() {
@@ -113,7 +112,7 @@ export function useSubscriptionCreditPlans() {
 
 /**
  * Hook para buscar resumo de créditos de assinatura do usuário
- * 
+ *
  * @param userId - ID do usuário (opcional, usa usuário autenticado)
  * @returns Resumo detalhado dos créditos de assinatura
  */
@@ -151,7 +150,7 @@ export function useUserSubscriptionCreditSummary(userId?: string) {
 
 /**
  * Hook para validar se usuário tem créditos suficientes para compra
- * 
+ *
  * @param requiredCredits - Créditos necessários para a compra
  * @param userId - ID do usuário (opcional, usa usuário autenticado)
  * @returns Resultado da validação
@@ -197,7 +196,7 @@ export function useValidateSubscriptionCredits(
 
 /**
  * Hook para usar créditos de assinatura em uma compra
- * 
+ *
  * @returns Mutation para usar créditos
  */
 export function useSubscriptionCreditsForPurchase() {
@@ -228,17 +227,17 @@ export function useSubscriptionCreditsForPurchase() {
     },
     onSuccess: (data) => {
       // Invalidar caches relevantes
-      queryClient.invalidateQueries({ 
-        queryKey: subscriptionCreditKeys.userSummary(user?.id) 
+      queryClient.invalidateQueries({
+        queryKey: subscriptionCreditKeys.userSummary(user?.id)
       });
-      queryClient.invalidateQueries({ 
-        queryKey: subscriptionCreditKeys.validation(user?.id) 
+      queryClient.invalidateQueries({
+        queryKey: subscriptionCreditKeys.validation(user?.id)
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ["user-coins", "balance", user?.id] 
+      queryClient.invalidateQueries({
+        queryKey: ["user-coins", "balance", user?.id]
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ["coin-transactions"] 
+      queryClient.invalidateQueries({
+        queryKey: ["coin-transactions"]
       });
 
       // Mostrar toast de sucesso
@@ -264,7 +263,7 @@ export function useSubscriptionCreditsForPurchase() {
 
 /**
  * Hook para processar pagamento de assinatura e adicionar créditos
- * 
+ *
  * @returns Mutation para processar pagamento
  */
 export function useProcessSubscriptionPayment() {
@@ -287,23 +286,23 @@ export function useProcessSubscriptionPayment() {
 
       if (error) throw error;
 
-      return data as { 
-        success: boolean; 
-        message: string; 
+      return data as {
+        success: boolean;
+        message: string;
         credits_added: number;
         user_id: string;
       };
     },
     onSuccess: (data, variables) => {
       // Invalidar caches relevantes
-      queryClient.invalidateQueries({ 
-        queryKey: subscriptionCreditKeys.userSummary(data.user_id) 
+      queryClient.invalidateQueries({
+        queryKey: subscriptionCreditKeys.userSummary(data.user_id)
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ["user-coins", "balance", data.user_id] 
+      queryClient.invalidateQueries({
+        queryKey: ["user-coins", "balance", data.user_id]
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ["coin-transactions"] 
+      queryClient.invalidateQueries({
+        queryKey: ["coin-transactions"]
       });
 
       // Mostrar toast de sucesso

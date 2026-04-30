@@ -320,6 +320,7 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
               alt={model.name}
               className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

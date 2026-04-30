@@ -1,6 +1,6 @@
 /**
  * Stripe Payment Service
- * 
+ *
  * Professional payment service with:
  * - Payment Intent creation
  * - Customer management
@@ -8,11 +8,11 @@
  * - Refunds
  * - Error handling
  * - Logging
- * 
+ *
  * @example
  * ```typescript
  * import { stripeService } from '@/lib/stripe/stripe-service';
- * 
+ *
  * // Create payment
  * const paymentIntent = await stripeService.createPaymentIntent({
  *   amount: 10000, // R$ 100.00
@@ -23,7 +23,7 @@
  */
 
 import Stripe from 'stripe';
-import { stripe } from './stripe-client';
+import { stripe } from './stripe-server';
 import { logInfo, logError, logWarn } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -96,7 +96,7 @@ export class StripeServiceError extends Error {
 export class StripeService {
   /**
    * Create a Payment Intent
-   * 
+   *
    * @param options - Payment intent options
    * @returns Payment Intent
    */
@@ -139,14 +139,14 @@ export class StripeService {
 
   /**
    * Retrieve a Payment Intent
-   * 
+   *
    * @param paymentIntentId - Payment Intent ID
    * @returns Payment Intent
    */
   async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
     try {
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      
+
       logInfo('Payment intent retrieved', {
         id: paymentIntent.id,
         status: paymentIntent.status
@@ -161,7 +161,7 @@ export class StripeService {
 
   /**
    * Confirm a Payment Intent
-   * 
+   *
    * @param paymentIntentId - Payment Intent ID
    * @param paymentMethodId - Payment Method ID
    * @returns Payment Intent
@@ -197,7 +197,7 @@ export class StripeService {
 
   /**
    * Cancel a Payment Intent
-   * 
+   *
    * @param paymentIntentId - Payment Intent ID
    * @returns Payment Intent
    */
@@ -224,7 +224,7 @@ export class StripeService {
 
   /**
    * Create a Customer
-   * 
+   *
    * @param options - Customer options
    * @returns Customer
    */
@@ -256,7 +256,7 @@ export class StripeService {
 
   /**
    * Get or Create Customer
-   * 
+   *
    * @param email - Customer email
    * @param userId - User ID
    * @returns Customer
@@ -273,7 +273,7 @@ export class StripeService {
       if (existingCustomer?.stripe_customer_id) {
         // Retrieve from Stripe
         const customer = await stripe.customers.retrieve(existingCustomer.stripe_customer_id);
-        
+
         if (!customer.deleted) {
           logInfo('Customer retrieved from cache', {
             id: customer.id,
@@ -296,7 +296,7 @@ export class StripeService {
 
   /**
    * Create a Refund
-   * 
+   *
    * @param paymentIntentId - Payment Intent ID
    * @param amount - Amount to refund (optional, full refund if not specified)
    * @param reason - Refund reason
@@ -338,7 +338,7 @@ export class StripeService {
 
   /**
    * Create a Subscription
-   * 
+   *
    * @param options - Subscription options
    * @returns Subscription
    */
@@ -378,7 +378,7 @@ export class StripeService {
 
   /**
    * Cancel a Subscription
-   * 
+   *
    * @param subscriptionId - Subscription ID
    * @param immediately - Cancel immediately or at period end
    * @returns Subscription
@@ -455,7 +455,7 @@ export class StripeService {
   private async saveCustomer(customer: Stripe.Customer): Promise<void> {
     try {
       const userId = customer.metadata?.userId;
-      
+
       if (userId) {
         await supabase.from('stripe_customers').insert({
           user_id: userId,

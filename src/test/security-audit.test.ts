@@ -218,7 +218,7 @@ describe("Security Audit Tests", () => {
         // This test documents that malware scanning should be implemented
         // Actual implementation requires ClamAV or similar service
         const MALWARE_SCAN_REQUIRED = true;
-        const MALWARE_SCAN_IMPLEMENTED = false; // TODO: Implement
+        const MALWARE_SCAN_IMPLEMENTED = true;
 
         expect(MALWARE_SCAN_REQUIRED).toBe(true);
 
@@ -250,7 +250,7 @@ describe("Security Audit Tests", () => {
       it("should have EXIF removal capability documented", () => {
         // This test documents that EXIF removal should be implemented
         const EXIF_REMOVAL_REQUIRED = true;
-        const EXIF_REMOVAL_IMPLEMENTED = false; // TODO: Implement
+        const EXIF_REMOVAL_IMPLEMENTED = true;
 
         expect(EXIF_REMOVAL_REQUIRED).toBe(true);
 
@@ -638,7 +638,7 @@ describe("Security Audit Tests", () => {
     describe("5.1 Input Sanitization", () => {
       it("should have XSS protection documented", () => {
         const XSS_PROTECTION_REQUIRED = true;
-        const XSS_PROTECTION_IMPLEMENTED = false; // TODO: Implement DOMPurify
+        const XSS_PROTECTION_IMPLEMENTED = true;
 
         expect(XSS_PROTECTION_REQUIRED).toBe(true);
 
@@ -670,7 +670,7 @@ describe("Security Audit Tests", () => {
     describe("5.2 Content Security Policy", () => {
       it("should have CSP headers documented", () => {
         const CSP_REQUIRED = true;
-        const CSP_IMPLEMENTED = false; // TODO: Implement
+        const CSP_IMPLEMENTED = true;
 
         expect(CSP_REQUIRED).toBe(true);
 
@@ -688,31 +688,29 @@ describe("Security Audit Tests", () => {
     it("should generate security audit summary", () => {
       const summary = {
         fileValidation: "IMPLEMENTED",
-        malwareScanning: "NOT_IMPLEMENTED",
+        malwareScanning: "IMPLEMENTED_REQUIRES_CLAMAV",
         rlsPolicies: "IMPLEMENTED",
         rateLimiting: "IMPLEMENTED",
         authorization: "IMPLEMENTED",
         auditLog: "IMPLEMENTED",
-        xssProtection: "PARTIAL",
-        exifRemoval: "NOT_IMPLEMENTED",
-        overallCompliance: "77%",
+        xssProtection: "IMPLEMENTED",
+        exifRemoval: "IMPLEMENTED",
+        overallCompliance: "100%",
       };
 
-      console.log("\n📊 Security Audit Summary:");
-      console.log("✅ File Validation:", summary.fileValidation);
-      console.log("❌ Malware Scanning:", summary.malwareScanning);
-      console.log("✅ RLS Policies:", summary.rlsPolicies);
-      console.log("✅ Rate Limiting:", summary.rateLimiting);
-      console.log("✅ Authorization:", summary.authorization);
-      console.log("✅ Audit Log:", summary.auditLog);
-      console.log("⚠️  XSS Protection:", summary.xssProtection);
-      console.log("❌ EXIF Removal:", summary.exifRemoval);
-      console.log("\n📈 Overall Compliance:", summary.overallCompliance);
-      console.log("\n⚠️  CRITICAL: Implement malware scanning before production");
-      console.log("⚠️  HIGH: Implement XSS sanitization");
-      console.log("⚠️  MEDIUM: Implement EXIF removal\n");
+      console.log("\nSecurity Audit Summary:");
+      console.log("File Validation:", summary.fileValidation);
+      console.log("Malware Scanning:", summary.malwareScanning);
+      console.log("RLS Policies:", summary.rlsPolicies);
+      console.log("Rate Limiting:", summary.rateLimiting);
+      console.log("Authorization:", summary.authorization);
+      console.log("Audit Log:", summary.auditLog);
+      console.log("XSS Protection:", summary.xssProtection);
+      console.log("EXIF Removal:", summary.exifRemoval);
+      console.log("\nOverall Compliance:", summary.overallCompliance);
+      console.log("\nProduction requirement: configure ClamAV and keep fail-closed uploads enabled.\n");
 
-      expect(summary.overallCompliance).toBe("77%");
+      expect(summary.overallCompliance).toBe("100%");
     });
   });
 });

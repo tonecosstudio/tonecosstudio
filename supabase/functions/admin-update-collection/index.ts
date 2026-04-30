@@ -4,13 +4,13 @@ import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
 
 /**
  * Admin Update Collection Endpoint
- * 
+ *
  * Updates an existing collection with all fields including rotation settings,
  * character revelation configuration, and image updates.
- * 
+ *
  * Requirements: 14.6
  * Task: 20.4
- * 
+ *
  * Request Body:
  * {
  *   id: string; // Collection ID to update
@@ -26,13 +26,13 @@ import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
  *   is_active?: boolean;
  *   display_order?: number;
  * }
- * 
+ *
  * Response:
  * {
  *   ok: true;
  *   collection: Collection;
  * }
- * 
+ *
  * Errors:
  * - 401: Unauthorized (no valid JWT)
  * - 403: Forbidden (not admin)
@@ -40,21 +40,6 @@ import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
  * - 404: Not Found (collection doesn't exist)
  * - 500: Internal Server Error
  */
-
-interface UpdateCollectionRequest {
-  id: string;
-  name?: string;
-  description?: string;
-  slug?: string;
-  image_url?: string;
-  rotation_type?: 'fixed' | 'odd_months' | 'even_months';
-  character_revelation_date?: string | null;
-  character_name?: string | null;
-  character_image_url?: string | null;
-  revealed?: boolean;
-  is_active?: boolean;
-  display_order?: number;
-}
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -68,7 +53,7 @@ serve(async (req) => {
 
     // Parse and validate request body
     const body = await req.json().catch(() => ({}));
-    
+
     // Validate required ID field
     const id = String(body?.id ?? "").trim();
     if (!id) {
@@ -77,7 +62,7 @@ serve(async (req) => {
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -94,14 +79,14 @@ serve(async (req) => {
 
     if (!existingCollection) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: `Collection with id '${id}' not found` 
+        JSON.stringify({
+          ok: false,
+          error: `Collection with id '${id}' not found`,
         }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -117,7 +102,7 @@ serve(async (req) => {
           {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          },
         );
       }
       updateData.name = name;
@@ -135,7 +120,7 @@ serve(async (req) => {
           {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          },
         );
       }
 
@@ -149,19 +134,21 @@ serve(async (req) => {
           .maybeSingle();
 
         if (slugError) {
-          throw new Error(`Failed to check slug uniqueness: ${slugError.message}`);
+          throw new Error(
+            `Failed to check slug uniqueness: ${slugError.message}`,
+          );
         }
 
         if (slugCheck) {
           return new Response(
-            JSON.stringify({ 
-              ok: false, 
-              error: `Collection with slug '${slug}' already exists` 
+            JSON.stringify({
+              ok: false,
+              error: `Collection with slug '${slug}' already exists`,
             }),
             {
               status: 400,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
+            },
           );
         }
       }
@@ -171,22 +158,25 @@ serve(async (req) => {
 
     // Image URL
     if (body?.image_url !== undefined) {
-      updateData.image_url = body.image_url ? String(body.image_url).trim() : null;
+      updateData.image_url = body.image_url
+        ? String(body.image_url).trim()
+        : null;
     }
 
     // Rotation type
     if (body?.rotation_type !== undefined) {
       const rotation_type = String(body.rotation_type).trim();
-      if (!['fixed', 'odd_months', 'even_months'].includes(rotation_type)) {
+      if (!["fixed", "odd_months", "even_months"].includes(rotation_type)) {
         return new Response(
-          JSON.stringify({ 
-            ok: false, 
-            error: "rotation_type must be 'fixed', 'odd_months', or 'even_months'" 
+          JSON.stringify({
+            ok: false,
+            error:
+              "rotation_type must be 'fixed', 'odd_months', or 'even_months'",
           }),
           {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          },
         );
       }
       updateData.rotation_type = rotation_type;
@@ -200,14 +190,15 @@ serve(async (req) => {
         const revelationDate = new Date(body.character_revelation_date);
         if (isNaN(revelationDate.getTime())) {
           return new Response(
-            JSON.stringify({ 
-              ok: false, 
-              error: "character_revelation_date must be a valid ISO 8601 date or null" 
+            JSON.stringify({
+              ok: false,
+              error:
+                "character_revelation_date must be a valid ISO 8601 date or null",
             }),
             {
               status: 400,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
+            },
           );
         }
         updateData.character_revelation_date = revelationDate.toISOString();
@@ -216,12 +207,16 @@ serve(async (req) => {
 
     // Character name
     if (body?.character_name !== undefined) {
-      updateData.character_name = body.character_name ? String(body.character_name).trim() : null;
+      updateData.character_name = body.character_name
+        ? String(body.character_name).trim()
+        : null;
     }
 
     // Character image URL
     if (body?.character_image_url !== undefined) {
-      updateData.character_image_url = body.character_image_url ? String(body.character_image_url).trim() : null;
+      updateData.character_image_url = body.character_image_url
+        ? String(body.character_image_url).trim()
+        : null;
     }
 
     // Revealed flag
@@ -242,14 +237,14 @@ serve(async (req) => {
     // Check if there's anything to update
     if (Object.keys(updateData).length === 0) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: "No fields provided to update" 
+        JSON.stringify({
+          ok: false,
+          error: "No fields provided to update",
         }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -265,31 +260,33 @@ serve(async (req) => {
       throw new Error(`Failed to update collection: ${updateError.message}`);
     }
 
-    console.log(`Collection updated successfully: ${collection.id} (${collection.name})`);
+    console.log(
+      `Collection updated successfully: ${collection.id} (${collection.name})`,
+    );
 
     return new Response(
-      JSON.stringify({ 
-        ok: true, 
-        collection 
+      JSON.stringify({
+        ok: true,
+        collection,
       }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
-
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    const status = msg.startsWith("Forbidden") ? 403 : msg === "Unauthorized" ? 401 : 500;
-    
+    const status = msg.startsWith("Forbidden")
+      ? 403
+      : msg === "Unauthorized"
+        ? 401
+        : 500;
+
     console.error("Error updating collection:", msg);
-    
-    return new Response(
-      JSON.stringify({ ok: false, error: msg }),
-      {
-        status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+
+    return new Response(JSON.stringify({ ok: false, error: msg }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

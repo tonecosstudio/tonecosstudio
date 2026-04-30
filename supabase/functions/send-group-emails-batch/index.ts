@@ -2,8 +2,11 @@
 // Sends batch email notifications for group messages
 // V1 Simple Approach: Always send email to all members (respecting notification preferences)
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireSharedSecret } from "../_shared/secrets.ts";
+import { assertAdmin } from "../_shared/supabase.ts";
 
 // Types
 interface GroupEmailBatchRequest {
@@ -29,7 +32,7 @@ interface GroupMessageDetails {
 }
 
 interface EmailServiceConfig {
-  provider: 'resend' | 'sendgrid';
+  provider: "resend" | "sendgrid";
   apiKey: string;
   fromEmail: string;
   fromName: string;
@@ -45,7 +48,7 @@ class EmailService {
     subject: string;
     html: string;
   }): Promise<{ id: string }> {
-    if (this.config.provider === 'resend') {
+    if (this.config.provider === "resend") {
       return this.sendViaResend(params);
     } else {
       return this.sendViaSendGrid(params);
@@ -57,11 +60,11 @@ class EmailService {
     subject: string;
     html: string;
   }): Promise<{ id: string }> {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         from: `${this.config.fromName} <${this.config.fromEmail}>`,
@@ -85,25 +88,29 @@ class EmailService {
     subject: string;
     html: string;
   }): Promise<{ id: string }> {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        personalizations: [{
-          to: [{ email: params.to }],
-        }],
+        personalizations: [
+          {
+            to: [{ email: params.to }],
+          },
+        ],
         from: {
           email: this.config.fromEmail,
           name: this.config.fromName,
         },
         subject: params.subject,
-        content: [{
-          type: 'text/html',
-          value: params.html,
-        }],
+        content: [
+          {
+            type: "text/html",
+            value: params.html,
+          },
+        ],
       }),
     });
 
@@ -112,7 +119,7 @@ class EmailService {
       throw new Error(`SendGrid API error: ${error}`);
     }
 
-    const messageId = response.headers.get('x-message-id') || 'unknown';
+    const messageId = response.headers.get("x-message-id") || "unknown";
     return { id: messageId };
   }
 }
@@ -252,16 +259,16 @@ function generateGroupEmailHTML(data: {
       <p class="greeting">Olá ${data.recipientName},</p>
       <p>Você recebeu uma nova mensagem no grupo:</p>
       <div class="group-badge">${data.groupName}</div>
-      
+
       <div class="message-box">
         <div class="message-sender">${data.senderName}</div>
         <div class="message-content">${data.messagePreview}</div>
       </div>
-      
+
       <center>
         <a href="${data.groupUrl}" class="cta-button">Ver Mensagem Completa</a>
       </center>
-      
+
       <p style="margin-top: 24px; font-size: 14px; color: #64748b;">
         Clique no botão acima para visualizar a mensagem completa e o histórico do grupo.
       </p>
@@ -279,11 +286,12 @@ function generateGroupEmailHTML(data: {
 // Get group message details with sender and group info
 async function getGroupMessageDetails(
   supabase: any,
-  messageId: string
+  messageId: string,
 ): Promise<GroupMessageDetails | null> {
   const { data: message, error: messageError } = await supabase
-    .from('chat_group_messages')
-    .select(`
+    .from("chat_group_messages")
+    .select(
+      `
       id,
       message,
       sender_id,
@@ -292,27 +300,28 @@ async function getGroupMessageDetails(
       chat_groups!inner (
         name
       )
-    `)
-    .eq('id', messageId)
+    `,
+    )
+    .eq("id", messageId)
     .single();
 
   if (messageError || !message) {
-    console.error('Error fetching message details:', messageError);
+    console.error("Error fetching message details:", messageError);
     return null;
   }
 
   // Get sender name
   const { data: senderProfile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', message.sender_id)
+    .from("profiles")
+    .select("full_name")
+    .eq("id", message.sender_id)
     .single();
 
   return {
     id: message.id,
     message: message.message,
     sender_id: message.sender_id,
-    sender_name: senderProfile?.full_name || 'Admin',
+    sender_name: senderProfile?.full_name || "Admin",
     group_id: message.group_id,
     group_name: message.chat_groups.name,
     created_at: message.created_at,
@@ -322,22 +331,24 @@ async function getGroupMessageDetails(
 // Get group members with email preferences
 async function getGroupMembers(
   supabase: any,
-  groupId: string
+  groupId: string,
 ): Promise<GroupMember[]> {
   const { data: members, error } = await supabase
-    .from('chat_group_members')
-    .select(`
+    .from("chat_group_members")
+    .select(
+      `
       user_id,
       profiles!inner (
         email,
         full_name,
         email_notifications_enabled
       )
-    `)
-    .eq('group_id', groupId);
+    `,
+    )
+    .eq("group_id", groupId);
 
   if (error) {
-    console.error('Error fetching group members:', error);
+    console.error("Error fetching group members:", error);
     return [];
   }
 
@@ -357,68 +368,85 @@ async function sendEmailWithRetry(
     subject: string;
     html: string;
   },
-  maxRetries: number = 3
+  maxRetries: number = 3,
 ): Promise<{ success: boolean; emailId?: string; error?: string }> {
   const retryDelays = [1000, 2000, 4000]; // Exponential backoff: 1s, 2s, 4s
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const result = await emailService.sendEmail(params);
-      console.log(`Email sent successfully on attempt ${attempt + 1}:`, result.id);
+      console.log(
+        `Email sent successfully on attempt ${attempt + 1}:`,
+        result.id,
+      );
       return { success: true, emailId: result.id };
     } catch (error) {
-      console.error(`Email send attempt ${attempt + 1} failed:`, (error as Error)r as Error)r as Error)r as Error).message);
-      
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Email send attempt ${attempt + 1} failed:`, message);
+
       if (attempt < maxRetries - 1) {
         // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelays[attempt]),
+        );
       } else {
         // Final attempt failed
-       (error as Error)rn { s(error as Error)s: fal(error as Error)rror: error.message };
+        return { success: false, error: message };
       }
     }
   }
 
-  return { success: false, error: 'Max retries exceeded' };
+  return { success: false, error: "Max retries exceeded" };
 }
 
 // Main handler
 serve(async (req) => {
   // CORS headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     // CORS preflight
-    if (req.method === 'OPTIONS') {
-      return new Response('ok', {
+    if (req.method === "OPTIONS") {
+      return new Response("ok", {
         headers: {
           ...corsHeaders,
-          'Access-Control-Allow-Methods': 'POST',
+          "Access-Control-Allow-Methods": "POST",
         },
       });
     }
 
+    if (Deno.env.get("EMAIL_WEBHOOK_SECRET")) {
+      const forbidden = requireSharedSecret(
+        req,
+        "EMAIL_WEBHOOK_SECRET",
+        "x-webhook-secret",
+      );
+      if (forbidden) return forbidden;
+    } else {
+      await assertAdmin(req);
+    }
+
     // Parse request
     const payload: GroupEmailBatchRequest = await req.json();
-    console.log('Group email batch request:', payload);
+    console.log("Group email batch request:", payload);
 
     // Validate payload
     if (!payload.groupId || !payload.messageId) {
-      throw new Error('Missing required fields: groupId and messageId');
+      throw new Error("Missing required fields: groupId and messageId");
     }
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get message details
-    const messageDetails = await getGroupMessageDetails(supabase, payload.messageId);
+    const messageDetails = await getGroupMessageDetails(
+      supabase,
+      payload.messageId,
+    );
     if (!messageDetails) {
-      throw new Error('Message not found');
+      throw new Error("Message not found");
     }
 
     // Get group members
@@ -426,8 +454,12 @@ serve(async (req) => {
     console.log(`Found ${members.length} members in group`);
 
     // Filter members with email notifications enabled
-    const membersToNotify = members.filter(m => m.email_notifications_enabled);
-    console.log(`${membersToNotify.length} members have email notifications enabled`);
+    const membersToNotify = members.filter(
+      (m) => m.email_notifications_enabled,
+    );
+    console.log(
+      `${membersToNotify.length} members have email notifications enabled`,
+    );
 
     if (membersToNotify.length === 0) {
       return new Response(
@@ -435,25 +467,25 @@ serve(async (req) => {
           success: true,
           sent: 0,
           skipped: members.length,
-          reason: 'no_members_with_notifications_enabled',
+          reason: "no_members_with_notifications_enabled",
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     // Configure email service
-    const emailProvider = Deno.env.get('EMAIL_PROVIDER') || 'resend';
-    const emailApiKey = Deno.env.get('EMAIL_API_KEY');
-    const emailFrom = Deno.env.get('EMAIL_FROM') || 'suporte@ordax.com.br';
-    const emailFromName = Deno.env.get('EMAIL_FROM_NAME') || 'Ordax';
-    const baseUrl = Deno.env.get('BASE_URL') || 'http://localhost:8080';
+    const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
+    const emailApiKey = Deno.env.get("EMAIL_API_KEY");
+    const emailFrom = Deno.env.get("EMAIL_FROM") || "suporte@ordax.com.br";
+    const emailFromName = Deno.env.get("EMAIL_FROM_NAME") || "Ordax";
+    const baseUrl = Deno.env.get("BASE_URL") || "http://localhost:8080";
 
     if (!emailApiKey) {
-      throw new Error('EMAIL_API_KEY not configured');
+      throw new Error("EMAIL_API_KEY not configured");
     }
 
     const emailConfig: EmailServiceConfig = {
-      provider: emailProvider as 'resend' | 'sendgrid',
+      provider: emailProvider as "resend" | "sendgrid",
       apiKey: emailApiKey,
       fromEmail: emailFrom,
       fromName: emailFromName,
@@ -463,9 +495,10 @@ serve(async (req) => {
     const emailService = new EmailService(emailConfig);
 
     // Generate message preview (first 200 chars)
-    const messagePreview = messageDetails.message.length > 200
-      ? messageDetails.message.substring(0, 200) + '...'
-      : messageDetails.message;
+    const messagePreview =
+      messageDetails.message.length > 200
+        ? messageDetails.message.substring(0, 200) + "..."
+        : messageDetails.message;
 
     // Send emails to all members (with retry logic)
     const results = {
@@ -481,7 +514,7 @@ serve(async (req) => {
 
         // Generate email HTML
         const emailHTML = generateGroupEmailHTML({
-          recipientName: member.full_name || 'Membro',
+          recipientName: member.full_name || "Membro",
           groupName: messageDetails.group_name,
           senderName: messageDetails.sender_name,
           messagePreview,
@@ -501,16 +534,20 @@ serve(async (req) => {
         } else {
           results.failed++;
           results.errors.push(`${member.email}: ${result.error}`);
-          console.error(`Failed to send email to ${member.email}:`, result.error);
+          console.error(
+            `Failed to send email to ${member.email}:`,
+            result.error,
+          );
         }
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         results.failed++;
-    (error as Error)esults.errors.pus(error as Error)member.email}: ${error.message}`);
-        console.error(`Error sending email to ${member.email}:`, error);
+        results.errors.push(`${member.email}: ${message}`);
+        console.error(`Error sending email to ${member.email}:`, message);
       }
     }
 
-    console.log('Batch email results:', results);
+    console.log("Batch email results:", results);
 
     return new Response(
       JSON.stringify({
@@ -520,14 +557,14 @@ serve(async (req) => {
         total: membersToNotify.length,
         errors: results.errors.length > 0 ? results.errors : undefined,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-
   } catch (error) {
-    console.error('Error in send-group-emails-batch function:', error);
-    return new Response(
-      JSON.st(error as Error)fy({ success: false, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Error in send-group-emails-batch function:", message);
+    return new Response(JSON.stringify({ success: false, error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

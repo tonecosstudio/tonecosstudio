@@ -1,22 +1,27 @@
 /**
  * Cron Job: Character Choice Expiration Handler
- * 
+ *
  * Runs hourly to handle character choices with expired deadlines.
- * 
+ *
  * Actions performed:
  * 1. Query choices with expired deadline and status = 'pending'
  * 2. Send notification to admin for each expired choice
  * 3. Update choice status to 'expired'
  * 4. Add to urgent alerts (via production_queue update)
  * 5. Log the expiration
- * 
+ *
  * Requirements:
  * - 2.2.4: Deadline Management - After deadline expires, admin is notified to manually assign character
  */
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { logCronStart, logCronSuccess, logCronError } from "../_shared/cron-logger.ts";
+import {
+  logCronStart,
+  logCronSuccess,
+  logCronError,
+} from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
+import { requireSharedSecret } from "../_shared/secrets.ts";
 
 interface ExpiredChoice {
   id: string;
@@ -26,17 +31,6 @@ interface ExpiredChoice {
   collection_id: string;
   deadline: string;
   created_at: string;
-}
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string | null;
-}
-
-interface Collection {
-  id: string;
-  name: string;
 }
 
 /**
@@ -51,14 +45,16 @@ async function sendAdminExpirationNotification(params: {
   orderType: string;
   daysExpired: number;
 }): Promise<void> {
-  const emailProvider = Deno.env.get('EMAIL_PROVIDER') || 'resend';
-  const emailApiKey = Deno.env.get('EMAIL_API_KEY');
-  const emailFrom = Deno.env.get('EMAIL_FROM') || 'noreply@ordax.com.br';
-  const emailFromName = Deno.env.get('EMAIL_FROM_NAME') || 'ORDAX';
-  const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@ordax.com.br';
+  const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
+  const emailApiKey = Deno.env.get("EMAIL_API_KEY");
+  const emailFrom = Deno.env.get("EMAIL_FROM") || "noreply@ordax.com.br";
+  const emailFromName = Deno.env.get("EMAIL_FROM_NAME") || "ORDAX";
+  const adminEmail = Deno.env.get("ADMIN_EMAIL") || "admin@ordax.com.br";
 
   if (!emailApiKey) {
-    console.warn('EMAIL_API_KEY not configured, skipping admin notification email');
+    console.warn(
+      "EMAIL_API_KEY not configured, skipping admin notification email",
+    );
     return;
   }
 
@@ -67,7 +63,7 @@ async function sendAdminExpirationNotification(params: {
 
   try {
     await sendEmail({
-      provider: emailProvider as 'resend' | 'sendgrid',
+      provider: emailProvider as "resend" | "sendgrid",
       apiKey: emailApiKey,
       from: emailFrom,
       fromName: emailFromName,
@@ -76,9 +72,14 @@ async function sendAdminExpirationNotification(params: {
       html: htmlContent,
     });
 
-    console.log(`Admin notification sent for expired choice: ${params.orderId}`);
+    console.log(
+      `Admin notification sent for expired choice: ${params.orderId}`,
+    );
   } catch (error) {
-    console.error(`Failed to send admin notification for ${params.orderId}:`, error);
+    console.error(
+      `Failed to send admin notification for ${params.orderId}:`,
+      error,
+    );
     throw error;
   }
 }
@@ -95,17 +96,19 @@ function generateAdminNotificationHTML(params: {
   orderType: string;
   daysExpired: number;
 }): string {
-  const formattedDeadline = new Date(params.deadline).toLocaleDateString('pt-BR', {
-    timeZone: 'America/Bahia',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formattedDeadline = new Date(params.deadline).toLocaleDateString(
+    "pt-BR",
+    {
+      timeZone: "America/Bahia",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    },
+  );
 
-  const orderPath = params.orderType === 'subscription_delivery' ? 'assinatura' : 'compra-avulsa';
-  const adminUrl = `${Deno.env.get('FRONTEND_URL') || 'https://ordax.com.br'}/admin/character-choices`;
+  const adminUrl = `${Deno.env.get("FRONTEND_URL") || "https://ordax.com.br"}/admin/character-choices`;
 
   return `
 <!DOCTYPE html>
@@ -219,12 +222,12 @@ function generateAdminNotificationHTML(params: {
       <p style="font-size: 18px; margin-bottom: 24px; color: #374151;">
         <strong>Alerta:</strong> Um cliente não escolheu seu personagem dentro do prazo.
       </p>
-      
+
       <div class="alert-box">
         <h2>📋 Detalhes do Pedido</h2>
         <div class="info-row">
           <span class="info-label">Cliente:</span>
-          <span class="info-value">${params.customerName || 'Não informado'}</span>
+          <span class="info-value">${params.customerName || "Não informado"}</span>
         </div>
         <div class="info-row">
           <span class="info-label">E-mail:</span>
@@ -240,7 +243,7 @@ function generateAdminNotificationHTML(params: {
         </div>
         <div class="info-row">
           <span class="info-label">Tipo:</span>
-          <span class="info-value">${params.orderType === 'subscription_delivery' ? 'Assinatura' : 'Compra Avulsa'}</span>
+          <span class="info-value">${params.orderType === "subscription_delivery" ? "Assinatura" : "Compra Avulsa"}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Prazo Expirado:</span>
@@ -248,15 +251,15 @@ function generateAdminNotificationHTML(params: {
         </div>
         <div class="info-row">
           <span class="info-label">Dias Expirado:</span>
-          <span class="info-value" style="color: #dc2626; font-weight: 600;">${params.daysExpired} ${params.daysExpired === 1 ? 'dia' : 'dias'}</span>
+          <span class="info-value" style="color: #dc2626; font-weight: 600;">${params.daysExpired} ${params.daysExpired === 1 ? "dia" : "dias"}</span>
         </div>
       </div>
-      
+
       <div class="action-required">
-        <strong>⚠️ Ação Necessária:</strong> O cliente não escolheu seu personagem dentro do prazo de 7 dias. 
+        <strong>⚠️ Ação Necessária:</strong> O cliente não escolheu seu personagem dentro do prazo de 7 dias.
         Por favor, acesse o painel de administração e atribua manualmente um personagem disponível para este pedido.
       </div>
-      
+
       <p style="margin-top: 24px;">
         <strong>Próximos Passos:</strong>
       </p>
@@ -266,15 +269,15 @@ function generateAdminNotificationHTML(params: {
         <li>Atribua um personagem ao pedido #${params.orderId}</li>
         <li>Notifique o cliente sobre a escolha atribuída (opcional)</li>
       </ol>
-      
+
       <div style="text-align: center;">
         <a href="${adminUrl}" class="cta-button">
           Gerenciar Escolhas
         </a>
       </div>
-      
+
       <p style="margin-top: 32px; font-size: 14px; color: #64748b;">
-        Este é um alerta automático do sistema de gerenciamento de produção. 
+        Este é um alerta automático do sistema de gerenciamento de produção.
         A escolha foi marcada como "expirada" e adicionada aos alertas urgentes do dashboard.
       </p>
     </div>
@@ -292,7 +295,7 @@ function generateAdminNotificationHTML(params: {
  * Sends an email using the configured email provider
  */
 async function sendEmail(params: {
-  provider: 'resend' | 'sendgrid';
+  provider: "resend" | "sendgrid";
   apiKey: string;
   from: string;
   fromName: string;
@@ -300,12 +303,12 @@ async function sendEmail(params: {
   subject: string;
   html: string;
 }): Promise<void> {
-  if (params.provider === 'resend') {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
+  if (params.provider === "resend") {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${params.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         from: `${params.fromName} <${params.from}>`,
@@ -320,25 +323,29 @@ async function sendEmail(params: {
       throw new Error(`Resend API error: ${error}`);
     }
   } else {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${params.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        personalizations: [{
-          to: [{ email: params.to }],
-        }],
+        personalizations: [
+          {
+            to: [{ email: params.to }],
+          },
+        ],
         from: {
           email: params.from,
           name: params.fromName,
         },
         subject: params.subject,
-        content: [{
-          type: 'text/html',
-          value: params.html,
-        }],
+        content: [
+          {
+            type: "text/html",
+            value: params.html,
+          },
+        ],
       }),
     });
 
@@ -353,14 +360,17 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    // Start logging
-    logId = await logCronStart('cron-expire-character-choices');
+    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    if (forbidden) return forbidden;
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Start logging
+    logId = await logCronStart("cron-expire-character-choices");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase environment variables not configured');
+      throw new Error("Supabase environment variables not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -371,14 +381,18 @@ Deno.serve(async (req) => {
 
     // Find character choices with expired deadline and status = 'pending'
     const { data: expiredChoices, error: choicesError } = await supabase
-      .from('character_choices')
-      .select('id, user_id, order_id, order_type, collection_id, deadline, created_at')
-      .eq('status', 'pending')
-      .lt('deadline', bahiaTime.toISOString());
+      .from("character_choices")
+      .select(
+        "id, user_id, order_id, order_type, collection_id, deadline, created_at",
+      )
+      .eq("status", "pending")
+      .lt("deadline", bahiaTime.toISOString());
 
     if (choicesError) {
-      console.error('Failed to fetch expired choices:', choicesError);
-      throw new Error(`Failed to fetch expired choices: ${choicesError.message}`);
+      console.error("Failed to fetch expired choices:", choicesError);
+      throw new Error(
+        `Failed to fetch expired choices: ${choicesError.message}`,
+      );
     }
 
     console.log(`Found ${expiredChoices?.length || 0} expired choice(s)`);
@@ -395,7 +409,7 @@ Deno.serve(async (req) => {
           totalExpired: 0,
           executedAt: bahiaTime.toISOString(),
         }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -416,36 +430,45 @@ Deno.serve(async (req) => {
 
         // Calculate days expired
         const deadlineDate = new Date(choice.deadline);
-        const daysExpired = Math.floor((bahiaTime.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysExpired = Math.floor(
+          (bahiaTime.getTime() - deadlineDate.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
 
         // Get user profile for email
         const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, email, full_name')
-          .eq('id', choice.user_id)
+          .from("profiles")
+          .select("id, email, full_name")
+          .eq("id", choice.user_id)
           .single();
 
         if (profileError || !profile || !profile.email) {
-          console.error(`Failed to get profile for user ${choice.user_id}:`, profileError);
+          console.error(
+            `Failed to get profile for user ${choice.user_id}:`,
+            profileError,
+          );
           errors.push({
             choiceId: choice.id,
-            error: `Failed to get user profile or email: ${profileError?.message || 'Not found'}`,
+            error: `Failed to get user profile or email: ${profileError?.message || "Not found"}`,
           });
           continue;
         }
 
         // Get collection name
         const { data: collection, error: collectionError } = await supabase
-          .from('collections')
-          .select('id, name')
-          .eq('id', choice.collection_id)
+          .from("collections")
+          .select("id, name")
+          .eq("id", choice.collection_id)
           .single();
 
         if (collectionError || !collection) {
-          console.error(`Failed to get collection ${choice.collection_id}:`, collectionError);
+          console.error(
+            `Failed to get collection ${choice.collection_id}:`,
+            collectionError,
+          );
           errors.push({
             choiceId: choice.id,
-            error: `Failed to get collection: ${collectionError?.message || 'Not found'}`,
+            error: `Failed to get collection: ${collectionError?.message || "Not found"}`,
           });
           continue;
         }
@@ -463,15 +486,18 @@ Deno.serve(async (req) => {
 
         // Update character_choices status to 'expired'
         const { error: updateChoiceError } = await supabase
-          .from('character_choices')
+          .from("character_choices")
           .update({
-            status: 'expired',
+            status: "expired",
             updated_at: bahiaTime.toISOString(),
           })
-          .eq('id', choice.id);
+          .eq("id", choice.id);
 
         if (updateChoiceError) {
-          console.error(`Failed to update choice status for ${choice.id}:`, updateChoiceError);
+          console.error(
+            `Failed to update choice status for ${choice.id}:`,
+            updateChoiceError,
+          );
           errors.push({
             choiceId: choice.id,
             error: `Failed to update choice status: ${updateChoiceError.message}`,
@@ -482,30 +508,38 @@ Deno.serve(async (req) => {
         // Update production_queue to add to urgent alerts
         // Find the production queue item for this order
         const { data: queueItem, error: queueFindError } = await supabase
-          .from('production_queue')
-          .select('id, internal_flags')
-          .eq('order_id', choice.order_id)
-          .eq('order_type', choice.order_type)
+          .from("production_queue")
+          .select("id, internal_flags")
+          .eq("order_id", choice.order_id)
+          .eq("order_type", choice.order_type)
           .single();
 
         if (queueFindError || !queueItem) {
-          console.warn(`Production queue item not found for order ${choice.order_id}:`, queueFindError);
+          console.warn(
+            `Production queue item not found for order ${choice.order_id}:`,
+            queueFindError,
+          );
           // Not a critical error - choice is still marked as expired
         } else {
           // Add 'choice_expired' flag to internal_flags
           const currentFlags = queueItem.internal_flags || [];
-          const updatedFlags = [...new Set([...currentFlags, 'choice_expired'])];
+          const updatedFlags = [
+            ...new Set([...currentFlags, "choice_expired"]),
+          ];
 
           const { error: updateQueueError } = await supabase
-            .from('production_queue')
+            .from("production_queue")
             .update({
               internal_flags: updatedFlags,
               updated_at: bahiaTime.toISOString(),
             })
-            .eq('id', queueItem.id);
+            .eq("id", queueItem.id);
 
           if (updateQueueError) {
-            console.error(`Failed to update production queue for ${queueItem.id}:`, updateQueueError);
+            console.error(
+              `Failed to update production queue for ${queueItem.id}:`,
+              updateQueueError,
+            );
             // Not a critical error - choice is still marked as expired
           }
         }
@@ -520,7 +554,8 @@ Deno.serve(async (req) => {
           daysExpired,
         });
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.error(`Error processing expired choice ${choice.id}:`, error);
         errors.push({
           choiceId: choice.id,
@@ -537,7 +572,9 @@ Deno.serve(async (req) => {
       executedAt: bahiaTime.toISOString(),
     });
 
-    console.log(`Cron job completed: ${totalExpired} expired choice(s) processed`);
+    console.log(
+      `Cron job completed: ${totalExpired} expired choice(s) processed`,
+    );
     if (errors.length > 0) {
       console.warn(`${errors.length} error(s) occurred during processing`);
     }
@@ -550,17 +587,20 @@ Deno.serve(async (req) => {
         errors: errors.length > 0 ? errors : undefined,
         executedAt: bahiaTime.toISOString(),
       }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error('Cron job failed:', error);
+    console.error("Cron job failed:", error);
 
     // Log error if we have a log ID
     if (logId) {
       try {
-        await logCronError(logId, error instanceof Error ? error : new Error(String(error)));
+        await logCronError(
+          logId,
+          error instanceof Error ? error : new Error(String(error)),
+        );
       } catch (logError) {
-        console.error('Failed to log error:', logError);
+        console.error("Failed to log error:", logError);
       }
     }
 
@@ -569,10 +609,10 @@ Deno.serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       }),
-      { 
+      {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { "Content-Type": "application/json" },
+      },
     );
   }
 });

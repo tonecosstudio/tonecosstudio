@@ -1,11 +1,12 @@
 /**
  * Audit Trail Service
- * 
+ *
  * Handles recording and retrieval of order status change history.
  * Uses the existing order_status_history table.
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import log from "@/lib/logger";
 
 /**
  * Status History record from order_status_history table
@@ -58,7 +59,7 @@ export async function getAllCollectionChanges(filters?: {
   const { data, error, count } = await query;
 
   if (error) {
-    console.error('Failed to get audit trail:', error.message);
+    log.error('Failed to get audit trail', { error: error.message });
     return { data: [], count: 0 };
   }
 
@@ -83,7 +84,7 @@ export async function searchCollectionChangesBySubscriber(
     .limit(limit);
 
   if (error) {
-    console.error('Failed to search audit trail:', error.message);
+    log.error('Failed to search audit trail', { error: error.message });
     return [];
   }
 
@@ -117,7 +118,7 @@ export async function recordStatusChange(params: {
     .single();
 
   if (error) {
-    console.error('Failed to record status change:', error.message);
+    log.error('Failed to record status change', { error: error.message });
     return null;
   }
 

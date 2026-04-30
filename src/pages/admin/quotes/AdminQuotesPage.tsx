@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ProductionTimeline } from "@/components/production/ProductionTimeline";
 import { AdminProductionTimelineEditor } from "@/pages/admin/quotes/AdminProductionTimelineEditor";
-import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import SEOHead from "@/components/SEOHead";
 
 type QuoteRow = {

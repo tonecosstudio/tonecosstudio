@@ -1,6 +1,6 @@
 /**
  * Stripe Service Tests
- * 
+ *
  * Testes automatizados para o serviço de pagamentos Stripe
  */
 
@@ -9,7 +9,7 @@ import { stripeService, StripeServiceError } from '@/lib/stripe/stripe-service';
 import Stripe from 'stripe';
 
 // Mock do Stripe
-vi.mock('@/lib/stripe/stripe-client', () => ({
+vi.mock('@/lib/stripe/stripe-server', () => ({
   stripe: {
     paymentIntents: {
       create: vi.fn(),
@@ -71,7 +71,7 @@ describe('StripeService', () => {
         client_secret: 'pi_test_123_secret',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.paymentIntents.create as any).mockResolvedValue(mockPaymentIntent);
 
       const result = await stripeService.createPaymentIntent({
@@ -97,7 +97,7 @@ describe('StripeService', () => {
         customer: 'cus_test_123',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.paymentIntents.create as any).mockResolvedValue(mockPaymentIntent);
 
       await stripeService.createPaymentIntent({
@@ -121,7 +121,7 @@ describe('StripeService', () => {
         metadata: { orderId: '123' },
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.paymentIntents.create as any).mockResolvedValue(mockPaymentIntent);
 
       await stripeService.createPaymentIntent({
@@ -137,7 +137,7 @@ describe('StripeService', () => {
     });
 
     it('deve lançar StripeServiceError em caso de erro', async () => {
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       const stripeError = new Stripe.errors.StripeCardError({
         type: 'card_error',
         code: 'card_declined',
@@ -160,7 +160,7 @@ describe('StripeService', () => {
         status: 'succeeded',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.paymentIntents.retrieve as any).mockResolvedValue(mockPaymentIntent);
 
       const result = await stripeService.getPaymentIntent('pi_test_123');
@@ -179,7 +179,7 @@ describe('StripeService', () => {
         status: 'succeeded',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.paymentIntents.confirm as any).mockResolvedValue(mockPaymentIntent);
 
       const result = await stripeService.confirmPaymentIntent(
@@ -204,7 +204,7 @@ describe('StripeService', () => {
         status: 'canceled',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.paymentIntents.cancel as any).mockResolvedValue(mockPaymentIntent);
 
       const result = await stripeService.cancelPaymentIntent('pi_test_123');
@@ -222,7 +222,7 @@ describe('StripeService', () => {
         name: 'Test User',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.customers.create as any).mockResolvedValue(mockCustomer);
 
       const result = await stripeService.createCustomer({
@@ -250,7 +250,7 @@ describe('StripeService', () => {
         status: 'succeeded',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.refunds.create as any).mockResolvedValue(mockRefund);
 
       const result = await stripeService.createRefund('pi_test_123');
@@ -272,7 +272,7 @@ describe('StripeService', () => {
         status: 'succeeded',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.refunds.create as any).mockResolvedValue(mockRefund);
 
       const result = await stripeService.createRefund('pi_test_123', 5000);
@@ -298,7 +298,7 @@ describe('StripeService', () => {
         },
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.subscriptions.create as any).mockResolvedValue(mockSubscription);
 
       const result = await stripeService.createSubscription({
@@ -325,7 +325,7 @@ describe('StripeService', () => {
         cancel_at_period_end: true,
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.subscriptions.update as any).mockResolvedValue(mockSubscription);
 
       const result = await stripeService.cancelSubscription('sub_test_123', false);
@@ -344,7 +344,7 @@ describe('StripeService', () => {
         status: 'canceled',
       };
 
-      const { stripe } = await import('@/lib/stripe/stripe-client');
+      const { stripe } = await import('@/lib/stripe/stripe-server');
       (stripe.subscriptions.cancel as any).mockResolvedValue(mockSubscription);
 
       const result = await stripeService.cancelSubscription('sub_test_123', true);

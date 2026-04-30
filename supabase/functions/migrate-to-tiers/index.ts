@@ -4,19 +4,19 @@ import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
 
 /**
  * Migrate to Tiers Endpoint
- * 
+ *
  * Analisa preços existentes e migra coleções para o sistema de níveis.
  * Pode executar em modo dry-run (apenas análise) ou modo real (executa migração).
- * 
+ *
  * Requisitos: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7
  * Tarefa: 6.5
- * 
+ *
  * Request Body:
  * {
  *   dryRun: boolean; // Se true, apenas analisa sem modificar dados
  *   autoCreateTiers: boolean; // Se true, cria níveis automaticamente baseado na análise
  * }
- * 
+ *
  * Response (dry run):
  * {
  *   ok: true;
@@ -30,7 +30,7 @@ import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
  *     suggested_tier_name: string;
  *   }>;
  * }
- * 
+ *
  * Response (real migration):
  * {
  *   ok: true;
@@ -39,18 +39,13 @@ import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
  *   collectionsAssigned: number;
  *   errors: string[];
  * }
- * 
+ *
  * Errors:
  * - 401: Unauthorized (no valid JWT)
  * - 403: Forbidden (not admin)
  * - 400: Bad Request (validation errors)
  * - 500: Internal Server Error
  */
-
-interface MigrateToTiersRequest {
-  dryRun: boolean;
-  autoCreateTiers: boolean;
-}
 
 interface MigrationSuggestion {
   price_full: number;
@@ -73,15 +68,18 @@ serve(async (req) => {
 
     // Parse and validate request body
     const body = await req.json().catch(() => ({}));
-    
+
     const dryRun = Boolean(body?.dryRun ?? true); // Default to dry run for safety
     const autoCreateTiers = Boolean(body?.autoCreateTiers ?? true);
 
-    console.log(`Migration mode: ${dryRun ? 'DRY RUN' : 'REAL'}, autoCreateTiers: ${autoCreateTiers}`);
+    console.log(
+      `Migration mode: ${dryRun ? "DRY RUN" : "REAL"}, autoCreateTiers: ${autoCreateTiers}`,
+    );
 
     // Call database function to analyze pricing
-    const { data: suggestions, error: analyzeError } = await service
-      .rpc("analyze_pricing_for_migration");
+    const { data: suggestions, error: analyzeError } = await service.rpc(
+      "analyze_pricing_for_migration",
+    );
 
     if (analyzeError) {
       throw new Error(`Failed to analyze pricing: ${analyzeError.message}`);
@@ -89,20 +87,22 @@ serve(async (req) => {
 
     const migrationSuggestions = suggestions as MigrationSuggestion[];
 
-    console.log(`Analysis complete: ${migrationSuggestions.length} unique price groups found`);
+    console.log(
+      `Analysis complete: ${migrationSuggestions.length} unique price groups found`,
+    );
 
     // If dry run, return suggestions without modifying data
     if (dryRun) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           ok: true,
           dryRun: true,
-          suggestions: migrationSuggestions
+          suggestions: migrationSuggestions,
         }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -119,18 +119,23 @@ serve(async (req) => {
         .from("migration_audit")
         .insert({
           migration_type: "initial_migration",
-          collections_affected: migrationSuggestions.reduce((sum, s) => sum + s.collection_count, 0),
+          collections_affected: migrationSuggestions.reduce(
+            (sum, s) => sum + s.collection_count,
+            0,
+          ),
           tiers_created: 0,
           started_at: migrationStartTime,
           status: "in_progress",
           executed_by: userId,
-          migration_data: { suggestions: migrationSuggestions }
+          migration_data: { suggestions: migrationSuggestions },
         })
         .select()
         .single();
 
       if (auditError) {
-        throw new Error(`Failed to create migration audit record: ${auditError.message}`);
+        throw new Error(
+          `Failed to create migration audit record: ${auditError.message}`,
+        );
       }
 
       const auditId = auditRecord.id;
@@ -140,19 +145,23 @@ serve(async (req) => {
         try {
           if (autoCreateTiers) {
             // Create tier for this price group
-            const { data: tier, error: tierError } = await service
-              .rpc("create_pricing_tier", {
+            const { data: tier, error: tierError } = await service.rpc(
+              "create_pricing_tier",
+              {
                 p_name: suggestion.suggested_tier_name,
                 p_description: `Criado automaticamente durante migração - ${suggestion.collection_count} coleções`,
                 p_price_full: suggestion.price_full,
                 p_deposit_amount: suggestion.deposit_amount,
                 p_pix_discount_percentage: 5, // Default 5% discount
                 p_is_default: false,
-                p_created_by: userId
-              });
+                p_created_by: userId,
+              },
+            );
 
             if (tierError) {
-              errors.push(`Failed to create tier '${suggestion.suggested_tier_name}': ${tierError.message}`);
+              errors.push(
+                `Failed to create tier '${suggestion.suggested_tier_name}': ${tierError.message}`,
+              );
               console.error(`Failed to create tier:`, tierError);
               continue;
             }
@@ -161,27 +170,35 @@ serve(async (req) => {
             createdTierIds.push(tierId);
             tiersCreated++;
 
-            console.log(`Created tier: ${suggestion.suggested_tier_name} (${tierId})`);
+            console.log(
+              `Created tier: ${suggestion.suggested_tier_name} (${tierId})`,
+            );
 
             // Assign collections to this tier
             for (const collectionId of suggestion.collection_ids) {
               try {
-                const { error: assignError } = await service
-                  .rpc("assign_collection_to_tier", {
+                const { error: assignError } = await service.rpc(
+                  "assign_collection_to_tier",
+                  {
                     p_collection_id: collectionId,
                     p_tier_id: tierId,
-                    p_assigned_by: userId
-                  });
+                    p_assigned_by: userId,
+                  },
+                );
 
                 if (assignError) {
-                  errors.push(`Failed to assign collection ${collectionId} to tier ${tierId}: ${assignError.message}`);
+                  errors.push(
+                    `Failed to assign collection ${collectionId} to tier ${tierId}: ${assignError.message}`,
+                  );
                   console.error(`Failed to assign collection:`, assignError);
                 } else {
                   collectionsAssigned++;
                 }
               } catch (e) {
                 const msg = e instanceof Error ? e.message : "Unknown error";
-                errors.push(`Exception assigning collection ${collectionId}: ${msg}`);
+                errors.push(
+                  `Exception assigning collection ${collectionId}: ${msg}`,
+                );
                 console.error(`Exception assigning collection:`, msg);
               }
             }
@@ -194,7 +211,8 @@ serve(async (req) => {
       }
 
       // Update migration audit record
-      const migrationStatus = errors.length === 0 ? "completed" : "completed_with_errors";
+      const migrationStatus =
+        errors.length === 0 ? "completed" : "completed_with_errors";
       await service
         .from("migration_audit")
         .update({
@@ -205,30 +223,31 @@ serve(async (req) => {
           migration_data: {
             suggestions: migrationSuggestions,
             created_tier_ids: createdTierIds,
-            collections_assigned: collectionsAssigned
-          }
+            collections_assigned: collectionsAssigned,
+          },
         })
         .eq("id", auditId);
 
-      console.log(`Migration complete: ${tiersCreated} tiers created, ${collectionsAssigned} collections assigned, ${errors.length} errors`);
+      console.log(
+        `Migration complete: ${tiersCreated} tiers created, ${collectionsAssigned} collections assigned, ${errors.length} errors`,
+      );
 
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           ok: true,
           dryRun: false,
           tiersCreated,
           collectionsAssigned,
-          errors
+          errors,
         }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
-
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
-      
+
       // Try to update audit record with failure
       try {
         await service
@@ -236,7 +255,7 @@ serve(async (req) => {
           .update({
             completed_at: new Date().toISOString(),
             status: "failed",
-            error_message: msg
+            error_message: msg,
           })
           .eq("started_at", migrationStartTime)
           .eq("executed_by", userId);
@@ -246,19 +265,19 @@ serve(async (req) => {
 
       throw e;
     }
-
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    const status = msg.startsWith("Forbidden") ? 403 : msg === "Unauthorized" ? 401 : 500;
-    
+    const status = msg.startsWith("Forbidden")
+      ? 403
+      : msg === "Unauthorized"
+        ? 401
+        : 500;
+
     console.error("Error in migrate-to-tiers:", msg);
-    
-    return new Response(
-      JSON.stringify({ ok: false, error: msg }),
-      {
-        status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+
+    return new Response(JSON.stringify({ ok: false, error: msg }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

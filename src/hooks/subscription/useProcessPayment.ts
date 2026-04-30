@@ -1,10 +1,9 @@
-// @ts-nocheck
 /**
  * Hook para processar pagamentos de assinatura e adicionar coins
- * 
+ *
  * Este hook integra o sistema de pagamentos com o sistema de coins,
  * creditando automaticamente os coins quando um pagamento é aprovado.
- * 
+ *
  * @module hooks/subscription/useProcessPayment
  */
 
@@ -28,21 +27,21 @@ import type { CoinsAmount, CoinsTransactionType } from '@/types/coins';
 
 /**
  * Hook para processar pagamento de assinatura
- * 
+ *
  * Fluxo:
  * 1. Registra pagamento
  * 2. Atualiza status da assinatura
  * 3. Adiciona coins ao usuário
  * 4. Registra transação de coins
  * 5. Notifica usuário
- * 
+ *
  * @returns Mutation para processar pagamento
- * 
+ *
  * @example
  * ```tsx
  * function PaymentConfirmation({ subscriptionId }: { subscriptionId: string }) {
  *   const processPayment = useProcessSubscriptionPayment();
- *   
+ *
  *   const handleConfirm = () => {
  *     processPayment.mutate({
  *       subscription_id: subscriptionId,
@@ -51,7 +50,7 @@ import type { CoinsAmount, CoinsTransactionType } from '@/types/coins';
  *       external_reference: 'PIX-123456',
  *     });
  *   };
- *   
+ *
  *   return (
  *     <button onClick={handleConfirm} disabled={processPayment.isPending}>
  *       Confirmar Pagamento
@@ -63,24 +62,24 @@ import type { CoinsAmount, CoinsTransactionType } from '@/types/coins';
 export function useProcessSubscriptionPayment() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (
       params: ProcessSubscriptionPaymentParams
     ): Promise<ProcessPaymentResponse> => {
       const { subscription_id, amount, payment_method, external_reference } = params;
-      
+
       // 1. Busca assinatura
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('id', subscription_id)
         .single();
-      
+
       if (subError || !subscription) {
         throw new Error('Assinatura não encontrada');
       }
-      
+
       // 2. Registra pagamento
       const { data: payment, error: paymentError } = await supabase
         .from('subscription_payments')
@@ -96,11 +95,11 @@ export function useProcessSubscriptionPayment() {
         })
         .select()
         .single();
-      
+
       if (paymentError || !payment) {
         throw new Error(`Erro ao registrar pagamento: ${paymentError?.message}`);
       }
-      
+
       // 3. Atualiza status da assinatura para ativa
       const { error: updateError } = await supabase
         .from('subscriptions')
@@ -109,11 +108,11 @@ export function useProcessSubscriptionPayment() {
           next_billing_date: calculateNextBillingDate(subscription.plan_type),
         })
         .eq('id', subscription_id);
-      
+
       if (updateError) {
         throw new Error(`Erro ao atualizar assinatura: ${updateError.message}`);
       }
-      
+
       // 4. Adiciona coins ao usuário
       const { error: coinsError } = await supabase.rpc('add_coins_to_user', {
         p_user_id: subscription.user_id,
@@ -122,11 +121,11 @@ export function useProcessSubscriptionPayment() {
         p_reference_id: payment.id,
         p_reference_type: 'subscription_payment',
       });
-      
+
       if (coinsError) {
         throw new Error(`Erro ao adicionar coins: ${coinsError.message}`);
       }
-      
+
       // 5. Atualiza total de coins recebidos
       const { error: totalError } = await supabase
         .from('subscriptions')
@@ -134,22 +133,22 @@ export function useProcessSubscriptionPayment() {
           total_coins_received: subscription.total_coins_received + subscription.coins_per_month,
         })
         .eq('id', subscription_id);
-      
+
       if (totalError) {
         console.error('Erro ao atualizar total de coins:', totalError);
       }
-      
+
       // 6. Busca novo saldo
       const { data: newBalance, error: balanceError } = await supabase
         .from('user_coins')
         .select('balance')
         .eq('user_id', subscription.user_id)
         .single();
-      
+
       if (balanceError) {
         console.error('Erro ao buscar novo saldo:', balanceError);
       }
-      
+
       return {
         success: true,
         payment: payment as SubscriptionPayment,
@@ -166,7 +165,7 @@ export function useProcessSubscriptionPayment() {
       queryClient.invalidateQueries({
         queryKey: coinsBalanceKeys.all,
       });
-      
+
       toast({
         title: 'Pagamento aprovado!',
         description: data.message,
@@ -188,19 +187,19 @@ export function useProcessSubscriptionPayment() {
 
 /**
  * Hook para admin adicionar coins manualmente a uma assinatura
- * 
+ *
  * Útil para:
  * - Bônus promocionais
  * - Compensações
  * - Ajustes manuais
- * 
+ *
  * @returns Mutation para adicionar coins
- * 
+ *
  * @example
  * ```tsx
  * function AdminAddCoins({ userId }: { userId: string }) {
  *   const addCoins = useAdminAddSubscriptionCoins();
- *   
+ *
  *   const handleAdd = () => {
  *     addCoins.mutate({
  *       user_id: userId,
@@ -208,7 +207,7 @@ export function useProcessSubscriptionPayment() {
  *       reason: 'Bônus promocional',
  *     });
  *   };
- *   
+ *
  *   return <button onClick={handleAdd}>Adicionar 1000 coins</button>;
  * }
  * ```
@@ -216,7 +215,7 @@ export function useProcessSubscriptionPayment() {
 export function useAdminAddSubscriptionCoins() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (params: {
       user_id: UserId;
@@ -224,25 +223,25 @@ export function useAdminAddSubscriptionCoins() {
       reason: string;
     }) => {
       const { user_id, amount, reason } = params;
-      
+
       // Verifica se usuário é admin
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+
       if (authError || !user) {
         throw new Error('Não autenticado');
       }
-      
+
       const { data: isAdmin, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
         .maybeSingle();
-      
+
       if (roleError || !isAdmin) {
         throw new Error('Apenas admins podem adicionar coins manualmente');
       }
-      
+
       // Adiciona coins
       const { error: coinsError } = await supabase.rpc('add_coins_to_user', {
         p_user_id: user_id,
@@ -251,18 +250,18 @@ export function useAdminAddSubscriptionCoins() {
         p_reference_id: user.id,
         p_reference_type: 'admin_adjustment',
       });
-      
+
       if (coinsError) {
         throw new Error(`Erro ao adicionar coins: ${coinsError.message}`);
       }
-      
+
       return { success: true, amount };
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: coinsBalanceKeys.user(variables.user_id),
       });
-      
+
       toast({
         title: 'Coins adicionados!',
         description: `${data.amount} coins foram creditados.`,
@@ -284,15 +283,15 @@ export function useAdminAddSubscriptionCoins() {
 
 /**
  * Hook para buscar histórico de pagamentos de uma assinatura
- * 
+ *
  * @param subscriptionId - ID da assinatura
  * @returns Query com lista de pagamentos
- * 
+ *
  * @example
  * ```tsx
  * function PaymentHistory({ subscriptionId }: { subscriptionId: string }) {
  *   const { data: payments } = useSubscriptionPayments(subscriptionId);
- *   
+ *
  *   return (
  *     <ul>
  *       {payments?.map(payment => (
@@ -314,11 +313,11 @@ export function useSubscriptionPayments(subscriptionId: string) {
         .select('*')
         .eq('subscription_id', subscriptionId)
         .order('created_at', { ascending: false });
-      
+
       if (error) {
         throw new Error(`Erro ao buscar pagamentos: ${error.message}`);
       }
-      
+
       return (data as SubscriptionPayment[]) || [];
     },
     staleTime: 60 * 1000, // 1 minuto
@@ -335,7 +334,7 @@ export function useSubscriptionPayments(subscriptionId: string) {
  */
 function calculateNextBillingDate(planType: string): string {
   const now = new Date();
-  
+
   switch (planType) {
     case 'bimestral':
       now.setMonth(now.getMonth() + 2);
@@ -352,7 +351,7 @@ function calculateNextBillingDate(planType: string): string {
     default:
       now.setMonth(now.getMonth() + 1);
   }
-  
+
   return now.toISOString();
 }
 

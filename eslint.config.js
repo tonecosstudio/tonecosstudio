@@ -19,27 +19,27 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      
+
       // React Refresh - keep disabled for flexibility
       "react-refresh/only-export-components": "off",
-      
-      // TypeScript Rules - Gradually enable for better type safety
-      "@typescript-eslint/no-unused-vars": ["warn", { 
+
+      // TypeScript Rules - Strict for production code, lenient for tests
+      "@typescript-eslint/no-unused-vars": ["error", {
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_",
         caughtErrorsIgnorePattern: "^_"
       }],
-      "@typescript-eslint/no-explicit-any": "warn", // Changed from "off" to "warn"
+      "@typescript-eslint/no-explicit-any": "warn", // Keep as warn - too many in tests
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-require-imports": "off",
-      
+
       // General Rules
       "no-useless-escape": "off",
       "no-case-declarations": "off",
-      
+
       // React Hooks Rules - Critical for React correctness
-      "react-hooks/rules-of-hooks": "error", // Changed from "warn" to "error"
-      "react-hooks/exhaustive-deps": "warn", // Keep as warn for now, will change to error later
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error", // Enforce dependency arrays
     },
   },
 );

@@ -1,13 +1,19 @@
 /**
  * Types for Subscription Credit System API
  * Based on the design document in .kiro/specs/subscription-credit-system/design.md
+ *
+ * NOTE: This is a legacy system that will be migrated to the unified order system.
+ * For new code, use types from @/types/admin/orders instead.
  */
 
 export type PlanType = 'trimestral' | 'semestral';
 export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
 export type CancellationType = 'with_refund' | 'no_renewal';
+
+// Legacy types - use specific types from @/types/admin/orders for new code
 export type OrderType = 'individual' | 'automatic';
 export type OrderStatus = 'pending' | 'confirmed' | 'in_production' | 'shipped' | 'cancelled';
+
 export type TransactionType = 'allocation' | 'debit_immediate' | 'debit_cycle_close' | 'expiration' | 'adjustment';
 export type CycleStatus = 'open' | 'full' | 'closed';
 

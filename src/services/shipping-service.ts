@@ -1,25 +1,24 @@
 /**
  * Shipping Service
- * 
+ *
  * Provides shipping carrier integration for label generation and tracking.
  * Currently implements a mock/stub that can be easily replaced with real API integration.
- * 
+ *
  * Supported Carriers:
  * - Correios (Brazilian national postal service) - Default
  * - Private carriers (future implementation)
- * 
+ *
  * Environment Variables Required:
  * - VITE_SHIPPING_CARRIER: 'correios' | 'private' (default: 'correios')
- * - VITE_SHIPPING_API_KEY: API key for the shipping carrier
  * - VITE_SHIPPING_API_URL: Base URL for the carrier API (optional)
  * - VITE_SHIPPING_CONTRACT_CODE: Contract code for Correios (optional)
  * - VITE_SHIPPING_ADMIN_CODE: Admin code for Correios (optional)
  * - VITE_SHIPPING_SERVICE_CODE: Service code (e.g., '04014' for SEDEX) (default: '04014')
- * 
+ *
  * @example
  * ```typescript
  * const shippingService = new ShippingService();
- * 
+ *
  * // Generate shipping label
  * const label = await shippingService.generateLabel('delivery-id-123', {
  *   name: 'João Silva',
@@ -31,7 +30,7 @@
  *   state: 'BA',
  *   zipCode: '40000-000'
  * });
- * 
+ *
  * // Get tracking status
  * const status = await shippingService.getTrackingStatus('BR123456789BR');
  * ```
@@ -107,7 +106,6 @@ export interface BatchLabelResult {
  */
 interface ShippingConfig {
   carrier: 'correios' | 'private';
-  apiKey: string;
   apiUrl: string;
   contractCode?: string;
   adminCode?: string;
@@ -146,7 +144,6 @@ export class ShippingService {
    */
   private loadConfig(): ShippingConfig {
     const carrier = (import.meta.env.VITE_SHIPPING_CARRIER || 'correios') as ShippingConfig['carrier'];
-    const apiKey = import.meta.env.VITE_SHIPPING_API_KEY || '';
     const apiUrl = import.meta.env.VITE_SHIPPING_API_URL || 'https://api.correios.com.br';
     const contractCode = import.meta.env.VITE_SHIPPING_CONTRACT_CODE || '';
     const adminCode = import.meta.env.VITE_SHIPPING_ADMIN_CODE || '';
@@ -156,7 +153,6 @@ export class ShippingService {
 
     return {
       carrier,
-      apiKey,
       apiUrl,
       contractCode,
       adminCode,
@@ -168,11 +164,11 @@ export class ShippingService {
 
   /**
    * Generate shipping label for a delivery
-   * 
+   *
    * @param deliveryId - The delivery ID
    * @param address - Destination address
    * @returns Label information including tracking code, label URL, and cost
-   * 
+   *
    * @throws {ShippingServiceError} If label generation fails
    */
   async generateLabel(deliveryId: string, address: Address): Promise<LabelResult> {
@@ -195,7 +191,7 @@ export class ShippingService {
 
       // Generate label based on carrier
       let labelResult: LabelResult;
-      
+
       if (this.config.carrier === 'correios') {
         labelResult = await this.generateCorreiosLabel(deliveryId, address, cost);
       } else {
@@ -220,10 +216,10 @@ export class ShippingService {
 
   /**
    * Get tracking status for a tracking code
-   * 
+   *
    * @param trackingCode - The tracking code to query
    * @returns Current tracking status and event history
-   * 
+   *
    * @throws {ShippingServiceError} If tracking query fails
    */
   async getTrackingStatus(trackingCode: string): Promise<TrackingStatus> {
@@ -257,7 +253,7 @@ export class ShippingService {
   /**
    * Update tracking statuses for all in-transit deliveries
    * Called by cron job to poll carrier API for status updates
-   * 
+   *
    * @returns Number of deliveries updated
    */
   async updateTrackingStatuses(): Promise<number> {
@@ -283,7 +279,7 @@ export class ShippingService {
       for (const delivery of deliveries) {
         try {
           const status = await this.getTrackingStatus(delivery.tracking_code!);
-          
+
           // Update delivery status if delivered
           if (status.delivered) {
             await supabase
@@ -294,7 +290,7 @@ export class ShippingService {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', delivery.id);
-            
+
             updatedCount++;
           }
         } catch (error) {
@@ -315,7 +311,7 @@ export class ShippingService {
 
   /**
    * Calculate shipping cost based on destination address and weight
-   * 
+   *
    * @param address - Destination address
    * @param weight - Package weight in kg
    * @returns Shipping cost in BRL
@@ -335,10 +331,10 @@ export class ShippingService {
       // In production, this would call the carrier API
       const basePrice = 15.00;
       const weightPrice = weight * 5.00;
-      
+
       // Add regional surcharge for states outside Bahia
       const regionalSurcharge = address.state !== 'BA' ? 10.00 : 0;
-      
+
       return basePrice + weightPrice + regionalSurcharge;
     } catch (error) {
       if (error instanceof ShippingServiceError) {
@@ -354,7 +350,7 @@ export class ShippingService {
 
   /**
    * Generate batch shipping labels for multiple deliveries
-   * 
+   *
    * @param deliveryIds - Array of delivery IDs
    * @returns Results of batch generation with successful and failed items
    */
@@ -378,7 +374,7 @@ export class ShippingService {
 
         // Generate label
         const label = await this.generateLabel(deliveryId, delivery.address);
-        
+
         result.successful.push({
           deliveryId,
           trackingCode: label.trackingCode,
@@ -405,7 +401,7 @@ export class ShippingService {
   private validateAddress(address: Address): void {
     const required = ['name', 'street', 'number', 'neighborhood', 'city', 'state', 'zipCode'];
     const missing = required.filter(field => !address[field as keyof Address]);
-    
+
     if (missing.length > 0) {
       throw new ShippingServiceError(
         `Missing required address fields: ${missing.join(', ')}`,
@@ -489,13 +485,13 @@ export class ShippingService {
 
   /**
    * Generate Correios shipping label (MOCK IMPLEMENTATION)
-   * 
+   *
    * In production, this would:
    * 1. Call Correios API to create shipment
    * 2. Get tracking code from response
    * 3. Download label PDF
    * 4. Store label in Supabase Storage
-   * 
+   *
    * @private
    */
   private async generateCorreiosLabel(
@@ -505,12 +501,15 @@ export class ShippingService {
   ): Promise<LabelResult> {
     // Mock implementation - generates fake tracking code
     // In production, replace with actual Correios API call
-    
+
     logDebug('Generating Correios label for delivery', { deliveryId, address, cost }, 'shipping');
+    if (!import.meta.env.PROD) {
+      console.log('[MOCK] Generating Correios label', { deliveryId });
+    }
 
     // Generate mock tracking code (Correios format: BR123456789BR)
     const trackingCode = `BR${Math.random().toString().slice(2, 11)}BR`;
-    
+
     // Mock label URL (in production, this would be the actual PDF URL)
     const labelUrl = `https://mock-correios.com/labels/${trackingCode}.pdf`;
 
@@ -526,9 +525,9 @@ export class ShippingService {
 
   /**
    * Get Correios tracking status (MOCK IMPLEMENTATION)
-   * 
+   *
    * In production, this would call Correios tracking API
-   * 
+   *
    * @private
    */
   private async getCorreiosTracking(trackingCode: string): Promise<TrackingStatus> {
@@ -568,7 +567,7 @@ export class ShippingService {
 
   /**
    * Generate private carrier shipping label (MOCK IMPLEMENTATION)
-   * 
+   *
    * @private
    */
   private async generatePrivateCarrierLabel(
@@ -578,6 +577,9 @@ export class ShippingService {
   ): Promise<LabelResult> {
     // Mock implementation for private carriers
     logDebug('Generating private carrier label', { deliveryId }, 'shipping');
+    if (!import.meta.env.PROD) {
+      console.log('[MOCK] Generating private carrier label', { deliveryId });
+    }
 
     const trackingCode = `PC${Math.random().toString().slice(2, 11)}`;
     const labelUrl = `https://mock-carrier.com/labels/${trackingCode}.pdf`;
@@ -593,7 +595,7 @@ export class ShippingService {
 
   /**
    * Get private carrier tracking status (MOCK IMPLEMENTATION)
-   * 
+   *
    * @private
    */
   private async getPrivateCarrierTracking(trackingCode: string): Promise<TrackingStatus> {

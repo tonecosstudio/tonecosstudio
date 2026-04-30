@@ -48,21 +48,21 @@ const SubscriberDashboardArcade = lazy(() => import("./pages/SubscriberDashboard
 const CoinsPurchaseArcade = lazy(() => import("./pages/CoinsPurchaseArcade"));
 
 // Admin pages
-const AdminHome = lazy(() => import("./pages/admin/AdminHome"));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminUserDetails = lazy(() => import("./pages/admin/AdminUserDetails"));
-const AuditTrail = lazy(() => import("./pages/admin/AuditTrail"));
-const AdminCreditsHub = lazy(() => import("./pages/admin/AdminCreditsHub"));
-const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
-const AdminPackaging = lazy(() => import("./pages/admin/AdminPackaging"));
-const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
-const AdminPaymentHub = lazy(() => import("./pages/admin/AdminPaymentHub"));
-const AdminCommunication = lazy(() => import("./pages/admin/AdminCommunication"));
-const AdminCollectionsHub = lazy(() => import("./pages/admin/AdminCollectionsHub"));
-const AdminFinancialHub = lazy(() => import("./pages/admin/AdminFinancialHub"));
-const AdminGroupDetailsPage = lazy(() => import("./pages/admin/AdminGroupDetailsPage"));
-const OrdersPage = lazy(() => import("./pages/admin/OrdersPage"));
-const ProductionHub = lazy(() => import("./pages/admin/ProductionHub"));
+const AdminHome = lazy(() => import("./pages/admin/analytics/AdminHome"));
+const AdminUsers = lazy(() => import("./pages/admin/users/AdminUsers"));
+const AdminUserDetails = lazy(() => import("./pages/admin/users/AdminUserDetails"));
+const AuditTrail = lazy(() => import("./pages/admin/settings/AuditTrail"));
+const AdminCreditsHub = lazy(() => import("./pages/admin/credits/AdminCreditsHub"));
+const AdminAnalytics = lazy(() => import("./pages/admin/analytics/AdminAnalytics"));
+const AdminPackaging = lazy(() => import("./pages/admin/production/AdminPackaging"));
+const AdminSettings = lazy(() => import("./pages/admin/settings/AdminSettings"));
+const AdminPaymentHub = lazy(() => import("./pages/admin/payments/AdminPaymentHub"));
+const AdminCommunication = lazy(() => import("./pages/admin/support/AdminCommunication"));
+const AdminCollectionsHub = lazy(() => import("./pages/admin/collections/AdminCollectionsHub"));
+const AdminFinancialHub = lazy(() => import("./pages/admin/payments/AdminFinancialHub"));
+const AdminGroupDetailsPage = lazy(() => import("./pages/admin/users/AdminGroupDetailsPage"));
+const OrdersPage = lazy(() => import("./pages/admin/production/OrdersPage"));
+const ProductionHub = lazy(() => import("./pages/admin/production/ProductionHub"));
 
 // ─── Loading fallback ────────────────────────────────────────────────
 function PageLoader() {

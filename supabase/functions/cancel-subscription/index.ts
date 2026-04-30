@@ -3,12 +3,15 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { nowInBahia, toUTC } from "../_shared/timezone.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
-import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import {
+  checkContentLength,
+  PAYLOAD_LIMITS,
+} from "../_shared/payload-guard.ts";
 import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 const CANCEL_SCHEMA: Schema = {
   subscriptionId: { type: "uuid", required: true },
-  reason:         { type: "string", maxLength: 500, sanitize: true },
+  reason: { type: "string", maxLength: 500, sanitize: true },
 };
 
 serve(async (req) => {
@@ -16,7 +19,7 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    const { claims, client } = await getClaims(req);
+    const { claims } = await getClaims(req);
     const userId = String(claims.sub);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -26,7 +29,12 @@ serve(async (req) => {
     }
 
     // Rate limit: standard operations
-    const rateLimited = await checkRateLimit(req, "cancel-subscription", RATE_LIMITS.STANDARD, userId);
+    const rateLimited = await checkRateLimit(
+      req,
+      "cancel-subscription",
+      RATE_LIMITS.STANDARD,
+      userId,
+    );
     if (rateLimited) return rateLimited;
 
     // Payload size guard
@@ -38,7 +46,10 @@ serve(async (req) => {
     const validation = validateOrReject(rawBody, CANCEL_SCHEMA);
     if ("error" in validation) return validation.error;
 
-    const { subscriptionId, reason } = validation.data as { subscriptionId: string; reason?: string };
+    const { subscriptionId, reason } = validation.data as {
+      subscriptionId: string;
+      reason?: string;
+    };
 
     // Busca assinatura
     const { data: subscription, error: subscriptionError } = await service
@@ -50,16 +61,21 @@ serve(async (req) => {
     if (subscriptionError) throw subscriptionError;
 
     if (!subscription) {
-      return new Response(JSON.stringify({ error: "Assinatura não encontrada" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Assinatura não encontrada" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Verifica se é o dono da assinatura
     if (subscription.user_id !== userId) {
       return new Response(
-        JSON.stringify({ error: "Você não tem permissão para cancelar esta assinatura" }),
+        JSON.stringify({
+          error: "Você não tem permissão para cancelar esta assinatura",
+        }),
         {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -104,18 +120,19 @@ serve(async (req) => {
 
     // Release capacity for future deliveries (before cutoff only)
     // Get all future deliveries that haven't started production
-    const { data: futureDeliveries, error: futureDeliveriesError } = await service
-      .from("subscription_deliveries")
-      .select("id, cycle_id, status")
-      .eq("subscription_id", subscriptionId)
-      .in("status", ["scheduled", "pending_choice"]);
+    const { data: futureDeliveries, error: futureDeliveriesError } =
+      await service
+        .from("subscription_deliveries")
+        .select("id, cycle_id, status")
+        .eq("subscription_id", subscriptionId)
+        .in("status", ["scheduled", "pending_choice"]);
 
     if (futureDeliveriesError) {
       console.error("Error fetching future deliveries:", futureDeliveriesError);
     } else if (futureDeliveries && futureDeliveries.length > 0) {
       // Check if before cutoff
-      const { data: beforeCutoff, error: cutoffError } = await service
-        .rpc("is_before_cutoff");
+      const { data: beforeCutoff, error: cutoffError } =
+        await service.rpc("is_before_cutoff");
 
       if (cutoffError) {
         console.error("Error checking cutoff:", cutoffError);
@@ -124,11 +141,13 @@ serve(async (req) => {
         for (const delivery of futureDeliveries) {
           if (delivery.cycle_id) {
             try {
-              const { error: releaseError } = await service
-                .rpc("release_capacity", {
+              const { error: releaseError } = await service.rpc(
+                "release_capacity",
+                {
                   p_cycle_id: delivery.cycle_id,
                   p_quantity: 1,
-                });
+                },
+              );
 
               if (releaseError) {
                 console.error(
@@ -168,7 +187,8 @@ serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error cancelling subscription:", msg);
-    const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
+    const status =
+      msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
     return new Response(JSON.stringify({ error: msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

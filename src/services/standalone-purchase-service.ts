@@ -1,14 +1,14 @@
 /**
  * Standalone Purchase Service
- * 
+ *
  * Handles creation and management of standalone purchases (single piece purchases
  * without subscription) using the deposit model.
- * 
+ *
  * Requirements: 4.1, 4.2, 4.3, 7.6
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { logInfo, logError } from "@/lib/logger";
+import log from "@/lib/logger";
 import { emailService } from "./email-service";
 import { StandalonePurchase } from "@/types/database";
 import { validateBeforeCutoff, CutoffPassedError } from "@/lib/cutoff-middleware";
@@ -25,21 +25,21 @@ export interface CreateStandalonePurchaseParams {
 
 /**
  * Create a standalone purchase with deposit
- * 
+ *
  * This function creates a new standalone purchase with the following validations:
  * 1. Checks if the cycle is still open (status = 'open')
  * 2. Verifies current time is before cutoff (day 15 at 23:59:59 Bahia time)
  * 3. Checks if capacity is available
  * 4. Reserves capacity for the cycle
- * 
+ *
  * The deposit amount is fixed at R$100.00, and the balance is calculated as
  * collection price minus deposit.
- * 
+ *
  * @param params - Creation parameters
  * @returns Promise<StandalonePurchase> - The created purchase
  * @throws CutoffPassedError if cutoff has passed
  * @throws Error if cycle is not open or capacity exceeded
- * 
+ *
  * Requirements: 4.1, 4.2, 4.3, 7.6
  */
 export async function createWithDeposit(
@@ -137,7 +137,7 @@ export async function createWithDeposit(
       .from('standalone_purchases')
       .delete()
       .eq('id', purchase.id);
-    
+
     throw new Error(`Failed to reserve capacity: ${reserveError.message}`);
   }
 
@@ -146,15 +146,15 @@ export async function createWithDeposit(
 
 /**
  * Check if a standalone purchase can be created for a given cycle
- * 
+ *
  * This function performs all validation checks without creating the purchase:
  * 1. Checks if before cutoff
  * 2. Checks if cycle is open
  * 3. Checks if capacity is available
- * 
+ *
  * @param cycleId - The cycle ID to check
  * @returns Promise<{ canCreate: boolean; reason?: string }> - Result with reason if cannot create
- * 
+ *
  * Requirements: 7.6
  */
 export async function canCreateStandalonePurchase(
@@ -223,7 +223,7 @@ export async function canCreateStandalonePurchase(
 
 /**
  * Get standalone purchases for a user
- * 
+ *
  * @param userId - The user ID
  * @returns Promise<StandalonePurchase[]> - List of purchases
  */
@@ -245,7 +245,7 @@ export async function getUserStandalonePurchases(
 
 /**
  * Get a standalone purchase by ID
- * 
+ *
  * @param purchaseId - The purchase ID
  * @returns Promise<StandalonePurchase | null> - The purchase or null if not found
  */
@@ -270,17 +270,17 @@ export async function getStandalonePurchase(
 
 /**
  * Cancel a standalone purchase and release capacity
- * 
+ *
  * This function cancels a standalone purchase and releases the reserved capacity
  * if the cancellation occurs before the cutoff date. The capacity is only released
  * if the current time is before day 15 at 23:59:59 Bahia time.
- * 
+ *
  * @param purchaseId - The purchase ID to cancel
  * @param reason - Optional cancellation reason
  * @param adminUserId - Optional admin user ID for audit logging
  * @returns Promise<void>
  * @throws Error if purchase not found or cancellation fails
- * 
+ *
  * Requirements: 3.6, 4.7, 15.3
  */
 export async function cancelStandalonePurchase(
@@ -383,19 +383,19 @@ export async function cancelStandalonePurchase(
 
 /**
  * Process balance payment for a standalone purchase
- * 
+ *
  * This function processes the balance payment for a standalone purchase with the following validations:
  * 1. Verifies the purchase exists and status is 'awaiting_balance'
  * 2. Checks that the balance_due_date has not passed
  * 3. Updates status to 'balance_paid'
  * 4. Sets balance_paid_at timestamp
  * 5. Generates a tracking code for shipping
- * 
+ *
  * @param purchaseId - The purchase ID
  * @param balanceVoucherUrl - URL of the balance payment voucher
  * @returns Promise<void>
  * @throws Error if purchase not found, status invalid, or deadline passed
- * 
+ *
  * Requirements: 4.5, 4.9
  */
 export async function processBalancePayment(
@@ -422,7 +422,7 @@ export async function processBalancePayment(
   if (purchase.balance_due_date) {
     const dueDate = new Date(purchase.balance_due_date);
     const now = new Date();
-    
+
     if (now > dueDate) {
       throw new Error('Cannot process balance payment - payment deadline has passed.');
     }
@@ -543,8 +543,8 @@ export async function markProductionComplete(
   // 6. Send email notification to customer (Requirement 4.4)
   try {
     await emailService.sendProductionStarted(purchaseId);
-    logInfo(`Production complete email sent to user ${purchase.user_id}`, 
-      { purchaseId, balanceDueDate: balanceDueDate.toISOString() }, 
+    logInfo(`Production complete email sent to user ${purchase.user_id}`,
+      { purchaseId, balanceDueDate: balanceDueDate.toISOString() },
       'standalone-purchase');
   } catch (emailError) {
     logError('Failed to send production complete email', emailError, 'standalone-purchase');
@@ -557,7 +557,7 @@ export async function markProductionComplete(
  *
  * This function cancels a standalone purchase when the balance payment is not received
  * within the deadline. The deposit is retained as "Arras Confirmatórias" (non-refundable deposit).
- * 
+ *
  * Actions performed:
  * 1. Updates status to 'cancelled'
  * 2. Sets cancelled_at timestamp
@@ -680,25 +680,25 @@ export async function cancelForNonPayment(
         { purchase_id: purchaseId, reason: cancellationReason }
       );
 
-      logInfo(`Cancellation email sent to user ${purchase.user_id}`, 
-        { purchaseId, reason: cancellationReason }, 
+      logInfo(`Cancellation email sent to user ${purchase.user_id}`,
+        { purchaseId, reason: cancellationReason },
         'standalone-purchase');
     }
   } catch (emailError) {
     logError('Failed to send cancellation email', emailError, 'standalone-purchase');
     // Don't fail the operation if email fails
   }
-} 
+}
     'standalone-purchase');
 }
 
 
 /**
  * Get all standalone purchases with filters for admin panel
- * 
+ *
  * @param filters - Optional filters for status, cycle, date range, search term
  * @returns Promise with purchases data and total count
- * 
+ *
  * Requirements: 15.1, 15.2
  */
 export async function getAllStandalonePurchases(filters?: {
@@ -795,11 +795,11 @@ export async function getAllStandalonePurchases(filters?: {
 
 /**
  * Search standalone purchases by customer name or email
- * 
+ *
  * @param searchTerm - Search term for customer name or email
  * @param limit - Maximum number of results
  * @returns Promise with matching purchases
- * 
+ *
  * Requirements: 15.2
  */
 export async function searchStandalonePurchasesByCustomer(
@@ -847,16 +847,16 @@ export async function searchStandalonePurchasesByCustomer(
 
 /**
  * Approve payment voucher and update purchase status
- * 
+ *
  * This function approves a payment voucher (deposit or balance) and updates the purchase status accordingly:
  * - For deposit vouchers: Updates status to 'deposit_paid' if not already
  * - For balance vouchers: Updates status to 'balance_paid' and generates tracking code
- * 
+ *
  * @param purchaseId - The purchase ID
  * @param voucherType - Type of voucher being approved ('deposit' or 'balance')
  * @returns Promise<void>
  * @throws Error if purchase not found or approval fails
- * 
+ *
  * Requirements: 25.7
  */
 export async function approvePaymentVoucher(
@@ -918,16 +918,16 @@ export async function approvePaymentVoucher(
 
 /**
  * Reject payment voucher and notify customer
- * 
+ *
  * This function rejects a payment voucher and sends a notification to the customer
  * with the rejection reason. The customer can then upload a new voucher.
- * 
+ *
  * @param purchaseId - The purchase ID
  * @param voucherType - Type of voucher being rejected ('deposit' or 'balance')
  * @param rejectionReason - Reason for rejection
  * @returns Promise<void>
  * @throws Error if purchase not found or rejection fails
- * 
+ *
  * Requirements: 25.8, 25.9
  */
 export async function rejectPaymentVoucher(
@@ -948,7 +948,7 @@ export async function rejectPaymentVoucher(
 
   // 2. Clear the voucher URL to allow re-upload
   const updateData: any = {};
-  
+
   if (voucherType === 'deposit') {
     updateData.deposit_voucher_url = null;
   } else if (voucherType === 'balance') {
@@ -976,7 +976,7 @@ export async function rejectPaymentVoucher(
     if (userData?.email) {
       const userName = userData.full_name || userData.email.split('@')[0];
       const voucherTypeName = voucherType === 'deposit' ? 'Depósito' : 'Saldo';
-      
+
       const html = `
 <!DOCTYPE html>
 <html>
@@ -1022,15 +1022,15 @@ export async function rejectPaymentVoucher(
         { purchase_id: purchaseId, voucher_type: voucherType, reason: rejectionReason }
       );
 
-      logInfo(`Voucher rejection notification sent to user ${purchase.user_id}`, 
-        { purchaseId, voucherType, reason: rejectionReason }, 
+      logInfo(`Voucher rejection notification sent to user ${purchase.user_id}`,
+        { purchaseId, voucherType, reason: rejectionReason },
         'standalone-purchase');
     }
   } catch (emailError) {
     logError('Failed to send voucher rejection email', emailError, 'standalone-purchase');
     // Don't fail the operation if email fails
   }
-} 
-    { voucherType, rejectionReason }, 
+}
+    { voucherType, rejectionReason },
     'standalone-purchase');
 }

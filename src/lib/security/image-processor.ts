@@ -1,12 +1,12 @@
 /**
  * Image Processing and Security Service
- * 
+ *
  * Handles image uploads with security features:
  * - EXIF metadata removal
  * - Image validation
  * - Compression and optimization
  * - Malware detection (basic)
- * 
+ *
  * Uses sharp library for image processing
  */
 
@@ -35,9 +35,11 @@ const DEFAULT_OPTIONS: Required<ImageProcessingOptions> = {
   removeMetadata: true
 };
 
+const SHARP_MODULE = 'sharp';
+
 /**
  * Validate image file before processing
- * 
+ *
  * @param file - Image file to validate
  * @returns Validation result
  */
@@ -47,10 +49,10 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
 
 /**
  * Check if file might contain malware (basic checks)
- * 
+ *
  * This is a basic check. For production, integrate with a proper
- * malware scanning service like ClamAV or VirusTotal.
- * 
+ * malware scanning service like ClamAV.
+ *
  * @param file - File to check
  * @returns true if file appears suspicious
  */
@@ -65,7 +67,7 @@ export async function detectPotentialMalware(file: File): Promise<boolean> {
     // Check 2: Read file header (magic bytes)
     const buffer = await file.slice(0, 12).arrayBuffer();
     const bytes = new Uint8Array(buffer);
-    
+
     // Valid image magic bytes
     const validHeaders = {
       jpeg: [0xFF, 0xD8, 0xFF],
@@ -127,10 +129,10 @@ export async function detectPotentialMalware(file: File): Promise<boolean> {
 
 /**
  * Process image: remove EXIF, resize, compress
- * 
+ *
  * Note: This function requires sharp library to be installed.
  * For browser-side processing, use browser-image-compression instead.
- * 
+ *
  * @param file - Image file to process
  * @param options - Processing options
  * @returns Processed image as Blob
@@ -167,12 +169,12 @@ export async function processImage(
   try {
     // For browser-side processing, use browser-image-compression
     // This is a placeholder - actual implementation depends on environment
-    
+
     // In browser environment:
     if (typeof window !== 'undefined') {
       return await procesImageInBrowser(file, opts);
     }
-    
+
     // In Node.js environment (Edge Functions):
     return await processImageInNode(file, opts);
   } catch (error) {
@@ -194,7 +196,7 @@ export async function processImage(
 
 /**
  * Process image in browser using browser-image-compression
- * 
+ *
  * @param file - Image file
  * @param options - Processing options
  * @returns Processed image blob
@@ -217,7 +219,7 @@ async function procesImageInBrowser(
   };
 
   const compressed = await imageCompression(file, compressionOptions);
-  
+
   // Additional EXIF removal (browser-image-compression should handle this)
   // but we double-check
   if (options.removeMetadata) {
@@ -229,7 +231,7 @@ async function procesImageInBrowser(
 
 /**
  * Process image in Node.js using sharp
- * 
+ *
  * @param file - Image file
  * @param options - Processing options
  * @returns Processed image blob
@@ -240,10 +242,10 @@ async function processImageInNode(
 ): Promise<Blob> {
   // This would be used in Supabase Edge Functions
   // Dynamic import sharp
-  const sharp = (await import('sharp')).default;
+  const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
 
   const buffer = await file.arrayBuffer();
-  
+
   let pipeline = sharp(Buffer.from(buffer));
 
   // Remove metadata (including EXIF)
@@ -284,14 +286,14 @@ async function processImageInNode(
 
 /**
  * Remove EXIF data from image blob
- * 
+ *
  * @param blob - Image blob
  * @returns Blob without EXIF data
  */
 async function removeEXIFData(blob: Blob): Promise<Blob> {
   // For JPEG images, EXIF data is in APP1 marker
   // This is a simplified implementation
-  
+
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
 
@@ -304,17 +306,17 @@ async function removeEXIFData(blob: Blob): Promise<Blob> {
     while (i < bytes.length - 1) {
       if (bytes[i] === 0xFF) {
         const marker = bytes[i + 1];
-        
+
         // Skip EXIF marker (APP1)
         if (marker === 0xE1) {
           const length = (bytes[i + 2] << 8) | bytes[i + 3];
           i += length + 2;
           continue;
         }
-        
+
         // Copy other markers
         newBytes.push(bytes[i], bytes[i + 1]);
-        
+
         // If marker has length, copy it
         if (marker >= 0xC0 && marker <= 0xFE && marker !== 0xD8 && marker !== 0xD9) {
           const length = (bytes[i + 2] << 8) | bytes[i + 3];
@@ -340,7 +342,7 @@ async function removeEXIFData(blob: Blob): Promise<Blob> {
 
 /**
  * Generate thumbnail from image
- * 
+ *
  * @param file - Original image file
  * @param size - Thumbnail size (width and height)
  * @returns Thumbnail blob
@@ -360,7 +362,7 @@ export async function generateThumbnail(
 
 /**
  * Validate image dimensions
- * 
+ *
  * @param file - Image file
  * @param minWidth - Minimum width
  * @param minHeight - Minimum height

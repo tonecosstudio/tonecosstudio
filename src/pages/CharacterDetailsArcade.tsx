@@ -1,6 +1,6 @@
 /**
  * Character Details Page - Metal Slug Arcade Style (v2)
- * 
+ *
  * Página completa de detalhes do personagem com estética arcade
  * Routes: /colecoes/:slug/:characterId | /personagem/:characterId
  */
@@ -114,6 +114,8 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
           src={images[activeIndex]}
           alt={`${name} - ${activeIndex + 1}`}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          loading="eager"
+          fetchpriority="high"
         />
 
         {/* Scanline */}
@@ -166,7 +168,7 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
                   : "border-[hsl(0,0%,15%)] opacity-50 hover:opacity-80"
               }`}
             >
-              <img src={img} alt={`${name} thumb ${i + 1}`} className="w-full h-full object-cover" />
+              <img src={img} alt={`${name} thumb ${i + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
             </button>
           ))}
         </div>
@@ -195,6 +197,8 @@ function RelatedCharacterCard({ char, collectionSlug }: { char: RelatedCharacter
               className={`w-full h-full object-cover transition-all duration-500 ${
                 hovered ? "scale-110 grayscale-0" : "grayscale-[0.5]"
               }`}
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -232,7 +236,7 @@ export default function CharacterDetailsArcade() {
       const { data, error } = await supabase
         .from("collection_characters")
         .select(`
-          id, name, description, image_url, image_urls, status, is_catalog, 
+          id, name, description, image_url, image_urls, status, is_catalog,
           collection_id, franchise, price_category_id,
           price_categories (display_name, price_coins, price_standalone),
           collections (id, name, slug, description)

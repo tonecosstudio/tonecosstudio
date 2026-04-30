@@ -4,13 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Mock environment variables
 vi.stubEnv('VITE_EMAIL_PROVIDER', 'sendgrid');
-vi.stubEnv('VITE_SENDGRID_API_KEY', 'test-api-key');
 vi.stubEnv('VITE_EMAIL_FROM', 'test@ordax.com');
 vi.stubEnv('VITE_EMAIL_FROM_NAME', 'ORDAX Test');
 
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    functions: {
+      invoke: vi.fn(() => Promise.resolve({ data: { success: true }, error: null })),
+    },
     from: vi.fn(() => ({
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
@@ -53,6 +55,7 @@ vi.mock('../notification-preferences-service', () => ({
 describe('Email Tracking', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (supabase.functions.invoke as any).mockResolvedValue({ data: { success: true }, error: null });
   });
 
   describe('Email Log Creation', () => {
@@ -72,7 +75,6 @@ describe('Email Tracking', () => {
           eq: vi.fn(() => Promise.resolve({ error: null }))
         }))
       });
-
       // Mock fetch to simulate successful email send
       global.fetch = vi.fn(() =>
         Promise.resolve({
@@ -122,7 +124,6 @@ describe('Email Tracking', () => {
           eq: vi.fn(() => Promise.resolve({ error: null }))
         }))
       });
-
       global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -215,7 +216,6 @@ describe('Email Tracking', () => {
         })),
         update: updateMock
       });
-
       global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -258,6 +258,10 @@ describe('Email Tracking', () => {
           }))
         })),
         update: updateMock
+      });
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: null,
+        error: { message: 'Server error' },
       });
 
       global.fetch = vi.fn(() =>

@@ -1,6 +1,6 @@
 /**
  * Collection Details Page - Metal Slug Arcade Style
- * 
+ *
  * Uses Page shell for consistent aesthetic with Home, Collections, Plans.
  * Route: /colecoes/:slug
  */
@@ -96,6 +96,8 @@ function CharacterCard({
                   ? "grayscale-0 scale-110"
                   : "grayscale-[0.6] scale-100"
               }`}
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -188,6 +190,8 @@ function FeaturedCharacterHero({
             src={character.image_url}
             alt={character.name}
             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--gold-accent)/0.15)] to-[hsl(0,0%,5%)] flex items-center justify-center">
@@ -412,6 +416,8 @@ export default function CollectionDetailsArcade() {
               src={collection.cover_image_url}
               alt=""
               className="w-full h-full object-cover opacity-[0.08] blur-sm"
+              loading="lazy"
+              decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-[hsl(0,0%,5%)/0.6] via-[hsl(0,0%,5%)/0.8] to-[hsl(0,0%,5%)]" />
           </div>
