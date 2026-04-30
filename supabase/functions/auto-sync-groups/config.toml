@@ -1,0 +1,2 @@
+# Uses CRON_SECRET instead of user JWT.
+verify_jwt = false
