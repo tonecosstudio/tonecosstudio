@@ -1029,6 +1029,3 @@ export async function rejectPaymentVoucher(
     // Don't fail the operation if email fails
   }
 }
-    { voucherType, rejectionReason },
-    'standalone-purchase');
-}
