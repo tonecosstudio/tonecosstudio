@@ -689,8 +689,6 @@ export async function cancelForNonPayment(
     // Don't fail the operation if email fails
   }
 }
-    'standalone-purchase');
-}
 
 
 /**
@@ -1030,7 +1028,4 @@ export async function rejectPaymentVoucher(
     logError('Failed to send voucher rejection email', emailError, 'standalone-purchase');
     // Don't fail the operation if email fails
   }
-}
-    { voucherType, rejectionReason },
-    'standalone-purchase');
 }
