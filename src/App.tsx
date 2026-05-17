@@ -22,6 +22,7 @@ const CollectionsShowcase = lazy(() => import("./pages/CollectionsShowcase"));
 const CollectionsArcade = lazy(() => import("./pages/CollectionsArcade"));
 const CharacterDetails = lazy(() => import("./pages/CharacterDetailsArcade"));
 const CharacterSelect = lazy(() => import("./pages/CharacterSelect"));
+const CharacterSelectMK = lazy(() => import("./pages/CharacterSelectMK"));
 const CollectionDetailsArcade = lazy(() => import("./pages/CollectionDetailsArcade"));
 const BuyCharacter = lazy(() => import("./pages/BuyCharacter"));
 const TermsArcade = lazy(() => import("./pages/TermsArcade"));
