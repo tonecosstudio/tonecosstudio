@@ -218,7 +218,7 @@ describe('StandalonePurchases Admin Page', () => {
       mockSearchResults as any
     );
 
-    const { rerender } = render(<StandalonePurchases />, { wrapper: createWrapper() });
+    render(<StandalonePurchases />, { wrapper: createWrapper() });
 
     // Simulate entering search term (would need user interaction in real test)
     // For now, just verify the mock is set up correctly

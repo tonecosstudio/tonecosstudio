@@ -8,7 +8,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import log from "@/lib/logger";
-import type { StageType, ProductionStageRecord } from "./stage-service";
+import type { StageType } from "./stage-types";
 
 // ============================================================================
 // Types

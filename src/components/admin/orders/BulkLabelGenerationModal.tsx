@@ -35,7 +35,7 @@ import type { BulkLabelGenerationResult } from '@/types/admin/orders';
 import { 
   openLabelsInTabs, 
   LabelErrorCode
-} from '@/services/admin/label-service';
+} from '@/hooks/admin/useLabelActions';
 
 interface BulkLabelGenerationModalProps {
   open: boolean;

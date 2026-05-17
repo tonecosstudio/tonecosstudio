@@ -1,10 +1,10 @@
-// @ts-nocheck
 /**
  * Seção de Informações de Produção
  * 
  * Exibe informações de produção e escolha de personagem no painel de detalhes do pedido.
  */
 
+import type { ComponentType } from "react";
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -161,7 +161,7 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
 function ChoiceStatusBadge({ status }: { status: string }) {
   const config: Record<string, {
     label: string;
-    icon: React.ComponentType<{ className?: string }>;
+    icon: ComponentType<{ className?: string }>;
     className: string;
   }> = {
     pending: {

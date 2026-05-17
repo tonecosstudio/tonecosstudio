@@ -7,7 +7,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Calendar, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, CheckCircle, XCircle, type LucideIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Subscription } from "@/lib/services/integrationService";
@@ -20,7 +20,7 @@ export function SubscriptionInfo({ subscription }: SubscriptionInfoProps) {
   const getStatusBadge = (status: string) => {
     const statusMap: Record<
       string,
-      { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: LucideIcon }
     > = {
       active: { label: "Ativa", variant: "default", icon: CheckCircle },
       inactive: { label: "Inativa", variant: "secondary", icon: XCircle },

@@ -1,0 +1,203 @@
+/**
+ * Character Roster V2 - Custom Styles
+ * Estilos adicionais para efeitos que não são possíveis apenas com Tailwind
+ */
+
+/* CSS Variables para tema dinâmico */
+:root {
+  --roster-primary: #8B5CF6;
+  --roster-secondary: #A78BFA;
+  --roster-accent: #C4B5FD;
+  --roster-background: #1E1B4B;
+  --roster-glow: #8B5CF6;
+  --roster-particle: #C4B5FD;
+}
+
+/* Gradiente radial customizado */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* Animação de pulso suave */
+@keyframes soft-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-soft-pulse {
+  animation: soft-pulse 3s ease-in-out infinite;
+}
+
+/* Glow effect para texto */
+.text-glow {
+  text-shadow: 
+    0 0 10px var(--roster-glow),
+    0 0 20px var(--roster-glow),
+    0 0 30px var(--roster-glow);
+}
+
+/* Glow effect para elementos */
+.element-glow {
+  box-shadow: 
+    0 0 20px var(--roster-glow),
+    0 0 40px var(--roster-glow),
+    inset 0 0 20px var(--roster-glow);
+}
+
+/* Scanline effect (opcional) */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(0, 0, 0, 0.1) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Chromatic aberration effect (opcional) */
+.chromatic-aberration {
+  position: relative;
+}
+
+.chromatic-aberration::before,
+.chromatic-aberration::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  opacity: 0.8;
+  mix-blend-mode: screen;
+}
+
+.chromatic-aberration::before {
+  color: #ff0000;
+  transform: translate(-2px, 0);
+}
+
+.chromatic-aberration::after {
+  color: #00ffff;
+  transform: translate(2px, 0);
+}
+
+/* Smooth scrollbar para seletor */
+.character-selector-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.character-selector-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.character-selector-scroll::-webkit-scrollbar-thumb {
+  background: var(--roster-accent);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.character-selector-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--roster-primary);
+}
+
+/* Animação de entrada para stats bars */
+@keyframes fill-bar {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--bar-width);
+  }
+}
+
+.stat-bar-fill {
+  animation: fill-bar 1s ease-out forwards;
+}
+
+/* Efeito de hologram (opcional) */
+.hologram-effect {
+  position: relative;
+  animation: hologram-flicker 0.1s infinite;
+}
+
+@keyframes hologram-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+/* Particle trail effect */
+@keyframes particle-trail {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(0);
+    opacity: 0;
+  }
+}
+
+.particle-trail {
+  animation: particle-trail 2s ease-out infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .character-selector-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* Accessibility - Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-soft-pulse,
+  .hologram-effect,
+  .particle-trail {
+    animation: none;
+  }
+  
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .text-glow,
+  .element-glow {
+    text-shadow: none;
+    box-shadow: none;
+  }
+  
+  .character-selector-scroll::-webkit-scrollbar-thumb {
+    background: #ffffff;
+  }
+}
+
+/* Print styles */
+@media print {
+  .scanlines::before,
+  .chromatic-aberration::before,
+  .chromatic-aberration::after {
+    display: none;
+  }
+}

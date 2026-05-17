@@ -1,11 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowDown, Users, ShoppingCart, CreditCard, CheckCircle2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface FunnelStage {
   name: string;
   value: number;
-  icon: any;
+  icon: LucideIcon;
   color: string;
 }
 

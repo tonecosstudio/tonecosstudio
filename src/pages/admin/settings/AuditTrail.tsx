@@ -41,6 +41,25 @@ const ORDER_TYPE_LABELS: Record<string, string> = {
   quote: "Orçamento",
 };
 
+interface AuditTrailFilters {
+  limit: number;
+  offset: number;
+  changeReason?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface AuditTrailRecord {
+  id: string;
+  created_at: string;
+  order_type: string;
+  order_id?: string | null;
+  old_status?: string | null;
+  new_status?: string | null;
+  changed_by_name?: string | null;
+  notes?: string | null;
+}
+
 export default function AuditTrail() {
   const { toast } = useToast();
   const [searchTermRaw, setSearchTermRaw, searchTermSanitized] = useSanitizedInput("", "search");
@@ -54,7 +73,7 @@ export default function AuditTrail() {
   const auditQuery = useQuery({
     queryKey: ["audit-trail", orderTypeFilter, startDate, endDate, currentPage],
     queryFn: async () => {
-      const filters: any = {
+      const filters: AuditTrailFilters = {
         limit: ITEMS_PER_PAGE,
         offset,
       };
@@ -232,7 +251,7 @@ export default function AuditTrail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {displayData.data.map((record: any) => (
+                      {displayData.data.map((record: AuditTrailRecord) => (
                         <TableRow key={record.id}>
                           <TableCell className="font-mono text-xs whitespace-nowrap">
                             {formatBahiaDate(record.created_at)}

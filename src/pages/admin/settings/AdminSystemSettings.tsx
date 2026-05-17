@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminProductionGateway } from "@/hooks/admin/useAdminProductionGateway";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,7 @@ interface Setting {
 }
 
 export default function AdminSystemSettings() {
+  const supabase = useAdminProductionGateway();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editedSettings, setEditedSettings] = useState<Record<string, string>>({});
@@ -83,7 +84,7 @@ export default function AdminSystemSettings() {
         description: "As alterações foram salvas com sucesso.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao atualizar",
         description: error.message,

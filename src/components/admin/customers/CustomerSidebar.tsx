@@ -6,9 +6,8 @@
  * Requirements: 7.1, 7.2, 7.3, 7.4, 7.6, 8.2, 8.3, 8.4, 9.1, 9.2, 19.1, 19.2, 19.5, 25.3
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -52,13 +51,7 @@ export function CustomerSidebar({ userId, isOpen, onToggle }: CustomerSidebarPro
   const [hasLoaded, setHasLoaded] = useState(false);
 
   // Load data when sidebar opens or userId changes
-  useEffect(() => {
-    if (isOpen && userId) {
-      loadCustomerData();
-    }
-  }, [isOpen, userId]);
-
-  const loadCustomerData = async () => {
+  const loadCustomerData = useCallback(async () => {
     setLoading(true);
     try {
       const [ordersData, quotesData, subscriptionData, paymentsData] = await Promise.all([
@@ -78,7 +71,13 @@ export function CustomerSidebar({ userId, isOpen, onToggle }: CustomerSidebarPro
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (isOpen && userId) {
+      loadCustomerData();
+    }
+  }, [isOpen, userId, loadCustomerData]);
 
   if (!isOpen) return null;
 

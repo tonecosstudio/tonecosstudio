@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,31 +9,15 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type NotificationType =
-  | "new_quote"
-  | "quote_approved"
-  | "payment_received"
-  | "payment_failed"
-  | "new_subscription"
-  | "subscription_cancelled"
-  | "support_ticket"
-  | "low_stock"
-  | "system_error"
-  | "user_registered";
-
-type NotificationPriority = "low" | "medium" | "high" | "urgent";
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  priority: NotificationPriority;
-  read: boolean;
-  action_url: string | null;
-  created_at: string;
-}
+import {
+  deleteAdminNotification,
+  fetchAdminNotificationsHistory,
+  markAdminNotificationRead,
+  markAllAdminNotificationsRead,
+  type NotificationFilter,
+  type NotificationType,
+  type NotificationPriority,
+} from "@/services/admin/admin-notifications-service";
 
 const notificationLabels: Record<NotificationType, string> = {
   new_quote: "Novo Orçamento",
@@ -59,37 +42,20 @@ const priorityColors: Record<NotificationPriority, string> = {
 export default function AdminNotificationHistory() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
+  const [filter, setFilter] = useState<NotificationFilter>("all");
 
   // Buscar todas as notificações
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["admin-notifications-history", filter],
     queryFn: async () => {
-      let query = supabase
-        .from("admin_notifications")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (filter === "unread") {
-        query = query.eq("read", false);
-      } else if (filter === "read") {
-        query = query.eq("read", true);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as Notification[];
+      return fetchAdminNotificationsHistory(filter);
     },
   });
 
   // Marcar como lida
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      const { error } = await supabase.rpc("mark_notification_read", {
-        p_notification_id: notificationId,
-      });
-      if (error) throw error;
+      await markAdminNotificationRead(notificationId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-notifications-history"] });
@@ -99,8 +65,7 @@ export default function AdminNotificationHistory() {
   // Marcar todas como lidas
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc("mark_all_notifications_read");
-      if (error) throw error;
+      await markAllAdminNotificationsRead();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-notifications-history"] });
@@ -114,11 +79,7 @@ export default function AdminNotificationHistory() {
   // Deletar notificação
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      const { error } = await supabase
-        .from("admin_notifications")
-        .delete()
-        .eq("id", notificationId);
-      if (error) throw error;
+      await deleteAdminNotification(notificationId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-notifications-history"] });
@@ -159,7 +120,7 @@ export default function AdminNotificationHistory() {
                 Notificações
                 {unreadCount > 0 && <Badge variant="destructive">{unreadCount}</Badge>}
               </CardTitle>
-              <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+              <Tabs value={filter} onValueChange={(v) => setFilter(v as NotificationFilter)}>
                 <TabsList>
                   <TabsTrigger value="all">Todas</TabsTrigger>
                   <TabsTrigger value="unread">Não Lidas</TabsTrigger>

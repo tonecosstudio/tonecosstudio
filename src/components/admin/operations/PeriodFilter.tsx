@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,7 +18,7 @@ interface PeriodFilterProps {
   value: DateRange;
   onChange: (range: DateRange) => void;
   className?: string;
-  persistKey?: string; // Chave para persistir preferência
+  persistKey?: string;
 }
 
 export function PeriodFilter({
@@ -30,75 +30,78 @@ export function PeriodFilter({
   const [preset, setPreset] = useState<PeriodPreset>("month");
   const [isOpen, setIsOpen] = useState(false);
 
-  // Carregar preferência salva ao montar
-  useEffect(() => {
-    if (persistKey) {
-      const saved = localStorage.getItem(persistKey);
-      if (saved) {
-        try {
-          const { preset: savedPreset, from, to } = JSON.parse(saved);
-          setPreset(savedPreset);
-          if (savedPreset === "custom" && from && to) {
-            onChange({
-              from: new Date(from),
-              to: new Date(to),
-            });
-          } else {
-            handlePresetChange(savedPreset, false);
-          }
-        } catch (e) {
-          console.error("Erro ao carregar preferência de período:", e);
-        }
+  const handlePresetChange = useCallback(
+    (newPreset: PeriodPreset, persist = true) => {
+      setPreset(newPreset);
+      const today = new Date();
+      let from: Date;
+      const to: Date = today;
+
+      switch (newPreset) {
+        case "today":
+          from = today;
+          break;
+        case "week":
+          from = new Date(today);
+          from.setDate(today.getDate() - 7);
+          break;
+        case "month":
+          from = new Date(today);
+          from.setMonth(today.getMonth() - 1);
+          break;
+        case "year":
+          from = new Date(today);
+          from.setFullYear(today.getFullYear() - 1);
+          break;
+        default:
+          return;
       }
+
+      onChange({ from, to });
+
+      if (persist && persistKey) {
+        localStorage.setItem(
+          persistKey,
+          JSON.stringify({
+            preset: newPreset,
+            from: from.toISOString(),
+            to: to.toISOString(),
+          })
+        );
+      }
+    },
+    [onChange, persistKey]
+  );
+
+  useEffect(() => {
+    if (!persistKey) return;
+    const saved = localStorage.getItem(persistKey);
+    if (!saved) return;
+
+    try {
+      const { preset: savedPreset, from, to } = JSON.parse(saved) as {
+        preset: PeriodPreset;
+        from?: string;
+        to?: string;
+      };
+      setPreset(savedPreset);
+      if (savedPreset === "custom" && from && to) {
+        onChange({
+          from: new Date(from),
+          to: new Date(to),
+        });
+      } else {
+        handlePresetChange(savedPreset, false);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar preferencia de periodo:", error);
     }
-  }, [persistKey]);
-
-  const handlePresetChange = (newPreset: PeriodPreset, persist = true) => {
-    setPreset(newPreset);
-    const today = new Date();
-    let from: Date;
-    const to: Date = today;
-
-    switch (newPreset) {
-      case "today":
-        from = today;
-        break;
-      case "week":
-        from = new Date(today);
-        from.setDate(today.getDate() - 7);
-        break;
-      case "month":
-        from = new Date(today);
-        from.setMonth(today.getMonth() - 1);
-        break;
-      case "year":
-        from = new Date(today);
-        from.setFullYear(today.getFullYear() - 1);
-        break;
-      default:
-        return;
-    }
-
-    onChange({ from, to });
-
-    // Persistir preferência
-    if (persist && persistKey) {
-      localStorage.setItem(
-        persistKey,
-        JSON.stringify({
-          preset: newPreset,
-          from: from.toISOString(),
-          to: to.toISOString(),
-        })
-      );
-    }
-  };
+  }, [handlePresetChange, onChange, persistKey]);
 
   const handleCustomApply = () => {
     setPreset("custom");
     setIsOpen(false);
 
-    // Persistir período customizado
     if (persistKey) {
       localStorage.setItem(
         persistKey,

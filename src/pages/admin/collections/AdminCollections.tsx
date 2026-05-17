@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as adminCollectionsService from "@/services/admin/admin-collections-service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,91 +34,93 @@ import {
   Image as ImageIcon,
   Calendar,
   Upload,
-  Eye,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MONTHS } from "./admin-collections.constants";
+import { slugifyCollectionName } from "./admin-collections.utils";
+import { useAdminCollectionsData } from "@/hooks/admin/useAdminCollectionsData";
 
-const COLLECTION_SIZES = [
-  { value: 6, label: "6 personagens (Semestral)" },
-  { value: 12, label: "12 personagens (Anual)" },
-];
+type RotationType = "fixed" | "odd_months" | "even_months";
 
-const MONTHS = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
+type CollectionItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  character_count?: number;
+  rotation_type?: RotationType;
+};
+
+type CharacterItem = {
+  id: string;
+  collection_id: string;
+  name: string;
+  description: string | null;
+  release_order: number;
+  release_month: number | null;
+  status: string;
+  image_url: string | null;
+};
+
+type CollectionCardPremiumProps = {
+  collection: CollectionItem;
+  isSelected: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onSuccess: () => void;
+};
+
+type CharacterCardPremiumProps = {
+  character: CharacterItem;
+  onSuccess: () => void;
+};
+
+type CalendarViewProps = {
+  characters: CharacterItem[];
+};
+
+type CreateCollectionDialogProps = {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+};
+
+type EditCollectionDialogProps = {
+  collection: CollectionItem;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+};
+
+type CreateCharacterDialogProps = {
+  collectionId: string;
+  maxOrder: number;
+  onSuccess: () => void;
+  trigger?: React.ReactNode;
+};
+
+type EditCharacterDialogProps = {
+  character: CharacterItem;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Erro inesperado";
+}
 
 export default function AdminCollectionsV2() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingCollection, setEditingCollection] = useState<any>(null);
+  const [editingCollection, setEditingCollection] = useState<CollectionItem | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
-
-  // Buscar coleções
-  const collectionsQuery = useQuery({
-    queryKey: ["admin-collections-v2"],
-    queryFn: async () => {
-      const { data: collections, error: collectionsError } = await supabase
-        .from("collections")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (collectionsError) throw collectionsError;
-      if (!collections) return [];
-
-      // Buscar contagem de personagens para cada coleção
-      const collectionsWithCount = await Promise.all(
-        collections.map(async (collection) => {
-          const { count, error: countError } = await supabase
-            .from("collection_characters")
-            .select("*", { count: "exact", head: true })
-            .eq("collection_id", collection.id);
-
-          if (countError) {
-            console.error("Error counting characters:", countError);
-            return { ...collection, character_count: 0 };
-          }
-
-          return { ...collection, character_count: count || 0 };
-        })
-      );
-
-      return collectionsWithCount;
-    },
-  });
-
-  // Buscar personagens de uma coleção
-  const charactersQuery = useQuery({
-    queryKey: ["admin-characters-v2", selectedCollection],
-    enabled: Boolean(selectedCollection),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collection_characters")
-        .select("*")
-        .eq("collection_id", selectedCollection)
-        .order("release_order", { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const collections = collectionsQuery.data || [];
-  const characters = charactersQuery.data || [];
-  const selectedCollectionData = collections.find((c: any) => c.id === selectedCollection);
+  const { collections, characters, selectedCollectionData } = useAdminCollectionsData(selectedCollection);
 
   return (
     <div className="space-y-6">
@@ -139,27 +140,15 @@ export default function AdminCollectionsV2() {
               onSubmit={async (data: CollectionFormDataWithCharacters) => {
                 try {
                   // 1. Criar a coleção
-                  const { data: newCollection, error: collectionError } = await supabase
-                    .from("collections")
-                    .insert({
-                      name: data.name,
-                      slug: data.name.toLowerCase().replace(/\s+/g, "-"),
-                      description: data.description,
-                      cover_image_url: data.image_url || null,
-                      rotation_type: data.rotation_type,
-                      tier_id: data.tier_id,
-                      is_active: data.is_active,
-                    })
-                    .select()
-                    .single();
-
-                  if (collectionError) {
-                    throw new Error(`Erro ao criar coleção: ${collectionError.message}`);
-                  }
-
-                  if (!newCollection) {
-                    throw new Error("Coleção criada mas não retornada");
-                  }
+                  const newCollection = await adminCollectionsService.createCollection({
+                    name: data.name,
+                    slug: slugifyCollectionName(data.name),
+                    description: data.description,
+                    cover_image_url: data.image_url || null,
+                    rotation_type: data.rotation_type,
+                    tier_id: data.tier_id,
+                    is_active: data.is_active,
+                  });
 
                   // 2. Criar os personagens se houver
                   if (data.characters && data.characters.length > 0) {
@@ -173,14 +162,12 @@ export default function AdminCollectionsV2() {
                       status: "upcoming" as const,
                     }));
 
-                    const { error: charactersError } = await supabase
-                      .from("collection_characters")
-                      .insert(charactersToInsert);
-
-                    if (charactersError) {
+                    try {
+                      await adminCollectionsService.insertCollectionCharacters(charactersToInsert);
+                    } catch (charactersError: unknown) {
                       // Rollback: deletar a coleção criada
-                      await supabase.from("collections").delete().eq("id", newCollection.id);
-                      throw new Error(`Erro ao criar personagens: ${charactersError.message}`);
+                      await adminCollectionsService.deleteCollectionById(newCollection.id);
+                      throw new Error(`Erro ao criar personagens: ${getErrorMessage(charactersError)}`);
                     }
                   }
 
@@ -195,10 +182,10 @@ export default function AdminCollectionsV2() {
                   });
 
                   setIsCreateOpen(false);
-                } catch (error: any) {
+                } catch (error: unknown) {
                   toast({
                     title: "Erro ao criar coleção",
-                    description: error.message,
+                    description: getErrorMessage(error),
                     variant: "destructive",
                   });
                   throw error;
@@ -228,7 +215,7 @@ export default function AdminCollectionsV2() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">
-                {collections.filter((c: any) => c.is_active).length}
+                {collections.filter((c: CollectionItem) => c.is_active).length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Disponíveis para assinatura</p>
             </CardContent>
@@ -241,7 +228,7 @@ export default function AdminCollectionsV2() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">
-                {collections.reduce((acc: number, c: any) => acc + (c.character_count || 0), 0)}
+                {collections.reduce((acc: number, c: CollectionItem) => acc + (c.character_count || 0), 0)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Personagens cadastrados</p>
             </CardContent>
@@ -254,7 +241,7 @@ export default function AdminCollectionsV2() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-amber-600">
-                {collections.filter((c: any) => c.image_url).length}
+                {collections.filter((c: CollectionItem) => c.image_url).length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Coleções com capa</p>
             </CardContent>
@@ -284,7 +271,7 @@ export default function AdminCollectionsV2() {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                  {collections.map((collection: any) => (
+                  {collections.map((collection: CollectionItem) => (
                     <CollectionCardPremium
                       key={collection.id}
                       collection={collection}
@@ -365,7 +352,7 @@ export default function AdminCollectionsV2() {
                           </span>
                           <span>•</span>
                           <span>
-                            {characters.filter((c: any) => c.image_url).length} com imagem
+                            {characters.filter((c: CharacterItem) => c.image_url).length} com imagem
                           </span>
                           <span>•</span>
                           <span className="font-mono">/{selectedCollectionData?.slug}</span>
@@ -438,7 +425,7 @@ export default function AdminCollectionsV2() {
                   </Card>
                 ) : viewMode === "grid" ? (
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {characters.map((character: any) => (
+                    {characters.map((character: CharacterItem) => (
                       <CharacterCardPremium
                         key={character.id}
                         character={character}
@@ -474,31 +461,13 @@ export default function AdminCollectionsV2() {
 }
 
 // Componente: Card de Coleção Premium
-function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuccess }: any) {
+function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuccess }: CollectionCardPremiumProps) {
   const { toast } = useToast();
 
-  const toggleActiveMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from("collections")
-        .update({ is_active: !collection.is_active })
-        .eq("id", collection.id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      onSuccess();
-      toast({
-        title: collection.is_active ? "Coleção desativada" : "Coleção ativada",
-      });
-    },
-  });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("collections").delete().eq("id", collection.id);
-
-      if (error) throw error;
+      await adminCollectionsService.deleteCollectionById(collection.id);
     },
     onSuccess: () => {
       onSuccess();
@@ -561,13 +530,13 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
         </div>
 
         {/* Rotation Type Badge */}
-        {(collection as any).rotation_type && (
+        {collection.rotation_type && (
           <div className="mt-2">
-            {(collection as any).rotation_type === 'fixed' ? (
+            {collection.rotation_type === "fixed" ? (
               <Badge variant="outline" className="text-xs">
                 📅 Fixa (Todos os meses)
               </Badge>
-            ) : (collection as any).rotation_type === 'odd_months' ? (
+            ) : collection.rotation_type === "odd_months" ? (
               <Badge variant="outline" className="text-xs bg-blue-500/10 border-blue-500/20 text-blue-600">
                 📅 Meses Ímpares
               </Badge>
@@ -607,18 +576,13 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
 }
 
 // Componente: Card de Personagem Premium
-function CharacterCardPremium({ character, onSuccess }: any) {
+function CharacterCardPremium({ character, onSuccess }: CharacterCardPremiumProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("collection_characters")
-        .delete()
-        .eq("id", character.id);
-
-      if (error) throw error;
+      await adminCollectionsService.deleteCollectionCharacterById(character.id);
     },
     onSuccess: () => {
       onSuccess();
@@ -742,9 +706,9 @@ function CharacterCardPremium({ character, onSuccess }: any) {
 }
 
 // Componente: Vista de Calendário
-function CalendarView({ characters }: any) {
+function CalendarView({ characters }: CalendarViewProps) {
   // Agrupar por mês
-  const charactersByMonth = characters.reduce((acc: any, char: any) => {
+  const charactersByMonth = characters.reduce((acc: Record<number, CharacterItem[]>, char: CharacterItem) => {
     const month = char.release_month || 0;
     if (!acc[month]) acc[month] = [];
     acc[month].push(char);
@@ -774,7 +738,7 @@ function CalendarView({ characters }: any) {
                   <p className="text-sm text-muted-foreground">Nenhum lançamento</p>
                 ) : (
                   <div className="space-y-2">
-                    {monthChars.map((char: any) => (
+                    {monthChars.map((char: CharacterItem) => (
                       <div key={char.id} className="text-sm p-2 rounded bg-muted/50">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs text-muted-foreground">
@@ -798,14 +762,14 @@ function CalendarView({ characters }: any) {
 // Dialog: Criar Coleção (continua no próximo arquivo devido ao tamanho)
 
 // Dialog: Criar Coleção
-function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
+function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateCollectionDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const [rotationType, setRotationType] = useState<'fixed' | 'odd_months' | 'even_months'>('fixed');
+  const [rotationType, setRotationType] = useState<RotationType>("fixed");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -833,30 +797,20 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
         const fileName = `${slug || name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.${fileExt}`;
         const filePath = `collections/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("models")
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("models").getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
+        await adminCollectionsService.uploadModelImage(filePath, imageFile);
+        imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
 
       // Criar coleção
-      const { error } = await supabase.from("collections").insert({
+      await adminCollectionsService.createCollection({
         name,
         slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
         description,
+        cover_image_url: imageUrl,
+        tier_id: null,
         is_active: isActive,
-        image_url: imageUrl,
         rotation_type: rotationType,
       });
-
-      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
@@ -873,11 +827,11 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
       setIsUploading(false);
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setIsUploading(false);
       toast({
         title: "Erro ao criar coleção",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -994,7 +948,7 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
           {/* Rotation Type */}
           <div>
             <Label htmlFor="rotation-type">Tipo de Rotação *</Label>
-            <Select value={rotationType} onValueChange={(value: any) => setRotationType(value)}>
+            <Select value={rotationType} onValueChange={(value: RotationType) => setRotationType(value)}>
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Selecione o tipo de rotação" />
               </SelectTrigger>
@@ -1037,14 +991,14 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: any) {
 }
 
 // Dialog: Editar Coleção
-function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: any) {
+function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: EditCollectionDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [name, setName] = useState(collection.name);
   const [slug, setSlug] = useState(collection.slug);
   const [description, setDescription] = useState(collection.description || "");
   const [rotationType, setRotationType] = useState<'fixed' | 'odd_months' | 'even_months'>(
-    (collection as any).rotation_type || 'fixed'
+    collection.rotation_type || 'fixed'
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(collection.image_url);
@@ -1065,14 +1019,8 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
   const updateMutation = useMutation({
     mutationFn: async () => {
       // Validate minimum fixed collections if changing from fixed to rotating
-      if ((collection as any).rotation_type === 'fixed' && rotationType !== 'fixed') {
-        const { count, error: countError } = await supabase
-          .from('collections')
-          .select('*', { count: 'exact', head: true })
-          .eq('rotation_type', 'fixed')
-          .eq('is_active', true);
-
-        if (countError) throw countError;
+      if (collection.rotation_type === "fixed" && rotationType !== 'fixed') {
+        const count = await adminCollectionsService.countActiveFixedCollections();
 
         // Need at least 2 fixed collections, so if count is 2 or less, we can't change this one
         if ((count || 0) <= 2) {
@@ -1088,32 +1036,17 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `${slug}-${Date.now()}.${fileExt}`;
         const filePath = `collections/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("models")
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("models").getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
+        await adminCollectionsService.uploadModelImage(filePath, imageFile);
+        imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
 
-      const { error } = await supabase
-        .from("collections")
-        .update({
-          name,
-          slug,
-          description,
-          image_url: imageUrl,
-          rotation_type: rotationType,
-        })
-        .eq("id", collection.id);
-
-      if (error) throw error;
+      await adminCollectionsService.updateCollectionById(collection.id, {
+        name,
+        slug,
+        description,
+        image_url: imageUrl,
+        rotation_type: rotationType,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
@@ -1124,11 +1057,11 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
       setIsUploading(false);
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setIsUploading(false);
       toast({
         title: "Erro ao atualizar",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -1218,7 +1151,7 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
           {/* Rotation Type */}
           <div>
             <Label htmlFor="edit-rotation-type">Tipo de Rotação *</Label>
-            <Select value={rotationType} onValueChange={(value: any) => setRotationType(value)}>
+            <Select value={rotationType} onValueChange={(value: RotationType) => setRotationType(value)}>
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Selecione o tipo de rotação" />
               </SelectTrigger>
@@ -1261,7 +1194,7 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: a
 }
 
 // Dialog: Criar Personagem
-function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: any) {
+function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: CreateCharacterDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
@@ -1297,20 +1230,11 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: a
         const fileName = `char-${collectionId}-${releaseOrder}-${Date.now()}.${fileExt}`;
         const filePath = `characters/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("models")
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("models").getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
+        await adminCollectionsService.uploadModelImage(filePath, imageFile);
+        imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
 
-      const { error } = await supabase.from("collection_characters").insert({
+      await adminCollectionsService.insertCollectionCharacter({
         collection_id: collectionId,
         name,
         description,
@@ -1319,8 +1243,6 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: a
         status,
         image_url: imageUrl,
       });
-
-      if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Personagem adicionado!" });
@@ -1338,11 +1260,11 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: a
       setIsOpen(false);
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setIsUploading(false);
       toast({
         title: "Erro ao adicionar",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -1498,7 +1420,7 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: a
 }
 
 // Dialog: Editar Personagem
-function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any) {
+function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: EditCharacterDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [name, setName] = useState(character.name);
@@ -1534,33 +1456,18 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `char-${character.collection_id}-${releaseOrder}-${Date.now()}.${fileExt}`;
         const filePath = `characters/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("models")
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("models").getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
+        await adminCollectionsService.uploadModelImage(filePath, imageFile);
+        imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
 
-      const { error } = await supabase
-        .from("collection_characters")
-        .update({
-          name,
-          description,
-          release_order: parseInt(releaseOrder),
-          release_month: releaseMonth ? parseInt(releaseMonth) : null,
-          status,
-          image_url: imageUrl,
-        })
-        .eq("id", character.id);
-
-      if (error) throw error;
+      await adminCollectionsService.updateCollectionCharacterById(character.id, {
+        name,
+        description,
+        release_order: parseInt(releaseOrder),
+        release_month: releaseMonth ? parseInt(releaseMonth) : null,
+        status,
+        image_url: imageUrl,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-characters-v2"] });
@@ -1570,11 +1477,11 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
       setIsUploading(false);
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       setIsUploading(false);
       toast({
         title: "Erro ao atualizar",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -1708,3 +1615,7 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: any
     </Dialog>
   );
 }
+
+
+const _unusedCreateCollectionDialog = CreateCollectionDialog;
+

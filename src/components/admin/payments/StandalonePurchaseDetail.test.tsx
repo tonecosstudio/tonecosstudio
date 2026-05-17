@@ -3,10 +3,17 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StandalonePurchaseDetail } from './StandalonePurchaseDetail';
-import * as standalonePurchaseService from '@/services/standalone-purchase-service';
+import { useStandalonePurchaseActions } from '@/hooks/admin/useStandalonePurchaseActions';
 
 // Mock the services
-vi.mock('@/services/standalone-purchase-service');
+vi.mock('@/hooks/admin/useStandalonePurchaseActions');
+vi.mock('@/hooks/admin/useAdminPaymentsGateway', () => ({
+  useAdminPaymentsGateway: () => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } } }),
+    },
+  }),
+}));
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
     toast: vi.fn(),
@@ -26,6 +33,12 @@ const createWrapper = () => {
 };
 
 describe('StandalonePurchaseDetail', () => {
+  const actionsMock = {
+    markProductionComplete: vi.fn(),
+    cancelStandalonePurchase: vi.fn(),
+    approvePaymentVoucher: vi.fn(),
+    rejectPaymentVoucher: vi.fn(),
+  };
   const mockPurchase = {
     id: 'purchase-123',
     user_id: 'user-456',
@@ -69,6 +82,7 @@ describe('StandalonePurchaseDetail', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useStandalonePurchaseActions).mockReturnValue(actionsMock);
   });
 
   it('renders purchase details correctly', () => {
@@ -134,7 +148,7 @@ describe('StandalonePurchaseDetail', () => {
   it('calls markProductionComplete when button is clicked', async () => {
     const user = userEvent.setup();
     const mockMarkComplete = vi.fn().mockResolvedValue({});
-    vi.mocked(standalonePurchaseService.markProductionComplete).mockImplementation(mockMarkComplete);
+    actionsMock.markProductionComplete.mockImplementation(mockMarkComplete);
 
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -169,7 +183,7 @@ describe('StandalonePurchaseDetail', () => {
   it('calls cancelStandalonePurchase with reason when confirmed', async () => {
     const user = userEvent.setup();
     const mockCancel = vi.fn().mockResolvedValue({});
-    vi.mocked(standalonePurchaseService.cancelStandalonePurchase).mockImplementation(mockCancel);
+    actionsMock.cancelStandalonePurchase.mockImplementation(mockCancel);
 
     render(<StandalonePurchaseDetail purchase={mockPurchase} />, {
       wrapper: createWrapper(),
@@ -291,7 +305,7 @@ describe('StandalonePurchaseDetail', () => {
   it('calls approvePaymentVoucher when approve button is clicked', async () => {
     const user = userEvent.setup();
     const mockApprove = vi.fn().mockResolvedValue({});
-    vi.mocked(standalonePurchaseService.approvePaymentVoucher).mockImplementation(mockApprove);
+    actionsMock.approvePaymentVoucher.mockImplementation(mockApprove);
 
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -330,7 +344,7 @@ describe('StandalonePurchaseDetail', () => {
   it('calls rejectPaymentVoucher with reason when confirmed', async () => {
     const user = userEvent.setup();
     const mockReject = vi.fn().mockResolvedValue({});
-    vi.mocked(standalonePurchaseService.rejectPaymentVoucher).mockImplementation(mockReject);
+    actionsMock.rejectPaymentVoucher.mockImplementation(mockReject);
 
     render(<StandalonePurchaseDetail purchase={mockPurchase} />, {
       wrapper: createWrapper(),

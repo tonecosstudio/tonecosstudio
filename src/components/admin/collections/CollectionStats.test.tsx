@@ -13,6 +13,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CollectionStats } from './CollectionStats';
 import { supabase } from '@/integrations/supabase/client';
 
+type FromMockCall = [string];
+type MockFrom = {
+  mock: { calls: FromMockCall[] };
+  mockImplementation: (fn: (table: string) => unknown) => void;
+};
+
 // Mock Supabase client
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -42,7 +48,7 @@ describe('CollectionStats', () => {
     );
   };
 
-  const mockSupabaseQuery = (table: string, data: any, error: any = null) => {
+  const mockSupabaseQuery = (table: string, data: unknown, error: unknown = null) => {
     const mockChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -52,7 +58,7 @@ describe('CollectionStats', () => {
       then: vi.fn((resolve) => resolve({ data, error })),
     };
 
-    (supabase.from as any).mockImplementation((tableName: string) => {
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation((tableName: string) => {
       if (tableName === table) {
         return mockChain;
       }
@@ -113,14 +119,14 @@ describe('CollectionStats', () => {
     // Mock collection price
     const collectionMock = mockSupabaseQuery('collections', { price_full: 100 });
 
-    (supabase.from as any).mockImplementation((table: string) => {
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation((table: string) => {
       if (table === 'subscription_deliveries') {
         // Return different mocks based on call order
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'subscription_deliveries').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'subscription_deliveries').length;
         return callCount === 1 ? allDeliveriesMock : currentMonthDeliveriesMock;
       }
       if (table === 'standalone_purchases') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'standalone_purchases').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'standalone_purchases').length;
         return callCount === 1 ? allPurchasesMock : currentMonthPurchasesMock;
       }
       if (table === 'collections') {
@@ -199,13 +205,13 @@ describe('CollectionStats', () => {
       }),
     };
 
-    (supabase.from as any).mockImplementation((table: string) => {
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation((table: string) => {
       if (table === 'subscription_deliveries') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'subscription_deliveries').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'subscription_deliveries').length;
         return callCount === 1 ? allDeliveriesMock : currentMonthDeliveriesMock;
       }
       if (table === 'standalone_purchases') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'standalone_purchases').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'standalone_purchases').length;
         return callCount === 1 ? allPurchasesMock : currentMonthPurchasesMock;
       }
       if (table === 'collections') {
@@ -281,13 +287,13 @@ describe('CollectionStats', () => {
       }),
     };
 
-    (supabase.from as any).mockImplementation((table: string) => {
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation((table: string) => {
       if (table === 'subscription_deliveries') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'subscription_deliveries').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'subscription_deliveries').length;
         return callCount === 1 ? allDeliveriesMock : currentMonthDeliveriesMock;
       }
       if (table === 'standalone_purchases') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'standalone_purchases').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'standalone_purchases').length;
         return callCount === 1 ? allPurchasesMock : currentMonthPurchasesMock;
       }
       if (table === 'collections') {
@@ -307,9 +313,6 @@ describe('CollectionStats', () => {
   });
 
   it('should calculate and display revenue correctly', async () => {
-    const currentMonth = new Date().getMonth() + 1;
-    const currentYear = new Date().getFullYear();
-
     // Mock 2 subscription deliveries at R$100 each = R$200
     const allDeliveriesMock = {
       select: vi.fn().mockReturnThis(),
@@ -362,13 +365,13 @@ describe('CollectionStats', () => {
       }),
     };
 
-    (supabase.from as any).mockImplementation((table: string) => {
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation((table: string) => {
       if (table === 'subscription_deliveries') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'subscription_deliveries').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'subscription_deliveries').length;
         return callCount === 1 ? allDeliveriesMock : currentMonthDeliveriesMock;
       }
       if (table === 'standalone_purchases') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'standalone_purchases').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'standalone_purchases').length;
         return callCount === 1 ? allPurchasesMock : currentMonthPurchasesMock;
       }
       if (table === 'collections') {
@@ -432,13 +435,13 @@ describe('CollectionStats', () => {
       }),
     };
 
-    (supabase.from as any).mockImplementation((table: string) => {
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation((table: string) => {
       if (table === 'subscription_deliveries') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'subscription_deliveries').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'subscription_deliveries').length;
         return callCount === 1 ? allDeliveriesMock : currentMonthDeliveriesMock;
       }
       if (table === 'standalone_purchases') {
-        const callCount = (supabase.from as any).mock.calls.filter((c: any) => c[0] === 'standalone_purchases').length;
+        const callCount = (supabase as unknown as { from: MockFrom }).from.mock.calls.filter((c) => c[0] === 'standalone_purchases').length;
         return callCount === 1 ? allPurchasesMock : currentMonthPurchasesMock;
       }
       if (table === 'collections') {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Componente para configurar multiplicador de preço por personagem
  * 
@@ -45,7 +44,7 @@ export function CharacterPriceMultiplierConfig({
   userId,
 }: CharacterPriceMultiplierConfigProps) {
   const { data: multiplierData, isLoading: loadingMultiplier } = useCharacterMultiplier(characterId);
-  const { data: characterPrice, isLoading: loadingCharacterPrice } = useCharacterPrice(characterId, userId);
+  const { isLoading: loadingCharacterPrice } = useCharacterPrice(characterId, userId);
   const { data: collectionPrice, isLoading: loadingCollectionPrice } = useCollectionPrice(
     multiplierData?.collection_id,
     userId

@@ -3,7 +3,7 @@
  * Funcionalidade tipo WhatsApp para o admin
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,10 +45,6 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
   useEffect(() => {
     loadContacts();
   }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [contacts, searchTerm, filterType]);
 
   const loadContacts = async () => {
     try {
@@ -101,7 +97,7 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...contacts];
 
     // Filtro por tipo
@@ -122,7 +118,11 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
     }
 
     setFilteredContacts(filtered);
-  };
+  }, [contacts, filterType, searchTerm]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const handleStartConversation = (contact: Contact) => {
     onStartConversation(contact.id, contact.full_name || contact.email, contact.email);
@@ -151,7 +151,12 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
         </div>
 
         {/* Filtro por tipo */}
-        <Select value={filterType} onValueChange={(v) => setFilterType(v as any)}>
+        <Select
+          value={filterType}
+          onValueChange={(v) =>
+            setFilterType(v as "all" | "customers" | "subscribers" | "quotes")
+          }
+        >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>

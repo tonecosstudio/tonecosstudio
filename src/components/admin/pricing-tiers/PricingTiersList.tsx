@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { usePricingTiers } from "@/hooks/usePricingTiers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +20,6 @@ import { MoreHorizontal, Edit, Power, RefreshCw, Star, Eye } from "lucide-react"
 import { formatCurrency } from "@/lib/utils";
 import type { PricingTierWithStats } from "@/types/pricing-tiers";
 import { toast } from "sonner";
-// @ts-nocheck
 interface PricingTiersListProps {
   onEdit: (tier: PricingTierWithStats) => void;
   onViewPlans?: (tierId: string) => void;
@@ -41,18 +39,18 @@ export function PricingTiersList({ onEdit, onViewPlans }: PricingTiersListProps)
     try {
       await deactivateTier.mutateAsync(tierId);
       toast.success(`Nível "${tierName}" desativado com sucesso`);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Erro ao desativar nível");
     }
   };
 
-  const handlePropagate = async (tierId: string, tierName: string) => {
+  const handlePropagate = async (tierId: string) => {
     try {
       const result = await propagatePrices.mutateAsync(tierId);
       toast.success(
         `Preços propagados: ${result.updated_count} coleções atualizadas`
       );
-    } catch (error) {
+    } catch (_error) {
       toast.error("Erro ao propagar preços");
     }
   };
@@ -146,7 +144,7 @@ export function PricingTiersList({ onEdit, onViewPlans }: PricingTiersListProps)
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
-                    onClick={() => handlePropagate(tier.id, tier.name)}
+                    onClick={() => handlePropagate(tier.id)}
                     disabled={!tier.is_active || propagatePrices.isPending}
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />

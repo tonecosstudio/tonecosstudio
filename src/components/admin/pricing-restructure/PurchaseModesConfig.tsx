@@ -84,7 +84,6 @@ export function PurchaseModesConfig() {
     );
   }
 
-  const activeModes = modes.filter((m) => m.is_active);
   const totalTiers = tiersWithPlans?.length || 0;
 
   return (
@@ -178,7 +177,7 @@ interface EditMultiplierDialogProps {
   mode: PurchaseMode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tiersWithPlans: any[];
+  tiersWithPlans: Array<{ tier_name: string; tier_price_base: number }>;
 }
 
 function EditMultiplierDialog({
@@ -188,8 +187,6 @@ function EditMultiplierDialog({
   tiersWithPlans,
 }: EditMultiplierDialogProps) {
   const updateMultiplier = useUpdatePurchaseModeMultiplier();
-  const [previewMultiplier, setPreviewMultiplier] = useState(mode.price_multiplier);
-
   const form = useForm<UpdateMultiplierFormData>({
     resolver: zodResolver(updateMultiplierSchema),
     defaultValues: {
@@ -225,7 +222,7 @@ function EditMultiplierDialog({
         newMultiplier: data.new_multiplier,
       });
       onOpenChange(false);
-    } catch (error) {
+    } catch (_error) {
       // Erro já tratado pelo hook
     }
   };
@@ -258,7 +255,6 @@ function EditMultiplierDialog({
                       onChange={(e) => {
                         const value = parseFloat(e.target.value) || 0;
                         field.onChange(value);
-                        setPreviewMultiplier(value);
                       }}
                     />
                   </FormControl>
@@ -355,3 +351,4 @@ function EditMultiplierDialog({
     </Dialog>
   );
 }
+

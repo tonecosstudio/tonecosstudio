@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PricingHierarchyView - Visualização hierárquica completa de preços
  * 
@@ -19,6 +18,24 @@ import { CreateTierDialog } from "./CreateTierDialog";
 import { EditTierDialog } from "./EditTierDialog";
 import { PurchaseModesConfig } from "../pricing-restructure/PurchaseModesConfig";
 import type { PricingTierWithStats } from "@/types/pricing-tiers";
+
+interface SubscriptionPlanRow {
+  id: string;
+  tier_id: string | null;
+  plan_mode: string | null;
+  price_multiplier: number | null;
+  price_full: number;
+  name: string | null;
+}
+
+interface CollectionByTierRow {
+  collection_id: string;
+  tier_id: string;
+  collections: {
+    id: string;
+    name: string;
+  } | null;
+}
 
 export function PricingHierarchyView() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -65,7 +82,7 @@ export function PricingHierarchyView() {
         .order("price_full");
 
       if (error) throw error;
-      return data;
+      return data as SubscriptionPlanRow[];
     },
   });
 
@@ -127,8 +144,8 @@ export function PricingHierarchyView() {
   const getCollectionsForTier = (tierId: string) => {
     if (!allCollections) return [];
     return allCollections
-      .filter((assignment: any) => assignment.tier_id === tierId)
-      .map((assignment: any) => ({
+      .filter((assignment: CollectionByTierRow) => assignment.tier_id === tierId)
+      .map((assignment: CollectionByTierRow) => ({
         id: assignment.collections?.id || assignment.collection_id,
         name: assignment.collections?.name || "Desconhecida",
       }));
@@ -227,6 +244,11 @@ export function PricingHierarchyView() {
         <EditTierDialog
           tier={selectedTier}
           open={isEditDialogOpen}
+          onClose={() => {
+            setIsEditDialogOpen(false);
+            setSelectedTier(null);
+            refetchTiers();
+          }}
           onOpenChange={(open) => {
             setIsEditDialogOpen(open);
             if (!open) {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * HistoricalCycles
  *
@@ -23,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Calendar, TrendingUp, Package, ArrowUpDown } from 'lucide-react';
+import { Calendar, Package, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -366,9 +365,13 @@ export function HistoricalCycles() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className="text-sm text-muted-foreground">
-                            {cycle.status === 'completed' ? 'Concluído' : 'Em andamento'}
-                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/admin/cycle-dashboard?month=${cycle.month}&year=${cycle.year}`)}
+                          >
+                            Ver Detalhes
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );

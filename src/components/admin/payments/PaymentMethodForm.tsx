@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentMethodForm Component
  *
@@ -196,7 +195,7 @@ export function PaymentMethodForm({
     if (accountDetails.trim()) {
       try {
         JSON.parse(accountDetails);
-      } catch (error) {
+      } catch (_error) {
         toast({
           title: "Dados bancários inválidos",
           description: "Os dados bancários devem estar em formato JSON válido.",

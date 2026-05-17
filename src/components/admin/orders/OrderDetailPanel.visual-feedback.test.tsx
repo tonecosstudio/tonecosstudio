@@ -11,7 +11,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderDetailPanel } from './OrderDetailPanel';
 import type { UnifiedOrder } from '@/types/admin/orders';
@@ -109,7 +108,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -145,7 +144,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -180,7 +179,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -210,7 +209,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -243,7 +242,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -276,7 +275,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -315,7 +314,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -355,7 +354,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -390,7 +389,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -427,7 +426,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -458,7 +457,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -498,7 +497,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -540,7 +539,7 @@ describe('OrderDetailPanel - Visual Feedback (Task 7.5)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel

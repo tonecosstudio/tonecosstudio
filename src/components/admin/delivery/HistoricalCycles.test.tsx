@@ -25,8 +25,8 @@ vi.mock('@/lib/services/timezoneService', () => ({
   timezoneService: {
     getCurrentTime: () => new Date('2026-06-15T12:00:00Z'),
     toSystemTimezone: (date: Date) => date,
-    getMonth: (date: Date) => 6,
-    getYear: (date: Date) => 2026,
+    getMonth: (_date: Date) => 6,
+    getYear: (_date: Date) => 2026,
   },
 }));
 
@@ -112,6 +112,10 @@ describe('HistoricalCycles', () => {
     },
   ];
 
+  const setSupabaseFromMock = (mockFrom: ReturnType<typeof vi.fn>) => {
+    (supabase as unknown as { from: ReturnType<typeof vi.fn> }).from = mockFrom;
+  };
+
   it('should render historical cycles table', async () => {
     const mockFrom = vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -123,7 +127,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -159,7 +163,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -182,8 +186,6 @@ describe('HistoricalCycles', () => {
   });
 
   it('should filter cycles by year', async () => {
-    const user = userEvent.setup();
-
     const mockFrom = vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnThis(),
@@ -194,7 +196,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -219,7 +221,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -244,7 +246,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -273,7 +275,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -300,7 +302,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -320,7 +322,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 
@@ -347,7 +349,7 @@ describe('HistoricalCycles', () => {
       }),
     });
 
-    (supabase.from as any) = mockFrom;
+    setSupabaseFromMock(mockFrom);
 
     render(<HistoricalCycles />, { wrapper: createWrapper() });
 

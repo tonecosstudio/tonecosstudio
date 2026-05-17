@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminPaymentsGateway } from "@/hooks/admin/useAdminPaymentsGateway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ interface PaymentKey {
 }
 
 export default function AdminPaymentKeys() {
+  const supabase = useAdminPaymentsGateway();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
@@ -98,7 +99,7 @@ export default function AdminPaymentKeys() {
     try {
       // Get sanitized data
       const sanitizedData = getSanitizedData();
-      const updates: Promise<any>[] = [];
+      const updates: Promise<void>[] = [];
 
       paymentKeys.forEach((key) => {
         const newValue = sanitizedData[key.key];
@@ -115,7 +116,7 @@ export default function AdminPaymentKeys() {
         title: "Chaves atualizadas",
         description: "Todas as chaves de pagamento foram atualizadas com sucesso.",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Erro ao atualizar",
         description: "Ocorreu um erro ao atualizar as chaves.",

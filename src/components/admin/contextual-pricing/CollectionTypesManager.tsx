@@ -43,6 +43,7 @@ import {
   getNextSortOrder,
 } from "@/hooks/useCollectionTypes";
 import { useToast } from "@/hooks/use-toast";
+import type { CollectionType } from "@/types/contextual-pricing";
 
 interface CollectionTypeFormData {
   name: string;
@@ -60,7 +61,7 @@ export function CollectionTypesManager() {
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingType, setEditingType] = useState<any>(null);
+  const [editingType, setEditingType] = useState<CollectionType | null>(null);
 
   const [formData, setFormData] = useState<CollectionTypeFormData>({
     name: "",
@@ -89,7 +90,7 @@ export function CollectionTypesManager() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleOpenEditDialog = (type: any) => {
+  const handleOpenEditDialog = (type: CollectionType) => {
     setEditingType(type);
     setFormData({
       name: type.name,
@@ -151,7 +152,7 @@ export function CollectionTypesManager() {
     });
   };
 
-  const handleMoveSortOrder = async (type: any, direction: "up" | "down") => {
+  const handleMoveSortOrder = async (type: CollectionType, direction: "up" | "down") => {
     const newOrder = direction === "up" ? type.sort_order - 1 : type.sort_order + 1;
     await updateMutation.mutateAsync({
       id: type.id,

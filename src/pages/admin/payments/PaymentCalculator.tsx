@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,9 +70,6 @@ export default function PaymentCalculator() {
   // Diferença entre PIX e Parcelado
   const diferencaValor6x = recebePix - recebeParcelado6x;
   const diferencaPercentual6x = (diferencaValor6x / recebeParcelado6x) * 100;
-
-  const diferencaValor10xLoja = recebePix - recebeParcelado10xLoja;
-  const diferencaPercentual10xLoja = (diferencaValor10xLoja / recebeParcelado10xLoja) * 100;
 
   const diferencaValor10xCliente = recebePix - recebeParcelado10xCliente;
   const diferencaPercentual10xCliente =

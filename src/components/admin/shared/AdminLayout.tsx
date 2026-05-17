@@ -1,5 +1,4 @@
-import { ReactNode, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { ReactNode, useState, type ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { NotificationCenter } from "@/components/admin/notifications/NotificationCenter";
 import {
@@ -8,24 +7,17 @@ import {
   Users,
   FileText,
   Upload,
-  Workflow,
   Settings,
   CreditCard,
-  Building2,
   Layers,
   DollarSign,
-  Ticket,
-  Clock,
   TrendingUp,
   BarChart3,
-  HeadphonesIcon,
   Gauge,
   Wallet,
   Menu,
   X,
-  History,
   CalendarClock,
-  FolderKanban,
   MessageSquare,
   ShoppingCart,
   RefreshCw,
@@ -47,7 +39,7 @@ interface AdminLayoutProps {
 }
 
 // Mapeamento de nomes de ícones para componentes
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   LayoutDashboard,
   FileText,
   ShoppingCart,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CollectionFormWithTabs Component
  *
@@ -39,7 +38,6 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import {
   Loader2,
-  RotateCw,
   Info,
   CheckCircle2,
   AlertTriangle,
@@ -51,7 +49,6 @@ import {
 import { cn } from "@/lib/utils";
 import ImageUpload from "../shared/ImageUpload";
 import { CollectionCharactersManager, type CharacterData } from "./CollectionCharactersManager";
-import type { Collection } from "@/services/collection-service";
 
 // Zod validation schema
 const collectionSchema = z.object({
@@ -69,8 +66,18 @@ export interface CollectionFormDataWithCharacters extends CollectionFormData {
   characters: CharacterData[];
 }
 
+interface CollectionFormCollection {
+  id: string;
+  name: string;
+  description: string;
+  priceMonthly?: number;
+  coverImage?: string;
+  rotation_type?: "fixed" | "odd_months" | "even_months";
+  is_active: boolean;
+}
+
 interface CollectionFormProps {
-  collection?: Collection | null;
+  collection?: CollectionFormCollection | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: CollectionFormDataWithCharacters) => Promise<void>;
@@ -152,7 +159,7 @@ export function CollectionFormWithTabs({
       }
     });
 
-    dateMap.forEach((names, date) => {
+    dateMap.forEach((names) => {
       if (names.length > 1) {
         warnings.push(`${names.join(" e ")} têm o mesmo mês de lançamento`);
       }
@@ -257,10 +264,10 @@ export function CollectionFormWithTabs({
         description: `A coleção "${name}" foi ${isEditing ? "atualizada" : "criada"} com sucesso.`,
       });
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: isEditing ? "Erro ao atualizar coleção" : "Erro ao criar coleção",
-        description: error.message || "Ocorreu um erro ao processar a solicitação.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao processar a solicitação.",
         variant: "destructive",
       });
     }
@@ -395,7 +402,7 @@ export function CollectionFormWithTabs({
                     <Label htmlFor="rotation-type">Tipo de Rotação *</Label>
                     <Select
                       value={rotationType}
-                      onValueChange={(value: any) => setRotationType(value)}
+                      onValueChange={(value: "fixed" | "odd_months" | "even_months") => setRotationType(value)}
                       disabled={isLoading}
                     >
                       <SelectTrigger id="rotation-type">

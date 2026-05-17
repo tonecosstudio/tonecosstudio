@@ -2,6 +2,7 @@
  * Componente para exibir timeline de escolhas de personagens
  * Organizado por status: Aprovados, Pendentes, Rejeitados
  */
+import type { ReactNode } from "react";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,6 +26,13 @@ interface MonthlySelectionsTimelineProps {
   selections: CharacterChoice[];
 }
 
+interface SelectionStatusConfig {
+  bgClass: string;
+  badgeClass: string;
+  icon: ReactNode;
+  text: string;
+}
+
 export function MonthlySelectionsTimeline({ selections }: MonthlySelectionsTimelineProps) {
   if (selections.length === 0) {
     return (
@@ -43,7 +51,7 @@ export function MonthlySelectionsTimeline({ selections }: MonthlySelectionsTimel
     return new Date(dateStr).toLocaleDateString("pt-BR");
   };
 
-  const renderSelection = (selection: CharacterChoice, statusConfig: any) => (
+  const renderSelection = (selection: CharacterChoice, statusConfig: SelectionStatusConfig) => (
     <div
       key={selection.id}
       className={`flex items-center justify-between p-3 rounded-lg border ${statusConfig.bgClass}`}

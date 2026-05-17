@@ -87,7 +87,7 @@ export default function OrdersPageV2() {
     selection;
 
   // Mutations
-  const { bulkUpdateStatus } = useOrderMutations();
+  const _orderMutations = useOrderMutations();
 
   // Handlers
   const handleSelectAll = (checked: boolean) => {

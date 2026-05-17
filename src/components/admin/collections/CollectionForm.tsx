@@ -51,7 +51,6 @@ import { cn } from "@/lib/utils";
 import ImageUpload from "../shared/ImageUpload";
 import { CollectionTierAssignment } from "../pricing-tiers/CollectionTierAssignment";
 import { CollectionCharactersManager, type CharacterData } from "./CollectionCharactersManager";
-import type { Collection } from "@/services/collection-service";
 import { supabase } from "@/integrations/supabase/client";
 
 // Zod validation schema
@@ -70,8 +69,29 @@ export interface CollectionFormDataWithCharacters extends CollectionFormData {
   characters: CharacterData[];
 }
 
+interface CollectionFormCollection {
+  id: string;
+  name: string;
+  description: string;
+  cover_image_url: string | null;
+  rotation_type: "fixed" | "odd_months" | "even_months";
+  is_active: boolean;
+  is_price_custom?: boolean;
+}
+
+interface PricingTier {
+  id: string;
+  name: string;
+  description: string | null;
+  price_full: number;
+  deposit_amount: number;
+  price_pix: number;
+  pix_discount_percentage: number;
+  is_default: boolean;
+}
+
 interface CollectionFormProps {
-  collection?: Collection | null;
+  collection?: CollectionFormCollection | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: CollectionFormDataWithCharacters) => Promise<void>;
@@ -101,7 +121,7 @@ export function CollectionForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Pricing tiers
-  const [pricingTiers, setPricingTiers] = useState<any[]>([]);
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
 
   // Validation state
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
@@ -117,22 +137,23 @@ export function CollectionForm({
           .order('display_order');
 
         if (!error && data) {
-          setPricingTiers(data);
+          const tiers = data as PricingTier[];
+          setPricingTiers(tiers);
           // Set default tier if none selected
-          if (!selectedTierId && data.length > 0) {
-            const defaultTier = data.find(t => t.is_default) || data[0];
+          if (!selectedTierId && tiers.length > 0) {
+            const defaultTier = tiers.find((t) => t.is_default) || tiers[0];
             setSelectedTierId(defaultTier.id);
           }
         }
-      } catch (err) {
-        console.error('Error loading pricing tiers:', err);
+      } catch (error) {
+        console.error('Error loading pricing tiers:', error);
       }
     };
 
     if (open) {
       loadPricingTiers();
     }
-  }, [open]);
+  }, [open, selectedTierId]);
 
   // Reset form when collection changes
   useEffect(() => {
@@ -173,7 +194,7 @@ export function CollectionForm({
       }
     });
 
-    dateMap.forEach((names, date) => {
+    dateMap.forEach((names) => {
       if (names.length > 1) {
         warnings.push(`${names.join(" e ")} têm o mesmo mês de lançamento`);
       }
@@ -288,10 +309,10 @@ export function CollectionForm({
         description: `A coleção "${name}" foi ${isEditing ? "atualizada" : "criada"} com sucesso.`,
       });
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: isEditing ? "Erro ao atualizar coleção" : "Erro ao criar coleção",
-        description: error.message || "Ocorreu um erro ao processar a solicitação.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao processar a solicitação.",
         variant: "destructive",
       });
     }
@@ -409,7 +430,7 @@ export function CollectionForm({
                     <Label htmlFor="rotation-type">Tipo de Rotação *</Label>
                     <Select
                       value={rotationType}
-                      onValueChange={(value: any) => setRotationType(value)}
+                      onValueChange={(value: "fixed" | "odd_months" | "even_months") => setRotationType(value)}
                       disabled={isLoading}
                     >
                       <SelectTrigger id="rotation-type">

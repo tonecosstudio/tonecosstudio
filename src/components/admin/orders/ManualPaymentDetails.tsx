@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Componente de Detalhes de Pagamento Manual
  *
@@ -12,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar, Hash } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, CreditCard } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,

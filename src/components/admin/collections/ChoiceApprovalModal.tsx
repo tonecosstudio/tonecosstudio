@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { approveChoice, rejectChoice, type CharacterChoice } from "@/services/admin/choice-service";
+import { useApproveChoice, useRejectChoice, type CharacterChoice } from "@/hooks/admin/useChoiceApproval";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -101,8 +101,9 @@ export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprov
   });
 
   // Approve mutation
+  const approveMutationBase = useApproveChoice();
   const approveMutation = useMutation({
-    mutationFn: (choiceId: string) => approveChoice(choiceId),
+    mutationFn: (choiceId: string) => approveMutationBase.mutateAsync(choiceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["character-choices"] });
       toast({
@@ -121,9 +122,10 @@ export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprov
   });
 
   // Reject mutation
+  const rejectMutationBase = useRejectChoice();
   const rejectMutation = useMutation({
     mutationFn: ({ choiceId, reason }: { choiceId: string; reason: string }) =>
-      rejectChoice(choiceId, reason),
+      rejectMutationBase.mutateAsync({ choiceId, reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["character-choices"] });
       toast({

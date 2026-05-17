@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -150,7 +149,7 @@ export function QuickRepliesManager() {
   const fetchQuickReplies = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("quick_replies" as any)
+      .from("quick_replies")
       .select("*")
       .order("display_order", { ascending: true });
 
@@ -158,7 +157,7 @@ export function QuickRepliesManager() {
       console.error("Erro ao buscar respostas rápidas:", error);
       toast.error("Erro ao carregar respostas rápidas");
     } else {
-      setQuickReplies((data as any) || []);
+      setQuickReplies(data || []);
     }
     setLoading(false);
   };
@@ -189,7 +188,7 @@ export function QuickRepliesManager() {
       if (editingReply) {
         // Update existing
         const { error } = await supabase
-          .from("quick_replies" as any)
+          .from("quick_replies")
           .update({
             category: formData.category,
             title: formData.title,
@@ -202,7 +201,7 @@ export function QuickRepliesManager() {
       } else {
         // Create new
         const maxOrder = Math.max(...quickReplies.map((r) => r.display_order), 0);
-        const { error } = await supabase.from("quick_replies" as any).insert({
+        const { error } = await supabase.from("quick_replies").insert({
           category: formData.category,
           title: formData.title,
           message: formData.message,
@@ -228,7 +227,7 @@ export function QuickRepliesManager() {
 
     try {
       const { error } = await supabase
-        .from("quick_replies" as any)
+        .from("quick_replies")
         .delete()
         .eq("id", id);
 
@@ -244,7 +243,7 @@ export function QuickRepliesManager() {
   const handleToggleActive = async (reply: QuickReply) => {
     try {
       const { error } = await supabase
-        .from("quick_replies" as any)
+        .from("quick_replies")
         .update({ is_active: !reply.is_active })
         .eq("id", reply.id);
 
@@ -286,7 +285,7 @@ export function QuickRepliesManager() {
     try {
       for (const update of updates) {
         await supabase
-          .from("quick_replies" as any)
+          .from("quick_replies")
           .update({ display_order: update.display_order })
           .eq("id", update.id);
       }

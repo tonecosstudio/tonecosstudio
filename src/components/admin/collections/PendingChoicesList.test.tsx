@@ -14,6 +14,10 @@ import { BrowserRouter } from 'react-router-dom';
 import { PendingChoicesList } from './PendingChoicesList';
 import { supabase } from '@/integrations/supabase/client';
 
+type MockFrom = {
+  mockImplementation: (fn: (...args: unknown[]) => unknown) => void;
+};
+
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -65,7 +69,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 
@@ -85,7 +89,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 
@@ -142,7 +146,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 
@@ -187,7 +191,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 
@@ -227,7 +231,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 
@@ -267,7 +271,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 
@@ -306,7 +310,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 
@@ -319,7 +323,7 @@ describe('PendingChoicesList', () => {
 
   it('should not fetch data when no cycleIds provided', () => {
     const mockFrom = vi.fn();
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={[]} />, { wrapper: createWrapper() });
 
@@ -368,7 +372,7 @@ describe('PendingChoicesList', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (supabase as unknown as { from: MockFrom }).from.mockImplementation(mockFrom);
 
     render(<PendingChoicesList cycleIds={['cycle-1']} />, { wrapper: createWrapper() });
 

@@ -1,9 +1,8 @@
-// @ts-nocheck
 /**
  * CollectionTierAssignmentDialog - Dialog para atribuir coleções a um nível
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -25,6 +24,18 @@ interface CollectionTierAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+}
+
+interface CollectionAssignmentRow {
+  id: string;
+  name: string;
+  tier_id: string | null;
+}
+
+interface CollectionQueryRow {
+  id: string;
+  name: string;
+  collection_tier_assignments: Array<{ tier_id: string | null }> | null;
 }
 
 export function CollectionTierAssignmentDialog({
@@ -57,7 +68,7 @@ export function CollectionTierAssignmentDialog({
 
       if (error) throw error;
       
-      return data.map((col: any) => ({
+      return (data as CollectionQueryRow[]).map((col) => ({
         id: col.id,
         name: col.name,
         tier_id: col.collection_tier_assignments?.[0]?.tier_id || null,
@@ -67,14 +78,14 @@ export function CollectionTierAssignmentDialog({
   });
 
   // Inicializar seleção com coleções já atribuídas
-  useState(() => {
+  useEffect(() => {
     if (collections && open) {
       const assigned = collections
-        .filter((c: any) => c.tier_id === tierId)
-        .map((c: any) => c.id);
+        .filter((c: CollectionAssignmentRow) => c.tier_id === tierId)
+        .map((c: CollectionAssignmentRow) => c.id);
       setSelectedCollections(assigned);
     }
-  });
+  }, [collections, open, tierId]);
 
   const handleToggle = (collectionId: string) => {
     setSelectedCollections((prev) =>

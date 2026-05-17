@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,6 @@ import {
   processTemplate,
   fetchCustomerData,
   detectVariables,
-  TEMPLATE_VARIABLES,
 } from "@/lib/services/templateService";
 
 interface QuickReply {
@@ -43,7 +41,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorProps) {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
-  const [filteredReplies, setFilteredReplies] = useState<QuickReply[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -58,14 +55,10 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    filterReplies();
-  }, [searchTerm, selectedCategory, quickReplies]);
-
   const fetchQuickReplies = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("quick_replies" as any)
+      .from("quick_replies")
       .select("*")
       .eq("is_active", true)
       .order("display_order", { ascending: true });
@@ -74,12 +67,12 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
       console.error("Erro ao buscar respostas rápidas:", error);
       toast.error("Erro ao carregar respostas rápidas");
     } else {
-      setQuickReplies((data as any) || []);
+      setQuickReplies(data || []);
     }
     setLoading(false);
   };
 
-  const filterReplies = () => {
+  const filteredReplies = useMemo(() => {
     let filtered = quickReplies;
 
     if (selectedCategory) {
@@ -93,8 +86,8 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
       );
     }
 
-    setFilteredReplies(filtered);
-  };
+    return filtered;
+  }, [quickReplies, searchTerm, selectedCategory]);
 
   const handleSelect = async (reply: QuickReply) => {
     // Detectar se tem variáveis

@@ -12,6 +12,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CollectionBreakdown } from './CollectionBreakdown';
 import { supabase } from '@/integrations/supabase/client';
+import type { ReactNode } from 'react';
 
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -22,9 +23,9 @@ vi.mock('@/integrations/supabase/client', () => ({
 
 // Mock Recharts to avoid rendering issues in tests
 vi.mock('recharts', () => ({
-  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: { children: ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => <div data-testid="bar" />,
-  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
+  PieChart: ({ children }: { children: ReactNode }) => <div data-testid="pie-chart">{children}</div>,
   Pie: () => <div data-testid="pie" />,
   Cell: () => <div data-testid="cell" />,
   XAxis: () => <div data-testid="x-axis" />,
@@ -32,7 +33,7 @@ vi.mock('recharts', () => ({
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
   Legend: () => <div data-testid="legend" />,
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: ReactNode }) => <div data-testid="responsive-container">{children}</div>,
 }));
 
 describe('CollectionBreakdown', () => {
@@ -64,7 +65,9 @@ describe('CollectionBreakdown', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     renderComponent('cycle-1');
 
@@ -72,7 +75,7 @@ describe('CollectionBreakdown', () => {
   });
 
   it('should display empty state when no data', async () => {
-    const mockFrom = vi.fn((table: string) => ({
+    const mockFrom = vi.fn((_table: string) => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           not: vi.fn(() => Promise.resolve({ data: [], error: null })),
@@ -80,7 +83,9 @@ describe('CollectionBreakdown', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     renderComponent('cycle-1', 'Ciclo 1 - Janeiro 2026');
 
@@ -136,7 +141,9 @@ describe('CollectionBreakdown', () => {
       }
     });
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     renderComponent('cycle-1', 'Ciclo 1 - Janeiro 2026');
 
@@ -205,7 +212,9 @@ describe('CollectionBreakdown', () => {
       }
     });
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     renderComponent('cycle-1');
 
@@ -261,7 +270,9 @@ describe('CollectionBreakdown', () => {
       }
     });
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     renderComponent('cycle-1');
 
@@ -280,7 +291,9 @@ describe('CollectionBreakdown', () => {
       })),
     }));
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     renderComponent('cycle-1', 'Ciclo 1 - Janeiro 2026');
 
@@ -314,7 +327,9 @@ describe('CollectionBreakdown', () => {
       }
     });
 
-    (supabase.from as any).mockImplementation(mockFrom);
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     renderComponent('cycle-1');
 

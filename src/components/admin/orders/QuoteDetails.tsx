@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Package, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { UnifiedOrder } from '@/types/admin/orders';
+import type { OrderStatus, UnifiedOrder } from '@/types/admin/orders';
 import { useUpdateOrderStatus } from '@/hooks/admin/useOrderMutations';
 import { formatCurrency } from '@/lib/utils';
 
@@ -28,11 +28,12 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
   const quoteData = order.quote;
 
   const handleUpdateStatus = async (newStatus: string) => {
+    const status = newStatus as OrderStatus;
     try {
       await updateStatusMutation.mutateAsync({
         orderId: order.id,
-        orderType: 'quote' as any,
-        newStatus: newStatus as any
+        orderType: 'quote',
+        newStatus: status
       });
 
       toast({

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CollectionStats Component
  *
@@ -26,6 +25,23 @@ interface StatsData {
   totalRevenue: number;
   subscriptionDeliveries: number;
   standalonePurchases: number;
+}
+
+interface CycleRef {
+  month: number;
+  year: number;
+}
+
+interface DeliveryWithCycle {
+  cycles: CycleRef | null;
+}
+
+interface PurchaseWithCycle {
+  cycles: CycleRef | null;
+}
+
+interface PurchaseRow {
+  total_amount: number | null;
 }
 
 export function CollectionStats({ collectionId, collectionName }: CollectionStatsProps) {
@@ -57,7 +73,7 @@ export function CollectionStats({ collectionId, collectionName }: CollectionStat
       if (currentMonthError) throw currentMonthError;
 
       // Filter current month deliveries
-      const currentMonthCount = currentMonthDeliveries?.filter((d: any) => {
+      const currentMonthCount = (currentMonthDeliveries as DeliveryWithCycle[] | null)?.filter((d) => {
         const cycle = d.cycles;
         return cycle && cycle.month === currentMonth && cycle.year === currentYear;
       }).length || 0;
@@ -81,7 +97,7 @@ export function CollectionStats({ collectionId, collectionName }: CollectionStat
       if (currentMonthPurchasesError) throw currentMonthPurchasesError;
 
       // Filter current month purchases
-      const currentMonthPurchasesCount = currentMonthPurchases?.filter((p: any) => {
+      const currentMonthPurchasesCount = (currentMonthPurchases as PurchaseWithCycle[] | null)?.filter((p) => {
         const cycle = p.cycles;
         return cycle && cycle.month === currentMonth && cycle.year === currentYear;
       }).length || 0;
@@ -107,7 +123,7 @@ export function CollectionStats({ collectionId, collectionName }: CollectionStat
       // For subscription deliveries, we use the collection price
       // For standalone purchases, we use the actual total_amount from the purchase
       const subscriptionRevenue = subscriptionDeliveriesCount * collectionPrice;
-      const standaloneRevenue = allPurchases?.reduce((sum: number, p: any) => sum + (p.total_amount || 0), 0) || 0;
+      const standaloneRevenue = (allPurchases as PurchaseRow[] | null)?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
       const totalRevenue = subscriptionRevenue + standaloneRevenue;
 
       return {

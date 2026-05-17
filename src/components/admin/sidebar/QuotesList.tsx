@@ -17,7 +17,7 @@ interface QuotesListProps {
   onRefresh: () => void;
 }
 
-export function QuotesList({ quotes, onRefresh }: QuotesListProps) {
+export function QuotesList({ quotes, onRefresh: _onRefresh }: QuotesListProps) {
   if (quotes.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground text-sm">

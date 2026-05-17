@@ -7,13 +7,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChoiceApprovalModal } from "./ChoiceApprovalModal";
-import type { CharacterChoice } from "@/services/admin/choice-service";
-import * as choiceService from "@/services/admin/choice-service";
+import type { CharacterChoice } from "@/hooks/admin/useChoiceApproval";
+import * as choiceHooks from "@/hooks/admin/useChoiceApproval";
 
-// Mock the services
-vi.mock("@/services/admin/choice-service", () => ({
-  approveChoice: vi.fn(),
-  rejectChoice: vi.fn(),
+// Mock the hooks
+vi.mock("@/hooks/admin/useChoiceApproval", () => ({
+  useApproveChoice: vi.fn(),
+  useRejectChoice: vi.fn(),
 }));
 
 // Mock Supabase client
@@ -88,6 +88,12 @@ function renderWithProviders(ui: React.ReactElement) {
 describe("ChoiceApprovalModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(choiceHooks.useApproveChoice).mockReturnValue({
+      mutateAsync: vi.fn().mockResolvedValue(mockChoice),
+    } as unknown as ReturnType<typeof choiceHooks.useApproveChoice>);
+    vi.mocked(choiceHooks.useRejectChoice).mockReturnValue({
+      mutateAsync: vi.fn().mockResolvedValue(mockChoice),
+    } as unknown as ReturnType<typeof choiceHooks.useRejectChoice>);
   });
 
   it("renders modal with choice details when open", async () => {
@@ -121,8 +127,8 @@ describe("ChoiceApprovalModal", () => {
 
   it("calls approveChoice when approve button is clicked", async () => {
     const user = userEvent.setup();
-    const mockApprove = vi.mocked(choiceService.approveChoice);
-    mockApprove.mockResolvedValue(mockChoice);
+    const approveHook = vi.mocked(choiceHooks.useApproveChoice)();
+    const mockApprove = vi.mocked(approveHook.mutateAsync);
 
     renderWithProviders(
       <ChoiceApprovalModal choice={mockChoice} open={true} onOpenChange={vi.fn()} />
@@ -154,8 +160,8 @@ describe("ChoiceApprovalModal", () => {
 
   it("calls rejectChoice with reason when rejection is confirmed", async () => {
     const user = userEvent.setup();
-    const mockReject = vi.mocked(choiceService.rejectChoice);
-    mockReject.mockResolvedValue(mockChoice);
+    const rejectHook = vi.mocked(choiceHooks.useRejectChoice)();
+    const mockReject = vi.mocked(rejectHook.mutateAsync);
 
     renderWithProviders(
       <ChoiceApprovalModal choice={mockChoice} open={true} onOpenChange={vi.fn()} />
@@ -174,7 +180,7 @@ describe("ChoiceApprovalModal", () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockReject).toHaveBeenCalledWith("choice-1", "Out of stock");
+      expect(mockReject).toHaveBeenCalledWith({ choiceId: "choice-1", reason: "Out of stock" });
     });
   });
 
@@ -198,7 +204,7 @@ describe("ChoiceApprovalModal", () => {
           single: vi.fn(() => Promise.resolve({ data: { stock_quantity: 3 }, error: null })),
         })),
       })),
-    } as any);
+    } as unknown as ReturnType<typeof supabase.from>);
 
     renderWithProviders(
       <ChoiceApprovalModal choice={mockChoice} open={true} onOpenChange={vi.fn()} />
@@ -219,7 +225,7 @@ describe("ChoiceApprovalModal", () => {
           single: vi.fn(() => Promise.resolve({ data: { stock_quantity: 0 }, error: null })),
         })),
       })),
-    } as any);
+    } as unknown as ReturnType<typeof supabase.from>);
 
     renderWithProviders(
       <ChoiceApprovalModal choice={mockChoice} open={true} onOpenChange={vi.fn()} />

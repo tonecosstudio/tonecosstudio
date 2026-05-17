@@ -4,13 +4,12 @@
  * Exibe uma timeline de todas as mudanças de status de um pedido
  */
 
-import { useQuery } from '@tanstack/react-query';
 import { Clock, User, ArrowRight } from 'lucide-react';
-import { fetchOrderStatusHistory } from '@/services/admin/orders-service';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import type { StatusHistoryEntry } from '@/types/admin/orders';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useOrderStatusHistory } from '@/hooks/admin/useOrderStatusHistory';
 
 interface OrderStatusHistoryProps {
   orderId: string;
@@ -18,11 +17,7 @@ interface OrderStatusHistoryProps {
 }
 
 export function OrderStatusHistory({ orderId, orderType }: OrderStatusHistoryProps) {
-  const { data: history, isLoading, error } = useQuery({
-    queryKey: ['order-status-history', orderId, orderType],
-    queryFn: () => fetchOrderStatusHistory(orderId, orderType),
-    staleTime: 30000, // 30 segundos
-  });
+  const { data: history, isLoading, error } = useOrderStatusHistory(orderId, orderType);
 
   if (isLoading) {
     return (
@@ -101,7 +96,6 @@ export function OrderStatusHistory({ orderId, orderType }: OrderStatusHistoryPro
             key={entry.id}
             entry={entry}
             isFirst={index === 0}
-            isLast={index === history.length - 1}
           />
         ))}
       </div>
@@ -112,10 +106,9 @@ export function OrderStatusHistory({ orderId, orderType }: OrderStatusHistoryPro
 interface StatusHistoryItemProps {
   entry: StatusHistoryEntry;
   isFirst: boolean;
-  isLast: boolean;
 }
 
-function StatusHistoryItem({ entry, isFirst, isLast }: StatusHistoryItemProps) {
+function StatusHistoryItem({ entry, isFirst }: StatusHistoryItemProps) {
   const formattedDate = new Date(entry.changedAt).toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',

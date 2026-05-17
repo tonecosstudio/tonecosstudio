@@ -37,6 +37,42 @@ import { useUserDetails } from "@/hooks/admin/useUserDetails";
 import { useUserSubscription } from "@/hooks/admin/useUserSubscription";
 import { useUserOrders } from "@/hooks/admin/useUserOrders";
 
+type Address = {
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+};
+
+type PaymentMethod = {
+  id: string;
+  card_brand?: string | null;
+  type?: string | null;
+  card_last4?: string | null;
+  is_default?: boolean;
+  card_holder_name?: string | null;
+  card_expiry_month?: number | null;
+  card_expiry_year?: number | null;
+};
+
+type SubscriptionCollection = {
+  name: string;
+};
+
+type UserBadgeEntry = {
+  id: string;
+  earned_at: string;
+  badge: {
+    icon: string;
+    name: string;
+    description: string;
+    rarity: string;
+  };
+};
+
 export default function AdminUserDetails() {
   // Arrange: Obter ID do usuário da URL
   const { userId } = useParams<{ userId: string }>();
@@ -44,7 +80,7 @@ export default function AdminUserDetails() {
   // Arrange: Hooks customizados para dados do usuário
   const { profile, roles, badges, paymentMethods, isLoading, isError } = useUserDetails({ userId });
   const { activeSubscription, coinsBalance, monthlySelections } = useUserSubscription({ userId });
-  const { filteredOrders, stats, filters, setFilters, orders } = useUserOrders({ userId });
+  const { filteredOrders, stats, filters, setFilters } = useUserOrders({ userId });
 
   // Act: Renderizar loading state
   if (isLoading) {
@@ -76,7 +112,7 @@ export default function AdminUserDetails() {
   }
 
   // Arrange: Extrair dados do endereço
-  const address = profile.address as any;
+  const address = profile.address as Address;
 
   return (
     <AdminLayout>
@@ -106,7 +142,7 @@ export default function AdminUserDetails() {
               {roles.length === 0 ? (
                 <Badge variant="secondary">user</Badge>
               ) : (
-                roles.map((r: any) => (
+                roles.map((r: { role: string }) => (
                   <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
                     {r.role}
                   </Badge>
@@ -292,7 +328,7 @@ export default function AdminUserDetails() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {paymentMethods.map((method: any) => (
+                  {paymentMethods.map((method: PaymentMethod) => (
                     <div
                       key={method.id}
                       className="flex items-center justify-between p-4 rounded-lg border"
@@ -489,7 +525,7 @@ export default function AdminUserDetails() {
                       <div className="text-sm font-medium text-muted-foreground">Coleções</div>
                       <div className="text-base mt-1">
                         {activeSubscription.collections_list?.length > 0
-                          ? activeSubscription.collections_list.map((c: any) => c.name).join(', ')
+                          ? activeSubscription.collections_list.map((c: SubscriptionCollection) => c.name).join(', ')
                           : 'Nenhuma coleção vinculada'}
                       </div>
                     </div>
@@ -663,7 +699,7 @@ export default function AdminUserDetails() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {badges.map((userBadge: any) => {
+                  {badges.map((userBadge: UserBadgeEntry) => {
                     const badge = userBadge.badge;
                     return (
                       <div

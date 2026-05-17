@@ -4,7 +4,6 @@
  * Componente extraído de AdminSubscriptionCreditCharacters para ser usado
  * como uma aba dentro do AdminCollectionsHub
  */
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,57 +28,89 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { subscriptionCreditAdminAPI } from "@/services/subscription-credit-admin-api";
-import { subscriptionCreditAPI } from "@/services/subscription-credit-api";
-import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit, Trash2, Star, Package, Coins, Layers } from "lucide-react";
+import * as adminCreditCharactersService from "@/hooks/admin/useAdminCreditCharactersData";
+import { Plus, Edit, Trash2, Package, Coins, Layers } from "lucide-react";
+
+const supabase = adminCreditCharactersService.adminCreditCharactersSupabase;
+
+type PriceCategory = {
+  id: string;
+  name?: string;
+  display_name: string;
+  description?: string | null;
+  price_coins?: number;
+  coin_value_in_cents?: number;
+  price_standalone?: number;
+  display_order?: number;
+  is_active?: boolean;
+};
+
+type CatalogCharacter = {
+  id: string;
+  name: string;
+  description?: string | null;
+  price_category_id?: string | null;
+  image_url?: string | null;
+  is_catalog?: boolean;
+  status?: "released" | "coming_soon" | string;
+  theme_category?: string | null;
+  product_line?: string | null;
+  release_order?: number | null;
+  price_categories?: PriceCategory | null;
+};
+
+type CharacterFormDialogProps = {
+  character: CatalogCharacter | null;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+};
+
+type PriceCategoriesSectionProps = {
+  categories: PriceCategory[];
+  isLoading: boolean;
+  isError: boolean;
+  onCreateCategory: () => void;
+  onEditCategory: (category: PriceCategory) => void;
+};
+
+type CategoryCardProps = {
+  category: PriceCategory;
+  onEdit: () => void;
+  onDelete: () => void;
+};
+
+type PriceCategoryDialogProps = {
+  category: PriceCategory | null;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Erro inesperado";
+}
 
 export function CreditCharactersContent() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
-  const [editingCharacter, setEditingCharacter] = useState<any>(null);
+  const [editingCharacter, setEditingCharacter] = useState<CatalogCharacter | null>(null);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editingCategory, setEditingCategory] = useState<PriceCategory | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // Fetch catalog characters from collection_characters table
   const charactersQuery = useQuery({
     queryKey: ["admin-catalog-characters"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('collection_characters')
-        .select(`
-          *,
-          price_categories (
-            id,
-            name,
-            display_name,
-            price_coins,
-            price_standalone
-          )
-        `)
-        .eq('is_catalog', true)
-        .order('name');
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: adminCreditCharactersService.fetchCatalogCharacters,
   });
 
   // Fetch price categories
   const categoriesQuery = useQuery({
     queryKey: ["admin-price-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('price_categories')
-        .select('*')
-        .order('display_order');
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: adminCreditCharactersService.fetchPriceCategories,
   });
 
   const characters = charactersQuery.data || [];
@@ -87,18 +118,13 @@ export function CreditCharactersContent() {
 
   // Filter characters by selected category
   const filteredCharacters = selectedCategory
-    ? characters.filter((c: any) => c.price_category_id === selectedCategory)
+    ? characters.filter((c: CatalogCharacter) => c.price_category_id === selectedCategory)
     : characters;
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('collection_characters')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await adminCreditCharactersService.deleteCatalogCharacterById(id);
     },
     onSuccess: () => {
       toast({ title: "Personagem excluído com sucesso" });
@@ -139,7 +165,6 @@ export function CreditCharactersContent() {
           isError={categoriesQuery.isError}
           onCreateCategory={() => setIsCreatingCategory(true)}
           onEditCategory={setEditingCategory}
-          onRefresh={() => qc.invalidateQueries({ queryKey: ["admin-price-categories"] })}
         />
       ) : (
         <>
@@ -157,8 +182,8 @@ export function CreditCharactersContent() {
               </div>
             </Button>
 
-            {categories.map((category: any) => {
-              const count = characters.filter((c: any) => c.price_category_id === category.id).length;
+            {categories.map((category: PriceCategory) => {
+              const count = characters.filter((c: CatalogCharacter) => c.price_category_id === category.id).length;
               return (
                 <Button
                   key={category.id}
@@ -214,7 +239,7 @@ export function CreditCharactersContent() {
               </div>
             )}
 
-            {filteredCharacters.map((character: any) => (
+            {filteredCharacters.map((character: CatalogCharacter) => (
               <Card key={character.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
@@ -344,9 +369,20 @@ export function CreditCharactersContent() {
 }
 
 // Character Form Dialog Component
-function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any) {
+type CharacterFormData = {
+  name: string;
+  description: string;
+  status: "released" | "coming_soon";
+  price_category_id: string;
+  theme_category: string;
+  product_line: string;
+  image_url: string;
+  is_catalog: boolean;
+};
+
+function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: CharacterFormDialogProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CharacterFormData>({
     name: "",
     description: "",
     status: "released",
@@ -431,7 +467,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: CharacterFormData) => {
       if (character) {
         // Update
         const { error } = await supabase
@@ -451,10 +487,10 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
       toast({ title: character ? "Personagem atualizado" : "Personagem criado" });
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: "Erro ao salvar personagem", 
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive" 
       });
     },
@@ -564,7 +600,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                {categories?.map((cat: any) => (
+                {categories?.map((cat: PriceCategory) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     <div className="flex items-center justify-between gap-4 w-full">
                       <span className="font-semibold">{cat.display_name}</span>
@@ -579,7 +615,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
             {formData.price_category_id && categories && (
               <p className="text-xs text-muted-foreground">
                 {(() => {
-                  const selectedCat = categories.find((c: any) => c.id === formData.price_category_id);
+                  const selectedCat = categories.find((c: PriceCategory) => c.id === formData.price_category_id);
                   if (!selectedCat) return null;
                   return `Preço: ${selectedCat.price_coins} coins (≈ R$ ${((selectedCat.price_coins * (selectedCat.coin_value_in_cents || 200)) / 100).toFixed(2)}) ou R$ ${(selectedCat.price_standalone / 100).toFixed(2)} avulso`;
                 })()}
@@ -659,7 +695,13 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: any
 
 
 // Price Categories Section Component
-function PriceCategoriesSection({ categories, isLoading, isError, onCreateCategory, onEditCategory, onRefresh }: any) {
+function PriceCategoriesSection({
+  categories,
+  isLoading,
+  isError,
+  onCreateCategory,
+  onEditCategory,
+}: PriceCategoriesSectionProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -689,10 +731,10 @@ function PriceCategoriesSection({ categories, isLoading, isError, onCreateCatego
       toast({ title: "Categoria excluída com sucesso" });
       qc.invalidateQueries({ queryKey: ["admin-price-categories"] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: "Erro ao excluir categoria", 
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive" 
       });
     },
@@ -739,7 +781,7 @@ function PriceCategoriesSection({ categories, isLoading, isError, onCreateCatego
           </div>
         )}
 
-        {categories.map((category: any) => (
+        {categories.map((category: PriceCategory) => (
           <CategoryCard
             key={category.id}
             category={category}
@@ -757,7 +799,7 @@ function PriceCategoriesSection({ categories, isLoading, isError, onCreateCatego
 }
 
 // Category Card Component
-function CategoryCard({ category, onEdit, onDelete }: any) {
+function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) {
   const [characterCount, setCharacterCount] = useState(0);
 
   // Count characters using this category
@@ -841,9 +883,20 @@ function CategoryCard({ category, onEdit, onDelete }: any) {
 }
 
 // Price Category Dialog Component
-function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: any) {
+type PriceCategoryFormData = {
+  name: string;
+  display_name: string;
+  description: string;
+  price_coins: number;
+  coin_value_in_cents: number;
+  price_standalone: number;
+  display_order: number;
+  is_active: boolean;
+};
+
+function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: PriceCategoryDialogProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PriceCategoryFormData>({
     name: category?.name || "",
     display_name: category?.display_name || "",
     description: category?.description || "",
@@ -855,7 +908,7 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: any)
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: PriceCategoryFormData) => {
       if (category) {
         // Update
         const { error } = await supabase
@@ -877,10 +930,10 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: any)
       toast({ title: category ? "Categoria atualizada" : "Categoria criada" });
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: "Erro ao salvar categoria", 
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive" 
       });
     },

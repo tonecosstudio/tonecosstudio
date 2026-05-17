@@ -90,7 +90,7 @@ export default function CommunicationTemplates() {
       setCopiedId(id);
       toast.success("Texto copiado para área de transferência");
       setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
+    } catch (_err) {
       toast.error("Erro ao copiar texto");
     }
   };

@@ -43,13 +43,12 @@ import {
   ExternalLink,
   ChevronRight,
   File,
-  FileImage,
   History,
   Shield,
   Package,
   Receipt,
 } from "lucide-react";
-import type { PaymentDetails, PaymentFile, PaymentAuditLog } from "@/types/manual-payment";
+import type { PaymentFile } from "@/types/manual-payment";
 import { getPaymentById } from "@/lib/payment-service";
 import { fileUploadService } from "@/lib/file-upload-service";
 import { PaymentActionButtons } from "./PaymentActionButtons";
@@ -649,7 +648,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
 
                     {/* Timeline items */}
                     <div className="space-y-8">
-                      {sortedAuditLogs.map((log, index) => {
+                      {sortedAuditLogs.map((log) => {
                         const isStatusChange = log.action_type === "status_changed";
                         const isFileUpload = log.action_type === "file_uploaded";
                         const isApproval = log.action_type === "approved";

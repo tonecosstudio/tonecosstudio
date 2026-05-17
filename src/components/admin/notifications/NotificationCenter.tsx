@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +26,7 @@ import {
   MessageSquare,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface AdminNotification {
@@ -42,10 +42,10 @@ export interface AdminNotification {
   is_read: boolean;
   read_at?: string;
   created_at: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   FileText,
   DollarSign,
   HeadphonesIcon,
@@ -192,7 +192,7 @@ export function NotificationCenter() {
           </div>
         </div>
 
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as "all" | "unread")}>
           <TabsList className="w-full rounded-none border-b">
             <TabsTrigger value="all" className="flex-1">
               Todas

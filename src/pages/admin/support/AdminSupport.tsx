@@ -1,6 +1,5 @@
 import { useState } from "react";
 import SEOHead from "@/components/SEOHead";
-import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, List } from "lucide-react";

@@ -4,7 +4,7 @@
  * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 9.1, 9.2
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSanitizedInput } from '@/hooks/useSanitizedInput';
 
@@ -12,7 +12,7 @@ describe('AdminUsers Form Sanitization', () => {
   describe('Email Input Sanitization', () => {
     it('should sanitize email input', () => {
       const { result } = renderHook(() => useSanitizedInput('', 'email'));
-      const [, setValue, sanitizedValue] = result.current;
+      const [, setValue] = result.current;
 
       act(() => {
         setValue('test@example.com');

@@ -18,6 +18,7 @@ interface UserQuickActionsProps {
 }
 
 export function UserQuickActions({ userId, userEmail, userName }: UserQuickActionsProps) {
+  void userId;
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,7 +30,7 @@ export function UserQuickActions({ userId, userEmail, userName }: UserQuickActio
         title: "Email enviado",
         description: `Email de reset de senha enviado para ${userEmail}`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Erro",
         description: "Falha ao enviar email de reset",
@@ -57,7 +58,7 @@ export function UserQuickActions({ userId, userEmail, userName }: UserQuickActio
         title: "Conta suspensa",
         description: `A conta de ${userName} foi suspensa`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Erro",
         description: "Falha ao suspender conta",

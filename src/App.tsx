@@ -46,6 +46,7 @@ const GroupsArcade = lazy(() => import("./pages/GroupsArcade"));
 const MemberGroupDetailsPage = lazy(() => import("./pages/MemberGroupDetailsPage"));
 const SubscriberDashboardArcade = lazy(() => import("./pages/SubscriberDashboardArcade"));
 const CoinsPurchaseArcade = lazy(() => import("./pages/CoinsPurchaseArcade"));
+const CharacterRosterV2 = lazy(() => import("./pages/CharacterRosterV2"));
 
 // Admin pages
 const AdminHome = lazy(() => import("./pages/admin/analytics/AdminHome"));
@@ -107,6 +108,7 @@ function AppContent() {
             <Route path="/selecionar-personagem" element={<CharacterSelect />} />
             <Route path="/colecoes/:slug" element={<CollectionDetailsArcade />} />
             <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
+            <Route path="/roster-v2" element={<CharacterRosterV2 />} />
             <Route path="/termos" element={<TermsArcade />} />
             <Route path="/privacidade" element={<PrivacyArcade />} />
             <Route path="/contato" element={<ContactArcade />} />

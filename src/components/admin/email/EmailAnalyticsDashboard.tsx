@@ -1,9 +1,7 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,7 +41,7 @@ export function EmailAnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState<string>('7d');
 
   // Fetch email statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats } = useQuery({
     queryKey: ['email-stats', timeRange],
     queryFn: async () => {
       const daysAgo = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 1;
@@ -106,7 +104,10 @@ export function EmailAnalyticsDashboard() {
   });
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; icon: React.ReactNode; label: string }> = {
+    const variants: Record<
+      string,
+      { variant: "default" | "destructive" | "secondary" | "outline"; icon: React.ReactNode; label: string }
+    > = {
       sent: { variant: 'default', icon: <CheckCircle className="w-3 h-3" />, label: 'Enviado' },
       failed: { variant: 'destructive', icon: <XCircle className="w-3 h-3" />, label: 'Falhou' },
       bounced: { variant: 'destructive', icon: <AlertCircle className="w-3 h-3" />, label: 'Rejeitado' },

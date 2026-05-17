@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CollectionBreakdown Component
  *
@@ -13,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Package, TrendingUp } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -28,6 +27,16 @@ interface CollectionData {
   subscription_deliveries: number;
   standalone_purchases: number;
   total: number;
+}
+
+interface CollectionRelation {
+  id: string;
+  name: string;
+}
+
+interface DeliveryRow {
+  collection_id: string;
+  collections: CollectionRelation | null;
 }
 
 // Colors for pie chart
@@ -81,7 +90,7 @@ export function CollectionBreakdown({ cycleId, cycleName }: CollectionBreakdownP
       const collectionMap = new Map<string, CollectionData>();
 
       // Process deliveries
-      deliveries?.forEach((delivery: any) => {
+      (deliveries as DeliveryRow[] | null)?.forEach((delivery) => {
         const collectionId = delivery.collection_id;
         const collectionName = delivery.collections?.name || 'Desconhecida';
 
@@ -101,7 +110,7 @@ export function CollectionBreakdown({ cycleId, cycleName }: CollectionBreakdownP
       });
 
       // Process standalone purchases
-      purchases?.forEach((purchase: any) => {
+      (purchases as DeliveryRow[] | null)?.forEach((purchase) => {
         const collectionId = purchase.collection_id;
         const collectionName = purchase.collections?.name || 'Desconhecida';
 

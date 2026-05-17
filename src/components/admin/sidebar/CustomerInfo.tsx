@@ -3,7 +3,7 @@
  * Mostra informações de contato e perfil do usuário
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Phone, User, MapPin, Calendar, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -34,11 +34,7 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProfile();
-  }, [userId]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       // Buscar dados do perfil (que já deve ter o email)
       const { data: profileData, error: profileError } = await supabase
@@ -55,7 +51,11 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   if (loading) {
     return (

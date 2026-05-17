@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,16 @@ import {
 } from "lucide-react";
 
 export function DashboardMetrics() {
+  type ConversationWithOptionalFields = {
+    status: string;
+    resolved_at: string | null;
+    last_message_at: string;
+    created_at: string;
+    first_response_at: string | null;
+    risk_flags?: unknown;
+    promised_date?: string | null;
+  };
+
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     open_count: 0,
     waiting_customer_count: 0,
@@ -27,7 +37,7 @@ export function DashboardMetrics() {
   });
   const [loading, setLoading] = useState(true);
 
-  const calculateMetrics = async () => {
+  const calculateMetrics = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -93,14 +103,14 @@ export function DashboardMetrics() {
       // 7. conversations_with_risk - conversas com risk_flags não vazio
       // Note: risk_flags field will be available after migration 20260221000004_update_support_conversations.sql
       const conversations_with_risk = conversations.filter((c) => {
-        const riskFlags = (c as any).risk_flags;
+        const riskFlags = (c as ConversationWithOptionalFields).risk_flags;
         return riskFlags && Array.isArray(riskFlags) && riskFlags.length > 0;
       }).length;
 
       // 8. conversations_overdue_promise - conversas com promised_date no passado
       // Note: promised_date field will be available after migration 20260221000004_update_support_conversations.sql
       const conversations_overdue_promise = conversations.filter((c) => {
-        const promisedDate = (c as any).promised_date;
+        const promisedDate = (c as ConversationWithOptionalFields).promised_date;
         if (!promisedDate) return false;
         const promised = new Date(promisedDate);
         return promised < now && c.status !== "resolved" && c.status !== "closed";
@@ -121,7 +131,7 @@ export function DashboardMetrics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     calculateMetrics();
@@ -146,7 +156,7 @@ export function DashboardMetrics() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [calculateMetrics]);
 
   if (loading) {
     return (

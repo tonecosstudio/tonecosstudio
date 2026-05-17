@@ -11,10 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DeliveryDetailModal } from '../DeliveryDetailModal';
+import { QueryClient } from '@tanstack/react-query';
 
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -36,10 +33,8 @@ vi.mock('@/hooks/use-toast', () => ({
 }));
 
 describe('Tracking Code Management Integration', () => {
-  let queryClient: QueryClient;
-
   beforeEach(() => {
-    queryClient = new QueryClient({
+    new QueryClient({
       defaultOptions: {
         queries: { retry: false },
         mutations: { retry: false }

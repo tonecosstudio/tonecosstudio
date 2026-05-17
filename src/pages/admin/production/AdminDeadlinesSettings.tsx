@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { adminProductionGateway as supabase } from "@/services/admin/admin-production-gateway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AdminDeadlinesSettings() {
   const queryClient = useQueryClient();
-  const [editedValues, setEditedValues] = useState({});
+  const [editedValues, setEditedValues] = useState<Record<string, string>>({});
 
   // Buscar configurações do SSOT
   const { data: settings, isLoading } = useQuery({
@@ -31,7 +31,7 @@ export default function AdminDeadlinesSettings() {
 
       if (error) throw error;
 
-      const settingsMap = {};
+      const settingsMap: Record<string, { value: string; description: string | null }> = {};
       data.forEach(item => {
         settingsMap[item.key] = { value: item.value, description: item.description };
       });
@@ -64,7 +64,7 @@ export default function AdminDeadlinesSettings() {
         return newValues;
       });
     },
-    onError: (error: any, variables) => {
+    onError: (error: Error, variables) => {
       toast.error(`Erro ao atualizar ${getSettingLabel(variables.key)}`, {
         description: error.message,
       });
@@ -79,7 +79,7 @@ export default function AdminDeadlinesSettings() {
       delivery_interval_days: "Intervalo Total",
       monthly_capacity: "Capacidade Mensal",
     };
-    return labels[key] || key;
+    return labels[key as keyof typeof labels] || key;
   };
 
   const getSettingIcon = (key: string) => {
@@ -90,7 +90,7 @@ export default function AdminDeadlinesSettings() {
       delivery_interval_days: RefreshCw,
       monthly_capacity: Package,
     };
-    const Icon = icons[key] || Info;
+    const Icon = icons[key as keyof typeof icons] || Info;
     return <Icon className="h-5 w-5" />;
   };
 

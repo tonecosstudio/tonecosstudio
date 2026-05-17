@@ -14,7 +14,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 
 // Mock Supabase client
 vi.mock('@/integrations/supabase/client', () => ({
@@ -28,7 +27,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 
 // Mock AdminLayout
 vi.mock('@/components/admin/shared/AdminLayout', () => ({
-  AdminLayout: ({ children }: any) => <div>{children}</div>,
+  AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 // Mock SEOHead
@@ -59,7 +58,10 @@ describe('AdminCollections - Rotation Configuration', () => {
         }),
       }),
     });
-    (supabase.from as any).mockImplementation(mockFrom);
+    const { supabase } = await import('@/integrations/supabase/client');
+    (
+      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
+    ).from.mockImplementation(mockFrom);
 
     const AdminCollections = (await import('./AdminCollections')).default;
 

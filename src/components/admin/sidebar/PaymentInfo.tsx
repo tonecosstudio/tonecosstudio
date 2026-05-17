@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { updatePaymentStatus, type ManualPayment } from "@/lib/services/integrationService";
+import { type LucideIcon } from "lucide-react";
 
 interface PaymentInfoProps {
   payments: ManualPayment[];
@@ -81,7 +82,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
   const getStatusBadge = (status: string) => {
     const statusMap: Record<
       string,
-      { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: LucideIcon }
     > = {
       pending: { label: "Pendente", variant: "secondary", icon: Clock },
       under_review: { label: "Em Análise", variant: "outline", icon: Clock },

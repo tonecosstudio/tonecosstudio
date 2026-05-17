@@ -42,4 +42,54 @@ export default tseslint.config(
       "react-hooks/exhaustive-deps": "error", // Enforce dependency arrays
     },
   },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["warn", {
+        patterns: [
+          {
+            group: ["@/integrations/*"],
+            message: "UI nao deve acessar integrations diretamente. Use hooks/services.",
+          },
+          {
+            group: ["@/lib/services/*"],
+            message: "UI nao deve depender de lib/services diretamente. Use hooks/application layer.",
+          },
+        ],
+      }],
+    },
+  },
+  {
+    files: ["src/components/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["warn", {
+        patterns: [
+          {
+            group: ["@/services/*"],
+            message: "Components devem evitar acesso direto a services. Preferir hooks por dominio.",
+          },
+        ],
+      }],
+    },
+  },
+  {
+    files: ["src/services/**/*.{ts,tsx}", "src/lib/services/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [
+          {
+            group: ["@/components/*", "@/pages/*"],
+            message: "Services nao devem importar UI (components/pages).",
+          },
+        ],
+      }],
+    },
+  },
 );

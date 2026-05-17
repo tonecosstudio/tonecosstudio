@@ -69,13 +69,12 @@ export function SecureUserForm({
     register,
     handleSubmit,
     formState: { errors },
-    setError
   } = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     values: formData
   });
 
-  const onSubmitForm = async (data: UserFormData) => {
+  const onSubmitForm = async (_data: UserFormData) => {
     // Check rate limit
     if (userId) {
       const rateLimitKey = getUserRateLimitKey(userId, 'profile-update');

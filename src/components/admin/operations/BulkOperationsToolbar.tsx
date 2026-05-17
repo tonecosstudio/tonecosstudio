@@ -34,7 +34,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import {
-  Check,
   CheckSquare,
   Square,
   Download,
@@ -43,8 +42,6 @@ import {
   AlertCircle,
   Clock,
   X,
-  FileText,
-  ChevronDown,
 } from "lucide-react";
 import type { PaymentListItem, BulkOperationResult } from "@/types/manual-payment";
 import {
@@ -78,7 +75,7 @@ interface OperationProgress {
 export function BulkOperationsToolbar({
   selectedPayments,
   payments,
-  onSelectAll,
+  onSelectAll: _onSelectAll,
   onClearSelection,
   onSelectionChange,
 }: BulkOperationsToolbarProps) {
@@ -89,8 +86,12 @@ export function BulkOperationsToolbar({
   const [activeOperation, setActiveOperation] = useState<BulkOperationType | null>(null);
   const [operationProgress, setOperationProgress] = useState<OperationProgress | null>(null);
   const [showSummary, setShowSummary] = useState(false);
-  const [asyncOperationId, setAsyncOperationId] = useState<string | null>(null);
-  const [asyncOperationStatus, setAsyncOperationStatus] = useState<any>(null);
+  const [asyncOperationStatus, setAsyncOperationStatus] = useState<{
+    operation_type: string;
+    status: "pending" | "processing" | "completed" | "failed";
+    success_count?: number;
+    payment_ids?: string[];
+  } | null>(null);
 
   // Check if all payments on current page are selected
   useEffect(() => {
@@ -254,8 +255,6 @@ export function BulkOperationsToolbar({
 
     try {
       const operationId = await startAsyncBulkApprove(selectedPayments, user.id);
-      setAsyncOperationId(operationId);
-
       toast({
         title: "Aprovação em lote iniciada",
         description:
@@ -279,7 +278,6 @@ export function BulkOperationsToolbar({
 
     try {
       const operationId = await startAsyncBulkMessage(selectedPayments, messageText, user.id);
-      setAsyncOperationId(operationId);
       setMessageText("");
 
       toast({
@@ -305,8 +303,6 @@ export function BulkOperationsToolbar({
 
     try {
       const operationId = await startAsyncBulkExport(selectedPayments, user.id);
-      setAsyncOperationId(operationId);
-
       toast({
         title: "Exportação em lote iniciada",
         description:

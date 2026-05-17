@@ -294,8 +294,6 @@ describe('Batch Label Generation Integration', () => {
   });
 
   it('should show error when no deliveries are selected', async () => {
-    const user = userEvent.setup();
-
     vi.mocked(ShippingService).mockImplementation(() => ({
       generateBatchLabels: vi.fn(),
     }) as any);

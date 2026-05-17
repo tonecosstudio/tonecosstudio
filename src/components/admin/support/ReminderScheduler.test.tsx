@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ReminderScheduler } from "./ReminderScheduler";
 import * as reminderService from "@/lib/reminder-service";
@@ -92,7 +92,7 @@ describe("ReminderScheduler", () => {
   });
 
   it("deve fechar o modal ao clicar em Cancelar", async () => {
-    const user = userEvent.setup();
+    userEvent.setup();
 
     render(
       <ReminderScheduler
@@ -109,7 +109,7 @@ describe("ReminderScheduler", () => {
   });
 
   it("deve validar que a data é obrigatória", async () => {
-    const user = userEvent.setup();
+    userEvent.setup();
 
     render(
       <ReminderScheduler
@@ -140,7 +140,7 @@ describe("ReminderScheduler", () => {
   });
 
   it("deve permitir alterar a hora do lembrete", async () => {
-    const user = userEvent.setup();
+    userEvent.setup();
 
     render(
       <ReminderScheduler
@@ -187,7 +187,7 @@ describe("ReminderScheduler", () => {
   });
 
   it("deve criar lembrete com sucesso quando dados válidos são fornecidos", async () => {
-    const user = userEvent.setup();
+    userEvent.setup();
     const mockReminder = {
       id: "456e7890-e89b-12d3-a456-426614174000",
       conversation_id: conversationId,

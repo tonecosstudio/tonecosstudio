@@ -1,44 +1,22 @@
 // AdminCollectionFinancials - v3.0
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3 } from "lucide-react";
+import {
+  useAdminCollectionFinancialAnalysis,
+  useAdminCollectionsFinancialSummary,
+} from "@/hooks/admin/useAdminCollectionFinancials";
 
 export default function AdminCollectionFinancials() {
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
   // Buscar todas as coleções com resumo financeiro
-  const { data: collections } = useQuery({
-    queryKey: ["collections-financial-summary"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections_financial_summary")
-        .select("*")
-        .order("name");
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: collections } = useAdminCollectionsFinancialSummary();
 
   // Buscar análise detalhada da coleção selecionada
-  const { data: analysis } = useQuery({
-    queryKey: ["collection-financial-analysis", selectedCollection],
-    queryFn: async () => {
-      if (!selectedCollection) return null;
-
-      const { data, error } = await supabase.rpc("get_collection_financial_analysis", {
-        p_collection_id: selectedCollection,
-      });
-
-      if (error) throw error;
-      return data?.[0];
-    },
-    enabled: !!selectedCollection,
-  });
+  const { data: analysis } = useAdminCollectionFinancialAnalysis(selectedCollection);
 
   return (
     <div className="space-y-6">

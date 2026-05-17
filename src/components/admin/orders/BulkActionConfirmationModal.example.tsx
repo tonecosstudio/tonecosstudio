@@ -91,7 +91,7 @@ export function OrdersPageExample() {
       // Fechar modal e limpar seleção
       setModalOpen(false);
       setSelectedOrders([]);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao executar a ação. Tente novamente.',

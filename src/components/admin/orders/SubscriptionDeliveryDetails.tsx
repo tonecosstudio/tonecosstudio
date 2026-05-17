@@ -5,7 +5,7 @@
  * incluindo coleção escolhida, personagem e progresso.
  */
 
-import { Package, Calendar, User as UserIcon, Image, BookOpen, Palette } from 'lucide-react';
+import { Package, Calendar, BookOpen, Palette } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import type { UnifiedOrder } from '@/types/admin/orders';
@@ -149,7 +149,7 @@ export function SubscriptionDeliveryDetails({ order }: SubscriptionDeliveryDetai
               </h3>
             </div>
             <div className="space-y-2">
-              {subscriptionDelivery.allDeliveries.map((delivery: any, index: number) => (
+              {subscriptionDelivery.allDeliveries.map((delivery, index: number) => (
                 <div
                   key={delivery.id || index}
                   className="flex items-center justify-between p-2 rounded border text-sm"

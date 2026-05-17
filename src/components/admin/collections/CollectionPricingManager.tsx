@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit, Trash2, DollarSign, Tag, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Tag, Package } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +37,10 @@ interface PricingTier {
   collections_count?: number;
 }
 
+interface TierQueryRow extends Omit<PricingTier, "collections_count"> {
+  collections?: Array<{ count: number }> | null;
+}
+
 export function CollectionPricingManager() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -65,7 +68,7 @@ export function CollectionPricingManager() {
 
       if (error) throw error;
 
-      return data.map(tier => ({
+      return (data as TierQueryRow[]).map((tier) => ({
         ...tier,
         collections_count: tier.collections?.[0]?.count || 0
       }));
@@ -109,10 +112,11 @@ export function CollectionPricingManager() {
       handleCloseDialog();
       qc.invalidateQueries({ queryKey: ["pricing-tiers"] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro ao salvar",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     },
@@ -134,10 +138,11 @@ export function CollectionPricingManager() {
       });
       qc.invalidateQueries({ queryKey: ["pricing-tiers"] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro ao excluir",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     },

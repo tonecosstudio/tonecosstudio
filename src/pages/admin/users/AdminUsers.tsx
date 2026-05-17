@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { adminUsersSupabase as supabase } from "@/services/admin/admin-users-service";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -42,34 +42,13 @@ import {
   ShoppingCart,
   CreditCard,
   UserCheck,
-  Search,
   Download,
-  Calendar,
-  TrendingUp,
 } from "lucide-react";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { ValidationFeedback } from "@/components/ui/validation-feedback";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
+import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
-
-type UserRow = {
-  id: string;
-  email: string | null;
-  created_at: string;
-  last_sign_in_at: string | null;
-  confirmed_at: string | null;
-  email_confirmed_at: string | null;
-  phone: string | null;
-  profile: {
-    id: string;
-    full_name: string | null;
-    phone: string | null;
-    whatsapp: string | null;
-    cpf: string | null;
-    profile_completion: number | null;
-  } | null;
-  roles: string[];
-};
+import { useAdminUsersData } from "@/hooks/admin/useAdminUsersData";
 
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
@@ -106,84 +85,7 @@ export default function AdminUsers() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const usersQuery = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => {
-      // Buscar todos os profiles (cada profile = 1 usuário)
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (profilesError) throw profilesError;
-
-      // Buscar roles de todos os usuários
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      if (rolesError) throw rolesError;
-
-      // Mapear roles por user_id
-      const rolesMap = new Map<string, string[]>();
-      (rolesData || []).forEach((r) => {
-        const roles = rolesMap.get(r.user_id) || [];
-        roles.push(r.role);
-        rolesMap.set(r.user_id, roles);
-      });
-
-      // Combinar dados
-      return (profilesData || []).map((profile) => ({
-        id: profile.id,
-        email: profile.email,
-        created_at: profile.created_at,
-        last_sign_in_at: profile.updated_at,
-        confirmed_at: null,
-        email_confirmed_at: null,
-        phone: profile.phone,
-        profile: {
-          id: profile.id,
-          full_name: profile.full_name,
-          phone: profile.phone,
-          whatsapp: profile.whatsapp,
-          cpf: profile.cpf,
-          profile_completion: profile.profile_completion,
-        },
-        roles: rolesMap.get(profile.id) || [],
-      })) as UserRow[];
-    },
-  });
-
-  // Buscar estatísticas de assinaturas e pedidos
-  const statsQuery = useQuery({
-    queryKey: ["admin-users-stats"],
-    queryFn: async () => {
-      // Buscar assinantes ativos
-      const { data: subscriptions } = await supabase
-        .from("subscriptions")
-        .select("user_id, status")
-        .eq("status", "active");
-
-      // Buscar usuários com pedidos
-      const { data: payments } = await supabase
-        .from("manual_payments")
-        .select("user_id")
-        .eq("status", "approved");
-
-      const subscriberIds = new Set((subscriptions || []).map((s) => s.user_id));
-      const buyerIds = new Set((payments || []).map((p) => p.user_id));
-
-      return {
-        subscriberIds,
-        buyerIds,
-        totalSubscribers: subscriberIds.size,
-        totalBuyers: buyerIds.size,
-      };
-    },
-  });
-
-  const allUsers = usersQuery.data ?? [];
-  const stats = statsQuery.data;
+  const { usersQuery, allUsers, stats } = useAdminUsersData();
 
   // Função para exportar usuários para CSV
   const exportToCSV = () => {

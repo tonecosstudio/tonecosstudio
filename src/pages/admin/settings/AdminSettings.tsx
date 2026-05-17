@@ -1,6 +1,6 @@
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, FileText, DollarSign, Gauge, Scale, ExternalLink, Clock, Calendar } from "lucide-react";
+import { Settings, DollarSign, Gauge, Scale, ExternalLink, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminSystemSettings from "./AdminSystemSettings";

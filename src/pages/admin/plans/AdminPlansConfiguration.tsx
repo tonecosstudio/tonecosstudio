@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import SEOHead from "@/components/SEOHead";
-import { supabase } from "@/integrations/supabase/client";
+import { adminPlansGateway as supabase } from "@/services/admin/admin-plans-gateway";
 import {
   Coins,
   Calculator,
@@ -17,7 +17,6 @@ import {
   DollarSign,
   Calendar,
   CheckCircle2,
-  XCircle,
   Sparkles,
   Info,
   TrendingUp
@@ -65,7 +64,6 @@ const PLAN_TYPES = [
 // Coin Exchange Rate Card Component
 function CoinExchangeRateCard() {
   const { toast } = useToast();
-  const qc = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [reaisAmount, setReaisAmount] = useState(500);
   const [coinsAmount, setCoinsAmount] = useState(100);
@@ -244,7 +242,6 @@ function CoinExchangeRateCard() {
 }
 
 export default function AdminPlansConfiguration() {
-  const { toast } = useToast();
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState("subscription-plans");
 
@@ -266,10 +263,10 @@ export default function AdminPlansConfiguration() {
 
   // Calculate totals from pricing_tiers
   const totalMonthlyRevenue = plans
-    .filter((p: any) => p.is_active)
-    .reduce((sum: number, p: any) => sum + (p.price_full || 0), 0);
+    .filter((p: { is_active: boolean }) => p.is_active)
+    .reduce((sum: number, p: { price_full: number | null }) => sum + (p.price_full || 0), 0);
 
-  const totalPieces = plans.filter((p: any) => p.is_active).length;
+  const totalPieces = plans.filter((p: { is_active: boolean }) => p.is_active).length;
 
   const totalCoins = 0; // Coins are managed separately via coin_transactions
 
@@ -416,7 +413,34 @@ export default function AdminPlansConfiguration() {
 }
 
 // Plan Configuration Card Component
-function PlanConfigCard({ planType, existingPlan, onUpdate }: any) {
+interface PlanTypeMeta {
+  key: PlanConfig["plan_type"];
+  label: string;
+  months: number;
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+}
+
+interface ExistingPlanLike {
+  id?: string;
+  plan_type: string;
+  name?: string;
+  price?: number;
+  pieces_per_subscription?: number;
+  base_credits?: number;
+  bonus_credits?: number;
+  deposit_amount?: number;
+  is_active?: boolean;
+  bonus_type?: "pieces" | "coins";
+}
+
+interface PlanConfigCardProps {
+  planType: PlanTypeMeta;
+  existingPlan?: ExistingPlanLike;
+  onUpdate: () => void;
+}
+
+function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
@@ -527,7 +551,7 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: any) {
       setIsEditing(false);
       onUpdate();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao salvar plano",
         description: error.message,

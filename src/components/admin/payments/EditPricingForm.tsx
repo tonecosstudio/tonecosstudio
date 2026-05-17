@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Formulário de Edição de Preços do Sistema de Coins
  *
@@ -20,9 +19,27 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+type CollectionTypeRef = {
+  name: string;
+};
+
+type BasePriceEntry = {
+  base_price_coins: number;
+  collection_types?: CollectionTypeRef | null;
+};
+
+type MultiplierEntry = {
+  user_context: string;
+  multiplier: number;
+};
+
 interface EditPricingFormProps {
-  basePrices: any[];
-  multipliers: any[];
+  basePrices: BasePriceEntry[];
+  multipliers: MultiplierEntry[];
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Erro inesperado";
 }
 
 export function EditPricingForm({ basePrices, multipliers }: EditPricingFormProps) {
@@ -101,10 +118,10 @@ export function EditPricingForm({ basePrices, multipliers }: EditPricingFormProp
         description: "Os preços base foram atualizados com sucesso.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Erro ao atualizar preços",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -153,10 +170,10 @@ export function EditPricingForm({ basePrices, multipliers }: EditPricingFormProp
         description: "Os multiplicadores foram atualizados com sucesso.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Erro ao atualizar multiplicadores",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },

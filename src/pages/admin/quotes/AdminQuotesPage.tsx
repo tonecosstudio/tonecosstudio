@@ -1,9 +1,4 @@
-// @ts-nocheck
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { FileText } from "lucide-react";
-
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,29 +7,8 @@ import { ProductionTimeline } from "@/components/production/ProductionTimeline";
 import { AdminProductionTimelineEditor } from "@/pages/admin/quotes/AdminProductionTimelineEditor";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import SEOHead from "@/components/SEOHead";
-
-type QuoteRow = {
-  id: string;
-  user_id: string;
-  status: string;
-  deadline: string | null;
-  notes: string | null;
-  created_at: string;
-};
-
-type QuoteItemRow = {
-  id: string;
-  quote_id: string;
-  model_id: string;
-  quantity: number;
-  scale: string;
-};
-
-type ModelMini = {
-  id: string;
-  name: string;
-  franchise: string | null;
-};
+import { useAdminQuotesData } from "@/hooks/admin/useAdminQuotesData";
+import { updateQuoteStatus } from "@/services/admin/admin-quotes-service";
 
 function fmtDate(iso: string) {
   try {
@@ -52,47 +26,7 @@ function fmtDate(iso: string) {
 
 export default function AdminQuotesPage() {
   const { toast } = useToast();
-
-  const quotesQuery = useQuery({
-    queryKey: ["admin-quotes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("quotes")
-        .select("id,user_id,status,deadline,notes,created_at")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return (data ?? []) as QuoteRow[];
-    },
-  });
-
-  const itemsQuery = useQuery({
-    queryKey: ["admin-quote-items"],
-    enabled: (quotesQuery.data ?? []).length > 0,
-    queryFn: async () => {
-      const quoteIds = (quotesQuery.data ?? []).map((q) => q.id);
-      const { data, error } = await supabase
-        .from("quote_items")
-        .select("id,quote_id,model_id,quantity,scale")
-        .in("quote_id", quoteIds);
-      if (error) throw error;
-      return (data ?? []) as QuoteItemRow[];
-    },
-  });
-
-  const modelsQuery = useQuery({
-    queryKey: ["admin-quote-models"],
-    enabled: (itemsQuery.data ?? []).length > 0,
-    queryFn: async () => {
-      const modelIds = Array.from(new Set((itemsQuery.data ?? []).map((i) => i.model_id)));
-      const { data, error } = await supabase
-        .from("models")
-        .select("id,name,franchise")
-        .in("id", modelIds);
-      if (error) throw error;
-      return (data ?? []) as ModelMini[];
-    },
-  });
+  const { quotesQuery, itemsQuery, modelsQuery } = useAdminQuotesData();
 
   const modelsById = useMemo(() => {
     const m = new Map<string, ModelMini>();
@@ -112,8 +46,7 @@ export default function AdminQuotesPage() {
 
   const setStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase.from("quotes").update({ status }).eq("id", id);
-      if (error) throw error;
+      await updateQuoteStatus(id, status);
       toast({ title: "Atualizado", description: `Status alterado para: ${status}` });
       quotesQuery.refetch();
     } catch (e) {

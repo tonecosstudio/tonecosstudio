@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CharacterChoicesContent - Gerenciamento de Escolhas de Personagens
  *
@@ -8,7 +7,8 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPendingChoices, type ChoiceFilters, type CharacterChoice } from "@/services/admin/choice-service";
+import type { CharacterChoice } from "@/hooks/admin/useChoiceApproval";
+import { useCharacterChoicesData, type ChoiceFilters } from "@/hooks/admin/useCharacterChoicesData";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { ChoiceApprovalModal } from "@/components/admin/collections/ChoiceApprovalModal";
 import { Search, Filter, X, Clock, User, Package, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
-import type { ChoiceStatus } from "@/services/admin/production-service";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -36,6 +35,13 @@ const STATUS_OPTIONS: Array<{
   { value: "locked", label: "Bloqueado", variant: "outline" },
 ];
 
+interface CollectionFilterOption {
+  id: string;
+  name: string;
+}
+
+type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked";
+
 export function CharacterChoicesContent() {
   const [filters, setFilters] = useState<ChoiceFilters>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,10 +50,7 @@ export function CharacterChoicesContent() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch choices
-  const { data: choices, isLoading } = useQuery({
-    queryKey: ["character-choices", filters, searchQuery],
-    queryFn: () => fetchPendingChoices({ ...filters, searchQuery }),
-  });
+  const { data: choices, isLoading } = useCharacterChoicesData(filters, searchQuery);
 
   // Fetch collections for filter
   const { data: collections } = useQuery({
@@ -59,7 +62,7 @@ export function CharacterChoicesContent() {
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
-      return data || [];
+      return (data || []) as CollectionFilterOption[];
     },
   });
 
@@ -210,7 +213,7 @@ export function CharacterChoicesContent() {
               <div className="space-y-3">
                 <Label>Coleções</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                  {collections.map((collection: any) => (
+                  {collections.map((collection) => (
                     <div key={collection.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`collection-${collection.id}`}
@@ -334,10 +337,12 @@ export function CharacterChoicesContent() {
       {selectedChoice && (
         <ChoiceApprovalModal
           choice={selectedChoice}
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedChoice(null);
+          open={isModalOpen}
+          onOpenChange={(isOpen) => {
+            setIsModalOpen(isOpen);
+            if (!isOpen) {
+              setSelectedChoice(null);
+            }
           }}
         />
       )}

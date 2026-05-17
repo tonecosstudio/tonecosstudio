@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Componente para configurar limite de coleções por plano
  *
@@ -107,8 +106,6 @@ export function CollectionLimitConfig({
   };
 
   const isUnlimited = parseInt(limit) === -1;
-  const displayLimit = isUnlimited ? "Ilimitado" : limit;
-
   return (
     <Card>
       <CardHeader>

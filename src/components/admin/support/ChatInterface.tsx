@@ -34,7 +34,6 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     hasMore,
     loadMore,
     messagesEndRef,
-    optimisticAttachments,
     addOptimisticAttachment,
     updateOptimisticAttachment,
   } = useMessages({ conversationId, autoScroll: true });
@@ -175,15 +174,16 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
         for (const file of filesToUpload) {
           try {
             await fileUploadService.uploadFile(file, conversationId, messageData.id, user.id);
-          } catch (error) {
+          } catch (_error) {
             toast.error(`Erro ao enviar ${file.name}`);
           }
         }
       }
 
       toast.success("Mensagem enviada");
-    } catch (error: any) {
-      toast.error(`Erro ao enviar mensagem: ${error.message || "Erro desconhecido"}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error(`Erro ao enviar mensagem: ${errorMessage}`);
     } finally {
       setIsSending(false);
       setIsUploading(false);
@@ -195,8 +195,9 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
     try {
       await messageService.deleteMessage(messageId);
       toast.success("Mensagem deletada");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao deletar mensagem");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao deletar mensagem";
+      toast.error(errorMessage);
     }
   };
 
@@ -220,8 +221,9 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       toast.success("Mensagem editada");
       setEditingMessageId(null);
       setEditingText("");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao editar mensagem");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao editar mensagem";
+      toast.error(errorMessage);
     }
   };
 
@@ -701,8 +703,16 @@ function MessageBubble({
 // AttachmentDisplay
 // =====================================================
 
+interface MessageAttachment {
+  file_path: string;
+  thumbnail_path?: string | null;
+  file_type: string;
+  file_name: string;
+  file_size: number;
+}
+
 interface AttachmentDisplayProps {
-  attachment: any;
+  attachment: MessageAttachment;
   getPublicUrl: (filePath: string) => string;
   isImage: (fileType: string) => boolean;
   isAdmin?: boolean;

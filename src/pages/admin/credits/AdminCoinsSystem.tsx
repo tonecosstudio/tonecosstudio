@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { adminCoinsGateway as supabase } from "@/services/admin/admin-coins-gateway";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +28,6 @@ import {
 import { EditPricingForm } from "@/components/admin/payments/EditPricingForm";
 import { ContextualPricingManager } from "@/components/admin/contextual-pricing";
 import { EditStandalonePricingForm } from "@/components/admin/payments/EditStandalonePricingForm";
-// @ts-nocheck
 export default function AdminCoinsSystem() {
   // Buscar estatísticas de coins usando coin_transactions (tabela real)
   const { data: stats } = useQuery({

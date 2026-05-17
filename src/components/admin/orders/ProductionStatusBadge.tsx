@@ -20,7 +20,8 @@ import {
   Search,
   Mail
 } from 'lucide-react';
-import type { ProductionStage } from '@/services/admin/production-service';
+import type { ComponentType } from 'react';
+import type { ProductionStage } from '@/hooks/admin/useProductionStage';
 
 interface ProductionStatusBadgeProps {
   stage: ProductionStage | null;
@@ -29,7 +30,7 @@ interface ProductionStatusBadgeProps {
 
 const stageConfig: Record<ProductionStage, {
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   className: string;
 }> = {

@@ -10,6 +10,8 @@ import {
   Legend,
 } from "recharts";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
+import type { TooltipProps } from "recharts";
 
 interface RevenueData {
   month: string;
@@ -51,7 +53,7 @@ export function RevenueChart({
   };
 
   // Tooltip customizado
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border rounded-lg shadow-lg p-3">

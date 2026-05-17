@@ -5,7 +5,7 @@
  * Clique no card para editar, organização automática por mês
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +48,8 @@ interface CollectionCharactersManagerProps {
   rotationType: 'fixed' | 'odd_months' | 'even_months';
   disabled?: boolean;
 }
+
+type ToastInvoker = (params: { title: string; description: string }) => void;
 
 const MONTHS = [
   { value: 1, label: "Janeiro", short: "Jan" },
@@ -117,7 +119,7 @@ export function CollectionCharactersManager({
 
     // Mostra toast de sucesso
     if (typeof window !== 'undefined') {
-      const toast = (window as any).toast;
+      const toast = (window as Window & { toast?: ToastInvoker }).toast;
       if (toast) {
         toast({
           title: "Personagem atualizado",
@@ -141,7 +143,7 @@ export function CollectionCharactersManager({
   // Adiciona um novo personagem
 
   // Ordena personagens por data
-  const sortCharactersByDate = (chars: CharacterData[]) => {
+  const sortCharactersByDate = useCallback((chars: CharacterData[]) => {
     return chars.sort((a, b) => {
       const dateA = a.releaseYear * 100 + a.releaseMonth;
       const dateB = b.releaseYear * 100 + b.releaseMonth;
@@ -150,7 +152,7 @@ export function CollectionCharactersManager({
       ...char,
       releaseOrder: index + 1,
     }));
-  };
+  }, []);
 
   // Sugere distribuição automática de meses
   const suggestMonthDistribution = () => {
@@ -174,7 +176,7 @@ export function CollectionCharactersManager({
 
     // Mostra toast de sucesso
     if (typeof window !== 'undefined') {
-      const toast = (window as any).toast;
+      const toast = (window as Window & { toast?: ToastInvoker }).toast;
       if (toast) {
         toast({
           title: "Distribuição aplicada",
@@ -196,6 +198,10 @@ export function CollectionCharactersManager({
   };
 
   const availableMonths = getAvailableMonths();
+  const characterDateSignature = useMemo(
+    () => characters.map((c) => `${c.id}-${c.releaseYear}-${c.releaseMonth}`).join(','),
+    [characters]
+  );
 
   // Ordena personagens automaticamente quando mudam as datas
   useEffect(() => {
@@ -209,7 +215,7 @@ export function CollectionCharactersManager({
     if (needsReorder) {
       onChange(sorted);
     }
-  }, [characters.map(c => `${c.id}-${c.releaseYear}-${c.releaseMonth}`).join(',')]);
+  }, [characterDateSignature, characters, onChange, sortCharactersByDate]);
 
   return (
     <div className="space-y-4">

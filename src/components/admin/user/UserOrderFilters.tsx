@@ -1,7 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import type { OrderStatus } from "@/types/admin/orders";
 
 interface UserOrderFiltersProps {
   typeFilter: string;

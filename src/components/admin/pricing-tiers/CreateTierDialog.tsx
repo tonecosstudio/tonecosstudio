@@ -75,7 +75,7 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
       toast.success(`Nível criado com ${result.plans_created} planos automáticos`);
       form.reset();
       onOpenChange(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Erro ao criar nível");
     }
   };

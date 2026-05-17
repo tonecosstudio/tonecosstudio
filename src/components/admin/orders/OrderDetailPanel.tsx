@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Painel de Detalhes do Pedido
  *
@@ -55,14 +54,7 @@ import {
   getStatusLabel,
   getValidNextStatuses,
 } from "@/hooks/admin/useOrderMutations";
-import { validateStatusTransition } from "@/services/admin/orders-validator";
-import {
-  generateLabelForOrder,
-  canGenerateLabel,
-  getLabelErrorMessage,
-  isRetryableError,
-  isAddressError,
-} from "@/services/admin/label-service";
+import { useOrderDetailActions } from "@/hooks/admin/useOrderDetailActions";
 
 interface OrderDetailPanelProps {
   order: UnifiedOrder | null;
@@ -79,6 +71,14 @@ export function OrderDetailPanel({
 }: OrderDetailPanelProps) {
   const { toast } = useToast();
   const { updateStatus } = useOrderMutations();
+  const {
+    validateTransition,
+    canGenerateLabel,
+    generateLabelForOrder,
+    getLabelErrorMessage,
+    isRetryableError,
+    isAddressError,
+  } = useOrderDetailActions();
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null);
@@ -94,7 +94,7 @@ export function OrderDetailPanel({
     if (!order) return;
 
     // Validar transição
-    const validationError = validateStatusTransition(order.status, newStatus, order.type);
+    const validationError = validateTransition(order.status, newStatus, order.type);
 
     if (validationError) {
       toast({
@@ -141,10 +141,11 @@ export function OrderDetailPanel({
       setSelectedStatus(null);
       setPendingStatus(null);
       setShowConfirmDialog(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Toast de erro com mensagem descritiva
+      const errorMessageText = error instanceof Error ? error.message : undefined;
       const errorMessage =
-        error.message || "Ocorreu um erro inesperado ao atualizar o status do pedido.";
+        errorMessageText || "Ocorreu um erro inesperado ao atualizar o status do pedido.";
 
       toast({
         title: "✗ Erro ao atualizar status",

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderDetailPanel } from './OrderDetailPanel';
@@ -115,7 +115,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
     });
 
     it('deve validar transição antes de enviar', async () => {
-      const user = userEvent.setup();
+      userEvent.setup();
       
       // Mock para simular erro de validação
       const mockUpdate = vi.fn().mockReturnValue({
@@ -131,7 +131,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -146,7 +146,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
     });
 
     it('deve exibir confirmação para mudanças críticas (cancelamento)', async () => {
-      const user = userEvent.setup();
+      userEvent.setup();
       
       const mockUpdate = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -165,7 +165,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -182,7 +182,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
 
   describe('Task 7.4: Persistência de mudança de status', () => {
     it('deve criar mutation para atualizar status no Supabase', async () => {
-      const user = userEvent.setup();
+      userEvent.setup();
       
       const mockUpdate = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -201,7 +201,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel
@@ -233,7 +233,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       // O timestamp é salvo via updated_at
       // O ID do admin é capturado pelo trigger do banco de dados via auth.uid()
@@ -264,7 +264,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
         }
       });
 
-      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+      vi.spyOn(queryClient, 'invalidateQueries');
 
       const mockUpdate = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -283,7 +283,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       render(
         <QueryClientProvider client={queryClient}>
@@ -320,7 +320,7 @@ describe('OrderDetailPanel - Status Update (Tasks 7.3 & 7.4)', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         update: mockUpdate
-      } as any);
+      } as unknown as never);
 
       renderWithProviders(
         <OrderDetailPanel

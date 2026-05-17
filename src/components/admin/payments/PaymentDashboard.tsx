@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentDashboard Component
  *
@@ -9,8 +8,8 @@
  * Task: 23.2 Integrar atualizações em tempo real nos componentes
  */
 
-import React, { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useCallback, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,12 +51,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   Filter,
   Search,
-  Calendar,
   Download,
   MoreVertical,
   Eye,
-  CheckCircle,
-  XCircle,
   AlertCircle,
   Clock,
   FileText,
@@ -74,13 +70,10 @@ import {
 } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { RealtimeIndicator } from "@/components/ui/RealtimeIndicator";
-import type { PaymentListItem, PaymentFilters, PaymentStatus } from "@/types/manual-payment";
+import type { PaymentFilters, PaymentStatus } from "@/types/manual-payment";
 import { listPendingPayments, getPaymentStats } from "@/lib/admin-payment-service";
 import { listAllPaymentMethods } from "@/lib/payment-method-service";
-import {
-  PaymentListItem as PaymentListItemComponent,
-  PaymentListItemCard,
-} from "./PaymentListItem";
+import { PaymentListItemCard } from "./PaymentListItem";
 import { BulkOperationsToolbar } from "../operations/BulkOperationsToolbar";
 import { useAdminDashboardRealtime } from "@/hooks/usePaymentRealtimeDashboard";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
@@ -95,7 +88,6 @@ type SortField = "created_at" | "amount" | "customer_name" | "status";
 type SortDirection = "asc" | "desc";
 
 export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
-  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<PaymentFilters>({});
   const [searchInputRaw, setSearchInputRaw, searchInputSanitized] = useSanitizedInput("", "search");
   const [sortField, setSortField] = useState<SortField>("created_at");
@@ -103,7 +95,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
-  const [showRealtimeIndicator, setShowRealtimeIndicator] = useState(true);
+  const [showRealtimeIndicator] = useState(true);
 
   // Hook para atualizações em tempo real
   const {
@@ -226,7 +218,8 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
 
   // Sort payments
   const sortedPayments = [...payments].sort((a, b) => {
-    let aValue: any, bValue: any;
+    let aValue: number | string;
+    let bValue: number | string;
 
     switch (sortField) {
       case "created_at":
@@ -327,21 +320,21 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   };
 
   // Handle real-time update notification
-  const handleRealtimeUpdate = () => {
+  const handleRealtimeUpdate = useCallback(() => {
     toast({
       title: "Atualização em tempo real",
       description: "Os dados foram atualizados automaticamente.",
       duration: 2000,
     });
     resetUpdateCount();
-  };
+  }, [resetUpdateCount]);
 
   // Efeito para mostrar notificação quando há novas atualizações
   useEffect(() => {
     if (hasNewUpdates && newUpdateCount > 0) {
       handleRealtimeUpdate();
     }
-  }, [hasNewUpdates, newUpdateCount]);
+  }, [hasNewUpdates, newUpdateCount, handleRealtimeUpdate]);
 
   // Função para reconectar manualmente
   const handleManualReconnect = () => {
@@ -1009,7 +1002,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
 
 // Mobile Filters Component
 interface MobileFiltersProps {
-  paymentMethods: any[];
+  paymentMethods: Array<{ id: string; name: string }>;
   filters: PaymentFilters;
   onStatusFilter: (statuses: PaymentStatus[]) => void;
   onPaymentMethodFilter: (methodId: string) => void;

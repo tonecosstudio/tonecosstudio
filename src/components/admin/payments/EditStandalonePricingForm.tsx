@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Formulário de Edição de Preços Avulsos (em R$) - 4 Tipos
  *
@@ -28,6 +27,10 @@ interface StandalonePricing {
   price_pix: number;
   pix_discount_percentage: number;
   description: string;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Erro inesperado";
 }
 
 export function EditStandalonePricingForm() {
@@ -111,10 +114,10 @@ export function EditStandalonePricingForm() {
         description: "Os preços avulsos foram atualizados com sucesso.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Erro ao atualizar preços",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },

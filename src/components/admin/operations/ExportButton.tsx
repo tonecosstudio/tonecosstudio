@@ -22,9 +22,10 @@ import { Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export type ExportFormat = "csv" | "excel" | "json";
+type ExportRow = Record<string, unknown>;
 
 interface ExportButtonProps {
-  data: any[];
+  data: ExportRow[];
   filename: string;
   onExport?: (format: ExportFormat) => Promise<void>;
   className?: string;
@@ -68,12 +69,12 @@ export function ExportButton({
     setSelectedColumns([]);
   };
 
-  const filterDataByColumns = (data: any[]) => {
+  const filterDataByColumns = (data: ExportRow[]) => {
     if (!allowColumnSelection || selectedColumns.length === 0) {
       return data;
     }
     return data.map((row) => {
-      const filtered: any = {};
+      const filtered: ExportRow = {};
       selectedColumns.forEach((col) => {
         if (col in row) {
           filtered[col] = row[col];
@@ -83,7 +84,7 @@ export function ExportButton({
     });
   };
 
-  const exportToCSV = (data: any[], filename: string) => {
+  const exportToCSV = (data: ExportRow[], filename: string) => {
     if (!data || data.length === 0) {
       toast({
         title: "Nenhum dado para exportar",
@@ -121,7 +122,7 @@ export function ExportButton({
     link.click();
   };
 
-  const exportToExcel = (data: any[], filename: string) => {
+  const exportToExcel = (data: ExportRow[], filename: string) => {
     if (!data || data.length === 0) {
       toast({
         title: "Nenhum dado para exportar",
@@ -191,7 +192,7 @@ export function ExportButton({
     link.click();
   };
 
-  const exportToJSON = (data: any[], filename: string) => {
+  const exportToJSON = (data: ExportRow[], filename: string) => {
     if (!data || data.length === 0) {
       toast({
         title: "Nenhum dado para exportar",

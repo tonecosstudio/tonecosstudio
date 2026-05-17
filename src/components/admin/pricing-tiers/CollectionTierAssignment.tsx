@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,7 +67,7 @@ export function CollectionTierAssignment({
         toast.success("Nível removido com sucesso");
       }
       setHasChanges(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Erro ao atualizar atribuição");
     }
   };

@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -27,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
-import { groupService } from "@/lib/services/groupService";
 import { useAuth } from "@/lib/auth";
 import { getGroupTypeLabel } from "@/types/groups";
 import { toast } from "sonner";
@@ -37,8 +35,8 @@ import { GroupMembersSidebar } from "@/components/groups/GroupMembersSidebar";
 import { GroupMessageList } from "@/components/groups/GroupMessageList";
 import { SendMessageForm } from "@/components/groups/SendMessageForm";
 import { GroupAnalytics } from "@/components/groups/GroupAnalytics";
-import { metricsService } from "@/lib/services/metricsService";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useAdminGroupServices } from "@/hooks/admin/useAdminGroupServices";
 
 /**
  * AdminGroupDetailsPage - Three-column layout for group management
@@ -56,6 +54,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
  * - Delete group
  */
 export default function AdminGroupDetailsPage() {
+  const { groupService, metricsService } = useAdminGroupServices();
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

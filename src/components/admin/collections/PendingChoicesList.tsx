@@ -30,6 +30,21 @@ interface PendingChoicesListProps {
   className?: string;
 }
 
+interface DeliveryPendingRow {
+  id: string;
+  delivery_number: number;
+  subscriptions: {
+    id: string;
+    users: {
+      id: string;
+      email: string;
+      raw_user_meta_data?: {
+        full_name?: string;
+      } | null;
+    } | null;
+  } | null;
+}
+
 /**
  * Calculate days until cutoff from current time
  */
@@ -82,7 +97,7 @@ export function PendingChoicesList({ cycleIds, className }: PendingChoicesListPr
         throw error;
       }
 
-      return (data || []).map((delivery: any) => ({
+      return ((data || []) as DeliveryPendingRow[]).map((delivery) => ({
         delivery_id: delivery.id,
         delivery_number: delivery.delivery_number,
         subscription_id: delivery.subscriptions?.id || '',

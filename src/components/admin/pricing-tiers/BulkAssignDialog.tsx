@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -45,6 +44,21 @@ interface Collection {
   tier_name?: string | null;
 }
 
+interface CollectionTierAssignmentRow {
+  tier_id: string | null;
+  pricing_tiers: {
+    name: string | null;
+  } | null;
+}
+
+interface CollectionQueryRow {
+  id: string;
+  name: string;
+  slug: string;
+  price_full: number;
+  collection_tier_assignments: CollectionTierAssignmentRow[] | null;
+}
+
 /**
  * Dialog para atribuição em massa de níveis a coleções
  * Requisitos: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6
@@ -89,7 +103,7 @@ export function BulkAssignDialog({ open, onOpenChange }: BulkAssignDialogProps) 
 
       if (error) throw error;
 
-      return data.map((col: any) => ({
+      return (data as CollectionQueryRow[]).map((col) => ({
         id: col.id,
         name: col.name,
         slug: col.slug,
@@ -173,7 +187,7 @@ export function BulkAssignDialog({ open, onOpenChange }: BulkAssignDialogProps) 
           `${result.success.length} sucesso, ${result.failed.length} falhas`
         );
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Erro ao executar atribuição em massa");
     } finally {
       setIsExecuting(false);

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/security/input-sanitizer";
+import { validateFileUpload, sanitizeFilename } from "@/lib/security/input-sanitizer";
 
 interface ImageUploadProps {
   label: string;
@@ -93,11 +93,12 @@ export default function ImageUpload({
         title: "Upload concluído",
         description: "Imagem enviada com sucesso!",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível enviar a imagem";
       console.error("Erro no upload:", error);
       toast({
         title: "Erro no upload",
-        description: error.message || "Não foi possível enviar a imagem",
+        description: message,
         variant: "destructive",
       });
     } finally {

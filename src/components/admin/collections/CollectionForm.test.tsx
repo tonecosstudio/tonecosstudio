@@ -12,7 +12,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CollectionForm } from "./CollectionForm";
-import type { Collection } from "@/services/collection-service";
+
+interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  priceMonthly?: number;
+  coverImage?: string;
+  rotation_type?: "fixed" | "odd_months" | "even_months";
+  is_active: boolean;
+}
 
 // Mock dependencies
 vi.mock("@/hooks/use-toast", () => ({
@@ -21,7 +30,7 @@ vi.mock("@/hooks/use-toast", () => ({
 }));
 
 vi.mock("./ImageUpload", () => ({
-  default: ({ label, onUploadComplete }: any) => (
+  default: ({ label, onUploadComplete }: { label: string; onUploadComplete: (url: string) => void }) => (
     <div data-testid="image-upload">
       <label>{label}</label>
       <button onClick={() => onUploadComplete("https://example.com/image.jpg")}>
@@ -127,8 +136,6 @@ describe("CollectionForm", () => {
 
       // Type invalid price - the input type="number" will prevent non-numeric input
       // So we need to check the validation differently
-      const priceInput = screen.getByLabelText(/Preço/) as HTMLInputElement;
-
       // Upload image first to pass that validation
       const uploadButton = screen.getAllByText("Upload Image")[0];
       await user.click(uploadButton);

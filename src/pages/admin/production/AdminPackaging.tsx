@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Package, FileText, Image, Gift, CheckCircle2, AlertCircle } from "lucide-react";
+import { Package, FileText, Image, CheckCircle2 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -100,7 +98,7 @@ Como cuidar da sua miniatura:
 Produto artesanal. Pequenas variações são normais e fazem cada peça única!`,
   });
 
-  const [costs, setCosts] = useState({
+  const [costs] = useState({
     box: 3.0,
     postcard: 1.5,
     certificate: 1.0,

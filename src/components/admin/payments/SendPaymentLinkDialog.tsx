@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminPaymentsGateway } from "@/hooks/admin/useAdminPaymentsGateway";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +30,9 @@ export function SendPaymentLinkDialog({
   amount,
   paymentType,
   customerName,
-  customerEmail,
+  customerEmail: _customerEmail,
 }: SendPaymentLinkDialogProps) {
+  const supabase = useAdminPaymentsGateway();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
@@ -84,7 +85,7 @@ export function SendPaymentLinkDialog({
       setPaymentLink("");
       setPixKey("");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao enviar link",
         description: error.message,

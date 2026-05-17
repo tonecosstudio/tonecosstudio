@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminPaymentsGateway } from "@/hooks/admin/useAdminPaymentsGateway";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Send,
   Eye,
-  Link as LinkIcon,
 } from "lucide-react";
 import { SendPaymentLinkDialog } from "@/components/admin/payments/SendPaymentLinkDialog";
 import { format } from "date-fns";
@@ -32,6 +31,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 export default function AdminPreorders() {
+  const supabase = useAdminPaymentsGateway();
   const { toast } = useToast();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export default function AdminPreorders() {
 
       // Buscar dados do usuário separadamente
       const quotesWithUserData = await Promise.all(
-        (data || []).map(async (quote: any) => {
+        ((data || []) as PreorderQuote[]).map(async (quote) => {
           const { data: profileData } = await supabase
             .from("profiles")
             .select("full_name, email")
@@ -151,7 +151,7 @@ export default function AdminPreorders() {
         description: "O cliente foi notificado para pagar o restante.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao liberar pagamento",
         description: error.message,
@@ -194,7 +194,7 @@ export default function AdminPreorders() {
         description: "O status do pedido foi atualizado.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao registrar pagamento",
         description: error.message,
@@ -307,7 +307,7 @@ export default function AdminPreorders() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredPreorders.map((quote: any) => (
+                {filteredPreorders.map((quote: PreorderQuote) => (
                   <div
                     key={quote.id}
                     className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
@@ -354,7 +354,7 @@ export default function AdminPreorders() {
                         {/* Itens */}
                         <p className="text-sm text-muted-foreground mb-3">
                           {quote.quote_items?.length} item(ns):{" "}
-                          {quote.quote_items?.map((item: any) => item.models?.name).join(", ")}
+                          {quote.quote_items?.map((item) => item.models?.name).join(", ")}
                         </p>
 
                         {/* Valores */}
@@ -492,3 +492,15 @@ export default function AdminPreorders() {
       </div>
   );
 }
+  interface PreorderQuote {
+    id: string;
+    user_id: string;
+    payment_status: string;
+    ready_for_final_payment?: boolean | null;
+    deposit_amount?: number | null;
+    remaining_amount?: number | null;
+    total_amount?: number | null;
+    created_at: string;
+    quote_items?: Array<{ id: string; models?: { name?: string | null } | null }> | null;
+    profiles?: { full_name?: string | null; email?: string | null };
+  }

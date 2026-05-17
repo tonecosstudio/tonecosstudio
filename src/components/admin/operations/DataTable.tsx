@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 export interface Column<T> {
   key: keyof T | string;
   label: string;
-  render?: (value: any, row: T) => React.ReactNode;
+  render?: (value: unknown, row: T) => React.ReactNode;
   sortable?: boolean;
   width?: string;
 }
@@ -31,7 +31,7 @@ interface DataTableProps<T> {
   className?: string;
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
   data,
   columns,
   searchable = true,

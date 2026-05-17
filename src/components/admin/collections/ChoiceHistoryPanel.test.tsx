@@ -6,12 +6,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChoiceHistoryPanel } from "./ChoiceHistoryPanel";
-import * as choiceService from "@/services/admin/choice-service";
-import type { CharacterChoice } from "@/services/admin/choice-service";
+import { useChoiceHistory } from "@/hooks/admin/useChoiceHistory";
+import type { CharacterChoice } from "@/hooks/admin/useChoiceApproval";
 
-// Mock the choice service
-vi.mock("@/services/admin/choice-service", () => ({
-  getChoiceHistory: vi.fn(),
+// Mock the choice history hook
+vi.mock("@/hooks/admin/useChoiceHistory", () => ({
+  useChoiceHistory: vi.fn(),
 }));
 
 // Mock date-fns to have consistent dates in tests
@@ -33,6 +33,11 @@ describe("ChoiceHistoryPanel", () => {
       },
     });
     vi.clearAllMocks();
+    vi.mocked(useChoiceHistory).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useChoiceHistory>);
   });
 
   const renderComponent = (orderId: string) => {
@@ -74,9 +79,11 @@ describe("ChoiceHistoryPanel", () => {
 
   describe("Loading State", () => {
     it("should display loading skeletons while fetching data", () => {
-      vi.mocked(choiceService.getChoiceHistory).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -87,7 +94,11 @@ describe("ChoiceHistoryPanel", () => {
 
   describe("Empty State", () => {
     it("should display empty state when no history exists", async () => {
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -104,7 +115,11 @@ describe("ChoiceHistoryPanel", () => {
   describe("Error State", () => {
     it("should display error message when fetch fails", async () => {
       const errorMessage = "Failed to fetch history";
-      vi.mocked(choiceService.getChoiceHistory).mockRejectedValue(new Error(errorMessage));
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: new Error(errorMessage),
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -118,7 +133,11 @@ describe("ChoiceHistoryPanel", () => {
 
   describe("Display History", () => {
     it("should display single choice history", async () => {
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([mockChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -145,10 +164,11 @@ describe("ChoiceHistoryPanel", () => {
         createdAt: "2024-01-14T14:00:00Z",
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([
-        mockChoice,
-        rejectedChoice,
-      ]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice, rejectedChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -161,7 +181,11 @@ describe("ChoiceHistoryPanel", () => {
     });
 
     it("should display character image when available", async () => {
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([mockChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -179,7 +203,11 @@ describe("ChoiceHistoryPanel", () => {
         characterImageUrl: null,
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([choiceWithoutCharacter]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [choiceWithoutCharacter],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -200,7 +228,11 @@ describe("ChoiceHistoryPanel", () => {
         approvedByName: null,
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([pendingChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [pendingChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -218,7 +250,11 @@ describe("ChoiceHistoryPanel", () => {
         approvedByName: null,
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([submittedChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [submittedChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -228,7 +264,11 @@ describe("ChoiceHistoryPanel", () => {
     });
 
     it("should display approved status with approver info", async () => {
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([mockChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -250,7 +290,11 @@ describe("ChoiceHistoryPanel", () => {
         approvedByName: null,
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([rejectedChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [rejectedChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -267,7 +311,11 @@ describe("ChoiceHistoryPanel", () => {
         status: "locked",
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([lockedChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [lockedChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -285,7 +333,11 @@ describe("ChoiceHistoryPanel", () => {
         changeCount: 1,
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([changedChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [changedChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -302,7 +354,11 @@ describe("ChoiceHistoryPanel", () => {
         changeCount: 2,
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([changedChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [changedChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -320,10 +376,11 @@ describe("ChoiceHistoryPanel", () => {
         createdAt: "2024-01-14T09:00:00Z",
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([
-        mockChoice,
-        olderChoice,
-      ]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice, olderChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -334,7 +391,11 @@ describe("ChoiceHistoryPanel", () => {
     });
 
     it("should display customer information for each entry", async () => {
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([mockChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -346,7 +407,11 @@ describe("ChoiceHistoryPanel", () => {
     });
 
     it("should display deadline information", async () => {
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([mockChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -358,7 +423,11 @@ describe("ChoiceHistoryPanel", () => {
 
   describe("Timestamps", () => {
     it("should display submitted timestamp when available", async () => {
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([mockChoice]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [mockChoice],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 
@@ -375,7 +444,11 @@ describe("ChoiceHistoryPanel", () => {
         rejectedAt: null,
       };
 
-      vi.mocked(choiceService.getChoiceHistory).mockResolvedValue([choiceWithNullTimestamps]);
+      vi.mocked(useChoiceHistory).mockReturnValue({
+        data: [choiceWithNullTimestamps],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useChoiceHistory>);
 
       renderComponent("order-1");
 

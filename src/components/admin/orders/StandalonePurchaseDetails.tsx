@@ -1,29 +1,19 @@
 /**
  * Detalhes de Compra Avulsa
- * 
- * Exibe informações específicas de compras avulsas
+ *
+ * Exibe informaÃ§Ãµes especÃ­ficas de compras avulsas
  * Alinhado com a estrutura real da tabela standalone_purchases
  */
 
-import { DollarSign, Calendar, User as UserIcon, Image, CreditCard } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import type { UnifiedOrder } from '@/types/admin/orders';
-import { isStandalonePurchase } from '@/types/admin/orders';
-import { formatCurrency } from '@/lib/utils';
+import { DollarSign, User as UserIcon } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { isStandalonePurchase, type UnifiedOrder } from "@/types/admin/orders";
+import { formatCurrency } from "@/lib/utils";
 
 interface StandalonePurchaseDetailsProps {
   order: UnifiedOrder;
 }
-
-// Payment method labels
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  pix: "PIX",
-  cartao: "Cartão",
-  boleto: "Boleto",
-  transferencia: "Transferência",
-  bank_transfer: "Transferência Bancária",
-};
 
 export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsProps) {
   if (!isStandalonePurchase(order)) {
@@ -36,20 +26,15 @@ export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsPr
     <>
       <Separator />
 
-      {/* Informações Financeiras */}
       <section>
         <div className="flex items-center gap-2 mb-3">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Detalhes Financeiros
-          </h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Detalhes Financeiros</h3>
         </div>
         <div className="space-y-3">
           <div className="flex items-center justify-between pt-1 pb-1 border-b">
             <span className="text-sm font-medium">Valor Total</span>
-            <span className="text-lg font-semibold">
-              {formatCurrency(standalonePurchase.priceFull)}
-            </span>
+            <span className="text-lg font-semibold">{formatCurrency(standalonePurchase.priceFull)}</span>
           </div>
 
           {standalonePurchase.priceBalance > 0 && (
@@ -61,7 +46,6 @@ export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsPr
             </div>
           )}
 
-          {/* Status de pagamento baseado no valor pago */}
           {standalonePurchase.balancePaidAt && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Pagamento</span>
@@ -82,16 +66,13 @@ export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsPr
         </div>
       </section>
 
-      {/* Informações do Personagem */}
       {standalonePurchase.character && (
         <>
           <Separator />
           <section>
             <div className="flex items-center gap-2 mb-3">
               <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Personagem
-              </h3>
+              <h3 className="text-sm font-medium text-muted-foreground">Personagem</h3>
             </div>
             <div className="p-3 bg-muted/50 rounded-lg border flex items-center gap-3">
               {standalonePurchase.character.imageUrl && (
@@ -109,3 +90,4 @@ export function StandalonePurchaseDetails({ order }: StandalonePurchaseDetailsPr
     </>
   );
 }
+

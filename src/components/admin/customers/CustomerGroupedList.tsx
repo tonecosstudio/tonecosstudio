@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, RefreshCw, ArrowLeft, Users, MessageSquare, AlertCircle } from "lucide-react";
+import { Search, RefreshCw, ArrowLeft, Users, MessageSquare } from "lucide-react";
 import { useConversations } from "@/hooks/useConversations";
 import type { Conversation, ConversationStatus } from "@/types/support";
 import { getStatusLabel, getTagLabel } from "@/types/support";

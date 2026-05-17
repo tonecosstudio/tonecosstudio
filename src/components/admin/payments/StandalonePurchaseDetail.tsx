@@ -32,17 +32,32 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toBahiaTime } from "@/lib/timezone";
-import {
-  markProductionComplete,
-  cancelStandalonePurchase,
-  approvePaymentVoucher,
-  rejectPaymentVoucher
-} from "@/services/standalone-purchase-service";
+import { useStandalonePurchaseActions } from "@/hooks/admin/useStandalonePurchaseActions";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminPaymentsGateway } from "@/hooks/admin/useAdminPaymentsGateway";
+
+interface StandalonePurchase {
+  id: string;
+  user_id: string;
+  status: string;
+  created_at: string;
+  production_complete_at?: string | null;
+  tracking_code?: string | null;
+  deposit_amount?: number | null;
+  balance_amount?: number | null;
+  total_amount?: number | null;
+  deposit_paid_at?: string | null;
+  balance_due_date?: string | null;
+  balance_paid_at?: string | null;
+  payment_voucher_deposit_url?: string | null;
+  payment_voucher_balance_url?: string | null;
+  user?: { full_name?: string | null; email?: string | null; phone?: string | null } | null;
+  collection?: { image_url?: string | null; name?: string | null; description?: string | null } | null;
+  cycle?: { cycle_number?: number | null; month?: number | null; year?: number | null; status?: string | null } | null;
+}
 
 interface StandalonePurchaseDetailProps {
-  purchase: any; // Full purchase object with relations (user, collection, cycle)
+  purchase: StandalonePurchase;
 }
 
 /**
@@ -60,6 +75,9 @@ interface StandalonePurchaseDetailProps {
  * Requirements: 15.6
  */
 export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailProps) {
+  const { markProductionComplete, cancelStandalonePurchase, approvePaymentVoucher, rejectPaymentVoucher } =
+    useStandalonePurchaseActions();
+  const supabase = useAdminPaymentsGateway();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -102,7 +120,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
       queryClient.invalidateQueries({ queryKey: ["standalone-purchases"] });
       queryClient.invalidateQueries({ queryKey: ["standalone-purchase", purchase.id] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro",
         description: error.message || "Não foi possível marcar a produção como concluída.",
@@ -130,7 +148,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
       queryClient.invalidateQueries({ queryKey: ["standalone-purchases"] });
       queryClient.invalidateQueries({ queryKey: ["standalone-purchase", purchase.id] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro",
         description: error.message || "Não foi possível cancelar o pedido.",
@@ -150,7 +168,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
       queryClient.invalidateQueries({ queryKey: ["standalone-purchases"] });
       queryClient.invalidateQueries({ queryKey: ["standalone-purchase", purchase.id] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro",
         description: error.message || "Não foi possível aprovar o comprovante.",
@@ -173,7 +191,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
       queryClient.invalidateQueries({ queryKey: ["standalone-purchases"] });
       queryClient.invalidateQueries({ queryKey: ["standalone-purchase", purchase.id] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro",
         description: error.message || "Não foi possível rejeitar o comprovante.",

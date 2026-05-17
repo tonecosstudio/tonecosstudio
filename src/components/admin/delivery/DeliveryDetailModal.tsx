@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DeliveryDetailModal
  *
@@ -118,6 +117,15 @@ interface CollectionChangeHistory {
   new_collection: {
     name: string;
   };
+}
+
+interface OrderStatusHistoryRow {
+  id: string;
+  order_type: string | null;
+  changed_by: string | null;
+  created_at: string;
+  old_status: string | null;
+  new_status: string;
 }
 
 export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileData }: DeliveryDetailModalProps) {
@@ -241,10 +249,10 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []).map((r: any) => ({
+      return ((data || []) as OrderStatusHistoryRow[]).map((r) => ({
         id: r.id,
         previous_collection_id: null,
-        new_collection_id: null,
+        new_collection_id: '',
         change_reason: r.order_type || 'manual',
         changed_by_admin: !!r.changed_by,
         created_at: r.created_at,

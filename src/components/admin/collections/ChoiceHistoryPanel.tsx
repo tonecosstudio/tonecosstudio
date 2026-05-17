@@ -10,8 +10,7 @@
  * - Add timeline visualization with icons for different events
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { getChoiceHistory, type CharacterChoice } from "@/services/admin/choice-service";
+import { useChoiceHistory } from "@/hooks/admin/useChoiceHistory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,11 +74,7 @@ const STATUS_CONFIG = {
 
 export function ChoiceHistoryPanel({ orderId }: ChoiceHistoryPanelProps) {
   // Fetch choice history
-  const { data: history, isLoading, error } = useQuery({
-    queryKey: ["choice-history", orderId],
-    queryFn: () => getChoiceHistory(orderId),
-    enabled: !!orderId,
-  });
+  const { data: history, isLoading, error } = useChoiceHistory(orderId);
 
   // Format timestamp
   const formatTimestamp = (timestamp: string | null): string => {

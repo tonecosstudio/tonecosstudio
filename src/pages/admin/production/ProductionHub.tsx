@@ -17,7 +17,6 @@ import { useProductionQueueRealtime } from "@/hooks/useProductionQueueRealtime";
 import { useSearchParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -62,8 +61,6 @@ import { exportProductionItemsToCSV } from "@/lib/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
 import type { ProductionFilters as ProductionFiltersType, ProductionStage, ProductionQueueItem } from "@/services/admin/production-service";
 import type { AlertType } from "@/components/production/UrgentAlertsBanner";
-
-type ViewMode = "kanban" | "list" | "calendar";
 
 function ProductionHub() {
   const [searchParams, setSearchParams] = useSearchParams();

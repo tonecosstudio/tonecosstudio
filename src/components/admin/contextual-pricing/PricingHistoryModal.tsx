@@ -146,7 +146,7 @@ export function PricingHistoryModal({ open, onOpenChange }: PricingHistoryModalP
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "base_price" | "multiplier" | "discount")}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="all">Todos</TabsTrigger>
             <TabsTrigger value="base_price">Preços Base</TabsTrigger>
