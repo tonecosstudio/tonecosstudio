@@ -689,8 +689,6 @@ export async function cancelForNonPayment(
     // Don't fail the operation if email fails
   }
 }
-    'standalone-purchase');
-}
 
 
 /**
