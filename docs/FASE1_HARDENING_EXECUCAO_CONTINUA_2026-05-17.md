@@ -187,3 +187,33 @@
 ### Efeito arquitetural
 - Mais um fluxo admin migrado para padrao UI -> hook -> service.
 - Menor acoplamento da camada de apresentacao com infraestrutura.
+
+---
+
+## Rodada adicional 6 (collection breakdown)
+
+### Problema atacado
+- `CollectionBreakdown` executava queries Supabase diretamente no componente, misturando UI com infraestrutura e regra de agregacao.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/collection-breakdown-service.ts`
+   - `fetchCollectionBreakdown()` com consolidacao de entregas de assinatura + compras avulsas.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useCollectionBreakdown.ts`
+3. Componente desacoplado:
+   - `src/components/admin/collections/CollectionBreakdown.tsx`
+   - consumo exclusivo do hook.
+4. Testes atualizados por boundary:
+   - `src/components/admin/collections/CollectionBreakdown.test.tsx`
+   - mock de hook (sem mock de Supabase).
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- teste direcionado `CollectionBreakdown.test.tsx`: 3/3 OK
+- build: OK
+
+### Efeito arquitetural
+- Reforco do padrao UI -> hook -> service em analytics de colecoes.
+- Regra de consolidacao de dados encapsulada na camada de service.
+- Menor acoplamento e maior consistencia estrutural entre modulos admin.

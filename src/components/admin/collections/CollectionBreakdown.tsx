@@ -8,35 +8,16 @@
  * Requirements: 13.3, 13.7
  */
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Package } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCollectionBreakdown } from '@/hooks/admin/useCollectionBreakdown';
 
 interface CollectionBreakdownProps {
   cycleId: string;
   cycleName?: string;
-}
-
-interface CollectionData {
-  collection_id: string;
-  collection_name: string;
-  subscription_deliveries: number;
-  standalone_purchases: number;
-  total: number;
-}
-
-interface CollectionRelation {
-  id: string;
-  name: string;
-}
-
-interface DeliveryRow {
-  collection_id: string;
-  collections: CollectionRelation | null;
 }
 
 // Colors for pie chart
@@ -52,88 +33,7 @@ const COLORS = [
 ];
 
 export function CollectionBreakdown({ cycleId, cycleName }: CollectionBreakdownProps) {
-  // Fetch collection breakdown data
-  const { data: collectionData, isLoading } = useQuery({
-    queryKey: ['collection-breakdown', cycleId],
-    queryFn: async () => {
-      // Query subscription deliveries by collection
-      const { data: deliveries, error: deliveriesError } = await supabase
-        .from('subscription_deliveries')
-        .select(`
-          collection_id,
-          collections (
-            id,
-            name
-          )
-        `)
-        .eq('cycle_id', cycleId)
-        .not('collection_id', 'is', null);
-
-      if (deliveriesError) throw deliveriesError;
-
-      // Query standalone purchases by collection
-      const { data: purchases, error: purchasesError } = await supabase
-        .from('standalone_purchases')
-        .select(`
-          collection_id,
-          collections (
-            id,
-            name
-          )
-        `)
-        .eq('cycle_id', cycleId)
-        .not('status', 'eq', 'cancelled');
-
-      if (purchasesError) throw purchasesError;
-
-      // Aggregate data by collection
-      const collectionMap = new Map<string, CollectionData>();
-
-      // Process deliveries
-      (deliveries as DeliveryRow[] | null)?.forEach((delivery) => {
-        const collectionId = delivery.collection_id;
-        const collectionName = delivery.collections?.name || 'Desconhecida';
-
-        if (!collectionMap.has(collectionId)) {
-          collectionMap.set(collectionId, {
-            collection_id: collectionId,
-            collection_name: collectionName,
-            subscription_deliveries: 0,
-            standalone_purchases: 0,
-            total: 0,
-          });
-        }
-
-        const data = collectionMap.get(collectionId)!;
-        data.subscription_deliveries++;
-        data.total++;
-      });
-
-      // Process standalone purchases
-      (purchases as DeliveryRow[] | null)?.forEach((purchase) => {
-        const collectionId = purchase.collection_id;
-        const collectionName = purchase.collections?.name || 'Desconhecida';
-
-        if (!collectionMap.has(collectionId)) {
-          collectionMap.set(collectionId, {
-            collection_id: collectionId,
-            collection_name: collectionName,
-            subscription_deliveries: 0,
-            standalone_purchases: 0,
-            total: 0,
-          });
-        }
-
-        const data = collectionMap.get(collectionId)!;
-        data.standalone_purchases++;
-        data.total++;
-      });
-
-      // Convert to array and sort by total descending
-      return Array.from(collectionMap.values()).sort((a, b) => b.total - a.total);
-    },
-    enabled: !!cycleId,
-  });
+  const { data: collectionData, isLoading } = useCollectionBreakdown(cycleId);
 
   // Calculate totals
   const totals = collectionData?.reduce(
