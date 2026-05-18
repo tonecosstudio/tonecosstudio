@@ -9,7 +9,6 @@
  */
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,26 +24,10 @@ import {
 import { Calendar, Package, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
 import { timezoneService } from '@/lib/services/timezoneService';
 import { useNavigate } from 'react-router-dom';
-
-interface Cycle {
-  id: string;
-  cycle_number: 1 | 2;
-  month: number;
-  year: number;
-  open_start: string;
-  open_end: string;
-  production_start: string;
-  production_end: string;
-  shipping_date: string;
-  status: 'open' | 'production' | 'shipping' | 'completed';
-  status_changed_at: string | null;
-  capacity_max: number;
-  capacity_current: number;
-  created_at: string;
-}
+import { useHistoricalCycles } from '@/hooks/admin/useHistoricalCycles';
+import type { HistoricalCycle as Cycle } from '@/hooks/admin/useHistoricalCycles';
 
 type SortField = 'date' | 'capacity' | 'status';
 type SortOrder = 'asc' | 'desc';
@@ -60,32 +43,11 @@ export function HistoricalCycles() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Fetch historical cycles (past cycles only)
-  const { data: cycles, isLoading } = useQuery({
-    queryKey: ['historical-cycles', selectedYear, selectedStatus],
-    queryFn: async () => {
-      let query = supabase
-        .from('cycles')
-        .select('*');
-
-      // Filter by year if selected
-      if (selectedYear !== 'all') {
-        query = query.eq('year', selectedYear);
-      }
-
-      // Filter by status if selected
-      if (selectedStatus !== 'all') {
-        query = query.eq('status', selectedStatus);
-      }
-
-      // Only get past cycles (before current month)
-      const currentMonth = timezoneService.getMonth(currentBahiaTime);
-      query = query.or(`year.lt.${currentYear},and(year.eq.${currentYear},month.lt.${currentMonth})`);
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return (data as Cycle[]) || [];
-    },
+  const { data: cycles, isLoading } = useHistoricalCycles({
+    selectedYear,
+    selectedStatus,
+    currentYear,
+    currentMonth: timezoneService.getMonth(currentBahiaTime),
   });
 
   // Sort cycles

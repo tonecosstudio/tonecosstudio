@@ -98,3 +98,34 @@
 - Separacao mais clara entre UI/aplicacao/infraestrutura.
 - Menor acoplamento de componente com cliente de dados.
 - Testes mais estaveis e menos sensiveis a detalhes de query.
+
+---
+
+## Rodada adicional 3 (historical cycles)
+
+### Problema atacado
+- `HistoricalCycles` consumia Supabase diretamente no componente de UI.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/historical-cycles-service.ts`
+   - `fetchHistoricalCycles()` + tipos de filtro e entidade.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useHistoricalCycles.ts`
+   - centraliza query key e query fn.
+3. Componente desacoplado:
+   - `src/components/admin/delivery/HistoricalCycles.tsx`
+   - sem acesso direto a infraestrutura.
+4. Testes atualizados por boundary:
+   - `src/components/admin/delivery/HistoricalCycles.test.tsx`
+   - mock de hook em vez de mock de Supabase.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- teste direcionado `HistoricalCycles.test.tsx`: 4/4 OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado em mais um fluxo admin.
+- Menor acoplamento de componente com camada de dados.
+- Maior consistencia estrutural com o padrao adotado nas rodadas anteriores.
