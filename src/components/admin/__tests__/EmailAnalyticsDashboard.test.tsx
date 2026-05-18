@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { EmailAnalyticsDashboard } from '../EmailAnalyticsDashboard';
+import { EmailAnalyticsDashboard } from '../email/EmailAnalyticsDashboard';
 import { supabase } from '@/integrations/supabase/client';
 
 // Mock Supabase
@@ -10,6 +10,10 @@ vi.mock('@/integrations/supabase/client', () => ({
     from: vi.fn()
   }
 }));
+
+const supabaseFromMock = supabase.from as unknown as {
+  mockReturnValue: (value: unknown) => void;
+};
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -41,7 +45,7 @@ describe('EmailAnalyticsDashboard', () => {
         { status: 'pending' },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => Promise.resolve({
             data: mockStats,
@@ -72,7 +76,7 @@ describe('EmailAnalyticsDashboard', () => {
         { status: 'opened' },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => Promise.resolve({
             data: mockStats,
@@ -104,7 +108,7 @@ describe('EmailAnalyticsDashboard', () => {
         { status: 'clicked' },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => Promise.resolve({
             data: mockStats,
@@ -135,7 +139,7 @@ describe('EmailAnalyticsDashboard', () => {
         { status: 'bounced' },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => Promise.resolve({
             data: mockStats,
@@ -194,7 +198,7 @@ describe('EmailAnalyticsDashboard', () => {
         },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => ({
             order: vi.fn(() => ({
@@ -236,7 +240,7 @@ describe('EmailAnalyticsDashboard', () => {
         },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => ({
             order: vi.fn(() => ({
@@ -275,7 +279,7 @@ describe('EmailAnalyticsDashboard', () => {
         },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => ({
             order: vi.fn(() => ({
@@ -314,7 +318,7 @@ describe('EmailAnalyticsDashboard', () => {
         },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => ({
             order: vi.fn(() => ({
@@ -335,7 +339,7 @@ describe('EmailAnalyticsDashboard', () => {
     });
 
     it('should show empty state when no logs', async () => {
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: vi.fn(() => ({
             order: vi.fn(() => ({
@@ -379,7 +383,7 @@ describe('EmailAnalyticsDashboard', () => {
         }))
       }));
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: selectMock
       });
 
@@ -405,7 +409,7 @@ describe('EmailAnalyticsDashboard', () => {
         }))
       }));
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn(() => ({
           gte: gteMock
         }))
