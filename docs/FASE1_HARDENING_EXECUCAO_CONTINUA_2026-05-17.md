@@ -245,3 +245,30 @@
 - Boundary UI -> hook -> service aplicado em fluxo de detalhes de entrega.
 - Menor acoplamento do componente com consultas Supabase.
 - Padronizacao estrutural com as rodadas anteriores.
+
+---
+
+## Rodada adicional 8 (quick replies manager)
+
+### Problema atacado
+- `QuickRepliesManager` concentrava CRUD + ordenacao com acesso direto ao Supabase no componente de UI.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/quick-replies-service.ts`
+   - `fetchQuickReplies()`, `createQuickReply()`, `updateQuickReply()`, `deleteQuickReply()`, `toggleQuickReplyActive()`, `updateQuickRepliesOrder()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useQuickRepliesManager.ts`
+   - centraliza estado, carregamento, reload e operacoes.
+3. Componente simplificado:
+   - `src/components/admin/support/QuickRepliesManager.tsx`
+   - remove acesso direto a Supabase e passa a consumir apenas hook.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Separacao clara entre UI, aplicacao e infraestrutura no modulo de respostas rapidas.
+- Reducao de responsabilidade do componente.
+- Reforco de padrao estrutural unico para fluxos admin.

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, GripVertical, Save, X } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import {
   DndContext,
   closestCenter,
@@ -48,25 +47,16 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
-interface QuickReply {
-  id: string;
-  category: string;
-  title: string;
-  message: string;
-  display_order: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { useQuickRepliesManager } from "@/hooks/admin/useQuickRepliesManager";
+import type { QuickReply } from "@/hooks/admin/useQuickRepliesManager";
 
 const CATEGORIES = [
-  { value: "saudacao", label: "Saudação" },
+  { value: "saudacao", label: "SaudaÃ§Ã£o" },
   { value: "pedido", label: "Pedido" },
   { value: "pagamento", label: "Pagamento" },
   { value: "rastreamento", label: "Rastreamento" },
-  { value: "orcamento", label: "Orçamento" },
-  { value: "duvida", label: "Dúvida" },
+  { value: "orcamento", label: "OrÃ§amento" },
+  { value: "duvida", label: "DÃºvida" },
   { value: "despedida", label: "Despedida" },
   { value: "outro", label: "Outro" },
 ];
@@ -122,13 +112,19 @@ function SortableRow({ reply, onEdit, onDelete, onToggleActive }: SortableRowPro
 }
 
 export function QuickRepliesManager() {
-  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    quickReplies,
+    loading,
+    reload,
+    saveReply,
+    removeReply,
+    toggleReplyActive,
+    reorderReplies,
+    setQuickReplies,
+  } = useQuickRepliesManager();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingReply, setEditingReply] = useState<QuickReply | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-
-  // Form state
   const [formData, setFormData] = useState({
     category: "",
     title: "",
@@ -141,26 +137,6 @@ export function QuickRepliesManager() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  useEffect(() => {
-    fetchQuickReplies();
-  }, []);
-
-  const fetchQuickReplies = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("quick_replies")
-      .select("*")
-      .order("display_order", { ascending: true });
-
-    if (error) {
-      console.error("Erro ao buscar respostas rápidas:", error);
-      toast.error("Erro ao carregar respostas rápidas");
-    } else {
-      setQuickReplies(data || []);
-    }
-    setLoading(false);
-  };
 
   const handleCreate = () => {
     setEditingReply(null);
@@ -180,81 +156,55 @@ export function QuickRepliesManager() {
 
   const handleSave = async () => {
     if (!formData.category || !formData.title || !formData.message) {
-      toast.error("Preencha todos os campos obrigatórios");
+      toast.error("Preencha todos os campos obrigatÃ³rios");
       return;
     }
 
     try {
-      if (editingReply) {
-        // Update existing
-        const { error } = await supabase
-          .from("quick_replies")
-          .update({
-            category: formData.category,
-            title: formData.title,
-            message: formData.message,
-          })
-          .eq("id", editingReply.id);
-
-        if (error) throw error;
-        toast.success("Resposta rápida atualizada com sucesso");
-      } else {
-        // Create new
-        const maxOrder = Math.max(...quickReplies.map((r) => r.display_order), 0);
-        const { error } = await supabase.from("quick_replies").insert({
-          category: formData.category,
-          title: formData.title,
-          message: formData.message,
-          display_order: maxOrder + 1,
-        });
-
-        if (error) throw error;
-        toast.success("Resposta rápida criada com sucesso");
-      }
-
+      await saveReply(editingReply?.id || null, formData);
+      toast.success(
+        editingReply
+          ? "Resposta rÃ¡pida atualizada com sucesso"
+          : "Resposta rÃ¡pida criada com sucesso"
+      );
       setIsDialogOpen(false);
-      fetchQuickReplies();
+      await reload();
     } catch (error) {
-      console.error("Erro ao salvar resposta rápida:", error);
-      toast.error("Erro ao salvar resposta rápida");
+      console.error("Erro ao salvar resposta rÃ¡pida:", error);
+      toast.error("Erro ao salvar resposta rÃ¡pida");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja deletar esta resposta rápida?")) {
+    if (!confirm("Tem certeza que deseja deletar esta resposta rÃ¡pida?")) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("quick_replies")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      toast.success("Resposta rápida deletada com sucesso");
-      fetchQuickReplies();
+      await removeReply(id);
+      toast.success("Resposta rÃ¡pida deletada com sucesso");
+      await reload();
     } catch (error) {
-      console.error("Erro ao deletar resposta rápida:", error);
-      toast.error("Erro ao deletar resposta rápida");
+      console.error("Erro ao deletar resposta rÃ¡pida:", error);
+      toast.error("Erro ao deletar resposta rÃ¡pida");
     }
   };
 
   const handleToggleActive = async (reply: QuickReply) => {
     try {
-      const { error } = await supabase
-        .from("quick_replies")
-        .update({ is_active: !reply.is_active })
-        .eq("id", reply.id);
-
-      if (error) throw error;
+      await toggleReplyActive(reply);
       toast.success(reply.is_active ? "Resposta desativada" : "Resposta ativada");
-      fetchQuickReplies();
+      await reload();
     } catch (error) {
       console.error("Erro ao alterar status:", error);
       toast.error("Erro ao alterar status");
     }
   };
+
+  const filteredReplies =
+    selectedCategory === "all"
+      ? quickReplies
+      : quickReplies.filter((reply) => reply.category === selectedCategory);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -265,42 +215,27 @@ export function QuickRepliesManager() {
 
     const oldIndex = filteredReplies.findIndex((item) => item.id === active.id);
     const newIndex = filteredReplies.findIndex((item) => item.id === over.id);
-
     const newItems = arrayMove(filteredReplies, oldIndex, newIndex);
-
-    // Update display_order for all items
     const updates = newItems.map((item, index) => ({
       id: item.id,
       display_order: index,
     }));
 
-    // Optimistically update UI
-    const newReplies = quickReplies.map((reply) => {
-      const update = updates.find((u) => u.id === reply.id);
+    const optimisticReplies = quickReplies.map((reply) => {
+      const update = updates.find((item) => item.id === reply.id);
       return update ? { ...reply, display_order: update.display_order } : reply;
     });
-    setQuickReplies(newReplies);
+    setQuickReplies(optimisticReplies);
 
-    // Update in database
     try {
-      for (const update of updates) {
-        await supabase
-          .from("quick_replies")
-          .update({ display_order: update.display_order })
-          .eq("id", update.id);
-      }
+      await reorderReplies(updates);
       toast.success("Ordem atualizada com sucesso");
     } catch (error) {
       console.error("Erro ao reordenar:", error);
       toast.error("Erro ao reordenar respostas");
-      fetchQuickReplies(); // Revert on error
+      await reload();
     }
   };
-
-  const filteredReplies =
-    selectedCategory === "all"
-      ? quickReplies
-      : quickReplies.filter((r) => r.category === selectedCategory);
 
   if (loading) {
     return <div className="p-4">Carregando...</div>;
@@ -312,9 +247,9 @@ export function QuickRepliesManager() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Gerenciar Respostas Rápidas</CardTitle>
+              <CardTitle>Gerenciar Respostas RÃ¡pidas</CardTitle>
               <CardDescription>
-                Crie, edite e organize respostas rápidas para o chat de suporte
+                Crie, edite e organize respostas rÃ¡pidas para o chat de suporte
               </CardDescription>
             </div>
             <Button onClick={handleCreate}>
@@ -332,9 +267,9 @@ export function QuickRepliesManager() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
+                {CATEGORIES.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -347,7 +282,7 @@ export function QuickRepliesManager() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={filteredReplies.map((r) => r.id)}
+              items={filteredReplies.map((reply) => reply.id)}
               strategy={verticalListSortingStrategy}
             >
               <Table>
@@ -355,10 +290,10 @@ export function QuickRepliesManager() {
                   <TableRow>
                     <TableHead className="w-[50px]"></TableHead>
                     <TableHead>Categoria</TableHead>
-                    <TableHead>Título</TableHead>
+                    <TableHead>TÃ­tulo</TableHead>
                     <TableHead>Mensagem</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="text-right">AÃ§Ãµes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -378,7 +313,7 @@ export function QuickRepliesManager() {
 
           {filteredReplies.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              Nenhuma resposta rápida encontrada
+              Nenhuma resposta rÃ¡pida encontrada
             </div>
           )}
         </CardContent>
@@ -388,11 +323,11 @@ export function QuickRepliesManager() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingReply ? "Editar Resposta Rápida" : "Nova Resposta Rápida"}
+              {editingReply ? "Editar Resposta RÃ¡pida" : "Nova Resposta RÃ¡pida"}
             </DialogTitle>
             <DialogDescription>
               Preencha os campos abaixo para {editingReply ? "atualizar" : "criar"} uma resposta
-              rápida
+              rÃ¡pida
             </DialogDescription>
           </DialogHeader>
 
@@ -407,9 +342,9 @@ export function QuickRepliesManager() {
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
+                  {CATEGORIES.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -417,11 +352,11 @@ export function QuickRepliesManager() {
             </div>
 
             <div>
-              <Label htmlFor="title">Título *</Label>
+              <Label htmlFor="title">TÃ­tulo *</Label>
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(event) => setFormData({ ...formData, title: event.target.value })}
                 placeholder="Ex: Boas-vindas"
               />
             </div>
@@ -431,13 +366,11 @@ export function QuickRepliesManager() {
               <Textarea
                 id="message"
                 value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                placeholder="Digite a mensagem que será inserida no chat"
+                onChange={(event) => setFormData({ ...formData, message: event.target.value })}
+                placeholder="Digite a mensagem que serÃ¡ inserida no chat"
                 rows={6}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {formData.message.length} caracteres
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">{formData.message.length} caracteres</p>
             </div>
           </div>
 
