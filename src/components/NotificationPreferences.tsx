@@ -1,11 +1,10 @@
-// @ts-nocheck
 /**
  * Notification Preferences Component
  * 
  * Allows users to manage their email notification preferences.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -21,11 +20,7 @@ export function NotificationPreferences() {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadPreferences();
-  }, []);
-
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -57,7 +52,11 @@ export function NotificationPreferences() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences]);
 
   const updatePreference = async (field: keyof NotificationPreferences, value: boolean) => {
     if (!preferences) return;
