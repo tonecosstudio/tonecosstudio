@@ -1028,3 +1028,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado ao histórico de preços contextuais.
 - Redução de acoplamento e padronização estrutural no módulo admin.
+
+---
+
+## Rodada adicional 33 (admin production global limit setting)
+
+### Problema atacado
+- `AdminProductionLimit` concentrava query/mutation de `system_settings` diretamente na página.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/production-global-limit-settings-service.ts`
+   - centraliza `fetchProductionGlobalLimitSetting()` e `updateProductionGlobalLimitSetting()`.
+2. Hook de aplicação:
+   - `src/hooks/admin/useProductionGlobalLimitSetting.ts`
+   - encapsula query e mutation com invalidação de cache.
+3. Página desacoplada:
+   - `src/pages/admin/production/AdminProductionLimit.tsx`
+   - remove acesso direto de dados e passa a consumir hooks de domínio.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado no limite global de produção.
+- Menor acoplamento entre camada de página e infraestrutura.

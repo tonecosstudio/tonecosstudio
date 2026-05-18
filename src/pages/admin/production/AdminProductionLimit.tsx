@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminProductionGateway as supabase } from "@/services/admin/admin-production-gateway";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,10 +18,13 @@ import {
   Save,
 } from "lucide-react";
 import { useProductionLimit } from "@/hooks/useProductionLimit";
+import {
+  useProductionGlobalLimitSetting,
+  useUpdateProductionGlobalLimitSetting,
+} from "@/hooks/admin/useProductionGlobalLimitSetting";
 
 export default function AdminProductionLimit() {
-  const queryClient = useQueryClient();
-  const [newLimit, setNewLimit] = useState<string>("");
+  const [newLimit, setNewLimit] = useState("");
 
   const {
     limit,
@@ -39,65 +40,35 @@ export default function AdminProductionLimit() {
     isReopening,
   } = useProductionLimit();
 
-  // Query para buscar configuração atual
-  const { data: settings } = useQuery({
-    queryKey: ["system-settings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("system_settings")
-        .select("*")
-        .eq("key", "monthly_production_limit")
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        // Retornar valor padrão se não existir configuração
-        return { key: "monthly_production_limit", value: "100" };
-      }
-
-      return data;
-    },
-  });
-
-  // Mutation para atualizar limite global
-  const updateLimit = useMutation({
-    mutationFn: async (value: string) => {
-      const { error } = await supabase
-        .from("system_settings")
-        .update({ value, updated_at: new Date().toISOString() })
-        .eq("key", "monthly_production_limit");
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["system-settings"] });
-      queryClient.invalidateQueries({ queryKey: ["production-limit"] });
-      toast.success("Limite atualizado com sucesso");
-      setNewLimit("");
-    },
-    onError: (error: Error) => {
-      toast.error("Erro ao atualizar limite", {
-        description: error.message,
-      });
-    },
-  });
+  const { data: settings } = useProductionGlobalLimitSetting();
+  const updateLimit = useUpdateProductionGlobalLimitSetting();
 
   const handleUpdateLimit = () => {
-    const value = parseInt(newLimit);
+    const value = parseInt(newLimit, 10);
     if (isNaN(value) || value < 1) {
       toast.error("Valor inválido", {
         description: "Digite um número maior que zero",
       });
       return;
     }
-    updateLimit.mutate(newLimit);
+
+    updateLimit.mutate(newLimit, {
+      onSuccess: () => {
+        toast.success("Limite atualizado com sucesso");
+        setNewLimit("");
+      },
+      onError: (error: Error) => {
+        toast.error("Erro ao atualizar limite", {
+          description: error.message,
+        });
+      },
+    });
   };
 
   if (isLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
+        <div className="flex h-64 items-center justify-center">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </AdminLayout>
@@ -114,13 +85,11 @@ export default function AdminProductionLimit() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">Limite de Produção</h1>
+          <h1 className="mb-2 text-3xl font-bold">Limite de Produção</h1>
           <p className="text-muted-foreground">Gerencie o limite global de produção mensal</p>
         </div>
 
-        {/* Cards de Estatísticas */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -158,7 +127,7 @@ export default function AdminProductionLimit() {
                 {salesOpen ? "Abertas" : "Fechadas"}
               </Badge>
               {isClosed && (
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Motivo: {limit?.is_closed ? "Limite atingido" : "Manual"}
                 </p>
               )}
@@ -166,7 +135,6 @@ export default function AdminProductionLimit() {
           </Card>
         </div>
 
-        {/* Produção do Mês Atual */}
         <Card>
           <CardHeader>
             <CardTitle>Produção de {monthName}</CardTitle>
@@ -192,29 +160,25 @@ export default function AdminProductionLimit() {
 
             <div className="flex gap-2">
               {salesOpen ? (
-                <Button
-                  variant="destructive"
-                  onClick={() => closeSales("manual")}
-                  disabled={isClosing}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
+                <Button variant="destructive" onClick={() => closeSales("manual")} disabled={isClosing}>
+                  <XCircle className="mr-2 h-4 w-4" />
                   Fechar Vendas
                 </Button>
               ) : (
                 <Button variant="default" onClick={() => reopenSales()} disabled={isReopening}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="mr-2 h-4 w-4" />
                   Reabrir Vendas
                 </Button>
               )}
             </div>
 
             {isClosed && (
-              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+              <div className="rounded-lg border border-orange-500/20 bg-orange-500/10 p-4">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
+                  <AlertCircle className="mt-0.5 h-5 w-5 text-orange-500" />
                   <div>
-                    <p className="font-medium text-sm">Vendas Fechadas</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-sm font-medium">Vendas Fechadas</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
                       As vendas foram encerradas. Clientes não poderão realizar novas compras até a
                       reabertura.
                     </p>
@@ -225,7 +189,6 @@ export default function AdminProductionLimit() {
           </CardContent>
         </Card>
 
-        {/* Configuração Global */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -248,7 +211,7 @@ export default function AdminProductionLimit() {
 
             <div className="space-y-2">
               <Label htmlFor="new-limit">Novo Limite</Label>
-              <div className="flex gap-2 max-w-md">
+              <div className="flex max-w-md gap-2">
                 <Input
                   id="new-limit"
                   type="number"
@@ -258,7 +221,7 @@ export default function AdminProductionLimit() {
                   onChange={(e) => setNewLimit(e.target.value)}
                 />
                 <Button onClick={handleUpdateLimit} disabled={!newLimit || updateLimit.isPending}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   Salvar
                 </Button>
               </div>
@@ -268,12 +231,12 @@ export default function AdminProductionLimit() {
               </p>
             </div>
 
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-4">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
+                <AlertCircle className="mt-0.5 h-5 w-5 text-blue-500" />
                 <div>
-                  <p className="font-medium text-sm">Como funciona</p>
-                  <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                  <p className="text-sm font-medium">Como funciona</p>
+                  <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-muted-foreground">
                     <li>O limite é global: soma de todas as coleções</li>
                     <li>Vendas fecham automaticamente ao atingir o limite</li>
                     <li>Vendas também fecham após 30 dias (mês completo de vendas)</li>
