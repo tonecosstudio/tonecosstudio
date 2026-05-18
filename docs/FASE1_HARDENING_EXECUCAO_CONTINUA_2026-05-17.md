@@ -117,6 +117,32 @@
 - Boundary reforcado em um hub financeiro critico.
 - Menor acoplamento da page com acesso a dados.
 
+---
+
+## Rodada adicional 12 (standalone pricing admin)
+
+### Problema atacado
+- `EditStandalonePricingForm` concentrava query e update direto em `character_standalone_pricing` dentro do componente de UI.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/standalone-pricing-admin-service.ts`
+   - `fetchStandalonePricing()` e `updateStandalonePricing()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useStandalonePricingAdmin.ts`
+   - query + mutation com invalidacao padronizada.
+3. Componente desacoplado:
+   - `src/components/admin/payments/EditStandalonePricingForm.tsx`
+   - remove acesso direto a `supabase` e consome apenas hooks.
+
+### Validacao desta rodada
+- `npx eslint src/components/admin/payments/EditStandalonePricingForm.tsx src/hooks/admin/useStandalonePricingAdmin.ts src/services/admin/standalone-pricing-admin-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Reforco de SSOT no modulo de precificacao avulsa.
+- Menos responsabilidade de infraestrutura na camada de UI.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado
