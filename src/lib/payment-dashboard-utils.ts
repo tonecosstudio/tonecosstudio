@@ -6,6 +6,7 @@ export type PaymentDashboardSortField = "created_at" | "amount" | "customer_name
 export type PaymentDashboardSortDirection = "asc" | "desc";
 
 export interface PaymentStatusUiConfig {
+  status: PaymentStatus;
   label: string;
   color: string;
   bgColor: string;
@@ -20,24 +21,29 @@ const STATUS_ORDER: Record<string, number> = {
 
 const STATUS_CONFIG: Record<string, PaymentStatusUiConfig> = {
   pending: {
+    status: "pending",
     variant: "outline",
     label: "Pendente",
     color: "text-yellow-600",
     bgColor: "bg-yellow-50",
   },
   under_review: {
+    status: "under_review",
     variant: "secondary",
     label: "Em Revisao",
     color: "text-blue-600",
     bgColor: "bg-blue-50",
   },
   requires_info: {
+    status: "requires_info",
     variant: "destructive",
     label: "Precisa de Info",
     color: "text-orange-600",
     bgColor: "bg-orange-50",
   },
 };
+
+export const PAYMENT_STATUS_OPTIONS: PaymentStatus[] = ["pending", "under_review", "requires_info"];
 
 export function getPaymentStatusConfig(status: PaymentStatus): PaymentStatusUiConfig {
   return (
@@ -98,4 +104,3 @@ export function formatPaymentCurrency(amount: number, currency: string): string 
 export function formatPaymentDate(dateString: string): string {
   return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
-

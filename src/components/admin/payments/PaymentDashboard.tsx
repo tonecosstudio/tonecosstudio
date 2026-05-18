@@ -81,6 +81,7 @@ import {
   formatPaymentCurrency,
   formatPaymentDate,
   getPaymentStatusConfig,
+  PAYMENT_STATUS_OPTIONS,
   sortPaymentListItems,
   type PaymentDashboardSortDirection,
   type PaymentDashboardSortField,
@@ -491,7 +492,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <div className="flex flex-wrap gap-2">
-                {(["pending", "under_review", "requires_info"] as PaymentStatus[]).map((status) => {
+                {PAYMENT_STATUS_OPTIONS.map((status) => {
                   const config = getStatusConfig(status);
                   const isActive = filters.status?.includes(status);
                   return (
@@ -960,7 +961,7 @@ function MobileFilters({
       <div className="space-y-3">
         <h3 className="text-sm font-medium">Status</h3>
         <div className="flex flex-wrap gap-2">
-          {(["pending", "under_review", "requires_info"] as PaymentStatus[]).map((status) => {
+          {PAYMENT_STATUS_OPTIONS.map((status) => {
             const isActive = filters.status?.includes(status);
             return (
               <Button
