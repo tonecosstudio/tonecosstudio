@@ -127,56 +127,6 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
     });
   }, [toast, updateStatusMutation.error]);
 
-  /*
-  const _legacyUpdateStatusMutation = useMutation({
-    mutationFn: async (data: {
-      deliveryId: string;
-      newStatus: string;
-      trackingCode?: string;
-      notes?: string;
-    }) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Não autenticado');
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-delivery-status`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify(data),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao atualizar status');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Status atualizado',
-        description: 'O status da entrega foi atualizado com sucesso.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['delivery-detail', deliveryId] });
-      queryClient.invalidateQueries({ queryKey: ['deliveries'] });
-      setIsEditing(false);
-      setNotesRaw('');
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Erro ao atualizar status',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-  */
-
   const handleUpdateStatus = () => {
     if (!deliveryId || !selectedStatus) return;
 

@@ -31,7 +31,7 @@ export default function AdminSystemSettings() {
   const { data: settings, isLoading } = useAdminSystemSettings();
 
   // Mutation para atualizar configurações
-  /* const _legacyMutation = useMutation({
+  /*
     mutationFn: async (updates: Record<string, string>) => {
       const updatePromises = Object.entries(updates).map(async ([key, value]) => {
         // Usar UPSERT para criar ou atualizar
@@ -77,7 +77,7 @@ export default function AdminSystemSettings() {
         variant: "destructive",
       });
     },
-  }); */
+  */
 
   const updateMutation = useUpdateAdminSystemSettings();
 
