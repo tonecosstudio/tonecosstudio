@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -36,11 +36,11 @@ import { formatDistanceToNow, differenceInDays, differenceInHours } from "date-f
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
-import { 
-  getAvailableCharacters, 
-  submitCharacterChoice,
-  type Character 
-} from "@/services/customer/choice-service";
+import {
+  useAvailableCharacters,
+  submitCharacterChoiceAction,
+  type CharacterEntity,
+} from "@/hooks/customer/useChoiceActions";
 
 // ============================================================================
 // Types
@@ -100,7 +100,7 @@ const DeadlineAlert: React.FC<DeadlineAlertProps> = ({ deadline }) => {
  * CharacterCard - Individual character card with hover preview
  */
 interface CharacterCardProps {
-  character: Character;
+  character: CharacterEntity;
   selected: boolean;
   onSelect: () => void;
 }
@@ -250,15 +250,11 @@ export const CharacterSelectionModal: React.FC<CharacterSelectionModalProps> = (
     data: characters, 
     isLoading, 
     error 
-  } = useQuery({
-    queryKey: ["available-characters", collectionId],
-    queryFn: () => getAvailableCharacters(collectionId),
-    enabled: open && !!collectionId,
-  });
+  } = useAvailableCharacters(collectionId, open);
   
   // Submit character choice mutation
   const submitMutation = useMutation({
-    mutationFn: (characterId: string) => submitCharacterChoice(orderId, characterId),
+    mutationFn: (characterId: string) => submitCharacterChoiceAction(orderId, characterId),
     onSuccess: () => {
       toast({
         title: "Escolha Enviada!",
