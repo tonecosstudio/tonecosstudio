@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAdminProductionGateway } from "@/hooks/admin/useAdminProductionGateway";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,10 @@ import {
   Palette,
 } from "lucide-react";
 import ImageUpload from "@/components/admin/shared/ImageUpload";
-
-interface Setting {
-  key: string;
-  value: string;
-  description: string | null;
-}
+import {
+  useAdminSystemSettings,
+  useUpdateAdminSystemSettings,
+} from "@/hooks/admin/useAdminSystemSettings";
 
 export default function AdminSystemSettings() {
   const supabase = useAdminProductionGateway();
@@ -34,18 +32,10 @@ export default function AdminSystemSettings() {
   const [editedSettings, setEditedSettings] = useState<Record<string, string>>({});
 
   // Buscar todas as configurações
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["admin-system-settings"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("system_settings").select("*").order("key");
-
-      if (error) throw error;
-      return data as Setting[];
-    },
-  });
+  const { data: settings, isLoading } = useAdminSystemSettings();
 
   // Mutation para atualizar configurações
-  const updateMutation = useMutation({
+  const _legacyMutation = useMutation({
     mutationFn: async (updates: Record<string, string>) => {
       const updatePromises = Object.entries(updates).map(async ([key, value]) => {
         // Usar UPSERT para criar ou atualizar
@@ -93,6 +83,8 @@ export default function AdminSystemSettings() {
     },
   });
 
+  const updateMutation = useUpdateAdminSystemSettings();
+
   const handleChange = (key: string, value: string) => {
     setEditedSettings((prev) => ({ ...prev, [key]: value }));
   };
@@ -106,7 +98,22 @@ export default function AdminSystemSettings() {
       return;
     }
 
-    updateMutation.mutate(editedSettings);
+    updateMutation.mutate(editedSettings, {
+      onSuccess: () => {
+        setEditedSettings({});
+        toast({
+          title: "ConfiguraÃ§Ãµes atualizadas",
+          description: "As alteraÃ§Ãµes foram salvas com sucesso.",
+        });
+      },
+      onError: (error: Error) => {
+        toast({
+          title: "Erro ao atualizar",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleReset = () => {

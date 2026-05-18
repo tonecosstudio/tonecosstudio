@@ -272,3 +272,32 @@
 - Separacao clara entre UI, aplicacao e infraestrutura no modulo de respostas rapidas.
 - Reducao de responsabilidade do componente.
 - Reforco de padrao estrutural unico para fluxos admin.
+
+---
+
+## Rodada adicional 9 (admin system settings)
+
+### Problema atacado
+- `AdminSystemSettings` concentrava leitura/escrita de `system_settings` na page.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/admin-system-settings-service.ts`
+   - `fetchAdminSystemSettings()` e `updateAdminSystemSettings()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useAdminSystemSettings.ts`
+   - encapsula query e mutation de configuracoes admin.
+3. Page migrada para consumo via hook:
+   - `src/pages/admin/settings/AdminSystemSettings.tsx`
+   - fluxo principal de leitura/salvamento passa por hook/service.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary principal da page passou a seguir padrao UI -> hook -> service.
+- Centralizacao da logica de persistencia de configuracoes do sistema no modulo admin.
+
+### Pendencia tecnica local
+- Existe bloco legado interno ainda presente na page e marcado como nao utilizado (`_legacyMutation`), sem impacto funcional no fluxo principal atual, planejado para remocao limpa na proxima rodada de saneamento da mesma tela.
