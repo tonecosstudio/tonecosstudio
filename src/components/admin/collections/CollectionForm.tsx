@@ -51,7 +51,7 @@ import { cn } from "@/lib/utils";
 import ImageUpload from "../shared/ImageUpload";
 import { CollectionTierAssignment } from "../pricing-tiers/CollectionTierAssignment";
 import { CollectionCharactersManager, type CharacterData } from "./CollectionCharactersManager";
-import { supabase } from "@/integrations/supabase/client";
+import { useCollectionFormPricingTiers } from "@/hooks/admin/useCollectionFormPricingTiers";
 
 // Zod validation schema
 const collectionSchema = z.object({
@@ -77,17 +77,6 @@ interface CollectionFormCollection {
   rotation_type: "fixed" | "odd_months" | "even_months";
   is_active: boolean;
   is_price_custom?: boolean;
-}
-
-interface PricingTier {
-  id: string;
-  name: string;
-  description: string | null;
-  price_full: number;
-  deposit_amount: number;
-  price_pix: number;
-  pix_discount_percentage: number;
-  is_default: boolean;
 }
 
 interface CollectionFormProps {
@@ -121,39 +110,16 @@ export function CollectionForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Pricing tiers
-  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const { data: pricingTiers = [] } = useCollectionFormPricingTiers(open);
 
   // Validation state
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
-  // Load pricing tiers
   useEffect(() => {
-    const loadPricingTiers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('pricing_tiers')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order');
-
-        if (!error && data) {
-          const tiers = data as PricingTier[];
-          setPricingTiers(tiers);
-          // Set default tier if none selected
-          if (!selectedTierId && tiers.length > 0) {
-            const defaultTier = tiers.find((t) => t.is_default) || tiers[0];
-            setSelectedTierId(defaultTier.id);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading pricing tiers:', error);
-      }
-    };
-
-    if (open) {
-      loadPricingTiers();
-    }
-  }, [open, selectedTierId]);
+    if (selectedTierId || pricingTiers.length === 0) return;
+    const defaultTier = pricingTiers.find((tier) => tier.is_default) || pricingTiers[0];
+    setSelectedTierId(defaultTier.id);
+  }, [pricingTiers, selectedTierId]);
 
   // Reset form when collection changes
   useEffect(() => {

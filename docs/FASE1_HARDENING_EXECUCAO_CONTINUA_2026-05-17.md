@@ -976,3 +976,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado no fluxo de atualização em massa.
 - Remoção de responsabilidade de infraestrutura da camada de UI.
+
+---
+
+## Rodada adicional 31 (collection form tiers query)
+
+### Problema atacado
+- `CollectionForm` consultava `pricing_tiers` diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/collection-form-pricing-tiers-service.ts`
+   - `fetchCollectionFormPricingTiers()` centraliza leitura de tiers ativos.
+2. Hook de aplicação:
+   - `src/hooks/admin/useCollectionFormPricingTiers.ts`
+   - encapsula query com `enabled` por abertura do modal.
+3. Componente desacoplado:
+   - `src/components/admin/collections/CollectionForm.tsx`
+   - remove import de `supabase` e consome apenas hook de domínio.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado no carregamento de tiers do formulário.
+- Redução de acoplamento entre apresentação e infraestrutura.
