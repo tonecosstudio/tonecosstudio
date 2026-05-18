@@ -350,3 +350,29 @@
 ### Efeito arquitetural
 - Separacao consistente entre UI/aplicacao/infraestrutura no fluxo de envio de link de pagamento.
 - Menor acoplamento e maior reutilizacao do caso de uso.
+
+---
+
+## Rodada adicional 12 (edit pricing form)
+
+### Problema atacado
+- `EditPricingForm` concentrava atualizacoes de precos e multiplicadores diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/coins-pricing-admin-service.ts`
+   - `updateBasePrices()` e `updateContextMultipliers()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useCoinsPricingAdmin.ts`
+   - mutations + invalidacao de `admin-coins-pricing-config`.
+3. Componente desacoplado:
+   - `src/components/admin/payments/EditPricingForm.tsx`
+   - consumo exclusivo dos hooks.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Fluxo de precificacao admin aderente ao padrao UI -> hook -> service.
+- Reducao de acoplamento com camada de dados no componente.
