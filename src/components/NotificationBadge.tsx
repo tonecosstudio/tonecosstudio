@@ -12,6 +12,7 @@ import React from "react";
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { NOTIFICATION_ROUTES } from "@/lib/routes/notification-routes";
 import { useFormattedNotificationCount } from "@/hooks/use-notification-count";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -95,9 +96,9 @@ export function NotificationBadge({
     }
 
     if (isAdmin) {
-      navigate("/admin/payments");
+      navigate(NOTIFICATION_ROUTES.adminPayments);
     } else {
-      navigate("/my-payments");
+      navigate(NOTIFICATION_ROUTES.myPayments);
     }
   };
 
@@ -135,7 +136,7 @@ export function NotificationBadge({
             <>
               {pendingPayments > 0 && (
                 <DropdownMenuItem
-                  onClick={() => navigate("/admin/payments?status=pending")}
+                  onClick={() => navigate(NOTIFICATION_ROUTES.adminPaymentsPending)}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos Pendentes</span>
@@ -148,7 +149,7 @@ export function NotificationBadge({
 
               {underReviewPayments > 0 && (
                 <DropdownMenuItem
-                  onClick={() => navigate("/admin/payments?status=under_review")}
+                  onClick={() => navigate(NOTIFICATION_ROUTES.adminPaymentsUnderReview)}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos em Análise</span>
@@ -163,7 +164,7 @@ export function NotificationBadge({
             <>
               {requiresInfoPayments > 0 && (
                 <DropdownMenuItem
-                  onClick={() => navigate("/my-payments?status=requires_info")}
+                  onClick={() => navigate(NOTIFICATION_ROUTES.myPaymentsRequiresInfo)}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos com Informações Solicitadas</span>
@@ -177,7 +178,7 @@ export function NotificationBadge({
           )}
 
           {unreadMessages > 0 && (
-            <DropdownMenuItem onClick={() => navigate("/support")}>
+            <DropdownMenuItem onClick={() => navigate(NOTIFICATION_ROUTES.support)}>
               <div className="flex items-center justify-between w-full">
                 <span>Mensagens Não Lidas</span>
                 <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
