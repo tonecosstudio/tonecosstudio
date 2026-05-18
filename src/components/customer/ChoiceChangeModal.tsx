@@ -27,23 +27,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { 
-  Clock, 
-  AlertCircle, 
+  AlertCircle,
   CheckCircle2, 
   Package,
   AlertTriangle,
   XCircle,
   Edit
 } from "lucide-react";
-import { formatDistanceToNow, differenceInDays, differenceInHours } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { 
-  getAvailableCharacters, 
-  changeCharacterChoice,
-  type Character 
-} from "@/services/customer/choice-service";
+  getAvailableCharactersAction,
+  changeCharacterChoiceAction,
+  type CharacterEntity
+} from "@/hooks/customer/useChoiceActions";
 
 // ============================================================================
 // Types
@@ -128,7 +125,7 @@ const RemainingChangesAlert: React.FC<RemainingChangesAlertProps> = ({ remaining
  * CharacterCard - Individual character card for selection
  */
 interface CharacterCardProps {
-  character: Character;
+  character: CharacterEntity;
   selected: boolean;
   isCurrent: boolean;
   onSelect: () => void;
@@ -253,7 +250,7 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
   open,
   onOpenChange,
   choiceId,
-  orderId,
+  orderId: _orderId,
   collectionId,
   currentCharacterId,
   currentCharacterName,
@@ -294,7 +291,7 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
     error 
   } = useQuery({
     queryKey: ["available-characters", collectionId],
-    queryFn: () => getAvailableCharacters(collectionId),
+    queryFn: () => getAvailableCharactersAction(collectionId),
     enabled: open && !!collectionId && canChange,
   });
   
@@ -304,7 +301,7 @@ export const ChoiceChangeModal: React.FC<ChoiceChangeModalProps> = ({
       if (!selectedCharacterId) {
         throw new Error("Nenhum personagem selecionado");
       }
-      return changeCharacterChoice(choiceId, selectedCharacterId, changeReason);
+      return changeCharacterChoiceAction(choiceId, selectedCharacterId, changeReason);
     },
     onSuccess: () => {
       toast({
