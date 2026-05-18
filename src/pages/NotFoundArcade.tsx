@@ -10,6 +10,15 @@ export default function NotFoundArcade() {
   const navigate = useNavigate();
   const [glitchActive, setGlitchActive] = useState(false);
 
+  const handleRetry = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/", { replace: true });
+  };
+
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
@@ -86,7 +95,7 @@ export default function NotFoundArcade() {
                   VOLTAR
                 </button>
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={handleRetry}
                   className="inline-flex items-center gap-2 border border-[hsl(0,0%,18%)] text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] hover:border-[hsl(var(--gold-accent)/0.3)] font-mono uppercase tracking-wider text-[10px] h-11 px-6 transition-all"
                 >
                   <RotateCcw className="w-3 h-3" />
