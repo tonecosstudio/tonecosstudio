@@ -10,16 +10,18 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChoiceChangeModal } from "./ChoiceChangeModal";
-import * as choiceService from "@/services/customer/choice-service";
+import type { CharacterEntity as Character } from "@/hooks/customer/useChoiceActions";
 
-// Mock the choice service
-vi.mock("@/services/customer/choice-service", () => ({
-  getAvailableCharacters: vi.fn(),
-  changeCharacterChoice: vi.fn(),
+const mockGetAvailableCharactersAction = vi.fn();
+const mockChangeCharacterChoiceAction = vi.fn();
+
+vi.mock("@/hooks/customer/useChoiceActions", () => ({
+  getAvailableCharactersAction: (...args: unknown[]) => mockGetAvailableCharactersAction(...args),
+  changeCharacterChoiceAction: (...args: unknown[]) => mockChangeCharacterChoiceAction(...args),
 }));
 
 // Mock toast
@@ -45,7 +47,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
 };
 
 // Mock characters data
-const mockCharacters = [
+const mockCharacters: Character[] = [
   {
     id: "char-1",
     name: "Personagem 1",
@@ -92,7 +94,7 @@ describe("ChoiceChangeModal", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+    mockGetAvailableCharactersAction.mockResolvedValue(mockCharacters);
   });
 
   describe("Rendering", () => {
@@ -133,7 +135,7 @@ describe("ChoiceChangeModal", () => {
       renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
       await waitFor(() => {
-        expect(choiceService.getAvailableCharacters).toHaveBeenCalledWith("col-1");
+        expect(mockGetAvailableCharactersAction).toHaveBeenCalledWith("col-1");
       });
 
       await waitFor(() => {
@@ -201,7 +203,7 @@ describe("ChoiceChangeModal", () => {
         <ChoiceChangeModal {...defaultProps} isApproved={false} />
       );
 
-      expect(choiceService.getAvailableCharacters).not.toHaveBeenCalled();
+      expect(mockGetAvailableCharactersAction).not.toHaveBeenCalled();
     });
   });
 
@@ -225,7 +227,6 @@ describe("ChoiceChangeModal", () => {
     });
 
     it("should not allow selecting current character", async () => {
-      const user = userEvent.setup();
       renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
       await waitFor(() => {
@@ -393,31 +394,7 @@ describe("ChoiceChangeModal", () => {
     it("should submit change on confirmation", async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
-      vi.mocked(choiceService.changeCharacterChoice).mockResolvedValue({
-        id: "choice-1",
-        orderId: "order-1",
-        orderType: "subscription_delivery",
-        userId: "user-1",
-        collectionId: "col-1",
-        characterId: "char-2",
-        characterName: "Personagem 2",
-        characterImageUrl: "https://example.com/char2.jpg",
-        status: "submitted",
-        submittedAt: new Date().toISOString(),
-        approvedAt: null,
-        approvedBy: null,
-        approvedByName: null,
-        rejectedAt: null,
-        rejectionReason: null,
-        deadline: defaultProps.deadline,
-        remindersSent: 0,
-        lastReminderAt: null,
-        previousChoiceId: null,
-        changeReason: "Prefiro este personagem",
-        changeCount: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      mockChangeCharacterChoiceAction.mockResolvedValue({ id: "choice-1", status: "submitted" });
 
       renderWithProviders(
         <ChoiceChangeModal {...defaultProps} onSuccess={onSuccess} />
@@ -444,11 +421,7 @@ describe("ChoiceChangeModal", () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(choiceService.changeCharacterChoice).toHaveBeenCalledWith(
-          "choice-1",
-          "char-2",
-          "Prefiro este personagem"
-        );
+        expect(mockChangeCharacterChoiceAction).toHaveBeenCalledWith("choice-1", "char-2", "Prefiro este personagem");
       });
 
       await waitFor(() => {
@@ -488,9 +461,7 @@ describe("ChoiceChangeModal", () => {
 
   describe("Error Handling", () => {
     it("should display error when loading characters fails", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockRejectedValue(
-        new Error("Erro ao carregar")
-      );
+      mockGetAvailableCharactersAction.mockRejectedValue(new Error("Erro ao carregar"));
 
       renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
@@ -501,9 +472,7 @@ describe("ChoiceChangeModal", () => {
 
     it("should handle submission error", async () => {
       const user = userEvent.setup();
-      vi.mocked(choiceService.changeCharacterChoice).mockRejectedValue(
-        new Error("Erro ao alterar escolha")
-      );
+      mockChangeCharacterChoiceAction.mockRejectedValue(new Error("Erro ao alterar escolha"));
 
       renderWithProviders(<ChoiceChangeModal {...defaultProps} />);
 
@@ -528,7 +497,7 @@ describe("ChoiceChangeModal", () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(choiceService.changeCharacterChoice).toHaveBeenCalled();
+        expect(mockChangeCharacterChoiceAction).toHaveBeenCalled();
       });
 
       // Modal should still be open after error
@@ -572,3 +541,4 @@ describe("ChoiceChangeModal", () => {
     });
   });
 });
+
