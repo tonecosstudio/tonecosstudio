@@ -50,6 +50,7 @@ import {
 import type { PaymentFile } from "@/types/manual-payment";
 import { getPaymentById } from "@/lib/payment-service";
 import { fileUploadService } from "@/lib/file-upload-service";
+import { log } from "@/lib/logger";
 import {
   exportPaymentDetailsToCsv,
   formatPaymentCurrency,
@@ -99,7 +100,11 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
               newPdfUrls[file.id] = url;
             }
           } catch (error) {
-            console.error(`Failed to load URL for file ${file.id}:`, error);
+            log.error("Failed to load payment file URL", {
+              error,
+              fileId: file.id,
+              filePath: file.file_path,
+            });
           }
         }
 
@@ -160,7 +165,11 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
         description: `Arquivo "${file.file_name}" está sendo baixado.`,
       });
     } catch (error) {
-      console.error("Failed to download file:", error);
+      log.error("Failed to download payment file", {
+        error,
+        fileId: file.id,
+        filePath: file.file_path,
+      });
       toast({
         title: "Erro no download",
         description: "Não foi possível baixar o arquivo. Tente novamente.",
