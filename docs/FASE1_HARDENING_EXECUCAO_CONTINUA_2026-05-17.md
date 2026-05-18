@@ -91,6 +91,32 @@
 - Mais um fluxo admin migrado para boundary `UI -> hook -> service`.
 - Reducao de responsabilidade da page e maior consistencia estrutural.
 
+---
+
+## Rodada adicional 11 (admin financial overview)
+
+### Problema atacado
+- `AdminFinancialHub` ainda continha query direta de `subscriptions` na page junto da consolidacao de dados financeiros.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/admin-financial-overview-service.ts`
+   - `fetchAdminFinancialOverview()` encapsulando consolidacao de receita + contagem de assinaturas.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useAdminFinancialOverview.ts`
+   - centraliza query key e query fn.
+3. Page desacoplada:
+   - `src/pages/admin/payments/AdminFinancialHub.tsx`
+   - remove dependencias diretas de infraestrutura e consome somente hook.
+
+### Validacao desta rodada
+- `npx eslint src/pages/admin/payments/AdminFinancialHub.tsx src/hooks/admin/useAdminFinancialOverview.ts src/services/admin/admin-financial-overview-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Boundary reforcado em um hub financeiro critico.
+- Menor acoplamento da page com acesso a dados.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado
