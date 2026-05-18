@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Clock } from "lucide-react";
 import { isBeforeCutoff, formatTimeUntilCutoff } from "@/lib/cutoff-middleware";
-import { canCreateStandalonePurchase } from "@/services/standalone-purchase-service";
+import { useStandalonePurchaseAvailability } from "@/hooks/useStandalonePurchaseAvailability";
 
 interface StandalonePurchaseButtonProps {
   cycleId: string;
@@ -34,35 +34,13 @@ interface StandalonePurchaseButtonProps {
  */
 export function StandalonePurchaseButton({
   cycleId,
-  collectionId,
+  collectionId: _collectionId,
   collectionName,
   onPurchase,
   disabled = false
 }: StandalonePurchaseButtonProps) {
-  const [canPurchase, setCanPurchase] = useState(true);
-  const [reason, setReason] = useState<string | undefined>();
   const [timeUntilCutoff, setTimeUntilCutoff] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Check if purchase is allowed
-  useEffect(() => {
-    const checkPurchaseAvailability = async () => {
-      setIsLoading(true);
-      try {
-        const result = await canCreateStandalonePurchase(cycleId);
-        setCanPurchase(result.canCreate);
-        setReason(result.reason);
-      } catch (error) {
-        console.error("Failed to check purchase availability:", error);
-        setCanPurchase(false);
-        setReason("Failed to check availability");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkPurchaseAvailability();
-  }, [cycleId]);
+  const { canPurchase, reason, isLoading } = useStandalonePurchaseAvailability(cycleId);
 
   // Update countdown timer
   useEffect(() => {
