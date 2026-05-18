@@ -272,6 +272,31 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service reforcado em configuracao de plano.
 
+---
+
+## Rodada adicional 18 (collection pricing manager)
+
+### Problema atacado
+- `CollectionPricingManager` executava leitura, criacao, edicao e exclusao de `pricing_tiers` diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/collection-pricing-manager-service.ts`
+   - `fetchCollectionPricingTiers()`, `saveCollectionPricingTier()`, `deleteCollectionPricingTier()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useCollectionPricingManager.ts`
+   - query + mutacoes com invalidacao padronizada.
+3. Componente desacoplado:
+   - `src/components/admin/collections/CollectionPricingManager.tsx`
+   - remove acesso direto a `supabase`.
+
+### Validacao desta rodada
+- `npx eslint src/components/admin/collections/CollectionPricingManager.tsx src/hooks/admin/useCollectionPricingManager.ts src/services/admin/collection-pricing-manager-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Reducao de acoplamento em um modulo central de precificacao.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado
