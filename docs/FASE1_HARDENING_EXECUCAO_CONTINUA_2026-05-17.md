@@ -159,3 +159,31 @@
 - Reducao de mistura UI/infraestrutura.
 - Regra de negocio de metricas centralizada em service.
 - Testes menos fragéis e mais alinhados ao contrato de componente.
+
+---
+
+## Rodada adicional 5 (pending choices list)
+
+### Problema atacado
+- `PendingChoicesList` consultava Supabase diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/pending-choices-service.ts`
+   - `fetchPendingChoices()` + tipagem de retorno.
+2. Hook de aplicacao:
+   - `src/hooks/admin/usePendingChoices.ts`
+3. Componente desacoplado:
+   - `src/components/admin/collections/PendingChoicesList.tsx`
+4. Testes atualizados por boundary:
+   - `src/components/admin/collections/PendingChoicesList.test.tsx`
+   - mock de hook em vez de mock de Supabase.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- teste direcionado `PendingChoicesList.test.tsx`: 3/3 OK
+- build: OK
+
+### Efeito arquitetural
+- Mais um fluxo admin migrado para padrao UI -> hook -> service.
+- Menor acoplamento da camada de apresentacao com infraestrutura.

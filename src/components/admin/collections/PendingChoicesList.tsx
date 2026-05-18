@@ -7,42 +7,17 @@
  * Requirements: 13.6
  */
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Users, ExternalLink } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { getCurrentCutoffDate } from '@/lib/cutoff-middleware';
 import { Link } from 'react-router-dom';
-
-interface PendingChoice {
-  delivery_id: string;
-  delivery_number: number;
-  user_id: string;
-  user_name: string;
-  user_email: string;
-  subscription_id: string;
-}
+import { usePendingChoices } from '@/hooks/admin/usePendingChoices';
 
 interface PendingChoicesListProps {
   cycleIds?: string[];
   className?: string;
-}
-
-interface DeliveryPendingRow {
-  id: string;
-  delivery_number: number;
-  subscriptions: {
-    id: string;
-    users: {
-      id: string;
-      email: string;
-      raw_user_meta_data?: {
-        full_name?: string;
-      } | null;
-    } | null;
-  } | null;
 }
 
 /**
@@ -65,49 +40,7 @@ function getDaysUntilCutoff(): number {
 export function PendingChoicesList({ cycleIds, className }: PendingChoicesListProps) {
   const daysUntilCutoff = getDaysUntilCutoff();
 
-  // Fetch pending choices for the specified cycles
-  const { data: pendingChoices, isLoading } = useQuery({
-    queryKey: ['pending-choices', cycleIds],
-    queryFn: async () => {
-      if (!cycleIds || cycleIds.length === 0) return [];
-
-      const { data, error } = await supabase
-        .from('subscription_deliveries')
-        .select(`
-          id,
-          delivery_number,
-          subscription_id,
-          subscriptions!inner (
-            id,
-            user_id,
-            users:user_id (
-              id,
-              email,
-              raw_user_meta_data
-            )
-          )
-        `)
-        .in('cycle_id', cycleIds)
-        .eq('status', 'pending_choice')
-        .is('collection_id', null)
-        .order('delivery_number', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching pending choices:', error);
-        throw error;
-      }
-
-      return ((data || []) as DeliveryPendingRow[]).map((delivery) => ({
-        delivery_id: delivery.id,
-        delivery_number: delivery.delivery_number,
-        subscription_id: delivery.subscriptions?.id || '',
-        user_id: delivery.subscriptions?.users?.id || '',
-        user_name: delivery.subscriptions?.users?.raw_user_meta_data?.full_name || 'Sem nome',
-        user_email: delivery.subscriptions?.users?.email || '',
-      })) as PendingChoice[];
-    },
-    enabled: !!cycleIds && cycleIds.length > 0,
-  });
+  const { data: pendingChoices, isLoading } = usePendingChoices(cycleIds);
 
   // Determine if case is urgent (< 3 days until cutoff)
   const isUrgent = daysUntilCutoff < 3;
