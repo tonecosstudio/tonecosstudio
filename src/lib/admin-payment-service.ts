@@ -8,6 +8,7 @@
  * listing pending payments, bulk operations, and statistics.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 import type {
   PaymentListItem,
   PaymentFilters,
@@ -76,8 +77,23 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
         .select("*", { count: "exact", head: true })
         .eq("payment_id", payment.id);
 
-      // Get unread message count (simplified - would need conversation integration)
-      const unreadMessages = 0; // TODO: Implement conversation integration
+      const { data: conversations } = await supabase
+        .from("support_conversations")
+        .select("id")
+        .eq("payment_id", payment.id);
+
+      const conversationIds = (conversations || []).map((conversation) => conversation.id);
+      let unreadMessages = 0;
+
+      if (conversationIds.length > 0) {
+        const { count: unreadCount } = await supabase
+          .from("support_messages")
+          .select("*", { count: "exact", head: true })
+          .in("conversation_id", conversationIds)
+          .eq("is_admin", false);
+
+        unreadMessages = unreadCount || 0;
+      }
 
       return {
         id: payment.id,
@@ -122,8 +138,37 @@ export async function getPaymentStats(): Promise<PaymentStats> {
 
   const totalPendingAmount = statusCounts?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
 
-  // Calculate average processing time (simplified - would need more complex query)
-  const avgProcessingTimeHours = 24; // TODO: Implement actual calculation
+  const { data: approvedPayments, error: approvedPaymentsError } = await supabase
+    .from("manual_payments")
+    .select("created_at, approved_at")
+    .eq("status", "approved")
+    .not("approved_at", "is", null);
+
+  if (approvedPaymentsError) {
+    throw new Error(`Failed to calculate average processing time: ${approvedPaymentsError.message}`);
+  }
+
+  const durations = (approvedPayments || [])
+    .map((payment) => {
+      if (!payment.approved_at) {
+        return null;
+      }
+
+      const createdAt = new Date(payment.created_at).getTime();
+      const approvedAt = new Date(payment.approved_at).getTime();
+
+      if (Number.isNaN(createdAt) || Number.isNaN(approvedAt) || approvedAt < createdAt) {
+        return null;
+      }
+
+      return (approvedAt - createdAt) / (1000 * 60 * 60);
+    })
+    .filter((hours): hours is number => hours !== null);
+
+  const avgProcessingTimeHours =
+    durations.length > 0
+      ? Number((durations.reduce((sum, hours) => sum + hours, 0) / durations.length).toFixed(2))
+      : 0;
 
   return {
     pending_count: pendingCount,
@@ -310,7 +355,17 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
   ];
 
   // Create CSV rows
-  const rows = (payments || []).map((payment: any) => [
+  type ExportablePayment = {
+    reference_number?: string | null;
+    amount: number;
+    currency: string;
+    status?: string | null;
+    created_at: string;
+    payment_type?: string | null;
+    payment_method?: { name?: string | null } | null;
+  };
+
+  const rows = ((payments || []) as ExportablePayment[]).map((payment) => [
     payment.reference_number || "",
     "", // customer name - would need separate profile lookup
     "", // customer email - would need separate profile lookup
@@ -356,8 +411,7 @@ export async function bulkSendMessage(
     errors: [],
   };
 
-  // Note: conversation messages handled via Edge Functions
-  const sendMessage = async (..._args: any[]) => {};
+  const { messageService } = await import("./services/messageService");
 
   // For large selections (>10 items), process in batches
   const BATCH_SIZE = 5;
@@ -391,8 +445,13 @@ export async function bulkSendMessage(
             continue;
           }
 
-          // Send message
-          await sendMessage(conversation.id, adminId, message, [], false);
+          await messageService.sendMessage({
+            conversation_id: conversation.id,
+            sender_id: adminId,
+            sender_type: "admin",
+            message,
+            is_internal: false,
+          });
           result.success_count++;
         } catch (error) {
           result.failure_count++;
@@ -434,8 +493,13 @@ export async function bulkSendMessage(
           continue;
         }
 
-        // Send message
-        await sendMessage(conversation.id, adminId, message, [], false);
+        await messageService.sendMessage({
+          conversation_id: conversation.id,
+          sender_id: adminId,
+          sender_type: "admin",
+          message,
+          is_internal: false,
+        });
         result.success_count++;
       } catch (error) {
         result.failure_count++;
@@ -488,7 +552,7 @@ export async function startAsyncBulkApprove(
 
   // Start processing in background (non-blocking)
   processBulkApproveAsync(data.id).catch((error) => {
-    console.error(`Async bulk approve failed for operation ${data.id}:`, error);
+    log.error("Async bulk approve failed", { operationId: data.id, error });
   });
 
   return data.id;
@@ -529,7 +593,7 @@ export async function startAsyncBulkMessage(
 
   // Start processing in background (non-blocking)
   processBulkMessageAsync(data.id).catch((error) => {
-    console.error(`Async bulk message failed for operation ${data.id}:`, error);
+    log.error("Async bulk message failed", { operationId: data.id, error });
   });
 
   return data.id;
@@ -564,7 +628,7 @@ export async function startAsyncBulkExport(paymentIds: string[], adminId: string
 
   // Start processing in background (non-blocking)
   processBulkExportAsync(data.id).catch((error) => {
-    console.error(`Async bulk export failed for operation ${data.id}:`, error);
+    log.error("Async bulk export failed", { operationId: data.id, error });
   });
 
   return data.id;
@@ -577,7 +641,7 @@ export async function startAsyncBulkExport(paymentIds: string[], adminId: string
  * @returns Bulk operation status and results
  * @throws Error if database query fails
  */
-export async function getBulkOperationStatus(operationId: string): Promise<any> {
+export async function getBulkOperationStatus(operationId: string): Promise<Record<string, unknown>> {
   const { data, error } = await supabase
     .from("bulk_operations")
     .select("*")
@@ -588,7 +652,7 @@ export async function getBulkOperationStatus(operationId: string): Promise<any> 
     throw new Error(`Failed to get bulk operation status: ${error.message}`);
   }
 
-  return data;
+  return (data || {}) as Record<string, unknown>;
 }
 
 /**
@@ -754,8 +818,7 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
       errors: [],
     };
 
-    // Note: conversation messages handled via Edge Functions
-    const sendMessage = async (..._args: any[]) => {};
+    const { messageService } = await import("./services/messageService");
 
     // Process in batches
     const BATCH_SIZE = 10;
@@ -785,8 +848,13 @@ async function processBulkMessageAsync(operationId: string): Promise<void> {
             continue;
           }
 
-          // Send message
-          await sendMessage(conversation.id, adminId, message, [], false);
+          await messageService.sendMessage({
+            conversation_id: conversation.id,
+            sender_id: adminId,
+            sender_type: "admin",
+            message,
+            is_internal: false,
+          });
           result.success_count++;
         } catch (error) {
           result.failure_count++;
@@ -867,7 +935,7 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
     const paymentIds = operation.payment_ids as string[];
 
     // Generate CSV
-    const csvBlob = await exportPaymentsToCSV(paymentIds);
+    const _csvBlob = await exportPaymentsToCSV(paymentIds);
 
     // Mark as completed with result
     await supabase

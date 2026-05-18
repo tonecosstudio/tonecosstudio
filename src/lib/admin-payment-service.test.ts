@@ -7,8 +7,6 @@
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import {
-  listPendingPayments,
-  getPaymentStats,
   bulkApprovePayments,
   exportPaymentsToCSV,
   bulkSendMessage,
@@ -41,9 +39,11 @@ vi.mock("./payment-service", () => ({
   approvePayment: vi.fn(() => Promise.resolve()),
 }));
 
-// Mock conversation service
-vi.mock("./conversation-service", () => ({
-  sendMessage: vi.fn(() => Promise.resolve()),
+// Mock message service
+vi.mock("./services/messageService", () => ({
+  messageService: {
+    sendMessage: vi.fn(() => Promise.resolve()),
+  },
 }));
 
 describe("AdminPaymentService", () => {
@@ -156,7 +156,7 @@ describe("AdminPaymentService", () => {
         }),
       });
 
-      const csvBlob = await exportPaymentsToCSV(paymentIds);
+      const _csvBlob = await exportPaymentsToCSV(paymentIds);
       // Mock the text() method for Blob
       const csvText =
         'Número de Referência,Cliente,Email,Valor,Moeda,Método de Pagamento,Status,Data de Criação,Tipo de Pagamento\n"PAY-20240101-0001","John Doe","john@example.com","100","BRL","PIX","approved","01/01/2024","Única"';
