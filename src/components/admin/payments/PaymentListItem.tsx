@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,18 +7,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertCircle,
-  CheckCircle,
   CheckSquare,
-  Clock,
   Download,
   Eye,
-  Eye as EyeIcon,
   FileText,
   MessageSquare,
   MoreVertical,
   Square,
-  XCircle,
 } from "lucide-react";
 import {
   formatPaymentCurrency,
@@ -27,6 +21,7 @@ import {
   formatPaymentDateOnly,
   getPaymentStatusConfig,
 } from "@/lib/payment-dashboard-utils";
+import { getPaymentStatusIcon } from "./payment-status-icons";
 import type { PaymentListItem as PaymentListItemType } from "@/types/manual-payment";
 
 interface PaymentListItemProps {
@@ -35,26 +30,6 @@ interface PaymentListItemProps {
   onExportPayment?: (paymentId: string) => void;
   isSelected?: boolean;
   onSelectChange?: (paymentId: string, selected: boolean) => void;
-}
-
-function getPaymentStatusIcon(
-  status: PaymentListItemType["status"],
-  className: string
-): ReactNode {
-  switch (status) {
-    case "pending":
-      return <Clock className={className} />;
-    case "under_review":
-      return <EyeIcon className={className} />;
-    case "requires_info":
-      return <AlertCircle className={className} />;
-    case "approved":
-      return <CheckCircle className={className} />;
-    case "rejected":
-      return <XCircle className={className} />;
-    default:
-      return null;
-  }
 }
 
 export function PaymentListItem({

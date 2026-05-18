@@ -72,6 +72,7 @@ import type { PaymentFilters, PaymentStatus } from "@/types/manual-payment";
 import { listPendingPayments, getPaymentStats } from "@/lib/admin-payment-service";
 import { listAllPaymentMethods } from "@/lib/payment-method-service";
 import { PaymentListItemCard } from "./PaymentListItem";
+import { getPaymentStatusIcon } from "./payment-status-icons";
 import { BulkOperationsToolbar } from "../operations/BulkOperationsToolbar";
 import { useAdminDashboardRealtime } from "@/hooks/usePaymentRealtimeDashboard";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
@@ -228,14 +229,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const getStatusConfig = (status: PaymentStatus) => {
     return {
       ...getPaymentStatusConfig(status),
-      icon:
-        status === "pending" ? (
-          <Clock className="h-3 w-3" />
-        ) : status === "under_review" ? (
-          <Eye className="h-3 w-3" />
-        ) : status === "requires_info" ? (
-          <AlertCircle className="h-3 w-3" />
-        ) : null,
+      icon: getPaymentStatusIcon(status, "h-3 w-3"),
     };
   };
 

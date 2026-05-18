@@ -38,7 +38,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
   MessageSquare,
   ExternalLink,
   ChevronRight,
@@ -51,7 +50,13 @@ import {
 import type { PaymentFile } from "@/types/manual-payment";
 import { getPaymentById } from "@/lib/payment-service";
 import { fileUploadService } from "@/lib/file-upload-service";
+import {
+  formatPaymentCurrency,
+  formatPaymentDate,
+  getPaymentStatusConfig,
+} from "@/lib/payment-dashboard-utils";
 import { PaymentActionButtons } from "./PaymentActionButtons";
+import { getPaymentStatusIcon } from "./payment-status-icons";
 
 interface PaymentDetailsViewProps {
   paymentId: string;
@@ -104,73 +109,6 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
       loadUrls();
     }
   }, [payment?.files]);
-
-  // Get status badge configuration
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case "pending":
-        return {
-          variant: "outline" as const,
-          icon: <Clock className="h-4 w-4" />,
-          label: "Pendente",
-          color: "text-yellow-600",
-          bgColor: "bg-yellow-50",
-        };
-      case "under_review":
-        return {
-          variant: "secondary" as const,
-          icon: <Eye className="h-4 w-4" />,
-          label: "Em Revisão",
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-        };
-      case "requires_info":
-        return {
-          variant: "destructive" as const,
-          icon: <AlertCircle className="h-4 w-4" />,
-          label: "Precisa de Informações",
-          color: "text-orange-600",
-          bgColor: "bg-orange-50",
-        };
-      case "approved":
-        return {
-          variant: "default" as const,
-          icon: <CheckCircle className="h-4 w-4" />,
-          label: "Aprovado",
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-        };
-      case "rejected":
-        return {
-          variant: "destructive" as const,
-          icon: <XCircle className="h-4 w-4" />,
-          label: "Rejeitado",
-          color: "text-red-600",
-          bgColor: "bg-red-50",
-        };
-      default:
-        return {
-          variant: "outline" as const,
-          icon: null,
-          label: status,
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-        };
-    }
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: currency || "BRL",
-    }).format(amount);
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
-  };
 
   // Format date for timeline
   const formatTimelineDate = (dateString: string) => {
@@ -296,7 +234,8 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
     );
   }
 
-  const statusConfig = getStatusConfig(payment.status);
+  const statusConfig = getPaymentStatusConfig(payment.status);
+  const statusIcon = getPaymentStatusIcon(payment.status, "h-4 w-4");
   const imageFiles = payment.files.filter((file) => file.file_type.startsWith("image/"));
   const pdfFiles = payment.files.filter((file) => file.file_type === "application/pdf");
   const sortedAuditLogs = [...payment.audit_logs].sort(
@@ -320,7 +259,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                 variant={statusConfig.variant}
                 className={`${statusConfig.bgColor} ${statusConfig.color} flex items-center gap-1`}
               >
-                {statusConfig.icon}
+                {statusIcon}
                 {statusConfig.label}
               </Badge>
               <span className="text-sm text-muted-foreground">{payment.reference_number}</span>
@@ -371,7 +310,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                     <Calendar className="h-4 w-4" />
                     <span>Data de Criação</span>
                   </div>
-                  <div className="font-medium">{formatDate(payment.created_at)}</div>
+                  <div className="font-medium">{formatPaymentDate(payment.created_at)}</div>
                 </div>
 
                 <div className="space-y-2">
@@ -408,7 +347,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                     <span>Valor</span>
                   </div>
                   <div className="font-medium text-lg">
-                    {formatCurrency(payment.amount, payment.currency)}
+                    {formatPaymentCurrency(payment.amount, payment.currency)}
                   </div>
                 </div>
 
@@ -582,7 +521,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                               <div className="font-medium">{file.file_name}</div>
                               <div className="text-sm text-muted-foreground">
                                 {(file.file_size / 1024 / 1024).toFixed(2)} MB • Enviado em{" "}
-                                {formatDate(file.created_at)}
+                                {formatPaymentDate(file.created_at)}
                               </div>
                             </div>
                           </div>
@@ -747,7 +686,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                             )}
                           </div>
                           <span className="text-sm text-muted-foreground">
-                            {formatDate(log.created_at)}
+                            {formatPaymentDate(log.created_at)}
                           </span>
                         </div>
 
@@ -866,7 +805,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                 <div>
                   <div className="text-sm font-medium">Data de Aprovação</div>
                   <div className="text-sm text-muted-foreground">
-                    {formatDate(payment.approved_at)}
+                    {formatPaymentDate(payment.approved_at)}
                   </div>
                 </div>
                 {payment.approved_by && (
