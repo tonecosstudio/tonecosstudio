@@ -819,3 +819,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service reforçado no fluxo de atribuição em massa.
 - Menos responsabilidade de dados no componente e maior consistência estrutural.
+
+---
+
+## Rodada adicional 25 (collection tier assignment dialog)
+
+### Problema atacado
+- `CollectionTierAssignmentDialog` misturava UI com leitura e escrita diretas no Supabase.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/collection-tier-assignment-dialog-service.ts`
+   - `fetchCollectionsForTierAssignment()` e `saveCollectionsForTierAssignment()`.
+2. Hook de aplicação:
+   - `src/hooks/admin/useCollectionTierAssignmentDialog.ts`
+   - query e mutation com invalidations centralizadas.
+3. Componente desacoplado:
+   - `src/components/admin/pricing-tiers/CollectionTierAssignmentDialog.tsx`
+   - fluxo UI focado em seleção e feedback.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado no diálogo de atribuição de níveis.
+- Redução de acoplamento e eliminação de responsabilidade de infra no componente.
