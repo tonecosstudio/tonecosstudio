@@ -715,3 +715,29 @@
 ### Efeito arquitetural
 - Notificacoes admin alinhadas ao padrao UI -> hook -> service.
 - Menor acoplamento do componente e boundary de dominio mais claro.
+
+---
+
+## Rodada adicional 21 (admin users actions)
+
+### Problema atacado
+- `AdminUsers` mantinha acao de promocao e remocao de role com acesso direto de infraestrutura na page.
+
+### Melhorias aplicadas
+1. Service expandido:
+   - `src/services/admin/admin-users-service.ts`
+   - `promoteAdminByEmail()` e `removeUserRole()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useAdminUserActions.ts`
+   - mutations com invalidacao de cache centralizada.
+3. Page desacoplada:
+   - `src/pages/admin/users/AdminUsers.tsx`
+   - remoção de chamadas diretas a supabase no componente de página.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Reforço do boundary UI -> hook -> service no fluxo de gestão de permissões de usuários.
+- Menor acoplamento e melhor reaproveitamento das ações de admin users.

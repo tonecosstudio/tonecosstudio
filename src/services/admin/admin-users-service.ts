@@ -83,3 +83,25 @@ export async function fetchAdminUsersStats() {
     totalBuyers: buyerIds.size,
   };
 }
+
+export async function promoteAdminByEmail(email: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke("admin-promote", {
+    body: { email: email.trim().toLowerCase(), role: "admin" },
+  });
+
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error ?? "Falha ao promover");
+}
+
+export async function removeUserRole(input: {
+  userId: string;
+  role: "admin" | "moderator" | "user";
+}): Promise<void> {
+  const { error } = await supabase
+    .from("user_roles")
+    .delete()
+    .eq("user_id", input.userId)
+    .eq("role", input.role);
+
+  if (error) throw error;
+}

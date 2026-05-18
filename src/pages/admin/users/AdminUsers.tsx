@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { adminUsersSupabase as supabase } from "@/services/admin/admin-users-service";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -49,6 +47,7 @@ import { ValidationFeedback } from "@/components/ui/validation-feedback";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
 import { useAdminUsersData } from "@/hooks/admin/useAdminUsersData";
+import { usePromoteAdminUser, useRemoveAdminUserRole } from "@/hooks/admin/useAdminUserActions";
 
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
@@ -67,13 +66,10 @@ function fmtDate(iso: string | null) {
 
 export default function AdminUsers() {
   const { toast } = useToast();
-  const qc = useQueryClient();
 
   // Sanitized input for email field
   const [emailRaw, setEmailRaw, emailSanitized] = useSanitizedInput("", "email");
   const [emailError, setEmailError] = useState<string>("");
-
-  const [isLoading, setIsLoading] = useState(false);
 
   // Sanitized input for search field
   const [searchTermRaw, setSearchTermRaw, searchTermSanitized] = useSanitizedInput("", "search");
@@ -86,6 +82,8 @@ export default function AdminUsers() {
   const itemsPerPage = 20;
 
   const { usersQuery, allUsers, stats } = useAdminUsersData();
+  const promoteAdminMutation = usePromoteAdminUser();
+  const removeRoleMutation = useRemoveAdminUserRole();
 
   // Função para exportar usuários para CSV
   const exportToCSV = () => {
@@ -268,24 +266,16 @@ export default function AdminUsers() {
       return;
     }
 
-    setIsLoading(true);
     setEmailError("");
 
     try {
-      const { data, error } = await supabase.functions.invoke("admin-promote", {
-        body: { email: emailSanitized.trim().toLowerCase(), role: "admin" },
-      });
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.error ?? "Falha ao promover");
+      await promoteAdminMutation.mutateAsync(emailSanitized);
       toast({ title: "Sucesso", description: "Usuário promovido a administrador." });
       setEmailRaw("");
       setEmailError("");
-      qc.invalidateQueries({ queryKey: ["admin-user-roles"] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
       toast({ title: "Falha", description: msg, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -306,14 +296,8 @@ export default function AdminUsers() {
         }
       }
 
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("role", role);
-      if (error) throw error;
+      await removeRoleMutation.mutateAsync({ userId, role });
       toast({ title: "Removido", description: `Role "${role}" removida.` });
-      qc.invalidateQueries({ queryKey: ["admin-users"] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
       toast({ title: "Falha", description: msg, variant: "destructive" });
@@ -413,9 +397,9 @@ export default function AdminUsers() {
             <Button
               className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium"
               onClick={promote}
-              disabled={!emailSanitized.trim() || isLoading}
+              disabled={!emailSanitized.trim() || promoteAdminMutation.isPending}
             >
-              {isLoading ? "Promovendo…" : "Promover a Admin"}
+              {promoteAdminMutation.isPending ? "Promovendo…" : "Promover a Admin"}
             </Button>
 
             <div className="rounded-sm border border-border bg-muted/30 p-3">
