@@ -5,7 +5,7 @@
  * Requirements: 12.1-12.15
  */
 
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, type Mock } from "vitest";
 import {
   bulkApprovePayments,
   exportPaymentsToCSV,
@@ -47,6 +47,8 @@ vi.mock("./services/messageService", () => ({
 }));
 
 describe("AdminPaymentService", () => {
+  const supabaseFromMock = supabase.from as unknown as Mock;
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -57,7 +59,7 @@ describe("AdminPaymentService", () => {
       const adminId = "admin-1";
 
       // Mock payment status checks
-      (supabase.from as any)
+      supabaseFromMock
         .mockReturnValueOnce({
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -103,7 +105,7 @@ describe("AdminPaymentService", () => {
       const progressCallback = vi.fn();
 
       // Mock payment status checks
-      (supabase.from as any)
+      supabaseFromMock
         .mockReturnValueOnce({
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -150,7 +152,7 @@ describe("AdminPaymentService", () => {
         },
       ];
 
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockResolvedValue({ data: mockPayments, error: null }),
         }),
@@ -180,7 +182,7 @@ describe("AdminPaymentService", () => {
       const adminId = "admin-1";
 
       // Mock conversation lookup
-      (supabase.from as any)
+      supabaseFromMock
         .mockReturnValueOnce({
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -215,7 +217,7 @@ describe("AdminPaymentService", () => {
       const progressCallback = vi.fn();
 
       // Mock conversation lookup
-      (supabase.from as any).mockReturnValue({
+      supabaseFromMock.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({

@@ -68,6 +68,27 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
     throw new Error(`Failed to list pending payments: ${error.message}`);
   }
 
+  const userIds = [...new Set((data || []).map((payment) => payment.user_id).filter(Boolean))];
+  const profileByUserId = new Map<string, { full_name: string | null; email: string | null }>();
+
+  if (userIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    if (profilesError) {
+      throw new Error(`Failed to load payment profiles: ${profilesError.message}`);
+    }
+
+    for (const profile of profiles || []) {
+      profileByUserId.set(profile.id, {
+        full_name: profile.full_name,
+        email: profile.email,
+      });
+    }
+  }
+
   // Transform data to PaymentListItem format
   const paymentListItems: PaymentListItem[] = await Promise.all(
     (data || []).map(async (payment) => {
@@ -98,8 +119,8 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
       return {
         id: payment.id,
         reference_number: payment.reference_number,
-        customer_name: `Cliente ${payment.reference_number}`, // Temporário - precisa de view ou RPC
-        customer_email: "", // Temporário - precisa de view ou RPC
+        customer_name: profileByUserId.get(payment.user_id)?.full_name || "Cliente",
+        customer_email: profileByUserId.get(payment.user_id)?.email || "",
         amount: payment.amount,
         currency: payment.currency,
         payment_method_name: payment.payment_method?.name || "Método desconhecido",
