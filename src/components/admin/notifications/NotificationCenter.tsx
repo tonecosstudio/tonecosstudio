@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,22 +26,12 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-export interface AdminNotification {
-  id: string;
-  type: string;
-  priority: "low" | "medium" | "high" | "critical";
-  title: string;
-  message: string;
-  icon?: string;
-  related_id?: string;
-  related_type?: string;
-  action_url?: string;
-  is_read: boolean;
-  read_at?: string;
-  created_at: string;
-  metadata?: Record<string, unknown>;
-}
+import {
+  type AdminNotification,
+  useAdminNotifications,
+  useMarkAllNotificationsAsRead,
+  useMarkNotificationAsRead,
+} from "@/hooks/admin/useNotificationCenter";
 
 const iconMap: Record<string, LucideIcon> = {
   FileText,
@@ -70,85 +58,40 @@ export function NotificationCenter() {
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const { toast } = useToast();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  // Buscar notificações
-  const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ["admin-notifications", filter],
-    queryFn: async () => {
-      let query = supabase
-        .from("admin_notifications")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
+  const { data: notifications = [], isLoading } = useAdminNotifications(filter);
+  const markAsReadMutation = useMarkNotificationAsRead();
+  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
 
-      if (filter === "unread") {
-        query = query.eq("is_read", false);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as AdminNotification[];
-    },
-    refetchInterval: 30000, // Refetch a cada 30 segundos
-  });
-
-  // Contar notificações não lidas
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  // Mutation para marcar como lida
-  const markAsReadMutation = useMutation({
-    mutationFn: async (notificationId: string) => {
-      const { error } = await supabase.rpc("mark_notification_read", {
-        p_notification_id: notificationId,
-      });
+  const handleMarkAllAsRead = () => {
+    markAllAsReadMutation.mutate(undefined, {
+      onSuccess: (count) => {
+        toast({
+          title: "Notificações marcadas como lidas",
+          description: `${count} notificações foram marcadas como lidas.`,
+        });
+      },
+    });
+  };
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
-    },
-  });
-
-  // Mutation para marcar todas como lidas
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc("mark_all_notifications_read");
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
-      toast({
-        title: "Notificações marcadas como lidas",
-        description: `${count} notificações foram marcadas como lidas.`,
-      });
-    },
-  });
-
-  // Lidar com clique na notificação
   const handleNotificationClick = (notification: AdminNotification) => {
-    // Marcar como lida
     if (!notification.is_read) {
       markAsReadMutation.mutate(notification.id);
     }
 
-    // Navegar para a URL de ação
     if (notification.action_url) {
       navigate(notification.action_url);
       setIsOpen(false);
     }
   };
 
-  // Obter ícone da notificação
   const getIcon = (notification: AdminNotification) => {
     const IconComponent = notification.icon ? iconMap[notification.icon] || Bell : Bell;
     return <IconComponent className="h-4 w-4" />;
   };
 
-  // Formatar tempo relativo
   const formatTime = (date: string) => {
     return formatDistanceToNow(new Date(date), {
       addSuffix: true,
@@ -164,7 +107,7 @@ export function NotificationCenter() {
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center p-0 text-xs"
             >
               {unreadCount > 99 ? "99+" : unreadCount}
             </Badge>
@@ -172,17 +115,17 @@ export function NotificationCenter() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between border-b p-4">
           <h3 className="font-semibold">Notificações</h3>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => markAllAsReadMutation.mutate()}
+                onClick={handleMarkAllAsRead}
                 disabled={markAllAsReadMutation.isPending}
               >
-                <CheckCheck className="h-4 w-4 mr-1" />
+                <CheckCheck className="mr-1 h-4 w-4" />
                 Marcar todas como lidas
               </Button>
             )}
@@ -205,12 +148,12 @@ export function NotificationCenter() {
           <TabsContent value={filter} className="m-0">
             <ScrollArea className="h-[400px]">
               {isLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <div className="flex h-32 items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-                  <Bell className="h-12 w-12 mb-2 opacity-50" />
+                <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
+                  <Bell className="mb-2 h-12 w-12 opacity-50" />
                   <p className="text-sm">Nenhuma notificação</p>
                 </div>
               ) : (
@@ -219,35 +162,30 @@ export function NotificationCenter() {
                     <div
                       key={notification.id}
                       className={cn(
-                        "p-4 cursor-pointer transition-colors hover:bg-muted/50",
+                        "cursor-pointer p-4 transition-colors hover:bg-muted/50",
                         !notification.is_read && "bg-muted/30"
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex items-start gap-3">
-                        {/* Ícone */}
                         <div
                           className={cn(
-                            "h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0",
+                            "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full",
                             priorityColors[notification.priority]
                           )}
                         >
                           {getIcon(notification)}
                         </div>
-
-                        {/* Conteúdo */}
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-medium text-sm">{notification.title}</p>
+                            <p className="text-sm font-medium">{notification.title}</p>
                             {!notification.is_read && (
-                              <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1" />
+                              <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {notification.message}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-xs text-muted-foreground">
+                          <p className="text-muted-foreground mt-1 text-sm">{notification.message}</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="text-muted-foreground text-xs">
                               {formatTime(notification.created_at)}
                             </span>
                             {notification.priority !== "medium" && (
@@ -264,8 +202,6 @@ export function NotificationCenter() {
                             )}
                           </div>
                         </div>
-
-                        {/* Ação de marcar como lida */}
                         {!notification.is_read && (
                           <Button
                             variant="ghost"
@@ -289,7 +225,7 @@ export function NotificationCenter() {
         </Tabs>
 
         {notifications.length > 0 && (
-          <div className="p-2 border-t">
+          <div className="border-t p-2">
             <Button
               variant="ghost"
               className="w-full"

@@ -689,3 +689,29 @@
 ### Efeito arquitetural
 - Boundary UI -> aplicacao -> infraestrutura restaurado no fluxo de aprovacao/rejeicao de escolha.
 - Reducao de acoplamento e maior testabilidade por isolamento de query logic.
+
+---
+
+## Rodada adicional 20 (notification center)
+
+### Problema atacado
+- `NotificationCenter` misturava UI com consultas e RPCs de notificacoes.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/notification-center-service.ts`
+   - `fetchAdminNotifications()`, `markNotificationAsRead()`, `markAllNotificationsAsRead()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useNotificationCenter.ts`
+   - query e mutations com invalidacao centralizada.
+3. Componente desacoplado:
+   - `src/components/admin/notifications/NotificationCenter.tsx`
+   - fluxo de dados apenas via hook, sem acesso direto a infra.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Notificacoes admin alinhadas ao padrao UI -> hook -> service.
+- Menor acoplamento do componente e boundary de dominio mais claro.
