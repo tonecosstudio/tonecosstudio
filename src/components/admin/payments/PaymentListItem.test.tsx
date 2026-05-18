@@ -10,6 +10,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { PaymentListItem, PaymentListItemCard } from "./PaymentListItem";
 import type { PaymentListItem as PaymentListItemType } from "@/types/manual-payment";
 
@@ -92,7 +93,7 @@ describe("PaymentListItem", () => {
       expect(screen.getByText("PIX")).toBeInTheDocument();
 
       // Check status
-      expect(screen.getByText("Em Revisão")).toBeInTheDocument();
+      expect(screen.getByText("Em Revisao")).toBeInTheDocument();
 
       // Check badges
       expect(screen.getByText("2")).toBeInTheDocument();
@@ -130,6 +131,8 @@ describe("PaymentListItem", () => {
     });
 
     it("should call onExportPayment when export menu item is clicked", async () => {
+      const user = userEvent.setup();
+
       render(
         <PaymentListItem
           payment={mockPayment}
@@ -138,21 +141,10 @@ describe("PaymentListItem", () => {
         />
       );
 
-      // Find and click the menu button
-      const menuButtons = screen.getAllByRole("button");
-      const menuButton = menuButtons.find((button) =>
-        button.querySelector('svg[class*="ellipsis-vertical"]')
-      );
+      await user.click(screen.getByLabelText("Abrir acoes do pagamento"));
+      await user.click(await screen.findByText("Exportar"));
 
-      expect(menuButton).toBeDefined();
-      fireEvent.click(menuButton!);
-
-      // Wait for menu to open and find export item
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // The menu might not be in the DOM yet, so we'll skip this test for now
-      // since it's testing UI interaction rather than component logic
-      console.log("Menu interaction test skipped - requires user interaction simulation");
+      expect(mockOnExportPayment).toHaveBeenCalledWith("payment-123");
     });
 
     it("should display correct status colors for pending status", () => {
@@ -266,7 +258,7 @@ describe("PaymentListItem", () => {
 
       const messageBadge = screen.getByText("1");
       expect(messageBadge).toBeInTheDocument();
-      expect(messageBadge).toHaveAttribute("title", "1 mensagem não lida");
+      expect(messageBadge).toHaveAttribute("title", "1 mensagem nao lida");
     });
   });
 
@@ -288,7 +280,7 @@ describe("PaymentListItem", () => {
       expect(screen.getByText("PIX")).toBeInTheDocument();
 
       // Check status
-      expect(screen.getByText("Em Revisão")).toBeInTheDocument();
+      expect(screen.getByText("Em Revisao")).toBeInTheDocument();
 
       // Check badges
       expect(screen.getByText("2")).toBeInTheDocument();

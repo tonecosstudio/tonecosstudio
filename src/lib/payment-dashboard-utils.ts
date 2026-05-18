@@ -10,22 +10,26 @@ export interface PaymentStatusUiConfig {
   label: string;
   color: string;
   bgColor: string;
-  variant: "outline" | "secondary" | "destructive";
+  borderColor: string;
+  variant: "default" | "outline" | "secondary" | "destructive";
 }
 
-const STATUS_ORDER: Record<string, number> = {
+const STATUS_ORDER: Record<PaymentStatus, number> = {
   pending: 0,
   under_review: 1,
   requires_info: 2,
+  approved: 3,
+  rejected: 4,
 };
 
-const STATUS_CONFIG: Record<string, PaymentStatusUiConfig> = {
+const STATUS_CONFIG: Record<PaymentStatus, PaymentStatusUiConfig> = {
   pending: {
     status: "pending",
     variant: "outline",
     label: "Pendente",
     color: "text-yellow-600",
     bgColor: "bg-yellow-50",
+    borderColor: "border-yellow-200",
   },
   under_review: {
     status: "under_review",
@@ -33,6 +37,7 @@ const STATUS_CONFIG: Record<string, PaymentStatusUiConfig> = {
     label: "Em Revisao",
     color: "text-blue-600",
     bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
   },
   requires_info: {
     status: "requires_info",
@@ -40,20 +45,30 @@ const STATUS_CONFIG: Record<string, PaymentStatusUiConfig> = {
     label: "Precisa de Info",
     color: "text-orange-600",
     bgColor: "bg-orange-50",
+    borderColor: "border-orange-200",
+  },
+  approved: {
+    status: "approved",
+    variant: "default",
+    label: "Aprovado",
+    color: "text-green-600",
+    bgColor: "bg-green-50",
+    borderColor: "border-green-200",
+  },
+  rejected: {
+    status: "rejected",
+    variant: "destructive",
+    label: "Rejeitado",
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
   },
 };
 
 export const PAYMENT_STATUS_OPTIONS: PaymentStatus[] = ["pending", "under_review", "requires_info"];
 
 export function getPaymentStatusConfig(status: PaymentStatus): PaymentStatusUiConfig {
-  return (
-    STATUS_CONFIG[status] || {
-      variant: "outline",
-      label: status,
-      color: "text-gray-600",
-      bgColor: "bg-gray-50",
-    }
-  );
+  return STATUS_CONFIG[status];
 }
 
 export function sortPaymentListItems(
@@ -103,6 +118,10 @@ export function formatPaymentCurrency(amount: number, currency: string): string 
 
 export function formatPaymentDate(dateString: string): string {
   return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
+}
+
+export function formatPaymentDateOnly(dateString: string): string {
+  return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
 }
 
 export function exportPaymentListItemToCsv(payment: PaymentListItem): void {
