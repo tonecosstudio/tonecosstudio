@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
   fetchAggregatedCounts,
+  type DateRange,
   fetchOrderCounts,
   fetchPreviousPeriodCounts,
   fetchQuotesPerDay,
@@ -9,11 +10,6 @@ import {
   fetchSubscriptionMetrics,
   getPreviousPeriod,
 } from '@/services/admin/admin-dashboard-stats-service';
-
-export interface DateRange {
-  from: Date;
-  to: Date;
-}
 
 export interface DashboardStats {
   models: number;
