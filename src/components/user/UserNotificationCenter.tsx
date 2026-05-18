@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,11 +27,12 @@ import {
   Megaphone,
   X,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserNotification } from "@/hooks/useUserNotifications";
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   Package,
   DollarSign,
   Truck,
@@ -198,7 +198,10 @@ export function UserNotificationCenter() {
           </div>
         </div>
 
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+        <Tabs
+          value={filter}
+          onValueChange={(v) => setFilter(v === "unread" ? "unread" : "all")}
+        >
           <TabsList className="w-full rounded-none border-b">
             <TabsTrigger value="all" className="flex-1">
               Todas
