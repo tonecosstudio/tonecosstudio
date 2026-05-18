@@ -376,3 +376,29 @@
 ### Efeito arquitetural
 - Fluxo de precificacao admin aderente ao padrao UI -> hook -> service.
 - Reducao de acoplamento com camada de dados no componente.
+
+---
+
+## Rodada adicional 13 (contacts list)
+
+### Problema atacado
+- `ContactsList` tinha carregamento e enriquecimento de contatos com acesso direto ao Supabase no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/contacts-service.ts`
+   - `fetchContacts()` com enriquecimento de flags (pedidos, assinatura, orcamentos).
+2. Hook de aplicacao:
+   - `src/hooks/admin/useContacts.ts`
+   - encapsula estado de carregamento e recarga.
+3. Componente desacoplado:
+   - `src/components/admin/customers/ContactsList.tsx`
+   - filtros e UI locais, dados via hook.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Lista de contatos alinhada ao padrao UI -> hook -> service.
+- Menor acoplamento de UI com infraestrutura e melhor reutilizacao do carregamento.
