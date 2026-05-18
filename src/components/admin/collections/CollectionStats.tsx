@@ -9,133 +9,17 @@
  * Requirements: 14.9
  */
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Package, DollarSign, Calendar } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useCollectionStats } from '@/hooks/admin/useCollectionStats';
 
 interface CollectionStatsProps {
   collectionId: string;
   collectionName?: string;
 }
 
-interface StatsData {
-  totalPiecesSold: number;
-  currentMonthSelections: number;
-  totalRevenue: number;
-  subscriptionDeliveries: number;
-  standalonePurchases: number;
-}
-
-interface CycleRef {
-  month: number;
-  year: number;
-}
-
-interface DeliveryWithCycle {
-  cycles: CycleRef | null;
-}
-
-interface PurchaseWithCycle {
-  cycles: CycleRef | null;
-}
-
-interface PurchaseRow {
-  total_amount: number | null;
-}
-
 export function CollectionStats({ collectionId, collectionName }: CollectionStatsProps) {
-  // Fetch collection statistics
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['collection-stats', collectionId],
-    queryFn: async (): Promise<StatsData> => {
-      // Get current month and year
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1;
-      const currentYear = now.getFullYear();
-
-      // Query all subscription deliveries for this collection
-      const { data: allDeliveries, error: allDeliveriesError } = await supabase
-        .from('subscription_deliveries')
-        .select('id, status')
-        .eq('collection_id', collectionId)
-        .in('status', ['confirmed', 'in_production', 'shipped', 'delivered']);
-
-      if (allDeliveriesError) throw allDeliveriesError;
-
-      // Query current month subscription deliveries
-      const { data: currentMonthDeliveries, error: currentMonthError } = await supabase
-        .from('subscription_deliveries')
-        .select('id, cycle_id, cycles!inner(month, year)')
-        .eq('collection_id', collectionId)
-        .in('status', ['confirmed', 'in_production', 'shipped', 'delivered']);
-
-      if (currentMonthError) throw currentMonthError;
-
-      // Filter current month deliveries
-      const currentMonthCount = (currentMonthDeliveries as DeliveryWithCycle[] | null)?.filter((d) => {
-        const cycle = d.cycles;
-        return cycle && cycle.month === currentMonth && cycle.year === currentYear;
-      }).length || 0;
-
-      // Query all standalone purchases for this collection (excluding cancelled)
-      const { data: allPurchases, error: allPurchasesError } = await supabase
-        .from('standalone_purchases')
-        .select('id, status, total_amount')
-        .eq('collection_id', collectionId)
-        .neq('status', 'cancelled');
-
-      if (allPurchasesError) throw allPurchasesError;
-
-      // Query current month standalone purchases
-      const { data: currentMonthPurchases, error: currentMonthPurchasesError } = await supabase
-        .from('standalone_purchases')
-        .select('id, cycle_id, cycles!inner(month, year)')
-        .eq('collection_id', collectionId)
-        .neq('status', 'cancelled');
-
-      if (currentMonthPurchasesError) throw currentMonthPurchasesError;
-
-      // Filter current month purchases
-      const currentMonthPurchasesCount = (currentMonthPurchases as PurchaseWithCycle[] | null)?.filter((p) => {
-        const cycle = p.cycles;
-        return cycle && cycle.month === currentMonth && cycle.year === currentYear;
-      }).length || 0;
-
-      // Get collection price for revenue calculation
-      const { data: collection, error: collectionError } = await supabase
-        .from('collections')
-        .select('price_full')
-        .eq('id', collectionId)
-        .single();
-
-      if (collectionError) throw collectionError;
-
-      const collectionPrice = collection?.price_full || 0;
-
-      // Calculate statistics
-      const subscriptionDeliveriesCount = allDeliveries?.length || 0;
-      const standalonePurchasesCount = allPurchases?.length || 0;
-      const totalPiecesSold = subscriptionDeliveriesCount + standalonePurchasesCount;
-      const currentMonthSelections = currentMonthCount + currentMonthPurchasesCount;
-
-      // Calculate revenue
-      // For subscription deliveries, we use the collection price
-      // For standalone purchases, we use the actual total_amount from the purchase
-      const subscriptionRevenue = subscriptionDeliveriesCount * collectionPrice;
-      const standaloneRevenue = (allPurchases as PurchaseRow[] | null)?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
-      const totalRevenue = subscriptionRevenue + standaloneRevenue;
-
-      return {
-        totalPiecesSold,
-        currentMonthSelections,
-        totalRevenue,
-        subscriptionDeliveries: subscriptionDeliveriesCount,
-        standalonePurchases: standalonePurchasesCount,
-      };
-    },
-    enabled: !!collectionId,
-  });
+  const { data: stats, isLoading } = useCollectionStats(collectionId);
 
   if (isLoading) {
     return (

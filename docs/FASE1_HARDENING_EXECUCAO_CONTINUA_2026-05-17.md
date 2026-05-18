@@ -129,3 +129,33 @@
 - Boundary UI -> hook -> service aplicado em mais um fluxo admin.
 - Menor acoplamento de componente com camada de dados.
 - Maior consistencia estrutural com o padrao adotado nas rodadas anteriores.
+
+---
+
+## Rodada adicional 4 (collection stats)
+
+### Problema atacado
+- `CollectionStats` fazia consultas Supabase diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/collection-stats-service.ts`
+   - `fetchCollectionStats()` com consolidacao da regra de calculo.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useCollectionStats.ts`
+3. Componente desacoplado:
+   - `src/components/admin/collections/CollectionStats.tsx`
+   - consumo apenas do hook.
+4. Testes atualizados por boundary:
+   - `src/components/admin/collections/CollectionStats.test.tsx`
+   - mock de hook em vez de mock de Supabase.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- teste direcionado `CollectionStats.test.tsx`: 3/3 OK
+- build: OK
+
+### Efeito arquitetural
+- Reducao de mistura UI/infraestrutura.
+- Regra de negocio de metricas centralizada em service.
+- Testes menos fragéis e mais alinhados ao contrato de componente.
