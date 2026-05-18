@@ -310,7 +310,7 @@ describe("PaymentService", () => {
       );
     });
 
-    it("should send message to conversation on rejection", async () => {
+    it("should leave rejection conversation messaging to edge functions", async () => {
       const { supabase } = await import("@/integrations/supabase/client");
 
       // Mock all database calls for getPaymentById and rejectPayment
@@ -378,32 +378,13 @@ describe("PaymentService", () => {
             insert: vi.fn(() => ({ data: null, error: null })),
           } as any;
         }
-        if (table === "support_messages") {
-          return {
-            insert: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-message-id",
-                      conversation_id: "test-conversation-id",
-                      message:
-                        "Seu pagamento foi rejeitado. Motivo: Invalid proof\n\nVocê pode enviar um novo comprovante se desejar.",
-                    },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
         return {} as any;
       });
 
       await rejectPayment("test-payment-id", "admin-id", "Invalid proof");
 
-      // Verify message was sent (check that support_messages insert was called)
-      expect(supabase.from).toHaveBeenCalledWith("support_messages");
+      // Conversation messages are emitted by Edge Functions, not this service.
+      expect(supabase.from).not.toHaveBeenCalledWith("support_messages");
     });
   });
 
@@ -591,7 +572,7 @@ describe("PaymentService", () => {
       );
     });
 
-    it("should send message to conversation when requesting info", async () => {
+    it("should leave info request conversation messaging to edge functions", async () => {
       const { supabase } = await import("@/integrations/supabase/client");
 
       // Mock all database calls
@@ -665,32 +646,13 @@ describe("PaymentService", () => {
             insert: vi.fn(() => ({ data: null, error: null })),
           } as any;
         }
-        if (table === "support_messages") {
-          return {
-            insert: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-message-id",
-                      conversation_id: "test-conversation-id",
-                      message:
-                        "Precisamos de mais informações sobre seu pagamento:\n\nPlease provide clearer image",
-                    },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
         return {} as any;
       });
 
       await requestPaymentInfo("test-payment-id", "admin-id", "Please provide clearer image");
 
-      // Verify message was sent (check that support_messages insert was called)
-      expect(supabase.from).toHaveBeenCalledWith("support_messages");
+      // Conversation messages are emitted by Edge Functions, not this service.
+      expect(supabase.from).not.toHaveBeenCalledWith("support_messages");
     });
   });
 
@@ -870,7 +832,7 @@ describe("PaymentService", () => {
       );
     });
 
-    it("should send message to conversation on approval", async () => {
+    it("should leave approval conversation messaging to edge functions", async () => {
       const { supabase } = await import("@/integrations/supabase/client");
 
       // Mock all database calls
@@ -944,31 +906,13 @@ describe("PaymentService", () => {
             insert: vi.fn(() => ({ data: null, error: null })),
           } as any;
         }
-        if (table === "support_messages") {
-          return {
-            insert: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-message-id",
-                      conversation_id: "test-conversation-id",
-                      message: "Seu pagamento foi aprovado! O pedido será processado em breve.",
-                    },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
         return {} as any;
       });
 
       await approvePayment("test-payment-id", "admin-id");
 
-      // Verify message was sent (check that support_messages insert was called)
-      expect(supabase.from).toHaveBeenCalledWith("support_messages");
+      // Conversation messages are emitted by Edge Functions, not this service.
+      expect(supabase.from).not.toHaveBeenCalledWith("support_messages");
     });
 
     it("should throw error if payment not found", async () => {

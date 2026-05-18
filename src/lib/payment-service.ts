@@ -17,6 +17,7 @@ import type {
   PaymentDetails,
 } from "@/types/manual-payment";
 import { getNotificationService } from "./notification-service";
+import { log } from "@/lib/logger";
 
 /**
  * Helper para tentar usar manual_payments, com fallback para quote_payments
@@ -27,16 +28,20 @@ async function tryWithFallback<T>(
 ): Promise<T> {
   try {
     return await manualPaymentsQuery();
-  } catch (error: any) {
-    // Se a tabela manual_payments não existir, tenta com quote_payments
-    if (error.code === "PGRST205" || error.message?.includes("Could not find the table")) {
-      console.warn("Tabela manual_payments não encontrada. Usando fallback para quote_payments.");
+  } catch (error: unknown) {
+    const fallbackError = error as { code?: string; message?: string };
+
+    if (
+      fallbackError.code === "PGRST205" ||
+      fallbackError.message?.includes("Could not find the table")
+    ) {
+      log.warn("manual_payments table unavailable; using quote_payments fallback", { error });
       return await quotePaymentsQuery();
     }
+
     throw error;
   }
 }
-
 /**
  * Mapeia status de quote_payments para manual_payments
  */
@@ -51,19 +56,6 @@ function mapQuotePaymentStatus(quoteStatus: string): PaymentStatus {
   return statusMap[quoteStatus] || "pending";
 }
 
-/**
- * Mapeia status de manual_payments para quote_payments
- */
-function mapToQuotePaymentStatus(manualStatus: PaymentStatus): string {
-  const statusMap: Record<PaymentStatus, string> = {
-    pending: "pending",
-    under_review: "processing",
-    requires_info: "pending", // Não tem equivalente direto
-    approved: "completed",
-    rejected: "failed",
-  };
-  return statusMap[manualStatus] || "pending";
-}
 
 /**
  * Valid status transitions for payment workflow
@@ -161,7 +153,7 @@ export async function createPayment(input: ManualPaymentInput): Promise<ManualPa
     await notificationService.sendPaymentCreated(payment.id);
   } catch (error) {
     // Don't fail payment creation if notification fails
-    console.error("Failed to send payment creation notification:", error);
+    log.error("Failed to send payment creation notification", { error, paymentId: payment.id });
   }
 
   return payment;
@@ -223,7 +215,7 @@ export async function getPaymentById(id: string): Promise<PaymentDetails | null>
       }
 
       // Mapear para o formato de ManualPayment
-      const mappedData: any = {
+      const mappedData = {
         ...data,
         reference_number: `QUOTE-${data.id.substring(0, 8)}`,
         status: mapQuotePaymentStatus(data.status),
@@ -235,7 +227,7 @@ export async function getPaymentById(id: string): Promise<PaymentDetails | null>
         },
         files: [],
         audit_logs: [],
-      };
+      } as PaymentDetails;
 
       return mappedData;
     }
@@ -341,7 +333,7 @@ export async function updatePaymentStatus(
   }
 
   // Update payment status
-  const updateData: Record<string, any> = {
+  const updateData: Partial<ManualPayment> = {
     status: newStatus,
   };
 
@@ -406,7 +398,7 @@ export async function approvePayment(id: string, adminId: string): Promise<void>
   });
 
   if (auditError) {
-    console.error("Failed to create audit log:", auditError);
+    log.error("Failed to create payment approval audit log", { error: auditError, paymentId: id });
     // Don't throw - audit log failure shouldn't block approval
   }
 
@@ -420,7 +412,7 @@ export async function approvePayment(id: string, adminId: string): Promise<void>
     await notificationService.sendPaymentApproved(id);
   } catch (error) {
     // Don't fail payment approval if notification fails
-    console.error("Failed to send payment approval notification:", error);
+    log.error("Failed to send payment approval notification", { error, paymentId: id });
   }
 }
 
@@ -471,7 +463,7 @@ export async function rejectPayment(id: string, adminId: string, reason: string)
   });
 
   if (auditError) {
-    console.error("Failed to create audit log:", auditError);
+    log.error("Failed to create payment rejection audit log", { error: auditError, paymentId: id });
     // Don't throw - audit log failure shouldn't block rejection
   }
 
@@ -483,7 +475,7 @@ export async function rejectPayment(id: string, adminId: string, reason: string)
     await notificationService.sendPaymentRejected(id, reason);
   } catch (error) {
     // Don't fail payment rejection if notification fails
-    console.error("Failed to send payment rejection notification:", error);
+    log.error("Failed to send payment rejection notification", { error, paymentId: id });
   }
 }
 
@@ -528,7 +520,7 @@ export async function requestPaymentInfo(
   });
 
   if (auditError) {
-    console.error("Failed to create audit log:", auditError);
+    log.error("Failed to create payment info request audit log", { error: auditError, paymentId: id });
     // Don't throw - audit log failure shouldn't block request
   }
 
@@ -540,6 +532,6 @@ export async function requestPaymentInfo(
     await notificationService.sendInfoRequested(id, message);
   } catch (error) {
     // Don't fail info request if notification fails
-    console.error("Failed to send info requested notification:", error);
+    log.error("Failed to send payment info request notification", { error, paymentId: id });
   }
 }
