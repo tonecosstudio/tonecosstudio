@@ -1,15 +1,25 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Bell, Check, Trash2, X } from "lucide-react";
+import { Bell, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+
+interface NotificationItem {
+  id: string;
+  user_id: string;
+  type: string | null;
+  title: string;
+  message: string;
+  link: string | null;
+  is_read: boolean | null;
+  created_at: string;
+}
 
 export function NotificationCenter() {
   const { user } = useAuth();
@@ -20,11 +30,13 @@ export function NotificationCenter() {
   const notificationsQuery = useQuery({
     queryKey: ["notifications", user?.id],
     enabled: Boolean(user?.id),
-    queryFn: async () => {
+    queryFn: async (): Promise<NotificationItem[]> => {
+      if (!user?.id) return [];
+
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -69,14 +81,14 @@ export function NotificationCenter() {
   });
 
   const notifications = notificationsQuery.data || [];
-  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const getNotificationIcon = (type: string) => {
+  const getNotificationIcon = () => {
     // Você pode adicionar ícones específicos por tipo
     return "🔔";
   };
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: NotificationItem) => {
     if (!notification.is_read) {
       markAsReadMutation.mutate(notification.id);
     }
@@ -126,7 +138,7 @@ export function NotificationCenter() {
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification: any) => (
+              {notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-4 hover:bg-muted/50 transition-colors ${
