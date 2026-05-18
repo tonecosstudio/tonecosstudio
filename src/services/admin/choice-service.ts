@@ -49,6 +49,71 @@ export interface ChoiceFilters {
   searchQuery?: string;
 }
 
+export interface ChoiceCollectionFilterOption {
+  id: string;
+  name: string;
+}
+
+interface RawCharacterChoiceRow {
+  id: string;
+  order_id: string;
+  order_type: "subscription_delivery" | "standalone_purchase";
+  user_id: string;
+  customer_name: string | null;
+  customer_email: string | null;
+  collection_id: string;
+  collection_name: string | null;
+  character_id: string | null;
+  character_name: string | null;
+  character_image_url: string | null;
+  status: ChoiceStatus;
+  submitted_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  approved_by_name: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  deadline: string;
+  reminders_sent: number | null;
+  last_reminder_at: string | null;
+  previous_choice_id: string | null;
+  change_reason: string | null;
+  change_count: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function mapCharacterChoice(item: RawCharacterChoiceRow): CharacterChoice {
+  return {
+    id: item.id,
+    orderId: item.order_id,
+    orderType: item.order_type,
+    userId: item.user_id,
+    customerName: item.customer_name || "Unknown",
+    customerEmail: item.customer_email || "",
+    collectionId: item.collection_id,
+    collectionName: item.collection_name || "Unknown Collection",
+    characterId: item.character_id,
+    characterName: item.character_name,
+    characterImageUrl: item.character_image_url,
+    status: item.status,
+    submittedAt: item.submitted_at,
+    approvedAt: item.approved_at,
+    approvedBy: item.approved_by,
+    approvedByName: item.approved_by_name,
+    rejectedAt: item.rejected_at,
+    rejectionReason: item.rejection_reason,
+    deadline: item.deadline,
+    remindersSent: item.reminders_sent || 0,
+    lastReminderAt: item.last_reminder_at,
+    previousChoiceId: item.previous_choice_id,
+    changeReason: item.change_reason,
+    changeCount: item.change_count || 0,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+  };
+}
+
 // ============================================================================
 // Main Functions
 // ============================================================================
@@ -93,34 +158,7 @@ export async function fetchPendingChoices(
   }
 
   // Transform data using denormalized fields
-  const choices: CharacterChoice[] = (data || []).map((item: any) => ({
-    id: item.id,
-    orderId: item.order_id,
-    orderType: item.order_type,
-    userId: item.user_id,
-    customerName: item.customer_name || "Unknown",
-    customerEmail: item.customer_email || "",
-    collectionId: item.collection_id,
-    collectionName: item.collection_name || "Unknown Collection",
-    characterId: item.character_id,
-    characterName: item.character_name,
-    characterImageUrl: item.character_image_url,
-    status: item.status,
-    submittedAt: item.submitted_at,
-    approvedAt: item.approved_at,
-    approvedBy: item.approved_by,
-    approvedByName: item.approved_by_name,
-    rejectedAt: item.rejected_at,
-    rejectionReason: item.rejection_reason,
-    deadline: item.deadline,
-    remindersSent: item.reminders_sent || 0,
-    lastReminderAt: item.last_reminder_at,
-    previousChoiceId: item.previous_choice_id,
-    changeReason: item.change_reason,
-    changeCount: item.change_count || 0,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-  }));
+  const choices: CharacterChoice[] = ((data || []) as RawCharacterChoiceRow[]).map(mapCharacterChoice);
 
   // Apply search filter (client-side for now)
   if (filters.searchQuery && filters.searchQuery.trim()) {
@@ -133,6 +171,20 @@ export async function fetchPendingChoices(
   }
 
   return choices;
+}
+
+export async function fetchActiveChoiceCollections(): Promise<ChoiceCollectionFilterOption[]> {
+  const { data, error } = await supabase
+    .from("collections")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) {
+    throw new Error(`Error fetching choice collections: ${error.message}`);
+  }
+
+  return (data || []) as ChoiceCollectionFilterOption[];
 }
 
 /**
@@ -293,32 +345,5 @@ export async function getChoiceHistory(orderId: string): Promise<CharacterChoice
   }
 
   // Transform data using denormalized fields
-  return (data || []).map((item: any) => ({
-    id: item.id,
-    orderId: item.order_id,
-    orderType: item.order_type,
-    userId: item.user_id,
-    customerName: item.customer_name || "Unknown",
-    customerEmail: item.customer_email || "",
-    collectionId: item.collection_id,
-    collectionName: item.collection_name || "Unknown Collection",
-    characterId: item.character_id,
-    characterName: item.character_name,
-    characterImageUrl: item.character_image_url,
-    status: item.status,
-    submittedAt: item.submitted_at,
-    approvedAt: item.approved_at,
-    approvedBy: item.approved_by,
-    approvedByName: item.approved_by_name,
-    rejectedAt: item.rejected_at,
-    rejectionReason: item.rejection_reason,
-    deadline: item.deadline,
-    remindersSent: item.reminders_sent || 0,
-    lastReminderAt: item.last_reminder_at,
-    previousChoiceId: item.previous_choice_id,
-    changeReason: item.change_reason,
-    changeCount: item.change_count || 0,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-  }));
+  return ((data || []) as RawCharacterChoiceRow[]).map(mapCharacterChoice);
 }

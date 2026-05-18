@@ -6,10 +6,9 @@
  */
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import type { CharacterChoice } from "@/hooks/admin/useChoiceApproval";
 import { useCharacterChoicesData, type ChoiceFilters } from "@/hooks/admin/useCharacterChoicesData";
-import { supabase } from "@/integrations/supabase/client";
+import { useChoiceCollections } from "@/hooks/admin/useChoiceCollections";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,11 +34,6 @@ const STATUS_OPTIONS: Array<{
   { value: "locked", label: "Bloqueado", variant: "outline" },
 ];
 
-interface CollectionFilterOption {
-  id: string;
-  name: string;
-}
-
 type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked";
 
 export function CharacterChoicesContent() {
@@ -53,18 +47,7 @@ export function CharacterChoicesContent() {
   const { data: choices, isLoading } = useCharacterChoicesData(filters, searchQuery);
 
   // Fetch collections for filter
-  const { data: collections } = useQuery({
-    queryKey: ["collections-for-choice-filters"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select("id, name")
-        .eq("is_active", true)
-        .order("name");
-      if (error) throw error;
-      return (data || []) as CollectionFilterOption[];
-    },
-  });
+  const { data: collections } = useChoiceCollections();
 
   // Calculate active filter count
   const activeFilterCount =
