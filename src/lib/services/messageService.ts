@@ -1,8 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Message, SendMessageData, PaginationOptions } from "@/types/support";
+import { log } from "@/lib/logger";
+import type { Attachment, Message, SendMessageData, PaginationOptions } from "@/types/support";
 import type { GroupMessage, GroupAttachment, Pagination } from "@/types/groups";
 import { fileUploadService } from "./fileUploadService";
-import { sanitizeGroupMessage, sanitizeText } from "@/lib/utils/sanitize";
+import { sanitizeGroupMessage } from "@/lib/utils/sanitize";
 
 export class MessageService {
   /**
@@ -25,7 +26,7 @@ export class MessageService {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Erro ao listar mensagens:", error);
+      log.error("Failed to list support messages", { error, conversationId });
       throw new Error("Erro ao carregar mensagens");
     }
 
@@ -34,7 +35,7 @@ export class MessageService {
     const messageIds = messages.map((msg) => msg.id);
 
     // Batch fetch all attachments at once instead of per-message
-    let allAttachments: any[] = [];
+    let allAttachments: Attachment[] = [];
     if (messageIds.length > 0) {
       const { data: attachmentsData } = await supabase
         .from("support_attachments")
@@ -44,7 +45,7 @@ export class MessageService {
     }
 
     // Group attachments by message_id
-    const attachmentsByMessage = new Map<string, any[]>();
+    const attachmentsByMessage = new Map<string, Attachment[]>();
     for (const att of allAttachments) {
       const existing = attachmentsByMessage.get(att.message_id) || [];
       existing.push(att);
@@ -53,7 +54,7 @@ export class MessageService {
 
     // Batch fetch sender profiles
     const senderIds = [...new Set(messages.map((msg) => msg.sender_id))];
-    let profilesMap = new Map<string, string>();
+    const profilesMap = new Map<string, string>();
     if (senderIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
@@ -93,7 +94,11 @@ export class MessageService {
       .single();
 
     if (error) {
-      console.error("Erro ao enviar mensagem:", error);
+      log.error("Failed to send support message", {
+        error,
+        conversationId: messageData.conversation_id,
+        senderId: messageData.sender_id,
+      });
       throw new Error("Erro ao enviar mensagem");
     }
 
@@ -104,16 +109,23 @@ export class MessageService {
 
     // Se for mensagem do admin para cliente, enviar notificação por email
     if (messageData.sender_type === "admin" && !messageData.is_internal) {
-      this.sendEmailNotification(data.id, messageData.conversation_id, messageData.message).catch(
-        (err) => {
-          console.error("Erro ao enviar notificação por email:", err);
-        }
-      );
+      this.sendEmailNotification(
+        data.id,
+        messageData.conversation_id,
+        messageData.sender_id,
+        messageData.message
+      ).catch((error) => {
+        log.error("Failed to enqueue support email notification", {
+          error,
+          messageId: data.id,
+          conversationId: messageData.conversation_id,
+        });
+      });
     }
 
     return {
       ...data,
-      sender_name: this.getSenderName(data.sender_type, data.sender_id),
+      sender_name: this.getSenderName(data.sender_type),
       attachments: messageData.attachments || [],
       is_internal: data.is_internal || false,
       read_by_admin: data.read_by_admin || false,
@@ -127,6 +139,7 @@ export class MessageService {
   private async sendEmailNotification(
     messageId: string,
     conversationId: string,
+    senderId: string,
     messageContent: string
   ): Promise<void> {
     try {
@@ -136,7 +149,9 @@ export class MessageService {
         .eq("id", conversationId)
         .single();
 
-      if (!conversation) return;
+      if (!conversation || conversation.user_id === senderId) {
+        return;
+      }
 
       const { error } = await supabase.functions.invoke("send-email", {
         body: {
@@ -148,10 +163,15 @@ export class MessageService {
       });
 
       if (error) {
-        console.error("Erro ao chamar Edge Function de email:", error);
+        log.error("Failed to invoke support email Edge Function", {
+          error,
+          messageId,
+          conversationId,
+          recipientUserId: conversation.user_id,
+        });
       }
     } catch (error) {
-      console.error("Erro ao enviar notificação por email:", error);
+      log.error("Failed to send support email notification", { error, messageId, conversationId });
     }
   }
 
@@ -188,13 +208,13 @@ export class MessageService {
       .single();
 
     if (error) {
-      console.error("Erro ao editar nota interna:", error);
+      log.error("Failed to edit internal support note", { error, messageId });
       throw new Error("Erro ao editar nota interna");
     }
 
     return {
       ...data,
-      sender_name: this.getSenderName(data.sender_type, data.sender_id),
+      sender_name: this.getSenderName(data.sender_type),
       attachments: [],
       is_internal: data.is_internal || false,
       read_by_admin: data.read_by_admin || false,
@@ -213,7 +233,7 @@ export class MessageService {
       .eq("is_internal", true);
 
     if (error) {
-      console.error("Erro ao deletar nota interna:", error);
+      log.error("Failed to delete internal support note", { error, messageId });
       throw new Error("Erro ao deletar nota interna");
     }
   }
@@ -230,7 +250,7 @@ export class MessageService {
       .in("id", messageIds);
 
     if (error) {
-      console.error("Erro ao marcar mensagens como lidas:", error);
+      log.error("Failed to mark support messages as read", { error, messageIds, readerType });
       throw new Error("Erro ao marcar mensagens como lidas");
     }
   }
@@ -267,7 +287,7 @@ export class MessageService {
       .eq("id", messageId);
 
     if (error) {
-      console.error("Erro ao deletar mensagem:", error);
+      log.error("Failed to delete support message", { error, messageId });
       throw new Error("Erro ao deletar mensagem");
     }
   }
@@ -320,13 +340,13 @@ export class MessageService {
       .single();
 
     if (error) {
-      console.error("Erro ao editar mensagem:", error);
+      log.error("Failed to edit support message", { error, messageId });
       throw new Error("Erro ao editar mensagem");
     }
 
     return {
       ...data,
-      sender_name: this.getSenderName(data.sender_type, data.sender_id),
+      sender_name: this.getSenderName(data.sender_type),
       attachments: [],
       is_internal: data.is_internal || false,
       read_by_admin: data.read_by_admin || false,
@@ -357,7 +377,7 @@ export class MessageService {
     const { error } = await supabase.from("support_attachments").insert(attachmentsData);
 
     if (error) {
-      console.error("Erro ao criar anexos:", error);
+      log.error("Failed to create support message attachments", { error, messageId });
       throw new Error("Erro ao criar anexos");
     }
   }
@@ -379,7 +399,7 @@ export class MessageService {
   /**
    * Obtém nome do remetente baseado no tipo (fallback)
    */
-  private getSenderName(senderType: string, senderId: string): string {
+  private getSenderName(senderType: string): string {
     if (senderType === "admin") return "Administrador";
     if (senderType === "customer") return "Cliente";
     if (senderType === "system") return "Sistema";
@@ -443,7 +463,7 @@ export class MessageService {
       .single();
 
     if (messageError) {
-      console.error("Erro ao criar mensagem de grupo:", messageError);
+      log.error("Failed to create group broadcast message", { error: messageError, groupId, senderId });
       throw new Error("Erro ao enviar mensagem");
     }
 
@@ -478,7 +498,7 @@ export class MessageService {
       try {
         const validation = fileUploadService.validateFile(file);
         if (!validation.valid) {
-          console.error(`Arquivo inválido: ${file.name}`, validation.error);
+          log.warn("Invalid group attachment skipped", { fileName: file.name, error: validation.error });
           continue;
         }
 
@@ -494,11 +514,15 @@ export class MessageService {
           });
 
         if (uploadError) {
-          console.error(`Erro ao fazer upload do arquivo ${file.name}:`, uploadError);
+          log.error("Failed to upload group attachment", {
+            error: uploadError,
+            fileName: file.name,
+            groupId,
+          });
           continue;
         }
 
-        let thumbnailPath: string | null = null;
+        const thumbnailPath: string | null = null;
 
         const { data: attachmentData, error: attachmentError } = await supabase
           .from("chat_group_attachments")
@@ -515,13 +539,17 @@ export class MessageService {
           .single();
 
         if (attachmentError) {
-          console.error(`Erro ao registrar anexo ${file.name}:`, attachmentError);
+          log.error("Failed to register group attachment", {
+            error: attachmentError,
+            fileName: file.name,
+            messageId,
+          });
           continue;
         }
 
         attachments.push(attachmentData);
       } catch (error) {
-        console.error(`Erro ao processar arquivo ${file.name}:`, error);
+        log.error("Failed to process group attachment", { error, fileName: file.name, messageId });
       }
     }
 
@@ -546,7 +574,7 @@ export class MessageService {
       .range(offset, offset + limit);
 
     if (error) {
-      console.error("Erro ao listar mensagens do grupo:", error);
+      log.error("Failed to list group messages", { error, groupId });
       throw new Error("Erro ao carregar mensagens do grupo");
     }
 
@@ -584,7 +612,7 @@ export class MessageService {
       .eq("id", messageId);
 
     if (error) {
-      console.error("Erro ao deletar mensagem do grupo:", error);
+      log.error("Failed to delete group message", { error, messageId });
       throw new Error("Erro ao deletar mensagem");
     }
   }
@@ -613,7 +641,7 @@ export class MessageService {
       .single();
 
     if (error) {
-      console.error("Erro ao editar mensagem do grupo:", error);
+      log.error("Failed to edit group message", { error, messageId });
       throw new Error("Erro ao editar mensagem");
     }
 
