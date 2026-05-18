@@ -10,6 +10,7 @@
 
 import React from "react";
 import { Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useFormattedNotificationCount } from "@/hooks/use-notification-count";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export function NotificationBadge({
   showDetails = false,
   onClick,
 }: NotificationBadgeProps) {
+  const navigate = useNavigate();
   const {
     total,
     formattedTotal,
@@ -93,9 +95,9 @@ export function NotificationBadge({
     }
 
     if (isAdmin) {
-      window.location.href = "/admin/payments";
+      navigate("/admin/payments");
     } else {
-      window.location.href = "/my-payments";
+      navigate("/my-payments");
     }
   };
 
@@ -133,7 +135,7 @@ export function NotificationBadge({
             <>
               {pendingPayments > 0 && (
                 <DropdownMenuItem
-                  onClick={() => (window.location.href = "/admin/payments?status=pending")}
+                  onClick={() => navigate("/admin/payments?status=pending")}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos Pendentes</span>
@@ -146,7 +148,7 @@ export function NotificationBadge({
 
               {underReviewPayments > 0 && (
                 <DropdownMenuItem
-                  onClick={() => (window.location.href = "/admin/payments?status=under_review")}
+                  onClick={() => navigate("/admin/payments?status=under_review")}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos em Análise</span>
@@ -161,7 +163,7 @@ export function NotificationBadge({
             <>
               {requiresInfoPayments > 0 && (
                 <DropdownMenuItem
-                  onClick={() => (window.location.href = "/my-payments?status=requires_info")}
+                  onClick={() => navigate("/my-payments?status=requires_info")}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>Pagamentos com Informações Solicitadas</span>
@@ -175,7 +177,7 @@ export function NotificationBadge({
           )}
 
           {unreadMessages > 0 && (
-            <DropdownMenuItem onClick={() => (window.location.href = "/support")}>
+            <DropdownMenuItem onClick={() => navigate("/support")}>
               <div className="flex items-center justify-between w-full">
                 <span>Mensagens Não Lidas</span>
                 <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
@@ -209,7 +211,7 @@ export function NotificationBadge({
         hasNotifications && "text-primary"
       )}
       onClick={showDetails ? undefined : handleNavigation}
-      aria-label={`Notificações ${hasNotifications ? `(${formattedTotal} não lidas)` : ""}`}
+      aria-label={hasNotifications ? `Notificações (${formattedTotal} não lidas)` : "Notificações"}
     >
       <Bell size={iconSizes[size]} />
 

@@ -6,13 +6,25 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { NotificationBadge, SimpleNotificationBadge } from "./NotificationBadge";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+const mockNavigate = vi.fn();
+const { mockUseFormattedNotificationCount } = vi.hoisted(() => ({
+  mockUseFormattedNotificationCount: vi.fn(),
+}));
+
+vi.mock("react-router-dom", () => ({
+  useNavigate: () => mockNavigate,
+}));
+
 // Mock do hook useFormattedNotificationCount
 vi.mock("@/hooks/use-notification-count", () => ({
-  useFormattedNotificationCount: vi.fn(() => ({
+  useFormattedNotificationCount: mockUseFormattedNotificationCount,
+}));
+
+mockUseFormattedNotificationCount.mockReturnValue({
     total: 0,
     formattedTotal: "0",
     hasNotifications: false,
@@ -23,8 +35,7 @@ vi.mock("@/hooks/use-notification-count", () => ({
     isAdmin: false,
     isLoading: false,
     error: null,
-  })),
-}));
+});
 
 // Mock dos componentes UI do shadcn
 vi.mock("@/components/ui/button", () => ({
@@ -73,11 +84,9 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 describe("NotificationBadge", () => {
-  const mockUseFormattedNotificationCount =
-    require("@/hooks/use-notification-count").useFormattedNotificationCount;
-
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockReset();
 
     // Mock padrão: sem notificações
     mockUseFormattedNotificationCount.mockReturnValue({
@@ -213,19 +222,12 @@ describe("NotificationBadge", () => {
         error: null,
       });
 
-      // Mock window.location.href
-      const mockLocation = { href: "" };
-      Object.defineProperty(window, "location", {
-        value: mockLocation,
-        writable: true,
-      });
-
       render(<NotificationBadge />, { wrapper });
 
       const button = screen.getByRole("button");
       fireEvent.click(button);
 
-      expect(window.location.href).toBe("/admin/payments");
+      expect(mockNavigate).toHaveBeenCalledWith("/admin/payments");
     });
 
     it("deve navegar para /my-payments quando cliente e clicado sem onClick", () => {
@@ -242,19 +244,12 @@ describe("NotificationBadge", () => {
         error: null,
       });
 
-      // Mock window.location.href
-      const mockLocation = { href: "" };
-      Object.defineProperty(window, "location", {
-        value: mockLocation,
-        writable: true,
-      });
-
       render(<NotificationBadge />, { wrapper });
 
       const button = screen.getByRole("button");
       fireEvent.click(button);
 
-      expect(window.location.href).toBe("/my-payments");
+      expect(mockNavigate).toHaveBeenCalledWith("/my-payments");
     });
   });
 
@@ -302,9 +297,6 @@ describe("NotificationBadge", () => {
 });
 
 describe("SimpleNotificationBadge", () => {
-  const mockUseFormattedNotificationCount =
-    require("@/hooks/use-notification-count").useFormattedNotificationCount;
-
   beforeEach(() => {
     vi.clearAllMocks();
 
