@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAdminPaymentsGateway } from "@/hooks/admin/useAdminPaymentsGateway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,35 +9,13 @@ import { Save, Key, CreditCard, Loader2 } from "lucide-react";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
-
-interface PaymentKey {
-  key: string;
-  value: string;
-  description: string;
-}
+import { useAdminPaymentKeys, useUpdateAdminPaymentKey } from "@/hooks/admin/useAdminPaymentKeys";
 
 export default function AdminPaymentKeys() {
-  const supabase = useAdminPaymentsGateway();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
 
-  // Buscar todas as chaves de pagamento
-  const { data: paymentKeys = [], isLoading } = useQuery({
-    queryKey: ["payment-keys"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("system_settings")
-        .select("*")
-        .or(
-          "key.like.pix_key_%,key.like.payment_link_%"
-        )
-        .order("key");
-
-      if (error) throw error;
-      return data as PaymentKey[];
-    },
-  });
+  const { data: paymentKeys = [], isLoading } = useAdminPaymentKeys();
 
   // Initialize form data from payment keys
   const initialFormData = paymentKeys.reduce((acc, key) => {
@@ -63,19 +39,7 @@ export default function AdminPaymentKeys() {
   );
 
   // Mutation para atualizar chaves
-  const updateKeyMutation = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: string }) => {
-      const { error } = await supabase
-        .from("system_settings")
-        .update({ value, updated_at: new Date().toISOString() })
-        .eq("key", key);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payment-keys"] });
-    },
-  });
+  const updateKeyMutation = useUpdateAdminPaymentKey();
 
   // Salvar todas as chaves
   const handleSaveAll = async (e: React.FormEvent<HTMLFormElement>) => {

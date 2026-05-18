@@ -65,6 +65,32 @@
 - Menor acoplamento da page com infraestrutura.
 - Padrao estrutural consistente com as rodadas anteriores do hardening.
 
+---
+
+## Rodada adicional 10 (admin payment keys)
+
+### Problema atacado
+- `AdminPaymentKeys` fazia query e update direto em `system_settings` dentro da page, mantendo acoplamento UI + infraestrutura.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/admin-payment-keys-service.ts`
+   - `fetchAdminPaymentKeys()` e `updateAdminPaymentKey()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useAdminPaymentKeys.ts`
+   - query + mutation com invalidacao padronizada.
+3. Page desacoplada:
+   - `src/pages/admin/payments/AdminPaymentKeys.tsx`
+   - remove acesso direto ao gateway e consome apenas hooks.
+
+### Validacao desta rodada
+- `npx eslint src/pages/admin/payments/AdminPaymentKeys.tsx src/hooks/admin/useAdminPaymentKeys.ts src/services/admin/admin-payment-keys-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Mais um fluxo admin migrado para boundary `UI -> hook -> service`.
+- Reducao de responsabilidade da page e maior consistencia estrutural.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado
