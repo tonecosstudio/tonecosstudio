@@ -16,10 +16,13 @@ import { ptBR } from "date-fns/locale";
 import { conversationService } from "@/lib/services/conversationService";
 import { messageService } from "@/lib/services/messageService";
 import { fileUploadService } from "@/lib/services/fileUploadService";
-import { supabase } from "@/integrations/supabase/client";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { sanitizeURL } from "@/lib/security/input-sanitizer";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
+import {
+  useSupportAttachmentPublicUrl,
+  useSupportChatCurrentUser,
+} from "@/hooks/admin/useSupportChatSession";
 import type { Message, Conversation } from "@/types/support";
 
 interface ChatInterfaceProps {
@@ -46,29 +49,8 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
   const [isUploading, setIsUploading] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
-
-  // Get current user once
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-
-        setCurrentUser({
-          id: user.id,
-          name: profile?.full_name || user.email || "Admin",
-        });
-      }
-    };
-    getUser();
-  }, []);
+  const { data: currentUser } = useSupportChatCurrentUser();
+  const getPublicUrl = useSupportAttachmentPublicUrl();
 
   // Typing indicator
   const { typingText, startTyping, stopTyping } = useTypingIndicator({
@@ -128,16 +110,14 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       setIsUploading(selectedFiles.length > 0);
       stopTyping();
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      const currentUserId = currentUser?.id;
+      if (!currentUserId) throw new Error("Usuário não autenticado");
 
       const messageText = newMessageSanitized.trim() || (selectedFiles.length > 0 ? "(anexo)" : "");
 
       const messageData = await messageService.sendMessage({
         conversation_id: conversationId,
-        sender_id: user.id,
+        sender_id: currentUserId,
         sender_type: "admin",
         message: messageText,
         is_internal: isInternal,
@@ -156,7 +136,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
               file,
               conversationId,
               messageData.id,
-              user.id
+              currentUserId
             );
             updateOptimisticAttachment(messageData.id, tempId, {
               status: "uploaded",
@@ -173,7 +153,12 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       } else if (filesToUpload.length > 0) {
         for (const file of filesToUpload) {
           try {
-            await fileUploadService.uploadFile(file, conversationId, messageData.id, user.id);
+            await fileUploadService.uploadFile(
+              file,
+              conversationId,
+              messageData.id,
+              currentUserId
+            );
           } catch (_error) {
             toast.error(`Erro ao enviar ${file.name}`);
           }
@@ -329,6 +314,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
             key={message.id}
             message={message}
             currentUserId={currentUserId}
+            getPublicUrl={getPublicUrl}
             formatTimestamp={formatTimestamp}
             onDelete={handleDeleteMessage}
             onEdit={handleStartEdit}
@@ -459,6 +445,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
 interface MessageBubbleProps {
   message: Message;
   currentUserId: string | null;
+  getPublicUrl: (filePath: string) => string;
   formatTimestamp: (timestamp: string) => string;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, currentText: string) => void;
@@ -472,6 +459,7 @@ interface MessageBubbleProps {
 function MessageBubble({
   message,
   currentUserId,
+  getPublicUrl,
   formatTimestamp,
   onDelete,
   onEdit,
@@ -493,11 +481,6 @@ function MessageBubble({
     const now = Date.now();
     return now - messageTime <= 15 * 60 * 1000;
   }, [currentUserId, message.sender_id, message.created_at, isDeleted]);
-
-  const getPublicUrl = (filePath: string) => {
-    const { data } = supabase.storage.from("support-attachments").getPublicUrl(filePath);
-    return data.publicUrl;
-  };
 
   const isImage = (fileType: string) => fileType.startsWith("image/");
 

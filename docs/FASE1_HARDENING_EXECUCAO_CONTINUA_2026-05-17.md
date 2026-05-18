@@ -871,3 +871,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service consolidado no dashboard de créditos.
 - Menor acoplamento com infra e melhor centralização de leitura de métricas.
+
+---
+
+## Rodada adicional 27 (support chat session boundary)
+
+### Problema atacado
+- `ChatInterface` acessava infraestrutura (`supabase`) diretamente para sessão atual e URLs de anexos.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/support-chat-session-service.ts`
+   - centraliza leitura do usuário atual e geração de URL pública de anexos.
+2. Hook de aplicação:
+   - `src/hooks/admin/useSupportChatSession.ts`
+   - encapsula query de sessão e acesso à URL pública.
+3. Componente desacoplado:
+   - `src/components/admin/support/ChatInterface.tsx`
+   - remove import direto de `supabase` e passa a consumir hooks/services.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado no chat administrativo.
+- Redução de acoplamento com infraestrutura no componente de UI.
