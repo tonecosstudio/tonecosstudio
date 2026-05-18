@@ -1015,7 +1015,23 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
               size="lg"
               onClick={() => {
                 setIsEditing(false);
-                window.location.reload();
+                setBonusType(existingPlan?.bonus_type || 'pieces');
+                setFormData((prev) => ({
+                  ...prev,
+                  id: existingPlan?.id,
+                  name: existingPlan?.name || `Plano ${planType.label}`,
+                  price_per_month: existingPlan?.price || 0,
+                  base_pieces: existingPlan?.pieces_per_subscription || 0,
+                  bonus_pieces: 0,
+                  total_pieces: 0,
+                  base_credits: existingPlan?.base_credits || 0,
+                  bonus_credits: existingPlan?.bonus_credits || 0,
+                  total_credits: 0,
+                  total_price: 0,
+                  coin_unit_cost: 0,
+                  deposit_amount: existingPlan?.deposit_amount || (planType.key === 'avulso' ? 100 : 0),
+                  is_active: existingPlan?.is_active ?? false,
+                }));
               }}
               className="w-full sm:w-auto"
             >
