@@ -1,11 +1,11 @@
-import { useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { validateFileUpload, sanitizeFilename } from "@/lib/security/input-sanitizer";
+import { validateFileUpload } from "@/lib/security/input-sanitizer";
+import { useAdminImageUpload } from "@/hooks/admin/useAdminImageUpload";
 
 interface ImageUploadProps {
   label: string;
@@ -31,28 +31,21 @@ export default function ImageUpload({
   className,
 }: ImageUploadProps) {
   const { toast } = useToast();
-  const [uploading, setUploading] = useState(false);
+  const uploadMutation = useAdminImageUpload();
+  const uploading = uploadMutation.isPending;
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
-    // Use centralized validation
     const maxSize = maxSizeMB * 1024 * 1024;
     const validation = validateFileUpload(file, acceptedFormats as readonly string[], maxSize);
-
-    if (!validation.valid) {
-      return validation.error || 'Arquivo inválido';
-    }
-
+    if (!validation.valid) return validation.error || "Arquivo inválido";
     return null;
   };
 
   const uploadFile = async (file: File) => {
-    setUploading(true);
-
     try {
-      // Validar arquivo
       const validationError = validateFile(file);
       if (validationError) {
         toast({
@@ -63,32 +56,9 @@ export default function ImageUpload({
         return;
       }
 
-      // Gerar nome único para o arquivo com sanitização
-      const sanitizedName = sanitizeFilename(file.name);
-      const fileExt = sanitizedName.split(".").pop() || 'jpg';
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-      // Upload para o Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          contentType: file.type,
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Obter URL pública
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucket).getPublicUrl(fileName);
-
-      // Atualizar preview
+      const publicUrl = await uploadMutation.mutateAsync({ file, bucket, folder });
       setPreviewUrl(publicUrl);
-
-      // Notificar componente pai
       onUploadComplete(publicUrl);
-
       toast({
         title: "Upload concluído",
         description: "Imagem enviada com sucesso!",
@@ -101,45 +71,33 @@ export default function ImageUpload({
         description: message,
         variant: "destructive",
       });
-    } finally {
-      setUploading(false);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      uploadFile(file);
-    }
+    if (file) uploadFile(file);
   };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    if (e.type === "dragleave") setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      uploadFile(file);
-    }
+    if (file) uploadFile(file);
   };
 
   const handleRemove = () => {
     setPreviewUrl(null);
     onUploadComplete("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -147,13 +105,12 @@ export default function ImageUpload({
       <Label>{label}</Label>
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
 
-      {/* Preview da imagem atual */}
       {previewUrl && (
         <div className="relative inline-block">
           <img
             src={previewUrl}
             alt="Preview"
-            className="max-w-xs h-auto rounded border border-border"
+            className="h-auto max-w-xs rounded border border-border"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
@@ -162,7 +119,7 @@ export default function ImageUpload({
             type="button"
             variant="destructive"
             size="icon"
-            className="absolute top-2 right-2 h-6 w-6"
+            className="absolute right-2 top-2 h-6 w-6"
             onClick={handleRemove}
             disabled={uploading}
           >
@@ -171,14 +128,13 @@ export default function ImageUpload({
         </div>
       )}
 
-      {/* Área de upload */}
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+          "rounded-lg border-2 border-dashed p-6 text-center transition-colors",
           dragActive
             ? "border-primary bg-primary/5"
             : "border-border hover:border-primary/50 hover:bg-accent/50",
-          uploading && "opacity-50 pointer-events-none"
+          uploading && "pointer-events-none opacity-50"
         )}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -215,15 +171,15 @@ export default function ImageUpload({
                   clique para selecionar
                 </button>
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {acceptedFormats.map(f => f.split('/')[1].toUpperCase()).join(', ')} • Máximo {maxSizeMB}MB
+              <p className="mt-1 text-xs text-muted-foreground">
+                {acceptedFormats.map((f) => f.split("/")[1].toUpperCase()).join(", ")} • Máximo{" "}
+                {maxSizeMB}MB
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Botão alternativo */}
       {!previewUrl && !uploading && (
         <Button
           type="button"
@@ -231,7 +187,7 @@ export default function ImageUpload({
           onClick={() => fileInputRef.current?.click()}
           className="w-full"
         >
-          <Upload className="h-4 w-4 mr-2" />
+          <Upload className="mr-2 h-4 w-4" />
           Selecionar Imagem
         </Button>
       )}

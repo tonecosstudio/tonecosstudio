@@ -741,3 +741,29 @@
 ### Efeito arquitetural
 - Reforço do boundary UI -> hook -> service no fluxo de gestão de permissões de usuários.
 - Menor acoplamento e melhor reaproveitamento das ações de admin users.
+
+---
+
+## Rodada adicional 22 (admin image upload)
+
+### Problema atacado
+- `ImageUpload` executava upload de storage diretamente no componente UI.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/admin-image-upload-service.ts`
+   - `uploadAdminImage()` com geração de nome e URL pública.
+2. Hook de aplicação:
+   - `src/hooks/admin/useAdminImageUpload.ts`
+   - mutation isolada para upload.
+3. Componente desacoplado:
+   - `src/components/admin/shared/ImageUpload.tsx`
+   - fluxo movido para hook/service, mantendo UX e validações.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado no upload compartilhado admin.
+- Redução de acoplamento infra em componente reutilizado por múltiplos domínios.
