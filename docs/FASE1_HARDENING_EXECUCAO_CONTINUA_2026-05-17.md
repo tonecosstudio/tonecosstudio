@@ -767,3 +767,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado no upload compartilhado admin.
 - Redução de acoplamento infra em componente reutilizado por múltiplos domínios.
+
+---
+
+## Rodada adicional 23 (support dashboard metrics)
+
+### Problema atacado
+- `DashboardMetrics` continha acesso direto a infra (query + realtime channel) no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/support-dashboard-metrics-service.ts`
+   - leitura de conversas e assinatura realtime isoladas.
+2. Hook de aplicação:
+   - `src/hooks/admin/useSupportDashboardMetrics.ts`
+   - cálculo de métricas + ciclo de atualização.
+3. Componente desacoplado:
+   - `src/components/admin/analytics/DashboardMetrics.tsx`
+   - agora focado apenas em renderização.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado no painel de métricas de suporte.
+- Menor acoplamento com Supabase no componente e melhor testabilidade da lógica de cálculo.
