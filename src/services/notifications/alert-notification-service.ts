@@ -7,6 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { logInfo, logError, logWarn } from "@/lib/logger";
+import { navigateInApp } from "@/lib/navigation";
 
 // ============================================================================
 // Types
@@ -24,15 +25,6 @@ export interface AlertNotification {
   icon?: string;
   tag?: string;
   data?: unknown;
-}
-
-function navigateTo(path: string): void {
-  if (window.location.pathname === path) {
-    return;
-  }
-
-  window.history.pushState({}, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
 // ============================================================================
@@ -98,7 +90,7 @@ export function showBrowserNotification(notification: AlertNotification): void {
     
     // Navigate to production dashboard if not already there
     if (!window.location.pathname.includes("/admin/production")) {
-      navigateTo("/admin/production");
+      navigateInApp("/admin/production");
     }
   };
 }
