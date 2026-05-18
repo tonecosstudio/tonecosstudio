@@ -17,7 +17,7 @@ import { Package, Clock, CheckCircle2, AlertCircle, XCircle, Edit } from "lucide
 import { formatDistanceToNow, differenceInDays, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import type { ChoiceStatus } from "@/services/customer/choice-service";
+import type { ChoiceStatusEntity } from "@/hooks/customer/useChoiceActions";
 import { CharacterSelectionModal } from "./CharacterSelectionModal";
 import { ChoiceChangeModal } from "./ChoiceChangeModal";
 
@@ -29,7 +29,7 @@ export interface CharacterChoiceCardProps {
   orderId: string;
   orderType: "subscription_delivery" | "standalone_purchase";
   collectionId: string;
-  choiceStatus: ChoiceStatus;
+  choiceStatus: ChoiceStatusEntity;
   choiceDeadline: string | null;
   choiceId?: string | null;
   characterId?: string | null;
@@ -40,7 +40,7 @@ export interface CharacterChoiceCardProps {
 }
 
 // Status labels in Portuguese
-const STATUS_LABELS: Record<ChoiceStatus, string> = {
+const STATUS_LABELS: Record<ChoiceStatusEntity, string> = {
   pending: "Aguardando Escolha",
   submitted: "Aguardando Aprovação",
   approved: "Aprovado",
@@ -99,7 +99,7 @@ const DeadlineCountdown: React.FC<DeadlineCountdownProps> = ({ deadline }) => {
 interface CharacterDisplayProps {
   name: string;
   imageUrl: string | null;
-  status: ChoiceStatus;
+  status: ChoiceStatusEntity;
 }
 
 const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ name, imageUrl, status }) => {

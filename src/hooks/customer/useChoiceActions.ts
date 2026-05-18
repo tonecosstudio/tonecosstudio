@@ -4,9 +4,10 @@ import {
   getAvailableCharacters,
   submitCharacterChoice,
 } from "@/services/customer/choice-service";
-import type { Character } from "@/services/customer/choice-service";
+import type { Character, ChoiceStatus } from "@/services/customer/choice-service";
 
 export type CharacterEntity = Character;
+export type ChoiceStatusEntity = ChoiceStatus;
 
 export function useAvailableCharacters(collectionId: string, enabled: boolean) {
   return useQuery({
