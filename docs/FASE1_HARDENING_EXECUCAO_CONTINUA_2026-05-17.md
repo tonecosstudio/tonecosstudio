@@ -1054,3 +1054,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado no limite global de produção.
 - Menor acoplamento entre camada de página e infraestrutura.
+
+---
+
+## Rodada adicional 34 (admin deadlines settings)
+
+### Problema atacado
+- `AdminDeadlinesSettings` continha query/mutation de `system_settings` diretamente na página.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/production-deadlines-settings-service.ts`
+   - centraliza leitura e atualização das configurações SSOT de prazos/capacidade.
+2. Hook de aplicação:
+   - `src/hooks/admin/useProductionDeadlinesSettings.ts`
+   - encapsula query e mutation com invalidações de cache.
+3. Página desacoplada:
+   - `src/pages/admin/production/AdminDeadlinesSettings.tsx`
+   - remove acesso direto de dados e consome hooks do domínio.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado aos prazos SSOT de produção.
+- Padronização estrutural da camada admin/production.
