@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CharacterChoiceStatus Component
  *
@@ -10,14 +9,13 @@
  */
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Package, CheckCircle, Clock, AlertCircle, Edit } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getMyChoice } from "@/services/customer/choice-service";
+import { useCharacterChoice, type CharacterChoiceEntity } from "@/hooks/customer/useCharacterChoice";
 import { CharacterSelectionModal } from "./CharacterSelectionModal";
 import { ChoiceChangeModal } from "./ChoiceChangeModal";
 import { formatDistanceToNow } from "date-fns";
@@ -34,21 +32,13 @@ export function CharacterChoiceStatus({
   orderId,
   collectionId,
   collectionName,
-  orderType,
+  orderType: _orderType,
 }: CharacterChoiceStatusProps) {
   const [showSelectionModal, setShowSelectionModal] = useState(false);
   const [showChangeModal, setShowChangeModal] = useState(false);
 
   // Fetch character choice for this order
-  const {
-    data: choice,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["character-choice", orderId],
-    queryFn: () => getMyChoice(orderId),
-    retry: 1,
-  });
+  const { data: choice, isLoading, refetch } = useCharacterChoice(orderId);
 
   const handleCharacterSelected = () => {
     setShowSelectionModal(false);
@@ -371,7 +361,7 @@ export function CharacterChoiceStatus({
           orderId={orderId}
           collectionId={collectionId}
           collectionName={collectionName}
-          currentChoice={choice}
+          currentChoice={choice as CharacterChoiceEntity}
           onChoiceChanged={handleChoiceChanged}
         />
       )}
