@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAdminProductionGateway } from "@/hooks/admin/useAdminProductionGateway";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,16 +24,14 @@ import {
 } from "@/hooks/admin/useAdminSystemSettings";
 
 export default function AdminSystemSettings() {
-  const supabase = useAdminProductionGateway();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [editedSettings, setEditedSettings] = useState<Record<string, string>>({});
 
   // Buscar todas as configurações
   const { data: settings, isLoading } = useAdminSystemSettings();
 
   // Mutation para atualizar configurações
-  const _legacyMutation = useMutation({
+  /* const _legacyMutation = useMutation({
     mutationFn: async (updates: Record<string, string>) => {
       const updatePromises = Object.entries(updates).map(async ([key, value]) => {
         // Usar UPSERT para criar ou atualizar
@@ -81,7 +77,7 @@ export default function AdminSystemSettings() {
         variant: "destructive",
       });
     },
-  });
+  }); */
 
   const updateMutation = useUpdateAdminSystemSettings();
 

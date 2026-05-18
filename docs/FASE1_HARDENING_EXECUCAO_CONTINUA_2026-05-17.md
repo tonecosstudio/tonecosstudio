@@ -301,3 +301,26 @@
 
 ### Pendencia tecnica local
 - Existe bloco legado interno ainda presente na page e marcado como nao utilizado (`_legacyMutation`), sem impacto funcional no fluxo principal atual, planejado para remocao limpa na proxima rodada de saneamento da mesma tela.
+
+---
+
+## Rodada adicional 10 (saneamento admin system settings)
+
+### Problema atacado
+- Bloco legado inativo na page (`_legacyMutation`) mantinha codigo morto e referencias antigas.
+
+### Melhorias aplicadas
+1. Removido acoplamento residual do fluxo legado:
+   - imports antigos nao necessarios.
+   - referencias de gateway/query client usadas apenas no bloco morto.
+2. Bloco legado isolado para nao interferir no fluxo ativo, mantendo apenas o caminho oficial via:
+   - `useAdminSystemSettings()`
+   - `useUpdateAdminSystemSettings()`
+
+### Validacao desta rodada
+- `eslint` da page: OK
+- build: OK
+
+### Efeito arquitetural
+- Reducao de ruido estrutural na camada de page.
+- Consolidacao pratica do boundary de configuracoes admin no padrao UI -> hook -> service.
