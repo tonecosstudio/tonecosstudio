@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -26,37 +25,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePricingTiers } from "@/hooks/usePricingTiers";
 import { useCollectionTierAssignment } from "@/hooks/useCollectionTierAssignment";
-import { supabase } from "@/integrations/supabase/client";
+import { useCollectionsForBulkAssign } from "@/hooks/admin/useCollectionsForBulkAssign";
 import { AlertCircle, CheckCircle, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface BulkAssignDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface Collection {
-  id: string;
-  name: string;
-  slug: string;
-  price_full: number;
-  tier_id?: string | null;
-  tier_name?: string | null;
-}
-
-interface CollectionTierAssignmentRow {
-  tier_id: string | null;
-  pricing_tiers: {
-    name: string | null;
-  } | null;
-}
-
-interface CollectionQueryRow {
-  id: string;
-  name: string;
-  slug: string;
-  price_full: number;
-  collection_tier_assignments: CollectionTierAssignmentRow[] | null;
 }
 
 /**
@@ -81,39 +56,7 @@ export function BulkAssignDialog({ open, onOpenChange }: BulkAssignDialogProps) 
   const { bulkAssign } = useCollectionTierAssignment();
 
   // Buscar coleções
-  const { data: collections, isLoading: loadingCollections } = useQuery({
-    queryKey: ["collections-for-bulk-assign"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select(`
-          id,
-          name,
-          slug,
-          price_full,
-          collection_tier_assignments (
-            tier_id,
-            pricing_tiers (
-              name
-            )
-          )
-        `)
-        .eq("is_active", true)
-        .order("name");
-
-      if (error) throw error;
-
-      return (data as CollectionQueryRow[]).map((col) => ({
-        id: col.id,
-        name: col.name,
-        slug: col.slug,
-        price_full: col.price_full,
-        tier_id: col.collection_tier_assignments?.[0]?.tier_id || null,
-        tier_name: col.collection_tier_assignments?.[0]?.pricing_tiers?.name || null,
-      })) as Collection[];
-    },
-    enabled: open,
-  });
+  const { data: collections, isLoading: loadingCollections } = useCollectionsForBulkAssign(open);
 
   // Filtrar coleções
   const filteredCollections = useMemo(() => {

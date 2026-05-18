@@ -793,3 +793,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado no painel de métricas de suporte.
 - Menor acoplamento com Supabase no componente e melhor testabilidade da lógica de cálculo.
+
+---
+
+## Rodada adicional 24 (bulk assign collections query)
+
+### Problema atacado
+- `BulkAssignDialog` executava query de coleções diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/collections-for-bulk-assign-service.ts`
+   - `fetchCollectionsForBulkAssign()`.
+2. Hook de aplicação:
+   - `src/hooks/admin/useCollectionsForBulkAssign.ts`
+   - encapsula query com `enabled`.
+3. Componente desacoplado:
+   - `src/components/admin/pricing-tiers/BulkAssignDialog.tsx`
+   - remove acesso direto à infraestrutura.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service reforçado no fluxo de atribuição em massa.
+- Menos responsabilidade de dados no componente e maior consistência estrutural.
