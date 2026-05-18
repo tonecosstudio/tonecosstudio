@@ -11,17 +11,21 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CharacterSelectionModal } from "./CharacterSelectionModal";
-import * as choiceService from "@/services/customer/choice-service";
-import type { Character } from "@/services/customer/choice-service";
+import type { CharacterEntity as Character } from "@/hooks/customer/useChoiceActions";
 
-// Mock the choice service
-vi.mock("@/services/customer/choice-service", () => ({
-  getAvailableCharacters: vi.fn(),
-  submitCharacterChoice: vi.fn(),
+const mockUseAvailableCharacters = vi.fn();
+const mockSubmitMutate = vi.fn();
+
+vi.mock("@/hooks/customer/useChoiceActions", () => ({
+  useAvailableCharacters: (...args: unknown[]) => mockUseAvailableCharacters(...args),
+  useSubmitCharacterChoice: () => ({
+    isPending: false,
+    mutate: mockSubmitMutate,
+  }),
 }));
 
 // Mock toast
@@ -103,7 +107,7 @@ describe("CharacterSelectionModal", () => {
 
   describe("Display and Layout", () => {
     it("should render modal with title and description", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -112,7 +116,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should display all available characters in grid", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -125,7 +129,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should display character images", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -137,7 +141,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should display character descriptions", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -148,7 +152,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should handle characters without images", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -160,7 +164,7 @@ describe("CharacterSelectionModal", () => {
 
   describe("Stock Level Indicators", () => {
     it("should show low stock badge for characters with stock <= 5", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -170,7 +174,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should show unavailable overlay for out of stock characters", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -180,9 +184,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should disable selection for unavailable characters", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
-      const user = userEvent.setup();
-
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
       await waitFor(() => {
@@ -194,7 +196,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should display stock level count", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -207,7 +209,7 @@ describe("CharacterSelectionModal", () => {
 
   describe("Deadline Countdown", () => {
     it("should display deadline countdown", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -217,7 +219,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should show urgent alert when deadline < 24h", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       
       const urgentDeadline = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(); // 12 hours
 
@@ -231,7 +233,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should show expired alert when deadline has passed", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       
       const expiredDeadline = new Date(Date.now() - 1000).toISOString(); // Past
 
@@ -245,7 +247,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should disable submission when deadline has passed", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       
       const expiredDeadline = new Date(Date.now() - 1000).toISOString();
 
@@ -262,7 +264,7 @@ describe("CharacterSelectionModal", () => {
 
   describe("Character Selection", () => {
     it("should allow selecting a character", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       const user = userEvent.setup();
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
@@ -282,7 +284,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should show confirmation view after clicking continue", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       const user = userEvent.setup();
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
@@ -306,7 +308,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should allow going back from confirmation view", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       const user = userEvent.setup();
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
@@ -339,32 +341,8 @@ describe("CharacterSelectionModal", () => {
 
   describe("Character Submission", () => {
     it("should submit character choice successfully", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
-      vi.mocked(choiceService.submitCharacterChoice).mockResolvedValue({
-        id: "choice-1",
-        orderId: "order-123",
-        orderType: "subscription_delivery",
-        userId: "user-1",
-        collectionId: "collection-1",
-        characterId: "char-1",
-        characterName: "Personagem A",
-        characterImageUrl: "https://example.com/char-a.jpg",
-        status: "submitted",
-        submittedAt: new Date().toISOString(),
-        approvedAt: null,
-        approvedBy: null,
-        approvedByName: null,
-        rejectedAt: null,
-        rejectionReason: null,
-        deadline: defaultProps.deadline,
-        remindersSent: 0,
-        lastReminderAt: null,
-        previousChoiceId: null,
-        changeReason: null,
-        changeCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
+      mockSubmitMutate.mockImplementation((_characterId: string, options?: { onSuccess?: () => void }) => { options?.onSuccess?.(); });
 
       const user = userEvent.setup();
 
@@ -391,17 +369,15 @@ describe("CharacterSelectionModal", () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(choiceService.submitCharacterChoice).toHaveBeenCalledWith("order-123", "char-1");
+        expect(mockSubmitMutate).toHaveBeenCalled();
         expect(defaultProps.onSuccess).toHaveBeenCalled();
         expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
       });
     });
 
     it("should handle submission error", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
-      vi.mocked(choiceService.submitCharacterChoice).mockRejectedValue(
-        new Error("Erro ao enviar escolha")
-      );
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
+      mockSubmitMutate.mockImplementation((_characterId: string, options?: { onError?: (error: Error) => void }) => { options?.onError?.(new Error("Erro ao enviar escolha")); });
 
       const user = userEvent.setup();
 
@@ -425,17 +401,15 @@ describe("CharacterSelectionModal", () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(choiceService.submitCharacterChoice).toHaveBeenCalled();
+        expect(mockSubmitMutate).toHaveBeenCalled();
         // Modal should remain open on error
         expect(defaultProps.onOpenChange).not.toHaveBeenCalledWith(false);
       });
     });
 
     it("should disable buttons during submission", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
-      vi.mocked(choiceService.submitCharacterChoice).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      );
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
+      mockSubmitMutate.mockImplementation(() => undefined);
 
       const user = userEvent.setup();
 
@@ -467,9 +441,7 @@ describe("CharacterSelectionModal", () => {
 
   describe("Loading and Error States", () => {
     it("should show loading skeleton while fetching characters", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
+      mockUseAvailableCharacters.mockReturnValue({ data: undefined, isLoading: true, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -482,9 +454,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should show error message when fetch fails", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockRejectedValue(
-        new Error("Erro ao carregar personagens")
-      );
+      mockUseAvailableCharacters.mockReturnValue({ data: undefined, isLoading: false, error: new Error("Erro ao carregar personagens") });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -494,7 +464,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should show message when no characters available", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue([]);
+      mockUseAvailableCharacters.mockReturnValue({ data: [], isLoading: false, error: null });
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
 
@@ -506,7 +476,7 @@ describe("CharacterSelectionModal", () => {
 
   describe("Modal Behavior", () => {
     it("should call onOpenChange when cancel is clicked", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       const user = userEvent.setup();
 
       renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
@@ -522,7 +492,7 @@ describe("CharacterSelectionModal", () => {
     });
 
     it("should reset selection when modal reopens", async () => {
-      vi.mocked(choiceService.getAvailableCharacters).mockResolvedValue(mockCharacters);
+      mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
       const user = userEvent.setup();
 
       const { rerender } = renderWithProviders(<CharacterSelectionModal {...defaultProps} />);
@@ -557,3 +527,4 @@ describe("CharacterSelectionModal", () => {
     });
   });
 });
+
