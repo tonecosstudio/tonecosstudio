@@ -924,3 +924,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service consolidado na visão hierárquica de preços.
 - Redução de acoplamento e centralização da regra de leitura/escrita.
+
+---
+
+## Rodada adicional 29 (delivery detail modal status update)
+
+### Problema atacado
+- `DeliveryDetailModal` executava atualização de status com acesso de infraestrutura no componente.
+
+### Melhorias aplicadas
+1. Service de domínio ampliado:
+   - `src/services/admin/delivery-detail-service.ts`
+   - adicionado `updateDeliveryStatus()` e `UpdateDeliveryStatusInput`.
+2. Hook de aplicação ampliado:
+   - `src/hooks/admin/useDeliveryDetailData.ts`
+   - adicionado `useUpdateDeliveryStatus()` com invalidação de queries.
+3. Componente ajustado:
+   - `src/components/admin/delivery/DeliveryDetailModal.tsx`
+   - atualização de status passa a usar hook de aplicação.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado à mutação de status de entrega.
+- Menor acoplamento de infraestrutura na camada de apresentação.

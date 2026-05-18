@@ -67,6 +67,13 @@ interface OrderStatusHistoryRow {
   new_status: string;
 }
 
+export interface UpdateDeliveryStatusInput {
+  deliveryId: string;
+  newStatus: string;
+  trackingCode?: string;
+  notes?: string;
+}
+
 export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryDetail | null> {
   const { data, error } = await supabase
     .from('subscription_deliveries')
@@ -149,4 +156,27 @@ export async function fetchDeliveryChangeHistory(deliveryId: string): Promise<Co
     previous_collection: row.old_status ? { name: row.old_status } : null,
     new_collection: { name: row.new_status },
   }));
+}
+
+export async function updateDeliveryStatus(input: UpdateDeliveryStatusInput) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error('Não autenticado');
+
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-delivery-status`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Erro ao atualizar status');
+  }
+
+  return response.json();
 }

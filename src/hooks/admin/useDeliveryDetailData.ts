@@ -1,8 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchDeliveryChangeHistory,
   fetchDeliveryDetail,
   fetchSubscriberAddress,
+  updateDeliveryStatus,
+  type UpdateDeliveryStatusInput,
 } from '@/services/admin/delivery-detail-service';
 
 export function useDeliveryDetail(deliveryId: string | null, open: boolean) {
@@ -26,5 +28,18 @@ export function useDeliveryChangeHistory(deliveryId: string | null, open: boolea
     queryKey: ['collection-change-history', deliveryId],
     queryFn: () => (deliveryId ? fetchDeliveryChangeHistory(deliveryId) : []),
     enabled: !!deliveryId && open,
+  });
+}
+
+export function useUpdateDeliveryStatus(deliveryId: string | null, onSuccess: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: UpdateDeliveryStatusInput) => updateDeliveryStatus(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-detail', deliveryId] });
+      queryClient.invalidateQueries({ queryKey: ['deliveries'] });
+      onSuccess();
+    },
   });
 }

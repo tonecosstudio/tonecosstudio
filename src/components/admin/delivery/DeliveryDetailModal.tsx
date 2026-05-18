@@ -7,7 +7,6 @@
  * Requirements: 15.6
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +27,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -54,6 +52,7 @@ import {
   useDeliveryChangeHistory,
   useDeliveryDetail,
   useSubscriberAddress,
+  useUpdateDeliveryStatus,
 } from '@/hooks/admin/useDeliveryDetailData';
 
 interface DeliveryDetailModalProps {
@@ -68,7 +67,6 @@ interface DeliveryDetailModalProps {
 
 export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileData }: DeliveryDetailModalProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Estado local para controles de atualização
   const [selectedStatus, setSelectedStatus] = useState<string>('');
@@ -107,7 +105,30 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
   const { data: changeHistory } = useDeliveryChangeHistory(deliveryId, open);
 
   // Mutation para atualizar status
-  const updateStatusMutation = useMutation({
+  const updateStatusMutation = useUpdateDeliveryStatus(deliveryId, () => {
+    setIsEditing(false);
+    setNotesRaw('');
+  });
+
+  useEffect(() => {
+    if (!updateStatusMutation.isSuccess) return;
+    toast({
+      title: 'Status atualizado',
+      description: 'O status da entrega foi atualizado com sucesso.',
+    });
+  }, [toast, updateStatusMutation.isSuccess]);
+
+  useEffect(() => {
+    if (!updateStatusMutation.error) return;
+    toast({
+      title: 'Erro ao atualizar status',
+      description: updateStatusMutation.error.message,
+      variant: 'destructive',
+    });
+  }, [toast, updateStatusMutation.error]);
+
+  /*
+  const _legacyUpdateStatusMutation = useMutation({
     mutationFn: async (data: {
       deliveryId: string;
       newStatus: string;
@@ -154,6 +175,7 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
       });
     },
   });
+  */
 
   const handleUpdateStatus = () => {
     if (!deliveryId || !selectedStatus) return;
