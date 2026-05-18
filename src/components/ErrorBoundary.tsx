@@ -66,7 +66,8 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleReload = () => {
-    window.location.reload();
+    this.handleReset();
+    navigateInApp(window.location.pathname, { force: true });
   };
 
   handleGoHome = () => {
