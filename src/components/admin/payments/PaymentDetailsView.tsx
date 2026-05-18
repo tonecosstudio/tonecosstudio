@@ -51,6 +51,7 @@ import type { PaymentFile } from "@/types/manual-payment";
 import { getPaymentById } from "@/lib/payment-service";
 import { fileUploadService } from "@/lib/file-upload-service";
 import {
+  exportPaymentDetailsToCsv,
   formatPaymentCurrency,
   formatPaymentDate,
   getPaymentStatusConfig,
@@ -176,6 +177,18 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
   // Handle close image viewer
   const handleCloseImageViewer = () => {
     setSelectedImageIndex(null);
+  };
+
+  const handleExportDetails = () => {
+    if (!payment) {
+      return;
+    }
+
+    exportPaymentDetailsToCsv(payment);
+    toast({
+      title: "Exportacao concluida",
+      description: `O pagamento ${payment.reference_number} foi exportado em CSV.`,
+    });
   };
 
   if (error) {
@@ -820,29 +833,14 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
             </Card>
           )}
 
-          {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Ações Rápidas</CardTitle>
+              <CardTitle>Acoes Rapidas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a
-                  href={`/admin/payments/${paymentId}/export`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar Detalhes
-                </a>
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                Gerar Recibo
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Enviar Mensagem
+              <Button variant="outline" className="w-full justify-start" onClick={handleExportDetails}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Detalhes
               </Button>
             </CardContent>
           </Card>

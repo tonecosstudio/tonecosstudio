@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { PaymentListItem, PaymentStatus } from "@/types/manual-payment";
+import type { PaymentDetails, PaymentListItem, PaymentStatus } from "@/types/manual-payment";
 
 export type PaymentDashboardSortField = "created_at" | "amount" | "customer_name" | "status";
 export type PaymentDashboardSortDirection = "asc" | "desc";
@@ -153,19 +153,33 @@ export function exportPaymentListItemToCsv(payment: PaymentListItem): void {
     String(payment.unread_messages),
   ];
 
-  const csv = [headers, row].map((fields) => fields.map(escapeCsvField).join(",")).join("\n");
-  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
+  downloadCsvFile([headers, row], `pagamento_${payment.reference_number || payment.id}.csv`);
+}
 
-  link.setAttribute("href", url);
-  link.setAttribute("download", `pagamento_${payment.reference_number || payment.id}.csv`);
-  link.style.visibility = "hidden";
+export function exportPaymentDetailsToCsv(payment: PaymentDetails): void {
+  const rows = [
+    ["Campo", "Valor"],
+    ["ID", payment.id],
+    ["Referencia", payment.reference_number],
+    ["Cliente", payment.customer_name || ""],
+    ["Email", payment.customer_email || ""],
+    ["Valor", formatPaymentCurrency(payment.amount, payment.currency)],
+    ["Moeda", payment.currency],
+    ["Metodo", payment.payment_method?.name || payment.payment_method_id],
+    ["Tipo", payment.payment_type],
+    ["Status", getPaymentStatusConfig(payment.status).label],
+    ["Criado em", formatPaymentDate(payment.created_at)],
+    ["Atualizado em", formatPaymentDate(payment.updated_at)],
+    ["Aprovado em", payment.approved_at ? formatPaymentDate(payment.approved_at) : ""],
+    ["Aprovado por", payment.approved_by || ""],
+    ["Motivo da rejeicao", payment.rejection_reason || ""],
+    ["Arquivos", String(payment.files.length)],
+    ["Registros de auditoria", String(payment.audit_logs.length)],
+    ["Conversa", payment.conversation?.id || ""],
+    ["Status da conversa", payment.conversation?.status || ""],
+  ];
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadCsvFile(rows, `pagamento_${payment.reference_number || payment.id}_detalhes.csv`);
 }
 
 function escapeCsvField(value: string): string {
@@ -174,4 +188,20 @@ function escapeCsvField(value: string): string {
   }
 
   return value;
+}
+
+function downloadCsvFile(rows: string[][], fileName: string): void {
+  const csv = rows.map((fields) => fields.map(escapeCsvField).join(",")).join("\n");
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute("href", url);
+  link.setAttribute("download", fileName);
+  link.style.visibility = "hidden";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { getPaymentById } from "@/lib/payment-service";
 import { fileUploadService } from "@/lib/file-upload-service";
+import { toast } from "@/hooks/use-toast";
 import { PaymentDetailsView } from "./PaymentDetailsView";
 
 // Mock the services
@@ -69,6 +70,7 @@ describe("PaymentDetailsView", () => {
   let queryClient: QueryClient;
   const mockGetPaymentById = vi.mocked(getPaymentById);
   const mockFileUploadService = vi.mocked(fileUploadService);
+  const mockToast = vi.mocked(toast);
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -186,6 +188,51 @@ describe("PaymentDetailsView", () => {
     expect(screen.getByRole("tab", { name: /Comprovantes/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Hist/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Log de Auditoria/ })).toBeInTheDocument();
+  });
+
+  it("exports payment details from quick actions", async () => {
+    const user = userEvent.setup();
+    const createObjectUrlMock = vi.fn(() => "blob:payment-details");
+    const revokeObjectUrlMock = vi.fn();
+    const anchorClickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectUrlMock,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectUrlMock,
+    });
+
+    mockGetPaymentById.mockResolvedValue(mockPayment);
+    mockFileUploadService.getSignedUrl.mockResolvedValue("https://example.com/signed-url");
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <PaymentDetailsView paymentId="test-id" />
+      </QueryClientProvider>
+    );
+
+    await screen.findByText("Detalhes do Pagamento");
+
+    expect(screen.queryByText("Gerar Recibo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Enviar Mensagem")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Exportar Detalhes/ }));
+
+    expect(createObjectUrlMock).toHaveBeenCalledOnce();
+    expect(anchorClickSpy).toHaveBeenCalledOnce();
+    expect(revokeObjectUrlMock).toHaveBeenCalledWith("blob:payment-details");
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Exportacao concluida",
+      })
+    );
+
+    anchorClickSpy.mockRestore();
   });
 
   it("displays image files in gallery", async () => {
