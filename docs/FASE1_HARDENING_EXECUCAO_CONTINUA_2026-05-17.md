@@ -199,6 +199,30 @@
 - Mais consistencia do padrao `UI -> hook -> service`.
 - Menos acoplamento na camada de suporte/chat admin.
 
+---
+
+## Rodada adicional 15 (support quick replies widget)
+
+### Problema atacado
+- `QuickReplies` fazia leitura direta de `support_quick_replies` no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/support-quick-replies-service.ts`
+   - `fetchActiveSupportQuickReplies()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useSupportQuickReplies.ts`.
+3. Componente desacoplado:
+   - `src/components/admin/support/QuickReplies.tsx`
+   - remove acesso direto a `supabase`.
+
+### Validacao desta rodada
+- `npx eslint src/components/admin/support/QuickReplies.tsx src/hooks/admin/useSupportQuickReplies.ts src/services/admin/support-quick-replies-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Reforco do boundary UI -> hook -> service no modulo de suporte.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado

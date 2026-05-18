@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Keyboard } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useSupportQuickReplies } from "@/hooks/admin/useSupportQuickReplies";
 
-interface QuickReply {
+interface SupportQuickReply {
   id: string;
   title: string;
   shortcut: string;
@@ -20,61 +20,38 @@ interface QuickRepliesProps {
 }
 
 export function QuickReplies({ onSelect }: QuickRepliesProps) {
-  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: quickReplies = [], isLoading: loading, isError } = useSupportQuickReplies();
 
   useEffect(() => {
-    const fetchQuickReplies = async () => {
-      const { data, error } = await supabase
-        .from("support_quick_replies")
-        .select("*")
-        .eq("is_active", true)
-        .order("category", { ascending: true });
-
-      if (error) {
-        console.error("Erro ao buscar respostas rapidas:", error);
-        toast.error("Erro ao carregar respostas rapidas");
-      } else {
-        setQuickReplies(data || []);
-      }
-      setLoading(false);
-    };
-
-    fetchQuickReplies();
-  }, []);
+    if (isError) toast.error("Erro ao carregar respostas rapidas");
+  }, [isError]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!e.ctrlKey) return;
-
       const shortcut = "Ctrl+" + e.key;
-      const reply = quickReplies.find((r) => r.shortcut?.toLowerCase() === shortcut.toLowerCase());
-
-      if (reply) {
-        e.preventDefault();
-        onSelect(reply.message);
-        toast.success("Resposta rapida aplicada: " + reply.title);
-      }
+      const reply = (quickReplies as SupportQuickReply[]).find(
+        (item) => item.shortcut?.toLowerCase() === shortcut.toLowerCase()
+      );
+      if (!reply) return;
+      e.preventDefault();
+      onSelect(reply.message);
+      toast.success("Resposta rapida aplicada: " + reply.title);
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [quickReplies, onSelect]);
 
-  const handleSelect = (reply: QuickReply) => {
+  const handleSelect = (reply: SupportQuickReply) => {
     onSelect(reply.message);
     toast.success("Resposta rapida aplicada: " + reply.title);
   };
 
-  if (loading) {
-    return <p className="text-sm text-muted-foreground">Carregando respostas rapidas...</p>;
-  }
+  if (loading) return <p className="text-sm text-muted-foreground">Carregando respostas rapidas...</p>;
+  if (quickReplies.length === 0) return null;
 
-  if (quickReplies.length === 0) {
-    return null;
-  }
-
-  const categories = [...new Set(quickReplies.map((r) => r.category))];
+  const categories = [...new Set((quickReplies as SupportQuickReply[]).map((item) => item.category))];
 
   return (
     <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
@@ -93,8 +70,8 @@ export function QuickReplies({ onSelect }: QuickRepliesProps) {
           <div key={category} className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase">{category}</p>
             <div className="grid grid-cols-1 gap-2">
-              {quickReplies
-                .filter((r) => r.category === category)
+              {(quickReplies as SupportQuickReply[])
+                .filter((item) => item.category === category)
                 .map((reply) => (
                   <Button
                     key={reply.id}
