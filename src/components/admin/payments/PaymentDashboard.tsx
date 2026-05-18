@@ -10,8 +10,6 @@
 
 import React, { useCallback, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,19 +77,24 @@ import { useAdminDashboardRealtime } from "@/hooks/usePaymentRealtimeDashboard";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { ValidationFeedback } from "@/components/ui/validation-feedback";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
+import {
+  formatPaymentCurrency,
+  formatPaymentDate,
+  getPaymentStatusConfig,
+  sortPaymentListItems,
+  type PaymentDashboardSortDirection,
+  type PaymentDashboardSortField,
+} from "@/lib/payment-dashboard-utils";
 
 interface PaymentDashboardProps {
   onViewPayment?: (paymentId: string) => void;
 }
 
-type SortField = "created_at" | "amount" | "customer_name" | "status";
-type SortDirection = "asc" | "desc";
-
 export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const [filters, setFilters] = useState<PaymentFilters>({});
   const [searchInputRaw, setSearchInputRaw, searchInputSanitized] = useSanitizedInput("", "search");
-  const [sortField, setSortField] = useState<SortField>("created_at");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortField, setSortField] = useState<PaymentDashboardSortField>("created_at");
+  const [sortDirection, setSortDirection] = useState<PaymentDashboardSortDirection>("desc");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
@@ -181,7 +184,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   };
 
   // Handle sort
-  const handleSort = (field: SortField) => {
+  const handleSort = (field: PaymentDashboardSortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -217,90 +220,24 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   };
 
   // Sort payments
-  const sortedPayments = [...payments].sort((a, b) => {
-    let aValue: number | string;
-    let bValue: number | string;
-
-    switch (sortField) {
-      case "created_at":
-        aValue = new Date(a.created_at).getTime();
-        bValue = new Date(b.created_at).getTime();
-        break;
-      case "amount":
-        aValue = a.amount;
-        bValue = b.amount;
-        break;
-      case "customer_name":
-        aValue = a.customer_name.toLowerCase();
-        bValue = b.customer_name.toLowerCase();
-        break;
-      case "status":
-        // Custom status order
-        const statusOrder = { pending: 0, under_review: 1, requires_info: 2 };
-        aValue = statusOrder[a.status as keyof typeof statusOrder] || 3;
-        bValue = statusOrder[b.status as keyof typeof statusOrder] || 3;
-        break;
-      default:
-        return 0;
-    }
-
-    if (sortDirection === "asc") {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
+  const sortedPayments = sortPaymentListItems(payments, sortField, sortDirection);
 
   // Get status badge variant and icon
   const getStatusConfig = (status: PaymentStatus) => {
-    switch (status) {
-      case "pending":
-        return {
-          variant: "outline" as const,
-          icon: <Clock className="h-3 w-3" />,
-          label: "Pendente",
-          color: "text-yellow-600",
-          bgColor: "bg-yellow-50",
-        };
-      case "under_review":
-        return {
-          variant: "secondary" as const,
-          icon: <Eye className="h-3 w-3" />,
-          label: "Em Revisão",
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-        };
-      case "requires_info":
-        return {
-          variant: "destructive" as const,
-          icon: <AlertCircle className="h-3 w-3" />,
-          label: "Precisa de Info",
-          color: "text-orange-600",
-          bgColor: "bg-orange-50",
-        };
-      default:
-        return {
-          variant: "outline" as const,
-          icon: null,
-          label: status,
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-        };
-    }
+    return {
+      ...getPaymentStatusConfig(status),
+      icon:
+        status === "pending" ? (
+          <Clock className="h-3 w-3" />
+        ) : status === "under_review" ? (
+          <Eye className="h-3 w-3" />
+        ) : status === "requires_info" ? (
+          <AlertCircle className="h-3 w-3" />
+        ) : null,
+    };
   };
 
-  // Format currency
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: currency || "BRL",
-    }).format(amount);
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
-  };
+  // Formatting and status behavior extracted to shared util
 
   // Clear all filters
   const clearFilters = () => {
@@ -745,7 +682,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                           <div>
                             <div className="font-medium text-lg">{payment.reference_number}</div>
                             <div className="text-sm text-muted-foreground">
-                              {formatDate(payment.created_at)}
+                              {formatPaymentDate(payment.created_at)}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -780,7 +717,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                           <div className="flex justify-between">
                             <span className="text-sm font-medium">Valor</span>
                             <span className="font-medium">
-                              {formatCurrency(payment.amount, payment.currency)}
+                              {formatPaymentCurrency(payment.amount, payment.currency)}
                             </span>
                           </div>
 
@@ -892,7 +829,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">
-                            {formatCurrency(payment.amount, payment.currency)}
+                            {formatPaymentCurrency(payment.amount, payment.currency)}
                           </TableCell>
                           <TableCell>{payment.payment_method_name}</TableCell>
                           <TableCell>
@@ -919,7 +856,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(payment.created_at)}
+                            {formatPaymentDate(payment.created_at)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
