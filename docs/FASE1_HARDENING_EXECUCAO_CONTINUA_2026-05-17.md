@@ -40,6 +40,31 @@
 
 ---
 
+## Rodada adicional 9 (admin preorders)
+
+### Problema atacado
+- `AdminPreorders` executava leitura e mutacoes Supabase diretamente na page, misturando UI, regra de aplicacao e infraestrutura.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/admin-preorders-service.ts`
+   - `fetchAdminPreorders()`, `fetchAdminPreordersStats()`, `releaseAdminPreorderFinalPayment()`, `registerAdminPreorderManualPayment()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useAdminPreorders.ts`
+   - centraliza queries e mutacoes com invalidacao padronizada.
+3. Page desacoplada:
+   - `src/pages/admin/payments/AdminPreorders.tsx`
+   - remove acesso direto a Supabase e passa a consumir hook + handlers locais de UI.
+
+### Validacao desta rodada
+- `npx eslint src/pages/admin/payments/AdminPreorders.tsx src/hooks/admin/useAdminPreorders.ts src/services/admin/admin-preorders-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Boundary claro `UI -> hook -> service -> gateway`.
+- Menor acoplamento da page com infraestrutura.
+- Padrao estrutural consistente com as rodadas anteriores do hardening.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado
