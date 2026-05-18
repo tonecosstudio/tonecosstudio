@@ -897,3 +897,30 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado no chat administrativo.
 - Redução de acoplamento com infraestrutura no componente de UI.
+
+---
+
+## Rodada adicional 28 (pricing hierarchy view)
+
+### Problema atacado
+- `PricingHierarchyView` acumulava queries e delete direto no componente, acoplando UI com infraestrutura.
+
+### Melhorias aplicadas
+1. Service agregado:
+   - `src/services/admin/pricing-hierarchy-service.ts`
+   - `fetchPricingHierarchyData()` com carregamento paralelo de tiers/planos/coleções.
+   - `deletePricingTier()` para remoção centralizada.
+2. Hook de aplicação:
+   - `src/hooks/admin/usePricingHierarchy.ts`
+   - query única da hierarquia e mutation de exclusão com invalidação.
+3. Componente desacoplado:
+   - `src/components/admin/pricing-tiers/PricingHierarchyView.tsx`
+   - passa a consumir apenas hook e remove acesso direto ao `supabase`.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service consolidado na visão hierárquica de preços.
+- Redução de acoplamento e centralização da regra de leitura/escrita.
