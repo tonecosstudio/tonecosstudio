@@ -10,6 +10,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { shippingService, type Address } from '@/services/shipping-service';
 import { validateDeliveryAddress } from './orders-validator';
+import log from '@/lib/logger';
 import type { 
   UnifiedOrder, 
   LabelGenerationResult,
@@ -25,7 +26,7 @@ export class LabelGenerationError extends Error {
     message: string,
     public readonly code: string,
     public readonly orderId?: string,
-    public readonly details?: Record<string, any>
+    public readonly details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'LabelGenerationError';
@@ -81,7 +82,7 @@ async function getOrderDeliveryAddress(order: UnifiedOrder): Promise<DeliveryAdd
       .single();
 
     if (error || !profile) {
-      console.error('Erro ao buscar perfil do usuário:', error);
+      log.error('Erro ao buscar perfil do usuário', { error, userId: order.customer.id });
       return null;
     }
 
@@ -108,11 +109,11 @@ async function getOrderDeliveryAddress(order: UnifiedOrder): Promise<DeliveryAdd
         country: addressData.country || addressData.pais || 'Brasil'
       };
     } catch (parseError) {
-      console.error('Erro ao parsear endereço:', parseError);
+      log.error('Erro ao parsear endereço', { parseError, address: profile.address });
       return null;
     }
   } catch (error) {
-    console.error('Erro ao buscar endereço de entrega:', error);
+    log.error('Erro ao buscar endereço de entrega', { error, orderId: order.id });
     return null;
   }
 }
@@ -283,7 +284,7 @@ async function updateOrderTrackingCode(
     } else if (order.type === 'standalone_purchase') {
       // Atualizar compra avulsa
       const { error } = await supabase
-        .from('standalone_purchases' as any)
+        .from('standalone_purchases' as unknown as 'subscription_deliveries')
         .update({
           tracking_code: trackingCode,
           status: 'shipped', // Atualizar status para enviado
@@ -296,7 +297,7 @@ async function updateOrderTrackingCode(
       }
     }
   } catch (error) {
-    console.error('Erro ao atualizar código de rastreamento:', error);
+    log.error('Erro ao atualizar código de rastreamento', { error, orderId: order.id, trackingCode });
     // Não lançar erro aqui - a etiqueta foi gerada com sucesso
     // O código de rastreamento pode ser atualizado manualmente se necessário
   }

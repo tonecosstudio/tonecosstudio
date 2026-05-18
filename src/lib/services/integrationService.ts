@@ -7,7 +7,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export interface Order {
+// Note: This is a simplified order interface for the integration service
+// For full order management, use UnifiedOrder from @/types/admin/orders
+export interface IntegrationOrder {
   id: string;
   reference_number: string;
   user_id: string;
@@ -63,7 +65,7 @@ export interface ManualPayment {
  * Get all orders for a user
  * Requirements: 7.1, 7.2
  */
-export async function getUserOrders(userId: string): Promise<Order[]> {
+export async function getUserOrders(userId: string): Promise<IntegrationOrder[]> {
   const { data, error } = await supabase
     .from("manual_payments")
     .select("*")
@@ -144,7 +146,7 @@ export async function getUserPayments(userId: string): Promise<ManualPayment[]> 
  * Note: This function is currently disabled because order_production_stages
  * table is not yet in the Supabase types. It will be enabled after migration.
  */
-export async function getOrderProductionStages(orderId: string): Promise<OrderProductionStage[]> {
+export async function getOrderProductionStages(_orderId: string): Promise<OrderProductionStage[]> {
   // TODO: Enable after order_production_stages table is added to Supabase types
   console.warn("getOrderProductionStages is not yet implemented - table not in types");
   return [];
@@ -174,7 +176,7 @@ export async function updateOrderStatus(
   status: string,
   _trackingCode?: string
 ): Promise<void> {
-  const updateData: any = { status };
+  const updateData: { status: string } = { status };
   // Note: tracking_code is not a column on manual_payments; tracking is handled via production_queue
 
   const { error } = await supabase.from("manual_payments").update(updateData).eq("id", orderId);

@@ -1,11 +1,11 @@
 /* Fontes carregadas via <link> no index.html para melhor performance */
 
+/* Character Roster V2 Styles */
+@import './styles/character-roster-v2.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Character Roster V2 Styles */
-@import './styles/character-roster-v2.css';
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.

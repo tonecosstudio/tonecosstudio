@@ -2,9 +2,6 @@
 // Types for Advanced Chat Support System
 // =====================================================
 
-// Import unified types from admin/orders
-import type { OrderStatus as UnifiedOrderStatus } from '@/types/admin/orders';
-
 // Enums
 export type ConversationStatus =
   | "new"
@@ -23,9 +20,8 @@ export type ConversationTag =
 export type RiskFlag = "cliente_conflito" | "atraso_critico" | "pagamento_problema";
 export type SenderType = "admin" | "customer" | "system";
 
-// DEPRECATED: Use UnifiedOrderStatus from @/types/admin/orders instead
-// This is kept for backward compatibility but will be removed
-export type OrderStatus = "aguardando_pagamento" | "em_producao" | "enviado" | "entregue";
+// REMOVED: OrderStatus - use UnifiedOrderStatus from @/types/admin/orders instead
+// This type has been consolidated into the unified order system
 
 export type ProductionStage =
   | "molde_pronto"
@@ -138,9 +134,10 @@ export interface OrderStatusTemplate {
 }
 
 // Integration Types
-// NOTE: This Order interface is for the support system context
+// NOTE: This interface is for the support system context only
 // For unified order management, use UnifiedOrder from @/types/admin/orders
-export interface Order {
+// Renamed to SupportOrder to avoid confusion with UnifiedOrder
+export interface SupportOrder {
   id: string;
   reference_number: string;
   user_id: string;
@@ -151,6 +148,9 @@ export interface Order {
   tracking_code?: string;
   production_stages?: OrderProductionStage[];
 }
+
+// Legacy export for backward compatibility - will be removed
+export type Order = SupportOrder;
 
 export interface Quote {
   id: string;
@@ -272,12 +272,8 @@ export const PRODUCTION_STAGES: ProductionStage[] = [
   "finalizacao",
 ];
 
-export const ORDER_STATUSES: OrderStatus[] = [
-  "aguardando_pagamento",
-  "em_producao",
-  "enviado",
-  "entregue",
-];
+// REMOVED: ORDER_STATUSES - use status arrays from @/types/admin/orders instead
+// REMOVED: getOrderStatusLabel - use getStatusLabel from @/services/admin/orders-validator instead
 
 // Helper functions
 export function getStatusLabel(status: ConversationStatus): string {
@@ -320,14 +316,4 @@ export function getProductionStageLabel(stage: ProductionStage): string {
     finalizacao: "Finalização",
   };
   return labels[stage];
-}
-
-export function getOrderStatusLabel(status: OrderStatus): string {
-  const labels: Record<OrderStatus, string> = {
-    aguardando_pagamento: "Aguardando Pagamento",
-    em_producao: "Em Produção",
-    enviado: "Enviado",
-    entregue: "Entregue",
-  };
-  return labels[status];
 }

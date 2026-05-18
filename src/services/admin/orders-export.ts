@@ -7,7 +7,8 @@
  * Requisitos: 9.1, 9.2
  */
 
-import type { UnifiedOrder, OrderFilters } from '@/types/admin/orders';
+import type { UnifiedOrder } from '@/types/admin/orders';
+import log from '@/lib/logger';
 
 // ============================================================================
 // Constantes
@@ -202,7 +203,7 @@ function formatDate(dateString: string | null | undefined): string {
     
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   } catch (error) {
-    console.error('Erro ao formatar data:', error);
+    log.error('Erro ao formatar data', { error });
     return '';
   }
 }
@@ -223,7 +224,7 @@ function formatCurrency(amount: number | null | undefined): string {
       currency: 'BRL'
     }).format(amount);
   } catch (error) {
-    console.error('Erro ao formatar moeda:', error);
+    log.error('Erro ao formatar moeda', { error });
     return `R$ ${amount.toFixed(2)}`;
   }
 }

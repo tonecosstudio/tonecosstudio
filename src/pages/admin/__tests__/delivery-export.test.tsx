@@ -64,9 +64,15 @@ describe('Delivery CSV Export', () => {
       click: vi.fn(),
       style: { visibility: '' },
     };
-    vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
-    vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any);
-    vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any);
+    vi.spyOn(document, 'createElement').mockReturnValue(
+      mockLink as unknown as HTMLElementTagNameMap[keyof HTMLElementTagNameMap]
+    );
+    vi.spyOn(document.body, 'appendChild').mockImplementation(
+      () => mockLink as unknown as Node
+    );
+    vi.spyOn(document.body, 'removeChild').mockImplementation(
+      () => mockLink as unknown as Node
+    );
   });
 
   it('should render Export CSV button', async () => {

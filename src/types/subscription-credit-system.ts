@@ -11,8 +11,11 @@ export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
 export type CancellationType = 'with_refund' | 'no_renewal';
 
 // Legacy types - use specific types from @/types/admin/orders for new code
+// DEPRECATED: Use OrderType from @/types/admin/orders instead
+// This OrderType ('individual' | 'automatic') is specific to the legacy subscription credit system
+// The modern OrderType is ('subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote')
 export type OrderType = 'individual' | 'automatic';
-export type OrderStatus = 'pending' | 'confirmed' | 'in_production' | 'shipped' | 'cancelled';
+// REMOVED: OrderStatus - use OrderStatus from @/types/admin/orders instead
 
 export type TransactionType = 'allocation' | 'debit_immediate' | 'debit_cycle_close' | 'expiration' | 'adjustment';
 export type CycleStatus = 'open' | 'full' | 'closed';
@@ -103,7 +106,7 @@ export interface Order {
   subscription_id: number;
   production_cycle_id: number;
   order_type: OrderType;
-  status: OrderStatus;
+  status: string; // Use OrderStatus from @/types/admin/orders for type safety
   is_priority: boolean;
   is_locked: boolean;
   total_credits: number;
