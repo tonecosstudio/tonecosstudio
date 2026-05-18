@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { MessageSquare, X } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { CustomerMessageList } from "./CustomerMessageList";
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 export function ChatButton() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -220,7 +221,7 @@ export function ChatButton() {
                     Você ainda não iniciou nenhuma conversa com nosso suporte.
                   </p>
                   <button
-                    onClick={() => (window.location.href = "/contato")}
+                    onClick={() => navigate("/contato")}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Ir para Contato

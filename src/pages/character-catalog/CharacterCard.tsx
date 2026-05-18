@@ -5,6 +5,7 @@ import { Star, Coins, DollarSign, TrendingDown, Loader2, Info, Crown, Sparkles, 
 import type { Character, PlanType } from '@/types/subscription-credit-system';
 import { useCharacterPrice, useCharacterPriceDetails } from '@/hooks/useCharacterPrice';
 import { useAuth } from '@/lib/auth';
+import { useNavigate } from 'react-router-dom';
 import { BalanceIndicator } from '@/components/character-catalog/BalanceIndicator';
 import { InsufficientBalanceMessage } from '@/components/character-catalog/InsufficientBalanceMessage';
 import {
@@ -25,11 +26,12 @@ interface CharacterCardProps {
 export function CharacterCard({
   character,
   isSubscriber,
-  planType,
+  planType: _planType,
   availableCredits,
   onPurchase,
 }: CharacterCardProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Get contextual price for the character (includes multiplier - RN008)
   const { data: contextualPrice, isLoading: priceLoading } = useCharacterPrice({
@@ -325,7 +327,7 @@ export function CharacterCard({
                       <Button
                         className="w-full gap-2"
                         variant="default"
-                        onClick={() => window.location.href = '/coins/purchase'}
+                        onClick={() => navigate('/coins/purchase')}
                         disabled={priceLoading}
                       >
                         <ShoppingCart className="h-4 w-4" />
