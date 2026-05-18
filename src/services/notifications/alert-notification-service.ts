@@ -7,7 +7,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { logInfo, logError, logWarn } from "@/lib/logger";
-import { logInfo, logError } from "@/lib/logger";
 
 // ============================================================================
 // Types
@@ -24,7 +23,16 @@ export interface AlertNotification {
   body: string;
   icon?: string;
   tag?: string;
-  data?: any;
+  data?: unknown;
+}
+
+function navigateTo(path: string): void {
+  if (window.location.pathname === path) {
+    return;
+  }
+
+  window.history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
 // ============================================================================
@@ -90,7 +98,7 @@ export function showBrowserNotification(notification: AlertNotification): void {
     
     // Navigate to production dashboard if not already there
     if (!window.location.pathname.includes("/admin/production")) {
-      window.location.href = "/admin/production";
+      navigateTo("/admin/production");
     }
   };
 }
@@ -154,7 +162,11 @@ let audioContext: AudioContext | null = null;
  */
 function initAudioContext(): void {
   if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContextConstructor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!audioContextConstructor) {
+      return;
+    }
+    audioContext = new audioContextConstructor();
   }
 }
 
@@ -331,8 +343,12 @@ export async function unsubscribeFromEmailDigest(userId: string): Promise<void> 
  * This should be called periodically or when metrics update
  */
 export function checkAndNotifyAlerts(
-  currentMetrics: any,
-  previousMetrics: any,
+  currentMetrics: {
+    urgent: { deadlineCritical: number; deadlineUrgent: number; blocked: number; overdue: number };
+  } | null,
+  previousMetrics: {
+    urgent: { deadlineCritical: number; deadlineUrgent: number; blocked: number; overdue: number };
+  } | null,
   preferences: NotificationPreferences
 ): void {
   if (!currentMetrics || !previousMetrics) {
