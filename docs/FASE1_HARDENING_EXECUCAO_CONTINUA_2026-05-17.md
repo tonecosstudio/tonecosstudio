@@ -217,3 +217,31 @@
 - Reforco do padrao UI -> hook -> service em analytics de colecoes.
 - Regra de consolidacao de dados encapsulada na camada de service.
 - Menor acoplamento e maior consistencia estrutural entre modulos admin.
+
+---
+
+## Rodada adicional 7 (delivery detail modal)
+
+### Problema atacado
+- `DeliveryDetailModal` concentrava queries de leitura diretamente no componente, com mistura de UI + acesso a infraestrutura.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/delivery-detail-service.ts`
+   - `fetchDeliveryDetail()`, `fetchSubscriberAddress()`, `fetchDeliveryChangeHistory()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useDeliveryDetailData.ts`
+   - centraliza query keys e query fns do modal.
+3. Componente simplificado:
+   - `src/components/admin/delivery/DeliveryDetailModal.tsx`
+   - remove `useQuery` inline e consome hooks de aplicacao.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- teste direcionado `OrderManagement.test.tsx`: 21/21 OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado em fluxo de detalhes de entrega.
+- Menor acoplamento do componente com consultas Supabase.
+- Padronizacao estrutural com as rodadas anteriores.

@@ -7,7 +7,7 @@
  * Requirements: 15.6
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,11 @@ import { useSanitizedInput } from '@/hooks/useSanitizedInput';
 import { ValidationFeedback } from '@/components/ui/validation-feedback';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { FORM_RATE_LIMITS } from '@/lib/security/sanitization-config';
+import {
+  useDeliveryChangeHistory,
+  useDeliveryDetail,
+  useSubscriberAddress,
+} from '@/hooks/admin/useDeliveryDetailData';
 
 interface DeliveryDetailModalProps {
   deliveryId: string | null;
@@ -59,73 +64,6 @@ interface DeliveryDetailModalProps {
     full_name: string | null;
     email: string | null;
   } | null;
-}
-
-interface DeliveryDetail {
-  id: string;
-  subscription_id: string;
-  cycle_id: string | null;
-  collection_id: string | null;
-  delivery_number: number;
-  status: string;
-  expected_delivery_date: string | null;
-  actual_delivery_date: string | null;
-  tracking_code: string | null;
-  auto_maintained: boolean;
-  bonus_piece_id: string | null;
-  created_at: string;
-  updated_at: string;
-  subscriptions: {
-    user_id: string;
-    collection_id: string;
-    plan_type: string;
-    status: string;
-    total_paid: number;
-    payment_method: string;
-    collections: {
-      name: string;
-      price: number;
-    };
-  } | null;
-  cycles: {
-    cycle_number: number;
-    month: number;
-    year: number;
-  } | null;
-  collections: {
-    name: string;
-    price: number;
-  } | null;
-  bonus_pieces: {
-    id: string;
-    description: string;
-    image_url: string | null;
-    status: string;
-  } | null;
-}
-
-interface CollectionChangeHistory {
-  id: string;
-  previous_collection_id: string | null;
-  new_collection_id: string;
-  change_reason: string;
-  changed_by_admin: boolean;
-  created_at: string;
-  previous_collection: {
-    name: string;
-  } | null;
-  new_collection: {
-    name: string;
-  };
-}
-
-interface OrderStatusHistoryRow {
-  id: string;
-  order_type: string | null;
-  changed_by: string | null;
-  created_at: string;
-  old_status: string | null;
-  new_status: string;
 }
 
 export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileData }: DeliveryDetailModalProps) {
@@ -152,63 +90,7 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
   const isTrackingCodeValid = validateTrackingCode(trackingCode);
 
   // Fetch delivery details
-  const { data: delivery, isLoading: isLoadingDelivery } = useQuery({
-    queryKey: ['delivery-detail', deliveryId],
-    queryFn: async () => {
-      if (!deliveryId) return null;
-
-      const { data, error } = await supabase
-        .from('subscription_deliveries')
-        .select(`
-          id,
-          subscription_id,
-          cycle_id,
-          collection_id,
-          delivery_number,
-          status,
-          expected_delivery_date,
-          actual_delivery_date,
-          tracking_code,
-          auto_maintained,
-          bonus_piece_id,
-          created_at,
-          updated_at,
-          subscriptions (
-            user_id,
-            collection_id,
-            plan_type,
-            status,
-            total_paid,
-            payment_method,
-            collections (
-              name,
-              price
-            )
-          ),
-          cycles (
-            cycle_number,
-            month,
-            year
-          ),
-          collections (
-            name,
-            price
-          ),
-          bonus_pieces (
-            id,
-            description,
-            image_url,
-            status
-          )
-        `)
-        .eq('id', deliveryId)
-        .single();
-
-      if (error) throw error;
-      return data as unknown as DeliveryDetail;
-    },
-    enabled: !!deliveryId && open,
-  });
+  const { data: delivery, isLoading: isLoadingDelivery } = useDeliveryDetail(deliveryId, open);
 
   // Inicializar estado quando delivery carregar
   useEffect(() => {
@@ -219,49 +101,10 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
   }, [delivery]);
 
   // Fetch subscriber profile address
-  const { data: profileAddress } = useQuery({
-    queryKey: ['subscriber-address', delivery?.subscriptions?.user_id],
-    queryFn: async () => {
-      if (!delivery?.subscriptions?.user_id) return null;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('address')
-        .eq('id', delivery.subscriptions.user_id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!delivery?.subscriptions?.user_id && open,
-  });
+  const { data: profileAddress } = useSubscriberAddress(delivery?.subscriptions?.user_id, open);
 
   // Fetch status change history from order_status_history
-  const { data: changeHistory } = useQuery({
-    queryKey: ['collection-change-history', deliveryId],
-    queryFn: async () => {
-      if (!deliveryId) return [];
-
-      const { data, error } = await supabase
-        .from('order_status_history')
-        .select('*')
-        .eq('order_id', deliveryId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return ((data || []) as OrderStatusHistoryRow[]).map((r) => ({
-        id: r.id,
-        previous_collection_id: null,
-        new_collection_id: '',
-        change_reason: r.order_type || 'manual',
-        changed_by_admin: !!r.changed_by,
-        created_at: r.created_at,
-        previous_collection: r.old_status ? { name: r.old_status } : null,
-        new_collection: { name: r.new_status },
-      })) as CollectionChangeHistory[];
-    },
-    enabled: !!deliveryId && open,
-  });
+  const { data: changeHistory } = useDeliveryChangeHistory(deliveryId, open);
 
   // Mutation para atualizar status
   const updateStatusMutation = useMutation({
