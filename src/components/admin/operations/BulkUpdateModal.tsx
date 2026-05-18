@@ -1,16 +1,10 @@
 /**
  * BulkUpdateModal
  *
- * Modal para atualização em massa do status de entregas.
- * Permite selecionar novo status e adicionar notas opcionais.
- * Exibe resultado com contagem de sucessos e falhas.
- *
- * Requirements: 15.9
- * Task: 21.7
+ * Modal para atualizacao em massa do status de entregas.
  */
 
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSanitizedInput } from '@/hooks/useSanitizedInput';
 import { ValidationFeedback } from '@/components/ui/validation-feedback';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
@@ -35,8 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { useBulkDeliveryStatusUpdate } from '@/hooks/admin/useBulkDeliveryStatusUpdate';
 
 interface BulkUpdateModalProps {
   open: boolean;
@@ -61,7 +55,7 @@ const statusOptions = [
   { value: 'scheduled', label: 'Agendado' },
   { value: 'pending_choice', label: 'Aguardando Escolha' },
   { value: 'confirmed', label: 'Confirmado' },
-  { value: 'in_production', label: 'Em Produção' },
+  { value: 'in_production', label: 'Em Producao' },
   { value: 'shipped', label: 'Enviado' },
   { value: 'delivered', label: 'Entregue' },
 ];
@@ -72,59 +66,19 @@ export function BulkUpdateModal({
   selectedDeliveryIds,
   onSuccess,
 }: BulkUpdateModalProps) {
-  const [newStatus, setNewStatus] = useState<string>('');
-
-  // Sanitized input for notes field (html type for rich text)
+  const [newStatus, setNewStatus] = useState('');
   const [notesRaw, setNotesRaw, notesSanitized] = useSanitizedInput('', 'html');
-
   const [result, setResult] = useState<BulkUpdateResult | null>(null);
-  const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const bulkUpdateMutation = useMutation({
-    mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Não autenticado');
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-update-delivery-status`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            deliveryIds: selectedDeliveryIds,
-            newStatus,
-            notes: notesSanitized || undefined,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao atualizar entregas');
-      }
-
-      return await response.json() as BulkUpdateResult;
-    },
-    onSuccess: (data) => {
-      setResult(data);
-      // Invalidar queries para atualizar a lista
-      queryClient.invalidateQueries({ queryKey: ['admin-deliveries'] });
-      if (onSuccess) {
-        onSuccess();
-      }
-    },
+  const bulkUpdateMutation = useBulkDeliveryStatusUpdate((data) => {
+    setResult(data);
+    onSuccess?.();
   });
 
   const handleSubmit = () => {
-    if (!newStatus) {
-      return;
-    }
+    if (!newStatus) return;
 
-    // Check rate limit before submission
     const rateLimitKey = `admin-bulk-delivery-update:${selectedDeliveryIds.join(',')}`;
     const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.adminDeliveryUpdate);
 
@@ -138,7 +92,11 @@ export function BulkUpdateModal({
     }
 
     setResult(null);
-    bulkUpdateMutation.mutate();
+    bulkUpdateMutation.mutate({
+      deliveryIds: selectedDeliveryIds,
+      newStatus,
+      notes: notesSanitized || undefined,
+    });
   };
 
   const handleClose = () => {
@@ -155,7 +113,7 @@ export function BulkUpdateModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Atualização em Massa</DialogTitle>
+          <DialogTitle>Atualizacao em Massa</DialogTitle>
           <DialogDescription>
             Atualizar o status de {selectedDeliveryIds.length} entrega(s) selecionada(s)
           </DialogDescription>
@@ -163,7 +121,6 @@ export function BulkUpdateModal({
 
         {!hasResult ? (
           <div className="space-y-4 py-4">
-            {/* Status Selection */}
             <div className="space-y-2">
               <Label htmlFor="status">Novo Status</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
@@ -180,76 +137,57 @@ export function BulkUpdateModal({
               </Select>
             </div>
 
-            {/* Notes */}
             <div className="space-y-2">
               <Label htmlFor="notes">Notas (opcional)</Label>
               <Textarea
                 id="notes"
-                placeholder="Adicione observações sobre esta atualização..."
+                placeholder="Adicione observacoes sobre esta atualizacao..."
                 value={notesRaw}
                 onChange={(e) => setNotesRaw(e.target.value)}
                 rows={3}
               />
-              {notesRaw !== notesSanitized && (
-                <ValidationFeedback
-                  info="Conteúdo HTML foi sanitizado para segurança"
-                />
-              )}
+              {notesRaw !== notesSanitized && <ValidationFeedback info="Conteudo HTML foi sanitizado para seguranca" />}
             </div>
 
-            {/* Error Display */}
             {bulkUpdateMutation.isError && (
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
                 <AlertDescription>
                   {bulkUpdateMutation.error instanceof Error
                     ? bulkUpdateMutation.error.message
-                    : 'Erro ao processar atualização'}
+                    : 'Erro ao processar atualizacao'}
                 </AlertDescription>
               </Alert>
             )}
           </div>
         ) : (
           <div className="space-y-4 py-4">
-            {/* Success/Failure Summary */}
             <div className="space-y-3">
               <Alert variant={result.success ? 'default' : 'destructive'}>
-                {result.success ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
-                <AlertDescription>
-                  {result.message}
-                </AlertDescription>
+                {result.success ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                <AlertDescription>{result.message}</AlertDescription>
               </Alert>
 
-              {/* Detailed Results */}
-              <div className="rounded-lg border p-4 space-y-2">
+              <div className="space-y-2 rounded-lg border p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Sucessos:</span>
-                  <span className="text-sm font-bold text-green-600">
-                    {result.successCount}
-                  </span>
+                  <span className="text-sm font-bold text-green-600">{result.successCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Falhas:</span>
-                  <span className="text-sm font-bold text-red-600">
-                    {result.failureCount}
-                  </span>
+                  <span className="text-sm font-bold text-red-600">{result.failureCount}</span>
                 </div>
               </div>
 
-              {/* Show failed deliveries if any */}
               {result.failureCount > 0 && (
-                <div className="rounded-lg border p-4 space-y-2 max-h-[200px] overflow-y-auto">
-                  <div className="text-sm font-medium mb-2">Entregas com falha:</div>
+                <div className="max-h-[200px] space-y-2 overflow-y-auto rounded-lg border p-4">
+                  <div className="mb-2 text-sm font-medium">Entregas com falha:</div>
                   {result.results
                     .filter((r) => !r.success)
                     .map((r) => (
                       <div
                         key={r.deliveryId}
-                        className="text-xs text-muted-foreground border-l-2 border-red-500 pl-2 py-1"
+                        className="border-l-2 border-red-500 py-1 pl-2 text-xs text-muted-foreground"
                       >
                         <div className="font-mono">{r.deliveryId.substring(0, 8)}...</div>
                         <div className="text-red-600">{r.error}</div>

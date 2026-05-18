@@ -950,3 +950,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado à mutação de status de entrega.
 - Menor acoplamento de infraestrutura na camada de apresentação.
+
+---
+
+## Rodada adicional 30 (bulk update modal)
+
+### Problema atacado
+- `BulkUpdateModal` executava autenticação e chamada da edge function diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/bulk-delivery-status-update-service.ts`
+   - centraliza autenticação e chamada da função `bulk-update-delivery-status`.
+2. Hook de aplicação:
+   - `src/hooks/admin/useBulkDeliveryStatusUpdate.ts`
+   - encapsula mutation e invalidação de `admin-deliveries`.
+3. Componente desacoplado:
+   - `src/components/admin/operations/BulkUpdateModal.tsx`
+   - passa a consumir apenas hook de domínio.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado no fluxo de atualização em massa.
+- Remoção de responsabilidade de infraestrutura da camada de UI.
