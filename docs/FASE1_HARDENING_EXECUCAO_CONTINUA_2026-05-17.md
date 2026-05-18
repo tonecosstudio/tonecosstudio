@@ -143,6 +143,36 @@
 - Reforco de SSOT no modulo de precificacao avulsa.
 - Menos responsabilidade de infraestrutura na camada de UI.
 
+---
+
+## Rodada adicional 13 (standalone purchase detail auth boundary)
+
+### Problema atacado
+- `StandalonePurchaseDetail` acessava autenticacao diretamente no componente para obter admin user id.
+
+### Melhorias aplicadas
+1. Service de auth de pagamentos:
+   - `src/services/admin/admin-payments-auth-service.ts`
+   - `getCurrentAdminPaymentsUserId()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useAdminPaymentsAuth.ts`
+   - expoe `getCurrentAdminUserId()` para camada de UI.
+3. Componente desacoplado:
+   - `src/components/admin/payments/StandalonePurchaseDetail.tsx`
+   - remove gateway/auth direto e usa hook.
+4. Testes atualizados:
+   - `src/components/admin/payments/StandalonePurchaseDetail.test.tsx`
+   - mock do novo hook de auth.
+
+### Validacao desta rodada
+- `npx eslint` dos arquivos alterados: OK
+- `npx vitest run src/components/admin/payments/StandalonePurchaseDetail.test.tsx` -> 19/19 OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Boundary de autenticacao padronizado no dominio admin/payments.
+- Reducao de acoplamento componente <-> infraestrutura.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado

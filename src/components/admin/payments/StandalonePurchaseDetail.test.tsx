@@ -7,11 +7,9 @@ import { useStandalonePurchaseActions } from '@/hooks/admin/useStandalonePurchas
 
 // Mock the services
 vi.mock('@/hooks/admin/useStandalonePurchaseActions');
-vi.mock('@/hooks/admin/useAdminPaymentsGateway', () => ({
-  useAdminPaymentsGateway: () => ({
-    auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } } }),
-    },
+vi.mock('@/hooks/admin/useAdminPaymentsAuth', () => ({
+  useAdminPaymentsAuth: () => ({
+    getCurrentAdminUserId: vi.fn().mockResolvedValue('test-user-id'),
   }),
 }));
 vi.mock('@/hooks/use-toast', () => ({

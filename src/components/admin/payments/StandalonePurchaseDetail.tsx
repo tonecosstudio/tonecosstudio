@@ -34,7 +34,7 @@ import { ptBR } from "date-fns/locale";
 import { toBahiaTime } from "@/lib/timezone";
 import { useStandalonePurchaseActions } from "@/hooks/admin/useStandalonePurchaseActions";
 import { useToast } from "@/hooks/use-toast";
-import { useAdminPaymentsGateway } from "@/hooks/admin/useAdminPaymentsGateway";
+import { useAdminPaymentsAuth } from "@/hooks/admin/useAdminPaymentsAuth";
 
 interface StandalonePurchase {
   id: string;
@@ -77,7 +77,7 @@ interface StandalonePurchaseDetailProps {
 export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailProps) {
   const { markProductionComplete, cancelStandalonePurchase, approvePaymentVoucher, rejectPaymentVoucher } =
     useStandalonePurchaseActions();
-  const supabase = useAdminPaymentsGateway();
+  const { getCurrentAdminUserId } = useAdminPaymentsAuth();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -106,10 +106,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
   // Mark production complete mutation
   const markCompleteMutation = useMutation({
     mutationFn: async () => {
-      // Get current admin user ID
-      const { data: { user } } = await supabase.auth.getUser();
-      const adminUserId = user?.id;
-
+      const adminUserId = await getCurrentAdminUserId();
       return markProductionComplete(purchase.id, adminUserId);
     },
     onSuccess: () => {
@@ -132,10 +129,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
   // Cancel order mutation
   const cancelMutation = useMutation({
     mutationFn: async (reason: string) => {
-      // Get current admin user ID
-      const { data: { user } } = await supabase.auth.getUser();
-      const adminUserId = user?.id;
-
+      const adminUserId = await getCurrentAdminUserId();
       return cancelStandalonePurchase(purchase.id, reason, adminUserId);
     },
     onSuccess: () => {
