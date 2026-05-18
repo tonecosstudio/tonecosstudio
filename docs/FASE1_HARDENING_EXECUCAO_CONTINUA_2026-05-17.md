@@ -67,3 +67,34 @@
 - Boundary mais limpo: componente de UI sem query direta em infraestrutura.
 - Service mais coeso e com menor duplicacao.
 - Melhor base para evoluir isolamento de dominio e testabilidade.
+
+---
+
+## Rodada adicional 2 (email analytics)
+
+### Problema atacado
+- `EmailAnalyticsDashboard` executava queries Supabase diretamente no componente (mistura UI + infraestrutura).
+
+### Melhorias aplicadas
+1. Novo service dedicado:
+   - `src/services/admin/email-analytics-service.ts`
+   - `fetchEmailStats()`, `fetchEmailLogs()` e tipos de dominio local.
+2. Novo hook de aplicacao:
+   - `src/hooks/admin/useEmailAnalytics.ts`
+   - Encapsula query keys e regras de consumo via React Query.
+3. Componente simplificado:
+   - `src/components/admin/email/EmailAnalyticsDashboard.tsx`
+   - Sem acesso direto a Supabase.
+4. Teste adaptado ao novo boundary:
+   - `src/components/admin/__tests__/EmailAnalyticsDashboard.test.tsx`
+   - Agora mocka hook de aplicacao (nao infraestrutura).
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- teste direcionado `EmailAnalyticsDashboard.test.tsx`: 4/4 OK
+- build: OK
+
+### Efeito arquitetural
+- Separacao mais clara entre UI/aplicacao/infraestrutura.
+- Menor acoplamento de componente com cliente de dados.
+- Testes mais estaveis e menos sensiveis a detalhes de query.

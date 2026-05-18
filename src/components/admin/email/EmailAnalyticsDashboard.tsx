@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useEmailLogs, useEmailStats } from '@/hooks/admin/useEmailAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -8,99 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Mail, CheckCircle, XCircle, Clock, Eye, MousePointer, AlertCircle } from 'lucide-react';
 
-interface EmailLog {
-  id: string;
-  recipient_email: string;
-  email_type: string;
-  subject: string;
-  status: string;
-  provider: string;
-  error_message: string | null;
-  retry_count: number;
-  sent_at: string | null;
-  opened_at: string | null;
-  clicked_at: string | null;
-  bounced_at: string | null;
-  created_at: string;
-}
-
-interface EmailStats {
-  total: number;
-  sent: number;
-  failed: number;
-  bounced: number;
-  opened: number;
-  clicked: number;
-  pending: number;
-}
-
 export function EmailAnalyticsDashboard() {
   const [searchEmail, setSearchEmail] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<string>('7d');
 
-  // Fetch email statistics
-  const { data: stats } = useQuery({
-    queryKey: ['email-stats', timeRange],
-    queryFn: async () => {
-      const daysAgo = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 1;
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysAgo);
-
-      const { data, error } = await supabase
-        .from('email_delivery_logs')
-        .select('status')
-        .gte('created_at', startDate.toISOString());
-
-      if (error) throw error;
-
-      const stats: EmailStats = {
-        total: data.length,
-        sent: data.filter(log => log.status === 'sent').length,
-        failed: data.filter(log => log.status === 'failed').length,
-        bounced: data.filter(log => log.status === 'bounced').length,
-        opened: data.filter(log => log.status === 'opened').length,
-        clicked: data.filter(log => log.status === 'clicked').length,
-        pending: data.filter(log => log.status === 'pending').length,
-      };
-
-      return stats;
-    },
-  });
-
-  // Fetch email logs
-  const { data: logs, isLoading: logsLoading } = useQuery({
-    queryKey: ['email-logs', searchEmail, filterType, filterStatus, timeRange],
-    queryFn: async () => {
-      const daysAgo = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 1;
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysAgo);
-
-      let query = supabase
-        .from('email_delivery_logs')
-        .select('*')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (searchEmail) {
-        query = query.ilike('recipient_email', `%${searchEmail}%`);
-      }
-
-      if (filterType !== 'all') {
-        query = query.eq('email_type', filterType);
-      }
-
-      if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as EmailLog[];
-    },
+  const { data: stats } = useEmailStats(timeRange);
+  const { data: logs, isLoading: logsLoading } = useEmailLogs({
+    searchEmail,
+    filterType,
+    filterStatus,
+    timeRange,
   });
 
   const getStatusBadge = (status: string) => {
