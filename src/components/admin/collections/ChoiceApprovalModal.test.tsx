@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChoiceApprovalModal } from "./ChoiceApprovalModal";
 import type { CharacterChoice } from "@/hooks/admin/useChoiceApproval";
 import * as choiceHooks from "@/hooks/admin/useChoiceApproval";
+import * as choiceModalHooks from "@/hooks/admin/useChoiceApprovalModal";
 
 // Mock the hooks
 vi.mock("@/hooks/admin/useChoiceApproval", () => ({
@@ -16,26 +17,9 @@ vi.mock("@/hooks/admin/useChoiceApproval", () => ({
   useRejectChoice: vi.fn(),
 }));
 
-// Mock Supabase client
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: { stock_quantity: 10 }, error: null })),
-          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
-        })),
-        neq: vi.fn(() => ({
-          gt: vi.fn(() => ({
-            order: vi.fn(() => Promise.resolve({ data: [], error: null })),
-          })),
-        })),
-      })),
-    })),
-    auth: {
-      getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "test-user" } } })),
-    },
-  },
+vi.mock("@/hooks/admin/useChoiceApprovalModal", () => ({
+  useCharacterStock: vi.fn(),
+  useAlternativeCharacters: vi.fn(),
 }));
 
 // Mock toast
@@ -94,6 +78,12 @@ describe("ChoiceApprovalModal", () => {
     vi.mocked(choiceHooks.useRejectChoice).mockReturnValue({
       mutateAsync: vi.fn().mockResolvedValue(mockChoice),
     } as unknown as ReturnType<typeof choiceHooks.useRejectChoice>);
+    vi.mocked(choiceModalHooks.useCharacterStock).mockReturnValue({
+      data: 10,
+    } as unknown as ReturnType<typeof choiceModalHooks.useCharacterStock>);
+    vi.mocked(choiceModalHooks.useAlternativeCharacters).mockReturnValue({
+      data: [],
+    } as unknown as ReturnType<typeof choiceModalHooks.useAlternativeCharacters>);
   });
 
   it("renders modal with choice details when open", async () => {
@@ -196,15 +186,9 @@ describe("ChoiceApprovalModal", () => {
   });
 
   it("shows suggest alternative button when stock is low", async () => {
-    // Mock low stock
-    const { supabase } = await import("@/integrations/supabase/client");
-    vi.mocked(supabase.from).mockReturnValue({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: { stock_quantity: 3 }, error: null })),
-        })),
-      })),
-    } as unknown as ReturnType<typeof supabase.from>);
+    vi.mocked(choiceModalHooks.useCharacterStock).mockReturnValue({
+      data: 3,
+    } as unknown as ReturnType<typeof choiceModalHooks.useCharacterStock>);
 
     renderWithProviders(
       <ChoiceApprovalModal choice={mockChoice} open={true} onOpenChange={vi.fn()} />
@@ -217,15 +201,9 @@ describe("ChoiceApprovalModal", () => {
   });
 
   it("disables approve button when character is out of stock", async () => {
-    // Mock out of stock
-    const { supabase } = await import("@/integrations/supabase/client");
-    vi.mocked(supabase.from).mockReturnValue({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: { stock_quantity: 0 }, error: null })),
-        })),
-      })),
-    } as unknown as ReturnType<typeof supabase.from>);
+    vi.mocked(choiceModalHooks.useCharacterStock).mockReturnValue({
+      data: 0,
+    } as unknown as ReturnType<typeof choiceModalHooks.useCharacterStock>);
 
     renderWithProviders(
       <ChoiceApprovalModal choice={mockChoice} open={true} onOpenChange={vi.fn()} />

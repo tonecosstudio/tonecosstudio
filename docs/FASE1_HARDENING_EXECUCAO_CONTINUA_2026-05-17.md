@@ -659,3 +659,33 @@
 ### Efeito arquitetural
 - Lista de contatos alinhada ao padrao UI -> hook -> service.
 - Menor acoplamento de UI com infraestrutura e melhor reutilizacao do carregamento.
+
+---
+
+## Rodada adicional 19 (choice approval modal)
+
+### Problema atacado
+- `ChoiceApprovalModal` continha consultas diretas ao Supabase para estoque e alternativas, misturando UI com infraestrutura.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/choice-approval-modal-service.ts`
+   - `fetchCharacterStock()` e `fetchAlternativeCharacters()`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useChoiceApprovalModal.ts`
+   - `useCharacterStock()` e `useAlternativeCharacters()`.
+3. Componente desacoplado:
+   - `src/components/admin/collections/ChoiceApprovalModal.tsx`
+   - remove acesso direto ao client de infra.
+4. Testes atualizados:
+   - `src/components/admin/collections/ChoiceApprovalModal.test.tsx`
+   - mocks migrados para os novos hooks de aplicacao.
+
+### Validacao desta rodada
+- teste alvo (`ChoiceApprovalModal.test.tsx`): 10/10 OK
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> aplicacao -> infraestrutura restaurado no fluxo de aprovacao/rejeicao de escolha.
+- Reducao de acoplamento e maior testabilidade por isolamento de query logic.

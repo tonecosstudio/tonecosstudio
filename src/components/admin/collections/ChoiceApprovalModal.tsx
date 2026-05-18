@@ -12,9 +12,9 @@
  */
 
 import { useState } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApproveChoice, useRejectChoice, type CharacterChoice } from "@/hooks/admin/useChoiceApproval";
-import { supabase } from "@/integrations/supabase/client";
+import { useAlternativeCharacters, useCharacterStock } from "@/hooks/admin/useChoiceApprovalModal";
 import {
   Dialog,
   DialogContent,
@@ -48,13 +48,6 @@ interface ChoiceApprovalModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface Character {
-  id: string;
-  name: string;
-  image_url: string;
-  stock_quantity: number;
-}
-
 export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprovalModalProps) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -63,41 +56,13 @@ export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprov
   const queryClient = useQueryClient();
 
   // Fetch character stock level
-  const { data: characterStock } = useQuery({
-    queryKey: ["character-stock", choice?.characterId],
-    queryFn: async () => {
-      if (!choice?.characterId) return null;
-
-      const { data, error } = await supabase
-        .from("collection_characters")
-        .select("stock_quantity")
-        .eq("id", choice.characterId)
-        .single();
-
-      if (error) throw error;
-      return data?.stock_quantity || 0;
-    },
-    enabled: !!choice?.characterId && open,
-  });
+  const { data: characterStock } = useCharacterStock(choice?.characterId, open);
 
   // Fetch alternative characters from the same collection
-  const { data: alternativeCharacters } = useQuery({
-    queryKey: ["alternative-characters", choice?.collectionId],
-    queryFn: async () => {
-      if (!choice?.collectionId) return [];
-
-      const { data, error } = await supabase
-        .from("collection_characters")
-        .select("id, name, image_url, stock_quantity")
-        .eq("collection_id", choice.collectionId)
-        .neq("id", choice.characterId || "")
-        .gt("stock_quantity", 0)
-        .order("name");
-
-      if (error) throw error;
-      return data as Character[];
-    },
-    enabled: !!choice?.collectionId && open && showAlternatives,
+  const { data: alternativeCharacters } = useAlternativeCharacters({
+    collectionId: choice?.collectionId,
+    characterId: choice?.characterId,
+    enabled: open && showAlternatives,
   });
 
   // Approve mutation
