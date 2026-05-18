@@ -104,3 +104,55 @@ export function formatPaymentCurrency(amount: number, currency: string): string 
 export function formatPaymentDate(dateString: string): string {
   return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
+
+export function exportPaymentListItemToCsv(payment: PaymentListItem): void {
+  const headers = [
+    "ID",
+    "Referencia",
+    "Cliente",
+    "Email",
+    "Valor",
+    "Moeda",
+    "Metodo",
+    "Status",
+    "Criado em",
+    "Arquivos",
+    "Mensagens nao lidas",
+  ];
+
+  const row = [
+    payment.id,
+    payment.reference_number,
+    payment.customer_name,
+    payment.customer_email,
+    formatPaymentCurrency(payment.amount, payment.currency),
+    payment.currency,
+    payment.payment_method_name,
+    getPaymentStatusConfig(payment.status).label,
+    formatPaymentDate(payment.created_at),
+    String(payment.file_count),
+    String(payment.unread_messages),
+  ];
+
+  const csv = [headers, row].map((fields) => fields.map(escapeCsvField).join(",")).join("\n");
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute("href", url);
+  link.setAttribute("download", `pagamento_${payment.reference_number || payment.id}.csv`);
+  link.style.visibility = "hidden";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsvField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+
+  return value;
+}

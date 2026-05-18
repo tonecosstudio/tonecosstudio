@@ -78,6 +78,7 @@ import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { ValidationFeedback } from "@/components/ui/validation-feedback";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
 import {
+  exportPaymentListItemToCsv,
   formatPaymentCurrency,
   formatPaymentDate,
   getPaymentStatusConfig,
@@ -249,12 +250,22 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
 
   // Handle export payment
   const handleExportPayment = (paymentId: string) => {
+    const payment = sortedPayments.find((item) => item.id === paymentId);
+
+    if (!payment) {
+      toast({
+        title: "Pagamento nao encontrado",
+        description: "Nao foi possivel localizar o pagamento para exportacao.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    exportPaymentListItemToCsv(payment);
     toast({
-      title: "Exportação iniciada",
-      description: `O pagamento ${paymentId} será exportado em breve.`,
+      title: "Exportacao concluida",
+      description: `O pagamento ${payment.reference_number || payment.id} foi exportado em CSV.`,
     });
-    // TODO: Implement actual export logic
-    console.log("Exporting payment:", paymentId);
   };
 
   // Handle real-time update notification
