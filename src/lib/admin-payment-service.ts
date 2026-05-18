@@ -36,7 +36,6 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
     )
     .in("status", ["pending", "under_review", "requires_info"]);
 
-  // Apply filters
   if (filters?.status && filters.status.length > 0) {
     query = query.in("status", filters.status);
   }
@@ -54,12 +53,9 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
   }
 
   if (filters?.search) {
-    query = query.or(
-      `reference_number.ilike.%${filters.search}%`
-    );
+    query = query.or(`reference_number.ilike.%${filters.search}%`);
   }
 
-  // Order by creation date (newest first) by default
   query = query.order("created_at", { ascending: false });
 
   const { data, error } = await query;
@@ -68,7 +64,9 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
     throw new Error(`Failed to list pending payments: ${error.message}`);
   }
 
-  const userIds = [...new Set((data || []).map((payment) => payment.user_id).filter(Boolean))];
+  const payments = data || [];
+  const paymentIds = payments.map((payment) => payment.id).filter(Boolean);
+  const userIds = [...new Set(payments.map((payment) => payment.user_id).filter(Boolean))];
   const profileByUserId = new Map<string, { full_name: string | null; email: string | null }>();
 
   if (userIds.length > 0) {
@@ -89,52 +87,76 @@ export async function listPendingPayments(filters?: PaymentFilters): Promise<Pay
     }
   }
 
-  // Transform data to PaymentListItem format
-  const paymentListItems: PaymentListItem[] = await Promise.all(
-    (data || []).map(async (payment) => {
-      // Get file count
-      const { count: fileCount } = await supabase
-        .from("payment_files")
-        .select("*", { count: "exact", head: true })
-        .eq("payment_id", payment.id);
+  const fileCountByPaymentId = new Map<string, number>();
+  const paymentIdByConversationId = new Map<string, string>();
+  const unreadMessagesByPaymentId = new Map<string, number>();
 
-      const { data: conversations } = await supabase
-        .from("support_conversations")
-        .select("id")
-        .eq("payment_id", payment.id);
+  if (paymentIds.length > 0) {
+    const { data: files, error: filesError } = await supabase
+      .from("payment_files")
+      .select("payment_id")
+      .in("payment_id", paymentIds);
 
-      const conversationIds = (conversations || []).map((conversation) => conversation.id);
-      let unreadMessages = 0;
+    if (filesError) {
+      throw new Error(`Failed to load payment file counts: ${filesError.message}`);
+    }
 
-      if (conversationIds.length > 0) {
-        const { count: unreadCount } = await supabase
-          .from("support_messages")
-          .select("*", { count: "exact", head: true })
-          .in("conversation_id", conversationIds)
-          .eq("is_admin", false);
+    for (const file of files || []) {
+      fileCountByPaymentId.set(file.payment_id, (fileCountByPaymentId.get(file.payment_id) || 0) + 1);
+    }
 
-        unreadMessages = unreadCount || 0;
+    const { data: conversations, error: conversationsError } = await supabase
+      .from("support_conversations")
+      .select("id, payment_id")
+      .in("payment_id", paymentIds);
+
+    if (conversationsError) {
+      throw new Error(`Failed to load payment conversations: ${conversationsError.message}`);
+    }
+
+    for (const conversation of conversations || []) {
+      if (conversation.payment_id) {
+        paymentIdByConversationId.set(conversation.id, conversation.payment_id);
+      }
+    }
+
+    const conversationIds = [...paymentIdByConversationId.keys()];
+
+    if (conversationIds.length > 0) {
+      const { data: unreadMessages, error: unreadMessagesError } = await supabase
+        .from("support_messages")
+        .select("conversation_id")
+        .in("conversation_id", conversationIds)
+        .eq("is_admin", false);
+
+      if (unreadMessagesError) {
+        throw new Error(`Failed to load payment unread messages: ${unreadMessagesError.message}`);
       }
 
-      return {
-        id: payment.id,
-        reference_number: payment.reference_number,
-        customer_name: profileByUserId.get(payment.user_id)?.full_name || "Cliente",
-        customer_email: profileByUserId.get(payment.user_id)?.email || "",
-        amount: payment.amount,
-        currency: payment.currency,
-        payment_method_name: payment.payment_method?.name || "Método desconhecido",
-        status: payment.status as PaymentStatus,
-        created_at: payment.created_at,
-        file_count: fileCount || 0,
-        unread_messages: unreadMessages,
-      };
-    })
-  );
+      for (const message of unreadMessages || []) {
+        const paymentId = paymentIdByConversationId.get(message.conversation_id);
 
-  return paymentListItems;
+        if (paymentId) {
+          unreadMessagesByPaymentId.set(paymentId, (unreadMessagesByPaymentId.get(paymentId) || 0) + 1);
+        }
+      }
+    }
+  }
+
+  return payments.map((payment) => ({
+    id: payment.id,
+    reference_number: payment.reference_number,
+    customer_name: profileByUserId.get(payment.user_id)?.full_name || "Cliente",
+    customer_email: profileByUserId.get(payment.user_id)?.email || "",
+    amount: payment.amount,
+    currency: payment.currency,
+    payment_method_name: payment.payment_method?.name || "Metodo desconhecido",
+    status: payment.status as PaymentStatus,
+    created_at: payment.created_at,
+    file_count: fileCountByPaymentId.get(payment.id) || 0,
+    unread_messages: unreadMessagesByPaymentId.get(payment.id) || 0,
+  }));
 }
-
 /**
  * Get payment statistics for admin dashboard
  *

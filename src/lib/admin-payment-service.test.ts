@@ -7,6 +7,7 @@
 
 import { describe, test, expect, vi, beforeEach, type Mock } from "vitest";
 import {
+  listPendingPayments,
   bulkApprovePayments,
   exportPaymentsToCSV,
   bulkSendMessage,
@@ -51,6 +52,109 @@ describe("AdminPaymentService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("listPendingPayments", () => {
+    test("should enrich pending payments with batched profile, file, and unread message data", async () => {
+      const mockPayments = [
+        {
+          id: "payment-1",
+          user_id: "user-1",
+          reference_number: "PAY-1",
+          amount: 100,
+          currency: "BRL",
+          status: "pending",
+          created_at: "2024-01-01T10:00:00Z",
+          payment_method: { name: "PIX" },
+        },
+        {
+          id: "payment-2",
+          user_id: "user-2",
+          reference_number: "PAY-2",
+          amount: 200,
+          currency: "BRL",
+          status: "under_review",
+          created_at: "2024-01-02T10:00:00Z",
+          payment_method: { name: "Cartao" },
+        },
+      ];
+
+      supabaseFromMock
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: mockPayments, error: null }),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "user-1", full_name: "Ana Cliente", email: "ana@example.com" },
+                { id: "user-2", full_name: "Bruno Cliente", email: "bruno@example.com" },
+              ],
+              error: null,
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { payment_id: "payment-1" },
+                { payment_id: "payment-2" },
+                { payment_id: "payment-2" },
+              ],
+              error: null,
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "conversation-1", payment_id: "payment-1" },
+                { id: "conversation-2", payment_id: "payment-2" },
+              ],
+              error: null,
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [
+                  { conversation_id: "conversation-2" },
+                  { conversation_id: "conversation-2" },
+                ],
+                error: null,
+              }),
+            }),
+          }),
+        });
+
+      const result = await listPendingPayments();
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          id: "payment-1",
+          customer_name: "Ana Cliente",
+          customer_email: "ana@example.com",
+          file_count: 1,
+          unread_messages: 0,
+        }),
+        expect.objectContaining({
+          id: "payment-2",
+          customer_name: "Bruno Cliente",
+          customer_email: "bruno@example.com",
+          file_count: 2,
+          unread_messages: 2,
+        }),
+      ]);
+      expect(supabaseFromMock).toHaveBeenCalledTimes(5);
+    });
   });
 
   describe("bulkApprovePayments", () => {
