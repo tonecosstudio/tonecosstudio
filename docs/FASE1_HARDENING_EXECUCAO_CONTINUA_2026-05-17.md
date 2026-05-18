@@ -247,6 +247,31 @@
 ### Efeito arquitetural
 - Menor acoplamento no sidebar admin e padrao estrutural consistente.
 
+---
+
+## Rodada adicional 17 (collection limit config)
+
+### Problema atacado
+- `CollectionLimitConfig` atualizava `subscription_plans` diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/collection-limit-config-service.ts`
+   - `updateSubscriptionPlanCollectionLimit(planId, newLimit)`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useCollectionLimitConfig.ts`
+   - mutation + invalidacao padronizada.
+3. Componente desacoplado:
+   - `src/components/admin/collections/CollectionLimitConfig.tsx`
+   - sem acesso direto a `supabase`.
+
+### Validacao desta rodada
+- `npx eslint src/components/admin/collections/CollectionLimitConfig.tsx src/hooks/admin/useCollectionLimitConfig.ts src/services/admin/collection-limit-config-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service reforcado em configuracao de plano.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado
