@@ -173,6 +173,32 @@
 - Boundary de autenticacao padronizado no dominio admin/payments.
 - Reducao de acoplamento componente <-> infraestrutura.
 
+---
+
+## Rodada adicional 14 (quick replies selector)
+
+### Problema atacado
+- `QuickRepliesSelector` fazia leitura direta em `quick_replies` no componente, misturando UI com acesso a dados.
+
+### Melhorias aplicadas
+1. Service reaproveitado e expandido:
+   - `src/services/admin/quick-replies-service.ts`
+   - novo `fetchActiveQuickReplies()`.
+2. Hook dedicado:
+   - `src/hooks/admin/useQuickRepliesSelector.ts`
+   - query com `enabled` baseado na abertura do popover.
+3. Componente desacoplado:
+   - `src/components/admin/support/QuickRepliesSelector.tsx`
+   - remove `supabase` direto e consome hook.
+
+### Validacao desta rodada
+- `npx eslint src/components/admin/support/QuickRepliesSelector.tsx src/hooks/admin/useQuickRepliesSelector.ts src/services/admin/quick-replies-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Mais consistencia do padrao `UI -> hook -> service`.
+- Menos acoplamento na camada de suporte/chat admin.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado

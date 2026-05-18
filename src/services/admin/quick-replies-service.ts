@@ -27,6 +27,17 @@ export async function fetchQuickReplies(): Promise<QuickReply[]> {
   return (data || []) as QuickReply[];
 }
 
+export async function fetchActiveQuickReplies(): Promise<QuickReply[]> {
+  const { data, error } = await supabase
+    .from("quick_replies")
+    .select("*")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as QuickReply[];
+}
+
 export async function createQuickReply(input: QuickReplyInput, displayOrder: number): Promise<void> {
   const { error } = await supabase.from("quick_replies").insert({
     ...input,
