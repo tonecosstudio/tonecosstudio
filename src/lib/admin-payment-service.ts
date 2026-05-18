@@ -377,6 +377,7 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
 
   // Create CSV rows
   type ExportablePayment = {
+    user_id: string;
     reference_number?: string | null;
     amount: number;
     currency: string;
@@ -386,10 +387,32 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
     payment_method?: { name?: string | null } | null;
   };
 
-  const rows = ((payments || []) as ExportablePayment[]).map((payment) => [
+  const exportablePayments = (payments || []) as ExportablePayment[];
+  const userIds = [...new Set(exportablePayments.map((payment) => payment.user_id).filter(Boolean))];
+  const profileByUserId = new Map<string, { full_name: string | null; email: string | null }>();
+
+  if (userIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    if (profilesError) {
+      throw new Error(`Failed to load payment export profiles: ${profilesError.message}`);
+    }
+
+    for (const profile of profiles || []) {
+      profileByUserId.set(profile.id, {
+        full_name: profile.full_name,
+        email: profile.email,
+      });
+    }
+  }
+
+  const rows = exportablePayments.map((payment) => [
     payment.reference_number || "",
-    "", // customer name - would need separate profile lookup
-    "", // customer email - would need separate profile lookup
+    profileByUserId.get(payment.user_id)?.full_name || "Cliente",
+    profileByUserId.get(payment.user_id)?.email || "",
     payment.amount.toString(),
     payment.currency,
     payment.payment_method?.name || "",
@@ -401,7 +424,7 @@ export async function exportPaymentsToCSV(paymentIds: string[]): Promise<Blob> {
   // Combine header and rows
   const csvContent = [
     headers.join(","),
-    ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
   ].join("\n");
 
   // Create Blob
@@ -956,7 +979,7 @@ async function processBulkExportAsync(operationId: string): Promise<void> {
     const paymentIds = operation.payment_ids as string[];
 
     // Generate CSV
-    const _csvBlob = await exportPaymentsToCSV(paymentIds);
+    await exportPaymentsToCSV(paymentIds);
 
     // Mark as completed with result
     await supabase

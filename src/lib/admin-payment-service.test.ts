@@ -135,12 +135,12 @@ describe("AdminPaymentService", () => {
   });
 
   describe("exportPaymentsToCSV", () => {
-    test("should generate CSV with correct headers", async () => {
+    test("should generate CSV with profile-backed customer fields", async () => {
       const paymentIds = ["payment-1", "payment-2"];
-
       const mockPayments = [
         {
           id: "payment-1",
+          user_id: "user-1",
           reference_number: "PAY-20240101-0001",
           amount: 100.0,
           currency: "BRL",
@@ -148,33 +148,47 @@ describe("AdminPaymentService", () => {
           payment_type: "one_time",
           created_at: "2024-01-01T10:00:00Z",
           payment_method: { name: "PIX" },
-          profiles: { full_name: "John Doe", email: "john@example.com" },
         },
       ];
 
-      supabaseFromMock.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ data: mockPayments, error: null }),
-        }),
-      });
+      supabaseFromMock
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: mockPayments, error: null }),
+          }),
+        })
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "user-1", full_name: "John Doe", email: "john@example.com" }],
+              error: null,
+            }),
+          }),
+        });
 
-      const _csvBlob = await exportPaymentsToCSV(paymentIds);
-      // Mock the text() method for Blob
-      const csvText =
-        'Número de Referência,Cliente,Email,Valor,Moeda,Método de Pagamento,Status,Data de Criação,Tipo de Pagamento\n"PAY-20240101-0001","John Doe","john@example.com","100","BRL","PIX","approved","01/01/2024","Única"';
+      const nativeBlob = globalThis.Blob;
+      const blobConstructor = vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => ({
+        parts,
+        options,
+      }));
+      vi.stubGlobal("Blob", blobConstructor);
 
-      expect(csvText).toContain("Número de Referência");
-      expect(csvText).toContain("Cliente");
-      expect(csvText).toContain("Email");
-      expect(csvText).toContain("Valor");
-      expect(csvText).toContain("Moeda");
-      expect(csvText).toContain("Método de Pagamento");
-      expect(csvText).toContain("Status");
-      expect(csvText).toContain("Data de Criação");
-      expect(csvText).toContain("Tipo de Pagamento");
+      try {
+        await exportPaymentsToCSV(paymentIds);
+        const csvText = String(blobConstructor.mock.calls[0][0][0]);
+
+        expect(csvText).toContain("Cliente");
+        expect(csvText).toContain("Email");
+        expect(csvText).toContain("Valor");
+        expect(csvText).toContain("Status");
+        expect(csvText).toContain('"PAY-20240101-0001"');
+        expect(csvText).toContain('"John Doe"');
+        expect(csvText).toContain('"john@example.com"');
+      } finally {
+        vi.stubGlobal("Blob", nativeBlob);
+      }
     });
   });
-
   describe("bulkSendMessage", () => {
     test("should send message to all selected payment conversations", async () => {
       const paymentIds = ["payment-1", "payment-2"];
