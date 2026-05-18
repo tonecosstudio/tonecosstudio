@@ -223,6 +223,30 @@
 ### Efeito arquitetural
 - Reforco do boundary UI -> hook -> service no modulo de suporte.
 
+---
+
+## Rodada adicional 16 (customer info sidebar)
+
+### Problema atacado
+- `CustomerInfo` fazia query direta em `profiles` dentro do componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/customer-profile-service.ts`
+   - `fetchCustomerProfile(userId)`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useCustomerProfile.ts`.
+3. Componente desacoplado:
+   - `src/components/admin/sidebar/CustomerInfo.tsx`
+   - remove acesso direto a `supabase`.
+
+### Validacao desta rodada
+- `npx eslint src/components/admin/sidebar/CustomerInfo.tsx src/hooks/admin/useCustomerProfile.ts src/services/admin/customer-profile-service.ts` -> OK
+- `npm run -s build` -> OK
+
+### Efeito arquitetural
+- Menor acoplamento no sidebar admin e padrao estrutural consistente.
+
 ## Rodada adicional (continuacao em modo continuo)
 
 ### Problema atacado

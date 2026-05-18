@@ -1,61 +1,15 @@
-/**
- * CustomerInfo - Exibe dados pessoais do cliente
- * Mostra informações de contato e perfil do usuário
- */
-
-import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Mail, Phone, User, MapPin, Calendar, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useCustomerProfile } from "@/hooks/admin/useCustomerProfile";
 
 interface CustomerInfoProps {
   userId: string;
 }
 
-interface ProfileData {
-  id: string;
-  email?: string;
-  full_name?: string;
-  phone?: string;
-  cpf?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-  created_at: string;
-  username?: string;
-  display_name?: string;
-  collector_level?: number;
-}
-
 export function CustomerInfo({ userId }: CustomerInfoProps) {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadProfile = useCallback(async () => {
-    try {
-      // Buscar dados do perfil (que já deve ter o email)
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      if (profileError) throw profileError;
-
-      setProfile(profileData);
-    } catch (error) {
-      console.error("Erro ao carregar dados do cliente:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+  const { data: profile, isLoading: loading } = useCustomerProfile(userId);
 
   if (loading) {
     return (
@@ -66,9 +20,7 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
   }
 
   if (!profile) {
-    return (
-      <div className="text-sm text-muted-foreground py-4">Dados do cliente não encontrados</div>
-    );
+    return <div className="text-sm text-muted-foreground py-4">Dados do cliente nao encontrados</div>;
   }
 
   const displayName = profile.full_name || profile.display_name || profile.username || "Cliente";
@@ -78,7 +30,6 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
 
   return (
     <div className="space-y-4">
-      {/* Nome e Badge de Colecionador */}
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-semibold text-lg">{displayName}</h3>
@@ -87,11 +38,10 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
           )}
         </div>
         {profile.collector_level && profile.collector_level > 1 && (
-          <Badge variant="secondary">Nível {profile.collector_level}</Badge>
+          <Badge variant="secondary">Nivel {profile.collector_level}</Badge>
         )}
       </div>
 
-      {/* Informações de Contato */}
       <div className="space-y-2">
         {profile.email && (
           <div className="flex items-center gap-2 text-sm">
@@ -101,7 +51,6 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
             </a>
           </div>
         )}
-
         {profile.phone && (
           <div className="flex items-center gap-2 text-sm">
             <Phone className="h-4 w-4 text-muted-foreground" />
@@ -110,7 +59,6 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
             </a>
           </div>
         )}
-
         {profile.cpf && (
           <div className="flex items-center gap-2 text-sm">
             <User className="h-4 w-4 text-muted-foreground" />
@@ -119,7 +67,6 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
         )}
       </div>
 
-      {/* Endereço */}
       {(profile.address || profile.city || profile.state) && (
         <div className="space-y-1">
           <div className="flex items-start gap-2 text-sm">
@@ -139,7 +86,6 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
         </div>
       )}
 
-      {/* Data de Cadastro */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t">
         <Calendar className="h-4 w-4" />
         <span>Cliente desde {memberSince}</span>
