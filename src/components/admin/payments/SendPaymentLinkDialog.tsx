@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAdminPaymentsGateway } from "@/hooks/admin/useAdminPaymentsGateway";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Send, Copy, Check } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSendPaymentLink } from "@/hooks/admin/useSendPaymentLink";
 
 interface SendPaymentLinkDialogProps {
   quoteId: string;
@@ -32,9 +31,8 @@ export function SendPaymentLinkDialog({
   customerName,
   customerEmail: _customerEmail,
 }: SendPaymentLinkDialogProps) {
-  const supabase = useAdminPaymentsGateway();
   const { toast } = useToast();
-  const qc = useQueryClient();
+  const sendLinkMutation = useSendPaymentLink(quoteId);
   const [isOpen, setIsOpen] = useState(false);
   const [paymentLink, setPaymentLink] = useState("");
   const [pixKey, setPixKey] = useState("");
@@ -43,64 +41,12 @@ export function SendPaymentLinkDialog({
   );
   const [copiedPix, setCopiedPix] = useState(false);
 
-  const sendLinkMutation = useMutation({
-    mutationFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Não autenticado");
-
-      // 1. Criar registro de payment_link
-      const { error: linkError } = await supabase.from("payment_links").insert({
-        quote_id: quoteId,
-        payment_type: paymentType,
-        amount: amount,
-        payment_link: paymentLink || null,
-        pix_key: pixKey || null,
-        instructions: instructions,
-        sent_by: userData.user.id,
-      });
-
-      if (linkError) throw linkError;
-
-      // 2. Atualizar quote
-      const { error: quoteError } = await supabase
-        .from("quotes")
-        .update({
-          payment_link: paymentLink || null,
-          pix_key: pixKey || null,
-          payment_instructions: instructions,
-          payment_link_sent_at: new Date().toISOString(),
-        })
-        .eq("id", quoteId);
-
-      if (quoteError) throw quoteError;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-preorders"] });
-      qc.invalidateQueries({ queryKey: ["quote-tracking", quoteId] });
-      toast({
-        title: "Link enviado!",
-        description: `${customerName} foi notificado.`,
-      });
-      setIsOpen(false);
-      setPaymentLink("");
-      setPixKey("");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao enviar link",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const copyPixKey = () => {
-    if (pixKey) {
-      navigator.clipboard.writeText(pixKey);
-      setCopiedPix(true);
-      toast({ title: "Chave PIX copiada!" });
-      setTimeout(() => setCopiedPix(false), 2000);
-    }
+    if (!pixKey) return;
+    navigator.clipboard.writeText(pixKey);
+    setCopiedPix(true);
+    toast({ title: "Chave PIX copiada!" });
+    setTimeout(() => setCopiedPix(false), 2000);
   };
 
   const getPaymentTypeLabel = () => {
@@ -135,7 +81,6 @@ export function SendPaymentLinkDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Alert Info */}
           <Alert>
             <AlertDescription>
               O cliente receberá uma notificação no site e poderá ver o link na página de
@@ -143,7 +88,6 @@ export function SendPaymentLinkDialog({
             </AlertDescription>
           </Alert>
 
-          {/* Link de Pagamento */}
           <div>
             <Label htmlFor="payment-link">Link de Pagamento (Opcional)</Label>
             <Input
@@ -158,7 +102,6 @@ export function SendPaymentLinkDialog({
             </p>
           </div>
 
-          {/* Chave PIX */}
           <div>
             <Label htmlFor="pix-key">Chave PIX (Opcional)</Label>
             <div className="flex gap-2 mt-2">
@@ -184,7 +127,6 @@ export function SendPaymentLinkDialog({
             </p>
           </div>
 
-          {/* Instruções */}
           <div>
             <Label htmlFor="instructions">Mensagem para o Cliente</Label>
             <Textarea
@@ -199,16 +141,15 @@ export function SendPaymentLinkDialog({
             </p>
           </div>
 
-          {/* Preview */}
           <div className="p-4 rounded-lg border bg-muted/50">
             <p className="text-sm font-medium mb-2">Preview da Notificação:</p>
             <div className="space-y-2 text-sm">
-              <p className="font-medium">💳 Link de Pagamento Disponível</p>
+              <p className="font-medium">Link de Pagamento Disponível</p>
               <p className="text-muted-foreground">Valor: R$ {amount.toFixed(2)}</p>
               {paymentLink && (
-                <p className="text-primary">🔗 Link: {paymentLink.substring(0, 50)}...</p>
+                <p className="text-primary">Link: {paymentLink.substring(0, 50)}...</p>
               )}
-              {pixKey && <p className="text-primary">🔑 PIX: {pixKey}</p>}
+              {pixKey && <p className="text-primary">PIX: {pixKey}</p>}
             </div>
           </div>
         </div>
@@ -218,7 +159,36 @@ export function SendPaymentLinkDialog({
             Cancelar
           </Button>
           <Button
-            onClick={() => sendLinkMutation.mutate()}
+            onClick={() =>
+              sendLinkMutation.mutate(
+                {
+                  quoteId,
+                  amount,
+                  paymentType,
+                  paymentLink,
+                  pixKey,
+                  instructions,
+                },
+                {
+                  onSuccess: () => {
+                    toast({
+                      title: "Link enviado!",
+                      description: `${customerName} foi notificado.`,
+                    });
+                    setIsOpen(false);
+                    setPaymentLink("");
+                    setPixKey("");
+                  },
+                  onError: (error: Error) => {
+                    toast({
+                      title: "Erro ao enviar link",
+                      description: error.message,
+                      variant: "destructive",
+                    });
+                  },
+                }
+              )
+            }
             disabled={sendLinkMutation.isPending || (!paymentLink && !pixKey)}
           >
             {sendLinkMutation.isPending ? (

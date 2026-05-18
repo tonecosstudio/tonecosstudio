@@ -324,3 +324,29 @@
 ### Efeito arquitetural
 - Reducao de ruido estrutural na camada de page.
 - Consolidacao pratica do boundary de configuracoes admin no padrao UI -> hook -> service.
+
+---
+
+## Rodada adicional 11 (send payment link dialog)
+
+### Problema atacado
+- `SendPaymentLinkDialog` tinha logica de persistencia direta no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/send-payment-link-service.ts`
+   - `sendPaymentLink()` com criacao de `payment_links` + update de `quotes`.
+2. Hook de aplicacao:
+   - `src/hooks/admin/useSendPaymentLink.ts`
+   - encapsula mutation e invalidacoes de cache.
+3. Componente desacoplado:
+   - `src/components/admin/payments/SendPaymentLinkDialog.tsx`
+   - sem acesso direto a gateway/supabase, apenas consumo do hook.
+
+### Validacao desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Separacao consistente entre UI/aplicacao/infraestrutura no fluxo de envio de link de pagamento.
+- Menor acoplamento e maior reutilizacao do caso de uso.
