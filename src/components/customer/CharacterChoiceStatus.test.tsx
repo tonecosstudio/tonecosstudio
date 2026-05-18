@@ -8,10 +8,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CharacterChoiceStatus } from "./CharacterChoiceStatus";
-import * as choiceService from "@/services/customer/choice-service";
+import * as useCharacterChoiceHook from "@/hooks/customer/useCharacterChoice";
 
-// Mock the choice service
-vi.mock("@/services/customer/choice-service");
+vi.mock("@/hooks/customer/useCharacterChoice");
 
 describe("CharacterChoiceStatus", () => {
   let queryClient: QueryClient;
@@ -42,16 +41,22 @@ describe("CharacterChoiceStatus", () => {
   };
 
   it("should show loading state initially", () => {
-    vi.mocked(choiceService.getMyChoice).mockImplementation(
-      () => new Promise(() => {}) // Never resolves
-    );
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
     expect(screen.getByText("Escolha de Personagem")).toBeInTheDocument();
   });
 
   it("should show 'Choose Character' button when no choice exists", async () => {
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(null);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: null,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
@@ -87,7 +92,11 @@ describe("CharacterChoiceStatus", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(mockChoice);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: mockChoice,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
@@ -124,7 +133,11 @@ describe("CharacterChoiceStatus", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(mockChoice);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: mockChoice,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
@@ -162,7 +175,11 @@ describe("CharacterChoiceStatus", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(mockChoice);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: mockChoice,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
@@ -201,7 +218,11 @@ describe("CharacterChoiceStatus", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(mockChoice);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: mockChoice,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
@@ -239,7 +260,11 @@ describe("CharacterChoiceStatus", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(mockChoice);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: mockChoice,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
@@ -277,7 +302,11 @@ describe("CharacterChoiceStatus", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(mockChoice);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: mockChoice,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
@@ -313,7 +342,11 @@ describe("CharacterChoiceStatus", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(choiceService.getMyChoice).mockResolvedValue(mockChoice);
+    vi.mocked(useCharacterChoiceHook.useCharacterChoice).mockReturnValue({
+      data: mockChoice,
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never);
 
     renderComponent();
 
