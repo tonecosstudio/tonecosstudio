@@ -1,16 +1,14 @@
 /**
  * Credits Dashboard Component
- * 
- * Overview dashboard for the credits system showing key metrics
- * using real database tables: coin_transactions, cycles, pricing_tiers.
+ *
+ * Overview dashboard for the credits system showing key metrics.
  */
 
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { Coins, RefreshCw, Wallet, TrendingUp, Users, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useCreditsDashboardMetrics } from "@/hooks/admin/useCreditsDashboardMetrics";
 
 interface MetricCardProps {
   title: string;
@@ -29,11 +27,9 @@ function MetricCard({ title, value, description, icon, trend }: MetricCardProps)
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
+        {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
         {trend && (
-          <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+          <p className="mt-1 flex items-center gap-1 text-xs text-green-600">
             <TrendingUp className="h-3 w-3" />
             {trend}
           </p>
@@ -45,181 +41,69 @@ function MetricCard({ title, value, description, icon, trend }: MetricCardProps)
 
 export function CreditsDashboard() {
   const navigate = useNavigate();
-
-  // Fetch total coins from coin_transactions (credit - debit)
-  const { data: coinsData } = useQuery({
-    queryKey: ["credits-total-coins"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coin_transactions")
-        .select("amount, transaction_type");
-      
-      if (error) throw error;
-      
-      let totalCredits = 0;
-      let totalDebits = 0;
-      (data || []).forEach(tx => {
-        if (tx.transaction_type === 'credit') totalCredits += tx.amount;
-        else totalDebits += tx.amount;
-      });
-      
-      return { total: totalCredits - totalDebits, credits: totalCredits, debits: totalDebits };
-    },
-  });
-
-  // Fetch active cycles count from cycles table
-  const { data: cyclesData } = useQuery({
-    queryKey: ["credits-active-cycles"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("cycles")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "active");
-      
-      if (error) throw error;
-      return { count: count || 0 };
-    },
-  });
-
-  // Fetch active pricing tiers
-  const { data: tiersData } = useQuery({
-    queryKey: ["credits-active-tiers"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("pricing_tiers")
-        .select("*", { count: "exact", head: true })
-        .eq("is_active", true);
-      
-      if (error) throw error;
-      return { count: count || 0 };
-    },
-  });
-
-  // Fetch coin packages count
-  const { data: packagesData } = useQuery({
-    queryKey: ["credits-active-packages"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("coin_packages")
-        .select("*", { count: "exact", head: true })
-        .eq("is_active", true);
-      
-      if (error) throw error;
-      return { count: count || 0 };
-    },
-  });
-
-  // Fetch active subscribers count from subscriptions table
-  const { data: subscribersData } = useQuery({
-    queryKey: ["credits-active-subscribers"],
-    queryFn: async () => {
-      const { count: activeCount, error: activeError } = await supabase
-        .from("subscriptions")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "active");
-
-      if (activeError) throw activeError;
-
-      const { count: totalCount, error: totalError } = await supabase
-        .from("subscriptions")
-        .select("*", { count: "exact", head: true });
-
-      if (totalError) throw totalError;
-
-      return { active: activeCount || 0, total: totalCount || 0 };
-    },
-  });
-
-  // Fetch users with coins (from user_coins table)
-  const { data: coinUsersData } = useQuery({
-    queryKey: ["credits-coin-users"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("user_coins")
-        .select("*", { count: "exact", head: true });
-
-      if (error) throw error;
-      return { count: count || 0 };
-    },
-  });
+  const { data: metrics } = useCreditsDashboardMetrics();
 
   return (
     <div className="space-y-6">
-      {/* Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricCard
           title="Coins em Circulação"
-          value={coinsData?.total?.toLocaleString() || "0"}
+          value={metrics?.coins.total?.toLocaleString() || "0"}
           description="Saldo líquido (créditos - débitos)"
           icon={<Coins className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           title="Assinantes Ativos"
-          value={subscribersData?.active || 0}
-          description={`${subscribersData?.total || 0} total`}
+          value={metrics?.subscribers.active || 0}
+          description={`${metrics?.subscribers.total || 0} total`}
           icon={<Users className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           title="Usuários com Coins"
-          value={coinUsersData?.count || 0}
+          value={metrics?.coinUsers.count || 0}
           description="Possuem saldo de coins"
           icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           title="Ciclos Ativos"
-          value={cyclesData?.count || 0}
+          value={metrics?.cycles.active || 0}
           description="Em produção"
           icon={<RefreshCw className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           title="Níveis de Preço"
-          value={tiersData?.count || 0}
+          value={metrics?.tiers.active || 0}
           description="Tiers ativos"
           icon={<Wallet className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           title="Pacotes de Coins"
-          value={packagesData?.count || 0}
+          value={metrics?.packages.active || 0}
           description="Disponíveis para venda"
           icon={<Package className="h-4 w-4 text-muted-foreground" />}
         />
       </div>
 
-      {/* Quick Actions */}
       <Card>
         <CardHeader>
           <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>
-            Acesso rápido às funcionalidades mais usadas
-          </CardDescription>
+          <CardDescription>Acesso rápido às funcionalidades mais usadas</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/creditos?tab=coins")}
-            >
+            <Button variant="outline" onClick={() => navigate("/admin/creditos?tab=coins")}>
               <Coins className="mr-2 h-4 w-4" />
               Gerenciar Coins
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/creditos?tab=cycles")}
-            >
+            <Button variant="outline" onClick={() => navigate("/admin/creditos?tab=cycles")}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Ver Ciclos
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/creditos?tab=plans")}
-            >
+            <Button variant="outline" onClick={() => navigate("/admin/creditos?tab=plans")}>
               <Wallet className="mr-2 h-4 w-4" />
               Configurar Planos
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/pedidos?type=subscription")}
-            >
+            <Button variant="outline" onClick={() => navigate("/admin/pedidos?type=subscription")}>
               <Users className="mr-2 h-4 w-4" />
               Ver Pedidos
             </Button>
@@ -227,13 +111,10 @@ export function CreditsDashboard() {
         </CardContent>
       </Card>
 
-      {/* System Status */}
       <Card>
         <CardHeader>
           <CardTitle>Status do Sistema</CardTitle>
-          <CardDescription>
-            Visão geral do sistema de créditos
-          </CardDescription>
+          <CardDescription>Visão geral do sistema de créditos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

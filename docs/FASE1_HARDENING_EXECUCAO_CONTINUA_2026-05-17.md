@@ -845,3 +845,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado no diálogo de atribuição de níveis.
 - Redução de acoplamento e eliminação de responsabilidade de infra no componente.
+
+---
+
+## Rodada adicional 26 (credits dashboard)
+
+### Problema atacado
+- `CreditsDashboard` concentrava múltiplas queries diretas no componente de UI.
+
+### Melhorias aplicadas
+1. Service agregado:
+   - `src/services/admin/credits-dashboard-service.ts`
+   - `fetchCreditsDashboardMetrics()` com carregamento paralelo de métricas.
+2. Hook de aplicação:
+   - `src/hooks/admin/useCreditsDashboardMetrics.ts`
+   - encapsula query única do dashboard.
+3. Componente desacoplado:
+   - `src/components/admin/credits/CreditsDashboard.tsx`
+   - agora apenas renderiza os dados agregados.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service consolidado no dashboard de créditos.
+- Menor acoplamento com infra e melhor centralização de leitura de métricas.
