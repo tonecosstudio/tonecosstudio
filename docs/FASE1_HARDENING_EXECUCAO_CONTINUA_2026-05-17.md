@@ -1002,3 +1002,29 @@
 ### Efeito arquitetural
 - Boundary UI -> hook -> service aplicado no carregamento de tiers do formulário.
 - Redução de acoplamento entre apresentação e infraestrutura.
+
+---
+
+## Rodada adicional 32 (pricing history modal)
+
+### Problema atacado
+- `PricingHistoryModal` fazia query de histórico diretamente no componente.
+
+### Melhorias aplicadas
+1. Service dedicado:
+   - `src/services/admin/contextual-pricing-history-service.ts`
+   - `fetchContextualPricingHistory(tab)` centraliza leitura e mapeamento de histórico.
+2. Hook de aplicação:
+   - `src/hooks/admin/useContextualPricingHistory.ts`
+   - encapsula query por aba com `enabled` por abertura do modal.
+3. Componente desacoplado:
+   - `src/components/admin/contextual-pricing/PricingHistoryModal.tsx`
+   - remove acesso direto ao `supabase` e consome somente hook de domínio.
+
+### Validação desta rodada
+- `eslint` dos arquivos alterados: OK
+- build: OK
+
+### Efeito arquitetural
+- Boundary UI -> hook -> service aplicado ao histórico de preços contextuais.
+- Redução de acoplamento e padronização estrutural no módulo admin.
