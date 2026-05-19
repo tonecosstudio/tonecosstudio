@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { log } from '@/lib/logger';
 import { timezoneService } from './timezoneService';
 
 /**
@@ -248,7 +249,7 @@ class BusinessDayService {
       .order('holiday_date');
 
     if (error) {
-      console.error('Erro ao buscar feriados:', error);
+      log.error('Erro ao buscar feriados', { error, year });
       return [];
     }
 

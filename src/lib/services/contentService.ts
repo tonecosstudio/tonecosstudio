@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { CycleType } from "./batchCalculator";
@@ -149,7 +150,10 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
       const settingsMap = new Map(systemSettings.map((s) => [s.key, s.value]));
 
       // Processar cada configuração
-      const get = (key: string, defaultValue: any) => settingsMap.get(key) || defaultValue;
+      const get = (key: string, defaultValue: string): string => {
+        const value = settingsMap.get(key);
+        return value === undefined || value === null ? defaultValue : String(value);
+      };
       const getNum = (key: string, defaultValue: number) =>
         parseFloat(get(key, defaultValue.toString()));
       const getDate = (key: string, defaultValue: Date) => {
@@ -227,7 +231,7 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
     cachedContent = settings;
     cacheTimestamp = now;
   } catch (error) {
-    console.error("Erro ao buscar configurações de conteúdo:", error);
+    log.error("Erro ao buscar configurações de conteúdo", { error });
   }
 
   return settings;
