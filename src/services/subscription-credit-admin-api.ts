@@ -8,8 +8,25 @@ import {
   Subscription,
   Character,
   ProductionCycle,
-  OrderWithItems,
 } from '@/types/subscription-credit-system';
+
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
+interface CharacterUpdatePayload {
+  name?: string;
+  description?: string;
+  price_cash?: number;
+  price_credits?: number;
+  is_exclusive_semestral?: boolean;
+  is_standard_collection?: boolean;
+  is_active?: boolean;
+  image_url?: string;
+}
 
 interface DashboardMetrics {
   subscriptions: {
@@ -221,7 +238,7 @@ class SubscriptionCreditAdminAPI {
     planType?: string
   ): Promise<{
     subscriptions: SubscriptionWithUser[];
-    pagination: any;
+    pagination: PaginationMeta;
   }> {
     const offset = (page - 1) * limit;
 
@@ -262,7 +279,7 @@ class SubscriptionCreditAdminAPI {
     );
 
     return {
-      subscriptions: subscriptionsWithUsers as any[],
+      subscriptions: subscriptionsWithUsers as SubscriptionWithUser[],
       pagination: {
         page,
         limit,
@@ -347,7 +364,7 @@ class SubscriptionCreditAdminAPI {
 
     if (error) throw error;
 
-    return character as any;
+    return character as Character;
   }
 
   async updateCharacter(
@@ -363,7 +380,7 @@ class SubscriptionCreditAdminAPI {
       imageUrl?: string;
     }
   ): Promise<Character> {
-    const updateData: any = {};
+    const updateData: CharacterUpdatePayload = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.priceCash !== undefined) updateData.price_cash = data.priceCash;
@@ -382,7 +399,7 @@ class SubscriptionCreditAdminAPI {
 
     if (error) throw error;
 
-    return character as any;
+    return character as Character;
   }
 
   async deactivateCharacter(id: string): Promise<Character> {
@@ -395,7 +412,7 @@ class SubscriptionCreditAdminAPI {
 
     if (error) throw error;
 
-    return character as any;
+    return character as Character;
   }
 
   // ============ Production Cycles ============
@@ -419,7 +436,7 @@ class SubscriptionCreditAdminAPI {
 
     if (error) throw error;
 
-    return cycle as any;
+    return cycle as ProductionCycle;
   }
 
   async closeProductionCycle(id: string): Promise<{
@@ -547,7 +564,7 @@ class SubscriptionCreditAdminAPI {
     ];
 
     return {
-      cycle: cycle as any,
+      cycle: cycle as ProductionCycle,
       statistics: {
         totalOrders,
         confirmedOrders,
