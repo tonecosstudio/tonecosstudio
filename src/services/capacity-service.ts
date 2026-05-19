@@ -10,6 +10,43 @@
 import { supabase } from "@/integrations/supabase/client";
 import log from "@/lib/logger";
 
+interface CapacityRpcError {
+  message: string;
+}
+
+interface CapacityRpcClient {
+  rpc(
+    name: "check_capacity_available",
+    args: { p_cycle_id: string; p_quantity: number }
+  ): Promise<{ data: boolean | null; error: CapacityRpcError | null }>;
+  rpc(
+    name: "reserve_capacity",
+    args: { p_cycle_id: string; p_quantity: number }
+  ): Promise<{ data: unknown; error: CapacityRpcError | null }>;
+  rpc(
+    name: "release_capacity",
+    args: { p_cycle_id: string; p_quantity: number }
+  ): Promise<{ data: unknown; error: CapacityRpcError | null }>;
+  rpc(name: "get_or_create_current_cycle"): Promise<{
+    data: CurrentCycleRow | null;
+    error: CapacityRpcError | null;
+  }>;
+}
+
+interface CurrentCycleRow {
+  cycle_number: 1 | 2;
+  month: number;
+  year: number;
+}
+
+interface CycleCapacityRow {
+  capacity_max: number | null;
+  capacity_current: number | null;
+  reserved_capacity: number | null;
+}
+
+const capacityRpc = supabase as unknown as CapacityRpcClient;
+
 /**
  * Capacity usage information for a cycle
  */
@@ -50,7 +87,7 @@ export async function checkAvailability(
   cycleId: string,
   quantity: number
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc('check_capacity_available' as any, {
+  const { data, error } = await capacityRpc.rpc('check_capacity_available', {
     p_cycle_id: cycleId,
     p_quantity: quantity
   });
@@ -85,7 +122,7 @@ export async function reserveCapacity(
   quantity: number,
   referenceId: string
 ): Promise<void> {
-  const { error } = await supabase.rpc('reserve_capacity' as any, {
+  const { error } = await capacityRpc.rpc('reserve_capacity', {
     p_cycle_id: cycleId,
     p_quantity: quantity
   });
@@ -120,7 +157,7 @@ export async function releaseCapacity(
   quantity: number,
   referenceId: string
 ): Promise<void> {
-  const { error } = await supabase.rpc('release_capacity' as any, {
+  const { error } = await capacityRpc.rpc('release_capacity', {
     p_cycle_id: cycleId,
     p_quantity: quantity
   });
@@ -155,7 +192,7 @@ export async function getCapacityUsage(cycleId: string): Promise<CapacityUsage> 
     .from('cycles')
     .select('capacity_max, capacity_current, reserved_capacity')
     .eq('id', cycleId)
-    .single();
+    .single<CycleCapacityRow>();
 
   if (error) {
     throw new Error(`Failed to get cycle capacity: ${error.message}`);
@@ -168,7 +205,7 @@ export async function getCapacityUsage(cycleId: string): Promise<CapacityUsage> 
   // Use capacity_max (capacity_limit will be used once types are regenerated)
   const max = cycle.capacity_max ?? 100;
   const current = cycle.capacity_current ?? 0;
-  const reserved = (cycle as any).reserved_capacity ?? 0;
+  const reserved = cycle.reserved_capacity ?? 0;
 
   // Available capacity = max - current - reserved
   const available = Math.max(0, max - current - reserved);
@@ -271,7 +308,7 @@ export async function checkSubscriptionCapacity(
   deliveryCount: number
 ): Promise<SubscriptionCapacityCheck> {
   // Get current cycle
-  const { data: currentCycle, error: cycleError } = await supabase.rpc('get_or_create_current_cycle' as any);
+  const { data: currentCycle, error: cycleError } = await capacityRpc.rpc('get_or_create_current_cycle');
 
   if (cycleError) {
     throw new Error(`Failed to get current cycle: ${cycleError.message}`);
@@ -284,9 +321,9 @@ export async function checkSubscriptionCapacity(
   // Calculate which cycles will be used for deliveries
   const deliveryCycles = calculateDeliveryCycles(
     {
-      cycle_number: (currentCycle as any).cycle_number,
-      month: (currentCycle as any).month,
-      year: (currentCycle as any).year
+      cycle_number: currentCycle.cycle_number,
+      month: currentCycle.month,
+      year: currentCycle.year
     },
     deliveryCount
   );
@@ -306,7 +343,7 @@ export async function checkSubscriptionCapacity(
 
     if (existingCycle) {
       // Check capacity using database function
-      const { data: hasCapacity, error } = await supabase.rpc('check_capacity_available' as any, {
+      const { data: hasCapacity, error } = await capacityRpc.rpc('check_capacity_available', {
         p_cycle_id: existingCycle.id,
         p_quantity: 1
       });
