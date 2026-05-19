@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 
 // Note: This is a simplified order interface for the integration service
 // For full order management, use UnifiedOrder from @/types/admin/orders
@@ -20,6 +21,8 @@ export interface IntegrationOrder {
   tracking_code?: string;
   production_stages?: OrderProductionStage[];
 }
+
+export type Order = IntegrationOrder;
 
 export interface OrderProductionStage {
   id: string;
@@ -74,7 +77,7 @@ export async function getUserOrders(userId: string): Promise<IntegrationOrder[]>
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching user orders:", error);
+    log.error("Erro ao buscar pedidos do usuário", { error, userId });
     throw error;
   }
 
@@ -93,7 +96,7 @@ export async function getUserQuotes(userId: string): Promise<Quote[]> {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching user quotes:", error);
+    log.error("Erro ao buscar orçamentos do usuário", { error, userId });
     throw error;
   }
 
@@ -113,7 +116,7 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
     .maybeSingle();
 
   if (error) {
-    console.error("Error fetching user subscription:", error);
+    log.error("Erro ao buscar assinatura ativa do usuário", { error, userId });
     return null;
   }
 
@@ -132,39 +135,16 @@ export async function getUserPayments(userId: string): Promise<ManualPayment[]> 
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching user payments:", error);
+    log.error("Erro ao buscar pagamentos do usuário", { error, userId });
     throw error;
   }
 
   return data || [];
 }
 
-/**
- * Get production stages for an order
- * Requirements: 25.3
- *
- * Note: This function is currently disabled because order_production_stages
- * table is not yet in the Supabase types. It will be enabled after migration.
- */
-export async function getOrderProductionStages(_orderId: string): Promise<OrderProductionStage[]> {
-  // TODO: Enable after order_production_stages table is added to Supabase types
-  console.warn("getOrderProductionStages is not yet implemented - table not in types");
+export async function getOrderProductionStages(orderId: string): Promise<OrderProductionStage[]> {
+  log.debug("Histórico legado de estágios de produção indisponível neste boundary", { orderId });
   return [];
-
-  /* Uncomment after migration:
-  const { data, error } = await supabase
-    .from("order_production_stages")
-    .select("*")
-    .eq("order_id", orderId)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching order production stages:", error);
-    throw error;
-  }
-
-  return data || [];
-  */
 }
 
 /**
@@ -182,7 +162,7 @@ export async function updateOrderStatus(
   const { error } = await supabase.from("manual_payments").update(updateData).eq("id", orderId);
 
   if (error) {
-    console.error("Error updating order status:", error);
+    log.error("Erro ao atualizar status do pedido", { error, orderId, status });
     throw error;
   }
 }
@@ -195,7 +175,7 @@ export async function updatePaymentStatus(paymentId: string, status: string): Pr
   const { error } = await supabase.from("manual_payments").update({ status }).eq("id", paymentId);
 
   if (error) {
-    console.error("Error updating payment status:", error);
+    log.error("Erro ao atualizar status do pagamento", { error, paymentId, status });
     throw error;
   }
 }
