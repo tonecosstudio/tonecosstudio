@@ -1,13 +1,9 @@
-/**
- * Hook para buscar informações de produção de um pedido
- *
- * Busca dados da production_queue e character_choices para exibir
- * status de produção e escolha de personagem.
- */
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
+import type { ChoiceStatus, ProductionStage } from "@/services/admin/production-service";
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import type { ProductionStage, ChoiceStatus } from '@/services/admin/production-service';
+type ProductionOrderType = "subscription_delivery" | "standalone_purchase";
 
 export interface ProductionInfo {
   id: string;
@@ -29,33 +25,30 @@ export interface CharacterChoiceInfo {
   approvedAt: string | null;
 }
 
-/**
- * Busca informações de produção para um pedido específico
- */
-export function useProductionInfo(orderId: string | null, orderType: 'subscription_delivery' | 'standalone_purchase' | null) {
+export function useProductionInfo(
+  orderId: string | null,
+  orderType: ProductionOrderType | null
+) {
   return useQuery({
-    queryKey: ['production-info', orderId, orderType],
-    queryFn: async () => {
-      if (!orderId || !orderType) {
-        return null;
-      }
+    queryKey: ["production-info", orderId, orderType],
+    queryFn: async (): Promise<ProductionInfo | null> => {
+      if (!orderId || !orderType) return null;
 
-      // Buscar na production_queue
       const { data, error } = await supabase
-        .from('production_queue')
-        .select('id, order_id, current_stage, choice_status, choice_deadline, character_name, estimated_completion_date')
-        .eq('order_id', orderId)
-        .eq('order_type', orderType)
+        .from("production_queue")
+        .select(
+          "id, order_id, current_stage, choice_status, choice_deadline, character_name, estimated_completion_date"
+        )
+        .eq("order_id", orderId)
+        .eq("order_type", orderType)
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao buscar informações de produção:', error);
+        log.error("Failed to fetch production info", { error, orderId, orderType });
         return null;
       }
 
-      if (!data) {
-        return null;
-      }
+      if (!data) return null;
 
       return {
         id: data.id,
@@ -64,50 +57,37 @@ export function useProductionInfo(orderId: string | null, orderType: 'subscripti
         choiceStatus: data.choice_status as ChoiceStatus,
         choiceDeadline: data.choice_deadline,
         characterName: data.character_name,
-        estimatedCompletionDate: data.estimated_completion_date
-      } as ProductionInfo;
+        estimatedCompletionDate: data.estimated_completion_date,
+      };
     },
-    enabled: !!orderId && !!orderType,
-    staleTime: 30000, // 30 segundos
-    refetchOnWindowFocus: true
+    enabled: Boolean(orderId && orderType),
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
   });
 }
 
-/**
- * Busca informações de escolha de personagem para um pedido
- */
-export function useCharacterChoice(orderId: string | null, orderType: 'subscription_delivery' | 'standalone_purchase' | null) {
+export function useCharacterChoice(
+  orderId: string | null,
+  orderType: ProductionOrderType | null
+) {
   return useQuery({
-    queryKey: ['character-choice', orderId, orderType],
-    queryFn: async () => {
-      if (!orderId || !orderType) {
-        return null;
-      }
+    queryKey: ["character-choice", orderId, orderType],
+    queryFn: async (): Promise<CharacterChoiceInfo | null> => {
+      if (!orderId || !orderType) return null;
 
-      // Buscar na character_choices (usando campos desnormalizados)
       const { data, error } = await supabase
-        .from('character_choices')
-        .select(`
-          id,
-          status,
-          deadline,
-          character_id,
-          character_name,
-          submitted_at,
-          approved_at
-        `)
-        .eq('order_id', orderId)
-        .eq('order_type', orderType)
+        .from("character_choices")
+        .select("id, status, deadline, character_id, character_name, submitted_at, approved_at")
+        .eq("order_id", orderId)
+        .eq("order_type", orderType)
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao buscar escolha de personagem:', error);
+        log.error("Failed to fetch character choice info", { error, orderId, orderType });
         return null;
       }
 
-      if (!data) {
-        return null;
-      }
+      if (!data) return null;
 
       return {
         id: data.id,
@@ -116,11 +96,11 @@ export function useCharacterChoice(orderId: string | null, orderType: 'subscript
         characterId: data.character_id,
         characterName: data.character_name || null,
         submittedAt: data.submitted_at,
-        approvedAt: data.approved_at
-      } as CharacterChoiceInfo;
+        approvedAt: data.approved_at,
+      };
     },
-    enabled: !!orderId && !!orderType,
-    staleTime: 30000, // 30 segundos
-    refetchOnWindowFocus: true
+    enabled: Boolean(orderId && orderType),
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
   });
 }

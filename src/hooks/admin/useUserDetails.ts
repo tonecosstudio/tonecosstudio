@@ -1,16 +1,12 @@
-/**
- * Hook para gerenciar dados de detalhes do usuário no admin
- * Segue padrão AAA: Arrange, Act, Assert
- */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 
 interface UseUserDetailsProps {
   userId: string | undefined;
 }
 
 export function useUserDetails({ userId }: UseUserDetailsProps) {
-  // Arrange: Query para perfil do usuário
   const profileQuery = useQuery({
     queryKey: ["admin-user-profile", userId],
     enabled: Boolean(userId),
@@ -24,13 +20,12 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) throw new Error("Usuário não encontrado");
+      if (!data) throw new Error("User not found");
 
       return data;
     },
   });
 
-  // Arrange: Query para roles do usuário
   const rolesQuery = useQuery({
     queryKey: ["admin-user-roles", userId],
     enabled: Boolean(userId),
@@ -47,7 +42,6 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
     },
   });
 
-  // Arrange: Query para badges do usuário
   const badgesQuery = useQuery({
     queryKey: ["admin-user-badges", userId],
     enabled: Boolean(userId),
@@ -64,7 +58,6 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
     },
   });
 
-  // Arrange: Query para métodos de pagamento (manual_payments como histórico)
   const paymentMethodsQuery = useQuery({
     queryKey: ["admin-user-payment-methods", userId],
     enabled: Boolean(userId),
@@ -79,14 +72,14 @@ export function useUserDetails({ userId }: UseUserDetailsProps) {
         .limit(10);
 
       if (error) {
-        console.error("Error fetching payment methods:", error);
+        log.error("Failed to fetch user payment history", { error, userId });
         return [];
       }
+
       return data || [];
     },
   });
 
-  // Act & Assert: Retornar dados e estados
   return {
     profile: profileQuery.data,
     roles: rolesQuery.data || [],
