@@ -15,9 +15,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   PriceInCoins,
-  QUERY_KEYS,
   CACHE_CONFIG,
 } from "@/types/contextual-pricing";
+import { log } from "@/lib/logger";
 
 // =====================================================
 // TYPES
@@ -106,7 +106,7 @@ export function useCharacterPrices(characterIds: string[], userId?: string | nul
         });
 
         if (error) {
-          console.error(`Erro ao calcular preço de ${characterId}:`, error);
+          log.error("Failed to calculate character price", { error, characterId, userId });
           return { characterId, price: null, error: error.message };
         }
 
@@ -192,7 +192,7 @@ export function useHasCharacterMultiplier(characterId: string) {
         .single();
 
       if (error) {
-        console.error("Erro ao verificar multiplicador:", error);
+        log.error("Failed to check character multiplier", { error, characterId });
         return false;
       }
 

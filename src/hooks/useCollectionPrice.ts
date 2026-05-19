@@ -14,6 +14,7 @@ import {
   QUERY_KEYS,
   CACHE_CONFIG,
 } from "@/types/contextual-pricing";
+import { log } from "@/lib/logger";
 
 // =====================================================
 // TYPES
@@ -89,7 +90,7 @@ export function useCollectionPrices(collectionIds: string[], userId?: string | n
         });
 
         if (error) {
-          console.error(`Erro ao calcular preço de ${collectionId}:`, error);
+          log.error("Failed to calculate collection price", { error, collectionId, userId });
           return { collectionId, price: null, error: error.message };
         }
 
@@ -128,7 +129,7 @@ export function useHasCollectionDiscount(collectionId: string, userId?: string |
         .limit(1);
 
       if (error) {
-        console.error("Erro ao verificar desconto:", error);
+        log.error("Failed to check collection discount", { error, collectionId, userId });
         return false;
       }
 

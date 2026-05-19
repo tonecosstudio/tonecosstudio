@@ -11,9 +11,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { log } from "@/lib/logger";
 import {
   CollectionType,
-  CollectionTypeInsert,
   CollectionTypeUpdate,
   QUERY_KEYS,
   CACHE_CONFIG,
@@ -335,7 +335,7 @@ export async function checkCollectionTypeNameExists(name: string, excludeId?: st
   const { data, error } = await query;
 
   if (error) {
-    console.error("Erro ao verificar nome:", error);
+    log.error("Failed to check collection type name", { error, name, excludeId });
     return false;
   }
 
