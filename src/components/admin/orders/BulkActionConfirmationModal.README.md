@@ -115,7 +115,7 @@ Para cada pedido na lista, o modal exibe:
 
 ## Exemplo Completo
 
-Veja o arquivo `BulkActionConfirmationModal.example.tsx` para um exemplo completo de integração com a `BulkActionsBar`.
+Integre o modal diretamente com a `BulkActionsBar` usando os handlers reais da página de pedidos.
 
 ## Integração com BulkActionsBar
 

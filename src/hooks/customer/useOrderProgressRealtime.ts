@@ -19,6 +19,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { log } from "@/lib/logger";
 import type { ProductionStage, ChoiceStatus } from "@/services/admin/production-service";
 
 // ============================================================================
@@ -127,7 +128,13 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
             return;
           }
 
-          console.log("[useOrderProgressRealtime] Production queue updated:", newData);
+          log.debug("Order progress production queue updated", {
+            orderId,
+            orderType,
+            productionQueueId: newData.id,
+            currentStage: newData.current_stage,
+            productionStatus: newData.production_status,
+          });
 
           // Invalidate queries to refresh UI
           queryClient.invalidateQueries({
@@ -162,9 +169,14 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
         if (!isMountedRef.current) return;
 
         if (status === "SUBSCRIBED") {
-          console.log("[useOrderProgressRealtime] Subscribed to production queue updates");
+          log.debug("Order progress production queue realtime subscribed", {
+            channel: productionChannelName,
+          });
         } else if (status === "CHANNEL_ERROR") {
-          console.error("[useOrderProgressRealtime] Channel error:", error);
+          log.error("Order progress production queue realtime failed", {
+            channel: productionChannelName,
+            error,
+          });
 
           if (enableToast) {
             toast({
@@ -175,9 +187,13 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
             });
           }
         } else if (status === "TIMED_OUT") {
-          console.warn("[useOrderProgressRealtime] Connection timed out, will retry");
+          log.warn("Order progress production queue realtime timed out", {
+            channel: productionChannelName,
+          });
         } else if (status === "CLOSED") {
-          console.log("[useOrderProgressRealtime] Channel closed");
+          log.debug("Order progress production queue realtime closed", {
+            channel: productionChannelName,
+          });
         }
       });
 
@@ -206,7 +222,13 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
             return;
           }
 
-          console.log("[useOrderProgressRealtime] Character choice updated:", newData);
+          log.debug("Order progress character choice updated", {
+            orderId,
+            orderType,
+            choiceId: newData.id,
+            status: newData.status,
+            characterId: newData.character_id,
+          });
 
           // Invalidate queries to refresh UI
           queryClient.invalidateQueries({
@@ -267,7 +289,13 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
             return;
           }
 
-          console.log("[useOrderProgressRealtime] Character choice created:", newData);
+          log.debug("Order progress character choice created", {
+            orderId,
+            orderType,
+            choiceId: newData.id,
+            status: newData.status,
+            characterId: newData.character_id,
+          });
 
           // Invalidate queries to refresh UI
           queryClient.invalidateQueries({
@@ -279,13 +307,22 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
         if (!isMountedRef.current) return;
 
         if (status === "SUBSCRIBED") {
-          console.log("[useOrderProgressRealtime] Subscribed to character choice updates");
+          log.debug("Order progress character choice realtime subscribed", {
+            channel: choiceChannelName,
+          });
         } else if (status === "CHANNEL_ERROR") {
-          console.error("[useOrderProgressRealtime] Choice channel error:", error);
+          log.error("Order progress character choice realtime failed", {
+            channel: choiceChannelName,
+            error,
+          });
         } else if (status === "TIMED_OUT") {
-          console.warn("[useOrderProgressRealtime] Choice connection timed out, will retry");
+          log.warn("Order progress character choice realtime timed out", {
+            channel: choiceChannelName,
+          });
         } else if (status === "CLOSED") {
-          console.log("[useOrderProgressRealtime] Choice channel closed");
+          log.debug("Order progress character choice realtime closed", {
+            channel: choiceChannelName,
+          });
         }
       });
 
@@ -294,7 +331,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
     // ========================================================================
 
     return () => {
-      console.log("[useOrderProgressRealtime] Cleaning up subscriptions");
+      log.debug("Order progress realtime cleanup", { orderId, orderType });
       supabase.removeChannel(productionChannel);
       supabase.removeChannel(choiceChannel);
     };
