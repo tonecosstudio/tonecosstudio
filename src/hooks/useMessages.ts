@@ -1,22 +1,84 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { messageService } from "@/lib/services/messageService";
-import type { Message } from "@/types/support";
 import { toast } from "sonner";
+
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import { log } from "@/lib/logger";
+import { messageService } from "@/lib/services/messageService";
+import type { Attachment, Message } from "@/types/support";
+
+type SupportMessageRow = Database["public"]["Tables"]["support_messages"]["Row"];
+type SupportAttachmentRow = Database["public"]["Tables"]["support_attachments"]["Row"];
 
 interface UseMessagesOptions {
   conversationId: string | null;
   autoScroll?: boolean;
 }
 
-// Optimistic attachment state
 interface OptimisticAttachment {
-  id: string; // temporary client-side ID
+  id: string;
   file: File;
   status: "uploading" | "uploaded" | "error";
   progress: number;
   url?: string;
   error?: string;
+}
+
+function isSupportMessageRow(value: unknown): value is SupportMessageRow {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<SupportMessageRow>;
+  return typeof candidate.id === "string" && typeof candidate.conversation_id === "string";
+}
+
+function isSupportAttachmentRow(value: unknown): value is SupportAttachmentRow {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<SupportAttachmentRow>;
+  return typeof candidate.id === "string" && typeof candidate.message_id === "string";
+}
+
+function toAttachment(row: SupportAttachmentRow): Attachment {
+  return {
+    id: row.id,
+    message_id: row.message_id,
+    file_name: row.file_name,
+    file_path: row.file_path,
+    file_size: row.file_size ?? 0,
+    file_type: row.file_type ?? "",
+    thumbnail_path: row.thumbnail_path ?? undefined,
+    uploaded_by: row.uploaded_by,
+    created_at: row.created_at,
+  };
+}
+
+function toMessage(row: SupportMessageRow, attachments: SupportAttachmentRow[]): Message {
+  return {
+    ...row,
+    sender_name: row.sender_type === "admin" ? "Admin" : "Cliente",
+    attachments: attachments.map(toAttachment),
+    is_internal: row.is_internal ?? false,
+    read_by_admin: row.read_by_admin ?? false,
+    read_by_customer: row.read_by_customer ?? false,
+  };
+}
+
+async function getMessageAttachments(messageId: string): Promise<SupportAttachmentRow[]> {
+  const { data, error } = await supabase
+    .from("support_attachments")
+    .select("*")
+    .eq("message_id", messageId);
+
+  if (error) {
+    log.error("Erro ao buscar anexos da mensagem", { error, messageId });
+    return [];
+  }
+
+  return data ?? [];
 }
 
 export function useMessages({ conversationId, autoScroll = true }: UseMessagesOptions) {
@@ -30,14 +92,12 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const LIMIT = 50;
 
-  // Scroll para última mensagem
   const scrollToBottom = useCallback(() => {
     if (autoScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [autoScroll]);
 
-  // Carregar mensagens iniciais
   const loadMessages = useCallback(async () => {
     if (!conversationId) {
       setMessages([]);
@@ -50,22 +110,19 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
         limit: LIMIT,
         offset: 0,
       });
-      // Não filtrar mensagens deletadas - mostrar como "Mensagem deletada"
+
       setMessages(data);
       setOffset(data.length);
       setHasMore(data.length === LIMIT);
-
-      // Scroll após carregar
       setTimeout(scrollToBottom, 100);
     } catch (error) {
-      console.error("Erro ao carregar mensagens:", error);
+      log.error("Erro ao carregar mensagens", { error, conversationId });
       toast.error("Erro ao carregar mensagens");
     } finally {
       setLoading(false);
     }
   }, [conversationId, scrollToBottom]);
 
-  // Carregar mensagens antigas (infinite scroll)
   const loadMore = useCallback(async () => {
     if (!conversationId || !hasMore || loading) return;
 
@@ -84,23 +141,21 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
         setHasMore(false);
       }
     } catch (error) {
-      console.error("Erro ao carregar mais mensagens:", error);
+      log.error("Erro ao carregar mais mensagens", { error, conversationId });
       toast.error("Erro ao carregar mais mensagens");
     } finally {
       setLoading(false);
     }
   }, [conversationId, hasMore, loading, offset]);
 
-  // Carregar mensagens quando conversa muda
   useEffect(() => {
     loadMessages();
   }, [loadMessages]);
 
-  // Configurar Realtime subscription
   useEffect(() => {
     if (!conversationId) return;
 
-    console.log(`[useMessages] Configurando Realtime para conversa: ${conversationId}`);
+    log.debug("Setting up support messages realtime subscription", { conversationId });
 
     const messagesChannel = supabase
       .channel(`messages_${conversationId}`)
@@ -113,81 +168,66 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
           filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
-          console.log("[useMessages] Message change:", payload);
+          log.debug("Support message realtime change received", {
+            conversationId,
+            eventType: payload.eventType,
+          });
 
-          if (payload.eventType === "INSERT") {
-            // Nova mensagem
-            const rawMessage = payload.new as any;
+          if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+            if (!isSupportMessageRow(payload.new)) {
+              log.warn("Ignoring invalid support message realtime payload", {
+                conversationId,
+                eventType: payload.eventType,
+                payload: payload.new,
+              });
+              return;
+            }
 
-            console.log("[useMessages] Nova mensagem recebida:", rawMessage.id);
-
-            // Buscar anexos da mensagem
-            const { data: attachmentsData } = await supabase
-              .from("support_attachments")
-              .select("*")
-              .eq("message_id", rawMessage.id);
-
-            console.log("[useMessages] Anexos encontrados:", attachmentsData?.length || 0);
-
-            // Enriquecer mensagem com dados adicionais
-            const enrichedMessage: Message = {
-              ...rawMessage,
-              sender_name: rawMessage.sender_type === "admin" ? "Admin" : "Cliente",
-              attachments: attachmentsData || [],
-              is_internal: rawMessage.is_internal || false,
-              read_by_admin: rawMessage.read_by_admin || false,
-              read_by_customer: rawMessage.read_by_customer || false,
-            };
+            const attachments = await getMessageAttachments(payload.new.id);
+            const enrichedMessage = toMessage(payload.new, attachments);
 
             setMessages((prev) => {
-              // Evitar duplicatas
-              if (prev.some((msg) => msg.id === enrichedMessage.id)) {
-                console.log("[useMessages] Mensagem duplicada, ignorando");
-                return prev;
+              if (payload.eventType === "INSERT") {
+                if (prev.some((msg) => msg.id === enrichedMessage.id)) {
+                  log.debug("Ignoring duplicate support message", {
+                    conversationId,
+                    messageId: enrichedMessage.id,
+                  });
+                  return prev;
+                }
+                return [...prev, enrichedMessage];
               }
-              console.log("[useMessages] Adicionando mensagem à lista");
-              return [...prev, enrichedMessage];
+
+              return prev.map((msg) => (msg.id === enrichedMessage.id ? enrichedMessage : msg));
             });
 
-            // Scroll para nova mensagem
-            setTimeout(scrollToBottom, 100);
-          } else if (payload.eventType === "UPDATE") {
-            // Mensagem atualizada (ex: editada)
-            const rawMessage = payload.new as any;
+            if (payload.eventType === "INSERT") {
+              setTimeout(scrollToBottom, 100);
+            }
+            return;
+          }
 
-            console.log("[useMessages] Mensagem atualizada:", rawMessage.id);
-
-            // Buscar anexos da mensagem
-            const { data: attachmentsData } = await supabase
-              .from("support_attachments")
-              .select("*")
-              .eq("message_id", rawMessage.id);
-
-            const enrichedMessage: Message = {
-              ...rawMessage,
-              sender_name: rawMessage.sender_type === "admin" ? "Admin" : "Cliente",
-              attachments: attachmentsData || [],
-              is_internal: rawMessage.is_internal || false,
-              read_by_admin: rawMessage.read_by_admin || false,
-              read_by_customer: rawMessage.read_by_customer || false,
-            };
-
-            setMessages((prev) =>
-              prev.map((msg) => (msg.id === enrichedMessage.id ? enrichedMessage : msg))
-            );
-          } else if (payload.eventType === "DELETE") {
-            // Mensagem deletada
+          if (payload.eventType === "DELETE") {
             const deletedId = payload.old.id;
-            console.log("[useMessages] Mensagem deletada:", deletedId);
+            if (typeof deletedId !== "string") {
+              log.warn("Ignoring invalid support message delete payload", {
+                conversationId,
+                payload: payload.old,
+              });
+              return;
+            }
+
             setMessages((prev) => prev.filter((msg) => msg.id !== deletedId));
           }
         }
       )
       .subscribe((status) => {
-        console.log("[useMessages] Status da subscription de mensagens:", status);
+        log.debug("Support messages realtime subscription status changed", {
+          conversationId,
+          status,
+        });
       });
 
-    // Subscription para anexos
     const attachmentsChannel = supabase
       .channel(`attachments_${conversationId}`)
       .on(
@@ -198,51 +238,57 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
           table: "support_attachments",
         },
         async (payload) => {
-          console.log("[useMessages] Attachment added:", payload);
-          const attachment = payload.new as any;
+          if (!isSupportAttachmentRow(payload.new)) {
+            log.warn("Ignoring invalid support attachment realtime payload", {
+              conversationId,
+              payload: payload.new,
+            });
+            return;
+          }
 
-          // Atualizar a mensagem correspondente com o novo anexo
+          const attachment = toAttachment(payload.new);
+
           setMessages((prev) =>
             prev.map((msg) => {
-              if (msg.id === attachment.message_id) {
-                console.log("[useMessages] Adicionando anexo à mensagem:", msg.id);
-                // Evitar duplicatas
-                const existingAttachments = msg.attachments || [];
-                if (existingAttachments.some((a) => a.id === attachment.id)) {
-                  return msg;
-                }
-                return {
-                  ...msg,
-                  attachments: [...existingAttachments, attachment],
-                };
+              if (msg.id !== attachment.message_id) {
+                return msg;
               }
-              return msg;
+
+              const existingAttachments = msg.attachments || [];
+              if (existingAttachments.some((existing) => existing.id === attachment.id)) {
+                return msg;
+              }
+
+              return {
+                ...msg,
+                attachments: [...existingAttachments, attachment],
+              };
             })
           );
 
-          // Limpar optimistic attachments para esta mensagem após confirmação
-          // Aguardar um pouco para garantir que o anexo foi adicionado
           setTimeout(() => {
             setOptimisticAttachments((prev) => {
-              const newMap = new Map(prev);
-              newMap.delete(attachment.message_id);
-              return newMap;
+              const next = new Map(prev);
+              next.delete(attachment.message_id);
+              return next;
             });
           }, 500);
         }
       )
       .subscribe((status) => {
-        console.log("[useMessages] Status da subscription de anexos:", status);
+        log.debug("Support attachments realtime subscription status changed", {
+          conversationId,
+          status,
+        });
       });
 
     return () => {
-      console.log("[useMessages] Removendo subscriptions");
+      log.debug("Removing support messages realtime subscriptions", { conversationId });
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(attachmentsChannel);
     };
   }, [conversationId, scrollToBottom]);
 
-  // Enviar mensagem
   const sendMessage = useCallback(
     async (message: string, isInternal: boolean = false) => {
       if (!conversationId) return;
@@ -258,10 +304,8 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
           message,
           is_internal: isInternal,
         });
-
-        // Mensagem será adicionada via Realtime
       } catch (error) {
-        console.error("Erro ao enviar mensagem:", error);
+        log.error("Erro ao enviar mensagem", { error, conversationId });
         toast.error("Erro ao enviar mensagem");
         throw error;
       }
@@ -269,50 +313,47 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
     [conversationId]
   );
 
-  // Marcar mensagens como lidas
   const markAsRead = useCallback(async () => {
     if (!conversationId) return;
 
     try {
-      // Buscar IDs das mensagens não lidas desta conversa
       const { data: unreadMessages, error } = await supabase
         .from("support_messages")
         .select("id")
         .eq("conversation_id", conversationId)
         .eq("read_by_admin", false)
-        .eq("sender_type", "customer"); // Apenas mensagens de clientes
+        .eq("sender_type", "customer");
 
       if (error) {
-        console.error("Erro ao buscar mensagens não lidas:", error);
+        log.error("Erro ao buscar mensagens não lidas", { error, conversationId });
         return;
       }
 
       if (unreadMessages && unreadMessages.length > 0) {
         const messageIds = unreadMessages.map((msg) => msg.id);
-
-        // Validar que todos os IDs são UUIDs válidos
         const validMessageIds = messageIds.filter((id) =>
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
         );
 
         if (validMessageIds.length > 0) {
           await messageService.markAsRead(validMessageIds, "admin");
-          console.log(`Marcadas ${validMessageIds.length} mensagens como lidas`);
+          log.debug("Marked support messages as read", {
+            conversationId,
+            count: validMessageIds.length,
+          });
         }
       }
     } catch (error) {
-      console.error("Erro ao marcar como lido:", error);
+      log.error("Erro ao marcar mensagens como lidas", { error, conversationId });
     }
   }, [conversationId]);
 
-  // Marcar como lido quando abre a conversa
   useEffect(() => {
     if (conversationId && messages.length > 0) {
       markAsRead();
     }
   }, [conversationId, messages.length, markAsRead]);
 
-  // Optimistic attachment management
   const addOptimisticAttachment = useCallback((messageId: string, file: File): string => {
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const attachment: OptimisticAttachment = {
@@ -323,10 +364,10 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
     };
 
     setOptimisticAttachments((prev) => {
-      const newMap = new Map(prev);
-      const existing = newMap.get(messageId) || [];
-      newMap.set(messageId, [...existing, attachment]);
-      return newMap;
+      const next = new Map(prev);
+      const existing = next.get(messageId) || [];
+      next.set(messageId, [...existing, attachment]);
+      return next;
     });
 
     return tempId;
@@ -335,13 +376,15 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
   const updateOptimisticAttachment = useCallback(
     (messageId: string, tempId: string, updates: Partial<OptimisticAttachment>) => {
       setOptimisticAttachments((prev) => {
-        const newMap = new Map(prev);
-        const attachments = newMap.get(messageId) || [];
-        newMap.set(
+        const next = new Map(prev);
+        const attachments = next.get(messageId) || [];
+        next.set(
           messageId,
-          attachments.map((a) => (a.id === tempId ? { ...a, ...updates } : a))
+          attachments.map((attachment) =>
+            attachment.id === tempId ? { ...attachment, ...updates } : attachment
+          )
         );
-        return newMap;
+        return next;
       });
     },
     []
@@ -349,14 +392,16 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
 
   const removeOptimisticAttachment = useCallback((messageId: string, tempId: string) => {
     setOptimisticAttachments((prev) => {
-      const newMap = new Map(prev);
-      const attachments = (newMap.get(messageId) || []).filter((a) => a.id !== tempId);
+      const next = new Map(prev);
+      const attachments = (next.get(messageId) || []).filter(
+        (attachment) => attachment.id !== tempId
+      );
       if (attachments.length === 0) {
-        newMap.delete(messageId);
+        next.delete(messageId);
       } else {
-        newMap.set(messageId, attachments);
+        next.set(messageId, attachments);
       }
-      return newMap;
+      return next;
     });
   }, []);
 
