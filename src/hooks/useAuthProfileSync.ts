@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { log } from '@/lib/logger';
 
 /**
  * Lista de emails que devem ter role de admin automaticamente
@@ -40,7 +41,7 @@ export function useAuthProfileSync() {
               .maybeSingle();
 
             if (!profile) {
-              console.warn('Profile not found after auth - trigger may have failed');
+              log.warn('Profile not found after auth sync', { userId });
               return;
             }
 
@@ -52,7 +53,7 @@ export function useAuthProfileSync() {
                 .eq('id', userId);
             }
         } catch (error) {
-          console.error('Auth sync error:', error);
+          log.error('Auth profile sync failed', { error });
         }
         })(); // Executar imediatamente em background
       }

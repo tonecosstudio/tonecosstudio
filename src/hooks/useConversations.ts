@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { conversationService } from "@/lib/services/conversationService";
+import { log } from "@/lib/logger";
 import type {
   Conversation,
   ConversationFilters,
@@ -22,7 +23,7 @@ export function useConversations() {
       const data = await conversationService.listConversations(filters);
       setConversations(data);
     } catch (error) {
-      console.error("Erro ao carregar conversas:", error);
+      log.error("Failed to load support conversations", { error, filters });
       toast.error("Erro ao carregar conversas");
     } finally {
       setLoading(false);
@@ -45,7 +46,9 @@ export function useConversations() {
           table: "support_conversations",
         },
         (payload) => {
-          console.log("Conversation change:", payload);
+          log.debug("Support conversation realtime change received", {
+            eventType: payload.eventType,
+          });
 
           if (payload.eventType === "INSERT") {
             // Nova conversa

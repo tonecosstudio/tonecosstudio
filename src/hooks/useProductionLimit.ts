@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+function getErrorMessage(error: Error): string {
+  return error.message || "Erro inesperado";
+}
+
 interface ProductionLimit {
   prod_month: number;
   prod_year: number;
@@ -52,14 +56,15 @@ export function useProductionLimit() {
       queryClient.invalidateQueries({ queryKey: ["production-limit"] });
       queryClient.invalidateQueries({ queryKey: ["sales-open"] });
     },
-    onError: (error: any) => {
-      if (error.message?.includes("Limite de produção mensal atingido")) {
+    onError: (error: Error) => {
+      const message = getErrorMessage(error);
+      if (message.includes("Limite de produção mensal atingido")) {
         toast.error("Limite de produção atingido", {
           description: "Todas as vagas do mês foram preenchidas.",
         });
       } else {
         toast.error("Erro ao processar venda", {
-          description: error.message,
+          description: message,
         });
       }
     },
@@ -80,9 +85,9 @@ export function useProductionLimit() {
       queryClient.invalidateQueries({ queryKey: ["sales-open"] });
       toast.success("Vendas fechadas com sucesso");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Erro ao fechar vendas", {
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });
@@ -99,9 +104,9 @@ export function useProductionLimit() {
       queryClient.invalidateQueries({ queryKey: ["sales-open"] });
       toast.success("Vendas reabertas com sucesso");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Erro ao reabrir vendas", {
-        description: error.message,
+        description: getErrorMessage(error),
       });
     },
   });

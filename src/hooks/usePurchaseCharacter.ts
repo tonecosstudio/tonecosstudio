@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { userCoinsKeys } from "./useUserCoins";
 import { PriceInCoins } from "@/types/contextual-pricing";
+import { log } from "@/lib/logger";
 
 // =====================================================
 // TYPES
@@ -86,11 +87,15 @@ export function usePurchaseCharacter() {
         variant: "default",
       });
     },
-    onError: (error: any, variables) => {
-      console.error("Erro ao comprar personagem:", error);
+    onError: (error: Error, variables) => {
+      log.error("Failed to purchase character with coins", {
+        error,
+        characterId: variables.characterId,
+        userId: variables.userId,
+      });
 
       // Verificar se é erro de saldo insuficiente
-      const errorMessage = error?.message || "Erro ao processar compra";
+      const errorMessage = error.message || "Erro ao processar compra";
       const isInsufficientBalance = errorMessage.includes("saldo insuficiente") || 
                                     errorMessage.includes("Insufficient balance");
 
