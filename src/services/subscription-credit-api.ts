@@ -6,11 +6,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import {
   Subscription,
-  UserCredits,
-  CreditTransaction,
   Character,
   ProductionCycle,
-  Order,
   OrderWithItems,
   CreditsBalanceResponse,
   TransactionsResponse,
@@ -21,6 +18,27 @@ import {
   UserCycleCountResponse,
   PlanType,
 } from '@/types/subscription-credit-system';
+
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
+interface AutomaticOrderItem {
+  character: Character;
+}
+
+interface AutomaticOrderRow {
+  id: string;
+  items: AutomaticOrderItem[];
+  total_credits: number;
+  is_locked: boolean;
+  cycle: {
+    close_date: string;
+  };
+}
 
 class SubscriptionCreditAPI {
   private async getCurrentUserId(): Promise<string> {
@@ -48,12 +66,12 @@ class SubscriptionCreditAPI {
       throw error;
     }
 
-    return data as any;
+    return data as Subscription;
   }
 
   async activateSubscription(
     planType: PlanType,
-    paymentMethodId: string
+    _paymentMethodId: string
   ): Promise<SubscriptionActivationResponse> {
     const userId = await this.getCurrentUserId();
     
@@ -127,7 +145,7 @@ class SubscriptionCreditAPI {
     subscriptionId: string,
     newPlanType: PlanType
   ): Promise<PlanChangeResponse> {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('subscription_credit_subscriptions')
       .update({ pending_plan_change: newPlanType })
       .eq('id', subscriptionId)
@@ -144,7 +162,7 @@ class SubscriptionCreditAPI {
   }
 
   async cancelWithRefund(subscriptionId: string): Promise<CancelWithRefundResponse> {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('subscription_credit_subscriptions')
       .update({
         status: 'cancelled',
@@ -240,7 +258,7 @@ class SubscriptionCreditAPI {
     if (error) throw error;
 
     return {
-      transactions: data as any[],
+      transactions: data as TransactionsResponse['transactions'],
       pagination: {
         page,
         limit,
@@ -274,7 +292,7 @@ class SubscriptionCreditAPI {
     planType?: PlanType
   ): Promise<{
     characters: Character[];
-    pagination: any;
+    pagination: PaginationMeta;
   }> {
     const offset = (page - 1) * limit;
 
@@ -295,7 +313,7 @@ class SubscriptionCreditAPI {
     if (error) throw error;
 
     return {
-      characters: data as any[],
+      characters: data as Character[],
       pagination: {
         page,
         limit,
@@ -314,7 +332,7 @@ class SubscriptionCreditAPI {
 
     if (error) throw error;
 
-    return data as any;
+    return data as Character;
   }
 
   async getStandardCollection(): Promise<{ characters: Character[] }> {
@@ -327,14 +345,14 @@ class SubscriptionCreditAPI {
 
     if (error) throw error;
 
-    return { characters: data as any[] };
+    return { characters: data as Character[] };
   }
 
   // ============ Orders ============
 
   async createIndividualOrder(
     characterId: string,
-    useCredits: boolean = true
+    _useCredits: boolean = true
   ): Promise<{
     order_id: string;
     credits_debited: number;
@@ -453,10 +471,10 @@ class SubscriptionCreditAPI {
 
     return {
       order_id: order.id,
-      characters: order.items.map((item: any) => item.character),
+      characters: (order as AutomaticOrderRow).items.map((item) => item.character),
       total_credits: order.total_credits,
       is_locked: order.is_locked,
-      cycle_close_date: order.cycle.close_date,
+      cycle_close_date: (order as AutomaticOrderRow).cycle.close_date,
     };
   }
 
@@ -502,7 +520,7 @@ class SubscriptionCreditAPI {
 
     return {
       order_id: orderId,
-      characters: characters as any[],
+      characters: characters as Character[],
       total_credits: totalCredits,
     };
   }
@@ -518,7 +536,7 @@ class SubscriptionCreditAPI {
 
     if (error) throw error;
 
-    return { orders: data as any[] };
+    return { orders: data as OrderWithItems[] };
   }
 
   async getUserCycleCount(): Promise<UserCycleCountResponse> {
@@ -551,7 +569,7 @@ class SubscriptionCreditAPI {
       throw new Error('Nenhum ciclo de produção aberto encontrado');
     }
 
-    return data as any;
+    return data as ProductionCycle;
   }
 
   async getCycleById(id: string): Promise<ProductionCycle> {
@@ -563,7 +581,7 @@ class SubscriptionCreditAPI {
 
     if (error) throw error;
 
-    return data as any;
+    return data as ProductionCycle;
   }
 
   async getCycleOrders(
@@ -573,7 +591,7 @@ class SubscriptionCreditAPI {
     priorityOnly: boolean = false
   ): Promise<{
     orders: OrderWithItems[];
-    pagination: any;
+    pagination: PaginationMeta;
   }> {
     const offset = (page - 1) * limit;
 
@@ -593,7 +611,7 @@ class SubscriptionCreditAPI {
     if (error) throw error;
 
     return {
-      orders: data as any[],
+      orders: data as OrderWithItems[],
       pagination: {
         page,
         limit,
