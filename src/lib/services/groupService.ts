@@ -1,50 +1,57 @@
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
+import { sanitizeGroupName } from "@/lib/utils/sanitize";
 import type {
+  CreateGroupInput,
   Group,
   GroupDetails,
-  CreateGroupInput,
   GroupMember,
+  GroupMetrics,
+  GroupType,
+  GroupWithMetrics,
+  MemberGroupView,
   PaginatedMembers,
   Pagination,
-  GroupMetrics,
-  MemberGroupView,
-  GroupType,
 } from "@/types/groups";
 import { validateGroupName, validateGroupType, validateMembershipCriteria } from "@/types/groups";
-import { sanitizeGroupName } from "@/lib/utils/sanitize";
+
+interface GroupMemberCountRow {
+  group_id: string;
+}
+
+interface GroupMessageTimestampRow {
+  group_id: string;
+  created_at: string;
+}
+
+interface MemberGroupsOptimizedRow {
+  group_id: string;
+  group_name: string;
+  group_type: GroupType;
+  unread_count: number | string;
+  last_message_text: string | null;
+  last_message_sender_name: string | null;
+  last_message_created_at: string | null;
+  last_viewed_at: string | null;
+}
 
 /**
- * GroupService - Service for managing chat groups
- *
- * NOTE: TypeScript errors about table names are expected until migrations are applied
- * and types are regenerated. The migrations exist in supabase/migrations/20260223000000_*.sql
- *
- * To regenerate types after applying migrations:
- * npx supabase gen types typescript --project-id pabxpvqwtvbjaunjejud > src/integrations/supabase/types.ts
+ * GroupService - Service for managing chat groups.
  */
-
 export class GroupService {
-  /**
-   * Creates a new group with validation
-   * Requirements: 1.1, 1.2, 1.3, 1.4
-   */
   async createGroup(input: CreateGroupInput): Promise<Group> {
-    // Sanitize group name to prevent XSS
     const sanitizedName = sanitizeGroupName(input.name);
 
-    // Validate group name
     const nameValidation = validateGroupName(sanitizedName);
     if (!nameValidation.valid) {
       throw new Error(nameValidation.error);
     }
 
-    // Validate group type
     const typeValidation = validateGroupType(input.type);
     if (!typeValidation.valid) {
       throw new Error(typeValidation.error);
     }
 
-    // Validate membership criteria
     const criteriaValidation = validateMembershipCriteria(
       input.type,
       input.membership_criteria || null
@@ -53,7 +60,6 @@ export class GroupService {
       throw new Error(criteriaValidation.error);
     }
 
-    // Check if group name already exists (excluding deleted groups)
     const { data: existingGroup } = await supabase
       .from("chat_groups")
       .select("id")
@@ -65,7 +71,6 @@ export class GroupService {
       throw new Error("Já existe um grupo com este nome");
     }
 
-    // Create the group
     const { data, error } = await supabase
       .from("chat_groups")
       .insert({
@@ -78,19 +83,14 @@ export class GroupService {
       .single();
 
     if (error) {
-      console.error("Erro ao criar grupo:", error);
+      log.error("Erro ao criar grupo", { error, groupName: sanitizedName });
       throw new Error("Erro ao criar grupo");
     }
 
     return data as Group;
   }
 
-  /**
-   * Soft deletes a group (marks as deleted but preserves data)
-   * Requirements: 15.1, 15.2, 15.3
-   */
   async deleteGroup(groupId: string, adminId: string): Promise<void> {
-    // Check if group exists and is not already deleted
     const { data: group, error: fetchError } = await supabase
       .from("chat_groups")
       .select("id, deleted_at")
@@ -105,7 +105,6 @@ export class GroupService {
       throw new Error("Grupo já foi deletado");
     }
 
-    // Soft delete the group
     const { error } = await supabase
       .from("chat_groups")
       .update({
@@ -115,17 +114,12 @@ export class GroupService {
       .eq("id", groupId);
 
     if (error) {
-      console.error("Erro ao deletar grupo:", error);
+      log.error("Erro ao deletar grupo", { error, groupId, adminId });
       throw new Error("Erro ao deletar grupo");
     }
   }
 
-  /**
-   * Gets detailed information about a group including metrics
-   * Requirements: 1.1, 1.2, 1.3, 1.4, 15.1, 15.2, 15.3
-   */
   async getGroupDetails(groupId: string): Promise<GroupDetails> {
-    // Fetch group data
     const { data: group, error: groupError } = await supabase
       .from("chat_groups")
       .select("*")
@@ -137,29 +131,26 @@ export class GroupService {
       throw new Error("Grupo não encontrado");
     }
 
-    // Get member count
     const { count: memberCount, error: memberError } = await supabase
       .from("chat_group_members")
       .select("*", { count: "exact", head: true })
       .eq("group_id", groupId);
 
     if (memberError) {
-      console.error("Erro ao contar membros:", memberError);
+      log.error("Erro ao contar membros do grupo", { error: memberError, groupId });
       throw new Error("Erro ao carregar detalhes do grupo");
     }
 
-    // Get message count
     const { count: messageCount, error: messageError } = await supabase
       .from("chat_group_messages")
       .select("*", { count: "exact", head: true })
       .eq("group_id", groupId);
 
     if (messageError) {
-      console.error("Erro ao contar mensagens:", messageError);
+      log.error("Erro ao contar mensagens do grupo", { error: messageError, groupId });
       throw new Error("Erro ao carregar detalhes do grupo");
     }
 
-    // Get last message timestamp
     const { data: lastMessageData } = await supabase
       .from("chat_group_messages")
       .select("created_at")
@@ -168,8 +159,6 @@ export class GroupService {
       .limit(1);
 
     const lastMessage = lastMessageData?.[0] || null;
-
-    // Calculate estimated view rate
     const estimatedViewRate = await this.calculateEstimatedViewRate(groupId);
 
     return {
@@ -181,54 +170,34 @@ export class GroupService {
     } as GroupDetails;
   }
 
-  /**
-   * Lists all groups with optional includeDeleted parameter
-   * Requirements: 1.1, 1.2, 1.3, 1.4, 15.1, 15.2, 15.3
-   */
   async listGroups(includeDeleted: boolean = false): Promise<Group[]> {
     let query = supabase.from("chat_groups").select("*");
 
-    // Filter out deleted groups unless includeDeleted is true
     if (!includeDeleted) {
       query = query.is("deleted_at", null);
     }
 
-    // Order by created_at descending
-    query = query.order("created_at", { ascending: false });
-
-    const { data, error } = await query;
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Erro ao listar grupos:", error);
+      log.error("Erro ao listar grupos", { error, includeDeleted });
       throw new Error("Erro ao carregar grupos");
     }
 
     return (data || []) as Group[];
   }
 
-  /**
-   * Lists all groups with metrics in a single optimized query
-   * Uses PostgreSQL aggregations to avoid N+1 queries
-   * Requirements: 1.1, 1.2, 1.3, 1.4, 16.1, 16.2
-   */
-  async listGroupsWithMetrics(
-    includeDeleted: boolean = false
-  ): Promise<import("@/types/groups").GroupWithMetrics[]> {
-    // First, get all groups
+  async listGroupsWithMetrics(includeDeleted: boolean = false): Promise<GroupWithMetrics[]> {
     let query = supabase.from("chat_groups").select("*");
 
-    // Filter out deleted groups unless includeDeleted is true
     if (!includeDeleted) {
       query = query.is("deleted_at", null);
     }
 
-    // Order by created_at descending
-    query = query.order("created_at", { ascending: false });
-
-    const { data: groups, error } = await query;
+    const { data: groups, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Erro ao listar grupos com métricas:", error);
+      log.error("Erro ao listar grupos com métricas", { error, includeDeleted });
       throw new Error("Erro ao carregar grupos");
     }
 
@@ -236,54 +205,37 @@ export class GroupService {
       return [];
     }
 
-    // Get group IDs
-    const groupIds = groups.map((g) => g.id);
+    const groupIds = groups.map((group) => group.id);
 
-    // Get member counts for all groups in parallel
-    const memberCountsPromise = supabase
-      .from("chat_group_members")
-      .select("group_id")
-      .in("group_id", groupIds);
-
-    // Get message counts and last messages for all groups in parallel
-    const messagesPromise = supabase
-      .from("chat_group_messages")
-      .select("group_id, created_at")
-      .in("group_id", groupIds)
-      .order("created_at", { ascending: false });
-
-    // Execute both queries in parallel
     const [memberCountsResult, messagesResult] = await Promise.all([
-      memberCountsPromise,
-      messagesPromise,
+      supabase.from("chat_group_members").select("group_id").in("group_id", groupIds),
+      supabase
+        .from("chat_group_messages")
+        .select("group_id, created_at")
+        .in("group_id", groupIds)
+        .order("created_at", { ascending: false }),
     ]);
 
-    // Build member count map
     const memberCountMap = new Map<string, number>();
     if (memberCountsResult.data) {
-      memberCountsResult.data.forEach((member: any) => {
-        const count = memberCountMap.get(member.group_id) || 0;
-        memberCountMap.set(member.group_id, count + 1);
+      (memberCountsResult.data as GroupMemberCountRow[]).forEach((member) => {
+        memberCountMap.set(member.group_id, (memberCountMap.get(member.group_id) || 0) + 1);
       });
     }
 
-    // Build message count and last message map
     const messageCountMap = new Map<string, number>();
     const lastMessageMap = new Map<string, string>();
     if (messagesResult.data) {
-      messagesResult.data.forEach((message: any) => {
-        const count = messageCountMap.get(message.group_id) || 0;
-        messageCountMap.set(message.group_id, count + 1);
+      (messagesResult.data as GroupMessageTimestampRow[]).forEach((message) => {
+        messageCountMap.set(message.group_id, (messageCountMap.get(message.group_id) || 0) + 1);
 
-        // Keep track of the most recent message
         if (!lastMessageMap.has(message.group_id)) {
           lastMessageMap.set(message.group_id, message.created_at);
         }
       });
     }
 
-    // Combine data
-    const groupsWithMetrics = groups.map((group) => ({
+    return groups.map((group) => ({
       id: group.id,
       name: group.name,
       type: group.type,
@@ -296,17 +248,10 @@ export class GroupService {
       member_count: memberCountMap.get(group.id) || 0,
       message_count: messageCountMap.get(group.id) || 0,
       last_message_at: lastMessageMap.get(group.id) || null,
-    }));
-
-    return groupsWithMetrics;
+    })) as GroupWithMetrics[];
   }
 
-  /**
-   * Adds a member to a manual group
-   * Requirements: 2.1, 2.2, 2.3, 2.4
-   */
   async addMember(groupId: string, userId: string): Promise<GroupMember> {
-    // Verify group exists and is manual
     const { data: group, error: groupError } = await supabase
       .from("chat_groups")
       .select("type, deleted_at")
@@ -325,7 +270,6 @@ export class GroupService {
       throw new Error("Apenas grupos manuais permitem adição manual de membros");
     }
 
-    // Verify user exists
     const { data: user, error: userError } = await supabase
       .from("profiles")
       .select("id")
@@ -336,7 +280,6 @@ export class GroupService {
       throw new Error("Usuário não encontrado");
     }
 
-    // Check if user is already a member
     const { data: existingMember } = await supabase
       .from("chat_group_members")
       .select("id")
@@ -345,11 +288,9 @@ export class GroupService {
       .single();
 
     if (existingMember) {
-      // Return informative message instead of error
       throw new Error("Usuário já é membro deste grupo");
     }
 
-    // Add member
     const { data, error } = await supabase
       .from("chat_group_members")
       .insert({
@@ -360,19 +301,14 @@ export class GroupService {
       .single();
 
     if (error) {
-      console.error("Erro ao adicionar membro:", error);
+      log.error("Erro ao adicionar membro ao grupo", { error, groupId, userId });
       throw new Error("Erro ao adicionar membro ao grupo");
     }
 
     return data as GroupMember;
   }
 
-  /**
-   * Removes a member from a manual group
-   * Requirements: 3.1, 3.2, 3.3
-   */
   async removeMember(groupId: string, userId: string): Promise<void> {
-    // Verify group exists and is manual
     const { data: group, error: groupError } = await supabase
       .from("chat_groups")
       .select("type, deleted_at")
@@ -387,7 +323,6 @@ export class GroupService {
       throw new Error("Apenas grupos manuais permitem remoção manual de membros");
     }
 
-    // Remove member
     const { error } = await supabase
       .from("chat_group_members")
       .delete()
@@ -395,33 +330,27 @@ export class GroupService {
       .eq("user_id", userId);
 
     if (error) {
-      console.error("Erro ao remover membro:", error);
+      log.error("Erro ao remover membro do grupo", { error, groupId, userId });
       throw new Error("Erro ao remover membro do grupo");
     }
   }
 
-  /**
-   * Lists members of a group with pagination
-   * Requirements: 2.1, 2.2, 2.3, 2.4
-   */
   async listMembers(
     groupId: string,
     pagination: Pagination = { page: 1, limit: 50 }
   ): Promise<PaginatedMembers> {
     const offset = (pagination.page - 1) * pagination.limit;
 
-    // Get total count
     const { count: totalCount, error: countError } = await supabase
       .from("chat_group_members")
       .select("*", { count: "exact", head: true })
       .eq("group_id", groupId);
 
     if (countError) {
-      console.error("Erro ao contar membros:", countError);
+      log.error("Erro ao contar membros do grupo", { error: countError, groupId });
       throw new Error("Erro ao carregar membros");
     }
 
-    // Get paginated members
     const { data: members, error: membersError } = await supabase
       .from("chat_group_members")
       .select("user_id, joined_at, last_viewed_at")
@@ -430,22 +359,21 @@ export class GroupService {
       .range(offset, offset + pagination.limit - 1);
 
     if (membersError) {
-      console.error("Erro ao listar membros:", membersError);
+      log.error("Erro ao listar membros do grupo", { error: membersError, groupId });
       throw new Error("Erro ao carregar membros");
     }
 
-    // Get user profiles
-    const userIds = members.map((m) => m.user_id);
+    const userIds = members.map((member) => member.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, full_name, email")
       .in("id", userIds);
 
-    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+    const profilesMap = new Map((profiles || []).map((profile) => [profile.id, profile]));
 
-    // Map members with user data
     const membersWithData = members.map((member) => {
       const profile = profilesMap.get(member.user_id);
+
       return {
         user_id: member.user_id,
         user_name: profile?.full_name || profile?.email || "Usuário",
@@ -466,34 +394,27 @@ export class GroupService {
     };
   }
 
-  /**
-   * Gets metrics for a group
-   * Requirements: 16.1, 16.2, 16.3, 16.4
-   */
   async getGroupMetrics(groupId: string): Promise<GroupMetrics> {
-    // Get total members
     const { count: totalMembers, error: memberError } = await supabase
       .from("chat_group_members")
       .select("*", { count: "exact", head: true })
       .eq("group_id", groupId);
 
     if (memberError) {
-      console.error("Erro ao contar membros:", memberError);
+      log.error("Erro ao contar membros do grupo", { error: memberError, groupId });
       throw new Error("Erro ao calcular métricas");
     }
 
-    // Get total messages
     const { count: totalMessages, error: messageError } = await supabase
       .from("chat_group_messages")
       .select("*", { count: "exact", head: true })
       .eq("group_id", groupId);
 
     if (messageError) {
-      console.error("Erro ao contar mensagens:", messageError);
+      log.error("Erro ao contar mensagens do grupo", { error: messageError, groupId });
       throw new Error("Erro ao calcular métricas");
     }
 
-    // Calculate estimated view rate
     const estimatedViewRate = await this.calculateEstimatedViewRate(groupId);
 
     return {
@@ -503,52 +424,6 @@ export class GroupService {
     };
   }
 
-  /**
-   * Calculates the estimated view rate for a group
-   * View rate = % of members who viewed the group after the last message was sent
-   * Requirements: 16.3, 16.4
-   */
-  private async calculateEstimatedViewRate(groupId: string): Promise<number> {
-    // Get the last message timestamp
-    const { data: lastMessageData } = await supabase
-      .from("chat_group_messages")
-      .select("created_at")
-      .eq("group_id", groupId)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    const lastMessage = lastMessageData?.[0] || null;
-
-    if (!lastMessage) {
-      // No messages yet, return 0
-      return 0;
-    }
-
-    // Get total member count
-    const { count: totalMembers } = await supabase
-      .from("chat_group_members")
-      .select("*", { count: "exact", head: true })
-      .eq("group_id", groupId);
-
-    if (!totalMembers || totalMembers === 0) {
-      return 0;
-    }
-
-    // Count members who viewed after the last message
-    const { count: viewedMembers } = await supabase
-      .from("chat_group_members")
-      .select("*", { count: "exact", head: true })
-      .eq("group_id", groupId)
-      .gt("last_viewed_at", lastMessage.created_at);
-
-    const viewRate = ((viewedMembers || 0) / totalMembers) * 100;
-    return Math.round(viewRate * 100) / 100; // Round to 2 decimal places
-  }
-
-  /**
-   * Gets a group by ID
-   * Requirements: 1.1, 1.2, 1.3, 1.4
-   */
   async getGroupById(groupId: string): Promise<Group> {
     const { data, error } = await supabase
       .from("chat_groups")
@@ -564,20 +439,14 @@ export class GroupService {
     return data as Group;
   }
 
-  /**
-   * Gets all groups that a user is a member of
-   * Returns groups with unread count and last message preview
-   * Requirements: 13.1, 13.2, 13.3
-   */
   async getMemberGroups(userId: string): Promise<MemberGroupView[]> {
     try {
-      // Use optimized database function (single query instead of N+1)
       const { data, error } = await supabase.rpc("get_member_groups_optimized", {
         p_user_id: userId,
       });
 
       if (error) {
-        console.error("Erro ao buscar grupos do membro:", error);
+        log.error("Erro ao buscar grupos do membro", { error, userId });
         throw new Error("Erro ao carregar grupos");
       }
 
@@ -585,25 +454,57 @@ export class GroupService {
         return [];
       }
 
-      // Transform database result to MemberGroupView format
-      return data.map((row: any) => ({
+      return (data as MemberGroupsOptimizedRow[]).map((row) => ({
         id: row.group_id,
         name: row.group_name,
-        type: row.group_type as GroupType,
+        type: row.group_type,
         unread_count: Number(row.unread_count),
         last_message: row.last_message_text
           ? {
               message: row.last_message_text,
-              sender_name: row.last_message_sender_name,
-              created_at: row.last_message_created_at,
+              sender_name: row.last_message_sender_name || "",
+              created_at: row.last_message_created_at || "",
             }
           : null,
         last_viewed_at: row.last_viewed_at,
       }));
     } catch (error) {
-      console.error("Erro ao buscar grupos do membro:", error);
+      log.error("Erro ao buscar grupos do membro", { error, userId });
       throw new Error("Erro ao carregar grupos");
     }
+  }
+
+  private async calculateEstimatedViewRate(groupId: string): Promise<number> {
+    const { data: lastMessageData } = await supabase
+      .from("chat_group_messages")
+      .select("created_at")
+      .eq("group_id", groupId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const lastMessage = lastMessageData?.[0] || null;
+
+    if (!lastMessage) {
+      return 0;
+    }
+
+    const { count: totalMembers } = await supabase
+      .from("chat_group_members")
+      .select("*", { count: "exact", head: true })
+      .eq("group_id", groupId);
+
+    if (!totalMembers || totalMembers === 0) {
+      return 0;
+    }
+
+    const { count: viewedMembers } = await supabase
+      .from("chat_group_members")
+      .select("*", { count: "exact", head: true })
+      .eq("group_id", groupId)
+      .gt("last_viewed_at", lastMessage.created_at);
+
+    const viewRate = ((viewedMembers || 0) / totalMembers) * 100;
+    return Math.round(viewRate * 100) / 100;
   }
 }
 
