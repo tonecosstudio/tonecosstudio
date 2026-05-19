@@ -1,15 +1,6 @@
+import { log } from "@/lib/logger";
+import type { PricingTier as PricingTierModel } from "@/types/pricing-tiers";
 import { z } from "zod";
-
-/**
- * Schemas de Validação Zod para Sistema de Níveis de Preço
- * 
- * Define validações para criação, atualização e operações com níveis de preço.
- * Requisitos: 7.1, 7.2, 7.3, 7.4, 7.5
- */
-
-// =====================================================
-// CONSTANTES DE VALIDAÇÃO
-// =====================================================
 
 const MAX_PRICE = 999999.99;
 const MIN_PRICE = 0.01;
@@ -20,25 +11,47 @@ const DEFAULT_PIX_DISCOUNT = 5;
 const NAME_MIN_LENGTH = 1;
 const NAME_MAX_LENGTH = 100;
 const DESCRIPTION_MAX_LENGTH = 500;
+const NAME_REGEX = /^[\p{L}0-9\s_-]+$/u;
 
-// Regex para nome alfanumérico com espaços, hífens e underscores
-const NAME_REGEX = /^[a-zA-Z0-9\s\-_áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]+$/;
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
 
-// =====================================================
-// SCHEMAS BASE
-// =====================================================
+type PricingTierRecord = Pick<PricingTierModel, "id" | "name" | "is_active">;
 
-/**
- * Schema para validar UUID
- */
+interface CollectionRecord {
+  id: string;
+  name: string;
+  is_price_custom: boolean;
+}
+
+interface QueryError {
+  code?: string;
+  message?: string;
+}
+
+interface QueryResult<T> {
+  data: T | null;
+  error: QueryError | null;
+}
+
+interface ValidationQuery<T> {
+  select(columns: string): ValidationQuery<T>;
+  eq(column: string, value: string): ValidationQuery<T>;
+  neq(column: string, value: string): ValidationQuery<T>;
+  single(): Promise<QueryResult<T>>;
+}
+
+interface PricingValidationClient {
+  from(table: "pricing_tiers"): ValidationQuery<PricingTierRecord>;
+  from(table: "collections"): ValidationQuery<CollectionRecord>;
+}
+
 export const uuidSchema = z.string().uuid({
   message: "ID deve ser um UUID válido",
 });
 
-/**
- * Schema para validar nome de nível
- * Requisitos: 1.2, 7.1
- */
 export const tierNameSchema = z
   .string()
   .min(NAME_MIN_LENGTH, {
@@ -52,9 +65,6 @@ export const tierNameSchema = z
   })
   .trim();
 
-/**
- * Schema para validar descrição de nível
- */
 export const tierDescriptionSchema = z
   .string()
   .max(DESCRIPTION_MAX_LENGTH, {
@@ -63,10 +73,6 @@ export const tierDescriptionSchema = z
   .trim()
   .optional();
 
-/**
- * Schema para validar preço cheio
- * Requisitos: 7.2
- */
 export const priceFullSchema = z
   .number({
     required_error: "Preço cheio é obrigatório",
@@ -75,6 +81,9 @@ export const priceFullSchema = z
   .positive({
     message: "Preço cheio deve ser maior que zero",
   })
+  .min(MIN_PRICE, {
+    message: `Preço cheio deve ser no mínimo R$ ${MIN_PRICE.toFixed(2)}`,
+  })
   .max(MAX_PRICE, {
     message: `Preço cheio deve ser no máximo R$ ${MAX_PRICE.toFixed(2)}`,
   })
@@ -82,10 +91,6 @@ export const priceFullSchema = z
     message: "Preço cheio deve ter no máximo 2 casas decimais",
   });
 
-/**
- * Schema para validar valor de entrada
- * Requisitos: 7.3
- */
 export const depositAmountSchema = z
   .number({
     required_error: "Valor de entrada é obrigatório",
@@ -94,6 +99,9 @@ export const depositAmountSchema = z
   .positive({
     message: "Valor de entrada deve ser maior que zero",
   })
+  .min(MIN_PRICE, {
+    message: `Valor de entrada deve ser no mínimo R$ ${MIN_PRICE.toFixed(2)}`,
+  })
   .max(MAX_PRICE, {
     message: `Valor de entrada deve ser no máximo R$ ${MAX_PRICE.toFixed(2)}`,
   })
@@ -101,10 +109,6 @@ export const depositAmountSchema = z
     message: "Valor de entrada deve ter no máximo 2 casas decimais",
   });
 
-/**
- * Schema para validar percentual de desconto PIX
- * Requisitos: 7.4
- */
 export const pixDiscountPercentageSchema = z
   .number({
     invalid_type_error: "Percentual de desconto deve ser um número",
@@ -117,14 +121,6 @@ export const pixDiscountPercentageSchema = z
   })
   .default(DEFAULT_PIX_DISCOUNT);
 
-// =====================================================
-// SCHEMAS DE INPUT
-// =====================================================
-
-/**
- * Schema para criar nível de preço
- * Requisitos: 1.2, 1.3, 7.1, 7.2, 7.3, 7.4, 7.5
- */
 export const createPricingTierSchema = z
   .object({
     name: tierNameSchema,
@@ -134,18 +130,11 @@ export const createPricingTierSchema = z
     pix_discount_percentage: pixDiscountPercentageSchema,
     is_default: z.boolean().default(false),
   })
-  .refine(
-    (data) => data.deposit_amount < data.price_full,
-    {
-      message: "Valor de entrada deve ser menor que o preço cheio",
-      path: ["deposit_amount"],
-    }
-  );
+  .refine((data) => data.deposit_amount < data.price_full, {
+    message: "Valor de entrada deve ser menor que o preço cheio",
+    path: ["deposit_amount"],
+  });
 
-/**
- * Schema para atualizar nível de preço
- * Requisitos: 1.6, 7.1, 7.2, 7.3, 7.4
- */
 export const updatePricingTierSchema = z
   .object({
     name: tierNameSchema.optional(),
@@ -159,7 +148,6 @@ export const updatePricingTierSchema = z
   })
   .refine(
     (data) => {
-      // Se ambos price_full e deposit_amount estão presentes, validar relação
       if (data.price_full !== undefined && data.deposit_amount !== undefined) {
         return data.deposit_amount < data.price_full;
       }
@@ -171,19 +159,11 @@ export const updatePricingTierSchema = z
     }
   );
 
-/**
- * Schema para atribuir coleção a nível
- * Requisitos: 2.1, 2.5
- */
 export const assignTierSchema = z.object({
   collection_id: uuidSchema,
   tier_id: uuidSchema,
 });
 
-/**
- * Schema para atribuição em massa
- * Requisitos: 10.1, 10.2
- */
 export const bulkAssignTierSchema = z.object({
   collection_ids: z
     .array(uuidSchema)
@@ -196,19 +176,11 @@ export const bulkAssignTierSchema = z.object({
   tier_id: uuidSchema,
 });
 
-/**
- * Schema para migração
- * Requisitos: 5.1, 5.4
- */
 export const migrateToTiersSchema = z.object({
   dryRun: z.boolean().default(true),
   autoCreateTiers: z.boolean().default(true),
 });
 
-/**
- * Schema para relatórios
- * Requisitos: 11.1
- */
 export const getPricingReportsSchema = z.object({
   reportType: z.enum(["collections_by_tier", "revenue_by_tier", "conversion_by_tier"], {
     required_error: "Tipo de relatório é obrigatório",
@@ -227,9 +199,7 @@ export const getPricingReportsSchema = z.object({
     .refine(
       (data) => {
         if (!data) return true;
-        const start = new Date(data.start);
-        const end = new Date(data.end);
-        return start <= end;
+        return new Date(data.start) <= new Date(data.end);
       },
       {
         message: "Data de início deve ser anterior ou igual à data de fim",
@@ -238,10 +208,6 @@ export const getPricingReportsSchema = z.object({
     ),
 });
 
-// =====================================================
-// TIPOS INFERIDOS DOS SCHEMAS
-// =====================================================
-
 export type CreatePricingTierInput = z.infer<typeof createPricingTierSchema>;
 export type UpdatePricingTierInput = z.infer<typeof updatePricingTierSchema>;
 export type AssignTierInput = z.infer<typeof assignTierSchema>;
@@ -249,20 +215,12 @@ export type BulkAssignTierInput = z.infer<typeof bulkAssignTierSchema>;
 export type MigrateToTiersInput = z.infer<typeof migrateToTiersSchema>;
 export type GetPricingReportsInput = z.infer<typeof getPricingReportsSchema>;
 
-// =====================================================
-// FUNÇÕES DE VALIDAÇÃO AUXILIARES
-// =====================================================
-
-/**
- * Valida se um nível existe no banco de dados
- * Requisitos: 2.1, 10.4
- */
 export async function validateTierExists(
   tierId: string,
-  supabase: any
-): Promise<{ valid: boolean; error?: string; tier?: any }> {
+  supabaseClient: PricingValidationClient
+): Promise<ValidationResult & { tier?: PricingTierRecord }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("pricing_tiers")
       .select("id, name, is_active")
       .eq("id", tierId)
@@ -277,7 +235,7 @@ export async function validateTierExists(
 
     return { valid: true, tier: data };
   } catch (error) {
-    console.error("Error validating tier:", error);
+    log.error("Erro ao validar nível de preço", { error, tierId });
     return {
       valid: false,
       error: "Erro ao validar nível de preço",
@@ -285,11 +243,9 @@ export async function validateTierExists(
   }
 }
 
-/**
- * Valida se um nível está ativo
- * Requisitos: 1.8, 10.4
- */
-export function validateTierActive(tier: any): { valid: boolean; error?: string } {
+export function validateTierActive(
+  tier: Pick<PricingTierRecord, "is_active" | "name">
+): ValidationResult {
   if (!tier.is_active) {
     return {
       valid: false,
@@ -300,16 +256,12 @@ export function validateTierActive(tier: any): { valid: boolean; error?: string 
   return { valid: true };
 }
 
-/**
- * Valida se uma coleção existe no banco de dados
- * Requisitos: 2.1
- */
 export async function validateCollectionExists(
   collectionId: string,
-  supabase: any
-): Promise<{ valid: boolean; error?: string; collection?: any }> {
+  supabaseClient: PricingValidationClient
+): Promise<ValidationResult & { collection?: CollectionRecord }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("collections")
       .select("id, name, is_price_custom")
       .eq("id", collectionId)
@@ -324,7 +276,7 @@ export async function validateCollectionExists(
 
     return { valid: true, collection: data };
   } catch (error) {
-    console.error("Error validating collection:", error);
+    log.error("Erro ao validar coleção", { error, collectionId });
     return {
       valid: false,
       error: "Erro ao validar coleção",
@@ -332,20 +284,13 @@ export async function validateCollectionExists(
   }
 }
 
-/**
- * Valida se um nome de nível é único
- * Requisitos: 1.2
- */
 export async function validateTierNameUnique(
   name: string,
-  supabase: any,
+  supabaseClient: PricingValidationClient,
   excludeTierId?: string
-): Promise<{ valid: boolean; error?: string }> {
+): Promise<ValidationResult> {
   try {
-    let query = supabase
-      .from("pricing_tiers")
-      .select("id")
-      .eq("name", name);
+    let query = supabaseClient.from("pricing_tiers").select("id").eq("name", name);
 
     if (excludeTierId) {
       query = query.neq("id", excludeTierId);
@@ -354,8 +299,7 @@ export async function validateTierNameUnique(
     const { data, error } = await query.single();
 
     if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows returned (which is what we want)
-      console.error("Error checking tier name uniqueness:", error);
+      log.error("Erro ao verificar unicidade do nome do nível", { error, name, excludeTierId });
       return {
         valid: false,
         error: "Erro ao validar nome do nível",
@@ -371,7 +315,7 @@ export async function validateTierNameUnique(
 
     return { valid: true };
   } catch (error) {
-    console.error("Error validating tier name uniqueness:", error);
+    log.error("Erro ao validar unicidade do nome do nível", { error, name, excludeTierId });
     return {
       valid: false,
       error: "Erro ao validar nome do nível",
@@ -379,10 +323,6 @@ export async function validateTierNameUnique(
   }
 }
 
-/**
- * Calcula o preço PIX baseado no preço cheio e percentual de desconto
- * Requisitos: 1.4
- */
 export function calculatePixPrice(priceFull: number, pixDiscountPercentage: number): number {
   return Math.round(priceFull * (1 - pixDiscountPercentage / 100) * 100) / 100;
 }
