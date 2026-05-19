@@ -15,6 +15,17 @@ import {
   usePaymentConversationRealtime 
 } from "./use-conversation-realtime";
 
+type MockRealtimePayload = {
+  eventType?: string;
+  old?: unknown;
+  new?: unknown;
+};
+
+type MockRealtimeChannel = {
+  on: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+};
+
 // Mock do Supabase
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -45,7 +56,7 @@ const createWrapper = () => {
 };
 
 describe("useConversationRealtime", () => {
-  let mockChannel: any;
+  let mockChannel: MockRealtimeChannel;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,8 +72,8 @@ describe("useConversationRealtime", () => {
       }),
     };
 
-    (supabase.channel as any).mockReturnValue(mockChannel);
-    (supabase.removeChannel as any).mockImplementation(() => {});
+    vi.mocked(supabase.channel).mockReturnValue(mockChannel as ReturnType<typeof supabase.channel>);
+    vi.mocked(supabase.removeChannel).mockResolvedValue("ok");
   });
 
   afterEach(() => {
@@ -148,9 +159,13 @@ describe("useConversationRealtime", () => {
 
   it("deve chamar onNewMessage quando receber uma nova mensagem", async () => {
     const onNewMessage = vi.fn();
-    let changeCallback: (payload: any) => void;
+    let changeCallback: (payload: MockRealtimePayload) => void;
     
-    mockChannel.on.mockImplementation((event: string, config: any, callback: (payload: any) => void) => {
+    mockChannel.on.mockImplementation((
+      event: string,
+      _config: unknown,
+      callback: (payload: MockRealtimePayload) => void
+    ) => {
       if (event === "postgres_changes") {
         changeCallback = callback;
       }
@@ -191,9 +206,13 @@ describe("useConversationRealtime", () => {
 
   it("deve chamar onMessageUpdate quando uma mensagem for atualizada", async () => {
     const onMessageUpdate = vi.fn();
-    let changeCallback: (payload: any) => void;
+    let changeCallback: (payload: MockRealtimePayload) => void;
     
-    mockChannel.on.mockImplementation((event: string, config: any, callback: (payload: any) => void) => {
+    mockChannel.on.mockImplementation((
+      event: string,
+      _config: unknown,
+      callback: (payload: MockRealtimePayload) => void
+    ) => {
       if (event === "postgres_changes") {
         changeCallback = callback;
       }
@@ -233,9 +252,13 @@ describe("useConversationRealtime", () => {
 
   it("deve chamar onConversationUpdate quando uma conversa for atualizada", async () => {
     const onConversationUpdate = vi.fn();
-    let changeCallback: (payload: any) => void;
+    let changeCallback: (payload: MockRealtimePayload) => void;
     
-    mockChannel.on.mockImplementation((event: string, config: any, callback: (payload: any) => void) => {
+    mockChannel.on.mockImplementation((
+      event: string,
+      _config: unknown,
+      callback: (payload: MockRealtimePayload) => void
+    ) => {
       if (event === "postgres_changes") {
         changeCallback = callback;
       }

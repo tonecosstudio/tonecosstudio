@@ -10,6 +10,17 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
 import { usePaymentRealtime, usePaymentStatusRealtime, useNewPaymentsRealtime } from "./use-payment-realtime";
 
+type MockRealtimePayload = {
+  eventType?: string;
+  old?: unknown;
+  new?: unknown;
+};
+
+type MockRealtimeChannel = {
+  on: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+};
+
 // Mock do Supabase
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -40,7 +51,7 @@ const createWrapper = () => {
 };
 
 describe("usePaymentRealtime", () => {
-  let mockChannel: any;
+  let mockChannel: MockRealtimeChannel;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,8 +67,8 @@ describe("usePaymentRealtime", () => {
       }),
     };
 
-    (supabase.channel as any).mockReturnValue(mockChannel);
-    (supabase.removeChannel as any).mockImplementation(() => {});
+    vi.mocked(supabase.channel).mockReturnValue(mockChannel as ReturnType<typeof supabase.channel>);
+    vi.mocked(supabase.removeChannel).mockResolvedValue("ok");
   });
 
   afterEach(() => {
@@ -167,9 +178,13 @@ describe("usePaymentRealtime", () => {
 
   it("deve chamar onPaymentChange quando receber uma mudança", async () => {
     const onPaymentChange = vi.fn();
-    let changeCallback: (payload: any) => void;
+    let changeCallback: (payload: MockRealtimePayload) => void;
     
-    mockChannel.on.mockImplementation((event: string, config: any, callback: (payload: any) => void) => {
+    mockChannel.on.mockImplementation((
+      event: string,
+      _config: unknown,
+      callback: (payload: MockRealtimePayload) => void
+    ) => {
       if (event === "postgres_changes") {
         changeCallback = callback;
       }
