@@ -1,16 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  isAdmin,
-  isGroupMember,
-  canManageGroup,
-  canSendGroupMessage,
-  canViewGroupMessages,
-  canDeleteGroup,
-  requireAdmin,
-  requireGroupMember,
-  requireGroupManagement,
-} from "./groupPermissions";
 import { supabase } from "@/integrations/supabase/client";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { isAdmin, isGroupMember, requireAdmin, requireGroupMember } from "./groupPermissions";
+
+type AuthUserResponse = Awaited<ReturnType<typeof supabase.auth.getUser>>;
+type SupabaseFromResult = ReturnType<typeof supabase.from>;
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -21,6 +14,47 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("@/lib/logger", () => ({
+  log: {
+    error: vi.fn(),
+  },
+}));
+
+function mockCurrentUser(userId: string | null): void {
+  vi.mocked(supabase.auth.getUser).mockResolvedValue({
+    data: { user: userId ? { id: userId } : null },
+    error: null,
+  } as unknown as AuthUserResponse);
+}
+
+function mockProfileRole(role: "admin" | "customer"): void {
+  vi.mocked(supabase.from).mockReturnValue({
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: { role },
+          error: null,
+        }),
+      }),
+    }),
+  } as unknown as SupabaseFromResult);
+}
+
+function mockGroupMembership(memberId: string | null): void {
+  vi.mocked(supabase.from).mockReturnValue({
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: memberId ? { id: memberId } : null,
+            error: memberId ? null : { code: "PGRST116" },
+          }),
+        }),
+      }),
+    }),
+  } as unknown as SupabaseFromResult);
+}
+
 describe("groupPermissions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -28,143 +62,53 @@ describe("groupPermissions", () => {
 
   describe("isAdmin", () => {
     it("returns true for admin users", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
+      mockCurrentUser("user-1");
+      mockProfileRole("admin");
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { role: "admin" },
-              error: null,
-            }),
-          }),
-        }),
-      } as any);
-
-      const result = await isAdmin();
-      expect(result).toBe(true);
+      await expect(isAdmin()).resolves.toBe(true);
     });
 
     it("returns false for non-admin users", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
+      mockCurrentUser("user-1");
+      mockProfileRole("customer");
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { role: "customer" },
-              error: null,
-            }),
-          }),
-        }),
-      } as any);
-
-      const result = await isAdmin();
-      expect(result).toBe(false);
+      await expect(isAdmin()).resolves.toBe(false);
     });
 
     it("returns false when user not found", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: null },
-        error: null,
-      } as any);
+      mockCurrentUser(null);
 
-      const result = await isAdmin();
-      expect(result).toBe(false);
+      await expect(isAdmin()).resolves.toBe(false);
     });
   });
 
   describe("isGroupMember", () => {
     it("returns true when user is a member", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
+      mockCurrentUser("user-1");
+      mockGroupMembership("member-1");
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { id: "member-1" },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      } as any);
-
-      const result = await isGroupMember("group-1");
-      expect(result).toBe(true);
+      await expect(isGroupMember("group-1")).resolves.toBe(true);
     });
 
     it("returns false when user is not a member", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
+      mockCurrentUser("user-1");
+      mockGroupMembership(null);
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: { code: "PGRST116" },
-              }),
-            }),
-          }),
-        }),
-      } as any);
-
-      const result = await isGroupMember("group-1");
-      expect(result).toBe(false);
+      await expect(isGroupMember("group-1")).resolves.toBe(false);
     });
   });
 
   describe("requireAdmin", () => {
     it("does not throw for admin users", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
-
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { role: "admin" },
-              error: null,
-            }),
-          }),
-        }),
-      } as any);
+      mockCurrentUser("user-1");
+      mockProfileRole("admin");
 
       await expect(requireAdmin()).resolves.not.toThrow();
     });
 
     it("throws for non-admin users", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
-
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { role: "customer" },
-              error: null,
-            }),
-          }),
-        }),
-      } as any);
+      mockCurrentUser("user-1");
+      mockProfileRole("customer");
 
       await expect(requireAdmin()).rejects.toThrow("Acesso negado");
     });
@@ -172,45 +116,15 @@ describe("groupPermissions", () => {
 
   describe("requireGroupMember", () => {
     it("does not throw for group members", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
-
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { id: "member-1" },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      } as any);
+      mockCurrentUser("user-1");
+      mockGroupMembership("member-1");
 
       await expect(requireGroupMember("group-1")).resolves.not.toThrow();
     });
 
     it("throws for non-members", async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: { id: "user-1" } },
-        error: null,
-      } as any);
-
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: { code: "PGRST116" },
-              }),
-            }),
-          }),
-        }),
-      } as any);
+      mockCurrentUser("user-1");
+      mockGroupMembership(null);
 
       await expect(requireGroupMember("group-1")).rejects.toThrow("não é membro");
     });
