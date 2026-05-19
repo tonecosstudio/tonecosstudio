@@ -9,7 +9,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ENV, PRICING, BATCH, CONTACT, NOTIFICATIONS, UI } from "@/config/constants";
+import { PRICING, BATCH, CONTACT, NOTIFICATIONS, UI } from "@/config/constants";
+import { log } from "@/lib/logger";
 
 /**
  * Interface para configurações do sistema
@@ -115,6 +116,10 @@ const DEFAULT_SETTINGS: SystemSettings = {
   hero_image_url: undefined,
 };
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Erro desconhecido";
+}
+
 /**
  * Hook para buscar configurações do sistema
  *
@@ -139,7 +144,7 @@ export function useSystemSettings() {
       const { data, error } = await supabase.from("system_settings_grouped").select("*").single();
 
       if (error) {
-        console.warn("Erro ao buscar configurações do banco, usando valores padrão:", error);
+        log.warn("Failed to fetch system settings view, using defaults", { error });
         return DEFAULT_SETTINGS;
       }
 
@@ -230,7 +235,7 @@ export async function fetchSystemSettings(): Promise<SystemSettings> {
   const { data, error } = await supabase.from("system_settings_grouped").select("*").single();
 
   if (error) {
-    console.warn("Erro ao buscar configurações do banco, usando valores padrão:", error);
+    log.warn("Failed to fetch system settings view, using defaults", { error });
     return DEFAULT_SETTINGS;
   }
 
@@ -284,8 +289,8 @@ export async function updateSystemSetting(
     }
 
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -312,7 +317,7 @@ export async function updateSystemSettings(
     }
 
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) };
   }
 }
