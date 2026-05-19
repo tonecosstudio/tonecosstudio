@@ -20,6 +20,23 @@ export interface GroupAnalytics {
   avgResponseTime: number; // in minutes
 }
 
+interface GroupMemberView {
+  user_id: string;
+  last_viewed_at: string | null;
+}
+
+interface GroupMemberJoin {
+  joined_at: string;
+}
+
+interface MemberProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+const RESPONSE_TIME_UNAVAILABLE_MINUTES = 0;
+
 /**
  * GroupAnalyticsService - Serviço para analytics de grupos
  *
@@ -147,17 +164,19 @@ export class GroupAnalyticsService {
     }
 
     // Get user profiles
-    const userIds = members.map((m) => m.user_id);
+    const userIds = (members as GroupMemberView[]).map((member) => member.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, full_name, email")
       .in("id", userIds);
 
-    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+    const profilesMap = new Map(
+      ((profiles || []) as MemberProfile[]).map((profile) => [profile.id, profile])
+    );
 
     // For now, use a simple metric (could be enhanced with message counts, etc.)
     // Simulate view counts based on last_viewed_at recency
-    return members.map((member, index) => {
+    return (members as GroupMemberView[]).map((member, index) => {
       const profile = profilesMap.get(member.user_id);
       return {
         userId: member.user_id,
@@ -211,7 +230,7 @@ export class GroupAnalyticsService {
 
     // Count cumulative members
     let cumulativeCount = 0;
-    members.forEach((member) => {
+    (members as GroupMemberJoin[]).forEach((member) => {
       const date = new Date(member.joined_at);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       cumulativeCount++;
@@ -246,7 +265,7 @@ export class GroupAnalyticsService {
       memberGrowth,
       totalMessages: messagesCount,
       totalMembers: membersCount,
-      avgResponseTime: 0, // TODO: Implement if needed
+      avgResponseTime: RESPONSE_TIME_UNAVAILABLE_MINUTES,
     };
   }
 
