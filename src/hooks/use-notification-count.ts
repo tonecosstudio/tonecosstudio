@@ -1,58 +1,178 @@
-/**
- * useNotificationCount - Hook para gerenciar badge de notificação in-app
- *
- * Requirements: 10.1-10.10
- * Design: .kiro/specs/manual-payment-system/design.md
- *
- * Este hook calcula e atualiza em tempo real a contagem de notificações
- * para clientes e administradores usando Supabase Realtime.
- *
- * Para clientes: requires_info + mensagens não lidas
- * Para admins: pending + under_review + mensagens não lidas
- */
-
-import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { RealtimeChannel, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/lib/roles";
-import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
+import { log } from "@/lib/logger";
 
-/**
- * Interface para o resultado do hook
- */
 export interface NotificationCount {
-  /** Contagem total de notificações */
   total: number;
-  /** Contagem de pagamentos pendentes (apenas para admins) */
   pendingPayments: number;
-  /** Contagem de pagamentos em análise (apenas para admins) */
   underReviewPayments: number;
-  /** Contagem de pagamentos que requerem informações (apenas para clientes) */
   requiresInfoPayments: number;
-  /** Contagem de mensagens não lidas */
   unreadMessages: number;
-  /** Se o usuário é admin */
   isAdmin: boolean;
-  /** Se está carregando */
   isLoading: boolean;
-  /** Erro se houver */
   error: Error | null;
 }
 
-/**
- * Hook para calcular e atualizar contagem de notificações em tempo real
- *
- * @returns NotificationCount com contagens atualizadas e status
- */
+type NotificationCountData = Omit<NotificationCount, "isLoading" | "error">;
+type ConversationIdRow = { id: string };
+
+const EMPTY_CUSTOMER_COUNT: NotificationCountData = {
+  total: 0,
+  pendingPayments: 0,
+  underReviewPayments: 0,
+  requiresInfoPayments: 0,
+  unreadMessages: 0,
+  isAdmin: false,
+};
+
+async function getCustomerConversations(customerId: string): Promise<ConversationIdRow[]> {
+  const { data, error } = await supabase
+    .from("support_conversations")
+    .select("id")
+    .eq("user_id", customerId);
+
+  if (error) {
+    log.error("Failed to fetch customer support conversations", { error, customerId });
+    return [];
+  }
+
+  return data || [];
+}
+
+async function fetchAdminNotificationCount(adminId: string): Promise<NotificationCountData> {
+  let pendingCount = 0;
+  let underReviewCount = 0;
+
+  try {
+    const { data: pendingPayments, error: pendingError } = await supabase
+      .from("manual_payments")
+      .select("id, status")
+      .in("status", ["pending", "under_review"]);
+
+    if (pendingError) {
+      log.error("Failed to fetch pending manual payments for notification count", {
+        error: pendingError,
+        adminId,
+      });
+
+      if (
+        pendingError.code === "PGRST205" ||
+        pendingError.message?.includes("Could not find the table")
+      ) {
+        log.warn("manual_payments table unavailable while counting admin notifications", {
+          adminId,
+        });
+      } else {
+        throw pendingError;
+      }
+    } else {
+      pendingCount = pendingPayments?.filter((payment) => payment.status === "pending").length || 0;
+      underReviewCount =
+        pendingPayments?.filter((payment) => payment.status === "under_review").length || 0;
+    }
+  } catch (error) {
+    log.error("Unexpected failure while counting admin manual payments", { error, adminId });
+  }
+
+  const { data: unreadMessages, error: messagesError } = await supabase
+    .from("support_messages")
+    .select("id, read_by_admin")
+    .eq("read_by_admin", false);
+
+  if (messagesError) {
+    log.error("Failed to fetch unread admin support messages", {
+      error: messagesError,
+      adminId,
+    });
+    throw messagesError;
+  }
+
+  const unreadMessagesCount = unreadMessages?.length || 0;
+
+  return {
+    total: pendingCount + underReviewCount + unreadMessagesCount,
+    pendingPayments: pendingCount,
+    underReviewPayments: underReviewCount,
+    requiresInfoPayments: 0,
+    unreadMessages: unreadMessagesCount,
+    isAdmin: true,
+  };
+}
+
+async function fetchCustomerNotificationCount(customerId: string): Promise<NotificationCountData> {
+  let requiresInfoCount = 0;
+
+  try {
+    const { data: requiresInfoPayments, error: paymentsError } = await supabase
+      .from("manual_payments")
+      .select("id, status")
+      .eq("user_id", customerId)
+      .eq("status", "requires_info");
+
+    if (paymentsError) {
+      log.error("Failed to fetch customer manual payments requiring information", {
+        error: paymentsError,
+        customerId,
+      });
+
+      if (
+        paymentsError.code === "PGRST205" ||
+        paymentsError.message?.includes("Could not find the table")
+      ) {
+        log.warn("manual_payments table unavailable while counting customer notifications", {
+          customerId,
+        });
+      } else {
+        throw paymentsError;
+      }
+    } else {
+      requiresInfoCount = requiresInfoPayments?.length || 0;
+    }
+  } catch (error) {
+    log.error("Unexpected failure while counting customer manual payments", {
+      error,
+      customerId,
+    });
+  }
+
+  const { data: unreadMessages, error: messagesError } = await supabase
+    .from("support_messages")
+    .select("id, read_by_customer, conversation_id")
+    .eq("read_by_customer", false);
+
+  if (messagesError) {
+    log.error("Failed to fetch unread customer support messages", {
+      error: messagesError,
+      customerId,
+    });
+    throw messagesError;
+  }
+
+  const customerConversations = await getCustomerConversations(customerId);
+  const unreadMessagesCount =
+    unreadMessages?.filter((message) =>
+      customerConversations.some((conversation) => conversation.id === message.conversation_id)
+    ).length || 0;
+
+  return {
+    total: requiresInfoCount + unreadMessagesCount,
+    pendingPayments: 0,
+    underReviewPayments: 0,
+    requiresInfoPayments: requiresInfoCount,
+    unreadMessages: unreadMessagesCount,
+    isAdmin: false,
+  };
+}
+
 export function useNotificationCount(): NotificationCount {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const { data: isAdminData, isLoading: isAdminLoading } = useIsAdmin(user?.id);
   const queryClient = useQueryClient();
   const [realTimeCount, setRealTimeCount] = useState<NotificationCount | null>(null);
 
-  /**
-   * Busca o usuário atual
-   */
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -63,10 +183,9 @@ export function useNotificationCount(): NotificationCount {
 
     getUser();
 
-    // Configurar listener para mudanças de autenticação
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
 
@@ -78,9 +197,6 @@ export function useNotificationCount(): NotificationCount {
   const isAdmin = isAdminData || false;
   const isLoadingAuth = isAdminLoading || !user;
 
-  /**
-   * Busca a contagem inicial de notificações
-   */
   const {
     data: initialCount,
     isLoading: isLoadingCount,
@@ -88,175 +204,15 @@ export function useNotificationCount(): NotificationCount {
   } = useQuery({
     queryKey: ["notification-count", user?.id, isAdmin],
     queryFn: async () => {
-      if (!user?.id) {
-        return {
-          total: 0,
-          pendingPayments: 0,
-          underReviewPayments: 0,
-          requiresInfoPayments: 0,
-          unreadMessages: 0,
-          isAdmin: false,
-        };
-      }
-
-      if (isAdmin) {
-        return await fetchAdminNotificationCount(user.id);
-      } else {
-        return await fetchCustomerNotificationCount(user.id);
-      }
+      if (!user?.id) return EMPTY_CUSTOMER_COUNT;
+      return isAdmin
+        ? fetchAdminNotificationCount(user.id)
+        : fetchCustomerNotificationCount(user.id);
     },
     enabled: !!user?.id && !isAdminLoading,
     refetchOnWindowFocus: false,
   });
 
-  /**
-   * Calcula contagem de notificações para administradores
-   */
-  const fetchAdminNotificationCount = async (
-    adminId: string
-  ): Promise<Omit<NotificationCount, "isLoading" | "error">> => {
-    let pendingCount = 0;
-    let underReviewCount = 0;
-
-    try {
-      // Buscar pagamentos pendentes e em análise
-      const { data: pendingPayments, error: pendingError } = await supabase
-        .from("manual_payments")
-        .select("id, status")
-        .in("status", ["pending", "under_review"]);
-
-      if (pendingError) {
-        console.error("Erro ao buscar pagamentos pendentes:", pendingError);
-        // Se a tabela não existir, retorna 0 para as contagens
-        if (
-          pendingError.code === "PGRST205" ||
-          pendingError.message?.includes("Could not find the table")
-        ) {
-          console.warn("Tabela manual_payments não encontrada. Retornando contagem zero.");
-        } else {
-          throw pendingError;
-        }
-      } else {
-        pendingCount = pendingPayments?.filter((p) => p.status === "pending").length || 0;
-        underReviewCount = pendingPayments?.filter((p) => p.status === "under_review").length || 0;
-      }
-    } catch (error) {
-      console.error("Erro inesperado ao buscar pagamentos:", error);
-      // Continua com contagem zero em caso de erro
-    }
-
-    // Buscar mensagens não lidas por administradores
-    const { data: unreadMessages, error: messagesError } = await supabase
-      .from("support_messages")
-      .select("id, read_by_admin")
-      .eq("read_by_admin", false);
-
-    if (messagesError) {
-      console.error("Erro ao buscar mensagens não lidas:", messagesError);
-      throw messagesError;
-    }
-
-    const unreadMessagesCount = unreadMessages?.length || 0;
-
-    const total = pendingCount + underReviewCount + unreadMessagesCount;
-
-    return {
-      total,
-      pendingPayments: pendingCount,
-      underReviewPayments: underReviewCount,
-      requiresInfoPayments: 0, // Admins não têm requires_info
-      unreadMessages: unreadMessagesCount,
-      isAdmin: true,
-    };
-  };
-
-  /**
-   * Calcula contagem de notificações para clientes
-   */
-  const fetchCustomerNotificationCount = async (
-    customerId: string
-  ): Promise<Omit<NotificationCount, "isLoading" | "error">> => {
-    let requiresInfoCount = 0;
-
-    try {
-      // Buscar pagamentos que requerem informações
-      const { data: requiresInfoPayments, error: paymentsError } = await supabase
-        .from("manual_payments")
-        .select("id, status")
-        .eq("user_id", customerId)
-        .eq("status", "requires_info");
-
-      if (paymentsError) {
-        console.error("Erro ao buscar pagamentos requires_info:", paymentsError);
-        // Se a tabela não existir, apenas continua com contagem zero
-        if (
-          paymentsError.code === "PGRST205" ||
-          paymentsError.message?.includes("Could not find the table")
-        ) {
-          console.warn("Tabela manual_payments não encontrada. Retornando contagem zero.");
-        } else {
-          throw paymentsError;
-        }
-      } else {
-        requiresInfoCount = requiresInfoPayments?.length || 0;
-      }
-    } catch (error) {
-      console.error("Erro ao buscar pagamentos requires_info:", error);
-      // Continua com contagem zero em caso de erro
-    }
-
-    // Buscar mensagens não lidas por clientes
-    const { data: unreadMessages, error: messagesError } = await supabase
-      .from("support_messages")
-      .select("id, read_by_customer, conversation_id")
-      .eq("read_by_customer", false);
-
-    if (messagesError) {
-      console.error("Erro ao buscar mensagens não lidas:", messagesError);
-      throw messagesError;
-    }
-
-    // Filtrar apenas mensagens de conversas do cliente
-    const customerConversations = await getCustomerConversations(customerId);
-    const customerUnreadMessages =
-      unreadMessages?.filter((msg) =>
-        customerConversations.some((conv) => conv.id === msg.conversation_id)
-      ) || [];
-
-    const unreadMessagesCount = customerUnreadMessages.length;
-
-    const total = requiresInfoCount + unreadMessagesCount;
-
-    return {
-      total,
-      pendingPayments: 0, // Clientes não veem pending
-      underReviewPayments: 0, // Clientes não veem under_review
-      requiresInfoPayments: requiresInfoCount,
-      unreadMessages: unreadMessagesCount,
-      isAdmin: false,
-    };
-  };
-
-  /**
-   * Busca conversas do cliente
-   */
-  const getCustomerConversations = async (customerId: string) => {
-    const { data, error } = await supabase
-      .from("support_conversations")
-      .select("id")
-      .eq("user_id", customerId);
-
-    if (error) {
-      console.error("Erro ao buscar conversas do cliente:", error);
-      return [];
-    }
-
-    return data || [];
-  };
-
-  /**
-   * Atualiza contagem quando há mudanças em tempo real
-   */
   const updateCount = useCallback(async () => {
     if (!user?.id) return;
 
@@ -271,10 +227,9 @@ export function useNotificationCount(): NotificationCount {
         error: null,
       });
 
-      // Invalida a query para forçar refetch se necessário
       queryClient.invalidateQueries({ queryKey: ["notification-count", user.id, isAdmin] });
     } catch (err) {
-      console.error("Erro ao atualizar contagem de notificações:", err);
+      log.error("Failed to refresh realtime notification count", { error: err, userId: user.id });
       setRealTimeCount((prev) =>
         prev
           ? {
@@ -287,15 +242,11 @@ export function useNotificationCount(): NotificationCount {
     }
   }, [user?.id, isAdmin, queryClient]);
 
-  /**
-   * Configura assinaturas em tempo real
-   */
   useEffect(() => {
     if (!user?.id) return;
 
-    const channels = [];
+    const channels: RealtimeChannel[] = [];
 
-    // Canal para mudanças de status de pagamento
     try {
       const paymentChannel = supabase
         .channel(`notification-payments-${user.id}`)
@@ -315,13 +266,12 @@ export function useNotificationCount(): NotificationCount {
 
       channels.push(paymentChannel);
     } catch (error) {
-      console.warn(
-        "Não foi possível criar canal de notificação para manual_payments. A tabela pode não existir:",
-        error
-      );
+      log.warn("Could not create manual payment notification realtime channel", {
+        error,
+        userId: user.id,
+      });
     }
 
-    // Canal para novas mensagens
     const messageChannel = supabase
       .channel(`notification-messages-${user.id}`)
       .on(
@@ -339,7 +289,6 @@ export function useNotificationCount(): NotificationCount {
 
     channels.push(messageChannel);
 
-    // Canal para atualizações de leitura de mensagens
     const messageReadChannel = supabase
       .channel(`notification-messages-read-${user.id}`)
       .on(
@@ -350,7 +299,6 @@ export function useNotificationCount(): NotificationCount {
           table: "support_messages",
         },
         (payload) => {
-          // Só atualiza se o campo read_by_customer ou read_by_admin mudou
           if (
             payload.new.read_by_customer !== payload.old?.read_by_customer ||
             payload.new.read_by_admin !== payload.old?.read_by_admin
@@ -363,7 +311,6 @@ export function useNotificationCount(): NotificationCount {
 
     channels.push(messageReadChannel);
 
-    // Cleanup
     return () => {
       channels.forEach((channel) => {
         supabase.removeChannel(channel);
@@ -371,12 +318,9 @@ export function useNotificationCount(): NotificationCount {
     };
   }, [user?.id, isAdmin, updateCount]);
 
-  /**
-   * Retorna o resultado combinado (dados iniciais + atualizações em tempo real)
-   */
   const isLoading = isLoadingAuth || isLoadingCount;
 
-  const result =
+  return (
     realTimeCount ||
     (initialCount
       ? {
@@ -385,23 +329,13 @@ export function useNotificationCount(): NotificationCount {
           error: error as Error | null,
         }
       : {
-          total: 0,
-          pendingPayments: 0,
-          underReviewPayments: 0,
-          requiresInfoPayments: 0,
-          unreadMessages: 0,
-          isAdmin: false,
+          ...EMPTY_CUSTOMER_COUNT,
           isLoading,
           error: error as Error | null,
-        });
-
-  return result;
+        })
+  );
 }
 
-/**
- * Hook auxiliar para formatar a contagem para exibição
- * (ex: "99+" para contagens maiores que 99)
- */
 export function useFormattedNotificationCount() {
   const notificationCount = useNotificationCount();
 
