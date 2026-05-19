@@ -363,9 +363,7 @@ export function getStatusText(status: CycleStatus): string {
  *
  * // Ciclo atual
  * const current = calculateCurrentBatch(rules);
- * console.log(getBatchSummary(current));
  *
  * // Próximos 6 ciclos (3 meses)
  * const future = calculateFutureBatches(rules, 6);
- * future.forEach(batch => console.log(getBatchSummary(batch)));
  */

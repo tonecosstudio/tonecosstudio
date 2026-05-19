@@ -12,7 +12,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { timezoneService } from './timezoneService';
-import { businessDayService } from './businessDayService';
 
 /**
  * Tipos
@@ -61,7 +60,7 @@ class CycleService {
    * @deprecated Este método é mantido para compatibilidade. No modelo mensal,
    * não há divisão quinzenal - todo o mês é um único ciclo.
    */
-  identifyCycleNumber(date: Date): 1 | 2 {
+  identifyCycleNumber(_date: Date): 1 | 2 {
     // No modelo mensal, sempre retorna 1 (todo o mês é um único ciclo)
     // Mantido como 1|2 para compatibilidade com código legado
     return 1;
@@ -75,7 +74,6 @@ class CycleService {
    * 
    * @example
    * const cycle = await cycleService.getCurrentCycle();
-   * console.log(`Ciclo ${cycle.cycle_number} de ${cycle.month}/${cycle.year}`);
    */
   async getCurrentCycle(date?: Date): Promise<Cycle | null> {
     const referenceDate = date || timezoneService.getCurrentTime();
