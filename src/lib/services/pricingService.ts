@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 
 export interface PricingSettings {
   // Preços Padrão
@@ -113,7 +114,7 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
         settings.currentMonthAvailable = current.prod_available;
         settings.currentMonthPercentage = current.prod_percentage_sold;
       }
-    } catch (error) {
+    } catch (_error) {
       // Silenciosamente ignora se a função não existir
     }
 
@@ -121,7 +122,7 @@ export async function fetchPricingSettings(): Promise<PricingSettings> {
     cachedSettings = settings;
     cacheTimestamp = now;
   } catch (error) {
-    console.error("Erro ao buscar configurações de preços:", error);
+    log.error("Erro ao buscar configurações de preços", { error });
   }
 
   return settings;
