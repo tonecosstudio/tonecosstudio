@@ -8,9 +8,10 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import log from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 import { emailService } from "./email-service";
 import { StandalonePurchase } from "@/types/database";
+import type { Tables } from "@/integrations/supabase/types";
 import { validateBeforeCutoff, CutoffPassedError } from "@/lib/cutoff-middleware";
 
 /**
@@ -22,6 +23,17 @@ export interface CreateStandalonePurchaseParams {
   cycleId: string;
   depositVoucherUrl?: string;
 }
+
+type StandalonePurchaseRow = Tables<'standalone_purchases'>;
+
+export type StandalonePurchaseListItem = StandalonePurchaseRow & {
+  profiles?: { id: string; full_name: string | null; email: string | null } | null;
+  collections?: { id: string; name: string; slug: string | null } | null;
+  cycles?: { id: string; month: number; year: number } | null;
+  collection_characters?: { id: string; name: string; image_url: string | null } | null;
+};
+
+type VoucherRejectionUpdate = Partial<Pick<StandalonePurchaseRow, 'deposit_voucher_url' | 'balance_voucher_url'>>;
 
 /**
  * Create a standalone purchase with deposit
@@ -357,7 +369,7 @@ export async function cancelStandalonePurchase(
   // 5. Log admin action for audit trail (Requirement 15.3)
   if (adminUserId) {
     try {
-      const { error: logError } = await supabase.rpc('log_standalone_admin_action', {
+      const { error: auditLogError } = await supabase.rpc('log_standalone_admin_action', {
         p_purchase_id: purchaseId,
         p_admin_user_id: adminUserId,
         p_action_type: 'cancel_order',
@@ -370,8 +382,8 @@ export async function cancelStandalonePurchase(
         }
       });
 
-      if (logError) {
-        logError('Failed to log admin action', logError, 'standalone-purchase');
+      if (auditLogError) {
+        logError('Failed to log admin action', auditLogError, 'standalone-purchase');
         // Don't fail the operation if logging fails
       }
     } catch (error) {
@@ -517,7 +529,7 @@ export async function markProductionComplete(
   // 5. Log admin action for audit trail (Requirement 15.3)
   if (adminUserId) {
     try {
-      const { error: logError } = await supabase.rpc('log_standalone_admin_action', {
+      const { error: auditLogError } = await supabase.rpc('log_standalone_admin_action', {
         p_purchase_id: purchaseId,
         p_admin_user_id: adminUserId,
         p_action_type: 'mark_production_complete',
@@ -530,8 +542,8 @@ export async function markProductionComplete(
         }
       });
 
-      if (logError) {
-        logError('Failed to log admin action', logError, 'standalone-purchase');
+      if (auditLogError) {
+        logError('Failed to log admin action', auditLogError, 'standalone-purchase');
         // Don't fail the operation if logging fails
       }
     } catch (error) {
@@ -707,7 +719,7 @@ export async function getAllStandalonePurchases(filters?: {
   searchTerm?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ data: any[]; count: number }> {
+}): Promise<{ data: StandalonePurchaseListItem[]; count: number }> {
   const limit = filters?.limit || 50;
   const offset = filters?.offset || 0;
 
@@ -786,7 +798,7 @@ export async function getAllStandalonePurchases(filters?: {
   }
 
   return {
-    data: data || [],
+    data: (data || []) as StandalonePurchaseListItem[],
     count: count || 0,
   };
 }
@@ -803,7 +815,7 @@ export async function getAllStandalonePurchases(filters?: {
 export async function searchStandalonePurchasesByCustomer(
   searchTerm: string,
   limit: number = 50
-): Promise<any[]> {
+): Promise<StandalonePurchaseListItem[]> {
   // First, search for users matching the term
   const { data: users, error: userError } = await supabase
     .from('profiles')
@@ -840,7 +852,7 @@ export async function searchStandalonePurchasesByCustomer(
     throw new Error(`Failed to fetch purchases: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as StandalonePurchaseListItem[];
 }
 
 /**
@@ -945,7 +957,7 @@ export async function rejectPaymentVoucher(
   }
 
   // 2. Clear the voucher URL to allow re-upload
-  const updateData: any = {};
+  const updateData: VoucherRejectionUpdate = {};
 
   if (voucherType === 'deposit') {
     updateData.deposit_voucher_url = null;
