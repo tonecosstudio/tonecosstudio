@@ -819,27 +819,12 @@ export async function fetchOrderStatusHistory(
   orderId: string,
   orderType: "subscription_delivery" | "standalone_purchase" | "manual_payment"
 ): Promise<StatusHistoryEntry[]> {
-  const result = await (supabase as any)
+  const { data, error } = await supabase
     .from("order_status_history")
     .select("*")
     .eq("order_id", orderId)
     .eq("order_type", orderType)
     .order("created_at", { ascending: false });
-
-  const { data, error } = result as {
-    data: Array<{
-      id: string;
-      order_id: string;
-      order_type: string;
-      old_status: string | null;
-      new_status: string;
-      changed_by_admin_id: string | null;
-      changed_by_admin_name: string | null;
-      created_at: string;
-      notes: string | null;
-    }> | null;
-    error: any;
-  };
 
   if (error) {
     log.error('Error fetching order status history', { error });
@@ -856,8 +841,8 @@ export async function fetchOrderStatusHistory(
       | "manual_payment",
     oldStatus: entry.old_status as OrderStatus,
     newStatus: entry.new_status as OrderStatus,
-    changedBy: entry.changed_by_admin_id || "system",
-    changedByName: entry.changed_by_admin_name || "Sistema",
+    changedBy: entry.changed_by || "system",
+    changedByName: entry.changed_by_name || "Sistema",
     changedAt: entry.created_at,
     notes: entry.notes || undefined,
   }));
@@ -967,13 +952,15 @@ export async function bulkUpdateStatus(
 
       // Registrar mudança no histórico (opcional, não bloqueia em caso de erro)
       try {
-        await (supabase as any).from("order_status_history").insert({
+        const { data: authData } = await supabase.auth.getUser();
+
+        await supabase.from("order_status_history").insert({
           order_id: order.id,
           order_type: order.type,
           old_status: order.status,
           new_status: newStatus,
-          changed_by_admin_id: (await supabase.auth.getUser()).data.user?.id || null,
-          changed_by_admin_name: (await supabase.auth.getUser()).data.user?.email || "Admin",
+          changed_by: authData.user?.id || null,
+          changed_by_name: authData.user?.email || "Admin",
           created_at: new Date().toISOString(),
         });
       } catch (historyError) {
@@ -1026,11 +1013,10 @@ async function searchOrdersWithFullText(
   searchQuery: string,
   orderType: "all" | "subscription_delivery" | "standalone_purchase" | "manual_payment" = "all"
 ): Promise<Array<{ order_id: string; order_type: string; rank: number }>> {
-  // @ts-expect-error - search_unified_orders RPC function will be available after migration
-  const { data, error } = (await supabase.rpc("search_unified_orders", {
+  const { data, error } = await supabase.rpc("search_unified_orders", {
     search_query: searchQuery,
     order_type_filter: orderType === "manual_payment" ? "all" : orderType,
-  })) as { data: Array<{ order_id: string; order_type: string; rank: number }> | null; error: any };
+  });
 
   if (error) {
     log.error('Error in full-text search', { error });
