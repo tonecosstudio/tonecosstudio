@@ -8,7 +8,7 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { fetchUnifiedOrders } from '@/services/admin/orders-service';
 import type {
   UnifiedOrder,
@@ -97,7 +97,7 @@ export function useOrdersQuery({
   });
 
   // Função para prefetch manual da próxima página
-  const prefetchNextPage = () => {
+  const prefetchNextPage = useCallback(() => {
     if (query.data && pagination.page < query.data.totalPages) {
       const nextPagination = {
         ...pagination,
@@ -110,7 +110,7 @@ export function useOrdersQuery({
         staleTime: CACHE_CONFIG.staleTime
       });
     }
-  };
+  }, [filters, pagination, query.data, queryClient]);
 
   // Prefetch automático da próxima página quando dados são carregados
   // Requisito 11.1: Melhorar performance percebida
@@ -123,7 +123,7 @@ export function useOrdersQuery({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [query.data, query.isSuccess, pagination.page, filters]);
+  }, [query.data, query.isSuccess, pagination.page, prefetchNextPage]);
 
   return {
     orders: query.data?.data || [],

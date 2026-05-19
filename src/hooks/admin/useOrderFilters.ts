@@ -39,6 +39,15 @@ const URL_PARAMS = {
   PAGE_SIZE: 'pageSize'
 } as const;
 
+function stripControlCharacters(value: string): string {
+  return Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code > 31 && code !== 127;
+    })
+    .join("");
+}
+
 // ============================================================================
 // Hook Principal
 // ============================================================================
@@ -226,10 +235,7 @@ function parseFiltersFromURL(searchParams: URLSearchParams): OrderFilters {
   // Parse search query (sanitize: limit length, strip control chars)
   const searchQuery = searchParams.get(URL_PARAMS.SEARCH);
   if (searchQuery) {
-    filters.searchQuery = searchQuery
-      .replace(/[\x00-\x1F]/g, "")
-      .trim()
-      .slice(0, 200);
+    filters.searchQuery = stripControlCharacters(searchQuery).trim().slice(0, 200);
   }
 
   return filters;

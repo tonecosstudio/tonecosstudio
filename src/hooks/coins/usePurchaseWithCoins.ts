@@ -15,7 +15,7 @@ import type {
   PurchaseCharacterParams,
   PurchaseWithCoinsResponse,
 } from '@/types/coins';
-import { coinsBalanceKeys, invalidateCoinsBalance } from './useCoinsBalance';
+import { invalidateCoinsBalance } from './useCoinsBalance';
 import { coinsTransactionsKeys } from './useCoinsTransactions';
 
 // ============================================================================

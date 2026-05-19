@@ -175,7 +175,7 @@ export function useExecuteMigration() {
   const { toast } = useToast();
   const [progress, setProgress] = useState(0);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (input: MigrateToTiersInput) => {
       // Validar input
       const validated = migrateToTiersSchema.parse(input);
@@ -252,6 +252,11 @@ export function useExecuteMigration() {
       setProgress(0);
     },
   });
+
+  return {
+    ...mutation,
+    progress,
+  };
 }
 
 /**
@@ -272,7 +277,7 @@ export function useMigrationWizard() {
       const data = await analyzeMutation.mutateAsync();
       setSuggestions(data);
       setCurrentStep("confirming");
-    } catch (error) {
+    } catch {
       setCurrentStep("idle");
     }
   };
@@ -286,7 +291,7 @@ export function useMigrationWizard() {
       });
       setResult(data);
       setCurrentStep("completed");
-    } catch (error) {
+    } catch {
       setCurrentStep("confirming");
     }
   };

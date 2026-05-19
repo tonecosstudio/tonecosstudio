@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Holiday {
@@ -73,7 +73,25 @@ export function useBusinessDaysInRange(startDate: Date, endDate: Date) {
     (_, i) => startYear + i
   );
 
-  const holidayQueries = years.map((year) => useHolidays(year));
+  const holidayQueries = useQueries({
+    queries: years.map((year) => ({
+      queryKey: ["holidays", year],
+      queryFn: async () => {
+        const start = `${year}-01-01`;
+        const end = `${year}-12-31`;
+        const { data, error } = await supabase
+          .from("holidays")
+          .select("*")
+          .gte("holiday_date", start)
+          .lte("holiday_date", end)
+          .order("holiday_date", { ascending: true });
+
+        if (error) throw error;
+        return data as Holiday[];
+      },
+      staleTime: 1000 * 60 * 60,
+    })),
+  });
 
   const isLoading = holidayQueries.some((q) => q.isLoading);
   const allHolidays = holidayQueries.flatMap((q) => q.data || []);

@@ -26,7 +26,7 @@ export function useUserOrders({ userId }: UseUserOrdersProps) {
     },
   });
 
-  const orders = ordersQuery.data || [];
+  const orders = useMemo(() => ordersQuery.data || [], [ordersQuery.data]);
 
   // Act: Filtrar pedidos
   const filteredOrders = useMemo(() => {
