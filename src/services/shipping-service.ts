@@ -114,6 +114,17 @@ interface ShippingConfig {
   retryDelay: number;
 }
 
+interface DeliveryInfo {
+  id: string;
+  subscription_id: string;
+  address?: Address;
+}
+
+interface DeliveryQueryResult {
+  data: DeliveryInfo | null;
+  error: { message: string } | null;
+}
+
 /**
  * Custom error for shipping operations
  */
@@ -438,7 +449,7 @@ export class ShippingService {
   /**
    * Get delivery information from database
    */
-  private async getDeliveryInfo(deliveryId: string): Promise<any> {
+  private async getDeliveryInfo(deliveryId: string): Promise<DeliveryInfo | null> {
     const { data, error } = await supabase
       .from('subscription_deliveries')
       .select(`
@@ -453,7 +464,7 @@ export class ShippingService {
         )
       `)
       .eq('id', deliveryId)
-      .single();
+      .single() as unknown as DeliveryQueryResult;
 
     if (error) {
       throw new Error(`Failed to fetch delivery: ${error.message}`);
@@ -504,7 +515,7 @@ export class ShippingService {
 
     logDebug('Generating Correios label for delivery', { deliveryId, address, cost }, 'shipping');
     if (!import.meta.env.PROD) {
-      console.log('[MOCK] Generating Correios label', { deliveryId });
+      logDebug('Mock Correios label generation', { deliveryId }, 'shipping');
     }
 
     // Generate mock tracking code (Correios format: BR123456789BR)
@@ -578,7 +589,7 @@ export class ShippingService {
     // Mock implementation for private carriers
     logDebug('Generating private carrier label', { deliveryId }, 'shipping');
     if (!import.meta.env.PROD) {
-      console.log('[MOCK] Generating private carrier label', { deliveryId });
+      logDebug('Mock private carrier label generation', { deliveryId }, 'shipping');
     }
 
     const trackingCode = `PC${Math.random().toString().slice(2, 11)}`;
