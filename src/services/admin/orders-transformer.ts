@@ -3,16 +3,105 @@
  * Corrigido para usar schema real do banco de dados
  */
 
-import type { UnifiedOrder } from "@/types/admin/orders";
+import type { OrderStatus, QuoteItem, UnifiedOrder } from "@/types/admin/orders";
+
+interface ProfileSummary {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+interface CollectionSummary {
+  id: string;
+  name: string;
+  slug: string | null;
+}
+
+interface CharacterSummary {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
+
+interface SubscriptionSummary {
+  id: string;
+  user_id: string;
+  collection_id?: string | null;
+  plan_type: string;
+  deliveries_completed: number;
+  deliveries_total: number;
+  status: string;
+}
+
+interface DeliveryRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  tracking_code: string | null;
+  actual_delivery_date: string | null;
+  delivered_date: string | null;
+  subscription_id: string;
+  delivery_number: number | null;
+  delivery_order: number | null;
+  cycle_id: string | null;
+  character_id: string | null;
+  reveal_date: string | null;
+  subscriptions: SubscriptionSummary | null;
+  collection_characters?: CharacterSummary | null;
+}
+
+interface PurchaseRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  user_id: string;
+  character_id: string | null;
+  amount?: number | null;
+  balance_amount?: number | null;
+  paid_amount?: number | null;
+  tracking_code: string | null;
+  profiles?: ProfileSummary | null;
+  collections?: CollectionSummary | null;
+  collection_characters?: CharacterSummary | null;
+}
+
+interface ManualPaymentRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  user_id: string;
+  amount: number | null;
+  payment_method: string | null;
+  payment_date: string | null;
+  reference_id: string | null;
+  reference_type: string | null;
+  notes: string | null;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  profiles?: ProfileSummary | null;
+}
+
+interface QuoteRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  user_id: string;
+  total_amount: number | null;
+  notes: string | null;
+  profiles?: ProfileSummary | null;
+}
 
 // ============================================================================
 // Transformar Entregas de Assinatura
 // ============================================================================
 
 export function transformDeliveries(
-  deliveries: any[],
-  profilesMap: Map<string, any>,
-  collectionsMap: Map<string, any>
+  deliveries: DeliveryRow[],
+  profilesMap: Map<string, ProfileSummary>,
+  collectionsMap: Map<string, CollectionSummary>
 ): UnifiedOrder[] {
   return deliveries
     .filter((delivery) => delivery.subscriptions !== null)
@@ -78,7 +167,7 @@ export function transformDeliveries(
 // Transformar Compras Avulsas
 // ============================================================================
 
-export function transformPurchases(purchases: any[]): UnifiedOrder[] {
+export function transformPurchases(purchases: PurchaseRow[]): UnifiedOrder[] {
   return purchases.map((purchase) => {
     const profile = purchase.profiles || {};
     const collection = purchase.collections;
@@ -108,7 +197,7 @@ export function transformPurchases(purchases: any[]): UnifiedOrder[] {
       actualDeliveryDate: null,
 
       standalonePurchase: {
-        cycleId: null,
+        cycleId: "",
         characterId: purchase.character_id,
         priceDeposit: 0,
         priceBalance: purchase.balance_amount || 0,
@@ -136,8 +225,8 @@ export function transformPurchases(purchases: any[]): UnifiedOrder[] {
 // ============================================================================
 
 export function transformManualPayments(
-  payments: any[],
-  profilesMap?: Map<string, any>,
+  payments: ManualPaymentRow[],
+  profilesMap?: Map<string, ProfileSummary>,
 ): UnifiedOrder[] {
   return payments.map((payment) => {
     const profile = profilesMap?.get(payment.user_id) || payment.profiles;
@@ -179,9 +268,9 @@ export function transformManualPayments(
 // ============================================================================
 
 export function transformQuotes(
-  quotes: any[], 
-  itemsMap: Map<string, any[]>,
-  profilesMap?: Map<string, any>
+  quotes: QuoteRow[],
+  itemsMap: Map<string, QuoteItem[]>,
+  profilesMap?: Map<string, ProfileSummary>
 ): UnifiedOrder[] {
   return quotes.map((quote) => {
     const profile = profilesMap?.get(quote.user_id) || quote.profiles;
