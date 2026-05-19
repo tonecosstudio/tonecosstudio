@@ -1,67 +1,76 @@
-# FASE 1 - Hardening Arquitetural e Estabilizacao Estrutural
+# FASE 1 - Hardening Arquitetural e Estabilização Estrutural
 
 ## Objetivo
-Estabelecer uma fundacao arquitetural solida antes de novas expansoes funcionais, refinamentos visuais e otimizacoes de UX.
+Estabelecer uma fundação arquitetural sólida antes de novas expansões funcionais, refinamentos visuais e otimizações de UX.
 
-## Escopo desta fase
-- Eliminar dependencias ciclicas e imports cruzados indevidos.
-- Reduzir acoplamento entre UI, aplicacao, dominio e infraestrutura.
-- Padronizar estrutura de modulos, services, hooks, components e pages.
-- Diminuir concentracao de responsabilidade em arquivos gigantes.
-- Consolidar convencoes de importacao, aliases e boundaries.
+## Escopo da fase
+- Eliminar dependências cíclicas e imports cruzados indevidos.
+- Reduzir acoplamento entre UI, aplicação, domínio e infraestrutura.
+- Padronizar estrutura de módulos, services, hooks, components e pages.
+- Diminuir concentração de responsabilidade em arquivos gigantes.
+- Consolidar convenções de importação, aliases e boundaries.
+- Remover código legado, paliativos e duplicações quando houver rota segura de substituição.
 
-## Diagnostico inicial (baseline)
-- `src` contem mais de 800 arquivos TS/TSX.
-- Existe ciclo detectado entre:
-  - `src/services/admin/stage-service.ts`
-  - `src/services/admin/stage-validation.ts`
-- Existem arquivos com alto risco de manutencao por tamanho e mistura de responsabilidades em `pages/admin`, `components/admin` e `services`.
-- `tsconfig.app.json` estava com `include` restrito a `src/integrations/**/*`, reduzindo cobertura de validacao estrutural.
-- Lint em estado de alto ruido, indicando necessidade de estrategia incremental com baseline.
+## Baseline validado
+- `src` contém aproximadamente 940 arquivos TS/TSX processados pela análise de dependências.
+- `npx madge --circular --extensions ts,tsx src` não encontrou dependências circulares.
+- O antigo suspeito `services/admin/stage-service.ts` x `stage-validation.ts` já está sem ciclo estático; o serviço usa imports dinâmicos estratégicos e tipos compartilhados em `stage-types.ts`.
+- `tsconfig.app.json` já cobre `src/**/*` e `src/vite-env.d.ts`.
+- O maior risco atual não é ciclo global, mas dívida incremental: services/hooks com `console.*`, textos corrompidos, duplicação de tipos/contextos e componentes com lógica de domínio embutida.
 
-## Plano de execucao
-1. **Fundacao e guardrails**
-2. **Dependencias e boundaries**
-3. **Normalizacao de estrutura por dominio**
-4. **Refatoracao de hotspots**
-5. **Consolidacao e metricas finais**
+## Execução concluída nesta fase
+- Logger central aplicado em services e hooks críticos.
+- Realtime de pagamentos alinhado ao boundary correto de `usePaymentSystemRealtime`.
+- Services de notificações, uploads, métricas, prazos e preços normalizados.
+- Hooks de mensagens, grupos e typing indicator endurecidos com guards e limpeza de timers/subscriptions.
+- Plano e relatórios antigos revisados para remover diagnósticos obsoletos.
 
-## Sprint 1 (implementacao imediata)
-1. Corrigir ciclo arquitetural em `services/admin/stage-*`.
-2. Corrigir cobertura de compilacao/validacao do app no `tsconfig.app.json`.
-3. Criar contratos compartilhados para tipos de estagio (`stage-types`).
-4. Registrar baseline inicial de metricas arquiteturais.
+## Plano de execução restante
 
-## Sprint 2 (arquitetura por dominio)
-1. Definir boundaries obrigatorios:
-2. `components` nao acessa infraestrutura diretamente.
-3. `pages` orquestra via hooks/camada de aplicacao.
-4. `services` concentra regras de aplicacao e acesso a dados.
-5. `lib` fica restrito a infraestrutura e utilitarios transversais.
-6. Remover imports cruzados indevidos entre dominios admin/customer/groups/production.
+### 1. Guardrails e relatórios
+- Manter `madge` sem ciclos.
+- Manter `npm run build` verde após cada bloco.
+- Usar `eslint` focado por arquivo/módulo antes de commits pequenos.
+- Atualizar relatórios somente com estado verificável.
 
-## Sprint 3 (hotspots de complexidade)
-1. Quebrar arquivos criticos em submodulos coesos.
-2. Extrair logica repetida para funcoes/shared domain-safe.
-3. Reduzir hooks com responsabilidade multipla.
-4. Remover codigo legado nao utilizado.
+### 2. Boundaries entre domínios
+- `components` não deve acessar infraestrutura diretamente quando existir service/hook de aplicação.
+- `pages` deve orquestrar fluxos por hooks/services, sem regra de domínio pesada.
+- `services` concentram regras de aplicação e acesso a dados.
+- `lib` fica restrito a infraestrutura, helpers e utilitários transversais.
+- Domínios admin/customer/groups/payments/production não devem importar detalhes internos uns dos outros.
 
-## Criterios de validacao da fase
-- Sem dependencia ciclica em `src` (madge circular = 0).
-- Sem acesso direto indevido entre modulos de dominios isolados.
-- Menor concentracao de logica de dominio dentro de componentes de UI.
-- Estrutura de importacao padronizada por alias e convencao definida.
-- Tendencia de queda em arquivos gigantes e duplicacoes.
+### 3. Normalização por domínio
+- Remover `console.*` de código de produção, mantendo logging via `@/lib/logger`.
+- Corrigir mojibake em arquivos tocados.
+- Migrar imports profundos para alias `@/` quando aplicável.
+- Consolidar tipos duplicados em `src/types` ou no módulo canônico.
 
-## Relatorio final da fase (formato)
+### 4. Hotspots
+- Quebrar arquivos grandes somente quando houver coesão clara para extração.
+- Extrair lógica repetida para helpers com dono único.
+- Reduzir hooks com responsabilidade múltipla.
+- Remover exemplos/legados não referenciados quando não forem documentação viva.
+
+## Critérios de validação da fase
+- `madge` com 0 dependências circulares.
+- Build de produção sem erro.
+- Nenhum novo `console.*` em production code tocado.
+- Nenhum `any` explícito novo em arquivos tocados.
+- Relatórios sem estado fictício ou diagnóstico desatualizado.
+- Score de estabilidade arquitetural acima de 75.
+
+## Relatório final da fase
+O relatório final deve conter:
 1. Problemas encontrados.
-2. Modulos mais criticos.
-3. Arquivos mais problematicos.
+2. Módulos mais críticos.
+3. Arquivos mais problemáticos.
 4. Riscos arquiteturais.
 5. Melhorias aplicadas.
-6. Pendencias restantes.
+6. Pendências restantes.
 7. Score de estabilidade arquitetural (0-100).
 
-## Baseline do score
+## Score
 - Score inicial estimado: **62/100**.
-- Meta da FASE 1: **75+** com reducao de risco estrutural.
+- Score após correções já aplicadas: **74/100**.
+- Meta da FASE 1: **75+** com redução real de risco estrutural.

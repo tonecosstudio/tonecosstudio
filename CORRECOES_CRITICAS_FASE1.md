@@ -1,74 +1,33 @@
-# 🚀 Correções Críticas - Fase 1
+# Correções Críticas - Fase 1
 
-**Data:** 29 de Abril de 2026
-**Status:** ✅ EM ANDAMENTO
+**Status:** em andamento, com correções incrementais aplicadas e validadas.
 
----
+## Objetivo
+Remover riscos estruturais imediatos antes de otimizações visuais, UX refinada e expansão funcional.
 
-## ✅ FASE 1: Remover Console.log de Produção
+## Correções já aplicadas
+- Logging centralizado em services e hooks críticos usando `@/lib/logger`.
+- Remoção de `console.*` em arquivos tocados durante a fase.
+- Realtime de pagamentos alinhado ao boundary de `usePaymentSystemRealtime`.
+- Services de grupos, métricas, notificações, uploads, prazos e preços normalizados.
+- Hooks de mensagens/grupos/typing indicator endurecidos com guards e limpeza de recursos.
+- Correção de textos corrompidos por encoding em arquivos tocados.
+- `madge` validado com 0 dependências circulares em `src`.
 
-### Arquivos Corrigidos (7/10)
+## Validações recentes
+- `npx madge --circular --extensions ts,tsx src`: 0 ciclos.
+- `npm run build`: sucesso.
+- `npx eslint` focado por arquivo/módulo alterado: sucesso nos escopos tocados.
+- `git diff --check`: sem whitespace errors nos escopos tocados.
 
-#### 1. ✅ src/services/delivery-service.ts
-- Substituídos 6 console.log/error por log.info/error
-- Adicionado import do logger Winston
-- Logs estruturados com metadados
+## Pendências prioritárias
+1. Continuar removendo `console.*` em código de produção.
+2. Reduzir `any` explícito nos hooks e services de maior risco.
+3. Consolidar tipos duplicados restantes somente quando houver compatibilidade real.
+4. Extrair lógica de domínio embutida em componentes grandes.
+5. Atualizar relatórios finais com métricas reais após nova rodada do script de arquitetura.
 
-#### 2. ✅ src/services/capacity-service.ts
-- Substituídos 2 console.log por log.info
-- Adicionado import do logger Winston
-- Logs estruturados com metadados
-
-#### 3. ✅ src/services/delivery-scheduling-service.ts
-- Substituídos 4 console.log/error por log.info/error
-- Adicionado import do logger Winston
-- Logs estruturados com metadados
-
-#### 4. ✅ src/services/customer/notification-preferences-service.ts
-- Substituídos 3 console.error por log.error
-- Adicionado import do logger Winston
-- Logs estruturados com metadados
-
-### Arquivos Pendentes (3/10)
-
-#### 5. ⏳ src/services/admin/orders-service.ts
-- 8 console.error/warn pendentes
-- Prioridade: ALTA
-
-#### 6. ⏳ src/services/audit-trail-service.ts
-- 3 console.error pendentes
-- Prioridade: MÉDIA
-
-#### 7. ⏳ src/services/notifications/email-templates/example-usage.ts
-- 10 console.log pendentes
-- Prioridade: BAIXA (arquivo de exemplo)
-
-### Arquivos Ignorados (Não Produção)
-
-- ✅ src/test/setup.ts - Arquivo de teste
-- ✅ src/services/notifications/email-templates/template-loader.ts - console.warn OK
-- ✅ src/services/admin/orders-service.test.fulltext.ts - Arquivo de teste
-
----
-
-## 📊 Progresso
-
-```
-Arquivos Corrigidos:    7/10  (70%)
-Console.log Removidos:  15/32 (47%)
-Status:                 ✅ EM ANDAMENTO
-```
-
----
-
-## 🎯 Próximos Passos
-
-1. ✅ Corrigir src/services/admin/orders-service.ts
-2. ✅ Corrigir src/services/audit-trail-service.ts
-3. ✅ Validar build
-4. ⏳ Iniciar Fase 2: Consolidar Tipos SSOT
-
----
-
-**Responsável:** Kiro AI
-**Última atualização:** 29/04/2026
+## Observações
+- Diagnósticos antigos sobre ciclo `stage-service.ts` x `stage-validation.ts` estão obsoletos.
+- `tsconfig.app.json` já cobre `src/**/*`.
+- Env vars de Google/Stripe não devem ser inventadas no código; isso é configuração operacional, não hardening arquitetural.
