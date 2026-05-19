@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import { log } from "@/lib/logger";
 import type {
   Conversation,
   ConversationFilters,
@@ -9,6 +11,80 @@ import type {
   CreateConversationData,
   PaginationOptions,
 } from "@/types/support";
+
+type SupportConversationRow = Database["public"]["Tables"]["support_conversations"]["Row"] & {
+  order_id?: string | null;
+  quote_id?: string | null;
+  subscription_id?: string | null;
+  promised_date?: string | null;
+  tags?: unknown;
+  risk_flags?: unknown;
+};
+type ProfileSummary = Pick<
+  Database["public"]["Tables"]["profiles"]["Row"],
+  "id" | "full_name" | "email"
+>;
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function mapConversation(
+  row: SupportConversationRow,
+  profile?: ProfileSummary
+): Conversation {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    subject: row.subject,
+    status: row.status as ConversationStatus,
+    priority: (row.priority ?? "normal") as ConversationPriority,
+    tags: toStringArray(row.tags) as ConversationTag[],
+    risk_flags: toStringArray(row.risk_flags) as RiskFlag[],
+    assigned_to: row.assigned_to ?? undefined,
+    promised_date: row.promised_date ?? undefined,
+    first_response_at: row.first_response_at ?? undefined,
+    resolved_at: row.resolved_at ?? undefined,
+    last_message_at: row.last_message_at ?? row.updated_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    order_id: row.order_id ?? undefined,
+    quote_id: row.quote_id ?? undefined,
+    subscription_id: row.subscription_id ?? undefined,
+    payment_id: row.payment_id ?? undefined,
+    user_name: profile?.full_name || profile?.email || "Usuário",
+    user_email: profile?.email || "",
+  };
+}
+
+async function getProfilesMap(userIds: string[]): Promise<Map<string, ProfileSummary>> {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email")
+    .in("id", userIds);
+
+  if (error) {
+    log.warn("Failed to load conversation profile summaries", { error, userIds });
+    return new Map();
+  }
+
+  return new Map((data ?? []).map((profile) => [profile.id, profile]));
+}
+
+async function mapConversations(rows: SupportConversationRow[]): Promise<Conversation[]> {
+  const userIds = [...new Set(rows.map((conversation) => conversation.user_id))];
+  const profilesMap = await getProfilesMap(userIds);
+
+  return rows.map((conversation) =>
+    mapConversation(conversation, profilesMap.get(conversation.user_id))
+  );
+}
 
 export class ConversationService {
   /**
@@ -58,32 +134,11 @@ export class ConversationService {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Erro ao listar conversas:", error);
+      log.error("Erro ao listar conversas", { error, filters, pagination });
       throw new Error("Erro ao carregar conversas");
     }
 
-    // Buscar dados dos usuários
-    const userIds = [...new Set((data || []).map((conv: any) => conv.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", userIds);
-
-    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
-    // Mapear conversas com dados do usuário
-    return (data || []).map((conv: any) => {
-      const profile = profilesMap.get(conv.user_id);
-      return {
-        ...conv,
-        status: conv.status as ConversationStatus,
-        priority: conv.priority as ConversationPriority,
-        user_name: profile?.full_name || profile?.email || "Usuário",
-        user_email: profile?.email || "",
-        risk_flags: (conv.risk_flags || []) as RiskFlag[],
-        tags: (conv.tags || []) as ConversationTag[],
-      };
-    });
+    return mapConversations((data ?? []) as SupportConversationRow[]);
   }
 
   /**
@@ -97,7 +152,7 @@ export class ConversationService {
       .single();
 
     if (error) {
-      console.error("Erro ao buscar conversa:", error);
+      log.error("Erro ao buscar conversa", { error, conversationId: id });
       throw new Error("Erro ao carregar conversa");
     }
 
@@ -110,15 +165,7 @@ export class ConversationService {
       .eq("id", data.user_id)
       .single();
 
-    return {
-      ...data,
-      status: data.status as ConversationStatus,
-      priority: data.priority as ConversationPriority,
-      user_name: profile?.full_name || profile?.email || "Usuário",
-      user_email: profile?.email || "",
-      risk_flags: (data.risk_flags || []) as RiskFlag[],
-      tags: (data.tags || []) as ConversationTag[],
-    };
+    return mapConversation(data as SupportConversationRow, profile ?? undefined);
   }
 
   /**
@@ -138,19 +185,11 @@ export class ConversationService {
       .single();
 
     if (error) {
-      console.error("Erro ao criar conversa:", error);
+      log.error("Erro ao criar conversa", { error, conversationData });
       throw new Error("Erro ao criar conversa");
     }
 
-    return {
-      ...data,
-      status: data.status as ConversationStatus,
-      priority: data.priority as ConversationPriority,
-      user_name: "Usuário",
-      user_email: "",
-      risk_flags: (data.risk_flags || []) as RiskFlag[],
-      tags: (data.tags || []) as ConversationTag[],
-    };
+    return mapConversation(data as SupportConversationRow);
   }
 
   /**
@@ -165,7 +204,7 @@ export class ConversationService {
       .single();
 
     if (error) {
-      console.error("Erro ao atualizar status:", error);
+      log.error("Erro ao atualizar status", { error, conversationId: id, status });
       throw new Error("Erro ao atualizar status");
     }
 
@@ -176,15 +215,7 @@ export class ConversationService {
       .eq("id", data.user_id)
       .single();
 
-    return {
-      ...data,
-      status: data.status as ConversationStatus,
-      priority: data.priority as ConversationPriority,
-      user_name: profile?.full_name || profile?.email || "Usuário",
-      user_email: profile?.email || "",
-      risk_flags: (data.risk_flags || []) as RiskFlag[],
-      tags: (data.tags || []) as ConversationTag[],
-    };
+    return mapConversation(data as SupportConversationRow, profile ?? undefined);
   }
 
   /**
@@ -199,7 +230,7 @@ export class ConversationService {
       .single();
 
     if (error) {
-      console.error("Erro ao atualizar tags:", error);
+      log.error("Erro ao atualizar tags", { error, conversationId: id, tags });
       throw new Error("Erro ao atualizar tags");
     }
 
@@ -210,15 +241,7 @@ export class ConversationService {
       .eq("id", data.user_id)
       .single();
 
-    return {
-      ...data,
-      status: data.status as ConversationStatus,
-      priority: data.priority as ConversationPriority,
-      user_name: profile?.full_name || profile?.email || "Usuário",
-      user_email: profile?.email || "",
-      risk_flags: (data.risk_flags || []) as RiskFlag[],
-      tags: (data.tags || []) as ConversationTag[],
-    };
+    return mapConversation(data as SupportConversationRow, profile ?? undefined);
   }
 
   /**
@@ -233,7 +256,11 @@ export class ConversationService {
       .single();
 
     if (error) {
-      console.error("Erro ao atualizar flags de risco:", error);
+      log.error("Erro ao atualizar flags de risco", {
+        error,
+        conversationId: id,
+        risk_flags,
+      });
       throw new Error("Erro ao atualizar flags de risco");
     }
 
@@ -244,15 +271,7 @@ export class ConversationService {
       .eq("id", data.user_id)
       .single();
 
-    return {
-      ...data,
-      status: data.status as ConversationStatus,
-      priority: data.priority as ConversationPriority,
-      user_name: profile?.full_name || profile?.email || "Usuário",
-      user_email: profile?.email || "",
-      risk_flags: (data.risk_flags || []) as RiskFlag[],
-      tags: (data.tags || []) as ConversationTag[],
-    };
+    return mapConversation(data as SupportConversationRow, profile ?? undefined);
   }
 
   /**
@@ -267,7 +286,11 @@ export class ConversationService {
       .single();
 
     if (error) {
-      console.error("Erro ao atualizar data prometida:", error);
+      log.error("Erro ao atualizar data prometida", {
+        error,
+        conversationId: id,
+        promised_date,
+      });
       throw new Error("Erro ao atualizar data prometida");
     }
 
@@ -278,15 +301,7 @@ export class ConversationService {
       .eq("id", data.user_id)
       .single();
 
-    return {
-      ...data,
-      status: data.status as ConversationStatus,
-      priority: data.priority as ConversationPriority,
-      user_name: profile?.full_name || profile?.email || "Usuário",
-      user_email: profile?.email || "",
-      risk_flags: (data.risk_flags || []) as RiskFlag[],
-      tags: (data.tags || []) as ConversationTag[],
-    };
+    return mapConversation(data as SupportConversationRow, profile ?? undefined);
   }
 
   /**
@@ -300,31 +315,11 @@ export class ConversationService {
       .order("last_message_at", { ascending: false });
 
     if (error) {
-      console.error("Erro ao buscar conversas:", error);
+      log.error("Erro ao buscar conversas", { error, searchTerm });
       throw new Error("Erro ao buscar conversas");
     }
 
-    // Buscar dados dos usuários
-    const userIds = [...new Set((data || []).map((conv: any) => conv.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", userIds);
-
-    const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
-    return (data || []).map((conv: any) => {
-      const profile = profilesMap.get(conv.user_id);
-      return {
-        ...conv,
-        status: conv.status as ConversationStatus,
-        priority: conv.priority as ConversationPriority,
-        user_name: profile?.full_name || profile?.email || "Usuário",
-        user_email: profile?.email || "",
-        risk_flags: (conv.risk_flags || []) as RiskFlag[],
-        tags: (conv.tags || []) as ConversationTag[],
-      };
-    });
+    return mapConversations((data ?? []) as SupportConversationRow[]);
   }
 
   /**
@@ -346,7 +341,7 @@ export class ConversationService {
       .is("read_at", null);
 
     if (error) {
-      console.error("Erro ao contar mensagens não lidas:", error);
+      log.error("Erro ao contar mensagens não lidas", { error, conversationId, viewerType });
       return 0;
     }
 
