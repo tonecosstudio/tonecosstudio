@@ -26,6 +26,14 @@ export interface BonusPiece {
   shipped_at: string | null;
 }
 
+type BonusPieceStatusUpdate = Partial<Pick<BonusPiece, 'status' | 'prepared_at' | 'shipped_at'>>;
+
+type BonusPieceQueryResult = BonusPiece & {
+  delivery?: {
+    cycle_id: string;
+  };
+};
+
 /**
  * BonusPieceService Class
  */
@@ -118,7 +126,7 @@ class BonusPieceService {
     bonusId: string,
     status: BonusStatus
   ): Promise<void> {
-    const updateData: any = {
+    const updateData: BonusPieceStatusUpdate = {
       status,
     };
     
@@ -185,7 +193,7 @@ class BonusPieceService {
       throw new Error(`Erro ao buscar peças bônus do ciclo: ${error.message}`);
     }
     
-    return (data as any[]).map(item => ({
+    return ((data || []) as BonusPieceQueryResult[]).map(item => ({
       id: item.id,
       created_at: item.created_at,
       updated_at: item.updated_at,
@@ -195,7 +203,7 @@ class BonusPieceService {
       status: item.status,
       prepared_at: item.prepared_at,
       shipped_at: item.shipped_at,
-    })) as BonusPiece[];
+    }));
   }
 
   /**
