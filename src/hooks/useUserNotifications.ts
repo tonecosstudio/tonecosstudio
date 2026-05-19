@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  playAudioNotification,
+  requestBrowserNotificationPermission,
+  showBrowserNotification,
+} from "@/lib/notifications/browser-notifications";
 
 export interface UserNotification {
   id: string;
@@ -18,7 +23,12 @@ export interface UserNotification {
   is_read: boolean;
   read_at?: string;
   created_at: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
+}
+
+interface NotificationSettings {
+  sound_enabled?: boolean | null;
+  sound_volume?: number | null;
 }
 
 interface UseUserNotificationsOptions {
@@ -34,7 +44,6 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
   const queryClient = useQueryClient();
   const [soundEnabled, setSoundEnabled] = useState(enableSound);
 
-  // Buscar notificações não lidas
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["user-notifications-unread"],
     queryFn: async () => {
@@ -50,11 +59,7 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
     refetchInterval,
   });
 
-  // Contar notificações não lidas
-  const unreadCount = notifications.length;
-
-  // Buscar configurações de notificação do usuário
-  const { data: settings } = useQuery({
+  const { data: settings } = useQuery<NotificationSettings | null>({
     queryKey: ["user-notification-settings"],
     queryFn: async () => {
       const {
@@ -69,40 +74,33 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
         .single();
 
       if (error && error.code !== "PGRST116") throw error;
-      return data;
+      return data as NotificationSettings | null;
     },
   });
 
-  // Atualizar estado de som baseado nas configurações
   useEffect(() => {
     if (settings) {
       setSoundEnabled(settings.sound_enabled ?? true);
     }
   }, [settings]);
 
-  // Tocar som de notificação
-  const playNotificationSound = () => {
-    if (!soundEnabled) return;
+  const playNotificationSound = useCallback(() => {
+    playAudioNotification({
+      enabled: soundEnabled,
+      volume: (settings?.sound_volume ?? 50) / 100,
+      context: "user-notifications",
+    });
+  }, [settings?.sound_volume, soundEnabled]);
 
-    try {
-      const audio = new Audio("/notification.mp3");
-      audio.volume = (settings?.sound_volume ?? 50) / 100;
-      audio.play().catch((error) => {
-        console.error("Erro ao tocar som de notificação:", error);
-      });
-    } catch (error) {
-      console.error("Erro ao criar áudio:", error);
-    }
-  };
-
-  // Subscrever a notificações em tempo real
   useEffect(() => {
-    const getUserAndSubscribe = async () => {
+    let channelRef: ReturnType<typeof supabase.channel> | undefined;
+    let cancelled = false;
+
+    async function setupRealtimeNotifications() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
-      if (!user) return;
+      if (!user || cancelled) return;
 
       const channel = supabase
         .channel("user-notifications-realtime")
@@ -117,14 +115,11 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
           (payload) => {
             const newNotification = payload.new as UserNotification;
 
-            // Invalidar query para atualizar lista
             queryClient.invalidateQueries({ queryKey: ["user-notifications-unread"] });
             queryClient.invalidateQueries({ queryKey: ["user-notifications"] });
 
-            // Tocar som
             playNotificationSound();
 
-            // Mostrar toast
             if (enableToast) {
               toast({
                 title: newNotification.title,
@@ -133,53 +128,38 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
               });
             }
 
-            // Notificação do navegador (se permitido)
-            if ("Notification" in window && Notification.permission === "granted") {
-              new Notification(newNotification.title, {
-                body: newNotification.message,
-                icon: "/logo.png",
-                badge: "/logo.png",
-                tag: newNotification.id,
-              });
-            }
+            showBrowserNotification({
+              title: newNotification.title,
+              body: newNotification.message,
+              tag: newNotification.id,
+            });
           }
         )
         .subscribe();
 
-      return () => {
+      if (cancelled) {
         supabase.removeChannel(channel);
-      };
+        return;
+      }
+
+      channelRef = channel;
+    }
+
+    setupRealtimeNotifications();
+
+    return () => {
+      cancelled = true;
+      if (channelRef) supabase.removeChannel(channelRef);
     };
-
-    getUserAndSubscribe();
-  }, [queryClient, enableToast, soundEnabled, settings, toast]);
-
-  // Solicitar permissão para notificações do navegador
-  const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-      console.warn("Este navegador não suporta notificações");
-      return false;
-    }
-
-    if (Notification.permission === "granted") {
-      return true;
-    }
-
-    if (Notification.permission !== "denied") {
-      const permission = await Notification.requestPermission();
-      return permission === "granted";
-    }
-
-    return false;
-  };
+  }, [enableToast, playNotificationSound, queryClient, toast]);
 
   return {
     notifications,
-    unreadCount,
+    unreadCount: notifications.length,
     isLoading,
     settings,
     soundEnabled,
     setSoundEnabled,
-    requestNotificationPermission,
+    requestNotificationPermission: requestBrowserNotificationPermission,
   };
 }
