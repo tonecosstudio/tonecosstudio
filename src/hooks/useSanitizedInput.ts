@@ -78,20 +78,20 @@ export function useSanitizedInput(
  * @param sanitizationMap - Map of field names to sanitization types
  * @returns Form state and handlers
  */
-export function useSanitizedForm<T extends Record<string, any>>(
+export function useSanitizedForm<T extends object>(
   initialData: T,
   sanitizationMap: Partial<Record<keyof T, SanitizationType>> = {}
 ) {
   const [formData, setFormData] = useState<T>(initialData);
 
-  const setValue = useCallback((field: keyof T, value: any) => {
+  const setValue = useCallback(<K extends keyof T>(field: K, value: T[K]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   }, []);
 
-  const getSanitizedValue = useCallback((field: keyof T): any => {
+  const getSanitizedValue = useCallback(<K extends keyof T>(field: K): T[K] => {
     const value = formData[field];
     const sanitizationType = sanitizationMap[field] || 'text';
 
@@ -101,29 +101,29 @@ export function useSanitizedForm<T extends Record<string, any>>(
 
     switch (sanitizationType) {
       case 'text':
-        return sanitizeText(value);
+        return sanitizeText(value) as T[K];
       case 'html':
-        return sanitizeHTML(value);
+        return sanitizeHTML(value) as T[K];
       case 'email':
         try {
-          return sanitizeEmail(value);
+          return sanitizeEmail(value) as T[K];
         } catch {
           return value;
         }
       case 'phone':
-        return sanitizePhoneNumber(value);
+        return sanitizePhoneNumber(value) as T[K];
       case 'url':
         try {
-          return sanitizeURL(value);
+          return sanitizeURL(value) as T[K];
         } catch {
           return value;
         }
       case 'search':
-        return sanitizeSearchQuery(value);
+        return sanitizeSearchQuery(value) as T[K];
       case 'none':
         return value;
       default:
-        return sanitizeText(value);
+        return sanitizeText(value) as T[K];
     }
   }, [formData, sanitizationMap]);
 
@@ -163,7 +163,7 @@ export function useSanitizedForm<T extends Record<string, any>>(
  * @param options - Additional options including logging context
  * @returns Form state and handlers
  */
-export function useSanitizedFormWithLogging<T extends Record<string, any>>(
+export function useSanitizedFormWithLogging<T extends object>(
   initialData: T,
   sanitizationMap: Partial<Record<keyof T, SanitizationType>> = {},
   options?: {
@@ -174,14 +174,14 @@ export function useSanitizedFormWithLogging<T extends Record<string, any>>(
 ) {
   const [formData, setFormData] = useState<T>(initialData);
 
-  const setValue = useCallback((field: keyof T, value: any) => {
+  const setValue = useCallback(<K extends keyof T>(field: K, value: T[K]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   }, []);
 
-  const getSanitizedValue = useCallback((field: keyof T): any => {
+  const getSanitizedValue = useCallback(<K extends keyof T>(field: K): T[K] => {
     const value = formData[field];
     const sanitizationType = sanitizationMap[field] || 'text';
 
@@ -229,7 +229,7 @@ export function useSanitizedFormWithLogging<T extends Record<string, any>>(
       );
     }
 
-    return result.value;
+    return result.value as T[K];
   }, [formData, sanitizationMap, options]);
 
   const getSanitizedData = useCallback((): T => {
