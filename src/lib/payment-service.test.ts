@@ -5,17 +5,15 @@
  * Requirements: 2.5-2.10, 8.1-8.10
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   createPayment,
-  getPaymentById,
-  listPaymentsByUser,
   updatePaymentStatus,
   approvePayment,
   rejectPayment,
   requestPaymentInfo,
 } from "./payment-service";
-import type { ManualPaymentInput, PaymentStatus } from "@/types/manual-payment";
+import type { ManualPaymentInput } from "@/types/manual-payment";
 
 // Mock Supabase client
 vi.mock("@/integrations/supabase/client", () => ({
@@ -90,6 +88,16 @@ vi.mock("@/integrations/supabase/client", () => ({
       })
     ),
   },
+}));
+
+vi.mock("./notification-service", () => ({
+  getNotificationService: () => ({
+    sendPaymentCreated: vi.fn().mockResolvedValue(undefined),
+    sendPaymentUnderReview: vi.fn().mockResolvedValue(undefined),
+    sendPaymentApproved: vi.fn().mockResolvedValue(undefined),
+    sendPaymentRejected: vi.fn().mockResolvedValue(undefined),
+    sendInfoRequested: vi.fn().mockResolvedValue(undefined),
+  }),
 }));
 
 describe("PaymentService", () => {

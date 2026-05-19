@@ -29,6 +29,7 @@ const RATE_LIMIT_MAX_UPLOADS = 10;
 const THUMBNAIL_MAX_WIDTH = 300;
 const THUMBNAIL_MAX_HEIGHT = 300;
 const THUMBNAIL_QUALITY = 0.8;
+const THUMBNAIL_LOAD_TIMEOUT_MS = 2000;
 const FAIL_CLOSED_UPLOAD_SECURITY =
   import.meta.env.PROD || import.meta.env.VITE_UPLOAD_SECURITY_FAIL_CLOSED === "true";
 
@@ -43,7 +44,7 @@ export class FileUploadError extends Error {
     public code: string,
     message: string,
     public statusCode: number = 400,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "FileUploadError";
@@ -184,13 +185,35 @@ export class FileUploadService {
       return null;
     }
 
-    return new Promise((resolve, reject) => {
+    if (
+      typeof Image === "undefined" ||
+      typeof document === "undefined" ||
+      typeof URL.createObjectURL !== "function"
+    ) {
+      return null;
+    }
+
+    return new Promise((resolve) => {
       const img = new Image();
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
+      const objectUrl = URL.createObjectURL(file);
+      let settled = false;
+
+      const finish = (thumbnail: Blob | null) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutId);
+        URL.revokeObjectURL(objectUrl);
+        resolve(thumbnail);
+      };
+
+      const timeoutId = window.setTimeout(() => finish(null), THUMBNAIL_LOAD_TIMEOUT_MS);
 
       if (!ctx) {
-        resolve(null);
+        finish(null);
         return;
       }
 
@@ -219,7 +242,7 @@ export class FileUploadService {
 
         canvas.toBlob(
           (blob) => {
-            resolve(blob);
+            finish(blob);
           },
           "image/jpeg",
           THUMBNAIL_QUALITY
@@ -227,10 +250,34 @@ export class FileUploadService {
       };
 
       img.onerror = () => {
-        resolve(null); // Don't fail upload if thumbnail generation fails
+        finish(null); // Don't fail upload if thumbnail generation fails
       };
 
-      img.src = URL.createObjectURL(file);
+      img.src = objectUrl;
+    });
+  }
+
+  private readFileArrayBuffer(file: File): Promise<ArrayBuffer> {
+    if (typeof file.arrayBuffer === "function") {
+      return file.arrayBuffer();
+    }
+
+    if (typeof FileReader === "undefined") {
+      throw new Error("File arrayBuffer API is unavailable");
+    }
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result instanceof ArrayBuffer) {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error("Failed to read file as ArrayBuffer"));
+      };
+      reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
+      reader.readAsArrayBuffer(file);
     });
   }
 
@@ -268,7 +315,7 @@ export class FileUploadService {
 
     // Scan for malware (Requirements 14.3, 14.4)
     try {
-      const arrayBuffer = await file.arrayBuffer();
+      const arrayBuffer = await this.readFileArrayBuffer(file);
       const scanResult = await malwareScanner.scanFile(arrayBuffer, file.name);
 
       if (!scanResult.safe) {

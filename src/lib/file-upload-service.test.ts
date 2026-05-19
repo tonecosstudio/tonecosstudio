@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { FileUploadService, FileUploadError } from "./file-upload-service";
+import { FileUploadService } from "./file-upload-service";
 import { supabase } from "@/integrations/supabase/client";
 
 // Mock Supabase client
@@ -18,6 +18,27 @@ vi.mock("@/integrations/supabase/client", () => ({
     },
     from: vi.fn(),
   },
+}));
+
+vi.mock("./image-compression", () => ({
+  compressImage: vi.fn(async (file: File) => file),
+}));
+
+vi.mock("./malware-scanner", () => ({
+  malwareScanner: {
+    scanFile: vi.fn(async () => ({
+      safe: true,
+      threats: [],
+      scanner: "mock",
+      scanTime: 1,
+    })),
+  },
+}));
+
+vi.mock("./notification-service", () => ({
+  getNotificationService: () => ({
+    sendPaymentUnderReview: vi.fn().mockResolvedValue(undefined),
+  }),
 }));
 
 describe("FileUploadService", () => {
