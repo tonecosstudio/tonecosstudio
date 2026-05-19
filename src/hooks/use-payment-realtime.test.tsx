@@ -41,14 +41,9 @@ const createWrapper = () => {
 
 describe("usePaymentRealtime", () => {
   let mockChannel: any;
-  let mockSubscription: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockSubscription = {
-      unsubscribe: vi.fn(),
-    };
 
     mockChannel = {
       on: vi.fn().mockReturnThis(),

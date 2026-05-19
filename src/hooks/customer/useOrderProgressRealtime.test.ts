@@ -220,7 +220,7 @@ describe("useOrderProgressRealtime", () => {
       const orderId = "test-order-123";
       const orderType = "subscription_delivery";
 
-      const { rerender } = renderHook(
+      renderHook(
         () =>
           useOrderProgressRealtime({
             orderId,

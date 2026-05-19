@@ -19,9 +19,6 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-// Importar o hook após o mock
-import { usePaymentRealtime } from "./use-payment-realtime";
-
 describe("usePaymentRealtime", () => {
   let mockChannel: any;
 
@@ -74,7 +71,7 @@ describe("usePaymentRealtime", () => {
 
     // Verificar se o hook configuraria o filtro corretamente
     // (esta é uma verificação conceitual, não execução real)
-    expect(true).toBe(true); // Placeholder para lógica real
+    expect(expectedFilter).toBe("id=eq.test-payment-id");
   });
 
   it("deve implementar backoff exponencial para reconexão", () => {
@@ -165,6 +162,8 @@ describe("Realtime Hooks Implementation", () => {
       "16.14": "Backoff exponencial para reconexão",
       "16.15": "Debounce para evitar UI thrashing",
     };
+
+    expect(Object.keys(requirements)).toHaveLength(15);
 
     // Verificar implementação dos recursos
     const implementedFeatures = {
