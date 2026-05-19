@@ -4,6 +4,7 @@
  */
 
 import { useContentSettings } from "./useContentSettings";
+import type { ContentSettings } from "@/lib/services/contentService";
 import {
   calculateCurrentBatch,
   calculateNextBatch,
@@ -17,7 +18,7 @@ export interface UseBatchInfoReturn {
   nextBatch: CalculatedBatch | null;
   futureBatches: CalculatedBatch[];
   rules: BatchRules;
-  settings: any;
+  settings: ContentSettings | undefined;
   isLoading: boolean;
   error: Error | null;
 }

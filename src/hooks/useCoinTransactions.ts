@@ -31,7 +31,7 @@ export interface CoinTransaction {
   reference_id?: string;
   reference_type?: string;
   description: string;
-  metadata?: any;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
 }
 
