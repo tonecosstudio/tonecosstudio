@@ -1,18 +1,34 @@
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 import type { GroupType, MembershipCriteria } from "@/types/groups";
 
-/**
- * Additional validation utilities for chat groups system
- * Requirements: 1.2, 1.4, 2.2, 5.2, 8.2
- */
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
 
-/**
- * Validates that a collection exists in the database
- * Requirements: 5.2
- */
-export async function validateCollectionExists(
-  collectionId: string
-): Promise<{ valid: boolean; error?: string }> {
+const VALID_GROUP_TYPES: GroupType[] = [
+  "manual",
+  "assinantes",
+  "colecao",
+  "lancamentos",
+  "pedidos",
+];
+
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_ATTACHMENT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
+export async function validateCollectionExists(collectionId: string): Promise<ValidationResult> {
   try {
     const { data, error } = await supabase
       .from("collections")
@@ -29,7 +45,7 @@ export async function validateCollectionExists(
 
     return { valid: true };
   } catch (error) {
-    console.error("Error validating collection:", error);
+    log.error("Erro ao validar coleção", { error, collectionId });
     return {
       valid: false,
       error: "Erro ao validar coleção",
@@ -37,13 +53,7 @@ export async function validateCollectionExists(
   }
 }
 
-/**
- * Validates that a user exists in the database
- * Requirements: 2.2
- */
-export async function validateUserExists(
-  userId: string
-): Promise<{ valid: boolean; error?: string }> {
+export async function validateUserExists(userId: string): Promise<ValidationResult> {
   try {
     const { data, error } = await supabase.from("profiles").select("id").eq("id", userId).single();
 
@@ -56,7 +66,7 @@ export async function validateUserExists(
 
     return { valid: true };
   } catch (error) {
-    console.error("Error validating user:", error);
+    log.error("Erro ao validar usuário", { error, userId });
     return {
       valid: false,
       error: "Erro ao validar usuário",
@@ -64,11 +74,7 @@ export async function validateUserExists(
   }
 }
 
-/**
- * Validates group name length and format
- * Requirements: 1.2
- */
-export function validateGroupName(name: string): { valid: boolean; error?: string } {
+export function validateGroupName(name: string): ValidationResult {
   if (!name || name.trim().length < 3) {
     return {
       valid: false,
@@ -86,11 +92,7 @@ export function validateGroupName(name: string): { valid: boolean; error?: strin
   return { valid: true };
 }
 
-/**
- * Validates message content length
- * Requirements: 8.2
- */
-export function validateMessage(message: string): { valid: boolean; error?: string } {
+export function validateMessage(message: string): ValidationResult {
   if (!message || message.trim().length < 1) {
     return {
       valid: false,
@@ -108,14 +110,8 @@ export function validateMessage(message: string): { valid: boolean; error?: stri
   return { valid: true };
 }
 
-/**
- * Validates group type is one of the allowed values
- * Requirements: 1.4
- */
-export function validateGroupType(type: string): { valid: boolean; error?: string } {
-  const validTypes: GroupType[] = ["manual", "assinantes", "colecao", "lancamentos", "pedidos"];
-
-  if (!validTypes.includes(type as GroupType)) {
+export function validateGroupType(type: string): ValidationResult {
+  if (!VALID_GROUP_TYPES.includes(type as GroupType)) {
     return {
       valid: false,
       error: "Tipo de grupo inválido",
@@ -125,15 +121,10 @@ export function validateGroupType(type: string): { valid: boolean; error?: strin
   return { valid: true };
 }
 
-/**
- * Validates membership criteria based on group type
- * Requirements: 1.4, 5.2
- */
 export function validateMembershipCriteria(
   type: GroupType,
   criteria: MembershipCriteria
-): { valid: boolean; error?: string } {
-  // Manual groups should not have criteria
+): ValidationResult {
   if (type === "manual" && criteria !== null) {
     return {
       valid: false,
@@ -141,7 +132,6 @@ export function validateMembershipCriteria(
     };
   }
 
-  // Non-manual groups should have criteria
   if (type !== "manual" && !criteria) {
     return {
       valid: false,
@@ -149,7 +139,6 @@ export function validateMembershipCriteria(
     };
   }
 
-  // Validate collection groups have collectionId
   if (type === "colecao" && criteria?.type === "colecao" && !criteria.collectionId) {
     return {
       valid: false,
@@ -160,14 +149,10 @@ export function validateMembershipCriteria(
   return { valid: true };
 }
 
-/**
- * Validates that a group name is unique (excluding deleted groups)
- * Requirements: 1.2
- */
 export async function validateGroupNameUnique(
   name: string,
   excludeGroupId?: string
-): Promise<{ valid: boolean; error?: string }> {
+): Promise<ValidationResult> {
   try {
     let query = supabase.from("chat_groups").select("id").eq("name", name).is("deleted_at", null);
 
@@ -178,8 +163,7 @@ export async function validateGroupNameUnique(
     const { data, error } = await query.single();
 
     if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows returned (which is what we want)
-      console.error("Error checking group name uniqueness:", error);
+      log.error("Erro ao verificar unicidade do nome do grupo", { error, name, excludeGroupId });
       return {
         valid: false,
         error: "Erro ao validar nome do grupo",
@@ -195,7 +179,7 @@ export async function validateGroupNameUnique(
 
     return { valid: true };
   } catch (error) {
-    console.error("Error validating group name uniqueness:", error);
+    log.error("Erro ao validar unicidade do nome do grupo", { error, name, excludeGroupId });
     return {
       valid: false,
       error: "Erro ao validar nome do grupo",
@@ -203,32 +187,15 @@ export async function validateGroupNameUnique(
   }
 }
 
-/**
- * Validates attachment file size and type
- * Requirements: 9.2
- */
-export function validateAttachment(file: File): { valid: boolean; error?: string } {
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  const ALLOWED_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  ];
-
-  if (file.size > MAX_FILE_SIZE) {
+export function validateAttachment(file: File): ValidationResult {
+  if (file.size > MAX_ATTACHMENT_SIZE) {
     return {
       valid: false,
       error: "Arquivo muito grande. Tamanho máximo: 10MB",
     };
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
     return {
       valid: false,
       error: "Tipo de arquivo não permitido",
