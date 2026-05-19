@@ -10,8 +10,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import log from "@/lib/logger";
-import type { Database } from "@/integrations/supabase/types";
-import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { calculate5thBusinessDay } from "@/lib/business-days";
 import { getHolidayDates } from "./holiday-service";
 import { checkAvailability } from "./capacity-service";
@@ -43,6 +42,8 @@ interface EntryCycle {
   month: number;
   year: number;
 }
+
+type SubscriptionDeliveryRecord = Tables<"subscription_deliveries">;
 
 /**
  * Schedule consecutive deliveries for a subscription
@@ -94,7 +95,7 @@ export async function scheduleConsecutiveDeliveries(
   subscriptionId: string,
   entryCycleId: string,
   planType: 'trimestral' | 'semestral'
-): Promise<any[]> {
+): Promise<SubscriptionDeliveryRecord[]> {
   // Validate inputs
   if (!subscriptionId || typeof subscriptionId !== 'string') {
     throw new Error('subscriptionId is required and must be a string');
@@ -140,7 +141,7 @@ export async function scheduleConsecutiveDeliveries(
   await checkCapacityForSchedule(schedule);
 
   // Create delivery records
-  const deliveries = [];
+  const deliveries: SubscriptionDeliveryRecord[] = [];
 
   for (const scheduledDelivery of schedule) {
     // Calculate shipping deadline (5th business day of delivery month)
@@ -348,7 +349,7 @@ async function getOrCreateCycle(
   // Create new monthly cycle using SSOT
   // The cycle dates will be calculated automatically by the database
   // based on system_settings (production_days, shipping_business_days)
-  const { data: newCycle, error: createError } = await supabase
+  const { error: createError } = await supabase
     .rpc('populate_cycles', {
       p_start_month: month,
       p_start_year: year,

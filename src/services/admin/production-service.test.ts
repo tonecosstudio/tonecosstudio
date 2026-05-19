@@ -134,65 +134,37 @@ describe("Production Service", () => {
 
   describe("fetchProductionMetrics", () => {
     it("deve buscar métricas de produção", async () => {
-      const mockMetrics = {
-        stages: {
-          awaiting_choice: 5,
-          design: 3,
-          production: 10,
-          quality_check: 2,
-          packaging: 1,
-          shipped: 20,
+      const criticalDeadline = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const mockQueueData = [
+        ...Array.from({ length: 5 }, () => ({
+          current_stage: "awaiting_choice",
+          production_status: "awaiting_choice",
+          priority: "normal",
+          choice_status: "pending",
+        })),
+        ...Array.from({ length: 35 }, () => ({
+          current_stage: "delivered",
+          production_status: "completed",
+          priority: "normal",
+          choice_status: "approved",
+        })),
+        {
+          current_stage: "printing",
+          production_status: "in_production",
+          priority: "critical",
+          choice_status: "pending",
+          choice_deadline: criticalDeadline,
         },
-        statuses: {
-          awaiting_choice: 5,
-          ready_for_production: 3,
-          in_production: 13,
-          completed: 20,
-          on_hold: 0,
-          cancelled: 0,
-        },
-        priorities: {
-          critical: 2,
-          high: 10,
-          normal: 25,
-          low: 4,
-        },
-        choices: {
-          pending: 5,
-          submitted: 2,
-          approved: 30,
-          rejected: 1,
-          locked: 3,
-        },
-        urgent: {
-          deadline_critical: 1,
-          deadline_urgent: 3,
-          blocked: 0,
-          overdue: 2,
-        },
-        scheduled: {
-          today: 5,
-          this_week: 15,
-          this_month: 30,
-        },
-        avg_stage_durations: {
-          design: 24,
-          production: 72,
-          quality_check: 12,
-        },
-        overall: {
-          total_items: 41,
-          avg_production_time_hours: 120,
-          completion_rate: 48.78,
-          avg_priority_score: 65.5,
-        },
-        generated_at: "2024-01-01T00:00:00Z",
+      ];
+
+      const mockQuery = {
+        select: vi.fn().mockResolvedValue({
+          data: mockQueueData,
+          error: null,
+        }),
       };
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
-        data: mockMetrics,
-        error: null,
-      } as any);
+      vi.mocked(supabase.from).mockReturnValue(mockQuery as any);
 
       const result = await fetchProductionMetrics();
 
@@ -254,11 +226,51 @@ describe("Production Service", () => {
         email: "maria@example.com",
       };
 
+      const mockCurrentAssignment = {
+        assigned_to: null,
+        assigned_to_name: null,
+      };
+
       const mockUpdatedItem = {
         id: "1",
+        order_id: "order-1",
+        order_type: "subscription_delivery",
+        customer_id: "user-1",
+        customer_name: "Cliente",
+        customer_email: "cliente@example.com",
+        collection_id: "col-1",
+        collection_name: "Coleção",
+        character_id: null,
+        character_name: null,
+        production_status: "ready_for_production",
+        current_stage: "model_preparation",
+        choice_status: "approved",
+        choice_deadline: null,
+        choice_made_at: null,
+        priority: "normal",
+        priority_score: 0,
+        scheduled_production_date: null,
+        estimated_completion_date: null,
         assigned_to: "user-2",
         assigned_to_name: "Maria Santos",
         assigned_at: "2024-01-02T00:00:00Z",
+        production_started_at: null,
+        production_completed_at: null,
+        production_notes: null,
+        customer_notes: null,
+        internal_flags: [],
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-02T00:00:00Z",
+        user_id: "user-1",
+      };
+
+      const mockCurrentAssignmentQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: mockCurrentAssignment,
+          error: null,
+        }),
       };
 
       const mockUserQuery = {
@@ -280,9 +292,18 @@ describe("Production Service", () => {
         }),
       };
 
+      const mockLogQuery = {
+        insert: vi.fn().mockResolvedValue({
+          data: {},
+          error: null,
+        }),
+      };
+
       vi.mocked(supabase.from)
+        .mockReturnValueOnce(mockCurrentAssignmentQuery as any)
         .mockReturnValueOnce(mockUserQuery as any)
-        .mockReturnValueOnce(mockUpdateQuery as any);
+        .mockReturnValueOnce(mockUpdateQuery as any)
+        .mockReturnValueOnce(mockLogQuery as any);
 
       const result = await assignProduction("1", "user-2");
 
@@ -395,12 +416,39 @@ describe("Production Service", () => {
     it("deve desbloquear produção", async () => {
       const mockCurrentItem = {
         id: "1",
-        current_stage: "production",
+        current_stage: "printing",
       };
 
       const mockUpdatedItem = {
         id: "1",
+        order_id: "order-1",
+        order_type: "subscription_delivery",
+        customer_id: "user-1",
+        user_id: "user-1",
+        customer_name: "Cliente",
+        customer_email: "cliente@example.com",
+        collection_id: "col-1",
+        collection_name: "Coleção",
+        character_id: null,
+        character_name: null,
         production_status: "in_production",
+        current_stage: "printing",
+        choice_status: "approved",
+        choice_deadline: null,
+        choice_made_at: null,
+        priority: "normal",
+        priority_score: 0,
+        scheduled_production_date: null,
+        estimated_completion_date: null,
+        assigned_to: null,
+        assigned_to_name: null,
+        assigned_at: null,
+        production_started_at: null,
+        production_completed_at: null,
+        production_notes: null,
+        customer_notes: null,
+        internal_flags: [],
+        created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-02T00:00:00Z",
       };
 
@@ -411,6 +459,20 @@ describe("Production Service", () => {
           data: mockCurrentItem,
           error: null,
         }),
+      };
+
+      const mockStageSelectQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: { started_at: "2024-01-01T00:00:00Z" },
+          error: null,
+        }),
+      };
+
+      const mockStageUpdateQuery = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
       };
 
       const mockUpdateQuery = {
@@ -425,6 +487,8 @@ describe("Production Service", () => {
 
       vi.mocked(supabase.from)
         .mockReturnValueOnce(mockSelectQuery as any)
+        .mockReturnValueOnce(mockStageSelectQuery as any)
+        .mockReturnValueOnce(mockStageUpdateQuery as any)
         .mockReturnValueOnce(mockUpdateQuery as any);
 
       const result = await unblockProduction("1");

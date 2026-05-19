@@ -13,6 +13,7 @@ import {
   SubscriptionDeliveryStatus,
   StandalonePurchaseStatus,
   ManualPaymentStatus,
+  QuoteStatus,
   StatusTransitionError,
   StatusTransitionMatrix
 } from '@/types/admin/orders';
@@ -117,7 +118,7 @@ const MANUAL_PAYMENT_TRANSITIONS: Record<ManualPaymentStatus, ManualPaymentStatu
  * Define quais status podem ser alcançados a partir de cada status atual.
  * Baseado no fluxo de análise e resposta de orçamentos.
  */
-const QUOTE_TRANSITIONS: Record<import('@/types/admin/orders').QuoteStatus, import('@/types/admin/orders').QuoteStatus[]> = {
+const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
   // Pendente pode ir para análise ou ser arquivado
   'pending': ['reviewing', 'archived'],
   
@@ -168,7 +169,7 @@ export function validateStatusTransition(
   }
 
   // Selecionar a matriz de transições apropriada
-  const transitionMatrix = 
+  const transitionMatrix: Partial<StatusTransitionMatrix> =
     orderType === 'subscription_delivery' ? SUBSCRIPTION_DELIVERY_TRANSITIONS :
     orderType === 'standalone_purchase' ? STANDALONE_PURCHASE_TRANSITIONS :
     orderType === 'manual_payment' ? MANUAL_PAYMENT_TRANSITIONS :
@@ -192,7 +193,7 @@ export function validateStatusTransition(
   }
 
   // Obter transições válidas para o status atual
-  const validTransitions = (transitionMatrix as any)[currentStatus] || [];
+  const validTransitions = transitionMatrix[currentStatus] || [];
 
   // Verificar se a transição é permitida
   if (!validTransitions.includes(newStatus)) {

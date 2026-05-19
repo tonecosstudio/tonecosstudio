@@ -5,6 +5,7 @@
  * relacionadas ao sistema de gestão de produção.
  */
 import { supabase } from "@/integrations/supabase/client";
+import type { Json, Tables } from "@/integrations/supabase/types";
 import { calculateEstimatedCompletion } from "./stage-service";
 import log from "@/lib/logger";
 
@@ -206,6 +207,8 @@ export interface ProductionQueueItem {
   createdAt: string;
   updatedAt: string;
 }
+
+type ProductionQueueRow = Tables<"production_queue">;
 
 export interface ProductionFilters {
   collections?: string[];
@@ -770,6 +773,8 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
  * @returns Item atualizado
  */
 export async function unblockProduction(id: string): Promise<ProductionQueueItem> {
+  const now = new Date().toISOString();
+
   // Buscar item atual para determinar status correto
   const { data: currentItem, error: fetchError } = await supabase
     .from("production_queue")
@@ -779,6 +784,35 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
 
   if (fetchError || !currentItem) {
     throw new Error(`Item não encontrado: ${fetchError?.message || "ID inválido"}`);
+  }
+
+  const { data: currentStage, error: stageFetchError } = await supabase
+    .from("production_stages")
+    .select("started_at")
+    .eq("production_queue_id", id)
+    .eq("stage_name", currentItem.current_stage)
+    .maybeSingle();
+
+  if (stageFetchError) {
+    throw new Error(`Erro ao buscar estágio bloqueado: ${stageFetchError.message}`);
+  }
+
+  const restoredStageStatus = currentStage?.started_at ? "in_progress" : "pending";
+
+  const { error: stageUpdateError } = await supabase
+    .from("production_stages")
+    .update({
+      is_blocked: false,
+      block_reason: null,
+      unblocked_at: now,
+      status: restoredStageStatus,
+      updated_at: now,
+    })
+    .eq("production_queue_id", id)
+    .eq("stage_name", currentItem.current_stage);
+
+  if (stageUpdateError) {
+    throw new Error(`Erro ao desbloquear estágio: ${stageUpdateError.message}`);
   }
 
   // Determinar status baseado no estágio atual
@@ -797,7 +831,7 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
     .from("production_queue")
     .update({
       production_status: newStatus,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq("id", id)
     .select()
@@ -809,8 +843,13 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
     );
   }
 
-  // TODO: Criar notificação para o cliente sobre o desbloqueio
-  // TODO: Atualizar production_stages para desmarcar bloqueio
+  try {
+    const { ProductionNotificationService } = await import("../notifications/production-notification-service");
+    const notificationService = new ProductionNotificationService();
+    await notificationService.sendStageUpdate(id, currentItem.current_stage);
+  } catch (notifError) {
+    log.error("Erro ao enviar notificação de desbloqueio", { notifError });
+  }
 
   return transformProductionQueueItem(updatedItem);
 }
@@ -864,25 +903,25 @@ export async function updateProductionSchedule(
  * Transforma dados do banco para o formato da interface ProductionQueueItem
  * Usa os campos denormalizados da tabela production_queue
  */
-function transformProductionQueueItem(data: any): ProductionQueueItem {
+function transformProductionQueueItem(data: ProductionQueueRow): ProductionQueueItem {
   return {
     id: data.id,
     orderId: data.order_id,
-    orderType: data.order_type,
-    customerId: data.customer_id,
+    orderType: data.order_type as ProductionQueueItem["orderType"],
+    customerId: data.customer_id ?? data.user_id,
     customerName: data.customer_name || "Cliente Desconhecido",
     customerEmail: data.customer_email || "",
-    collectionId: data.collection_id,
+    collectionId: data.collection_id ?? "",
     collectionName: data.collection_name || "Coleção Desconhecida",
     characterId: data.character_id,
     characterName: data.character_name,
-    productionStatus: data.production_status,
-    currentStage: data.current_stage,
-    choiceStatus: data.choice_status,
+    productionStatus: (data.production_status ?? "awaiting_choice") as ProductionStatus,
+    currentStage: (data.current_stage ?? "awaiting_payment") as ProductionStage,
+    choiceStatus: (data.choice_status ?? "pending") as ChoiceStatus,
     choiceDeadline: data.choice_deadline,
     choiceMadeAt: data.choice_made_at,
-    priority: data.priority,
-    priorityScore: data.priority_score,
+    priority: (data.priority ?? "normal") as Priority,
+    priorityScore: data.priority_score ?? 0,
     scheduledProductionDate: data.scheduled_production_date,
     estimatedCompletionDate: data.estimated_completion_date,
     assignedTo: data.assigned_to,
@@ -892,8 +931,12 @@ function transformProductionQueueItem(data: any): ProductionQueueItem {
     productionCompletedAt: data.production_completed_at,
     productionNotes: data.production_notes,
     customerNotes: data.customer_notes,
-    internalFlags: data.internal_flags || [],
+    internalFlags: toStringArray(data.internal_flags),
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
+}
+
+function toStringArray(value: Json | null): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }

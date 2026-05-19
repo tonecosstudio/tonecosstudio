@@ -30,6 +30,14 @@ export interface PhotoWithMetadata {
   uploadedAt?: string;
 }
 
+interface StagePhotoMetadataRow {
+  photo_url: string;
+  customer_visible: boolean;
+  caption: string | null;
+  uploaded_by_name: string | null;
+  uploaded_at: string | null;
+}
+
 // ============================================================================
 // Service Functions
 // ============================================================================
@@ -119,7 +127,9 @@ export async function getStagePhotosWithMetadata(
     throw new Error(`Failed to get photos with metadata: ${error.message}`);
   }
 
-  return (data || []).map((item: any) => ({
+  const photos = (data ?? []) as StagePhotoMetadataRow[];
+
+  return photos.map((item) => ({
     url: item.photo_url,
     customerVisible: item.customer_visible,
     caption: item.caption,
