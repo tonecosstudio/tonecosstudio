@@ -12,14 +12,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { subscriptionKeys } from './useSubscription';
 import { coinsBalanceKeys } from '../coins/useCoinsBalance';
+import { log } from '@/lib/logger';
 import type {
   ProcessSubscriptionPaymentParams,
   ProcessPaymentResponse,
   SubscriptionPayment,
-  PaymentStatus,
   UserId,
 } from '@/types/subscription';
-import type { CoinsAmount, CoinsTransactionType } from '@/types/coins';
+import type { CoinsAmount } from '@/types/coins';
 
 // ============================================================================
 // HOOK: PROCESSAR PAGAMENTO
@@ -135,7 +135,10 @@ export function useProcessSubscriptionPayment() {
         .eq('id', subscription_id);
 
       if (totalError) {
-        console.error('Erro ao atualizar total de coins:', totalError);
+        log.error('Failed to update subscription total coins received', {
+          error: totalError,
+          subscriptionId: subscription_id,
+        });
       }
 
       // 6. Busca novo saldo
@@ -146,7 +149,10 @@ export function useProcessSubscriptionPayment() {
         .single();
 
       if (balanceError) {
-        console.error('Erro ao buscar novo saldo:', balanceError);
+        log.error('Failed to fetch updated subscription coin balance', {
+          error: balanceError,
+          userId: subscription.user_id,
+        });
       }
 
       return {
@@ -157,7 +163,7 @@ export function useProcessSubscriptionPayment() {
         message: `Pagamento aprovado! Você recebeu ${subscription.coins_per_month} coins.`,
       };
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       // Invalida caches
       queryClient.invalidateQueries({
         queryKey: subscriptionKeys.all,

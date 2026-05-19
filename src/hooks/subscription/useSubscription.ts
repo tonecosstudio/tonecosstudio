@@ -15,6 +15,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { log } from '@/lib/logger';
 
 // ============================================================================
 // TYPES (aligned with DB schema)
@@ -52,7 +53,7 @@ interface DbSubscriptionPlan {
   is_active: boolean;
   slug: string | null;
   tier_id: string | null;
-  features: any;
+  features: unknown;
   created_at: string;
   updated_at: string;
 }
@@ -137,7 +138,11 @@ export function useSubscriptionPlan(userId?: UserId | null) {
         .maybeSingle();
       
       if (error) {
-        console.error('Erro ao buscar plano:', error);
+        log.error('Failed to fetch subscription plan', {
+          error,
+          userId,
+          planId: subscription.plan_id,
+        });
         return null;
       }
       

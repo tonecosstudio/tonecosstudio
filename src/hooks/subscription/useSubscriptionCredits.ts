@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
+import { log } from "@/lib/logger";
 
 // =====================================================
 // TYPES
@@ -65,6 +66,10 @@ export interface CreditValidationResult {
   total_credits?: number;
   used_credits?: number;
   expiry_date?: string;
+}
+
+function getMutationErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
 }
 
 // =====================================================
@@ -247,10 +252,13 @@ export function useSubscriptionCreditsForPurchase() {
         variant: "default",
       });
     },
-    onError: (error: any) => {
-      console.error("Erro ao usar créditos de assinatura:", error);
+    onError: (error: unknown) => {
+      log.error("Failed to use subscription credits for purchase", { error });
 
-      const errorMessage = error?.message || "Erro ao processar compra com créditos";
+      const errorMessage = getMutationErrorMessage(
+        error,
+        "Erro ao processar compra com créditos"
+      );
 
       toast({
         title: "Erro na compra",
@@ -293,7 +301,7 @@ export function useProcessSubscriptionPayment() {
         user_id: string;
       };
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       // Invalidar caches relevantes
       queryClient.invalidateQueries({
         queryKey: subscriptionCreditKeys.userSummary(data.user_id)
@@ -312,10 +320,10 @@ export function useProcessSubscriptionPayment() {
         variant: "default",
       });
     },
-    onError: (error: any) => {
-      console.error("Erro ao processar pagamento de assinatura:", error);
+    onError: (error: unknown) => {
+      log.error("Failed to process subscription payment credits", { error });
 
-      const errorMessage = error?.message || "Erro ao processar pagamento";
+      const errorMessage = getMutationErrorMessage(error, "Erro ao processar pagamento");
 
       toast({
         title: "Erro no pagamento",
