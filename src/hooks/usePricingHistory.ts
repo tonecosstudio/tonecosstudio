@@ -24,6 +24,19 @@ export interface PricingHistoryFilters {
   userId?: string;
 }
 
+type PricingHistoryCsvRow = PricingHistory & {
+  profiles: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+  pricing_tiers: {
+    name: string | null;
+  } | null;
+  collections: {
+    name: string | null;
+  } | null;
+};
+
 // =====================================================
 // QUERY KEYS
 // =====================================================
@@ -341,7 +354,7 @@ export async function exportPricingHistoryToCSV(
     "Alterado Por",
   ];
 
-  const rows = data?.map((item: any) => [
+  const rows = (data as PricingHistoryCsvRow[] | null)?.map((item) => [
     new Date(item.changed_at).toLocaleString("pt-BR"),
     item.change_type,
     item.pricing_tiers?.name || "-",

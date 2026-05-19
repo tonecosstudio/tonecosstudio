@@ -32,6 +32,10 @@ export const collectionTierKeys = {
   byTier: (tierId: string) => [...collectionTierKeys.all, "tier", tierId] as const,
 };
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Erro desconhecido";
+}
+
 // =====================================================
 // QUERIES
 // =====================================================
@@ -283,8 +287,8 @@ export function useBulkAssignTier() {
           } else {
             results.success.push(collectionId);
           }
-        } catch (e: any) {
-          results.failed.push({ id: collectionId, error: e.message });
+        } catch (error: unknown) {
+          results.failed.push({ id: collectionId, error: getErrorMessage(error) });
         }
       }
 

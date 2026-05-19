@@ -17,6 +17,11 @@ import type {
 } from "@/types/pricing-tiers";
 import { getPricingReportsSchema } from "@/lib/validations/pricing-tiers";
 
+type PricingReportCsvData =
+  | CollectionsByTierReport[]
+  | RevenueByTierReport[]
+  | ConversionByTierReport[];
+
 // =====================================================
 // QUERY KEYS
 // =====================================================
@@ -239,12 +244,24 @@ export function usePricingReportsSummary(dateRange?: { start: string; end: strin
  * Requisitos: 11.6
  */
 export function exportReportToCSV(
+  reportType: "collections_by_tier",
+  data: CollectionsByTierReport[]
+): string;
+export function exportReportToCSV(
+  reportType: "revenue_by_tier",
+  data: RevenueByTierReport[]
+): string;
+export function exportReportToCSV(
+  reportType: "conversion_by_tier",
+  data: ConversionByTierReport[]
+): string;
+export function exportReportToCSV(
   reportType: "collections_by_tier" | "revenue_by_tier" | "conversion_by_tier",
-  data: any[]
+  data: PricingReportCsvData
 ): string {
   if (reportType === "collections_by_tier") {
     const headers = ["Nível", "Total de Coleções", "Coleções Ativas"];
-    const rows = data.map((item: CollectionsByTierReport) => [
+    const rows = (data as CollectionsByTierReport[]).map((item) => [
       item.tier_name,
       item.collection_count.toString(),
       item.active_collection_count.toString(),
@@ -259,7 +276,7 @@ export function exportReportToCSV(
       "Receita de Assinaturas",
       "Receita de Compras Avulsas",
     ];
-    const rows = data.map((item: RevenueByTierReport) => [
+    const rows = (data as RevenueByTierReport[]).map((item) => [
       item.tier_name,
       `R$ ${item.total_revenue.toFixed(2)}`,
       `R$ ${item.subscription_revenue.toFixed(2)}`,
@@ -270,7 +287,7 @@ export function exportReportToCSV(
 
   if (reportType === "conversion_by_tier") {
     const headers = ["Nível", "Visualizações", "Compras", "Taxa de Conversão"];
-    const rows = data.map((item: ConversionByTierReport) => [
+    const rows = (data as ConversionByTierReport[]).map((item) => [
       item.tier_name,
       item.views.toString(),
       item.purchases.toString(),
