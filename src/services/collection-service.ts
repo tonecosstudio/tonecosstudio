@@ -26,7 +26,6 @@ import {
 
 // Type aliases for better readability
 type CollectionRow = Database['public']['Tables']['collections']['Row'];
-type RotationType = 'fixed' | 'odd_months' | 'even_months';
 
 /**
  * Custom error types for better error handling

@@ -6,7 +6,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import type { ProductionStage, ProductionQueueItem } from './production-service';
+import type { ProductionStage } from './production-service';
 
 export interface BulkOperationResult {
   successful: number;

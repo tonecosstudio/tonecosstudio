@@ -10,6 +10,33 @@ import type { ProductionStageRecord, StageType } from "./stage-types";
 
 // ============================================================================
 
+type ProductionStageUpdatePayload = Record<string, string | string[]>;
+type ProductionStageRaw = Record<string, unknown>;
+
+function stringValue(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function nullableStringValue(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function numberValue(value: unknown): number {
+  return typeof value === "number" ? value : 0;
+}
+
+function nullableNumberValue(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+
+function booleanValue(value: unknown): boolean {
+  return typeof value === "boolean" ? value : false;
+}
+
+function stringArrayValue(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
 // ============================================================================
 // Função: Buscar Histórico de Estágios
 // ============================================================================
@@ -31,7 +58,7 @@ export async function getStageHistory(productionQueueId: string): Promise<Produc
     throw new Error(`Erro ao buscar histórico de estágios: ${error.message}`);
   }
 
-  return (data || []).map(transformStageRecord);
+  return (data || []).map((stage) => transformStageRecord(stage as ProductionStageRaw));
 }
 
 // ============================================================================
@@ -115,7 +142,7 @@ export async function completeStage(
 
   // Preparar dados de atualização
   const now = new Date().toISOString();
-  const updateData: any = {
+  const updateData: ProductionStageUpdatePayload = {
     status: "completed",
     completed_at: now,
     updated_at: now,
@@ -180,7 +207,7 @@ export async function completeStage(
     log.error("Failed to log stage transition", { logError });
   }
 
-  return transformStageRecord(updatedStage);
+  return transformStageRecord(updatedStage as ProductionStageRaw);
 }
 
 // ============================================================================
@@ -280,9 +307,6 @@ export async function calculateEstimatedCompletion(productionQueueId: string): P
   const estimatedDate = new Date(now);
   let hoursToAdd = remainingHours;
 
-  // Assumir 8 horas de trabalho por dia
-  const workHoursPerDay = 8;
-
   while (hoursToAdd > 0) {
     estimatedDate.setHours(estimatedDate.getHours() + 1);
 
@@ -303,27 +327,27 @@ export async function calculateEstimatedCompletion(productionQueueId: string): P
 /**
  * Transforma dados do banco para o formato da interface ProductionStageRecord
  */
-function transformStageRecord(data: any): ProductionStageRecord {
+function transformStageRecord(data: ProductionStageRaw): ProductionStageRecord {
   return {
-    id: data.id,
-    productionQueueId: data.production_queue_id,
-    stageName: data.stage_name,
-    stageOrder: data.stage_order,
-    status: data.status,
-    startedAt: data.started_at,
-    completedAt: data.completed_at,
-    estimatedDuration: data.estimated_duration,
-    actualDuration: data.actual_duration,
-    assignedTo: data.assigned_to,
-    assignedToName: data.assigned_to_name,
-    assignedAt: data.assigned_at,
-    notes: data.notes,
-    photos: data.photos || [],
-    isBlocked: data.is_blocked,
-    blockReason: data.block_reason,
-    blockedAt: data.blocked_at,
-    unblockedAt: data.unblocked_at,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
+    id: stringValue(data.id),
+    productionQueueId: stringValue(data.production_queue_id),
+    stageName: stringValue(data.stage_name) as StageType,
+    stageOrder: numberValue(data.stage_order),
+    status: stringValue(data.status) as ProductionStageRecord["status"],
+    startedAt: nullableStringValue(data.started_at),
+    completedAt: nullableStringValue(data.completed_at),
+    estimatedDuration: numberValue(data.estimated_duration),
+    actualDuration: nullableNumberValue(data.actual_duration),
+    assignedTo: nullableStringValue(data.assigned_to),
+    assignedToName: nullableStringValue(data.assigned_to_name),
+    assignedAt: nullableStringValue(data.assigned_at),
+    notes: nullableStringValue(data.notes),
+    photos: stringArrayValue(data.photos),
+    isBlocked: booleanValue(data.is_blocked),
+    blockReason: nullableStringValue(data.block_reason),
+    blockedAt: nullableStringValue(data.blocked_at),
+    unblockedAt: nullableStringValue(data.unblocked_at),
+    createdAt: stringValue(data.created_at),
+    updatedAt: stringValue(data.updated_at),
   };
 }

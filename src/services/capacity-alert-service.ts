@@ -11,6 +11,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { emailService } from "./email-service";
 import { logInfo, logError } from "@/lib/logger";
 
+type CapacityAlertRpcName = "check_capacity_alert" | "reset_capacity_alert";
+type CapacityAlertRpcClient = {
+  rpc: (
+    fn: CapacityAlertRpcName,
+    args: { p_cycle_id: string }
+  ) => Promise<{ data: boolean | null; error: { message: string } | null }>;
+};
+
+const capacityAlertRpc = supabase as unknown as CapacityAlertRpcClient;
+
 /**
  * Alert configuration for a cycle
  */
@@ -164,7 +174,7 @@ export async function getAlertStatus(cycleId: string): Promise<AlertStatus> {
  * Requirements: 16.5
  */
 export async function checkAndTriggerAlert(cycleId: string): Promise<boolean> {
-  const { data, error } = await supabase.rpc('check_capacity_alert' as any, {
+  const { data, error } = await capacityAlertRpc.rpc('check_capacity_alert', {
     p_cycle_id: cycleId
   });
 
@@ -185,7 +195,7 @@ export async function checkAndTriggerAlert(cycleId: string): Promise<boolean> {
  * Requirements: 16.5
  */
 export async function resetAlert(cycleId: string): Promise<void> {
-  const { error } = await supabase.rpc('reset_capacity_alert' as any, {
+  const { error } = await capacityAlertRpc.rpc('reset_capacity_alert', {
     p_cycle_id: cycleId
   });
 
@@ -223,16 +233,6 @@ export async function sendCapacityAlert(
 ): Promise<void> {
   // Get alert configuration
   const config = await getAlertConfig(cycleId);
-
-  const message = `
-ALERTA DE CAPACIDADE - ORDAX
-
-Ciclo ${cycleInfo.cycleNumber} - ${cycleInfo.month}/${cycleInfo.year}
-Capacidade: ${cycleInfo.currentCapacity}/${cycleInfo.maxCapacity} (${cycleInfo.percentage}%)
-
-O limite de ${config.threshold}% foi atingido.
-Acesse o painel administrativo para gerenciar a capacidade.
-  `.trim();
 
   // Send email if configured
   if (config.email) {
