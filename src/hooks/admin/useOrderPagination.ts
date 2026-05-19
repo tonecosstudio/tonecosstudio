@@ -13,6 +13,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { PaginationParams } from '@/types/admin/orders';
+import type { DependencyList } from 'react';
 
 // ============================================================================
 // Constantes
@@ -30,6 +31,7 @@ export const DEFAULT_PAGINATION: PaginationParams = {
  * Tamanhos de página disponíveis
  */
 export const PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 /**
  * Nomes dos parâmetros de URL
@@ -38,6 +40,10 @@ const URL_PARAMS = {
   PAGE: 'page',
   PAGE_SIZE: 'pageSize'
 } as const;
+
+function isPageSizeOption(pageSize: number): pageSize is PageSizeOption {
+  return (PAGE_SIZE_OPTIONS as readonly number[]).includes(pageSize);
+}
 
 // ============================================================================
 // Hook Principal
@@ -111,7 +117,7 @@ export function useOrderPagination(): UseOrderPaginationReturn {
   // Função para definir tamanho de página
   const setPageSize = useCallback((pageSize: number) => {
     // Validar que o pageSize é um dos valores permitidos
-    const validPageSize = PAGE_SIZE_OPTIONS.includes(pageSize as any)
+    const validPageSize = isPageSizeOption(pageSize)
       ? pageSize
       : DEFAULT_PAGINATION.pageSize;
 
@@ -184,7 +190,7 @@ function parsePaginationFromURL(searchParams: URLSearchParams): PaginationParams
   const pageSizeParam = searchParams.get(URL_PARAMS.PAGE_SIZE);
   if (pageSizeParam) {
     const pageSize = parseInt(pageSizeParam, 10);
-    if (!isNaN(pageSize) && PAGE_SIZE_OPTIONS.includes(pageSize as any)) {
+    if (!isNaN(pageSize) && isPageSizeOption(pageSize)) {
       pagination.pageSize = pageSize;
     }
   }
@@ -228,7 +234,7 @@ export function usePaginationInfo(
 /**
  * Hook para gerenciar paginação com reset automático ao mudar filtros
  */
-export function useOrderPaginationWithReset(filterDependencies: any[]) {
+export function useOrderPaginationWithReset(filterDependencies: DependencyList) {
   const paginationControls = useOrderPagination();
   const { firstPage } = paginationControls;
 
@@ -258,7 +264,7 @@ export function validatePagination(
     };
   }
 
-  if (!PAGE_SIZE_OPTIONS.includes(pagination.pageSize as any)) {
+  if (!isPageSizeOption(pagination.pageSize)) {
     return {
       valid: false,
       error: `Tamanho de página deve ser um dos valores: ${PAGE_SIZE_OPTIONS.join(', ')}`
