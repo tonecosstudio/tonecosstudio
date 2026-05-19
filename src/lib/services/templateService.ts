@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 
 export interface TemplateVariable {
   key: string;
@@ -13,14 +14,40 @@ export interface TemplateVariable {
   example: string;
 }
 
+export interface CustomerOrderTemplateData {
+  id: string;
+  status: string;
+  tracking_code?: string | null;
+  created_at: string;
+}
+
+export interface CustomerQuoteTemplateData {
+  id: string;
+  total_price?: number | null;
+  total_amount?: number | null;
+}
+
+export interface CustomerPaymentTemplateData {
+  amount?: number | null;
+  status: string;
+}
+
+export interface CustomerSubscriptionTemplateData {
+  status: string;
+  plan_type?: string | null;
+  collections?: {
+    name?: string | null;
+  } | null;
+}
+
 export interface CustomerData {
   userId: string;
   name?: string;
   email?: string;
-  orders?: any[];
-  quotes?: any[];
-  payments?: any[];
-  subscription?: any;
+  orders?: CustomerOrderTemplateData[];
+  quotes?: CustomerQuoteTemplateData[];
+  payments?: CustomerPaymentTemplateData[];
+  subscription?: CustomerSubscriptionTemplateData | null;
 }
 
 export interface SystemSettings {
@@ -271,10 +298,10 @@ export async function fetchSystemSettings(): Promise<SystemSettings> {
         settings.currentMonthAvailable = current.prod_available;
       }
     } catch (error) {
-      // Silenciosamente ignora se a função não existir
+      log.debug("Limite de produção atual indisponível para templates", { error });
     }
   } catch (error) {
-    console.error("Erro ao buscar configurações do sistema:", error);
+    log.error("Erro ao buscar configurações do sistema para templates", { error });
   }
 
   return settings;
@@ -307,7 +334,7 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
         customerData.email = profile.email;
       }
     } catch (error) {
-      // Silenciosamente ignora erro
+      log.debug("Dados de perfil indisponíveis para template", { error, userId });
     }
 
     // Buscar orçamentos (quotes) - esta tabela provavelmente existe
@@ -320,10 +347,10 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
         .limit(5);
 
       if (!error) {
-        customerData.quotes = quotes || [];
+        customerData.quotes = (quotes || []) as CustomerQuoteTemplateData[];
       }
     } catch (error) {
-      // Silenciosamente ignora
+      log.debug("Orçamentos indisponíveis para template", { error, userId });
     }
 
     // Buscar pagamentos manuais
@@ -336,10 +363,10 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
         .limit(5);
 
       if (!error) {
-        customerData.payments = payments || [];
+        customerData.payments = (payments || []) as CustomerPaymentTemplateData[];
       }
     } catch (error) {
-      // Silenciosamente ignora
+      log.debug("Pagamentos indisponíveis para template", { error, userId });
     }
 
     // Buscar pedidos (preorders)
@@ -352,10 +379,10 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
         .limit(5);
 
       if (!error) {
-        customerData.orders = orders || [];
+        customerData.orders = (orders || []) as CustomerOrderTemplateData[];
       }
     } catch (error) {
-      // Silenciosamente ignora
+      log.debug("Pedidos indisponíveis para template", { error, userId });
     }
 
     // Buscar assinatura ativa (estrutura real: collection_id, plan_type)
@@ -376,13 +403,13 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
         .maybeSingle();
 
       if (!error && subscription) {
-        customerData.subscription = subscription;
+        customerData.subscription = subscription as CustomerSubscriptionTemplateData;
       }
     } catch (error) {
-      // Silenciosamente ignora
+      log.debug("Assinatura indisponível para template", { error, userId });
     }
   } catch (error) {
-    console.error("Erro ao buscar dados do cliente:", error);
+    log.error("Erro ao buscar dados do cliente para template", { error, userId });
   }
 
   return customerData;
