@@ -40,6 +40,10 @@ export interface Delivery {
   tracking_code: string | null;
 }
 
+type DeliveryStatusUpdate = Partial<
+  Pick<Delivery, 'status' | 'status_changed_at' | 'shipped_at' | 'delivered_at'>
+>;
+
 /**
  * DeliveryService Class
  */
@@ -168,7 +172,7 @@ class DeliveryService {
     deliveryId: string,
     status: DeliveryStatus
   ): Promise<void> {
-    const updateData: any = {
+    const updateData: DeliveryStatusUpdate = {
       status,
       status_changed_at: new Date().toISOString(),
     };
