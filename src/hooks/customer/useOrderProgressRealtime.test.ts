@@ -14,6 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { ProductionStage, ChoiceStatus } from "@/services/admin/production-service";
 
+type MockRealtimeChannel = {
+  on: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+};
+
 // Mock dependencies
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -29,7 +34,7 @@ vi.mock("@/hooks/use-toast", () => ({
 describe("useOrderProgressRealtime", () => {
   let queryClient: QueryClient;
   let mockToast: ReturnType<typeof vi.fn>;
-  let mockChannel: any;
+  let mockChannel: MockRealtimeChannel;
   let mockSubscribe: ReturnType<typeof vi.fn>;
   let mockOn: ReturnType<typeof vi.fn>;
 
@@ -46,7 +51,7 @@ describe("useOrderProgressRealtime", () => {
 
     // Setup toast mock
     mockToast = vi.fn();
-    (useToast as any).mockReturnValue({ toast: mockToast });
+    vi.mocked(useToast).mockReturnValue({ toast: mockToast } as ReturnType<typeof useToast>);
 
     // Setup channel mock
     mockSubscribe = vi.fn((callback) => {
@@ -64,7 +69,7 @@ describe("useOrderProgressRealtime", () => {
       subscribe: mockSubscribe,
     };
 
-    (supabase.channel as any).mockReturnValue(mockChannel);
+    vi.mocked(supabase.channel).mockReturnValue(mockChannel as ReturnType<typeof supabase.channel>);
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) =>

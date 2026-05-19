@@ -22,6 +22,12 @@ vi.mock('@/integrations/supabase/client', () => ({
   }
 }));
 
+type SupabaseFromResult = ReturnType<typeof supabase.from>;
+
+function mockFromResult(value: unknown): SupabaseFromResult {
+  return value as SupabaseFromResult;
+}
+
 describe('useOrderMutations', () => {
   let queryClient: QueryClient;
 
@@ -56,9 +62,9 @@ describe('useOrderMutations', () => {
         })
       });
 
-      vi.mocked(supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValue(mockFromResult({
         update: mockUpdate
-      } as any);
+      }));
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
@@ -101,9 +107,9 @@ describe('useOrderMutations', () => {
         })
       });
 
-      vi.mocked(supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValue(mockFromResult({
         update: mockUpdate
-      } as any);
+      }));
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
@@ -123,7 +129,7 @@ describe('useOrderMutations', () => {
     it('deve tratar erros corretamente', async () => {
       const mockError = new Error('Database error');
       
-      vi.mocked(supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValue(mockFromResult({
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             select: vi.fn().mockReturnValue({
@@ -134,7 +140,7 @@ describe('useOrderMutations', () => {
             })
           })
         })
-      } as any);
+      }));
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
@@ -161,9 +167,9 @@ describe('useOrderMutations', () => {
         })
       });
 
-      vi.mocked(supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValue(mockFromResult({
         update: mockUpdate
-      } as any);
+      }));
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
@@ -201,9 +207,9 @@ describe('useOrderMutations', () => {
         })
       });
 
-      vi.mocked(supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValue(mockFromResult({
         update: mockUpdate
-      } as any);
+      }));
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 
@@ -239,9 +245,9 @@ describe('useOrderMutations', () => {
         })
       });
 
-      vi.mocked(supabase.from).mockReturnValue({
+      vi.mocked(supabase.from).mockReturnValue(mockFromResult({
         update: mockUpdate
-      } as any);
+      }));
 
       const { result } = renderHook(() => useOrderMutations(), { wrapper });
 

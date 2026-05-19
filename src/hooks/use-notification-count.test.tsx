@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsAdmin } from "@/lib/roles";
 import { useNotificationCount, useFormattedNotificationCount } from "./use-notification-count";
 
 // Mock do Supabase
@@ -54,6 +55,12 @@ vi.mock("@/lib/roles", () => ({
     isLoading: false,
   })),
 }));
+
+type SupabaseFromResult = ReturnType<typeof supabase.from>;
+
+function mockFromResult(value: unknown): SupabaseFromResult {
+  return value as SupabaseFromResult;
+}
 
 // Criar QueryClient para testes
 const createTestQueryClient = () => new QueryClient({
@@ -115,7 +122,7 @@ describe("useNotificationCount", () => {
 
       // Mock para pagamentos requires_info
       const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue({
+      mockFrom.mockReturnValue(mockFromResult({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             eq: vi.fn(() => ({
@@ -126,7 +133,7 @@ describe("useNotificationCount", () => {
             })),
           })),
         })),
-      } as any);
+      }));
     });
 
     it("deve calcular contagem para cliente com pagamentos requires_info", async () => {
@@ -144,7 +151,7 @@ describe("useNotificationCount", () => {
     it("deve calcular contagem para cliente com mensagens não lidas", async () => {
       // Mock para mensagens não lidas
       const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue({
+      mockFrom.mockReturnValue(mockFromResult({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             single: vi.fn(() => Promise.resolve({
@@ -156,7 +163,7 @@ describe("useNotificationCount", () => {
             })),
           })),
         })),
-      } as any);
+      }));
 
       const { result } = renderHook(() => useNotificationCount(), { wrapper });
 
@@ -176,14 +183,14 @@ describe("useNotificationCount", () => {
       });
 
       // Mock para useIsAdmin retornar true
-      vi.mocked(require("@/lib/roles").useIsAdmin).mockReturnValue({
+      vi.mocked(useIsAdmin).mockReturnValue({
         data: true,
         isLoading: false,
       });
 
       // Mock para pagamentos pendentes e em análise
       const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue({
+      mockFrom.mockReturnValue(mockFromResult({
         select: vi.fn(() => ({
           in: vi.fn(() => ({
             single: vi.fn(() => Promise.resolve({
@@ -196,7 +203,7 @@ describe("useNotificationCount", () => {
             })),
           })),
         })),
-      } as any);
+      }));
     });
 
     it("deve calcular contagem para admin com pagamentos pendentes", async () => {
@@ -213,7 +220,7 @@ describe("useNotificationCount", () => {
     it("deve calcular contagem para admin com mensagens não lidas", async () => {
       // Mock para mensagens não lidas por admin
       const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue({
+      mockFrom.mockReturnValue(mockFromResult({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             single: vi.fn(() => Promise.resolve({
@@ -226,7 +233,7 @@ describe("useNotificationCount", () => {
             })),
           })),
         })),
-      } as any);
+      }));
 
       const { result } = renderHook(() => useNotificationCount(), { wrapper });
 
@@ -247,7 +254,7 @@ describe("useNotificationCount", () => {
 
       // Mock para erro
       const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue({
+      mockFrom.mockReturnValue(mockFromResult({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             eq: vi.fn(() => ({
@@ -258,7 +265,7 @@ describe("useNotificationCount", () => {
             })),
           })),
         })),
-      } as any);
+      }));
 
       const { result } = renderHook(() => useNotificationCount(), { wrapper });
 
@@ -280,14 +287,14 @@ describe("useFormattedNotificationCount", () => {
     });
 
     // Mock para useIsAdmin
-    vi.mocked(require("@/lib/roles").useIsAdmin).mockReturnValue({
+    vi.mocked(useIsAdmin).mockReturnValue({
       data: true,
       isLoading: false,
     });
 
     // Mock para retornar muitos pagamentos
     const mockFrom = vi.mocked(supabase.from);
-    mockFrom.mockReturnValue({
+    mockFrom.mockReturnValue(mockFromResult({
       select: vi.fn(() => ({
         in: vi.fn(() => ({
           single: vi.fn(() => Promise.resolve({
@@ -299,7 +306,7 @@ describe("useFormattedNotificationCount", () => {
           })),
         })),
       })),
-    } as any);
+    }));
 
     const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 
@@ -320,14 +327,14 @@ describe("useFormattedNotificationCount", () => {
     });
 
     // Mock para useIsAdmin
-    vi.mocked(require("@/lib/roles").useIsAdmin).mockReturnValue({
+    vi.mocked(useIsAdmin).mockReturnValue({
       data: false,
       isLoading: false,
     });
 
     // Mock para retornar poucos pagamentos
     const mockFrom = vi.mocked(supabase.from);
-    mockFrom.mockReturnValue({
+    mockFrom.mockReturnValue(mockFromResult({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -341,7 +348,7 @@ describe("useFormattedNotificationCount", () => {
           })),
         })),
       })),
-    } as any);
+    }));
 
     const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 
@@ -360,14 +367,14 @@ describe("useFormattedNotificationCount", () => {
     });
 
     // Mock para useIsAdmin
-    vi.mocked(require("@/lib/roles").useIsAdmin).mockReturnValue({
+    vi.mocked(useIsAdmin).mockReturnValue({
       data: false,
       isLoading: false,
     });
 
     // Mock para retornar nenhum pagamento
     const mockFrom = vi.mocked(supabase.from);
-    mockFrom.mockReturnValue({
+    mockFrom.mockReturnValue(mockFromResult({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -378,7 +385,7 @@ describe("useFormattedNotificationCount", () => {
           })),
         })),
       })),
-    } as any);
+    }));
 
     const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 

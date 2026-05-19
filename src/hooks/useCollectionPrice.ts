@@ -135,7 +135,7 @@ export function useHasCollectionDiscount(collectionId: string, userId?: string |
 
       return data && data.length > 0;
     },
-    enabled: !!collectionId && !!userId,
+    enabled: !!collectionId,
     staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)
   });
 }

@@ -3,6 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useGroupMessages } from "./useGroupMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { messageService } from "@/lib/services/messageService";
+import type { User } from "@supabase/supabase-js";
 
 // Mock dependencies
 vi.mock("@/integrations/supabase/client", () => ({
@@ -67,12 +68,18 @@ describe("useGroupMessages", () => {
     },
   ];
 
+  type SupabaseFromResult = ReturnType<typeof supabase.from>;
+
+  function mockFromResult(value: unknown): SupabaseFromResult {
+    return value as SupabaseFromResult;
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Mock auth
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: mockUser as any },
+      data: { user: mockUser as User },
       error: null,
     });
 
@@ -215,7 +222,7 @@ describe("useGroupMessages", () => {
       }),
     });
 
-    vi.mocked(supabase.from).mockImplementation(mockFrom as any);
+    vi.mocked(supabase.from).mockImplementation(mockFromResult(mockFrom));
 
     const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 

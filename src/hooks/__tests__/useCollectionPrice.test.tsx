@@ -19,6 +19,31 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
+type SupabaseRpcResult = Awaited<ReturnType<typeof supabase.rpc>>;
+
+type CollectionDiscountQuery = {
+  select: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  limit: ReturnType<typeof vi.fn>;
+};
+
+function rpcResult(data: unknown, error: { message: string } | null = null): SupabaseRpcResult {
+  return { data, error } as SupabaseRpcResult;
+}
+
+function mockCollectionDiscountQuery(
+  response: { data: Array<{ id: string }> | null; error: { message: string } | null }
+) {
+  const query: CollectionDiscountQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(response),
+  };
+
+  vi.mocked(supabase.from).mockReturnValue(query as unknown as ReturnType<typeof supabase.from>);
+  return query;
+}
+
 // Helper para criar wrapper com QueryClient
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -48,7 +73,7 @@ describe('useCollectionPrice', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({
       data: mockPrice,
       error: null,
-    } as any);
+    } as SupabaseRpcResult);
 
     const { result } = renderHook(
       () => useCollectionPrice({ collectionId: 'col-123', userId: 'user-123' }),
@@ -65,10 +90,7 @@ describe('useCollectionPrice', () => {
   });
 
   it('should handle error when fetching price', async () => {
-    vi.mocked(supabase.rpc).mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Database error' },
-    } as any);
+    vi.mocked(supabase.rpc).mockResolvedValueOnce(rpcResult(null, { message: 'Database error' }));
 
     const { result } = renderHook(
       () => useCollectionPrice({ collectionId: 'col-123', userId: 'user-123' }),
@@ -100,7 +122,7 @@ describe('useCollectionPrice', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({
       data: mockPrice,
       error: null,
-    } as any);
+    } as SupabaseRpcResult);
 
     const { result } = renderHook(
       () => useCollectionPrice({ collectionId: 'col-123', userId: null }),
@@ -128,8 +150,8 @@ describe('useCollectionPrices', () => {
     ];
 
     vi.mocked(supabase.rpc)
-      .mockResolvedValueOnce({ data: mockPrices[0], error: null } as any)
-      .mockResolvedValueOnce({ data: mockPrices[1], error: null } as any);
+      .mockResolvedValueOnce(rpcResult(mockPrices[0]))
+      .mockResolvedValueOnce(rpcResult(mockPrices[1]));
 
     const { result } = renderHook(
       () => useCollectionPrices(['col-1', 'col-2'], 'user-123'),
@@ -146,14 +168,8 @@ describe('useCollectionPrices', () => {
 
   it('should handle partial errors in batch fetch', async () => {
     vi.mocked(supabase.rpc)
-      .mockResolvedValueOnce({
-        data: { collection_id: 'col-1', price_in_coins: 100, has_discount: false },
-        error: null
-      } as any)
-      .mockResolvedValueOnce({
-        data: null,
-        error: { message: 'Error' }
-      } as any);
+      .mockResolvedValueOnce(rpcResult({ collection_id: 'col-1', price_in_coins: 100, has_discount: false }))
+      .mockResolvedValueOnce(rpcResult(null, { message: 'Error' }));
 
     const { result } = renderHook(
       () => useCollectionPrices(['col-1', 'col-2'], 'user-123'),
@@ -183,16 +199,10 @@ describe('useHasCollectionDiscount', () => {
   });
 
   it('should return true when user has discount', async () => {
-    const mockFrom = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({
-        data: [{ id: 'sub-col-1' }],
-        error: null,
-      }),
-    };
-
-    vi.mocked(supabase.from).mockReturnValue(mockFrom as any);
+    mockCollectionDiscountQuery({
+      data: [{ id: 'sub-col-1' }],
+      error: null,
+    });
 
     const { result } = renderHook(
       () => useHasCollectionDiscount('col-123', 'user-123'),
@@ -205,16 +215,10 @@ describe('useHasCollectionDiscount', () => {
   });
 
   it('should return false when user has no discount', async () => {
-    const mockFrom = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      }),
-    };
-
-    vi.mocked(supabase.from).mockReturnValue(mockFrom as any);
+    mockCollectionDiscountQuery({
+      data: [],
+      error: null,
+    });
 
     const { result } = renderHook(
       () => useHasCollectionDiscount('col-123', 'user-123'),
@@ -239,16 +243,10 @@ describe('useHasCollectionDiscount', () => {
   });
 
   it('should handle database error gracefully', async () => {
-    const mockFrom = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' },
-      }),
-    };
-
-    vi.mocked(supabase.from).mockReturnValue(mockFrom as any);
+    mockCollectionDiscountQuery({
+      data: null,
+      error: { message: 'Database error' },
+    });
 
     const { result } = renderHook(
       () => useHasCollectionDiscount('col-123', 'user-123'),
