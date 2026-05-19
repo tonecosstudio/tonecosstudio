@@ -4,79 +4,89 @@
  * Requirements: 16.1-16.15
  */
 
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePaymentStatusRealtime } from "@/hooks/use-payment-realtime";
 import { useConversationMessagesRealtime } from "@/hooks/use-conversation-realtime";
+import { toast } from "@/hooks/use-toast";
+import { log } from "@/lib/logger";
+import type { SupportMessage } from "@/hooks/use-conversation-realtime";
+import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
 import { useRealtimeIndicator } from "./useRealtimeIndicator";
 
 interface UsePaymentDetailsRealtimeOptions {
   paymentId: string;
   conversationId?: string;
   enabled?: boolean;
-  onStatusChange?: (newStatus: string, oldStatus: string | null, payment: any) => void;
-  onNewMessage?: (message: any) => void;
+  onStatusChange?: (
+    newStatus: PaymentStatus,
+    oldStatus: PaymentStatus | null,
+    payment: ManualPayment
+  ) => void;
+  onNewMessage?: (message: SupportMessage) => void;
   onError?: (error: Error) => void;
 }
 
+function mergePaymentDetailsCache(
+  oldData: unknown,
+  newStatus: PaymentStatus,
+  payment: ManualPayment
+) {
+  if (!oldData || typeof oldData !== "object" || Array.isArray(oldData)) {
+    return oldData;
+  }
+
+  return { ...oldData, status: newStatus, ...payment };
+}
+
 export function usePaymentDetailsRealtime(options: UsePaymentDetailsRealtimeOptions) {
-  const {
-    paymentId,
-    conversationId,
-    enabled = true,
-    onStatusChange,
-    onNewMessage,
-    onError,
-  } = options;
+  const { paymentId, conversationId, enabled = true, onStatusChange, onNewMessage } = options;
 
   const queryClient = useQueryClient();
   const { hasNewUpdates, newUpdateCount, incrementUpdateCount, resetUpdateCount } =
     useRealtimeIndicator();
 
   // Hook para atualizações de status do pagamento
-  const paymentRealtime = usePaymentStatusRealtime(
-    paymentId,
-    (newStatus, oldStatus, payment) => {
-      console.log("Status do pagamento atualizado em tempo real:", {
-        paymentId,
-        oldStatus,
-        newStatus,
-        payment,
-      });
+  const paymentRealtime = usePaymentStatusRealtime(paymentId, (newStatus, oldStatus, payment) => {
+    if (!enabled) return;
 
-      // Incrementa contador de atualizações
-      incrementUpdateCount();
+    log.info("Status do pagamento atualizado em tempo real", {
+      paymentId,
+      oldStatus,
+      newStatus,
+      payment,
+    });
 
-      // Chama callback personalizado
-      onStatusChange?.(newStatus, oldStatus, payment);
+    // Incrementa contador de atualizações
+    incrementUpdateCount();
 
-      // Atualiza o cache do React Query
-      queryClient.setQueryData(["payment-details", paymentId], (oldData: any) => {
-        if (!oldData) return oldData;
-        return { ...oldData, status: newStatus, ...payment };
-      });
+    // Chama callback personalizado
+    onStatusChange?.(newStatus, oldStatus, payment);
 
-      // Invalida queries relacionadas
-      queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
-      queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
+    // Atualiza o cache do React Query
+    queryClient.setQueryData(["payment-details", paymentId], (oldData: unknown) =>
+      mergePaymentDetailsCache(oldData, newStatus, payment)
+    );
 
-      // Mostra notificação
-      toast({
-        title: "Status atualizado",
-        description: `O status do pagamento foi alterado para ${newStatus}.`,
-        duration: 3000,
-      });
-    },
-    {
-      enabled: enabled && !!paymentId,
-    }
-  );
+    // Invalida queries relacionadas
+    queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
+    queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
+
+    // Mostra notificação
+    toast({
+      title: "Status atualizado",
+      description: `O status do pagamento foi alterado para ${newStatus}.`,
+      duration: 3000,
+    });
+  });
 
   // Hook para novas mensagens na conversa
   const conversationRealtime = useConversationMessagesRealtime(
     conversationId || `payment-${paymentId}`,
     (message) => {
-      console.log("Nova mensagem na conversa:", message);
+      if (!enabled || !conversationId) return;
+
+      log.info("Nova mensagem na conversa", { message, conversationId });
 
       // Incrementa contador de atualizações
       incrementUpdateCount();
@@ -85,9 +95,7 @@ export function usePaymentDetailsRealtime(options: UsePaymentDetailsRealtimeOpti
       onNewMessage?.(message);
 
       // Invalida queries de conversa
-      if (conversationId) {
-        queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
-      }
+      queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
 
       // Mostra notificação
       toast({
@@ -95,9 +103,6 @@ export function usePaymentDetailsRealtime(options: UsePaymentDetailsRealtimeOpti
         description: "Uma nova mensagem foi recebida na conversa.",
         duration: 3000,
       });
-    },
-    {
-      enabled: enabled && !!conversationId,
     }
   );
 
@@ -169,14 +174,13 @@ export function usePaymentDetailsRealtimeSimple(paymentId: string) {
 
   const { isConnected, isReconnecting, error } = usePaymentStatusRealtime(
     paymentId,
-    (newStatus, oldStatus, payment) => {
-      console.log("Pagamento atualizado:", { paymentId, newStatus });
+    (newStatus, _oldStatus, payment) => {
+      log.info("Pagamento atualizado", { paymentId, newStatus });
 
       // Atualiza o cache
-      queryClient.setQueryData(["payment-details", paymentId], (oldData: any) => {
-        if (!oldData) return oldData;
-        return { ...oldData, status: newStatus, ...payment };
-      });
+      queryClient.setQueryData(["payment-details", paymentId], (oldData: unknown) =>
+        mergePaymentDetailsCache(oldData, newStatus, payment)
+      );
 
       // Incrementa contador
       incrementUpdateCount();
@@ -187,8 +191,7 @@ export function usePaymentDetailsRealtimeSimple(paymentId: string) {
         description: `O status foi alterado para ${newStatus}.`,
         duration: 2000,
       });
-    },
-    { enabled: !!paymentId }
+    }
   );
 
   return {
