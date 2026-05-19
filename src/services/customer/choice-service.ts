@@ -52,6 +52,32 @@ export interface CharacterChoice {
   updatedAt: string;
 }
 
+type CharacterChoiceRow = {
+  id: string;
+  order_id: string;
+  order_type: CharacterChoice["orderType"];
+  user_id: string;
+  collection_id: string;
+  character_id: string | null;
+  character_name: string | null;
+  character_image_url?: string | null;
+  status: ChoiceStatus;
+  submitted_at: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  approved_by_name?: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  deadline: string;
+  reminders_sent?: number | null;
+  last_reminder_at?: string | null;
+  previous_choice_id?: string | null;
+  change_reason?: string | null;
+  change_count?: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // ============================================================================
 // Função: Buscar Personagens Disponíveis
 // ============================================================================
@@ -447,7 +473,7 @@ export async function getMyChoice(orderId: string): Promise<CharacterChoice | nu
 /**
  * Transforma dados do banco para o formato da interface CharacterChoice
  */
-function transformCharacterChoice(data: any): CharacterChoice {
+function transformCharacterChoice(data: CharacterChoiceRow): CharacterChoice {
   return {
     id: data.id,
     orderId: data.order_id,
@@ -465,11 +491,11 @@ function transformCharacterChoice(data: any): CharacterChoice {
     rejectedAt: data.rejected_at,
     rejectionReason: data.rejection_reason,
     deadline: data.deadline,
-    remindersSent: data.reminders_sent,
-    lastReminderAt: data.last_reminder_at,
-    previousChoiceId: data.previous_choice_id,
-    changeReason: data.change_reason,
-    changeCount: data.change_count,
+    remindersSent: data.reminders_sent ?? 0,
+    lastReminderAt: data.last_reminder_at ?? null,
+    previousChoiceId: data.previous_choice_id ?? null,
+    changeReason: data.change_reason ?? null,
+    changeCount: data.change_count ?? 0,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
