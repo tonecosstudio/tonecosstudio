@@ -1,9 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { broadcastGroupMessage, verifyGroupMembership } from "./groupBroadcast";
 import { supabase } from "@/integrations/supabase/client";
-import type { GroupMessage, GroupAttachment } from "@/types/groups";
+import type { GroupAttachment, GroupMessage } from "@/types/groups";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { broadcastGroupMessage, verifyGroupMembership } from "./groupBroadcast";
 
-// Mock Supabase client
+type SupabaseChannel = ReturnType<typeof supabase.channel>;
+type SupabaseFromResult = ReturnType<typeof supabase.from>;
+type BroadcastMessage = GroupMessage & {
+  sender_name: string;
+  sender_avatar: string | null;
+  attachments: GroupAttachment[];
+};
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     channel: vi.fn(),
@@ -11,85 +18,97 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("@/lib/logger", () => ({
+  log: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+
+function createMessage(overrides: Partial<BroadcastMessage> = {}): BroadcastMessage {
+  const now = new Date().toISOString();
+
+  return {
+    id: "msg-1",
+    group_id: "test-group-id",
+    sender_id: "user-1",
+    message: "Test message",
+    created_at: now,
+    updated_at: now,
+    sender_name: "Test User",
+    sender_avatar: null,
+    attachments: [],
+    ...overrides,
+  };
+}
+
+function mockBroadcastChannel(send: ReturnType<typeof vi.fn>): void {
+  vi.mocked(supabase.channel).mockReturnValue({
+    send,
+  } as unknown as SupabaseChannel);
+}
+
+function mockMembershipQuery(result: { data: { id: string } | null; error: unknown }): {
+  from: ReturnType<typeof vi.fn>;
+  firstEq: ReturnType<typeof vi.fn>;
+  secondEq: ReturnType<typeof vi.fn>;
+  maybeSingle: ReturnType<typeof vi.fn>;
+} {
+  const maybeSingle = vi.fn().mockResolvedValue(result);
+  const secondEq = vi.fn().mockReturnValue({ maybeSingle });
+  const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
+  const select = vi.fn().mockReturnValue({ eq: firstEq });
+  const from = vi.fn().mockReturnValue({ select });
+
+  vi.mocked(supabase.from).mockImplementation(from as unknown as typeof supabase.from);
+
+  return { from, firstEq, secondEq, maybeSingle };
+}
+
+function mockMembershipQueryError(error: Error): void {
+  const maybeSingle = vi.fn().mockRejectedValue(error);
+  const secondEq = vi.fn().mockReturnValue({ maybeSingle });
+  const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
+  const select = vi.fn().mockReturnValue({ eq: firstEq });
+
+  vi.mocked(supabase.from).mockReturnValue({ select } as unknown as SupabaseFromResult);
+}
+
 describe("groupBroadcast", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe("broadcastGroupMessage", () => {
-    it("should broadcast message to correct channel", async () => {
-      const mockSend = vi.fn().mockResolvedValue(undefined);
-      const mockChannel = {
-        send: mockSend,
-      };
-
-      vi.mocked(supabase.channel).mockReturnValue(mockChannel as any);
-
+    it("broadcasts message to correct channel", async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
       const groupId = "test-group-id";
-      const message: GroupMessage & {
-        sender_name: string;
-        sender_avatar: string | null;
-        attachments: GroupAttachment[];
-      } = {
-        id: "msg-1",
-        group_id: groupId,
-        sender_id: "user-1",
-        message: "Test message",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sender_name: "Test User",
-        sender_avatar: null,
-        attachments: [],
-      };
+      const message = createMessage({ group_id: groupId });
+
+      mockBroadcastChannel(send);
 
       await broadcastGroupMessage(groupId, message);
 
       expect(supabase.channel).toHaveBeenCalledWith(`group:${groupId}`);
-      expect(mockSend).toHaveBeenCalledWith({
+      expect(send).toHaveBeenCalledWith({
         type: "broadcast",
         event: "new_message",
         payload: { message },
       });
     });
 
-    it("should handle broadcast errors gracefully", async () => {
-      const mockSend = vi.fn().mockRejectedValue(new Error("Network error"));
-      const mockChannel = {
-        send: mockSend,
-      };
-
-      vi.mocked(supabase.channel).mockReturnValue(mockChannel as any);
-
+    it("handles broadcast errors gracefully", async () => {
+      const send = vi.fn().mockRejectedValue(new Error("Network error"));
       const groupId = "test-group-id";
-      const message: GroupMessage & {
-        sender_name: string;
-        sender_avatar: string | null;
-        attachments: GroupAttachment[];
-      } = {
-        id: "msg-1",
-        group_id: groupId,
-        sender_id: "user-1",
-        message: "Test message",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sender_name: "Test User",
-        sender_avatar: null,
-        attachments: [],
-      };
 
-      // Should not throw error (graceful degradation)
-      await expect(broadcastGroupMessage(groupId, message)).resolves.not.toThrow();
+      mockBroadcastChannel(send);
+
+      await expect(broadcastGroupMessage(groupId, createMessage({ group_id: groupId }))).resolves.not.toThrow();
     });
 
-    it("should include attachments in broadcast payload", async () => {
-      const mockSend = vi.fn().mockResolvedValue(undefined);
-      const mockChannel = {
-        send: mockSend,
-      };
-
-      vi.mocked(supabase.channel).mockReturnValue(mockChannel as any);
-
-      const groupId = "test-group-id";
+    it("includes attachments in broadcast payload", async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
       const attachments: GroupAttachment[] = [
         {
           id: "att-1",
@@ -103,139 +122,62 @@ describe("groupBroadcast", () => {
           created_at: new Date().toISOString(),
         },
       ];
-
-      const message: GroupMessage & {
-        sender_name: string;
-        sender_avatar: string | null;
-        attachments: GroupAttachment[];
-      } = {
-        id: "msg-1",
-        group_id: groupId,
-        sender_id: "user-1",
-        message: "Test message with attachment",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sender_name: "Test User",
-        sender_avatar: null,
+      const message = createMessage({
         attachments,
-      };
+        message: "Test message with attachment",
+      });
 
-      await broadcastGroupMessage(groupId, message);
+      mockBroadcastChannel(send);
 
-      expect(mockSend).toHaveBeenCalledWith({
+      await broadcastGroupMessage("test-group-id", message);
+
+      expect(send).toHaveBeenCalledWith({
         type: "broadcast",
         event: "new_message",
         payload: { message },
       });
-
-      const payload = mockSend.mock.calls[0][0].payload;
-      expect(payload.message.attachments).toHaveLength(1);
-      expect(payload.message.attachments[0].file_name).toBe("test.pdf");
+      expect(send.mock.calls[0][0].payload.message.attachments).toHaveLength(1);
+      expect(send.mock.calls[0][0].payload.message.attachments[0].file_name).toBe("test.pdf");
     });
   });
 
   describe("verifyGroupMembership", () => {
-    it("should return true for valid member", async () => {
-      const mockSingle = vi.fn().mockResolvedValue({
+    it("returns true for valid member", async () => {
+      const { from } = mockMembershipQuery({
         data: { id: "membership-1" },
         error: null,
       });
 
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: mockSingle,
-          }),
-        }),
-      });
-
-      const mockFrom = vi.fn().mockReturnValue({
-        select: mockSelect,
-      });
-
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any);
-
-      const result = await verifyGroupMembership("group-1", "user-1");
-
-      expect(result).toBe(true);
-      expect(mockFrom).toHaveBeenCalledWith("chat_group_members");
-      expect(mockSelect).toHaveBeenCalledWith("id");
+      await expect(verifyGroupMembership("group-1", "user-1")).resolves.toBe(true);
+      expect(from).toHaveBeenCalledWith("chat_group_members");
     });
 
-    it("should return false for non-member", async () => {
-      const mockSingle = vi.fn().mockResolvedValue({
+    it("returns false for non-member", async () => {
+      mockMembershipQuery({
         data: null,
         error: { message: "Not found" },
       });
 
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: mockSingle,
-          }),
-        }),
-      });
-
-      const mockFrom = vi.fn().mockReturnValue({
-        select: mockSelect,
-      });
-
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any);
-
-      const result = await verifyGroupMembership("group-1", "user-2");
-
-      expect(result).toBe(false);
+      await expect(verifyGroupMembership("group-1", "user-2")).resolves.toBe(false);
     });
 
-    it("should return false on database error", async () => {
-      const mockSingle = vi.fn().mockRejectedValue(new Error("Database error"));
+    it("returns false on database error", async () => {
+      mockMembershipQueryError(new Error("Database error"));
 
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: mockSingle,
-          }),
-        }),
-      });
-
-      const mockFrom = vi.fn().mockReturnValue({
-        select: mockSelect,
-      });
-
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any);
-
-      const result = await verifyGroupMembership("group-1", "user-1");
-
-      expect(result).toBe(false);
+      await expect(verifyGroupMembership("group-1", "user-1")).resolves.toBe(false);
     });
 
-    it("should verify correct group and user IDs", async () => {
-      const mockEq = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: "membership-1" },
-            error: null,
-          }),
-        }),
-      });
-
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: mockEq,
-      });
-
-      const mockFrom = vi.fn().mockReturnValue({
-        select: mockSelect,
-      });
-
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any);
-
+    it("verifies correct group and user IDs", async () => {
       const groupId = "group-123";
       const userId = "user-456";
+      const { firstEq, secondEq } = mockMembershipQuery({
+        data: { id: "membership-1" },
+        error: null,
+      });
 
       await verifyGroupMembership(groupId, userId);
 
-      expect(mockEq).toHaveBeenCalledWith("group_id", groupId);
-      const secondEq = mockEq.mock.results[0].value.eq;
+      expect(firstEq).toHaveBeenCalledWith("group_id", groupId);
       expect(secondEq).toHaveBeenCalledWith("user_id", userId);
     });
   });

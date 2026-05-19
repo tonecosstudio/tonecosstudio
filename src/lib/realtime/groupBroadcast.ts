@@ -1,17 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { GroupMessage, GroupAttachment } from "@/types/groups";
+import { log } from "@/lib/logger";
+import type { GroupAttachment, GroupMessage } from "@/types/groups";
 
-/**
- * Broadcasts a group message to all members via Realtime channel
- * Requirements: 10.1, 10.2, 10.3, 10.4
- */
+type BroadcastGroupMessage = GroupMessage & {
+  sender_name: string;
+  sender_avatar: string | null;
+  attachments: GroupAttachment[];
+};
+
 export async function broadcastGroupMessage(
   groupId: string,
-  message: GroupMessage & {
-    sender_name: string;
-    sender_avatar: string | null;
-    attachments: GroupAttachment[];
-  }
+  message: BroadcastGroupMessage
 ): Promise<void> {
   try {
     const channel = supabase.channel(`group:${groupId}`);
@@ -22,18 +21,16 @@ export async function broadcastGroupMessage(
       payload: { message },
     });
 
-    console.log(`[Broadcast] Message sent to group:${groupId}`, message.id);
+    log.debug("Mensagem de grupo enviada via broadcast", { groupId, messageId: message.id });
   } catch (error) {
-    console.error(`[Broadcast] Failed to broadcast message to group:${groupId}`, error);
-    // Graceful degradation - don't throw error
-    // Email notifications will still be sent via background job
+    log.error("Erro ao enviar broadcast de mensagem do grupo", {
+      error,
+      groupId,
+      messageId: message.id,
+    });
   }
 }
 
-/**
- * Verifies if a user is a member of a group before allowing channel subscription
- * Requirements: 10.2 (channel security validation)
- */
 export async function verifyGroupMembership(groupId: string, userId: string): Promise<boolean> {
   try {
     const { data: membership, error } = await supabase
@@ -41,16 +38,24 @@ export async function verifyGroupMembership(groupId: string, userId: string): Pr
       .select("id")
       .eq("group_id", groupId)
       .eq("user_id", userId)
-      .maybeSingle(); // Mudado de .single() para .maybeSingle() para evitar erro 406
+      .maybeSingle();
 
     if (error || !membership) {
-      console.warn(`[Security] User ${userId} is not a member of group ${groupId}`);
+      log.warn("Associação ao grupo não encontrada para canal realtime", {
+        error,
+        groupId,
+        userId,
+      });
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error(`[Security] Error verifying membership:`, error);
+    log.error("Erro ao verificar associação ao grupo para canal realtime", {
+      error,
+      groupId,
+      userId,
+    });
     return false;
   }
 }
