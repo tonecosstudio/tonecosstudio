@@ -12,6 +12,27 @@ import { logInfo, logError } from "@/lib/logger";
 import { isBeforeCutoff, nowInBahia } from "@/lib/timezone";
 import { releaseCapacity } from "./capacity-service";
 
+interface QueryResult<T> {
+  data: T;
+  error: { message: string } | null;
+}
+
+interface SubscriptionPauseRow {
+  pause_count: number | null;
+  status: string;
+}
+
+interface SubscriptionPauseUpdate {
+  pause_count: number;
+  updated_at: string;
+}
+
+interface SubsequentDeliveryRow {
+  id: string;
+  expected_delivery_date: string | null;
+  cycle_id: string | null;
+}
+
 /**
  * Request to pause the next delivery of a subscription
  * 
@@ -47,7 +68,7 @@ export async function requestPause(
     .from('subscriptions')
     .select('pause_count, status')
     .eq('id', subscriptionId)
-    .single() as any; // Type assertion until types are regenerated
+    .single() as unknown as QueryResult<SubscriptionPauseRow | null>;
 
   if (subscriptionError || !subscription) {
     throw new Error(`Failed to get subscription: ${subscriptionError?.message || 'Subscription not found'}`);
@@ -103,7 +124,7 @@ export async function requestPause(
     .select('id, expected_delivery_date, cycle_id')
     .eq('subscription_id', subscriptionId)
     .gt('delivery_number', nextDelivery.delivery_number)
-    .order('delivery_number', { ascending: true }) as any; // Type assertion until types are regenerated
+    .order('delivery_number', { ascending: true }) as unknown as QueryResult<SubsequentDeliveryRow[] | null>;
 
   if (subsequentError) {
     throw new Error(`Failed to get subsequent deliveries: ${subsequentError.message}`);
@@ -147,12 +168,14 @@ export async function requestPause(
   }
 
   // Requirement 23.6: Increment pause_count
+  const subscriptionUpdate: SubscriptionPauseUpdate = {
+    pause_count: pauseCount + 1,
+    updated_at: new Date().toISOString()
+  };
+
   const { error: incrementError } = await supabase
     .from('subscriptions')
-    .update({
-      pause_count: pauseCount + 1,
-      updated_at: new Date().toISOString()
-    } as any) // Type assertion until types are regenerated
+    .update(subscriptionUpdate)
     .eq('id', subscriptionId);
 
   if (incrementError) {

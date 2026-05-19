@@ -7,14 +7,6 @@
  * 
  * Requirements: 6.1, 6.2, 6.3, 6.4
  * 
- * IMPORTANT NOTES:
- * - This service uses type assertions (as any) in some places because the Supabase
- *   generated types have not been regenerated after adding the collection_id and
- *   auto_maintained columns to subscription_deliveries table (migration 1.4) and
- *   the record_collection_change database function (migration 1.2).
- * - To regenerate types, run: npx supabase gen types typescript --project-id <project-id>
- * - Once types are regenerated, the type assertions can be removed.
- * - The service is fully functional and tested despite the type assertions.
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +15,27 @@ import { nowInBahia } from "@/lib/timezone";
 import { recordCollectionChange } from "./audit-trail-service";
 import { emailService } from "./email-service";
 import { logInfo, logError } from "@/lib/logger";
+
+interface QueryResult<T> {
+  data: T;
+  error: { message: string } | null;
+}
+
+interface CurrentDeliveryRow {
+  expected_delivery_date: string | null;
+  delivery_number: number;
+}
+
+interface PreviousDeliveryRow {
+  id: string;
+  collection_id: string | null;
+}
+
+interface DeliveryMaintenanceUpdate {
+  collection_id: string;
+  auto_maintained: boolean;
+  updated_at: string;
+}
 
 /**
  * Apply automatic maintenance to a delivery
@@ -54,7 +67,7 @@ export async function applyAutomaticMaintenance(
     .from('subscription_deliveries')
     .select('expected_delivery_date, delivery_number')
     .eq('id', deliveryId)
-    .single();
+    .single() as unknown as QueryResult<CurrentDeliveryRow | null>;
 
   if (currentDeliveryError || !currentDelivery) {
     throw new Error(`Failed to get current delivery: ${currentDeliveryError?.message || 'Delivery not found'}`);
@@ -62,13 +75,12 @@ export async function applyAutomaticMaintenance(
 
   // Get the previous delivery's collection_id
   // Previous delivery is the one with delivery_number = current - 1
-  // Note: Type assertion needed until Supabase types are regenerated after migration 1.4
   const { data: previousDelivery, error: previousDeliveryError } = await supabase
     .from('subscription_deliveries')
-    .select('collection_id, id' as any)
+    .select('collection_id, id')
     .eq('subscription_id', subscriptionId)
     .eq('delivery_number', currentDelivery.delivery_number - 1)
-    .single();
+    .single() as unknown as QueryResult<PreviousDeliveryRow | null>;
 
   if (previousDeliveryError || !previousDelivery) {
     // No previous delivery found - this is the first delivery
@@ -79,12 +91,11 @@ export async function applyAutomaticMaintenance(
     return;
   }
 
-  const prevDelivery = previousDelivery as any;
-  if (!prevDelivery.collection_id) {
+  if (!previousDelivery.collection_id) {
     // Previous delivery has no collection choice yet
     // Cannot apply automatic maintenance
-    logInfo(`Previous delivery ${prevDelivery.id} has no collection choice, skipping automatic maintenance`, 
-      { previousDeliveryId: prevDelivery.id, subscriptionId }, 
+    logInfo(`Previous delivery ${previousDelivery.id} has no collection choice, skipping automatic maintenance`, 
+      { previousDeliveryId: previousDelivery.id, subscriptionId }, 
       'automatic-maintenance');
     return;
   }
@@ -99,21 +110,22 @@ export async function applyAutomaticMaintenance(
 
   // Check if the previous collection is active in the current month
   const collectionIsActive = await isCollectionActive(
-    prevDelivery.collection_id,
+    previousDelivery.collection_id,
     month,
     year
   );
 
   if (collectionIsActive) {
     // Collection is active - copy it to current delivery
-    // Note: Type assertion needed until Supabase types are regenerated
+    const deliveryUpdate: DeliveryMaintenanceUpdate = {
+      collection_id: previousDelivery.collection_id,
+      auto_maintained: true,
+      updated_at: new Date().toISOString()
+    };
+
     const { error: updateError } = await supabase
       .from('subscription_deliveries')
-      .update({
-        collection_id: prevDelivery.collection_id,
-        auto_maintained: true,
-        updated_at: new Date().toISOString()
-      } as any)
+      .update(deliveryUpdate)
       .eq('id', deliveryId);
 
     if (updateError) {
@@ -137,7 +149,7 @@ export async function applyAutomaticMaintenance(
         deliveryId,
         userId: subscription.user_id,
         previousCollectionId: null, // No previous choice for this delivery
-        newCollectionId: prevDelivery.collection_id,
+        newCollectionId: previousDelivery.collection_id,
         changeReason: 'automatic_maintenance',
         changedByAdmin: false,
       });
@@ -146,8 +158,8 @@ export async function applyAutomaticMaintenance(
       logError('Failed to create audit trail record', auditError, 'automatic-maintenance');
     }
 
-    logInfo(`Automatic maintenance applied: copied collection ${prevDelivery.collection_id} to delivery ${deliveryId}`, 
-      { deliveryId, collectionId: prevDelivery.collection_id, subscriptionId }, 
+    logInfo(`Automatic maintenance applied: copied collection ${previousDelivery.collection_id} to delivery ${deliveryId}`, 
+      { deliveryId, collectionId: previousDelivery.collection_id, subscriptionId }, 
       'automatic-maintenance');
   } else {
     // Collection is not active in current month - send notification
@@ -178,7 +190,7 @@ export async function applyAutomaticMaintenance(
         const { data: collectionData } = await supabase
           .from('collections')
           .select('name')
-          .eq('id', prevDelivery.collection_id)
+          .eq('id', previousDelivery.collection_id)
           .single();
 
         const collectionName = collectionData?.name || 'Coleção anterior';
@@ -233,7 +245,7 @@ export async function applyAutomaticMaintenance(
           subscription.user_id,
           { 
             delivery_id: deliveryId,
-            old_collection_id: prevDelivery.collection_id,
+            old_collection_id: previousDelivery.collection_id,
             month,
             year
           }
