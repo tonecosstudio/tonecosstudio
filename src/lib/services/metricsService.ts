@@ -1,4 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
+
+interface GroupMetricsSummary {
+  total_members: number;
+  total_messages: number;
+  estimated_view_rate: number;
+}
 
 /**
  * MetricsService - Service for calculating group metrics
@@ -41,7 +48,7 @@ export class MetricsService {
       .eq("group_id", groupId);
 
     if (error) {
-      console.error("Erro ao contar membros:", error);
+      log.error("Erro ao contar membros do grupo", { error, groupId });
       throw new Error("Erro ao calcular total de membros");
     }
 
@@ -59,7 +66,7 @@ export class MetricsService {
       .eq("group_id", groupId);
 
     if (error) {
-      console.error("Erro ao contar mensagens:", error);
+      log.error("Erro ao contar mensagens do grupo", { error, groupId });
       throw new Error("Erro ao calcular total de mensagens");
     }
 
@@ -87,13 +94,14 @@ export class MetricsService {
       .maybeSingle();
 
     if (messageError) {
-      console.error("Erro ao buscar última mensagem:", messageError);
-      // Return 0 instead of throwing to avoid breaking the UI
+      log.error("Erro ao buscar última mensagem do grupo", {
+        error: messageError,
+        groupId,
+      });
       return 0;
     }
 
     if (!lastMessage) {
-      // No messages yet, return 0
       return 0;
     }
 
@@ -104,7 +112,7 @@ export class MetricsService {
       .eq("group_id", groupId);
 
     if (countError) {
-      console.error("Erro ao contar membros:", countError);
+      log.error("Erro ao contar membros do grupo", { error: countError, groupId });
       throw new Error("Erro ao calcular taxa de visualização");
     }
 
@@ -120,7 +128,10 @@ export class MetricsService {
       .gt("last_viewed_at", lastMessage.created_at);
 
     if (viewedError) {
-      console.error("Erro ao contar membros que visualizaram:", viewedError);
+      log.error("Erro ao contar membros que visualizaram o grupo", {
+        error: viewedError,
+        groupId,
+      });
       throw new Error("Erro ao calcular taxa de visualização");
     }
 
@@ -139,11 +150,7 @@ export class MetricsService {
    *
    * Requirements: 16.1, 16.2, 16.3, 16.4
    */
-  async getGroupMetrics(groupId: string): Promise<{
-    total_members: number;
-    total_messages: number;
-    estimated_view_rate: number;
-  }> {
+  async getGroupMetrics(groupId: string): Promise<GroupMetricsSummary> {
     // Execute all queries in parallel for better performance
     const [totalMembers, totalMessages, estimatedViewRate] = await Promise.all([
       this.getTotalMembers(groupId),
