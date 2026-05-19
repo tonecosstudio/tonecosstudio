@@ -10,8 +10,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  CollectionBasePricing,
-  QUERY_KEYS,
   CACHE_CONFIG,
   isValidPriceInCoins
 } from "@/types/contextual-pricing";
@@ -42,6 +40,21 @@ export interface UpdateBasePriceResponse {
   old_price: number;
   new_price: number;
   message: string;
+}
+
+interface CollectionTypeJoin {
+  name: string;
+  display_name: string;
+  sort_order?: number | null;
+}
+
+interface CollectionBasePricingRow {
+  collection_type_id: string;
+  base_price_coins: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  collection_types: CollectionTypeJoin;
 }
 
 // =====================================================
@@ -88,7 +101,7 @@ export function useBasePricing() {
       }
 
       // Transformar dados para formato mais amigável
-      const transformed = data.map((item: any) => ({
+      const transformed = ((data || []) as CollectionBasePricingRow[]).map((item) => ({
         collection_type_id: item.collection_type_id,
         collection_type_name: item.collection_types.name,
         collection_type_display_name: item.collection_types.display_name,

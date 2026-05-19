@@ -13,7 +13,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  PriceMultiplier,
   isValidMultiplier,
   CACHE_CONFIG,
 } from "@/types/contextual-pricing";
@@ -40,6 +39,16 @@ export interface CharacterMultiplierPreset {
   label: string;
   value: number;
   description: string;
+}
+
+interface CharacterWithCollectionRow {
+  id: string;
+  name: string;
+  price_multiplier: number | null;
+  collection_id: string;
+  collections: {
+    name: string;
+  } | null;
 }
 
 // =====================================================
@@ -118,12 +127,14 @@ export function useCharacterMultiplier(characterId: string | null | undefined) {
         throw new Error(`Erro ao buscar multiplicador: ${error.message}`);
       }
 
+      const character = data as CharacterWithCollectionRow;
+
       return {
-        character_id: data.id,
-        character_name: data.name,
-        price_multiplier: data.price_multiplier,
-        collection_id: data.collection_id,
-        collection_name: (data.collections as any).name,
+        character_id: character.id,
+        character_name: character.name,
+        price_multiplier: character.price_multiplier,
+        collection_id: character.collection_id,
+        collection_name: character.collections?.name ?? "",
       } as CharacterMultiplierData;
     },
     enabled: !!characterId,
@@ -158,12 +169,12 @@ export function useCharactersWithMultipliers() {
         throw new Error(`Erro ao buscar personagens: ${error.message}`);
       }
 
-      return data.map((item) => ({
+      return ((data || []) as CharacterWithCollectionRow[]).map((item) => ({
         character_id: item.id,
         character_name: item.name,
         price_multiplier: item.price_multiplier,
         collection_id: item.collection_id,
-        collection_name: (item.collections as any).name,
+        collection_name: item.collections?.name ?? "",
       })) as CharacterMultiplierData[];
     },
     staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)

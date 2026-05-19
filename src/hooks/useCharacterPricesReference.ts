@@ -48,6 +48,18 @@ export interface PurchasingPower {
   suggestions: string[];          // Sugestões de combinações
 }
 
+interface BasePriceReferenceRow {
+  base_price_coins: number;
+  collection_types: {
+    name: string;
+  } | null;
+}
+
+interface PricingContextMultiplierRow {
+  user_context: string;
+  multiplier: number;
+}
+
 // =====================================================
 // QUERY KEYS
 // =====================================================
@@ -100,24 +112,27 @@ export function useCharacterPricesReference() {
       }
 
       // Extrair valores
+      const activeBasePrices = (basePrices || []) as BasePriceReferenceRow[];
+      const activeMultipliers = (multipliers || []) as PricingContextMultiplierRow[];
+
       const subscriptionBase =
-        basePrices?.find((p: any) => p.collection_types?.name === "subscription")
+        activeBasePrices.find((p) => p.collection_types?.name === "subscription")
           ?.base_price_coins || 200;
       const standardBase =
-        basePrices?.find((p: any) => p.collection_types?.name === "standard_catalog")
+        activeBasePrices.find((p) => p.collection_types?.name === "standard_catalog")
           ?.base_price_coins || 300;
       const premiumBase =
-        basePrices?.find((p: any) => p.collection_types?.name === "premium_catalog")
+        activeBasePrices.find((p) => p.collection_types?.name === "premium_catalog")
           ?.base_price_coins || 450;
 
       const chosenMultiplier =
-        multipliers?.find((m: any) => m.user_context === "subscribed_chosen")
+        activeMultipliers.find((m) => m.user_context === "subscribed_chosen")
           ?.multiplier || 1.0;
       const notChosenMultiplier =
-        multipliers?.find((m: any) => m.user_context === "subscribed_not_chosen")
+        activeMultipliers.find((m) => m.user_context === "subscribed_not_chosen")
           ?.multiplier || 1.2;
       const noSubscriptionMultiplier =
-        multipliers?.find((m: any) => m.user_context === "no_subscription")
+        activeMultipliers.find((m) => m.user_context === "no_subscription")
           ?.multiplier || 1.5;
 
       // Calcular preços finais
