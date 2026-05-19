@@ -1,12 +1,27 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { messageService } from "@/lib/services/messageService";
-import type { EnrichedGroupMessage, Pagination } from "@/types/groups";
 import { toast } from "sonner";
+
+import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
+import { messageService } from "@/lib/services/messageService";
+import type { EnrichedGroupMessage } from "@/types/groups";
 
 interface UseGroupMessagesOptions {
   groupId: string | null;
   autoScroll?: boolean;
+}
+
+interface GroupMessagePayload {
+  message: EnrichedGroupMessage;
+}
+
+function isGroupMessagePayload(payload: unknown): payload is GroupMessagePayload {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const candidate = payload as { message?: Partial<EnrichedGroupMessage> };
+  return typeof candidate.message?.id === "string";
 }
 
 export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessagesOptions) {
@@ -18,14 +33,12 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const LIMIT = 50;
 
-  // Scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (autoScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [autoScroll]);
 
-  // Load messages
   const loadMessages = useCallback(
     async (page: number = 1) => {
       if (!groupId) {
@@ -51,10 +64,9 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
         setTotalPages(result.pagination.total_pages);
         setHasMore(result.pagination.page < result.pagination.total_pages);
 
-        // Scroll after loading
         setTimeout(scrollToBottom, 100);
       } catch (error) {
-        console.error("Erro ao carregar mensagens do grupo:", error);
+        log.error("Erro ao carregar mensagens do grupo", { error, groupId });
         toast.error("Erro ao carregar mensagens");
       } finally {
         setLoading(false);
@@ -63,7 +75,6 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
     [groupId, scrollToBottom]
   );
 
-  // Load more messages (pagination)
   const loadMore = useCallback(async () => {
     if (!groupId || !hasMore || loading) return;
 
@@ -71,12 +82,10 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
     await loadMessages(nextPage);
   }, [groupId, hasMore, loading, currentPage, loadMessages]);
 
-  // Load messages when group changes
   useEffect(() => {
     loadMessages(1);
   }, [loadMessages]);
 
-  // Update last viewed timestamp when opening group
   useEffect(() => {
     if (!groupId) return;
 
@@ -86,16 +95,15 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
         if (!user) return;
 
         await messageService.updateLastViewed(groupId, user.id);
-        console.log(`[useGroupMessages] Updated last_viewed_at for group ${groupId}`);
+        log.debug("Updated group last viewed timestamp", { groupId, userId: user.id });
       } catch (error) {
-        console.error("Erro ao atualizar última visualização:", error);
+        log.error("Erro ao atualizar última visualização do grupo", { error, groupId });
       }
     };
 
     updateLastViewed();
   }, [groupId]);
 
-  // Setup Realtime subscription
   useEffect(() => {
     if (!groupId) return;
 
@@ -106,54 +114,61 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
       try {
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) {
-          console.warn("[useGroupMessages] User not authenticated");
+          log.warn("Skipping group realtime setup without authenticated user", { groupId });
           return;
         }
 
-        console.log(`[useGroupMessages] Setting up Realtime for group: ${groupId}`);
+        log.debug("Setting up group realtime subscription", { groupId, userId: user.id });
 
         channel = supabase.channel(`group:${groupId}`, {
           config: {
             broadcast: {
-              self: false, // Don't receive own messages
-              ack: false, // Don't wait for acknowledgment
+              self: false,
+              ack: false,
             },
           },
         });
 
         channel
           .on("broadcast", { event: "new_message" }, ({ payload }) => {
-            console.log("[useGroupMessages] New message received:", payload);
+            if (!isGroupMessagePayload(payload)) {
+              log.warn("Ignoring invalid group message payload", { groupId, payload });
+              return;
+            }
 
-            const newMessage = payload.message as EnrichedGroupMessage;
+            const newMessage = payload.message;
+            log.debug("New group message received", { groupId, messageId: newMessage.id });
 
             setMessages((prev) => {
-              // Avoid duplicates
               if (prev.some((msg) => msg.id === newMessage.id)) {
-                console.log("[useGroupMessages] Duplicate message, ignoring");
+                log.debug("Ignoring duplicate group message", {
+                  groupId,
+                  messageId: newMessage.id,
+                });
                 return prev;
               }
-              console.log("[useGroupMessages] Adding message to list");
+
               return [...prev, newMessage];
             });
 
-            // Scroll to new message
             setTimeout(scrollToBottom, 100);
 
-            // Update last_viewed_at when new message arrives
-            messageService.updateLastViewed(groupId, user.id).catch((err) => {
-              console.error("Error updating last_viewed_at:", err);
+            messageService.updateLastViewed(groupId, user.id).catch((error: unknown) => {
+              log.error("Error updating group last viewed timestamp", {
+                error,
+                groupId,
+                userId: user.id,
+              });
             });
           })
           .subscribe((status) => {
-            console.log("[useGroupMessages] Subscription status:", status);
+            log.debug("Group realtime subscription status changed", { groupId, status });
             if (status === "SUBSCRIBED") {
               isSubscribed = true;
             }
           });
       } catch (error) {
-        console.error("[useGroupMessages] Error setting up Realtime:", error);
-        // Graceful degradation - continue without Realtime
+        log.error("Error setting up group realtime subscription", { error, groupId });
         toast.error(
           "Erro ao conectar ao chat em tempo real. As mensagens serão atualizadas ao recarregar."
         );
@@ -164,13 +179,12 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
 
     return () => {
       if (channel && isSubscribed) {
-        console.log("[useGroupMessages] Removing Realtime subscription");
+        log.debug("Removing group realtime subscription", { groupId });
         supabase.removeChannel(channel);
       }
     };
   }, [groupId, scrollToBottom]);
 
-  // Send message (admin only)
   const sendMessage = useCallback(
     async (message: string, attachmentFiles?: File[]) => {
       if (!groupId) return;
@@ -179,7 +193,6 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) throw new Error("Usuário não autenticado");
 
-        // Verify user is admin
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
@@ -197,7 +210,6 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
           attachmentFiles
         );
 
-        // Get sender info for enriched message
         const { data: senderProfile } = await supabase
           .from("profiles")
           .select("full_name, email, avatar_url")
@@ -210,14 +222,12 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
           sender_avatar: senderProfile?.avatar_url || null,
         };
 
-        // Broadcast via Realtime
         const { broadcastGroupMessage } = await import("@/lib/realtime/groupBroadcast");
         await broadcastGroupMessage(groupId, enrichedMessage);
 
-        // Message will be added via Realtime subscription
         toast.success("Mensagem enviada com sucesso");
       } catch (error) {
-        console.error("Erro ao enviar mensagem:", error);
+        log.error("Erro ao enviar mensagem do grupo", { error, groupId });
         toast.error(error instanceof Error ? error.message : "Erro ao enviar mensagem");
         throw error;
       }
