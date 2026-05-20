@@ -1,3 +1,5 @@
+import type { PaymentFile, PaymentMethod } from "@/types/manual-payment";
+
 /**
  * Tipos TypeScript para o Sistema de Pedidos Unificados
  * 
@@ -186,13 +188,13 @@ export interface ManualPaymentData {
   paymentMethodName?: string;
   paymentType?: string;
   currency?: string;
-  linkedTo?: any;
+  linkedTo?: unknown;
   rejectionReason?: string | null;
   approvedAt?: string | null;
   approvedBy?: string | null;
   approvedByName?: string | null;
-  files?: any[];
-  paymentMethod_detail?: any;
+  files?: PaymentFile[];
+  paymentMethod_detail?: PaymentMethod;
 }
 
 /**

@@ -1,3 +1,5 @@
+import type { Json } from "@/integrations/supabase/types";
+
 /**
  * Types for Manual Payment System
  * Based on database schema: supabase/migrations/20260216000000_create_manual_payment_system.sql
@@ -62,7 +64,7 @@ export interface PaymentMethod {
   instructions: string;
   payment_link?: string | null;
   pix_key?: string | null;
-  account_details?: Record<string, any> | null;
+  account_details?: Record<string, Json> | null;
   is_active: boolean;
   is_default: boolean;
   display_order: number;
@@ -153,7 +155,7 @@ export interface PaymentMethodInput {
   instructions: string;
   payment_link?: string;
   pix_key?: string;
-  account_details?: Record<string, any>;
+  account_details?: Record<string, Json>;
   is_active: boolean;
   is_default?: boolean;
   display_order?: number;

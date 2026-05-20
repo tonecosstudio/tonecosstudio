@@ -2,6 +2,8 @@
 // Feature: pricing-system-restructure
 // Tipos TypeScript para o sistema de preços reestruturado
 
+import type { Json } from "@/integrations/supabase/types";
+
 /**
  * Modalidade de Compra (Purchase Mode)
  * Configuração global de uma modalidade
@@ -90,7 +92,7 @@ export interface PurchaseModeHistory {
   new_value: string;
   changed_at: string;
   changed_by: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, Json> | null;
 }
 
 /**

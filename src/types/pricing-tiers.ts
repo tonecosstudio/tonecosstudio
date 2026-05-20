@@ -1,3 +1,5 @@
+import type { Json } from "@/integrations/supabase/types";
+
 /**
  * Tipos TypeScript para o Sistema de Níveis de Preço
  * 
@@ -69,7 +71,7 @@ export interface PricingHistory {
   new_deposit_amount: number | null;
   changed_at: string;
   changed_by: string;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, Json> | null;
 }
 
 /**
@@ -86,7 +88,7 @@ export interface MigrationAudit {
   status: 'in_progress' | 'completed' | 'completed_with_errors' | 'failed';
   executed_by: string;
   error_message: string | null;
-  migration_data: Record<string, any> | null;
+  migration_data: Record<string, Json> | null;
 }
 
 /**
@@ -285,7 +287,7 @@ export type PricingReportResult =
 /**
  * Resposta de Sucesso Genérica
  */
-export interface ApiSuccessResponse<T = any> {
+export interface ApiSuccessResponse<T = unknown> {
   ok: true;
   data?: T;
 }
@@ -301,7 +303,7 @@ export interface ApiErrorResponse {
 /**
  * Resposta de API (Union)
  */
-export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 /**
  * Resposta de Propagação de Preços
