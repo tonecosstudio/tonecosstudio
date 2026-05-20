@@ -17,7 +17,185 @@ import type {
   PaginatedResponse,
   OrderStatus,
   StatusHistoryEntry,
+  QuoteItem,
 } from "@/types/admin/orders";
+
+interface QueryError {
+  message: string;
+}
+
+interface QueryResult<T> {
+  data: T[] | null;
+  count: number | null;
+  error: QueryError | null;
+}
+
+interface ProfileSummary {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+interface CollectionSummary {
+  id: string;
+  name: string;
+  slug: string | null;
+}
+
+interface CharacterSummary {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
+
+interface SubscriptionSummary {
+  id: string;
+  user_id: string;
+  collection_id?: string | null;
+  plan_type: string;
+  deliveries_completed: number;
+  deliveries_total: number;
+  status: string;
+}
+
+interface DeliveryRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  tracking_code: string | null;
+  actual_delivery_date: string | null;
+  delivered_date: string | null;
+  subscription_id: string;
+  delivery_number: number | null;
+  delivery_order: number | null;
+  cycle_id: string | null;
+  character_id: string | null;
+  reveal_date: string | null;
+  subscriptions: SubscriptionSummary | null;
+  collection_characters?: CharacterSummary | null;
+}
+
+interface PurchaseRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  user_id: string;
+  character_id: string | null;
+  amount?: number | null;
+  balance_amount?: number | null;
+  paid_amount?: number | null;
+  tracking_code: string | null;
+  profiles?: ProfileSummary | null;
+  collections?: CollectionSummary | null;
+  collection_characters?: CharacterSummary | null;
+}
+
+interface ManualPaymentRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  user_id: string;
+  amount: number | null;
+  payment_method: string | null;
+  payment_date: string | null;
+  reference_id: string | null;
+  reference_type: string | null;
+  notes: string | null;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  profiles?: ProfileSummary | null;
+}
+
+interface SubscriptionPlanSummary {
+  id: string;
+  name: string;
+  plan_type: string;
+  price_full?: number | null;
+  price_pix: number | null;
+}
+
+interface ManualPaymentSubscriptionRow {
+  id: string;
+  status: string;
+  plan_type: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+interface EnrichedManualPaymentSubscription {
+  id: string;
+  status: string;
+  start_date: string | null;
+  end_date: null;
+  subscription_plans: {
+    id: string;
+    name: string;
+    price: number | null;
+    billing_cycle: string;
+  } | null;
+}
+
+interface ManualPaymentQuoteRow {
+  id: string;
+  status: string;
+  total_price: number | null;
+  admin_response: string | null;
+}
+
+interface ManualPaymentQueryRow extends ManualPaymentRow {
+  subscription_id: string | null;
+  quote_id: string | null;
+  subscriptions?: EnrichedManualPaymentSubscription | null;
+  quotes?: ManualPaymentQuoteRow | null;
+}
+
+interface QuoteRow {
+  id: string;
+  status: OrderStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  user_id: string;
+  total_amount: number | null;
+  notes: string | null;
+  profiles?: ProfileSummary | null;
+}
+
+interface SubscriptionCollectionRow {
+  subscription_id: string;
+  collection_id: string;
+  collections: CollectionSummary | null;
+}
+
+interface PaymentInfoRequestInsert {
+  payment_id: string;
+  requested_by_admin_id: string;
+  requested_by_admin_name: string;
+  message: string;
+  status: "pending";
+}
+
+interface UserNotificationInsert {
+  user_id: string;
+  type: "payment_info_request" | "payment_approved" | "payment_rejected";
+  title: string;
+  message: string;
+  related_id: string;
+  related_type: "manual_payment";
+  is_read: boolean;
+}
+
+interface AdminInsertTable<TInsert> {
+  insert(row: TInsert): Promise<{ error: QueryError | null }>;
+}
+
+interface AdminTablesClient {
+  from(table: "payment_info_requests"): AdminInsertTable<PaymentInfoRequestInsert>;
+  from(table: "user_notifications"): AdminInsertTable<UserNotificationInsert>;
+}
+
+const adminTables = supabase as unknown as AdminTablesClient;
 
 // ============================================================================
 // Função Principal: Buscar Pedidos Unificados
@@ -53,35 +231,35 @@ export async function fetchUnifiedOrders(
   const offset = (page - 1) * pageSize;
 
   // Buscar entregas de assinatura (se aplicável)
-  let deliveriesPromise: Promise<any> | null = null;
+  let deliveriesPromise: Promise<QueryResult<DeliveryRow>> | null = null;
   if (filters.type === "all" || filters.type === "subscription_delivery") {
     deliveriesPromise = fetchSubscriptionDeliveries(filters);
   }
 
   // Buscar compras avulsas (se aplicável)
-  let purchasesPromise: Promise<any> | null = null;
+  let purchasesPromise: Promise<QueryResult<PurchaseRow>> | null = null;
   if (filters.type === "all" || filters.type === "standalone_purchase") {
     purchasesPromise = fetchStandalonePurchases(filters);
   }
 
   // Buscar pagamentos manuais (se aplicável)
-  let paymentsPromise: Promise<any> | null = null;
+  let paymentsPromise: Promise<QueryResult<ManualPaymentRow>> | null = null;
   if (filters.type === "all" || filters.type === "manual_payment") {
     paymentsPromise = fetchManualPayments(filters);
   }
 
   // Buscar orçamentos (se aplicável)
-  let quotesPromise: Promise<any> | null = null;
+  let quotesPromise: Promise<QueryResult<QuoteRow>> | null = null;
   if (filters.type === "all" || filters.type === "quote") {
     quotesPromise = fetchQuotes(filters);
   }
 
   // Executar queries em paralelo
   const [deliveriesResult, purchasesResult, paymentsResult, quotesResult] = await Promise.all([
-    deliveriesPromise || Promise.resolve({ data: [], count: 0 }),
-    purchasesPromise || Promise.resolve({ data: [], count: 0 }),
-    paymentsPromise || Promise.resolve({ data: [], count: 0 }),
-    quotesPromise || Promise.resolve({ data: [], count: 0 }),
+    deliveriesPromise || Promise.resolve({ data: [], count: 0, error: null }),
+    purchasesPromise || Promise.resolve({ data: [], count: 0, error: null }),
+    paymentsPromise || Promise.resolve({ data: [], count: 0, error: null }),
+    quotesPromise || Promise.resolve({ data: [], count: 0, error: null }),
   ]);
 
   // Verificar erros
@@ -99,23 +277,23 @@ export async function fetchUnifiedOrders(
   }
 
   // Buscar profiles e collections para entregas de assinatura
-  const profilesMap = new Map<string, any>();
-  const collectionsMap = new Map<string, any>();
+  const profilesMap = new Map<string, ProfileSummary>();
+  const collectionsMap = new Map<string, CollectionSummary>();
 
   if (deliveriesResult.data && deliveriesResult.data.length > 0) {
     // Extrair IDs únicos de user_id e collection_id
     const userIds = [
       ...new Set(
         deliveriesResult.data
-          .map((d: any) => d.subscriptions?.user_id)
-          .filter((id: any): id is string => typeof id === "string")
+          .map((d) => d.subscriptions?.user_id)
+          .filter((id): id is string => typeof id === "string")
       ),
     ] as string[];
     const collectionIds = [
       ...new Set(
         deliveriesResult.data
-          .map((d: any) => d.subscriptions?.collection_id)
-          .filter((id: any): id is string => typeof id === "string")
+          .map((d) => d.subscriptions?.collection_id)
+          .filter((id): id is string => typeof id === "string")
       ),
     ] as string[];
 
@@ -127,7 +305,7 @@ export async function fetchUnifiedOrders(
         .in("id", userIds);
 
       if (profiles) {
-        profiles.forEach((p: any) => profilesMap.set(p.id, p));
+        profiles.forEach((p) => profilesMap.set(p.id, p));
       }
     }
 
@@ -139,15 +317,15 @@ export async function fetchUnifiedOrders(
         .in("id", collectionIds);
 
       if (collections) {
-        collections.forEach((c: any) => collectionsMap.set(c.id, c));
+        collections.forEach((c) => collectionsMap.set(c.id, c));
       }
     }
   }
 
   // Buscar itens dos orçamentos
-  const quoteItemsMap = new Map<string, any[]>();
+  const quoteItemsMap = new Map<string, QuoteItem[]>();
   if (quotesResult.data && quotesResult.data.length > 0) {
-    const quoteIds = quotesResult.data.map((q: any) => q.id);
+    const quoteIds = quotesResult.data.map((q) => q.id);
     const items = await fetchQuoteItems(quoteIds);
 
     items.forEach((item) => {
@@ -233,7 +411,7 @@ export async function fetchUnifiedOrders(
  * Esta query busca apenas subscription_deliveries com subscriptions.
  * Os dados de profiles e collections são buscados separadamente na função principal.
  */
-async function fetchSubscriptionDeliveries(filters: OrderFilters) {
+async function fetchSubscriptionDeliveries(filters: OrderFilters): Promise<QueryResult<DeliveryRow>> {
   let query = supabase.from("subscription_deliveries").select(
     `
       id,
@@ -281,7 +459,7 @@ async function fetchSubscriptionDeliveries(filters: OrderFilters) {
     query = query.lte("created_at", filters.dateTo);
   }
 
-  return await query;
+  return await query as unknown as QueryResult<DeliveryRow>;
 }
 
 /**
@@ -294,7 +472,7 @@ async function fetchSubscriptionDeliveries(filters: OrderFilters) {
  *
  * Isso evita N+1 queries e garante performance otimizada.
  */
-async function fetchStandalonePurchases(filters: OrderFilters) {
+async function fetchStandalonePurchases(filters: OrderFilters): Promise<QueryResult<PurchaseRow>> {
   let query = supabase.from("standalone_purchases").select(
     `
       id,
@@ -464,8 +642,8 @@ export async function fetchOrderById(
     const userId = data.subscriptions?.user_id;
     const collectionId = data.subscriptions?.collection_id;
 
-    const profilesMap = new Map<string, any>();
-    const collectionsMap = new Map<string, any>();
+    const profilesMap = new Map<string, ProfileSummary>();
+    const collectionsMap = new Map<string, CollectionSummary>();
 
     if (userId) {
       const { data: profile } = await supabase
@@ -647,7 +825,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       .single();
 
     if (userProfile) {
-      purchasesData.forEach((p: any) => {
+      purchasesData.forEach((p: PurchaseRow) => {
         p.profiles = userProfile;
       });
     }
@@ -688,7 +866,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       .single();
 
     if (userProfile) {
-      paymentsData.forEach((payment: any) => {
+      paymentsData.forEach((payment: ManualPaymentRow) => {
         payment.profiles = userProfile;
       });
     }
@@ -721,14 +899,14 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
   }
 
   // Buscar profiles e collections para entregas de assinatura
-  const profilesMap = new Map<string, any>();
-  const collectionsMap = new Map<string, any>();
+  const profilesMap = new Map<string, ProfileSummary>();
+  const collectionsMap = new Map<string, CollectionSummary>();
 
   if (deliveriesData && deliveriesData.length > 0) {
     const userIds = [
       ...new Set(
         deliveriesData
-          .map((d: any) => d.subscriptions?.user_id)
+          .map((d: DeliveryRow) => d.subscriptions?.user_id)
           .filter((id): id is string => typeof id === "string")
       ),
     ];
@@ -740,12 +918,12 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
         .in("id", userIds);
 
       if (profiles) {
-        profiles.forEach((p: any) => profilesMap.set(p.id, p));
+        profiles.forEach((p) => profilesMap.set(p.id, p));
       }
     }
 
     // Fetch collections via subscription_collections junction
-    const subIds = [...new Set(deliveriesData.map((d: any) => d.subscription_id).filter(Boolean))];
+    const subIds = [...new Set(deliveriesData.map((d: DeliveryRow) => d.subscription_id).filter(Boolean))];
     if (subIds.length > 0) {
       const { data: subCols } = await supabase
         .from("subscription_collections")
@@ -753,7 +931,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
         .in("subscription_id", subIds);
 
       if (subCols) {
-        subCols.forEach((sc: any) => {
+        (subCols as unknown as SubscriptionCollectionRow[]).forEach((sc) => {
           if (sc.collections) {
             collectionsMap.set(sc.collections.id, sc.collections);
           }
@@ -763,9 +941,9 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
   }
 
   // Buscar itens dos orçamentos
-  const quoteItemsMap = new Map<string, any[]>();
+  const quoteItemsMap = new Map<string, QuoteItem[]>();
   if (quotesData && quotesData.length > 0) {
-    const quoteIds = quotesData.map((q: any) => q.id);
+    const quoteIds = quotesData.map((q: QuoteRow) => q.id);
     const items = await fetchQuoteItems(quoteIds);
 
     items.forEach((item) => {
@@ -1039,7 +1217,7 @@ async function searchOrdersWithFullText(
  * - payment_files (comprovantes)
  * - profiles (admin que aprovou, se aplicável)
  */
-async function fetchManualPayments(filters: OrderFilters) {
+async function fetchManualPayments(filters: OrderFilters): Promise<QueryResult<ManualPaymentRow>> {
   let query = supabase.from("manual_payments").select(
     `
       id,
@@ -1082,13 +1260,17 @@ async function fetchManualPayments(filters: OrderFilters) {
     query = query.lte("created_at", filters.dateTo);
   }
 
-  const result = await query;
+  const result = await query as unknown as QueryResult<ManualPaymentQueryRow>;
 
   // Fetch related data separately
   if (result.data && result.data.length > 0) {
-    const userIds = [...new Set(result.data.map((p: any) => p.user_id))];
-    const subscriptionIds = result.data.filter((p: any) => p.subscription_id).map((p: any) => p.subscription_id);
-    const quoteIds = result.data.filter((p: any) => p.quote_id).map((p: any) => p.quote_id);
+    const userIds = [...new Set(result.data.map((payment) => payment.user_id))];
+    const subscriptionIds = result.data
+      .filter((payment): payment is ManualPaymentQueryRow & { subscription_id: string } => Boolean(payment.subscription_id))
+      .map((payment) => payment.subscription_id);
+    const quoteIds = result.data
+      .filter((payment): payment is ManualPaymentQueryRow & { quote_id: string } => Boolean(payment.quote_id))
+      .map((payment) => payment.quote_id);
 
     // Fetch profiles
     const { data: profiles } = await supabase
@@ -1097,7 +1279,7 @@ async function fetchManualPayments(filters: OrderFilters) {
       .in("id", userIds);
 
     // Fetch subscriptions with plans
-    let subscriptions: any[] = [];
+    let subscriptions: EnrichedManualPaymentSubscription[] = [];
     if (subscriptionIds.length > 0) {
       const { data: subsData } = await supabase
         .from("subscriptions")
@@ -1106,16 +1288,19 @@ async function fetchManualPayments(filters: OrderFilters) {
 
       if (subsData && subsData.length > 0) {
         // Fetch subscription plans separately
-        const planTypes = [...new Set(subsData.map((s: any) => s.plan_type))];
+        const subscriptionRows = subsData as ManualPaymentSubscriptionRow[];
+        const planTypes = [...new Set(subscriptionRows.map((subscription) => subscription.plan_type))];
         const { data: plansData } = await supabase
           .from("subscription_plans")
           .select("id, name, plan_type, price_full, price_pix")
           .in("plan_type", planTypes);
 
-        const plansMap = new Map(plansData?.map((p: any) => [p.plan_type, p]) || []);
+        const plansMap = new Map(
+          ((plansData as SubscriptionPlanSummary[] | null) || []).map((plan) => [plan.plan_type, plan])
+        );
 
         // Merge plans into subscriptions and map to expected format
-        subscriptions = subsData.map((sub: any) => {
+        subscriptions = subscriptionRows.map((sub) => {
           const plan = plansMap.get(sub.plan_type);
           return {
             id: sub.id,
@@ -1134,22 +1319,22 @@ async function fetchManualPayments(filters: OrderFilters) {
     }
 
     // Fetch quotes
-    let quotes: any[] = [];
+    let quotes: ManualPaymentQuoteRow[] = [];
     if (quoteIds.length > 0) {
       const { data: quotesData } = await supabase
         .from("quotes")
         .select("id, status, total_price, admin_response")
         .in("id", quoteIds);
-      quotes = quotesData || [];
+      quotes = (quotesData as ManualPaymentQuoteRow[] | null) || [];
     }
 
     // Create maps for easy lookup
-    const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
-    const subscriptionsMap = new Map(subscriptions.map((s: any) => [s.id, s]));
-    const quotesMap = new Map(quotes.map((q: any) => [q.id, q]));
+    const profilesMap = new Map(((profiles as ProfileSummary[] | null) || []).map((profile) => [profile.id, profile]));
+    const subscriptionsMap = new Map(subscriptions.map((subscription) => [subscription.id, subscription]));
+    const quotesMap = new Map(quotes.map((quote) => [quote.id, quote]));
 
     // Merge data
-    result.data = result.data.map((payment: any) => ({
+    result.data = result.data.map((payment) => ({
       ...payment,
       profiles: profilesMap.get(payment.user_id) || null,
       subscriptions: payment.subscription_id ? subscriptionsMap.get(payment.subscription_id) || null : null,
@@ -1157,7 +1342,7 @@ async function fetchManualPayments(filters: OrderFilters) {
     }));
   }
 
-  return result;
+  return result as QueryResult<ManualPaymentRow>;
 }
 
 // ============================================================================
@@ -1197,7 +1382,7 @@ async function fetchQuotes(filters: OrderFilters) {
     query = query.lte("created_at", filters.dateTo);
   }
 
-  return await query;
+  return await query as unknown as QueryResult<QuoteRow>;
 }
 
 /**
@@ -1288,7 +1473,7 @@ export async function requestManualPaymentInfo(paymentId: string, message: strin
   }
 
   // 3. Criar registro de solicitação de informações
-  const { error: requestError } = await (supabase as any).from("payment_info_requests").insert({
+  const { error: requestError } = await adminTables.from("payment_info_requests").insert({
     payment_id: paymentId,
     requested_by_admin_id: admin.id,
     requested_by_admin_name: admin.email || "Admin",
@@ -1301,7 +1486,7 @@ export async function requestManualPaymentInfo(paymentId: string, message: strin
   }
 
   // 4. Criar notificação para o usuário
-  const { error: notificationError } = await (supabase as any).from("user_notifications").insert({
+  const { error: notificationError } = await adminTables.from("user_notifications").insert({
     user_id: payment.user_id,
     type: "payment_info_request",
     title: "Informações Adicionais Necessárias",
@@ -1390,7 +1575,7 @@ export async function approveManualPayment(paymentId: string): Promise<void> {
   }
 
   // 4. Criar notificação para o usuário
-  const { error: notificationError } = await (supabase as any).from("user_notifications").insert({
+  const { error: notificationError } = await adminTables.from("user_notifications").insert({
     user_id: payment.user_id,
     type: "payment_approved",
     title: "Pagamento Aprovado",
@@ -1455,7 +1640,7 @@ export async function rejectManualPayment(paymentId: string, reason: string): Pr
   }
 
   // 3. Criar notificação para o usuário
-  const { error: notificationError } = await (supabase as any).from("user_notifications").insert({
+  const { error: notificationError } = await adminTables.from("user_notifications").insert({
     user_id: payment.user_id,
     type: "payment_rejected",
     title: "Pagamento Rejeitado",
