@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ProductionPipelineView - Visual Pipeline Layout with Drag & Drop
  * 
@@ -9,8 +8,7 @@
  * - Modal com lista de clientes ao clicar na imagem
  */
 
-import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState, type MouseEvent } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -23,21 +21,24 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Package, User, Calendar, AlertTriangle, GripVertical } from "lucide-react";
+import { Package, User, Calendar, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import type {
+  Priority,
+  ProductionFilters,
+  ProductionQueueItem,
+  ProductionStage,
+} from "@/types/production";
 import {
-  fetchProductionQueue,
-  updateProductionStage,
   STAGE_LABELS,
-  type ProductionFilters,
-  type ProductionStage,
-  type ProductionQueueItem,
-} from "@/services/admin/production-service";
+  useMoveProductionPipelineItems,
+  useProductionPipelineQueue,
+} from "@/hooks/admin/useProductionPipeline";
+import { useProductionCharacterImages } from "@/hooks/admin/useProductionCharacterImages";
 
 interface ProductionPipelineViewProps {
   filters: ProductionFilters;
@@ -117,8 +118,8 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
   const [selectedGroup, setSelectedGroup] = useState<GroupedCharacter | null>(null);
   const [activeGroup, setActiveGroup] = useState<GroupedCharacter | null>(null);
   const [movingItems, setMovingItems] = useState<Set<string>>(new Set());
-  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const moveItemsMutation = useMoveProductionPipelineItems();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -126,11 +127,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
     })
   );
 
-  // Fetch production queue
-  const { data: queueData, isLoading } = useQuery({
-    queryKey: ["production-queue", filters],
-    queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
-  });
+  const { data: queueData, isLoading } = useProductionPipelineQueue(filters);
 
   // Extrair IDs de personagens únicos para buscar imagens
   const characterIds = useMemo(() => {
@@ -142,25 +139,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
     return Array.from(ids);
   }, [queueData]);
 
-  // Fetch character images
-  const { data: characterImages } = useQuery({
-    queryKey: ["character-images", characterIds],
-    queryFn: async () => {
-      if (characterIds.length === 0) return new Map<string, string>();
-      const { data, error } = await supabase
-        .from("collection_characters")
-        .select("id, image_url")
-        .in("id", characterIds);
-      if (error) throw error;
-      const map = new Map<string, string>();
-      data?.forEach((c: { id: string; image_url: string | null }) => {
-        if (c.image_url) map.set(c.id, c.image_url);
-      });
-      return map;
-    },
-    enabled: characterIds.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: characterImages } = useProductionCharacterImages(characterIds);
 
   // Agrupar itens por estágio e depois por personagem
   const stageGroups = useMemo(() => {
@@ -238,17 +217,13 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
     setMovingItems(new Set(itemIds));
 
     try {
-      // Move all items in the group
-      await Promise.all(
-        itemIds.map((id) => updateProductionStage(id, targetStage))
-      );
+      await moveItemsMutation.mutateAsync({ itemIds, targetStage });
 
       toast({
         title: "Estágio atualizado",
         description: `${group.count} ${group.count === 1 ? "item movido" : "itens movidos"} para ${STAGE_LABELS[targetStage]}`,
       });
 
-      queryClient.invalidateQueries({ queryKey: ["production-queue"] });
     } catch (error) {
       console.error("Erro ao mover itens:", error);
       toast({
@@ -439,7 +414,7 @@ function CharacterCardInteractive({
   onClick: () => void;
   isDragging?: boolean;
 }) {
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
     // Prevent click when dragging
     if (isDragging) {
       e.preventDefault();
@@ -534,7 +509,7 @@ function CustomerListModal({
   if (!group) return null;
 
   const sortedItems = [...group.items].sort((a, b) => {
-    const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
+    const priorityOrder: Record<Priority, number> = { critical: 0, high: 1, normal: 2, low: 3 };
     return (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2);
   });
 
@@ -594,8 +569,8 @@ function CustomerListModal({
   );
 }
 
-function PriorityBadge({ priority }: { priority: string }) {
-  const variants: Record<string, { label: string; className: string }> = {
+function PriorityBadge({ priority }: { priority: Priority }) {
+  const variants: Record<Priority, { label: string; className: string }> = {
     critical: { label: "Crítico", className: "bg-red-500 text-white" },
     high: { label: "Alto", className: "bg-orange-500 text-white" },
     normal: { label: "Normal", className: "bg-muted text-muted-foreground" },
