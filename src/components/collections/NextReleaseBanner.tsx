@@ -7,11 +7,32 @@ import { Calendar, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
+type RpcError = { message?: string } | null;
+
+interface NextReleaseRow {
+  collection_id: string | null;
+  collection_slug?: string | null;
+  collection_name: string;
+  character_name: string;
+  character_image: string | null;
+  release_date: string;
+  days_until_release: number;
+}
+
+interface NextReleaseRpcClient {
+  rpc(functionName: "get_next_release"): PromiseLike<{
+    data: NextReleaseRow[] | null;
+    error: RpcError;
+  }>;
+}
+
+const nextReleaseRpc = supabase as unknown as NextReleaseRpcClient;
+
 export function NextReleaseBanner() {
   const { data: nextRelease, isLoading } = useQuery({
     queryKey: ["next-release"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_next_release" as any);
+      const { data, error } = await nextReleaseRpc.rpc("get_next_release");
 
       if (error) throw error;
 

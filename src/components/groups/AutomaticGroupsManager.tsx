@@ -1,9 +1,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+type RpcError = { message?: string } | null;
+
+interface AutomaticGroupsRpcClient {
+  rpc(functionName: "sync_all_automatic_groups"): PromiseLike<{
+    data: unknown;
+    error: RpcError;
+  }>;
+}
+
+const automaticGroupsRpc = supabase as unknown as AutomaticGroupsRpcClient;
 
 /**
  * AutomaticGroupsManager - Gerencia sincronização de grupos automáticos
@@ -21,7 +32,7 @@ export function AutomaticGroupsManager() {
     setSyncing(true);
     try {
       // Chamar função do banco para sincronizar todos os grupos
-      const { error } = await supabase.rpc("sync_all_automatic_groups" as any);
+      const { error } = await automaticGroupsRpc.rpc("sync_all_automatic_groups");
 
       if (error) throw error;
 
@@ -32,21 +43,6 @@ export function AutomaticGroupsManager() {
       toast.error("Erro ao sincronizar grupos. Verifique o console.");
     } finally {
       setSyncing(false);
-    }
-  };
-
-  const handleSyncGroup = async (groupId: string) => {
-    try {
-      const { error } = await supabase.rpc("sync_automatic_group_members" as any, {
-        p_group_id: groupId,
-      });
-
-      if (error) throw error;
-
-      toast.success("Grupo sincronizado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao sincronizar grupo:", error);
-      toast.error("Erro ao sincronizar grupo. Verifique o console.");
     }
   };
 
