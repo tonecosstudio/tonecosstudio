@@ -1,18 +1,12 @@
-// @ts-nocheck
-import { useQuery } from "@tanstack/react-query";
-import { fetchProductionMetrics } from "@/services/admin/production-service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, TrendingUp, Users, Calendar } from "lucide-react";
 import { StageDistributionChart } from "./StageDistributionChart";
 import { PriorityDistributionChart } from "./PriorityDistributionChart";
+import { useProductionMetrics } from "@/hooks/admin/useProductionMetrics";
 
 export function ProductionAnalytics() {
-  const { data: metrics, isLoading } = useQuery({
-    queryKey: ["production-metrics"],
-    queryFn: fetchProductionMetrics,
-    refetchInterval: 60000,
-  });
+  const { data: metrics, isLoading } = useProductionMetrics();
 
   if (isLoading) {
     return (
@@ -32,6 +26,8 @@ export function ProductionAnalytics() {
   }
 
   if (!metrics) return null;
+
+  const choicesTotal = Object.values(metrics.choices).reduce((total, value) => total + value, 0);
 
   return (
     <div className="space-y-6">
@@ -126,7 +122,7 @@ export function ProductionAnalytics() {
             <div className="flex items-center justify-between">
               <span className="text-sm">Taxa de Conclusão</span>
               <Badge variant="default" className="bg-green-600">
-                {(metrics.overall.completionRate * 100).toFixed(0)}%
+                {metrics.overall.completionRate.toFixed(0)}%
               </Badge>
             </div>
             <div className="flex items-center justify-between">
@@ -170,7 +166,7 @@ export function ProductionAnalytics() {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold">
-                  {metrics.choices.total}
+                  {choicesTotal}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Total</p>
               </div>
