@@ -35,6 +35,36 @@ import { supabase } from '@/integrations/supabase/client';
  */
 type WebhookHandler = (event: Stripe.Event) => Promise<void>;
 
+type StripeSubscriptionWithBillingPeriod = Stripe.Subscription & {
+  current_period_start: number;
+  current_period_end: number;
+  cancel_at_period_end: boolean;
+};
+
+type StripeInvoiceWithSubscription = Stripe.Invoice & {
+  subscription?: string | Stripe.Subscription | null;
+};
+
+function getSubscriptionBillingPeriod(subscription: Stripe.Subscription) {
+  const billingSubscription = subscription as StripeSubscriptionWithBillingPeriod;
+
+  return {
+    current_period_start: new Date(
+      billingSubscription.current_period_start * 1000
+    ).toISOString(),
+    current_period_end: new Date(billingSubscription.current_period_end * 1000).toISOString(),
+    cancel_at_period_end: billingSubscription.cancel_at_period_end,
+  };
+}
+
+function getStripeResourceId(resource: string | { id?: string } | null | undefined): string | null {
+  if (typeof resource === 'string') {
+    return resource;
+  }
+
+  return resource?.id ?? null;
+}
+
 /**
  * Webhook handlers map
  */
@@ -243,6 +273,7 @@ async function handlePaymentIntentCanceled(event: Stripe.Event): Promise<void> {
  */
 async function handleSubscriptionCreated(event: Stripe.Event): Promise<void> {
   const subscription = event.data.object as Stripe.Subscription;
+  const billingPeriod = getSubscriptionBillingPeriod(subscription);
 
   logInfo('Subscription created', {
     id: subscription.id,
@@ -255,8 +286,8 @@ async function handleSubscriptionCreated(event: Stripe.Event): Promise<void> {
     stripe_subscription_id: subscription.id,
     customer_id: subscription.customer as string,
     status: subscription.status,
-    current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-    current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+    current_period_start: billingPeriod.current_period_start,
+    current_period_end: billingPeriod.current_period_end,
     metadata: subscription.metadata,
   });
 
@@ -268,6 +299,7 @@ async function handleSubscriptionCreated(event: Stripe.Event): Promise<void> {
  */
 async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
   const subscription = event.data.object as Stripe.Subscription;
+  const billingPeriod = getSubscriptionBillingPeriod(subscription);
 
   logInfo('Subscription updated', {
     id: subscription.id,
@@ -279,9 +311,9 @@ async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
     .from('stripe_subscriptions')
     .update({
       status: subscription.status,
-      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-      cancel_at_period_end: (subscription as any).cancel_at_period_end,
+      current_period_start: billingPeriod.current_period_start,
+      current_period_end: billingPeriod.current_period_end,
+      cancel_at_period_end: billingPeriod.cancel_at_period_end,
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_subscription_id', subscription.id);
@@ -348,11 +380,12 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
  * Handle invoice.payment_succeeded event
  */
 async function handleInvoicePaymentSucceeded(event: Stripe.Event): Promise<void> {
-  const invoice = event.data.object as Stripe.Invoice;
+  const invoice = event.data.object as StripeInvoiceWithSubscription;
+  const subscriptionId = getStripeResourceId(invoice.subscription);
 
   logInfo('Invoice payment succeeded', {
     id: invoice.id,
-    subscriptionId: (invoice as any).subscription,
+    subscriptionId,
     amount: invoice.amount_paid
   }, 'stripe-webhook');
 
@@ -364,11 +397,12 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event): Promise<void>
  * Handle invoice.payment_failed event
  */
 async function handleInvoicePaymentFailed(event: Stripe.Event): Promise<void> {
-  const invoice = event.data.object as Stripe.Invoice;
+  const invoice = event.data.object as StripeInvoiceWithSubscription;
+  const subscriptionId = getStripeResourceId(invoice.subscription);
 
   logWarn('Invoice payment failed', {
     id: invoice.id,
-    subscriptionId: (invoice as any).subscription,
+    subscriptionId,
     amount: invoice.amount_due
   }, 'stripe-webhook');
 

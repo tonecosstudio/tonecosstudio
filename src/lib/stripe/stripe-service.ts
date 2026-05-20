@@ -83,7 +83,7 @@ export class StripeServiceError extends Error {
     message: string,
     public readonly code: string,
     public readonly statusCode: number = 400,
-    public readonly originalError?: any
+    public readonly originalError?: unknown
   ) {
     super(message);
     this.name = 'StripeServiceError';
@@ -523,7 +523,7 @@ export class StripeService {
   /**
    * Handle Stripe errors
    */
-  private handleStripeError(error: any): StripeServiceError {
+  private handleStripeError(error: unknown): StripeServiceError {
     if (error instanceof Stripe.errors.StripeError) {
       const statusCode = error.statusCode || 400;
       const code = error.code || 'stripe_error';

@@ -31,7 +31,7 @@ interface StripeConfig {
  * Load Stripe configuration from environment variables
  */
 function loadStripeConfig(): StripeConfig {
-  const publishableKey = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || '';
+  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
 
   if (!publishableKey) {
     logError('Stripe keys not configured', {
