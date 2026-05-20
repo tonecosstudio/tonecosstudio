@@ -5,16 +5,17 @@
  * reduzindo o bundle size inicial em ~350kB
  */
 
-import { lazy, Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+import type { ChartDataPoint, ChartRendererConfig, ChartType } from "./ChartRenderer";
 
 // Lazy load do componente de chart
-const ChartComponent = lazy(() => import('./ChartRenderer'));
+const ChartComponent = lazy(() => import("./ChartRenderer"));
 
 interface LazyChartProps {
-  type: 'line' | 'bar' | 'pie' | 'area';
-  data: any[];
-  config: any;
+  type: ChartType;
+  data: ChartDataPoint[];
+  config: ChartRendererConfig;
   height?: number;
 }
 
