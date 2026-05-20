@@ -1,10 +1,15 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/layouts/Page";
 import { ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
-import { Trophy, Star, Heart, Calendar, TrendingUp } from "lucide-react";
+import { Trophy } from "lucide-react";
+import {
+  getPublicCollectionImageUrl,
+  getPublicProfileByUsername,
+  listPublicBadges,
+  listPublicCollectionItems,
+} from "@/lib/public-profile-service";
 
 export default function PublicProfileArcade() {
   const { username } = useParams<{ username: string }>();
@@ -12,43 +17,19 @@ export default function PublicProfileArcade() {
   const profileQuery = useQuery({
     queryKey: ["public-profile", username],
     enabled: Boolean(username),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("username", username)
-        .eq("is_public", true)
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getPublicProfileByUsername(username),
   });
 
   const badgesQuery = useQuery({
     queryKey: ["public-badges", profileQuery.data?.id],
     enabled: Boolean(profileQuery.data?.id),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_badges")
-        .select("*, collector_badges (*)")
-        .eq("user_id", profileQuery.data!.id);
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => listPublicBadges(profileQuery.data!.id),
   });
 
   const collectionQuery = useQuery({
     queryKey: ["public-collection-items", profileQuery.data?.id],
     enabled: Boolean(profileQuery.data?.id),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("public_collection")
-        .select("*, models (name, image_bucket, image_path, franchise)")
-        .eq("user_id", profileQuery.data!.id)
-        .order("display_order", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => listPublicCollectionItems(profileQuery.data!.id),
   });
 
   const profile = profileQuery.data;
@@ -141,7 +122,7 @@ export default function PublicProfileArcade() {
           <div>
             <ArcadeSectionTitle>BADGES</ArcadeSectionTitle>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {badges.map((b: any) => (
+              {badges.map((b) => (
                 <ArcadeCard key={b.id} className="p-3 text-center">
                   <span className="text-2xl mb-1 block">{b.collector_badges?.icon || "🏆"}</span>
                   <p className="font-mono text-[10px] text-[hsl(var(--gold-accent))] tracking-wider">{b.collector_badges?.name}</p>
@@ -156,11 +137,9 @@ export default function PublicProfileArcade() {
           <div>
             <ArcadeSectionTitle>COLEÇÃO PÚBLICA</ArcadeSectionTitle>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {collection.map((item: any) => {
+              {collection.map((item) => {
                 const model = item.models;
-                const imageUrl = model?.image_bucket && model?.image_path
-                  ? supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl
-                  : null;
+                const imageUrl = getPublicCollectionImageUrl(model);
                 return (
                   <ArcadeCard key={item.id} className="overflow-hidden">
                     <div className="aspect-square bg-[hsl(0,0%,8%)]">
