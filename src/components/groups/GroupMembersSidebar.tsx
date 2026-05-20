@@ -6,10 +6,13 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { MemberDetailsDrawer } from "./MemberDetailsDrawer";
 import { ImportMembersDialog } from "./ImportMembersDialog";
+import type { PaginatedMembers } from "@/types/groups";
 
 interface GroupMembersSidebarProps {
   groupId: string;
 }
+
+type GroupMemberListItem = PaginatedMembers["members"][number];
 
 export function GroupMembersSidebar({ groupId }: GroupMembersSidebarProps) {
   const { user } = useAuth();
@@ -45,7 +48,7 @@ export function GroupMembersSidebar({ groupId }: GroupMembersSidebarProps) {
     );
   }
 
-  const MemberItem = ({ member, isOnline }: { member: any; isOnline: boolean }) => {
+  const MemberItem = ({ member, isOnline }: { member: GroupMemberListItem; isOnline: boolean }) => {
     const initials = member.user_name
       ? member.user_name
           .split(" ")

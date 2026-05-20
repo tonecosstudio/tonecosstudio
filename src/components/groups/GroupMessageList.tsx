@@ -40,6 +40,22 @@ interface GroupMessageListProps {
   groupId: string;
 }
 
+type MessageDateFilter = "all" | "today" | "week" | "month";
+
+type DisplayGroupMessage = GroupMessage & {
+  sender_name?: string | null;
+  sender_avatar?: string | null;
+  attachments: GroupAttachment[];
+  link_text?: string | null;
+  link_url?: string | null;
+  action_button_text?: string | null;
+  action_button_url?: string | null;
+};
+
+function isMessageDateFilter(value: string): value is MessageDateFilter {
+  return value === "all" || value === "today" || value === "week" || value === "month";
+}
+
 /**
  * Converte file_path para URL pública do Supabase Storage
  */
@@ -52,7 +68,7 @@ function getAttachmentUrl(filePath: string): string {
 /**
  * Detecta URLs no texto e as torna clicáveis
  */
-function linkifyText(text: string, isCurrentUser: boolean): React.ReactNode {
+function linkifyText(text: string): React.ReactNode {
   // Regex para detectar URLs (http, https, www)
   const urlRegex =
     /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g;
@@ -92,7 +108,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [dateFilter, setDateFilter] = useState<MessageDateFilter>("all");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -120,7 +136,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
     // Removido refetchInterval - Realtime cuida das atualizações
   });
 
-  const messages = data?.messages || [];
+  const messages: DisplayGroupMessage[] = useMemo(() => data?.messages ?? [], [data?.messages]);
 
   // Edit message mutation
   const editMutation = useMutation({
@@ -183,6 +199,12 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
   const handleConfirmDelete = () => {
     if (messageToDelete) {
       deleteMutation.mutate(messageToDelete);
+    }
+  };
+
+  const handleDateFilterChange = (value: string) => {
+    if (isMessageDateFilter(value)) {
+      setDateFilter(value);
     }
   };
 
@@ -278,7 +300,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
               </Button>
             )}
           </div>
-          <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
+          <Select value={dateFilter} onValueChange={handleDateFilterChange}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -313,15 +335,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
       ) : (
         filteredMessages.map((message) => {
           const isCurrentUser = message.sender_id === user?.id;
-          const msg = message as GroupMessage & {
-            sender_name: string;
-            sender_avatar: string;
-            attachments: GroupAttachment[];
-            link_text?: string | null;
-            link_url?: string | null;
-            action_button_text?: string | null;
-            action_button_url?: string | null;
-          };
+          const msg = message;
 
           return (
             <div key={msg.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
@@ -394,7 +408,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                   </div>
                 ) : (
                   <div className="text-sm leading-relaxed whitespace-pre-wrap break-words text-gray-800 dark:text-gray-200">
-                    {linkifyText(msg.message, isCurrentUser)}
+                    {linkifyText(msg.message)}
                   </div>
                 )}
 
@@ -425,7 +439,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                 {/* Attachments */}
                 {msg.attachments && msg.attachments.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    {msg.attachments.map((attachment: any) => {
+                    {msg.attachments.map((attachment: GroupAttachment) => {
                       const isImage = attachment.file_type?.startsWith("image/");
                       const publicUrl = getAttachmentUrl(attachment.file_path);
 
