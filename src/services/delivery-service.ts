@@ -11,6 +11,20 @@ import log from "@/lib/logger";
 import { applyAutomaticMaintenance } from "./automatic-maintenance-service";
 import { recordCollectionChange } from "./audit-trail-service";
 
+interface DeliveryRpcError {
+  message: string;
+}
+
+interface DeliveryRpcClient {
+  rpc(
+    name: 'activate_delivery_with_auto_maintenance',
+    args: { p_delivery_id: string }
+  ): Promise<{ data: unknown; error: DeliveryRpcError | null }>;
+  rpc(name: 'is_before_cutoff'): Promise<{ data: boolean | null; error: DeliveryRpcError | null }>;
+}
+
+const deliveryRpc = supabase as unknown as DeliveryRpcClient;
+
 /**
  * Activate a delivery and apply automatic maintenance
  *
@@ -32,7 +46,7 @@ import { recordCollectionChange } from "./audit-trail-service";
  * Requirements: 6.2, 10.4
  */
 export async function activateDelivery(deliveryId: string): Promise<void> {
-  const { error } = await supabase.rpc('activate_delivery_with_auto_maintenance' as any, {
+  const { error } = await deliveryRpc.rpc('activate_delivery_with_auto_maintenance', {
     p_delivery_id: deliveryId
   });
 
@@ -83,7 +97,7 @@ export async function activateDeliveryWithService(
   const { error: updateError } = await supabase
     .from('subscription_deliveries')
     .update({
-      status: 'pending_choice' as any,  // Type assertion until types are regenerated
+      status: 'pending_choice',
       updated_at: new Date().toISOString()
     })
     .eq('id', deliveryId);
@@ -192,8 +206,8 @@ export async function canChangeCollection(deliveryId: string): Promise<boolean> 
   }
 
   // Check if before cutoff using database function
-  const { data: beforeCutoff, error: cutoffError } = await supabase
-    .rpc('is_before_cutoff' as any);
+  const { data: beforeCutoff, error: cutoffError } = await deliveryRpc
+    .rpc('is_before_cutoff');
 
   if (cutoffError) {
     throw new Error(`Failed to check cutoff: ${cutoffError.message}`);
@@ -239,7 +253,7 @@ export async function changeCollectionChoice(
     .from('subscription_deliveries')
     .select('collection_id, auto_maintained')
     .eq('id', deliveryId)
-    .single() as any;
+    .single();
 
   if (deliveryError || !delivery) {
     throw new Error(`Failed to get delivery: ${deliveryError?.message || 'Delivery not found'}`);
