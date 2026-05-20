@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 type QueryError = { message?: string } | null;
 type QueryResult<T> = PromiseLike<{ data: T | null; error: QueryError }>;
+type QueryListResult<T> = PromiseLike<{ data: T[] | null; error: QueryError }>;
 
 export type ProductionStageKey =
   | "queued"
@@ -101,6 +102,94 @@ type ProductionTablesClient = {
 };
 
 const productionTables = supabase as unknown as ProductionTablesClient;
+
+type QuoteProductionReadTable = {
+  select(columns: string): {
+    eq(column: "quote_id", value: string): {
+      maybeSingle(): QueryResult<ProductionRow>;
+    };
+  };
+};
+
+type QuoteProductionUpdatesReadTable = {
+  select(columns: string): {
+    eq(column: "quote_id", value: string): {
+      order(
+        column: "created_at",
+        options: { ascending: boolean }
+      ): QueryListResult<ProductionUpdateRow>;
+    };
+  };
+};
+
+type QuoteProductionPhotosReadTable = {
+  select(columns: string): {
+    eq(column: "quote_id", value: string): {
+      in(column: "update_id", values: string[]): {
+        order(
+          column: "created_at",
+          options: { ascending: boolean }
+        ): QueryListResult<ProductionPhotoRow>;
+      };
+    };
+  };
+};
+
+type ProductionReadClient = {
+  from(table: "quote_production"): QuoteProductionReadTable;
+  from(table: "quote_production_updates"): QuoteProductionUpdatesReadTable;
+  from(table: "quote_production_photos"): QuoteProductionPhotosReadTable;
+};
+
+const productionReadTables = supabase as unknown as ProductionReadClient;
+
+export interface ProductionTimelineData {
+  production: ProductionRow | null;
+  updates: ProductionUpdateRow[];
+  photos: ProductionPhotoRow[];
+}
+
+export async function fetchProductionTimeline(quoteId: string): Promise<ProductionTimelineData> {
+  const { data: production, error: productionError } = await productionReadTables
+    .from("quote_production")
+    .select("id,quote_id,current_stage,started_at,updated_at")
+    .eq("quote_id", quoteId)
+    .maybeSingle();
+
+  if (productionError) {
+    throw productionError;
+  }
+
+  const { data: updates, error: updatesError } = await productionReadTables
+    .from("quote_production_updates")
+    .select("id,quote_id,stage,note,created_at,created_by")
+    .eq("quote_id", quoteId)
+    .order("created_at", { ascending: true });
+
+  if (updatesError) {
+    throw updatesError;
+  }
+
+  const updateIds = (updates ?? []).map((update) => update.id);
+  const { data: photos, error: photosError } = updateIds.length
+    ? await productionReadTables
+        .from("quote_production_photos")
+        .select("id,quote_id,update_id,url,caption,created_at,created_by")
+        .eq("quote_id", quoteId)
+        .in("update_id", updateIds)
+        .order("created_at", { ascending: true })
+    : { data: [], error: null };
+
+  if (photosError) {
+    throw photosError;
+  }
+
+  return {
+    production: production ?? null,
+    updates: updates ?? [],
+    photos: photos ?? [],
+  };
+}
 
 export async function ensureProductionForQuote(quoteId: string) {
   const { data, error } = await productionTables
