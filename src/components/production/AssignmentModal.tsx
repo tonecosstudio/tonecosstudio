@@ -1,12 +1,6 @@
-// @ts-nocheck
-/**
- * AssignmentModal Component
- * 
- * Modal for assigning a single production item to a team member.
- * Displays team members with their current workload and includes search/filter functionality.
- */
-
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from "react";
+import { Search, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,21 +8,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
-import { Users, Search } from 'lucide-react';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  workload: number;
-}
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useProductionAssignmentTeamMembers } from "@/hooks/admin/useProductionAssignmentOptions";
 
 interface AssignmentModalProps {
   open: boolean;
@@ -41,171 +26,108 @@ export function AssignmentModal({
   open,
   onOpenChange,
   currentAssignee,
-  onConfirm
+  onConfirm,
 }: AssignmentModalProps) {
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [reason, setReason] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: teamMembers = [], isLoading } = useProductionAssignmentTeamMembers(open);
+  const isReassignment = Boolean(
+    currentAssignee && selectedUserId && currentAssignee !== selectedUserId
+  );
 
-  // Check if this is a reassignment
-  const isReassignment = currentAssignee && selectedUserId && currentAssignee !== selectedUserId;
-
-  // Set current assignee as default selection
   useEffect(() => {
     if (open && currentAssignee) {
       setSelectedUserId(currentAssignee);
     }
   }, [open, currentAssignee]);
 
-  // Fetch team members when modal opens
-  useEffect(() => {
-    if (open) {
-      fetchTeamMembers();
-    }
-  }, [open]);
-
-  const fetchTeamMembers = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch all profiles (team members)
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .order('full_name');
-
-      if (profilesError) throw profilesError;
-
-      // Fetch workload for each team member
-      const { data: workloadData, error: workloadError } = await supabase
-        .from('production_queue')
-        .select('assigned_to')
-        .not('assigned_to', 'is', null)
-        .in('production_status', ['ready_for_production', 'in_production']);
-
-      if (workloadError) throw workloadError;
-
-      // Count workload per team member
-      const workloadMap = new Map<string, number>();
-      workloadData?.forEach((item) => {
-        const count = workloadMap.get(item.assigned_to) || 0;
-        workloadMap.set(item.assigned_to, count + 1);
-      });
-
-      // Combine profiles with workload
-      const members: TeamMember[] = (profiles || []).map((profile) => ({
-        id: profile.id,
-        name: profile.full_name || profile.email || 'Sem nome',
-        email: profile.email || '',
-        workload: workloadMap.get(profile.id) || 0,
-      }));
-
-      setTeamMembers(members);
-    } catch (error) {
-      console.error('Erro ao buscar membros da equipe:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Filter team members based on search term
   const filteredTeamMembers = useMemo(() => {
-    if (!searchTerm.trim()) {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) {
       return teamMembers;
     }
 
-    const lowerSearch = searchTerm.toLowerCase();
     return teamMembers.filter(
       (member) =>
-        member.name.toLowerCase().includes(lowerSearch) ||
-        member.email.toLowerCase().includes(lowerSearch)
+        member.name.toLowerCase().includes(normalizedSearch) ||
+        member.email.toLowerCase().includes(normalizedSearch)
     );
   }, [teamMembers, searchTerm]);
 
+  const resetForm = () => {
+    setSelectedUserId("");
+    setSearchTerm("");
+    setReason("");
+  };
+
   const handleConfirm = async () => {
-    if (!selectedUserId) return;
+    if (!selectedUserId) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      await onConfirm(selectedUserId, reason || undefined);
+      await onConfirm(selectedUserId, reason.trim() || undefined);
+      resetForm();
       onOpenChange(false);
-      setSelectedUserId('');
-      setSearchTerm('');
-      setReason('');
-    } catch (error) {
-      console.error('Erro ao atribuir item:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
+    resetForm();
     onOpenChange(false);
-    setSelectedUserId('');
-    setSearchTerm('');
-    setReason('');
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Atribuir Item de Produção</DialogTitle>
+          <DialogTitle>Atribuir Item de Producao</DialogTitle>
           <DialogDescription>
-            Selecione um membro da equipe para atribuir este item de produção.
+            Selecione um membro da equipe para atribuir este item de producao.
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome ou email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(event) => setSearchTerm(event.target.value)}
               className="pl-9"
             />
           </div>
 
-          {/* Reason Input (for reassignments) */}
           {isReassignment && (
             <div className="space-y-2">
-              <Label htmlFor="reason">Motivo da Reatribuição</Label>
+              <Label htmlFor="reason">Motivo da Reatribuicao</Label>
               <Input
                 id="reason"
-                placeholder="Ex: Balanceamento de carga, especialização..."
+                placeholder="Ex: Balanceamento de carga, especializacao..."
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(event) => setReason(event.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Opcional: Informe o motivo da reatribuição para registro
+                Opcional: informe o motivo da reatribuicao para registro.
               </p>
             </div>
           )}
 
-          {/* Team Members List */}
           {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton className="h-4 w-4 rounded-full" />
-                  <div className="flex-1">
-                    <Skeleton className="h-4 w-32 mb-1" />
-                    <Skeleton className="h-3 w-48" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AssignmentModalSkeleton />
           ) : filteredTeamMembers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>
                 {searchTerm
-                  ? 'Nenhum membro encontrado com esse critério'
-                  : 'Nenhum membro da equipe encontrado'}
+                  ? "Nenhum membro encontrado com esse criterio"
+                  : "Nenhum membro da equipe encontrado"}
               </p>
             </div>
           ) : (
@@ -218,14 +140,11 @@ export function AssignmentModal({
                     onClick={() => setSelectedUserId(member.id)}
                   >
                     <RadioGroupItem value={member.id} id={member.id} />
-                    <Label
-                      htmlFor={member.id}
-                      className="flex-1 cursor-pointer"
-                    >
+                    <Label htmlFor={member.id} className="flex-1 cursor-pointer">
                       <div className="font-medium">{member.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {member.email} • {member.workload}{' '}
-                        {member.workload === 1 ? 'item atribuído' : 'itens atribuídos'}
+                        {member.email} - {member.workload}{" "}
+                        {member.workload === 1 ? "item atribuido" : "itens atribuidos"}
                       </div>
                     </Label>
                   </div>
@@ -236,21 +155,30 @@ export function AssignmentModal({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!selectedUserId || isSubmitting}
-          >
-            {isSubmitting ? 'Atribuindo...' : 'Atribuir'}
+          <Button onClick={handleConfirm} disabled={!selectedUserId || isSubmitting}>
+            {isSubmitting ? "Atribuindo..." : "Atribuir"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AssignmentModalSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="flex items-center gap-3">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-32 mb-1" />
+            <Skeleton className="h-3 w-48" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
