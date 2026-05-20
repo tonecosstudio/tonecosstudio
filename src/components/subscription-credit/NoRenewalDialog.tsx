@@ -1,11 +1,9 @@
-// @ts-nocheck
 /**
  * No Renewal Dialog
  * Allows user to disable auto-renewal without immediate cancellation
  */
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +19,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { Subscription } from "@/types/subscription-credit-system";
-import { subscriptionCreditAPI } from "@/services/subscription-credit-api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUserCoins } from "@/hooks/useUserCoins";
 import { useAuth } from "@/lib/auth";
+import { useDisableSubscriptionRenewal } from "@/hooks/subscription/useSubscriptionCreditActions";
 
 interface NoRenewalDialogProps {
   subscription: Subscription;
@@ -35,18 +33,15 @@ interface NoRenewalDialogProps {
 export function NoRenewalDialog({ subscription, isOpen, onOpenChange }: NoRenewalDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [confirmed, setConfirmed] = useState(false);
   const { data: coinsData } = useUserCoins(user?.id);
 
-  const noRenewalMutation = useMutation({
-    mutationFn: () => subscriptionCreditAPI.setNoRenewal(subscription.id),
+  const noRenewalMutation = useDisableSubscriptionRenewal(subscription.id, {
     onSuccess: (data) => {
       toast({
         title: "Renovação automática desativada",
         description: `Sua assinatura expirará em ${format(new Date(data.end_date), "dd 'de' MMMM", { locale: ptBR })}`,
       });
-      queryClient.invalidateQueries({ queryKey: ["subscription-credit"] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -171,7 +166,7 @@ export function NoRenewalDialog({ subscription, isOpen, onOpenChange }: NoRenewa
             <Checkbox
               id="confirm-no-renewal"
               checked={confirmed}
-              onCheckedChange={(checked) => setConfirmed(checked as boolean)}
+              onCheckedChange={(checked) => setConfirmed(checked === true)}
             />
             <label
               htmlFor="confirm-no-renewal"

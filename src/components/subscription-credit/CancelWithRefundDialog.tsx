@@ -1,11 +1,9 @@
-// @ts-nocheck
 /**
  * Cancel with Refund Dialog
  * Allows user to cancel subscription with proportional refund
  */
 
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -22,10 +20,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { Subscription } from "@/types/subscription-credit-system";
-import { subscriptionCreditAPI } from "@/services/subscription-credit-api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUserCoins } from "@/hooks/useUserCoins";
 import { useAuth } from "@/lib/auth";
+import { useCancelSubscriptionWithRefund } from "@/hooks/subscription/useSubscriptionCreditActions";
 
 interface CancelWithRefundDialogProps {
   subscription: Subscription;
@@ -40,7 +38,6 @@ export function CancelWithRefundDialog({
 }: CancelWithRefundDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [confirmed, setConfirmed] = useState(false);
   const [estimatedRefund, setEstimatedRefund] = useState(0);
   const { data: coinsData } = useUserCoins(user?.id);
@@ -61,14 +58,12 @@ export function CancelWithRefundDialog({
     setEstimatedRefund(refund);
   }, [subscription]);
 
-  const cancelMutation = useMutation({
-    mutationFn: () => subscriptionCreditAPI.cancelWithRefund(subscription.id),
+  const cancelMutation = useCancelSubscriptionWithRefund(subscription.id, {
     onSuccess: (data) => {
       toast({
         title: "Assinatura cancelada",
         description: `Reembolso de R$ ${data.refund_amount.toFixed(2)} será processado em até 7 dias úteis.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["subscription-credit"] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -180,7 +175,7 @@ export function CancelWithRefundDialog({
             <Checkbox
               id="confirm-cancel"
               checked={confirmed}
-              onCheckedChange={(checked) => setConfirmed(checked as boolean)}
+              onCheckedChange={(checked) => setConfirmed(checked === true)}
             />
             <label
               htmlFor="confirm-cancel"

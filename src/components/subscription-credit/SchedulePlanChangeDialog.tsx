@@ -1,11 +1,8 @@
-// @ts-nocheck
 /**
  * Schedule Plan Change Dialog
  * Allows user to schedule upgrade/downgrade for next renewal
  */
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +18,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Subscription, PlanType } from '@/types/subscription-credit-system';
-import { subscriptionCreditAPI } from '@/services/subscription-credit-api';
+import { useScheduleSubscriptionPlanChange } from '@/hooks/subscription/useSubscriptionCreditActions';
 
 interface SchedulePlanChangeDialogProps {
   subscription: Subscription;
@@ -35,20 +32,15 @@ export function SchedulePlanChangeDialog({
   onOpenChange,
 }: SchedulePlanChangeDialogProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isConfirming, setIsConfirming] = useState(false);
-
   const newPlanType: PlanType = subscription.plan_type === 'trimestral' ? 'semestral' : 'trimestral';
   const isUpgrade = newPlanType === 'semestral';
 
-  const scheduleMutation = useMutation({
-    mutationFn: () => subscriptionCreditAPI.schedulePlanChange(subscription.id, newPlanType),
+  const scheduleMutation = useScheduleSubscriptionPlanChange(subscription.id, newPlanType, {
     onSuccess: (data) => {
       toast({
         title: 'Mudança agendada com sucesso!',
         description: `Seu plano será alterado em ${format(new Date(data.effective_date), "dd 'de' MMMM", { locale: ptBR })}`,
       });
-      queryClient.invalidateQueries({ queryKey: ['subscription-credit'] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
