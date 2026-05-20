@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, Plus, Edit, Trash2, X } from "lucide-react";
+import { FileText, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -16,90 +14,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
-
-interface MessageTemplate {
-  id: string;
-  name: string;
-  content: string;
-  created_by: string;
-  created_at: string;
-}
+import {
+  useGroupMessageTemplates,
+  type GroupMessageTemplate,
+} from "@/hooks/groups/useGroupMessageTemplates";
 
 interface MessageTemplatesProps {
   onSelect: (text: string) => void;
 }
 
 export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { templates, isLoading, saveTemplate, deleteTemplate } = useGroupMessageTemplates();
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<GroupMessageTemplate | null>(null);
   const [formData, setFormData] = useState({ name: "", content: "" });
 
-  // Fetch templates
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ["message-templates"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("message_templates")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as MessageTemplate[];
-    },
-    enabled: !!user,
-  });
-
-  // Create/Update template mutation
-  const saveMutation = useMutation({
-    mutationFn: async (data: { name: string; content: string; id?: string }) => {
-      if (data.id) {
-        // Update
-        const { error } = await supabase
-          .from("message_templates")
-          .update({ name: data.name, content: data.content })
-          .eq("id", data.id);
-        if (error) throw error;
-      } else {
-        // Create
-        const { error } = await supabase.from("message_templates").insert({
-          name: data.name,
-          content: data.content,
-          created_by: user!.id,
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["message-templates"] });
-      setDialogOpen(false);
-      setEditingTemplate(null);
-      setFormData({ name: "", content: "" });
-      toast.success(editingTemplate ? "Template atualizado" : "Template criado");
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Erro ao salvar template");
-    },
-  });
-
-  // Delete template mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("message_templates").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["message-templates"] });
-      toast.success("Template deletado");
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Erro ao deletar template");
-    },
-  });
+  const resetForm = () => {
+    setEditingTemplate(null);
+    setFormData({ name: "", content: "" });
+  };
 
   const handleSelect = (content: string) => {
     onSelect(content);
@@ -108,32 +42,43 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
   };
 
   const handleCreate = () => {
-    setEditingTemplate(null);
-    setFormData({ name: "", content: "" });
+    resetForm();
     setDialogOpen(true);
   };
 
-  const handleEdit = (template: MessageTemplate) => {
+  const handleEdit = (template: GroupMessageTemplate) => {
     setEditingTemplate(template);
     setFormData({ name: template.name, content: template.content });
     setDialogOpen(true);
   };
 
   const handleSave = () => {
-    if (!formData.name.trim() || !formData.content.trim()) {
+    const name = formData.name.trim();
+    const content = formData.content.trim();
+
+    if (!name || !content) {
       toast.error("Preencha todos os campos");
       return;
     }
 
-    saveMutation.mutate({
-      ...formData,
-      id: editingTemplate?.id,
-    });
+    saveTemplate.mutate(
+      {
+        name,
+        content,
+        id: editingTemplate?.id,
+      },
+      {
+        onSuccess: () => {
+          setDialogOpen(false);
+          resetForm();
+        },
+      }
+    );
   };
 
   const handleDelete = (id: string) => {
     if (confirm("Tem certeza que deseja deletar este template?")) {
-      deleteMutation.mutate(id);
+      deleteTemplate.mutate(id);
     }
   };
 
@@ -157,11 +102,11 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
           <div className="max-h-[400px] overflow-y-auto">
             {isLoading ? (
               <div className="p-4 space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="h-16 bg-gray-100 rounded animate-pulse" />
                 ))}
               </div>
-            ) : templates && templates.length > 0 ? (
+            ) : templates.length > 0 ? (
               <div className="p-2 space-y-1">
                 {templates.map((template) => (
                   <div
@@ -183,8 +128,8 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={(event) => {
+                          event.stopPropagation();
                           handleEdit(template);
                         }}
                       >
@@ -194,8 +139,8 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={(event) => {
+                          event.stopPropagation();
                           handleDelete(template.id);
                         }}
                       >
@@ -218,7 +163,6 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
         </PopoverContent>
       </Popover>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -235,7 +179,7 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
                 id="name"
                 placeholder="Ex: Boas-vindas"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(event) => setFormData({ ...formData, name: event.target.value })}
               />
             </div>
 
@@ -245,7 +189,7 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
                 id="content"
                 placeholder="Digite a mensagem do template..."
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                onChange={(event) => setFormData({ ...formData, content: event.target.value })}
                 className="min-h-[120px]"
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -258,12 +202,12 @@ export function MessageTemplates({ onSelect }: MessageTemplatesProps) {
             <Button
               variant="outline"
               onClick={() => setDialogOpen(false)}
-              disabled={saveMutation.isPending}
+              disabled={saveTemplate.isPending}
             >
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? "Salvando..." : "Salvar"}
+            <Button onClick={handleSave} disabled={saveTemplate.isPending}>
+              {saveTemplate.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>

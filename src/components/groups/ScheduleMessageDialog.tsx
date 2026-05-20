@@ -1,6 +1,4 @@
-// @ts-nocheck
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,9 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useGroupMessageScheduling } from "@/hooks/groups/useGroupMessageScheduling";
 
 interface ScheduleMessageDialogProps {
   groupId: string;
@@ -34,38 +31,27 @@ export function ScheduleMessageDialog({
   message,
   onScheduled,
 }: ScheduleMessageDialogProps) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("12:00");
 
-  const scheduleMutation = useMutation({
-    mutationFn: async (scheduledFor: Date) => {
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { error } = await supabase.from("scheduled_messages").insert({
-        group_id: groupId,
-        message,
-        scheduled_for: scheduledFor.toISOString(),
-        created_by: user.id,
-        status: "pending",
-      });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduled-messages"] });
-      setOpen(false);
-      setDate(undefined);
-      setTime("12:00");
-      toast.success("Mensagem agendada com sucesso");
-      onScheduled?.();
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Erro ao agendar mensagem");
-    },
+  const scheduleMutation = useGroupMessageScheduling(() => {
+    setOpen(false);
+    setDate(undefined);
+    setTime("12:00");
+    onScheduled?.();
   });
+
+  const getScheduledDate = () => {
+    if (!date) {
+      return null;
+    }
+
+    const [hours = 0, minutes = 0] = time.split(":").map(Number);
+    const scheduledDate = new Date(date);
+    scheduledDate.setHours(hours, minutes, 0, 0);
+    return scheduledDate;
+  };
 
   const handleSchedule = () => {
     if (!date) {
@@ -78,18 +64,18 @@ export function ScheduleMessageDialog({
       return;
     }
 
-    // Combinar data e hora
-    const [hours, minutes] = time.split(":").map(Number);
-    const scheduledDate = new Date(date);
-    scheduledDate.setHours(hours, minutes, 0, 0);
+    const scheduledDate = getScheduledDate();
+    if (!scheduledDate) {
+      toast.error("Selecione uma data");
+      return;
+    }
 
-    // Validar se é no futuro
     if (scheduledDate <= new Date()) {
       toast.error("A data deve ser no futuro");
       return;
     }
 
-    scheduleMutation.mutate(scheduledDate);
+    scheduleMutation.mutate({ groupId, message, scheduledAt: scheduledDate });
   };
 
   return (
@@ -109,7 +95,6 @@ export function ScheduleMessageDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Preview da mensagem */}
           <div>
             <Label>Mensagem</Label>
             <div className="mt-1 p-3 bg-muted rounded-lg text-sm max-h-32 overflow-y-auto">
@@ -117,7 +102,6 @@ export function ScheduleMessageDialog({
             </div>
           </div>
 
-          {/* Seletor de data */}
           <div>
             <Label>Data</Label>
             <Popover>
@@ -138,34 +122,32 @@ export function ScheduleMessageDialog({
                   mode="single"
                   selected={date}
                   onSelect={setDate}
-                  disabled={(date) => date < new Date()}
+                  disabled={(calendarDate) => calendarDate < new Date()}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* Seletor de hora */}
           <div>
             <Label htmlFor="time">Hora</Label>
             <Input
               id="time"
               type="time"
               value={time}
-              onChange={(e) => setTime(e.target.value)}
+              onChange={(event) => setTime(event.target.value)}
               className="mt-1"
             />
           </div>
 
-          {/* Preview do agendamento */}
           {date && (
             <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                📅 Mensagem será enviada em:
+                Mensagem será enviada em:
               </p>
               <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                 {format(
-                  new Date(date.setHours(...time.split(":").map(Number))),
+                  getScheduledDate() ?? date,
                   "EEEE, dd 'de' MMMM 'de' yyyy 'às' HH:mm",
                   { locale: ptBR }
                 )}
