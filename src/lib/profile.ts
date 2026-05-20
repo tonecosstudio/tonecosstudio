@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 export type AddressBR = {
   cep?: string;
@@ -40,14 +41,29 @@ export type ProfileRow = {
   updated_at?: string;
 };
 
+type ProfileUpsertInput = {
+  id: string;
+  delivery_address?: Json | null;
+  preferences_text?: string | null;
+  preference_tags?: string[] | null;
+  full_name?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  cpf?: string | null;
+  birth_date?: string | null;
+  email_notifications?: boolean;
+  order_updates?: boolean;
+  marketing_emails?: boolean;
+};
+
 export async function getMyProfile(userId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", userId)
     .maybeSingle();
   if (error) throw error;
-  return (data ?? null) as ProfileRow | null;
+  return (data ?? null) as unknown as ProfileRow | null;
 }
 
 export async function upsertMyProfile(input: {
@@ -65,13 +81,19 @@ export async function upsertMyProfile(input: {
   order_updates?: boolean;
   marketing_emails?: boolean;
 }) {
-  const { data, error } = await (supabase as any)
+  const { address: _address, delivery_address, ...profileInput } = input;
+  const upsertInput: ProfileUpsertInput = {
+    ...profileInput,
+    delivery_address: delivery_address as Json | null | undefined,
+  };
+
+  const { data, error } = await supabase
     .from("profiles")
-    .upsert(input, { onConflict: "id" })
+    .upsert(upsertInput, { onConflict: "id" })
     .select("*")
     .single();
   if (error) throw error;
-  return data as ProfileRow;
+  return data as unknown as ProfileRow;
 }
 
 export async function analyzePreferencesWithAI(preferencesText: string) {

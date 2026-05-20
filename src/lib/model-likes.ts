@@ -11,7 +11,7 @@ export type ModelLikeRow = {
  * with unique(user_id, model_id) and RLS so users can read/write only their own likes.
  */
 export async function listLikedModelIds(userId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("model_likes")
     .select("model_id")
     .eq("user_id", userId);
@@ -21,14 +21,14 @@ export async function listLikedModelIds(userId: string) {
 }
 
 export async function likeModel(userId: string, modelId: string) {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("model_likes")
     .insert({ user_id: userId, model_id: modelId });
   if (error) throw error;
 }
 
 export async function unlikeModel(userId: string, modelId: string) {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("model_likes")
     .delete()
     .eq("user_id", userId)

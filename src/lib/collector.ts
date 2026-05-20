@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type CollectorBadgeRarity = "common" | "rare" | "epic" | "legendary";
+type PublicCollectionInsert =
+  Database["public"]["Tables"]["public_collection"]["Insert"];
 
 export type CollectorProfile = {
   id: string;
@@ -16,9 +21,9 @@ export type CollectorProfile = {
 export type CollectorBadge = {
   id: string;
   name: string;
-  description: string;
-  icon: string;
-  rarity: "common" | "rare" | "epic" | "legendary";
+  description: string | null;
+  icon: string | null;
+  rarity: CollectorBadgeRarity;
 };
 
 export type UserBadge = CollectorBadge & {
@@ -32,11 +37,28 @@ export type PublicCollectionItem = {
   display_order: number;
 };
 
+type UserBadgeQueryRow = {
+  earned_at: string;
+  collector_badges: {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+    rarity: string;
+  } | null;
+};
+
+function normalizeBadgeRarity(rarity: string): CollectorBadgeRarity {
+  return ["common", "rare", "epic", "legendary"].includes(rarity)
+    ? (rarity as CollectorBadgeRarity)
+    : "common";
+}
+
 /**
  * Busca o perfil de colecionador do usuário atual
  */
 export async function getMyCollectorProfile(userId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("profiles")
     .select(
       "id, username, display_name, bio, avatar_url, is_public, collector_level, collector_xp, pieces_owned, total_spent"
@@ -61,7 +83,7 @@ export async function updateCollectorProfile(
     is_public?: boolean;
   }
 ) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("profiles")
     .update(updates)
     .eq("id", userId)
@@ -76,20 +98,26 @@ export async function updateCollectorProfile(
  * Busca todos os badges disponíveis
  */
 export async function getAllBadges() {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("collector_badges")
     .select("*")
     .order("requirement_value", { ascending: true });
 
   if (error) throw error;
-  return data as CollectorBadge[];
+  return (data ?? []).map((badge) => ({
+    id: badge.id,
+    name: badge.name,
+    description: badge.description,
+    icon: badge.icon,
+    rarity: normalizeBadgeRarity(badge.rarity),
+  }));
 }
 
 /**
  * Busca badges conquistados pelo usuário
  */
 export async function getUserBadges(userId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("user_badges")
     .select(
       `
@@ -108,21 +136,23 @@ export async function getUserBadges(userId: string) {
 
   if (error) throw error;
 
-  return (data || []).map((item: any) => ({
-    id: item.collector_badges.id,
-    name: item.collector_badges.name,
-    description: item.collector_badges.description,
-    icon: item.collector_badges.icon,
-    rarity: item.collector_badges.rarity,
-    earned_at: item.earned_at,
-  })) as UserBadge[];
+  return ((data ?? []) as UserBadgeQueryRow[])
+    .filter((item) => item.collector_badges)
+    .map((item) => ({
+      id: item.collector_badges!.id,
+      name: item.collector_badges!.name,
+      description: item.collector_badges!.description,
+      icon: item.collector_badges!.icon,
+      rarity: normalizeBadgeRarity(item.collector_badges!.rarity),
+      earned_at: item.earned_at,
+    }));
 }
 
 /**
  * Busca a coleção pública do usuário
  */
 export async function getPublicCollection(userId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("public_collection")
     .select(
       `
@@ -150,13 +180,15 @@ export async function getPublicCollection(userId: string) {
  * Adiciona um modelo à coleção pública
  */
 export async function addToPublicCollection(userId: string, modelId: string, notes?: string) {
-  const { data, error } = await (supabase as any)
+  const insert: PublicCollectionInsert = {
+    user_id: userId,
+    model_id: modelId,
+    notes: notes || null,
+  };
+
+  const { data, error } = await supabase
     .from("public_collection")
-    .insert({
-      user_id: userId,
-      model_id: modelId,
-      notes: notes || null,
-    })
+    .insert(insert)
     .select()
     .single();
 
@@ -168,7 +200,7 @@ export async function addToPublicCollection(userId: string, modelId: string, not
  * Remove um modelo da coleção pública
  */
 export async function removeFromPublicCollection(collectionId: string) {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("public_collection")
     .delete()
     .eq("id", collectionId);
@@ -180,7 +212,7 @@ export async function removeFromPublicCollection(collectionId: string) {
  * Atualiza notas de um item da coleção
  */
 export async function updateCollectionNotes(collectionId: string, notes: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("public_collection")
     .update({ notes })
     .eq("id", collectionId)
@@ -196,7 +228,7 @@ export async function updateCollectionNotes(collectionId: string, notes: string)
  */
 export async function updateCollectionOrder(items: Array<{ id: string; display_order: number }>) {
   const promises = items.map((item) =>
-    (supabase as any)
+    supabase
       .from("public_collection")
       .update({ display_order: item.display_order })
       .eq("id", item.id)
@@ -214,7 +246,7 @@ export async function updateCollectionOrder(items: Array<{ id: string; display_o
  * Verifica se um username está disponível
  */
 export async function checkUsernameAvailability(username: string, currentUserId?: string) {
-  const query = (supabase as any).from("profiles").select("id").eq("username", username);
+  const query = supabase.from("profiles").select("id").eq("username", username);
 
   if (currentUserId) {
     query.neq("id", currentUserId);
