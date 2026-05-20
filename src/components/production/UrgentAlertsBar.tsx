@@ -1,6 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { fetchProductionMetrics, type ProductionMetrics } from "@/services/admin/production-service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,12 +7,7 @@ import {
   Ban,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  getNotificationPreferences,
-  checkAndNotifyAlerts,
-} from "@/services/notifications/alert-notification-service";
+import { useUrgentAlerts } from "@/hooks/admin/useUrgentAlerts";
 
 /**
  * UrgentAlertsBar Component
@@ -42,50 +34,7 @@ interface UrgentAlertsBarProps {
 export type AlertType = "deadline_critical" | "deadline_urgent" | "blocked" | "overdue";
 
 export function UrgentAlertsBar({ onAlertClick }: UrgentAlertsBarProps) {
-  const queryClient = useQueryClient();
-  const previousMetricsRef = useRef<ProductionMetrics | null>(null);
-
-  // Fetch production metrics
-  const { data: metrics, isLoading, error } = useQuery<ProductionMetrics>({
-    queryKey: ["production-metrics"],
-    queryFn: fetchProductionMetrics,
-    refetchInterval: 30000, // Refetch every 30 seconds as fallback
-  });
-
-  // Monitor metrics changes and trigger notifications
-  useEffect(() => {
-    if (metrics && previousMetricsRef.current) {
-      const preferences = getNotificationPreferences();
-      checkAndNotifyAlerts(metrics, previousMetricsRef.current, preferences);
-    }
-    
-    if (metrics) {
-      previousMetricsRef.current = metrics;
-    }
-  }, [metrics]);
-
-  // Set up real-time updates
-  useEffect(() => {
-    const channel = supabase
-      .channel("urgent-alerts-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "production_queue",
-        },
-        () => {
-          // Invalidate metrics query when production_queue changes
-          queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
+  const { data: metrics, isLoading, error } = useUrgentAlerts();
 
   if (isLoading) {
     return (

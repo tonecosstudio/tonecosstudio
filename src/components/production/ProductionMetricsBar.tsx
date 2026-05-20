@@ -1,6 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { fetchProductionMetrics, type ProductionMetrics } from "@/services/admin/production-service";
+import { useProductionMetrics } from "@/hooks/admin/useProductionMetrics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,8 +11,6 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * ProductionMetricsBar Component
@@ -31,49 +27,10 @@ import { useQueryClient } from "@tanstack/react-query";
  * - Responsive grid layout
  */
 export function ProductionMetricsBar() {
-  const queryClient = useQueryClient();
-
-  // Fetch production metrics
-  const { data: metrics, isLoading, error } = useQuery<ProductionMetrics>({
-    queryKey: ["production-metrics"],
-    queryFn: fetchProductionMetrics,
-    refetchInterval: 30000, // Refetch every 30 seconds as fallback
+  const { data: metrics, isLoading, error } = useProductionMetrics({
+    refetchInterval: 30000,
+    enableRealtime: true,
   });
-
-  // Set up real-time updates
-  useEffect(() => {
-    const channel = supabase
-      .channel("production-metrics-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "production_queue",
-        },
-        () => {
-          // Invalidate metrics query when production_queue changes
-          queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "production_stages",
-        },
-        () => {
-          // Invalidate metrics query when production_stages changes
-          queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   if (isLoading) {
     return (
