@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useContentSettings } from "@/hooks/useContentSettings";
 import { processContentVariables } from "@/lib/services/contentService";
+import type { ContentSettings } from "@/lib/services/contentService";
 
 interface FAQItem {
   q: string;
-  a: string | ((content: any) => string);
+  a: string | ((content: ContentSettings) => string);
 }
 
 interface DynamicFAQProps {
