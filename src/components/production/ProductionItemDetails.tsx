@@ -1,19 +1,40 @@
-// @ts-nocheck
 import { useState } from "react";
+import { AlertCircle, Calendar, Clock, Package, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, User, Package, AlertCircle } from "lucide-react";
-import type { ProductionQueueItem } from "@/services/admin/production-service";
+import type { Priority, ProductionQueueItem, ProductionStage } from "@/types/production";
 import { BlockProductionModal } from "./BlockProductionModal";
-import { UnblockProductionModal } from "./UnblockProductionModal";
 import { EditProductionModal } from "./EditProductionModal";
 import { ProductionHistoryModal } from "./ProductionHistoryModal";
+import { UnblockProductionModal } from "./UnblockProductionModal";
 
 interface ProductionItemDetailsProps {
   item: ProductionQueueItem | null;
   onUpdate?: () => void;
 }
+
+const PRIORITY_CLASSES: Record<Priority, string> = {
+  critical: "bg-red-500",
+  high: "bg-orange-500",
+  normal: "bg-blue-500",
+  low: "bg-green-500",
+};
+
+const STAGE_LABELS: Record<ProductionStage, string> = {
+  awaiting_payment: "Aguardando Pagamento",
+  payment_confirmed: "Pagamento Confirmado",
+  awaiting_choice: "Aguardando Escolha",
+  model_preparation: "Preparacao do Modelo",
+  printing: "Em Impressao 3D",
+  post_processing: "Limpeza e Preparacao",
+  painting: "Pintura Artesanal",
+  quality_check: "Controle de Qualidade",
+  packaging: "Embalagem",
+  ready_to_ship: "Pronto para Envio",
+  shipped: "Enviado",
+  delivered: "Entregue",
+};
 
 export function ProductionItemDetails({ item, onUpdate }: ProductionItemDetailsProps) {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -29,80 +50,52 @@ export function ProductionItemDetails({ item, onUpdate }: ProductionItemDetailsP
     );
   }
 
-  const handleModalSuccess = () => {
-    if (onUpdate) {
-      onUpdate();
-    }
-  };
-
-  const priorityColors = {
-    critical: "bg-red-500",
-    high: "bg-orange-500",
-    medium: "bg-yellow-500",
-    low: "bg-green-500",
-  };
-
-  const stageLabels: Record<string, string> = {
-    awaiting_payment: "Aguardando Pagamento",
-    payment_confirmed: "Pagamento Confirmado",
-    awaiting_choice: "Aguardando Escolha",
-    model_preparation: "Preparação do Modelo",
-    printing: "Em Impressão 3D",
-    post_processing: "Limpeza e Preparação",
-    painting: "Pintura Artesanal",
-    quality_check: "Controle de Qualidade",
-    packaging: "Embalagem",
-    ready_to_ship: "Pronto para Envio",
-    shipped: "Enviado",
-    delivered: "Entregue",
-    blocked: "Bloqueado",
-  };
+  const isBlocked = item.productionStatus === "on_hold";
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <div className="flex items-start justify-between mb-2">
           <h2 className="text-2xl font-bold">{item.customerName}</h2>
-          <Badge
-            className={priorityColors[item.priority as keyof typeof priorityColors]}
-          >
-            {item.priority}
-          </Badge>
+          <Badge className={PRIORITY_CLASSES[item.priority]}>{item.priority}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{item.collectionName}</p>
       </div>
 
       <Separator />
 
-      {/* Status */}
       <div className="space-y-3">
         <h3 className="font-semibold">Status</h3>
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">
-            {stageLabels[item.currentStage] || item.currentStage}
-          </span>
+          <span className="text-sm">{STAGE_LABELS[item.currentStage]}</span>
         </div>
       </div>
 
       <Separator />
 
-      {/* Prazos */}
       <div className="space-y-3">
         <h3 className="font-semibold">Prazos</h3>
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              Entrega: {new Date(item.deliveryDeadline).toLocaleDateString("pt-BR")}
-            </span>
-          </div>
-          {item.productionDeadline && (
+          {item.estimatedCompletionDate ? (
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                Conclusao estimada: {formatDate(item.estimatedCompletionDate)}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Conclusao estimada nao definida</span>
+            </div>
+          )}
+
+          {item.scheduledProductionDate && (
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                Produção: {new Date(item.productionDeadline).toLocaleDateString("pt-BR")}
+                Producao agendada: {formatDate(item.scheduledProductionDate)}
               </span>
             </div>
           )}
@@ -111,88 +104,71 @@ export function ProductionItemDetails({ item, onUpdate }: ProductionItemDetailsP
 
       <Separator />
 
-      {/* Atribuição */}
       {item.assignedTo && (
         <>
           <div className="space-y-3">
-            <h3 className="font-semibold">Atribuído a</h3>
+            <h3 className="font-semibold">Atribuido a</h3>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{item.assignedToName || "Não atribuído"}</span>
+              <span className="text-sm">{item.assignedToName || "Nao atribuido"}</span>
             </div>
           </div>
           <Separator />
         </>
       )}
 
-      {/* Notas */}
       {item.productionNotes && (
         <>
           <div className="space-y-3">
-            <h3 className="font-semibold">Notas de Produção</h3>
+            <h3 className="font-semibold">Notas de Producao</h3>
             <p className="text-sm text-muted-foreground">{item.productionNotes}</p>
           </div>
           <Separator />
         </>
       )}
 
-      {/* Bloqueio */}
-      {item.isBlocked && (
+      {isBlocked && (
         <>
           <div className="space-y-3">
             <h3 className="font-semibold flex items-center gap-2 text-red-600">
               <AlertCircle className="h-4 w-4" />
               Item Bloqueado
             </h3>
-            {item.blockReason && (
-              <p className="text-sm text-muted-foreground">{item.blockReason}</p>
+            {item.productionNotes && (
+              <p className="text-sm text-muted-foreground">{item.productionNotes}</p>
             )}
           </div>
           <Separator />
         </>
       )}
 
-      {/* Ações */}
       <div className="space-y-2">
-        <Button 
-          className="w-full" 
-          variant="default"
-          onClick={() => setShowEditModal(true)}
-        >
+        <Button className="w-full" variant="default" onClick={() => setShowEditModal(true)}>
           Editar Item
         </Button>
-        <Button 
-          className="w-full" 
-          variant="outline"
-          onClick={() => setShowHistoryModal(true)}
-        >
-          Ver Histórico
+        <Button className="w-full" variant="outline" onClick={() => setShowHistoryModal(true)}>
+          Ver Historico
         </Button>
-        {item.isBlocked ? (
-          <Button 
-            className="w-full" 
+        {isBlocked ? (
+          <Button
+            className="w-full"
             variant="destructive"
             onClick={() => setShowUnblockModal(true)}
           >
             Desbloquear
           </Button>
         ) : (
-          <Button 
-            className="w-full" 
-            variant="secondary"
-            onClick={() => setShowBlockModal(true)}
-          >
+          <Button className="w-full" variant="secondary" onClick={() => setShowBlockModal(true)}>
             Bloquear
           </Button>
         )}
       </div>
 
-      {/* Modals */}
       <EditProductionModal
         isOpen={showEditModal}
         onOpenChange={setShowEditModal}
         item={item}
-        onSuccess={handleModalSuccess}
+        onSuccess={onUpdate}
       />
 
       <ProductionHistoryModal
@@ -205,15 +181,19 @@ export function ProductionItemDetails({ item, onUpdate }: ProductionItemDetailsP
         isOpen={showBlockModal}
         onOpenChange={setShowBlockModal}
         productionQueueId={item.id}
-        onBlock={handleModalSuccess}
+        onBlock={onUpdate}
       />
 
       <UnblockProductionModal
         isOpen={showUnblockModal}
         onOpenChange={setShowUnblockModal}
         productionQueueId={item.id}
-        onUnblock={handleModalSuccess}
+        onUnblock={onUpdate}
       />
     </div>
   );
+}
+
+function formatDate(date: string): string {
+  return new Date(date).toLocaleDateString("pt-BR");
 }

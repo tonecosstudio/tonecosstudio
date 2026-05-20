@@ -34,3 +34,35 @@ export interface ProductionFilters {
   dateTo?: string;
   searchQuery?: string;
 }
+
+export interface ProductionQueueItem {
+  id: string;
+  orderId: string;
+  orderType: "subscription_delivery" | "standalone_purchase";
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  collectionId: string;
+  collectionName: string;
+  characterId: string | null;
+  characterName: string | null;
+  productionStatus: ProductionStatus;
+  currentStage: ProductionStage;
+  choiceStatus: ChoiceStatus;
+  choiceDeadline: string | null;
+  choiceMadeAt: string | null;
+  priority: Priority;
+  priorityScore: number;
+  scheduledProductionDate: string | null;
+  estimatedCompletionDate: string | null;
+  assignedTo: string | null;
+  assignedToName: string | null;
+  assignedAt: string | null;
+  productionStartedAt: string | null;
+  productionCompletedAt: string | null;
+  productionNotes: string | null;
+  customerNotes: string | null;
+  internalFlags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
