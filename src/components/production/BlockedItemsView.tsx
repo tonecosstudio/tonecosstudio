@@ -1,19 +1,10 @@
-// @ts-nocheck
-/**
- * BlockedItemsView Component
- *
- * Displays all blocked production items in a dedicated view.
- * Features:
- * - Display all blocked items
- * - Show block reason and duration
- * - Add "Unblock" button
- * - Sort by longest blocked first
- *
- * Integrates with production-service.ts and UnblockProductionModal
- */
-
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -22,164 +13,50 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Clock, CheckCircle2, Package } from "lucide-react";
-import { fetchProductionQueue } from "@/services/admin/production-service";
+import { useBlockedProductionItems } from "@/hooks/admin/useBlockedProductionItems";
+import type { Priority, ProductionStage } from "@/types/production";
 import { UnblockProductionModal } from "./UnblockProductionModal";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
 
-// ============================================================================
-// Types
-// ============================================================================
+const STAGE_LABELS: Record<ProductionStage, string> = {
+  awaiting_payment: "Aguardando Pagamento",
+  payment_confirmed: "Pagamento Confirmado",
+  awaiting_choice: "Aguardando Escolha",
+  model_preparation: "Preparacao do Modelo",
+  printing: "Em Impressao 3D",
+  post_processing: "Limpeza e Preparacao",
+  painting: "Pintura Artesanal",
+  quality_check: "Controle de Qualidade",
+  packaging: "Embalagem",
+  ready_to_ship: "Pronto para Envio",
+  shipped: "Enviado",
+  delivered: "Entregue",
+};
 
-interface BlockedItem {
-  id: string;
-  customerName: string;
-  customerEmail: string;
-  collectionName: string;
-  characterName: string | null;
-  currentStage: string;
-  blockReason: string;
-  blockedAt: string;
-  blockedDurationHours: number;
-  assignedToName: string | null;
-  priority: string;
-}
+const PRIORITY_CLASSES: Record<Priority, string> = {
+  critical: "bg-red-500 text-white",
+  high: "bg-orange-500 text-white",
+  normal: "bg-blue-500 text-white",
+  low: "bg-gray-500 text-white",
+};
 
-interface BlockedItemsViewProps {
-  // No props - fetches data internally
-}
-
-// ============================================================================
-// Component
-// ============================================================================
-
-export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
+export function BlockedItemsView() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isUnblockModalOpen, setIsUnblockModalOpen] = useState(false);
+  const { data: blockedItems, isLoading, refetch } = useBlockedProductionItems();
 
-  // Fetch blocked items
-  const { data: blockedItems, isLoading, refetch } = useQuery({
-    queryKey: ["blocked-items"],
-    queryFn: async (): Promise<BlockedItem[]> => {
-      // Fetch production queue items with status 'on_hold'
-      const queueResponse = await fetchProductionQueue(
-        { statuses: ["on_hold"] },
-        { page: 1, pageSize: 1000 }
-      );
-
-      // For each blocked item, fetch stage information to get block reason and blocked_at
-      const blockedItemsPromises = queueResponse.data.map(async (item) => {
-        const { data: stageData } = await supabase
-          .from("production_stages")
-          .select("block_reason, blocked_at")
-          .eq("production_queue_id", item.id)
-          .eq("stage_name", item.currentStage)
-          .eq("is_blocked", true)
-          .single();
-
-        const blockedAt = stageData?.blocked_at || new Date().toISOString();
-        const blockedDurationMs = new Date().getTime() - new Date(blockedAt).getTime();
-        const blockedDurationHours = blockedDurationMs / (1000 * 60 * 60);
-
-        return {
-          id: item.id,
-          customerName: item.customerName,
-          customerEmail: item.customerEmail,
-          collectionName: item.collectionName,
-          characterName: item.characterName,
-          currentStage: item.currentStage,
-          blockReason: stageData?.block_reason || item.productionNotes || "Motivo não especificado",
-          blockedAt,
-          blockedDurationHours,
-          assignedToName: item.assignedToName,
-          priority: item.priority,
-        };
-      });
-
-      const blockedItems = await Promise.all(blockedItemsPromises);
-
-      // Sort by longest blocked first (descending duration)
-      return blockedItems.sort((a, b) => b.blockedDurationHours - a.blockedDurationHours);
-    },
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-
-  // Handle unblock button click
   const handleUnblockClick = (itemId: string) => {
     setSelectedItemId(itemId);
     setIsUnblockModalOpen(true);
   };
 
-  // Handle unblock success
   const handleUnblockSuccess = () => {
-    refetch();
+    void refetch();
   };
 
-  // Format stage name
-  const formatStageName = (stage: string): string => {
-    const stageLabels: Record<string, string> = {
-      awaiting_payment: "Aguardando Pagamento",
-      payment_confirmed: "Pagamento Confirmado",
-      awaiting_choice: "Aguardando Escolha",
-      model_preparation: "Preparação do Modelo",
-      printing: "Em Impressão 3D",
-      post_processing: "Limpeza e Preparação",
-      painting: "Pintura Artesanal",
-      quality_check: "Controle de Qualidade",
-      packaging: "Embalagem",
-      ready_to_ship: "Pronto para Envio",
-      shipped: "Enviado",
-      delivered: "Entregue",
-    };
-    return stageLabels[stage] || stage;
-  };
-
-  // Format duration
-  const formatDuration = (hours: number): string => {
-    if (hours < 1) {
-      return `${Math.round(hours * 60)} minutos`;
-    } else if (hours < 24) {
-      return `${Math.round(hours)} horas`;
-    } else {
-      const days = Math.floor(hours / 24);
-      const remainingHours = Math.round(hours % 24);
-      return remainingHours > 0
-        ? `${days} ${days === 1 ? "dia" : "dias"} e ${remainingHours} ${remainingHours === 1 ? "hora" : "horas"}`
-        : `${days} ${days === 1 ? "dia" : "dias"}`;
-    }
-  };
-
-  // Format date
-  const formatDate = (date: string): string => {
-    try {
-      return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
-    } catch {
-      return "-";
-    }
-  };
-
-  // Get priority color
-  const getPriorityColor = (priority: string): string => {
-    const colors: Record<string, string> = {
-      critical: "bg-red-500 text-white",
-      high: "bg-orange-500 text-white",
-      normal: "bg-blue-500 text-white",
-      low: "bg-gray-500 text-white",
-    };
-    return colors[priority] || colors.normal;
-  };
-
-  // Loading state
   if (isLoading) {
     return <BlockedItemsViewSkeleton />;
   }
 
-  // Empty state
   if (!blockedItems || blockedItems.length === 0) {
     return (
       <div className="text-center py-12 border rounded-lg bg-green-50 dark:bg-green-950/20">
@@ -188,7 +65,7 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
           Nenhum Item Bloqueado
         </h3>
         <p className="text-muted-foreground">
-          Ótimo! Não há itens de produção bloqueados no momento.
+          Nao ha itens de producao bloqueados no momento.
         </p>
       </div>
     );
@@ -197,7 +74,6 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
   return (
     <>
       <div className="space-y-4">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -211,21 +87,20 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
           </p>
         </div>
 
-        {/* Table */}
         <div className="border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Coleção</TableHead>
+                <TableHead>Colecao</TableHead>
                 <TableHead>Personagem</TableHead>
-                <TableHead>Estágio</TableHead>
+                <TableHead>Estagio</TableHead>
                 <TableHead>Prioridade</TableHead>
                 <TableHead>Motivo do Bloqueio</TableHead>
                 <TableHead>Bloqueado em</TableHead>
-                <TableHead>Duração</TableHead>
-                <TableHead>Responsável</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead>Duracao</TableHead>
+                <TableHead>Responsavel</TableHead>
+                <TableHead className="text-right">Acoes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -240,10 +115,10 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
                   <TableCell>{item.collectionName}</TableCell>
                   <TableCell>{item.characterName || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{formatStageName(item.currentStage)}</Badge>
+                    <Badge variant="outline">{STAGE_LABELS[item.currentStage]}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPriorityColor(item.priority)}>
+                    <Badge className={PRIORITY_CLASSES[item.priority]}>
                       {item.priority.toUpperCase()}
                     </Badge>
                   </TableCell>
@@ -257,7 +132,7 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
                       <Clock className="h-3 w-3 text-muted-foreground" />
-                      {formatDate(item.blockedAt)}
+                      {formatBlockedDate(item.blockedAt)}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -267,11 +142,11 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
                         item.blockedDurationHours > 48
                           ? "border-red-500 text-red-700 dark:text-red-400"
                           : item.blockedDurationHours > 24
-                          ? "border-orange-500 text-orange-700 dark:text-orange-400"
-                          : ""
+                            ? "border-orange-500 text-orange-700 dark:text-orange-400"
+                            : ""
                       }
                     >
-                      {formatDuration(item.blockedDurationHours)}
+                      {formatBlockedDuration(item.blockedDurationHours)}
                     </Badge>
                   </TableCell>
                   <TableCell>{item.assignedToName || "-"}</TableCell>
@@ -293,7 +168,6 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
         </div>
       </div>
 
-      {/* Unblock Modal */}
       {selectedItemId && (
         <UnblockProductionModal
           isOpen={isUnblockModalOpen}
@@ -304,11 +178,34 @@ export const BlockedItemsView: React.FC<BlockedItemsViewProps> = () => {
       )}
     </>
   );
-};
+}
 
-// ============================================================================
-// Skeleton Component
-// ============================================================================
+function formatBlockedDuration(hours: number): string {
+  if (hours < 1) {
+    return `${Math.round(hours * 60)} minutos`;
+  }
+
+  if (hours < 24) {
+    return `${Math.round(hours)} horas`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const remainingHours = Math.round(hours % 24);
+
+  return remainingHours > 0
+    ? `${days} ${days === 1 ? "dia" : "dias"} e ${remainingHours} ${
+        remainingHours === 1 ? "hora" : "horas"
+      }`
+    : `${days} ${days === 1 ? "dia" : "dias"}`;
+}
+
+function formatBlockedDate(date: string): string {
+  try {
+    return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
+  } catch {
+    return "-";
+  }
+}
 
 function BlockedItemsViewSkeleton() {
   return (
@@ -327,15 +224,15 @@ function BlockedItemsViewSkeleton() {
           <TableHeader>
             <TableRow>
               <TableHead>Cliente</TableHead>
-              <TableHead>Coleção</TableHead>
+              <TableHead>Colecao</TableHead>
               <TableHead>Personagem</TableHead>
-              <TableHead>Estágio</TableHead>
+              <TableHead>Estagio</TableHead>
               <TableHead>Prioridade</TableHead>
               <TableHead>Motivo do Bloqueio</TableHead>
               <TableHead>Bloqueado em</TableHead>
-              <TableHead>Duração</TableHead>
-              <TableHead>Responsável</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead>Duracao</TableHead>
+              <TableHead>Responsavel</TableHead>
+              <TableHead className="text-right">Acoes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
