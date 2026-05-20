@@ -1,17 +1,19 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Check, CreditCard, Smartphone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProductionLimitBadge } from "@/components/production/ProductionLimitBadge";
-import { useCollectionPricing, useGlobalPricingSettings } from "@/hooks/useCollectionPricing";
+import { useCollectionPricing } from "@/hooks/useCollectionPricing";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import {
+  createStandalonePurchaseReservation,
+  getStandalonePurchaseCollectionBySlug,
+} from "@/lib/standalone-purchase-service";
 
 export default function BuyCharacter() {
   const { slug } = useParams<{ slug: string }>();
@@ -22,35 +24,11 @@ export default function BuyCharacter() {
 
   const { data: collection, isLoading } = useQuery({
     queryKey: ["collection", slug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select(
-          `
-          *,
-          collection_characters (
-            id,
-            name,
-            description,
-            image_url,
-            release_order,
-            status
-          )
-        `
-        )
-        .eq("slug", slug)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getStandalonePurchaseCollectionBySlug(slug),
   });
 
   // Buscar preços dinâmicos
   const { data: pricing, isLoading: isPricingLoading } = useCollectionPricing(collection?.id);
-
-  // Buscar configurações globais para pegar o desconto PIX
-  const { data: globalSettings } = useGlobalPricingSettings();
 
   if (isLoading || isPricingLoading) {
     return (
@@ -81,15 +59,7 @@ export default function BuyCharacter() {
     );
   }
 
-  const characters = (collection.collection_characters || []) as Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    image_url: string | null;
-    release_order: number;
-    release_month: number | null;
-    status: "upcoming" | "revealed" | "released";
-  }>;
+  const characters = collection.collection_characters || [];
 
   // Pegar o personagem do mês atual (revealed)
   const currentMonthCharacter = characters.find((c) => c.status === "revealed");
@@ -100,9 +70,6 @@ export default function BuyCharacter() {
   const depositAmount = pricing?.deposit_amount || settings?.default_deposit_amount || 100;
   const remainingPix = pricing?.remaining_pix || pricePix - depositAmount;
   const remainingFull = pricing?.remaining_full || priceFull - depositAmount;
-  const pixDiscount =
-    globalSettings?.pix_discount_percentage || settings?.pix_discount_percentage || 5;
-
   return (
     <Page
       title={`Comprar Peça Avulsa - ${collection.name}`}
@@ -339,40 +306,10 @@ export default function BuyCharacter() {
                             }
 
                             try {
-                              // Buscar ciclo atual aberto
-                              const { data: currentCycle, error: cycleError } = await supabase
-                                .from("cycles")
-                                .select("id")
-                                .eq("status", "open")
-                                .single();
-
-                              if (cycleError || !currentCycle) {
-                                toast({
-                                  title: "Erro",
-                                  description: "Nenhum ciclo de produção aberto no momento.",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-
-                              // Criar compra avulsa via edge function
-                              const { data, error } = await supabase.functions.invoke(
-                                'create-standalone-purchase',
-                                {
-                                  body: {
-                                    collectionId: collection.id,
-                                    cycleId: currentCycle.id,
-                                    characterId: currentMonthCharacter.id, // Personagem escolhido
-                                    depositVoucherUrl: null // Será enviado depois
-                                  }
-                                }
-                              );
-
-                              if (error) throw error;
-
-                              if (!data.success) {
-                                throw new Error(data.error || 'Erro ao criar compra');
-                              }
+                              await createStandalonePurchaseReservation({
+                                collectionId: collection.id,
+                                characterId: currentMonthCharacter.id,
+                              });
 
                               toast({
                                 title: "Compra criada!",
@@ -383,16 +320,17 @@ export default function BuyCharacter() {
                               setTimeout(() => {
                                 navigate(`/meus-pedidos`);
                               }, 1500);
-                            } catch (error: any) {
+                            } catch (error) {
                               console.error("Erro ao criar compra:", error);
 
                               let errorMessage = "Ocorreu um erro ao criar sua compra.";
+                              const message = error instanceof Error ? error.message : "";
 
-                              if (error.message?.includes('CUTOFF_PASSED')) {
+                              if (message.includes('CUTOFF_PASSED')) {
                                 errorMessage = "O prazo para compras deste ciclo já passou.";
-                              } else if (error.message?.includes('CAPACITY_EXCEEDED')) {
+                              } else if (message.includes('CAPACITY_EXCEEDED')) {
                                 errorMessage = "Capacidade esgotada para este ciclo.";
-                              } else if (error.message?.includes('CYCLE_NOT_OPEN')) {
+                              } else if (message.includes('CYCLE_NOT_OPEN')) {
                                 errorMessage = "Ciclo não está aberto para novas compras.";
                               }
 
@@ -461,3 +399,4 @@ export default function BuyCharacter() {
     </Page>
   );
 }
+

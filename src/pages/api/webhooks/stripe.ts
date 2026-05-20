@@ -56,12 +56,13 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({ received: true }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
+  } catch (error) {
     logError('Webhook processing failed', error, 'stripe-webhook');
+    const message = error instanceof Error ? error.message : 'Webhook processing failed';
 
     // Retornar erro
     return new Response(
-      JSON.stringify({ error: error.message || 'Webhook processing failed' }),
+      JSON.stringify({ error: message }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }

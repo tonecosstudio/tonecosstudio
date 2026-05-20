@@ -1,21 +1,23 @@
 import { Page } from "@/components/layouts/Page";
-import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
+import { ArcadeHero, ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
 import { listPaymentsByUser } from "@/lib/payment-service";
-import { toast } from "@/hooks/use-toast";
+import { useUserPaymentsRealtime } from "@/hooks/useUserPaymentsRealtime";
 import {
-  Clock, CheckCircle, XCircle, AlertCircle, Eye, Search, FileText, Filter
+  Clock, CheckCircle, XCircle, AlertCircle, Eye, Search, FileText
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import type { PaymentStatus } from "@/types/manual-payment";
+import type { ManualPayment, PaymentFilters, PaymentStatus } from "@/types/manual-payment";
 
-const statusConfig: Record<string, { icon: any; color: string; label: string }> = {
+type PaymentStatusFilter = PaymentStatus | "all";
+
+const statusConfig: Record<PaymentStatus, { icon: LucideIcon; color: string; label: string }> = {
   pending: { icon: Clock, color: "text-yellow-400", label: "PENDENTE" },
   under_review: { icon: Eye, color: "text-blue-400", label: "EM ANÁLISE" },
   requires_info: { icon: AlertCircle, color: "text-orange-400", label: "PRECISA INFO" },
@@ -26,14 +28,14 @@ const statusConfig: Record<string, { icon: any; color: string; label: string }> 
 export default function MyPaymentsArcade() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<PaymentStatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: payments = [], isLoading, refetch } = useQuery({
     queryKey: ["user-payments", user?.id, statusFilter, searchQuery],
     queryFn: () => {
       if (!user?.id) throw new Error("Não autenticado");
-      const filters: any = {};
+      const filters: PaymentFilters = {};
       if (statusFilter !== "all") filters.status = [statusFilter];
       if (searchQuery) filters.search = searchQuery;
       return listPaymentsByUser(user.id, filters);
@@ -41,20 +43,19 @@ export default function MyPaymentsArcade() {
     enabled: !!user?.id,
   });
 
-  // Realtime
-  useEffect(() => {
-    if (!user?.id) return;
-    const channel = supabase
-      .channel('payments-arcade')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'manual_payments', filter: `user_id=eq.${user.id}` }, () => refetch())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user?.id, refetch]);
+  const refreshPayments = useCallback(() => {
+    void refetch();
+  }, [refetch]);
+
+  useUserPaymentsRealtime({
+    userId: user?.id,
+    onPaymentUpdate: refreshPayments,
+  });
 
   const formatCurrency = (amount: number) => `R$ ${amount.toFixed(2)}`;
 
-  const pendingCount = payments.filter((p: any) => p.status === "pending").length;
-  const approvedCount = payments.filter((p: any) => p.status === "approved").length;
+  const pendingCount = payments.filter((p) => p.status === "pending").length;
+  const approvedCount = payments.filter((p) => p.status === "approved").length;
 
   return (
     <Page title="Meus Pagamentos | ORDAX" description="Acompanhe seus pagamentos">
@@ -83,7 +84,7 @@ export default function MyPaymentsArcade() {
               />
             </div>
             <div className="flex gap-2 flex-wrap">
-              {["all", "pending", "under_review", "approved", "rejected"].map(s => (
+              {(["all", "pending", "under_review", "approved", "rejected"] as PaymentStatusFilter[]).map(s => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
@@ -93,7 +94,7 @@ export default function MyPaymentsArcade() {
                       : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,45%)] hover:text-[hsl(0,0%,70%)]"
                   }`}
                 >
-                  {s === "all" ? "TODOS" : (statusConfig[s]?.label || s)}
+                  {s === "all" ? "TODOS" : statusConfig[s].label}
                 </button>
               ))}
             </div>
@@ -113,8 +114,8 @@ export default function MyPaymentsArcade() {
           </ArcadeCard>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {payments.map((payment: any) => {
-              const cfg = statusConfig[payment.status] || statusConfig.pending;
+            {payments.map((payment: ManualPayment) => {
+              const cfg = statusConfig[payment.status];
               const Icon = cfg.icon;
               return (
                 <ArcadeCard
