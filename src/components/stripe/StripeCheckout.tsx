@@ -19,15 +19,17 @@
  * ```
  */
 
-import { useEffect, useState } from 'react';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { stripePromise } from '@/lib/stripe/stripe-client';
-import { supabase } from '@/integrations/supabase/client';
-import { logInfo, logError } from '@/lib/logger';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import type { PaymentIntent } from "@stripe/stripe-js";
+import { stripePromise } from "@/lib/stripe/stripe-client";
+import { supabase } from "@/integrations/supabase/client";
+import { logInfo, logError } from "@/lib/logger";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 interface StripeCheckoutProps {
   /** Valor em centavos (ex: 10000 = R$ 100.00) */
@@ -39,7 +41,7 @@ interface StripeCheckoutProps {
   /** Metadata adicional */
   metadata?: Record<string, string>;
   /** Callback de sucesso */
-  onSuccess?: (paymentIntent: any) => void;
+  onSuccess?: (paymentIntent: PaymentIntent) => void;
   /** Callback de erro */
   onError?: (error: Error) => void;
 }
@@ -47,13 +49,17 @@ interface StripeCheckoutProps {
 /**
  * Formulário de pagamento interno
  */
-function CheckoutForm({ amount, currency, description, metadata, onSuccess, onError }: StripeCheckoutProps) {
+function toError(error: unknown, fallbackMessage: string): Error {
+  return error instanceof Error ? error : new Error(fallbackMessage);
+}
+
+function CheckoutForm({ amount, currency, onSuccess, onError }: StripeCheckoutProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements) {
@@ -83,10 +89,11 @@ function CheckoutForm({ amount, currency, description, metadata, onSuccess, onEr
         logInfo('Payment succeeded', { paymentIntentId: paymentIntent.id }, 'stripe-checkout');
         onSuccess?.(paymentIntent);
       }
-    } catch (error: any) {
-      logError('Payment failed', error, 'stripe-checkout');
-      setErrorMessage(error.message || 'Erro ao processar pagamento');
-      onError?.(error);
+    } catch (error) {
+      const normalizedError = toError(error, "Erro ao processar pagamento");
+      logError('Payment failed', normalizedError, 'stripe-checkout');
+      setErrorMessage(normalizedError.message);
+      onError?.(normalizedError);
     } finally {
       setIsProcessing(false);
     }
@@ -127,6 +134,7 @@ function CheckoutForm({ amount, currency, description, metadata, onSuccess, onEr
  * Componente principal de checkout
  */
 export function StripeCheckout(props: StripeCheckoutProps) {
+  const { amount, currency, description, metadata, onError } = props;
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,16 +146,16 @@ export function StripeCheckout(props: StripeCheckoutProps) {
     const createPaymentIntent = async () => {
       try {
         logInfo('Creating payment intent', {
-          amount: props.amount,
-          currency: props.currency
+          amount,
+          currency
         }, 'stripe-checkout');
 
         const { data, error } = await supabase.functions.invoke('create-payment-intent', {
           body: {
-            amount: props.amount,
-            currency: props.currency || 'brl',
-            description: props.description,
-            metadata: props.metadata,
+            amount,
+            currency: currency || 'brl',
+            description,
+            metadata,
           },
         });
 
@@ -162,12 +170,13 @@ export function StripeCheckout(props: StripeCheckoutProps) {
         if (!isMounted) return;
         setClientSecret(data.clientSecret);
         setIsLoading(false);
-      } catch (error: any) {
+      } catch (error) {
         if (!isMounted) return;
-        logError('Failed to create payment intent', error, 'stripe-checkout');
-        setError(error.message || 'Erro ao inicializar pagamento');
+        const normalizedError = toError(error, "Erro ao inicializar pagamento");
+        logError('Failed to create payment intent', normalizedError, 'stripe-checkout');
+        setError(normalizedError.message);
         setIsLoading(false);
-        props.onError?.(error);
+        onError?.(normalizedError);
       }
     };
 
@@ -175,7 +184,7 @@ export function StripeCheckout(props: StripeCheckoutProps) {
     return () => {
       isMounted = false;
     };
-  }, [props.amount, props.currency, props.description, props.metadata, props.onError]);
+  }, [amount, currency, description, metadata, onError]);
 
   if (isLoading) {
     return (
@@ -216,7 +225,7 @@ export function StripeCheckout(props: StripeCheckoutProps) {
       <CardHeader>
         <CardTitle>Pagamento Seguro</CardTitle>
         <CardDescription>
-          {props.description || 'Complete os dados do cartão para finalizar o pagamento'}
+          {description || 'Complete os dados do cartão para finalizar o pagamento'}
         </CardDescription>
       </CardHeader>
       <CardContent>
