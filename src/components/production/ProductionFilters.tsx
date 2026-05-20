@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ProductionFilters Component
  * 
@@ -13,8 +12,6 @@
  * Filters are managed in parent component and passed down via props.
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { X, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,7 +19,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Card, CardContent } from "@/components/ui/card";
-import type { ProductionFilters as ProductionFiltersType, Priority, ProductionStage } from "@/services/admin/production-service";
+import type {
+  Priority,
+  ProductionFilters as ProductionFiltersType,
+  ProductionStage,
+} from "@/types/production";
+import {
+  useProductionCollectionFilterOptions,
+  useProductionTeamMemberFilterOptions,
+} from "@/hooks/admin/useProductionFilterOptions";
 
 interface ProductionFiltersProps {
   filters: ProductionFiltersType;
@@ -59,40 +64,10 @@ export function ProductionFilters({
   onFiltersChange,
   onReset,
 }: ProductionFiltersProps) {
-  // Fetch collections for filter
-  const { data: collections, isLoading: isLoadingCollections } = useQuery({
-    queryKey: ["collections-for-filters"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select("id, name")
-        .eq("is_active", true)
-        .order("name");
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch team members (admin users) for filter
-  const { data: teamMembers, isLoading: isLoadingTeamMembers } = useQuery({
-    queryKey: ["team-members-for-filters"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_list_users");
-
-      if (error) throw error;
-      
-      // Filter only admin users
-      const admins = (data || []).filter((user: any) => 
-        user.roles && Array.isArray(user.roles) && user.roles.includes("admin")
-      );
-      
-      return admins.map((user: any) => ({
-        id: user.id,
-        name: user.full_name || user.email || "Sem nome",
-      }));
-    },
-  });
+  const { data: collections, isLoading: isLoadingCollections } =
+    useProductionCollectionFilterOptions();
+  const { data: teamMembers, isLoading: isLoadingTeamMembers } =
+    useProductionTeamMemberFilterOptions();
 
   // Calculate active filter count
   const activeFilterCount = 

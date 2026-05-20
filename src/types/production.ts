@@ -23,3 +23,14 @@ export type ProductionStage =
 export type Priority = "critical" | "high" | "normal" | "low";
 
 export type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked";
+
+export interface ProductionFilters {
+  collections?: string[];
+  priorities?: Priority[];
+  stages?: ProductionStage[];
+  statuses?: ProductionStatus[];
+  assignedTo?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  searchQuery?: string;
+}

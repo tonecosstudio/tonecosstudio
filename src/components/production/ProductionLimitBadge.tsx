@@ -1,32 +1,11 @@
-// @ts-nocheck
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle, CheckCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface ProductionLimit {
-  prod_month: number;
-  prod_year: number;
-  prod_global_limit: number;
-  prod_units_sold: number;
-  prod_available: number;
-  prod_is_closed: boolean;
-  prod_percentage_sold: number;
-}
+import { useProductionLimit } from "@/hooks/useProductionLimit";
 
 export function ProductionLimitBadge() {
-  const { data: limit, isLoading } = useQuery({
-    queryKey: ["production-limit"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_current_production_limit").single();
-
-      if (error) throw error;
-      return data as ProductionLimit;
-    },
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
-  });
+  const { limit, isLoading } = useProductionLimit();
 
   if (isLoading) {
     return (

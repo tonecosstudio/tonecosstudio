@@ -8,13 +8,19 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json, Tables } from "@/integrations/supabase/types";
 import { calculateEstimatedCompletion } from "./stage-service";
 import log from "@/lib/logger";
-import type { ChoiceStatus, Priority, ProductionStage, ProductionStatus } from "@/types/production";
+import type {
+  ChoiceStatus,
+  Priority,
+  ProductionFilters,
+  ProductionStage,
+  ProductionStatus,
+} from "@/types/production";
 
 // ============================================================================
 // Tipos
 // ============================================================================
 
-export type { ChoiceStatus, Priority, ProductionStage, ProductionStatus };
+export type { ChoiceStatus, Priority, ProductionFilters, ProductionStage, ProductionStatus };
 
 // ============================================================================
 // Constantes de Estágios
@@ -186,17 +192,6 @@ export interface ProductionQueueItem {
 }
 
 type ProductionQueueRow = Tables<"production_queue">;
-
-export interface ProductionFilters {
-  collections?: string[];
-  priorities?: Priority[];
-  stages?: ProductionStage[];
-  statuses?: ProductionStatus[];
-  assignedTo?: string[];
-  dateFrom?: string;
-  dateTo?: string;
-  searchQuery?: string;
-}
 
 export interface PaginationParams {
   page: number;
