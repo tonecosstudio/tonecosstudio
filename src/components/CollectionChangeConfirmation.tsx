@@ -22,12 +22,18 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 
+interface CollectionSummary {
+  name?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+}
+
 interface CollectionChangeConfirmationProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-  previousCollection: any;
-  newCollection: any;
+  previousCollection?: CollectionSummary | null;
+  newCollection: CollectionSummary;
   isCloseToCutoff?: boolean;
   timeUntilCutoff?: string;
 }

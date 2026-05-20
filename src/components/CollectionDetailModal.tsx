@@ -16,8 +16,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Eye, EyeOff, Sparkles } from "lucide-react";
 
+type RotationType = 'fixed' | 'odd_months' | 'even_months';
+
+interface CollectionDetail {
+  id: string;
+  name: string;
+  description?: string | null;
+  image_url?: string | null;
+  rotation_type?: RotationType | string | null;
+  revealed?: boolean | null;
+  character_name?: string | null;
+  character_image_url?: string | null;
+  price_full?: number | null;
+}
+
 interface CollectionDetailModalProps {
-  collection: any;
+  collection?: CollectionDetail | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (collectionId: string) => void;
