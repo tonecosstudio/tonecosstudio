@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ProductionKanbanBoard Component
  * 
@@ -15,21 +14,20 @@
  * - Real-time updates
  */
 
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, type MouseEvent } from "react";
 import {
   DndContext,
-  DragEndEvent,
   DragOverlay,
-  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
   closestCorners,
   useDroppable,
   useDraggable,
+  type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
-import { ChevronDown, ChevronRight, Plus, Package, MoreVertical, UserPlus, AlertCircle, Eye } from "lucide-react";
+import { ChevronDown, ChevronRight, Package, MoreVertical, UserPlus, AlertCircle, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,23 +39,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import type {
+  Priority,
+  ProductionFilters,
+  ProductionQueueItem,
+  ProductionStage,
+} from "@/types/production";
 import {
-  fetchProductionQueue,
-  updateProductionStage,
   STAGE_LABELS,
   STAGE_ORDER,
-  type ProductionQueueItem,
-  type ProductionStage,
-  type ProductionFilters,
-  type PaginatedResponse,
-} from "@/services/admin/production-service";
+  useMoveProductionKanbanItem,
+  useProductionPipelineQueue,
+} from "@/hooks/admin/useProductionPipeline";
 
 interface ProductionKanbanBoardProps {
   filters: ProductionFilters;
 }
 
 // Stage configuration with labels and colors
-const STAGE_COLORS: Record<string, string> = {
+const STAGE_COLORS: Record<ProductionStage, string> = {
   awaiting_payment: "bg-slate-100 border-slate-300 dark:bg-slate-900/30 dark:border-slate-700",
   payment_confirmed: "bg-emerald-100 border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-700",
   awaiting_choice: "bg-yellow-100 border-yellow-300 dark:bg-yellow-900/30 dark:border-yellow-700",
@@ -82,7 +82,6 @@ const STAGE_CONFIG: Array<{ key: ProductionStage; label: string; color: string }
 
 export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [collapsedColumns, setCollapsedColumns] = useState<Set<ProductionStage>>(new Set());
   const [activeItem, setActiveItem] = useState<ProductionQueueItem | null>(null);
 
@@ -95,17 +94,8 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
     })
   );
 
-  // Fetch production queue items
-  const { data: queueData, isLoading } = useQuery({
-    queryKey: ["production-queue", filters],
-    queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
-  });
-
-  // Mutation for updating stage (success/error handling done in handleDragEnd for better control)
-  const updateStageMutation = useMutation({
-    mutationFn: ({ itemId, newStage }: { itemId: string; newStage: ProductionStage }) =>
-      updateProductionStage(itemId, newStage),
-  });
+  const { data: queueData, isLoading } = useProductionPipelineQueue(filters);
+  const updateStageMutation = useMoveProductionKanbanItem(filters);
 
   // Group items by stage
   const itemsByStage = useMemo(() => {
@@ -146,25 +136,12 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
   };
 
   // Validate stage transition
-  const validateStageTransition = (currentStage: ProductionStage, newStage: ProductionStage): { valid: boolean; error?: string } => {
-    // Define valid stage order
-    const stageOrder: ProductionStage[] = [
-      "awaiting_payment",
-      "payment_confirmed",
-      "awaiting_choice",
-      "model_preparation",
-      "printing",
-      "post_processing",
-      "painting",
-      "quality_check",
-      "packaging",
-      "ready_to_ship",
-      "shipped",
-      "delivered",
-    ];
-
-    const currentIndex = stageOrder.indexOf(currentStage);
-    const newIndex = stageOrder.indexOf(newStage);
+  const validateStageTransition = (
+    item: ProductionQueueItem,
+    newStage: ProductionStage
+  ): { valid: boolean; error?: string } => {
+    const currentIndex = STAGE_ORDER.indexOf(item.currentStage);
+    const newIndex = STAGE_ORDER.indexOf(newStage);
 
     // Can't move to the same stage
     if (currentIndex === newIndex) {
@@ -180,9 +157,8 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
     }
 
     // Special validation: can't move from awaiting_choice if choice is still pending
-    if (currentStage === "awaiting_choice" && newIndex > currentIndex) {
-      const item = queueData?.data.find(i => i.currentStage === currentStage);
-      if (item?.choiceStatus === "pending") {
+    if (item.currentStage === "awaiting_choice" && newIndex > currentIndex) {
+      if (item.choiceStatus === "pending") {
         return {
           valid: false,
           error: "Aguardando escolha do personagem pelo cliente. Não é possível avançar.",
@@ -214,7 +190,7 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
     if (item.currentStage === newStage) return;
 
     // Validate stage transition
-    const validation = validateStageTransition(item.currentStage, newStage);
+    const validation = validateStageTransition(item, newStage);
     if (!validation.valid) {
       toast({
         title: "Transição inválida",
@@ -224,34 +200,17 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
       return;
     }
 
-    // Optimistic update: immediately update the UI
-    const previousData = queryClient.getQueryData<PaginatedResponse<ProductionQueueItem>>(["production-queue", filters]);
-    
-    if (previousData) {
-      queryClient.setQueryData<PaginatedResponse<ProductionQueueItem>>(
-        ["production-queue", filters],
-        {
-          ...previousData,
-          data: previousData.data.map(i =>
-            i.id === itemId ? { ...i, currentStage: newStage } : i
-          ),
-        }
-      );
-    }
-
     // Update the stage with rollback on error
     updateStageMutation.mutate(
       { itemId, newStage },
       {
         onError: (error) => {
-          // Rollback: restore previous data
-          if (previousData) {
-            queryClient.setQueryData(["production-queue", filters], previousData);
-          }
-          
           toast({
             title: "Erro ao atualizar estágio",
-            description: error.message || "Não foi possível mover o item. Tente novamente.",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Não foi possível mover o item. Tente novamente.",
             variant: "destructive",
           });
         },
@@ -261,10 +220,6 @@ export function ProductionKanbanBoard({ filters }: ProductionKanbanBoardProps) {
             title: "Estágio atualizado com sucesso",
             description: `O item foi movido para "${STAGE_CONFIG.find(s => s.key === newStage)?.label}".`,
           });
-          
-          // Invalidate queries to ensure data consistency
-          queryClient.invalidateQueries({ queryKey: ["production-queue"] });
-          queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
         },
       }
     );
@@ -376,21 +331,6 @@ function KanbanColumn({
               </>
             )}
           </div>
-
-          {!isCollapsed && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-2"
-              onClick={() => {
-                // TODO: Implement add item to stage functionality
-                console.log("Add item to stage:", stage);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar
-            </Button>
-          )}
         </CardHeader>
 
         {!isCollapsed && (
@@ -433,14 +373,14 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
       }
     : undefined;
 
-  const priorityColors: Record<string, string> = {
+  const priorityColors: Record<Priority, string> = {
     critical: "bg-red-500 text-white",
     high: "bg-orange-500 text-white",
     normal: "bg-blue-500 text-white",
     low: "bg-gray-500 text-white",
   };
 
-  const priorityLabels: Record<string, string> = {
+  const priorityLabels: Record<Priority, string> = {
     critical: "Crítico",
     high: "Alto",
     normal: "Normal",
@@ -481,7 +421,7 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
   };
 
   // Handle quick actions
-  const handleAssign = (e: React.MouseEvent) => {
+  const handleAssign = (e: MouseEvent) => {
     e.stopPropagation();
     toast({
       title: "Atribuir item",
@@ -489,7 +429,7 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
     });
   };
 
-  const handleBlock = (e: React.MouseEvent) => {
+  const handleBlock = (e: MouseEvent) => {
     e.stopPropagation();
     toast({
       title: "Bloquear item",
@@ -497,7 +437,7 @@ function KanbanCard({ item, isDragging = false }: KanbanCardProps) {
     });
   };
 
-  const handleViewDetails = (e: React.MouseEvent) => {
+  const handleViewDetails = (e: MouseEvent) => {
     e.stopPropagation();
     toast({
       title: "Ver detalhes",

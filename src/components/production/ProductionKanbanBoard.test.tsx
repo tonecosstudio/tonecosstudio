@@ -2,13 +2,45 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProductionKanbanBoard } from "./ProductionKanbanBoard";
-import * as productionService from "@/services/admin/production-service";
-import type { ProductionQueueItem } from "@/services/admin/production-service";
+import type { ProductionQueueItem } from "@/types/production";
+
+const serviceMocks = vi.hoisted(() => ({
+  fetchProductionQueue: vi.fn(),
+  updateProductionStage: vi.fn(),
+}));
 
 // Mock the production service
 vi.mock("@/services/admin/production-service", () => ({
-  fetchProductionQueue: vi.fn(),
-  updateProductionStage: vi.fn(),
+  fetchProductionQueue: serviceMocks.fetchProductionQueue,
+  updateProductionStage: serviceMocks.updateProductionStage,
+  STAGE_LABELS: {
+    awaiting_payment: "Aguardando Pagamento",
+    payment_confirmed: "Pagamento Confirmado",
+    awaiting_choice: "Aguardando Escolha",
+    model_preparation: "Preparacao do Modelo",
+    printing: "Em Impressao 3D",
+    post_processing: "Limpeza e Preparacao",
+    painting: "Pintura Artesanal",
+    quality_check: "Controle de Qualidade",
+    packaging: "Embalagem",
+    ready_to_ship: "Pronto para Envio",
+    shipped: "Enviado",
+    delivered: "Entregue",
+  },
+  STAGE_ORDER: [
+    "awaiting_payment",
+    "payment_confirmed",
+    "awaiting_choice",
+    "model_preparation",
+    "printing",
+    "post_processing",
+    "painting",
+    "quality_check",
+    "packaging",
+    "ready_to_ship",
+    "shipped",
+    "delivered",
+  ],
 }));
 
 // Mock toast hook
@@ -44,7 +76,7 @@ describe("ProductionKanbanBoard", () => {
       characterId: "char-1",
       characterName: "Personagem A",
       productionStatus: "in_production",
-      currentStage: "design",
+      currentStage: "model_preparation",
       choiceStatus: "approved",
       choiceDeadline: null,
       choiceMadeAt: "2024-01-01T00:00:00Z",
@@ -105,7 +137,7 @@ describe("ProductionKanbanBoard", () => {
   };
 
   it("renders loading state initially", () => {
-    vi.mocked(productionService.fetchProductionQueue).mockImplementation(
+    serviceMocks.fetchProductionQueue.mockImplementation(
       () => new Promise(() => {}) // Never resolves
     );
 
@@ -114,7 +146,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("renders all stage columns", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -126,8 +158,8 @@ describe("ProductionKanbanBoard", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Aguardando Escolha")).toBeInTheDocument();
-      expect(screen.getByText("Design")).toBeInTheDocument();
-      expect(screen.getByText("Produção")).toBeInTheDocument();
+      expect(screen.getByText("Preparacao do Modelo")).toBeInTheDocument();
+      expect(screen.getByText("Em Impressao 3D")).toBeInTheDocument();
       expect(screen.getByText("Controle de Qualidade")).toBeInTheDocument();
       expect(screen.getByText("Embalagem")).toBeInTheDocument();
       expect(screen.getByText("Enviado")).toBeInTheDocument();
@@ -135,7 +167,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays items in correct columns", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -153,7 +185,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays item count per column", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -171,7 +203,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays priority badges correctly", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -188,7 +220,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays deadline for pending choices", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -205,7 +237,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays assigned team member", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -221,7 +253,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays character name when chosen", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -236,30 +268,13 @@ describe("ProductionKanbanBoard", () => {
     });
   });
 
-  it("shows 'Add' button for each column", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
-      data: mockItems,
-      total: 2,
-      page: 1,
-      pageSize: 1000,
-      totalPages: 1,
-    });
-
-    renderComponent();
-
-    await waitFor(() => {
-      const addButtons = screen.getAllByText("Adicionar");
-      expect(addButtons.length).toBe(6); // One for each stage
-    });
-  });
-
   it("applies filters correctly", async () => {
     const filters = {
       priorities: ["high" as const],
-      stages: ["design" as const],
+      stages: ["model_preparation" as const],
     };
 
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -270,7 +285,7 @@ describe("ProductionKanbanBoard", () => {
     renderComponent(filters);
 
     await waitFor(() => {
-      expect(productionService.fetchProductionQueue).toHaveBeenCalledWith(
+      expect(serviceMocks.fetchProductionQueue).toHaveBeenCalledWith(
         filters,
         { page: 1, pageSize: 1000 }
       );
@@ -278,7 +293,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays order number", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -296,7 +311,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays collection icon with name", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -314,7 +329,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("displays team member avatar with initials", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -337,7 +352,7 @@ describe("ProductionKanbanBoard", () => {
       choiceDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
     };
 
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: [urgentItem],
       total: 1,
       page: 1,
@@ -354,7 +369,7 @@ describe("ProductionKanbanBoard", () => {
   });
 
   it("shows quick actions menu", async () => {
-    vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+    serviceMocks.fetchProductionQueue.mockResolvedValue({
       data: mockItems,
       total: 2,
       page: 1,
@@ -377,11 +392,11 @@ describe("ProductionKanbanBoard", () => {
     it("prevents skipping stages during drag-and-drop", async () => {
       const itemInDesign: ProductionQueueItem = {
         ...mockItems[0],
-        currentStage: "design",
+        currentStage: "model_preparation",
         choiceStatus: "approved",
       };
 
-      vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+      serviceMocks.fetchProductionQueue.mockResolvedValue({
         data: [itemInDesign],
         total: 1,
         page: 1,
@@ -406,7 +421,7 @@ describe("ProductionKanbanBoard", () => {
         choiceStatus: "pending",
       };
 
-      vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+      serviceMocks.fetchProductionQueue.mockResolvedValue({
         data: [itemAwaitingChoice],
         total: 1,
         page: 1,
@@ -426,11 +441,11 @@ describe("ProductionKanbanBoard", () => {
     it("allows moving backwards through stages", async () => {
       const itemInProduction: ProductionQueueItem = {
         ...mockItems[0],
-        currentStage: "production",
+        currentStage: "printing",
         choiceStatus: "approved",
       };
 
-      vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+      serviceMocks.fetchProductionQueue.mockResolvedValue({
         data: [itemInProduction],
         total: 1,
         page: 1,
@@ -450,11 +465,11 @@ describe("ProductionKanbanBoard", () => {
     it("allows moving to adjacent stage", async () => {
       const itemInDesign: ProductionQueueItem = {
         ...mockItems[0],
-        currentStage: "design",
+        currentStage: "model_preparation",
         choiceStatus: "approved",
       };
 
-      vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+      serviceMocks.fetchProductionQueue.mockResolvedValue({
         data: [itemInDesign],
         total: 1,
         page: 1,
@@ -468,13 +483,13 @@ describe("ProductionKanbanBoard", () => {
         expect(screen.getByText("João Silva")).toBeInTheDocument();
       });
 
-      // Validation logic allows moving to next adjacent stage (production)
+      // Validation logic allows moving to next adjacent stage (printing)
     });
   });
 
   describe("Optimistic Updates and Rollback", () => {
     it("performs optimistic update when dragging item", async () => {
-      vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+      serviceMocks.fetchProductionQueue.mockResolvedValue({
         data: mockItems,
         total: 2,
         page: 1,
@@ -482,9 +497,9 @@ describe("ProductionKanbanBoard", () => {
         totalPages: 1,
       });
 
-      vi.mocked(productionService.updateProductionStage).mockResolvedValue({
+      serviceMocks.updateProductionStage.mockResolvedValue({
         ...mockItems[0],
-        currentStage: "production",
+        currentStage: "printing",
       });
 
       renderComponent();
@@ -498,7 +513,7 @@ describe("ProductionKanbanBoard", () => {
     });
 
     it("rolls back on API error", async () => {
-      vi.mocked(productionService.fetchProductionQueue).mockResolvedValue({
+      serviceMocks.fetchProductionQueue.mockResolvedValue({
         data: mockItems,
         total: 2,
         page: 1,
@@ -506,7 +521,7 @@ describe("ProductionKanbanBoard", () => {
         totalPages: 1,
       });
 
-      vi.mocked(productionService.updateProductionStage).mockRejectedValue(
+      serviceMocks.updateProductionStage.mockRejectedValue(
         new Error("API Error: Failed to update stage")
       );
 
