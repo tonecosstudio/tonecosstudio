@@ -1,15 +1,15 @@
-// @ts-nocheck
 import { useLazyImage } from "@/hooks/use-lazy-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 interface OptimizedImageProps {
   src: string | null;
   alt: string;
   className?: string;
   aspectRatio?: "square" | "video" | "portrait" | "auto";
-  fallback?: React.ReactNode;
+  fallback?: ReactNode;
   priority?: boolean; // Se true, não usa lazy loading
 }
 
@@ -28,9 +28,10 @@ export function OptimizedImage({
   fallback,
   priority = false,
 }: OptimizedImageProps) {
-  const { imgRef, imageSrc, isLoading, error } = useLazyImage(
-    priority ? src : src,
-    priority ? { threshold: 1 } : undefined
+  const { imgRef, imageSrc, isLoading, error } = useLazyImage<HTMLDivElement>(
+    src,
+    undefined,
+    priority
   );
 
   const aspectRatioClass = {
@@ -56,19 +57,24 @@ export function OptimizedImage({
 
   // Estado de carregamento
   if (isLoading || !imageSrc) {
-    return <Skeleton ref={imgRef} className={cn(aspectRatioClass, className)} />;
+    return (
+      <div ref={imgRef} className={cn(aspectRatioClass, className)}>
+        <Skeleton className="h-full w-full" />
+      </div>
+    );
   }
 
   // Imagem carregada
   return (
-    <img
-      ref={imgRef}
-      src={imageSrc}
-      alt={alt}
-      loading={priority ? "eager" : "lazy"}
-      decoding="async"
-      className={cn("object-cover w-full h-full", aspectRatioClass, className)}
-    />
+    <div ref={imgRef} className={cn(aspectRatioClass, className)}>
+      <img
+        src={imageSrc}
+        alt={alt}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        className="h-full w-full object-cover"
+      />
+    </div>
   );
 }
 
@@ -93,7 +99,7 @@ export function OptimizedAvatar({
     xl: "h-16 w-16",
   };
 
-  const { imgRef, imageSrc, isLoading, error } = useLazyImage(src);
+  const { imgRef, imageSrc, isLoading, error } = useLazyImage<HTMLDivElement>(src);
 
   if (error || !src) {
     return (
@@ -109,18 +115,23 @@ export function OptimizedAvatar({
   }
 
   if (isLoading || !imageSrc) {
-    return <Skeleton ref={imgRef} className={cn("rounded-full", sizeClasses[size])} />;
+    return (
+      <div ref={imgRef} className={cn("rounded-full", sizeClasses[size])}>
+        <Skeleton className="h-full w-full rounded-full" />
+      </div>
+    );
   }
 
   return (
-    <img
-      ref={imgRef}
-      src={imageSrc}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      className={cn("rounded-full object-cover", sizeClasses[size])}
-    />
+    <div ref={imgRef} className={cn("overflow-hidden rounded-full", sizeClasses[size])}>
+      <img
+        src={imageSrc}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover"
+      />
+    </div>
   );
 }
 
@@ -136,15 +147,15 @@ export function OptimizedBackgroundImage({
 }: {
   src: string | null;
   alt: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
   className?: string;
   overlay?: boolean;
 }) {
-  const { imgRef, imageSrc, isLoading, error } = useLazyImage(src);
+  const { imgRef, imageSrc, isLoading, error } = useLazyImage<HTMLDivElement>(src);
 
   if (error || !src) {
     return (
-      <div ref={imgRef} className={cn("bg-muted relative", className)}>
+      <div ref={imgRef} role="img" aria-label={alt} className={cn("bg-muted relative", className)}>
         {children}
       </div>
     );
@@ -161,6 +172,8 @@ export function OptimizedBackgroundImage({
   return (
     <div
       ref={imgRef}
+      role="img"
+      aria-label={alt}
       className={cn("relative", className)}
       style={{
         backgroundImage: `url(${imageSrc})`,

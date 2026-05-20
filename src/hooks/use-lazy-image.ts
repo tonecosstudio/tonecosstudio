@@ -4,15 +4,28 @@ import { useState, useEffect, useRef } from "react";
  * Hook para lazy loading de imagens
  * Carrega imagens apenas quando estão visíveis no viewport
  */
-export function useLazyImage(src: string | null, options?: IntersectionObserverInit) {
+export function useLazyImage<TElement extends HTMLElement = HTMLDivElement>(
+  src: string | null,
+  options?: IntersectionObserverInit,
+  eager = false
+) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<TElement>(null);
 
   useEffect(() => {
     if (!src) {
       setIsLoading(false);
+      setImageSrc(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(false);
+
+    if (eager) {
+      setImageSrc(src);
       return;
     }
 
@@ -38,7 +51,7 @@ export function useLazyImage(src: string | null, options?: IntersectionObserverI
     return () => {
       observer.disconnect();
     };
-  }, [src, options]);
+  }, [src, options, eager]);
 
   useEffect(() => {
     if (!imageSrc) return;
