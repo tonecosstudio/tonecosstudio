@@ -19,8 +19,6 @@
 import React from "react";
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-const IS_PRODUCTION = import.meta.env.PROD;
-const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
 // Sentry é opcional - todas as funções são no-ops se não estiver instalado
 const SENTRY_ENABLED = false; // Mude para true após instalar @sentry/react
@@ -38,7 +36,7 @@ export function initSentry() {
 /**
  * Captura erro manualmente (no-op se Sentry não estiver instalado)
  */
-export function captureError(error: Error, context?: Record<string, any>) {
+export function captureError(error: Error, context?: Record<string, unknown>) {
   if (!SENTRY_ENABLED) {
     console.error("Error:", error, context);
     return;
@@ -58,28 +56,32 @@ export function captureMessage(message: string, level: "info" | "warning" | "err
 /**
  * Define contexto do usuário (no-op se Sentry não estiver instalado)
  */
-export function setUser(user: { id: string; email?: string; username?: string } | null) {
+export function setUser(_user: { id: string; email?: string; username?: string } | null) {
   if (!SENTRY_ENABLED) return;
 }
 
 /**
  * Adiciona breadcrumb (no-op se Sentry não estiver instalado)
  */
-export function addBreadcrumb(message: string, category: string, data?: Record<string, any>) {
+export function addBreadcrumb(
+  _message: string,
+  _category: string,
+  _data?: Record<string, unknown>
+) {
   if (!SENTRY_ENABLED) return;
 }
 
 /**
  * Define tag customizada (no-op se Sentry não estiver instalado)
  */
-export function setTag(key: string, value: string) {
+export function setTag(_key: string, _value: string) {
   if (!SENTRY_ENABLED) return;
 }
 
 /**
  * Define contexto customizado (no-op se Sentry não estiver instalado)
  */
-export function setContext(name: string, context: Record<string, any>) {
+export function setContext(_name: string, _context: Record<string, unknown>) {
   if (!SENTRY_ENABLED) return;
 }
 
@@ -88,37 +90,13 @@ export function setContext(name: string, context: Record<string, any>) {
  */
 export function withSentryErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
-  options?: {
+  _options?: {
     fallback?: React.ReactNode;
     showDialog?: boolean;
   }
 ) {
   if (!SENTRY_ENABLED) return Component;
   return Component;
-}
-
-/**
- * Componente de fallback para erros
- */
-function ErrorFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="max-w-md w-full space-y-4 text-center">
-        <div className="text-6xl">😔</div>
-        <h1 className="text-2xl font-bold">Algo deu errado</h1>
-        <p className="text-muted-foreground">
-          Desculpe, ocorreu um erro inesperado. Nossa equipe foi notificada e está trabalhando para
-          resolver.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-        >
-          Recarregar Página
-        </button>
-      </div>
-    </div>
-  );
 }
 
 // Export default vazio para compatibilidade

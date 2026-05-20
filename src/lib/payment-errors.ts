@@ -45,7 +45,7 @@ export class PaymentError extends Error {
     public code: PaymentErrorCode,
     message: string,
     public statusCode: number = 400,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "PaymentError";

@@ -14,6 +14,10 @@
 
 import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 
+type OptimisticUpdateContext<T> = {
+  previousData?: T;
+};
+
 /**
  * Cache time constants (in milliseconds)
  */
@@ -242,11 +246,11 @@ export const CACHE_INVALIDATION = {
  * @returns Optimistic update configuration
  */
 export function createOptimisticUpdate<T>(
-  queryKey: string[],
-  updater: (old: T | undefined) => T
+  _queryKey: string[],
+  _updater: (old: T | undefined) => T
 ) {
   return {
-    onMutate: async (variables: any) => {
+    onMutate: async (_variables: unknown): Promise<OptimisticUpdateContext<T>> => {
       // Cancel outgoing refetches
       // await queryClient.cancelQueries({ queryKey });
 
@@ -259,7 +263,7 @@ export function createOptimisticUpdate<T>(
       // Return context with previous data
       return { previousData: undefined }; // Placeholder
     },
-    onError: (err: Error, variables: any, context: any) => {
+    onError: (_err: Error, _variables: unknown, _context?: OptimisticUpdateContext<T>) => {
       // Rollback on error
       // if (context?.previousData) {
       //   queryClient.setQueryData(queryKey, context.previousData);
@@ -310,7 +314,7 @@ export const queryKeys = {
   collection: {
     all: ['collection'] as const,
     lists: () => ['collection', 'list'] as const,
-    list: (filters: Record<string, any>) => ['collection', 'list', filters] as const,
+    list: (filters: Record<string, unknown>) => ['collection', 'list', filters] as const,
     details: (id: string) => ['collection', 'details', id] as const,
     characters: (id: string) => ['collection', 'characters', id] as const,
   },
@@ -319,21 +323,21 @@ export const queryKeys = {
   order: {
     all: ['order'] as const,
     lists: () => ['order', 'list'] as const,
-    list: (filters: Record<string, any>) => ['order', 'list', filters] as const,
+    list: (filters: Record<string, unknown>) => ['order', 'list', filters] as const,
     details: (id: string) => ['order', 'details', id] as const,
   },
 
   // Admin keys
   admin: {
     all: ['admin'] as const,
-    users: (filters: Record<string, any>) => ['admin', 'users', filters] as const,
+    users: (filters: Record<string, unknown>) => ['admin', 'users', filters] as const,
     analytics: (period: string) => ['admin', 'analytics', period] as const,
   },
 
   // Search keys
   search: {
     all: ['search'] as const,
-    query: (q: string, filters: Record<string, any>) => ['search', q, filters] as const,
+    query: (q: string, filters: Record<string, unknown>) => ['search', q, filters] as const,
   },
 } as const;
 
