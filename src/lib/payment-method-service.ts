@@ -25,6 +25,21 @@ let activeMethodsCache: {
 
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
+type PaymentMethodUpdateData = Partial<
+  Pick<
+    PaymentMethod,
+    | "name"
+    | "type"
+    | "instructions"
+    | "payment_link"
+    | "pix_key"
+    | "account_details"
+    | "is_active"
+    | "is_default"
+    | "display_order"
+  >
+>;
+
 /**
  * List all active payment methods
  * Results are cached for 5 minutes
@@ -146,7 +161,7 @@ export async function updatePaymentMethod(
   input: Partial<PaymentMethodInput>
 ): Promise<PaymentMethod> {
   // Prepare update data (only include provided fields)
-  const updateData: Record<string, any> = {};
+  const updateData: PaymentMethodUpdateData = {};
 
   if (input.name !== undefined) {
     if (input.name.trim().length === 0) {
