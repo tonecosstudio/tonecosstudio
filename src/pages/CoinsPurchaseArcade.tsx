@@ -1,34 +1,25 @@
-// @ts-nocheck
 import { Page } from "@/components/layouts/Page";
-import { ArcadeHero, ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
+import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useUserCoins } from "@/hooks/useUserCoins";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  useCoinPackages,
+  getBonusPercentage,
+  getTotalCoins,
+  type CoinPackage,
+} from "@/hooks/useCoinPackages";
 import { Coins, Sparkles, TrendingUp, Zap, Check, AlertTriangle, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-
-interface CoinPackage {
-  id: string; name: string; amount: number; bonus: number;
-  price_brl: number; is_active: boolean; is_popular: boolean; is_best_value: boolean;
-}
 
 export default function CoinsPurchaseArcade() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: coinsData, isLoading: coinsLoading } = useUserCoins(user?.id);
-  const { data: packages, isLoading: packagesLoading } = useQuery({
-    queryKey: ["coin-packages"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("coin_packages").select("*").eq("is_active", true).order("amount", { ascending: true });
-      if (error) throw error;
-      return data as CoinPackage[];
-    },
-  });
+  const { data: packages, isLoading: packagesLoading } = useCoinPackages();
 
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,12 +30,13 @@ export default function CoinsPurchaseArcade() {
     if (!acceptedTerms) { toast({ title: "Aceite os termos", variant: "destructive" }); return; }
     setIsProcessing(true);
     setSelectedPkg(pkg.id);
-    try {
-      await new Promise(r => setTimeout(r, 2000));
-      toast({ title: "Compra realizada!", description: `${(pkg.amount + pkg.bonus).toLocaleString("pt-BR")} coins adicionados!` });
-      navigate(-1);
-    } catch { toast({ title: "Erro na compra", variant: "destructive" }); }
-    finally { setIsProcessing(false); setSelectedPkg(null); }
+    toast({
+      title: "Compra indisponível",
+      description: "A integração de pagamento para compra de coins ainda não está ativa.",
+      variant: "destructive",
+    });
+    setIsProcessing(false);
+    setSelectedPkg(null);
   };
 
   const isLoading = coinsLoading || packagesLoading;
@@ -94,8 +86,8 @@ export default function CoinsPurchaseArcade() {
         ) : packages && packages.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {packages.map(pkg => {
-              const total = pkg.amount + pkg.bonus;
-              const bonusPct = pkg.bonus > 0 ? Math.round((pkg.bonus / pkg.amount) * 100) : 0;
+              const total = getTotalCoins(pkg);
+              const bonusPct = getBonusPercentage(pkg);
               const isSelected = selectedPkg === pkg.id;
 
               return (
