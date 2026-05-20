@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { StandalonePurchase } from "@/types/database";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
@@ -15,8 +13,33 @@ import {
 } from "lucide-react";
 import { toBahiaTime } from "@/lib/timezone";
 
+type StandalonePurchaseStatusValue =
+  | "deposit_paid"
+  | "awaiting_balance"
+  | "balance_paid"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+type DateInput = Date | string | null | undefined;
+
+export interface StandalonePurchaseStatusData {
+  status: StandalonePurchaseStatusValue;
+  deposit_amount?: number | null;
+  balance_amount?: number | null;
+  deposit_paid_at?: DateInput;
+  production_complete_at?: DateInput;
+  balance_due_date?: DateInput;
+  balance_paid_at?: DateInput;
+  shipped_at?: DateInput;
+  delivered_at?: DateInput;
+  cancelled_at?: DateInput;
+  tracking_code?: string | null;
+  cancellation_reason?: string | null;
+}
+
 interface StandalonePurchaseStatusProps {
-  purchase: StandalonePurchase;
+  purchase: StandalonePurchaseStatusData;
 }
 
 /**
@@ -30,8 +53,11 @@ interface StandalonePurchaseStatusProps {
  * @param purchase - The standalone purchase object
  */
 export function StandalonePurchaseStatus({ purchase }: StandalonePurchaseStatusProps) {
+  const depositAmount = purchase.deposit_amount ?? 0;
+  const balanceAmount = purchase.balance_amount ?? 0;
+
   // Get status badge configuration
-  const getStatusBadge = (status: StandalonePurchase['status']) => {
+  const getStatusBadge = (status: StandalonePurchaseStatusValue) => {
     switch (status) {
       case 'deposit_paid':
         return {
@@ -80,16 +106,23 @@ export function StandalonePurchaseStatus({ purchase }: StandalonePurchaseStatusP
 
   const statusConfig = getStatusBadge(purchase.status);
 
-  // Format dates in Bahia timezone
-  const formatDate = (date: Date | null) => {
+  const normalizeDate = (date: DateInput): Date | null => {
     if (!date) return null;
-    const bahiaDate = toBahiaTime(date);
+    return date instanceof Date ? date : new Date(date);
+  };
+
+  // Format dates in Bahia timezone
+  const formatDate = (date: DateInput) => {
+    const normalizedDate = normalizeDate(date);
+    if (!normalizedDate) return null;
+    const bahiaDate = toBahiaTime(normalizedDate);
     return format(bahiaDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   };
 
-  const formatDateOnly = (date: Date | null) => {
-    if (!date) return null;
-    const bahiaDate = toBahiaTime(date);
+  const formatDateOnly = (date: DateInput) => {
+    const normalizedDate = normalizeDate(date);
+    if (!normalizedDate) return null;
+    const bahiaDate = toBahiaTime(normalizedDate);
     return format(bahiaDate, "dd/MM/yyyy", { locale: ptBR });
   };
 
@@ -102,7 +135,7 @@ export function StandalonePurchaseStatus({ purchase }: StandalonePurchaseStatusP
       bgColor: 'bg-blue-500/10',
       completed: !!purchase.deposit_paid_at,
       date: purchase.deposit_paid_at,
-      description: `R$ ${purchase.deposit_amount.toFixed(2)} pago`,
+      description: `R$ ${depositAmount.toFixed(2)} pago`,
     },
     {
       phase: 'Produção',
@@ -121,7 +154,7 @@ export function StandalonePurchaseStatus({ purchase }: StandalonePurchaseStatusP
       completed: !!purchase.balance_paid_at,
       date: purchase.balance_paid_at,
       description: purchase.balance_paid_at 
-        ? `R$ ${purchase.balance_amount.toFixed(2)} pago`
+        ? `R$ ${balanceAmount.toFixed(2)} pago`
         : purchase.balance_due_date
         ? `Vence em ${formatDateOnly(purchase.balance_due_date)}`
         : 'Aguardando produção',
@@ -204,7 +237,7 @@ export function StandalonePurchaseStatus({ purchase }: StandalonePurchaseStatusP
                   Vencimento: {formatDateOnly(purchase.balance_due_date)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Valor: R$ {purchase.balance_amount.toFixed(2)}
+                  Valor: R$ {balanceAmount.toFixed(2)}
                 </p>
               </div>
             </div>
