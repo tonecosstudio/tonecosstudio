@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
+type QueryError = { message?: string } | null;
+type QueryResult<T> = PromiseLike<{ data: T | null; error: QueryError }>;
+
 export type ProductionStageKey =
   | "queued"
   | "printing"
@@ -44,10 +47,63 @@ export type ProductionPhotoRow = {
   created_by: string | null;
 };
 
+type QuoteProductionUpsert = {
+  quote_id: string;
+  current_stage: ProductionStageKey;
+};
+
+type QuoteProductionUpdateInsert = {
+  quote_id: string;
+  stage: ProductionStageKey;
+  note: string | null;
+};
+
+type QuoteProductionPhotoInsert = {
+  quote_id: string;
+  update_id: string;
+  url: string;
+  caption: string | null;
+};
+
+type UpsertOptions = { onConflict: string };
+
+type QuoteProductionTable = {
+  upsert(
+    value: QuoteProductionUpsert,
+    options: UpsertOptions
+  ): {
+    select(columns: string): {
+      single(): QueryResult<ProductionRow>;
+    };
+  } & QueryResult<null>;
+};
+
+type QuoteProductionUpdatesTable = {
+  insert(value: QuoteProductionUpdateInsert): {
+    select(columns: string): {
+      single(): QueryResult<{ id: string }>;
+    };
+  };
+};
+
+type QuoteProductionPhotosTable = {
+  insert(value: QuoteProductionPhotoInsert): {
+    select(columns: string): {
+      single(): QueryResult<ProductionPhotoRow>;
+    };
+  };
+};
+
+type ProductionTablesClient = {
+  from(table: "quote_production"): QuoteProductionTable;
+  from(table: "quote_production_updates"): QuoteProductionUpdatesTable;
+  from(table: "quote_production_photos"): QuoteProductionPhotosTable;
+};
+
+const productionTables = supabase as unknown as ProductionTablesClient;
+
 export async function ensureProductionForQuote(quoteId: string) {
-  // Client typing may not include these tables yet.
-  const sb = supabase as any;
-  const { data, error } = await sb
+  const { data, error } = await productionTables
     .from("quote_production")
     .upsert({ quote_id: quoteId, current_stage: "queued" }, { onConflict: "quote_id" })
     .select("id,quote_id,current_stage,started_at,updated_at")
@@ -61,14 +117,12 @@ export async function setProductionStage(
   stage: ProductionStageKey,
   note?: string
 ) {
-  const sb = supabase as any;
-
-  const { error: prodErr } = await sb
+  const { error: prodErr } = await productionTables
     .from("quote_production")
     .upsert({ quote_id: quoteId, current_stage: stage }, { onConflict: "quote_id" });
   if (prodErr) throw prodErr;
 
-  const { data: upd, error: updErr } = await sb
+  const { data: upd, error: updErr } = await productionTables
     .from("quote_production_updates")
     .insert({ quote_id: quoteId, stage, note: (note ?? "").trim() || null })
     .select("id")
@@ -87,14 +141,17 @@ export async function uploadProductionPhoto(params: {
   const { quoteId, updateId, file, caption } = params;
 
   // Validate file before upload
-  const { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } = await import('./security/input-sanitizer');
+  const { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } = await import(
+    "./security/input-sanitizer"
+  );
   const validation = validateFileUpload(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
   if (!validation.valid) {
     throw new Error(validation.error || 'Arquivo inválido');
   }
 
   const sanitizedName = sanitizeFilename(file.name);
-  const safeExt = (sanitizedName.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const safeExt =
+    (sanitizedName.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const key = `${quoteId}/${updateId}/${crypto.randomUUID()}.${safeExt}`;
 
   // Bucket is expected to exist as public bucket named "production".
@@ -106,8 +163,7 @@ export async function uploadProductionPhoto(params: {
 
   const url = supabase.storage.from("production").getPublicUrl(key).data.publicUrl;
 
-  const sb = supabase as any;
-  const { data, error } = await sb
+  const { data, error } = await productionTables
     .from("quote_production_photos")
     .insert({
       quote_id: quoteId,
