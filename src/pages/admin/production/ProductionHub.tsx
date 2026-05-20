@@ -52,10 +52,11 @@ import { BulkProgressModal } from "@/components/production/BulkProgressModal";
 
 // Componentes de Escolhas
 import { CharacterChoicesContent } from "@/components/admin/production/CharacterChoicesContent";
+import { useProductionMetrics } from "@/hooks/admin/useProductionMetrics";
 
 // Services
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProductionQueue, fetchProductionMetrics } from "@/services/admin/production-service";
+import { fetchProductionQueue } from "@/services/admin/production-service";
 import { bulkAssignProduction, bulkUpdateStage } from "@/services/admin/bulk-operations-service";
 import { exportProductionItemsToCSV } from "@/lib/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
@@ -105,10 +106,9 @@ function ProductionHub() {
   };
 
   // Fetch production metrics
-  const metricsQuery = useQuery({
-    queryKey: ["production-metrics"],
-    queryFn: fetchProductionMetrics,
+  const metricsQuery = useProductionMetrics({
     refetchInterval: 60000,
+    enableRealtime: true,
   });
 
   // Fetch production queue
