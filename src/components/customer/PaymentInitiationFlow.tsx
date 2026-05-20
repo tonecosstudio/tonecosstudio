@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PaymentInitiationFlow Component
  *
@@ -8,7 +7,7 @@
  * Task: 16.1 Criar componente PaymentInitiationFlow
  */
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,12 +15,10 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -30,7 +27,6 @@ import {
   Banknote,
   QrCode,
   Building,
-  Link as LinkIcon,
   Copy,
   ExternalLink,
   Loader2,
@@ -64,7 +60,6 @@ export function PaymentInitiationFlow({
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
-  const [isConfirming, setIsConfirming] = useState(false);
 
   // Fetch active payment methods
   const {
@@ -113,7 +108,6 @@ export function PaymentInitiationFlow({
         description: error.message,
         variant: "destructive",
       });
-      setIsConfirming(false);
     },
   });
 
@@ -184,7 +178,6 @@ export function PaymentInitiationFlow({
       return;
     }
 
-    setIsConfirming(true);
     createPaymentMutation.mutate();
   };
 
