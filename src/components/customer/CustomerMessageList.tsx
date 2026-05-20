@@ -5,7 +5,7 @@ import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Message } from "@/types/support";
+import type { Attachment, Message } from "@/types/support";
 import { supabase } from "@/integrations/supabase/client";
 import { conversationService } from "@/lib/services/conversationService";
 import { toast } from "sonner";
@@ -52,9 +52,6 @@ export function CustomerMessageList({
     loadMore,
     messagesEndRef,
     optimisticAttachments,
-    addOptimisticAttachment,
-    updateOptimisticAttachment,
-    removeOptimisticAttachment,
   } = useMessages({ conversationId, autoScroll: true });
 
   // Typing indicator
@@ -293,7 +290,7 @@ function CustomerMessageBubble({
         {/* Attachments (confirmed) */}
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-2 space-y-2">
-            {message.attachments.map((attachment: any) => {
+            {message.attachments.map((attachment: Attachment) => {
               const isImage = attachment.file_type?.startsWith("image/");
               const publicUrl = getAttachmentUrl(attachment.file_path);
 

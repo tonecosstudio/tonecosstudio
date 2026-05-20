@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CustomerMessageInput - Input de mensagens para clientes
  * RECRIADO DO ZERO - Versão simplificada e funcional
@@ -6,6 +5,7 @@
  */
 
 import { useState } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { Send, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,15 @@ import { validateMessage } from "@/lib/validations/support";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { toast } from "sonner";
 
+type OptimisticAttachmentStatus = "uploading" | "uploaded" | "error";
+
+interface OptimisticAttachmentUpdate {
+  status?: OptimisticAttachmentStatus;
+  progress?: number;
+  url?: string;
+  error?: string;
+}
+
 interface CustomerMessageInputProps {
   conversationId: string;
   currentUserId: string;
@@ -23,7 +32,11 @@ interface CustomerMessageInputProps {
   isClosed?: boolean; // Indica se a conversa está encerrada
   onMessageSent?: () => void; // Callback após enviar mensagem (DEPRECATED - será removido)
   addOptimisticAttachment?: (messageId: string, file: File) => string;
-  updateOptimisticAttachment?: (messageId: string, tempId: string, updates: any) => void;
+  updateOptimisticAttachment?: (
+    messageId: string,
+    tempId: string,
+    updates: OptimisticAttachmentUpdate
+  ) => void;
 }
 
 export function CustomerMessageInput({
@@ -47,7 +60,7 @@ export function CustomerMessageInput({
     currentUserName,
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const validFiles: File[] = [];
 
@@ -130,15 +143,11 @@ export function CustomerMessageInput({
           const tempId = addOptimisticAttachment(messageData.id, file);
 
           try {
-            // Upload com progress tracking
             const uploadResult = await fileUploadService.uploadFile(
               file,
               conversationId,
               messageData.id,
-              user.id,
-              (progress) => {
-                updateOptimisticAttachment(messageData.id, tempId, { progress });
-              }
+              user.id
             );
 
             console.log(`[CustomerMessageInput] Anexo enviado com sucesso:`, uploadResult);
@@ -146,7 +155,8 @@ export function CustomerMessageInput({
             // Marcar como uploaded (será substituído pelo real via Realtime)
             updateOptimisticAttachment(messageData.id, tempId, {
               status: "uploaded",
-              url: uploadResult.url,
+              progress: 100,
+              url: uploadResult.public_url,
             });
           } catch (error) {
             console.error("Erro ao fazer upload:", error);
@@ -193,7 +203,7 @@ export function CustomerMessageInput({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();

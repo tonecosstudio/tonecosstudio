@@ -35,58 +35,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FileUploadComponent } from "@/components/customer/FileUploadComponent";
+import { UploadedFilesList } from "@/components/customer/UploadedFilesList";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
 import { getPaymentById } from "@/lib/payment-service";
-import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
-
-// Import placeholder components
-const FileUploadComponent = ({ paymentId, onUploadComplete, onError }: any) => (
-  <div className="border rounded-lg p-4">
-    <div className="flex items-center gap-2 mb-4">
-      <Upload className="h-5 w-5" />
-      <h3 className="font-medium">Enviar Comprovante</h3>
-    </div>
-    <p className="text-sm text-muted-foreground mb-4">
-      Faça upload do comprovante de pagamento. Formatos aceitos: JPG, PNG, PDF (máx. 5MB).
-    </p>
-    <Button onClick={() => onUploadComplete?.([{ id: "temp-file", name: "comprovante.jpg" }])}>
-      <Upload className="h-4 w-4 mr-2" />
-      Selecionar Arquivo
-    </Button>
-  </div>
-);
-
-const UploadedFilesList = ({ paymentId, files }: any) => (
-  <div className="space-y-3">
-    <div className="flex items-center gap-2">
-      <FileText className="h-5 w-5" />
-      <h3 className="font-medium">Comprovantes Enviados</h3>
-    </div>
-    {files && files.length > 0 ? (
-      <div className="space-y-2">
-        {files.map((file: any) => (
-          <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
-            <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium">{file.file_name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {format(new Date(file.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                </p>
-              </div>
-            </div>
-            <Button variant="ghost" size="sm">
-              <Eye className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <p className="text-sm text-muted-foreground italic">Nenhum comprovante enviado ainda.</p>
-    )}
-  </div>
-);
+import type { PaymentAuditLog, PaymentDetails, PaymentFile, PaymentStatus } from "@/types/manual-payment";
 
 interface CustomerPaymentDetailsProps {
   paymentId: string;
@@ -94,9 +47,8 @@ interface CustomerPaymentDetailsProps {
   onBack?: () => void;
 }
 
-export function CustomerPaymentDetails({ paymentId, userId, onBack }: CustomerPaymentDetailsProps) {
+export function CustomerPaymentDetails({ paymentId, userId: _userId, onBack }: CustomerPaymentDetailsProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
 
   // Fetch payment data
@@ -107,12 +59,12 @@ export function CustomerPaymentDetails({ paymentId, userId, onBack }: CustomerPa
     refetch,
   } = useQuery({
     queryKey: ["payment-details", paymentId],
-    queryFn: () => getPaymentById(paymentId),
+    queryFn: async (): Promise<PaymentDetails> => getPaymentById(paymentId),
     enabled: !!paymentId,
   });
 
   // Handle file upload
-  const handleFileUploadComplete = (files: any[]) => {
+  const handleFileUploadComplete = (_files: PaymentFile[]) => {
     toast({
       title: "Arquivos enviados com sucesso",
       description: "Seus comprovantes foram enviados para análise.",
@@ -417,7 +369,7 @@ export function CustomerPaymentDetails({ paymentId, userId, onBack }: CustomerPa
                   {payment.audit_logs
                     .slice()
                     .reverse()
-                    .map((log: any) => (
+                    .map((log: PaymentAuditLog) => (
                       <div key={log.id} className="flex gap-4">
                         <div className="flex flex-col items-center">
                           <div className="w-3 h-3 rounded-full bg-primary mt-1" />
@@ -523,7 +475,7 @@ export function CustomerPaymentDetails({ paymentId, userId, onBack }: CustomerPa
             <CardContent>
               {payment.audit_logs && payment.audit_logs.length > 0 ? (
                 <div className="space-y-4">
-                  {payment.audit_logs.map((log: any) => (
+                  {payment.audit_logs.map((log: PaymentAuditLog) => (
                     <Card key={log.id} className="overflow-hidden">
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-2">

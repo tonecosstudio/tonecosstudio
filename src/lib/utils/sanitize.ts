@@ -1,4 +1,5 @@
 import DOMPurify from "dompurify";
+import type { Json } from "@/integrations/supabase/types";
 
 /**
  * Sanitization utilities for user-generated content
@@ -103,7 +104,7 @@ export function sanitizeGroupName(name: string): string {
 export function sanitizeProfile(data: {
   full_name?: string;
   bio?: string;
-  [key: string]: any;
+  [key: string]: Json | undefined;
 }): typeof data {
   return {
     ...data,
@@ -158,7 +159,7 @@ export function sanitizeFilename(filename: string): string {
  * @param sanitizer - Sanitization function to apply (default: sanitizeText)
  * @returns New object with sanitized values
  */
-export function sanitizeObject<T extends Record<string, any>>(
+export function sanitizeObject<T extends Record<string, unknown>>(
   obj: T,
   sanitizer: (value: string) => string = sanitizeText
 ): T {
@@ -166,7 +167,7 @@ export function sanitizeObject<T extends Record<string, any>>(
     return obj;
   }
 
-  const sanitized: any = Array.isArray(obj) ? [] : {};
+  const sanitized: Record<string, unknown> | unknown[] = Array.isArray(obj) ? [] : {};
 
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -175,7 +176,7 @@ export function sanitizeObject<T extends Record<string, any>>(
       if (typeof value === 'string') {
         sanitized[key] = sanitizer(value);
       } else if (typeof value === 'object' && value !== null) {
-        sanitized[key] = sanitizeObject(value, sanitizer);
+        sanitized[key] = sanitizeObject(value as Record<string, unknown>, sanitizer);
       } else {
         sanitized[key] = value;
       }
