@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ProgressNotification Component
  * 
@@ -17,7 +16,7 @@
  */
 
 import { useToast } from "@/hooks/use-toast";
-import type { ProductionStage, ChoiceStatus } from "@/services/admin/production-service";
+import type { ProductionStage } from "@/types/production";
 
 // ============================================================================
 // Types
@@ -42,14 +41,24 @@ export interface ProgressNotificationOptions {
   playSound?: boolean;
 }
 
+interface WebkitAudioWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 // Stage display names in Portuguese
 const STAGE_NAMES: Record<ProductionStage, string> = {
+  awaiting_payment: "Aguardando Pagamento",
+  payment_confirmed: "Pagamento Confirmado",
   awaiting_choice: "Aguardando Escolha",
-  design: "Design",
-  production: "Produção",
+  model_preparation: "Preparacao do Modelo",
+  printing: "Impressao 3D",
+  post_processing: "Pos-processamento",
+  painting: "Pintura",
   quality_check: "Controle de Qualidade",
   packaging: "Embalagem",
+  ready_to_ship: "Pronto para Envio",
   shipped: "Enviado",
+  delivered: "Entregue",
 };
 
 // ============================================================================
@@ -62,7 +71,13 @@ const STAGE_NAMES: Record<ProductionStage, string> = {
  */
 function playNotificationSound(): void {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextConstructor = window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
+
+    if (!AudioContextConstructor) {
+      return;
+    }
+
+    const audioContext = new AudioContextConstructor();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 

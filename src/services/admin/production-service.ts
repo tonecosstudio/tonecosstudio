@@ -8,36 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json, Tables } from "@/integrations/supabase/types";
 import { calculateEstimatedCompletion } from "./stage-service";
 import log from "@/lib/logger";
+import type { ChoiceStatus, Priority, ProductionStage, ProductionStatus } from "@/types/production";
 
 // ============================================================================
 // Tipos
 // ============================================================================
 
-export type ProductionStatus =
-  | "awaiting_choice"
-  | "ready_for_production"
-  | "in_production"
-  | "completed"
-  | "on_hold"
-  | "cancelled";
-
-export type ProductionStage =
-  | "awaiting_payment"      // 1. Aguardando Pagamento
-  | "payment_confirmed"     // 2. Pagamento Confirmado
-  | "awaiting_choice"       // 3. Aguardando Escolha (assinaturas)
-  | "model_preparation"     // 4. Preparação do Modelo
-  | "printing"              // 5. Em Impressão 3D
-  | "post_processing"       // 6. Limpeza e Preparação
-  | "painting"              // 7. Pintura Artesanal
-  | "quality_check"         // 8. Controle de Qualidade
-  | "packaging"             // 9. Embalagem
-  | "ready_to_ship"         // 10. Pronto para Envio
-  | "shipped"               // 11. Enviado
-  | "delivered";            // 12. Entregue
-
-export type Priority = "critical" | "high" | "normal" | "low";
-
-export type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked";
+export type { ChoiceStatus, Priority, ProductionStage, ProductionStatus };
 
 // ============================================================================
 // Constantes de Estágios
@@ -940,3 +917,4 @@ function transformProductionQueueItem(data: ProductionQueueRow): ProductionQueue
 function toStringArray(value: Json | null): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
+
