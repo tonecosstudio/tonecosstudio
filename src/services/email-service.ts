@@ -12,6 +12,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { logDebug, logError, logInfo, logWarn } from '@/lib/logger';
 import { notificationPreferencesService, EmailType } from './notification-preferences-service';
 
@@ -31,22 +32,49 @@ interface EmailConfig {
   retryDelay: number;
 }
 
-interface SendGridConfig {
-  apiKey: string;
+type EmailMetadata = Record<string, Json>;
+
+interface EmailLogUpdate {
+  status?: string;
+  sent_at?: string;
+  error_message?: string;
+  retry_count?: number;
+  provider_message_id?: string;
 }
 
-interface SESConfig {
-  region: string;
-  accessKeyId: string;
-  secretAccessKey: string;
+interface EmailUser {
+  id: string;
+  email: string;
+  raw_user_meta_data?: {
+    full_name?: string;
+  } | null;
 }
 
-interface SMTPConfig {
-  host: string;
-  port: number;
-  user: string;
-  password: string;
-  secure: boolean;
+interface EmailCollection {
+  id: string;
+  name: string;
+  description?: string | null;
+  character_name?: string | null;
+  character_image_url?: string | null;
+  image_url?: string | null;
+  revealed?: boolean | null;
+}
+
+interface EmailSubscription {
+  id?: string;
+  plan_type: string;
+  shipping_address?: ShippingAddress | null;
+  user?: EmailUser | null;
+}
+
+interface ShippingAddress {
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
 }
 
 class EmailServiceError extends Error {
@@ -107,7 +135,7 @@ export class EmailService {
     html: string,
     emailType: string = 'other',
     userId?: string,
-    metadata?: Record<string, any>
+    metadata?: EmailMetadata
   ): Promise<void> {
     const options: EmailOptions = {
       to,
@@ -191,7 +219,7 @@ export class EmailService {
     subject: string;
     status: string;
     provider: string;
-    metadata: Record<string, any>;
+    metadata: EmailMetadata;
   }): Promise<string> {
     try {
       const { data: log, error } = await supabase
@@ -236,7 +264,7 @@ export class EmailService {
     }
 
     try {
-      const updateData: any = {};
+      const updateData: EmailLogUpdate = {};
 
       if (updates.status) updateData.status = updates.status;
       if (updates.sentAt) updateData.sent_at = updates.sentAt;
@@ -295,102 +323,6 @@ export class EmailService {
         false
       );
     }
-  }
-
-  /**
-   * Send email via SendGrid
-   */
-  private async sendViaSendGrid(options: EmailOptions): Promise<void> {
-    const config = this.providerConfig as SendGridConfig;
-
-    if (!config.apiKey) {
-      throw new EmailServiceError(
-        'SendGrid API key not configured',
-        'MISSING_API_KEY',
-        false
-      );
-    }
-
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: options.to }],
-            subject: options.subject,
-          },
-        ],
-        from: {
-          email: options.from || this.config.from,
-          name: options.fromName || this.config.fromName,
-        },
-        content: [
-          {
-            type: 'text/html',
-            value: options.html,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new EmailServiceError(
-        `SendGrid API error: ${response.status} - ${errorText}`,
-        'SENDGRID_ERROR',
-        response.status >= 500 || response.status === 429
-      );
-    }
-  }
-
-  /**
-   * Send email via AWS SES
-   */
-  private async sendViaSES(options: EmailOptions): Promise<void> {
-    const config = this.providerConfig as SESConfig;
-
-    if (!config.accessKeyId || !config.secretAccessKey) {
-      throw new EmailServiceError(
-        'AWS SES credentials not configured',
-        'MISSING_CREDENTIALS',
-        false
-      );
-    }
-
-    // Note: In production, you would use AWS SDK here
-    // For now, this is a placeholder that shows the structure
-    throw new EmailServiceError(
-      'AWS SES integration requires AWS SDK implementation',
-      'NOT_IMPLEMENTED',
-      false
-    );
-  }
-
-  /**
-   * Send email via SMTP
-   */
-  private async sendViaSMTP(options: EmailOptions): Promise<void> {
-    const config = this.providerConfig as SMTPConfig;
-
-    if (!config.host || !config.user || !config.password) {
-      throw new EmailServiceError(
-        'SMTP configuration incomplete',
-        'MISSING_SMTP_CONFIG',
-        false
-      );
-    }
-
-    // Note: In production, you would use a library like nodemailer here
-    // For now, this is a placeholder that shows the structure
-    throw new EmailServiceError(
-      'SMTP integration requires nodemailer or similar library',
-      'NOT_IMPLEMENTED',
-      false
-    );
   }
 
   /**
@@ -494,7 +426,7 @@ export class EmailService {
       }
 
       // Type assertion for user data
-      const user = subscription.user as any;
+      const user = subscription.user as unknown as EmailUser | null;
       if (!user || !user.email) {
         throw new EmailServiceError(
           'User email not found',
@@ -622,7 +554,7 @@ export class EmailService {
       }
 
       // Type assertion for collection with character fields
-      const collectionData = collection as any;
+      const collectionData = collection as unknown as EmailCollection;
 
       // Verify collection has been revealed
       if (!collectionData.revealed || !collectionData.character_name) {
@@ -794,8 +726,8 @@ export class EmailService {
       }
 
       // Type assertion for nested data
-      const subscription = delivery.subscription as any;
-      const user = subscription?.user as any;
+      const subscription = delivery.subscription as unknown as EmailSubscription | null;
+      const user = subscription?.user ?? null;
 
       if (!user || !user.email) {
         throw new EmailServiceError(
@@ -834,7 +766,9 @@ export class EmailService {
           })
         : 'A definir';
 
-      const currentCollection = delivery.collection ? (delivery.collection as any).name : null;
+      const currentCollection = delivery.collection
+        ? (delivery.collection as unknown as EmailCollection).name
+        : null;
 
       const collectionSelectionUrl = `${window.location.origin}/my-subscriptions`;
       const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
@@ -927,15 +861,22 @@ export class EmailService {
       }
 
       // Type assertions for nested data
-      const subscription = delivery.subscription as any;
-      const user = subscription?.user as any;
-      const collection = delivery.collection as any;
-      const collectionData = collection as any;
+      const subscription = delivery.subscription as unknown as EmailSubscription | null;
+      const user = subscription?.user ?? null;
+      const collectionData = delivery.collection as unknown as EmailCollection | null;
 
       if (!user || !user.email) {
         throw new EmailServiceError(
           'User email not found',
           'USER_EMAIL_NOT_FOUND',
+          false
+        );
+      }
+
+      if (!collectionData?.name) {
+        throw new EmailServiceError(
+          'Collection not found',
+          'COLLECTION_NOT_FOUND',
           false
         );
       }
@@ -973,7 +914,7 @@ export class EmailService {
           })
         : 'A definir';
 
-      const isBonusPiece = subscription.plan_type === 'semestral' && delivery.delivery_number === 6;
+      const isBonusPiece = subscription?.plan_type === 'semestral' && delivery.delivery_number === 6;
 
       const trackingUrl = `${window.location.origin}/my-subscriptions`;
       const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
@@ -981,7 +922,7 @@ export class EmailService {
       const templateData = {
         userName,
         collectionName: collectionData.name,
-        characterName: collectionData.character_name || null,
+        characterName: collectionData?.character_name || null,
         deliveryNumber: delivery.delivery_number,
         expectedShippingDate,
         isBonusPiece,
@@ -1060,15 +1001,22 @@ export class EmailService {
       }
 
       // Type assertions for nested data
-      const subscription = delivery.subscription as any;
-      const user = subscription?.user as any;
-      const collection = delivery.collection as any;
-      const collectionData = collection as any;
+      const subscription = delivery.subscription as unknown as EmailSubscription | null;
+      const user = subscription?.user ?? null;
+      const collectionData = delivery.collection as unknown as EmailCollection | null;
 
       if (!user || !user.email) {
         throw new EmailServiceError(
           'User email not found',
           'USER_EMAIL_NOT_FOUND',
+          false
+        );
+      }
+
+      if (!collectionData?.name) {
+        throw new EmailServiceError(
+          'Collection not found',
+          'COLLECTION_NOT_FOUND',
           false
         );
       }
@@ -1119,10 +1067,10 @@ export class EmailService {
           })
         : 'A definir';
 
-      const isBonusPiece = subscription.plan_type === 'semestral' && delivery.delivery_number === 6;
+      const isBonusPiece = subscription?.plan_type === 'semestral' && delivery.delivery_number === 6;
 
       // Parse shipping address
-      const shippingAddress = subscription.shipping_address || {};
+      const shippingAddress = subscription?.shipping_address || {};
 
       const trackingUrl = `https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${trackingCode}`;
       const dashboardUrl = `${window.location.origin}/my-subscriptions`;
@@ -1134,7 +1082,7 @@ export class EmailService {
         trackingCode,
         trackingUrl,
         collectionName: collectionData.name,
-        characterName: collectionData.character_name || null,
+        characterName: collectionData?.character_name || null,
         deliveryNumber: delivery.delivery_number,
         carrier: 'Correios',
         estimatedDeliveryDate,
@@ -1223,14 +1171,21 @@ export class EmailService {
       }
 
       // Type assertions for nested data
-      const user = purchase.user as any;
-      const collection = purchase.collection as any;
-      const collectionData = collection as any;
+      const user = purchase.user as unknown as EmailUser | null;
+      const collectionData = purchase.collection as unknown as EmailCollection | null;
 
       if (!user || !user.email) {
         throw new EmailServiceError(
           'User email not found',
           'USER_EMAIL_NOT_FOUND',
+          false
+        );
+      }
+
+      if (!collectionData?.name) {
+        throw new EmailServiceError(
+          'Collection not found',
+          'COLLECTION_NOT_FOUND',
           false
         );
       }
@@ -1284,7 +1239,7 @@ export class EmailService {
         daysRemaining,
         orderId: purchase.id.substring(0, 8).toUpperCase(),
         collectionName: collectionData.name,
-        characterName: collectionData.character_name || null,
+        characterName: collectionData?.character_name || null,
         paymentUrl,
         supportEmail
       };
@@ -1362,14 +1317,21 @@ export class EmailService {
       }
 
       // Type assertions for nested data
-      const user = purchase.user as any;
-      const collection = purchase.collection as any;
-      const collectionData = collection as any;
+      const user = purchase.user as unknown as EmailUser | null;
+      const collectionData = purchase.collection as unknown as EmailCollection | null;
 
       if (!user || !user.email) {
         throw new EmailServiceError(
           'User email not found',
           'USER_EMAIL_NOT_FOUND',
+          false
+        );
+      }
+
+      if (!collectionData?.name) {
+        throw new EmailServiceError(
+          'Collection not found',
+          'COLLECTION_NOT_FOUND',
           false
         );
       }
@@ -1437,7 +1399,7 @@ export class EmailService {
         cancellationDate,
         cancellationReason: reason,
         collectionName: collectionData.name,
-        characterName: collectionData.character_name || null,
+        characterName: collectionData?.character_name || null,
         purchaseDate,
         balanceDueDate,
         depositAmount: purchase.deposit_amount.toFixed(2),
