@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
@@ -8,10 +7,16 @@ import { Page } from "@/components/layouts/Page";
 import {
   ArcadeHero,
   ArcadeCard,
-  ArcadeSectionTitle,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { Heart, Trash2, Eye, Edit2, X, Check, Bell, BellOff, Crosshair } from "lucide-react";
+import {
+  getWishlistModelImageUrl,
+  listWishlistItems,
+  removeWishlistItem,
+  updateWishlistItem,
+  type UpdateWishlistItemInput,
+} from "@/lib/wishlist-service";
 
 export default function WishlistArcade() {
   const { user } = useAuth();
@@ -24,32 +29,17 @@ export default function WishlistArcade() {
   const wishlistQuery = useQuery({
     queryKey: ["wishlist", user?.id],
     enabled: Boolean(user?.id),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("wishlist")
-        .select(`id, notes, priority, notify_when_available, added_at, models (id, name, image_path, image_bucket, franchise, category)`)
-        .eq("user_id", user!.id)
-        .order("priority", { ascending: false })
-        .order("added_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => listWishlistItems(user!.id),
   });
 
   const removeMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("wishlist").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: removeWishlistItem,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["wishlist"] }); toast({ title: "Removido" }); },
     onError: () => { toast({ title: "Erro ao remover", variant: "destructive" }); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, notes, priority, notify }: { id: string; notes: string; priority: number; notify: boolean }) => {
-      const { error } = await supabase.from("wishlist").update({ notes, priority, notify_when_available: notify }).eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (input: UpdateWishlistItemInput) => updateWishlistItem(input),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["wishlist"] }); toast({ title: "Atualizado" }); setEditingItem(null); },
     onError: () => { toast({ title: "Erro", variant: "destructive" }); },
   });
@@ -90,11 +80,9 @@ export default function WishlistArcade() {
           </ArcadeCard>
         ) : (
           <div className="space-y-4">
-            {items.map((item: any) => {
+            {items.map((item) => {
               const model = item.models;
-              const imageUrl = model
-                ? supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl
-                : null;
+              const imageUrl = getWishlistModelImageUrl(model);
               const priority = getPriorityConfig(item.priority);
               const isEditing = editingItem?.id === item.id;
 
