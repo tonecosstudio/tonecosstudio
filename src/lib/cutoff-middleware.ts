@@ -9,6 +9,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+type RpcError = { message?: string } | null;
+type CutoffRpcClient = {
+  rpc(functionName: "is_before_cutoff"): PromiseLike<{ data: boolean | null; error: RpcError }>;
+};
+
+const cutoffRpc = supabase as unknown as CutoffRpcClient;
+
 /**
  * Custom error class for cutoff violations
  */
@@ -33,15 +40,14 @@ export class CutoffPassedError extends Error {
  */
 export async function validateBeforeCutoff(deliveryId?: string): Promise<void> {
   // Call the database function to check cutoff
-  const { data: beforeCutoff, error } = await supabase
-    .rpc('is_before_cutoff' as any);
+  const { data: beforeCutoff, error } = await cutoffRpc.rpc("is_before_cutoff");
 
   if (error) {
     throw new Error(`Failed to check cutoff: ${error.message}`);
   }
 
   if (!beforeCutoff) {
-    const message = deliveryId 
+    const message = deliveryId
       ? `Changes blocked for delivery ${deliveryId} - production has started`
       : "Changes blocked - production has started";
     throw new CutoffPassedError(message);
@@ -68,17 +74,17 @@ export async function validateDeliveryModification(deliveryId: string): Promise<
 
   // Then check delivery status
   const { data: delivery, error } = await supabase
-    .from('subscription_deliveries')
-    .select('status, cycle_id')
-    .eq('id', deliveryId)
+    .from("subscription_deliveries")
+    .select("status, cycle_id")
+    .eq("id", deliveryId)
     .single();
 
   if (error || !delivery) {
-    throw new Error(`Failed to get delivery: ${error?.message || 'Delivery not found'}`);
+    throw new Error(`Failed to get delivery: ${error?.message || "Delivery not found"}`);
   }
 
   // Check if delivery status allows modifications
-  const modifiableStatuses = ['pending_choice', 'confirmed'];
+  const modifiableStatuses = ["pending_choice", "confirmed"];
   if (!modifiableStatuses.includes(delivery.status)) {
     throw new Error(`Cannot modify delivery in status: ${delivery.status}`);
   }
@@ -96,17 +102,16 @@ export async function validateDeliveryModification(deliveryId: string): Promise<
  */
 export async function isBeforeCutoff(): Promise<boolean> {
   try {
-    const { data: beforeCutoff, error } = await supabase
-      .rpc('is_before_cutoff' as any);
+    const { data: beforeCutoff, error } = await cutoffRpc.rpc("is_before_cutoff");
 
     if (error) {
-      console.error('Failed to check cutoff:', error);
+      console.error("Failed to check cutoff:", error);
       return false;
     }
 
     return beforeCutoff === true;
   } catch (error) {
-    console.error('Failed to check cutoff:', error);
+    console.error("Failed to check cutoff:", error);
     return false;
   }
 }
