@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,10 +19,10 @@ import {
   addToPublicCollection,
   removeFromPublicCollection,
   updateCollectionNotes,
+  searchAvailablePublicCollectionModels,
+  getPublicModelImageUrl,
 } from "@/lib/collector";
-import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Edit2, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 type Props = {
   userId: string;
@@ -44,16 +43,7 @@ export function ManagePublicCollection({ userId }: Props) {
   const modelsQuery = useQuery({
     queryKey: ["available-models", searchQuery],
     enabled: isAddDialogOpen && searchQuery.length >= 2,
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("models")
-        .select("id, name, image_path, image_bucket, franchise")
-        .ilike("name", `%${searchQuery}%`)
-        .limit(10);
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => searchAvailablePublicCollectionModels(searchQuery),
   });
 
   const addMutation = useMutation({
@@ -64,8 +54,8 @@ export function ManagePublicCollection({ userId }: Props) {
       setIsAddDialogOpen(false);
       setSearchQuery("");
     },
-    onError: (e: any) => {
-      const msg = e?.message || "Erro ao adicionar";
+    onError: (error: Error) => {
+      const msg = error.message || "Erro ao adicionar";
       toast({ title: "Erro", description: msg, variant: "destructive" });
     },
   });
@@ -76,7 +66,7 @@ export function ManagePublicCollection({ userId }: Props) {
       qc.invalidateQueries({ queryKey: ["my-public-collection"] });
       toast({ title: "Removido da coleção pública" });
     },
-    onError: (e: any) => {
+    onError: () => {
       toast({ title: "Erro ao remover", variant: "destructive" });
     },
   });
@@ -134,22 +124,24 @@ export function ManagePublicCollection({ userId }: Props) {
                 )}
                 {availableModels.length > 0 && (
                   <div className="grid gap-3 max-h-96 overflow-y-auto">
-                    {availableModels.map((model: any) => {
+                    {availableModels.map((model) => {
                       const isInCollection = collection.some(
-                        (item: any) => item.model_id === model.id
+                        (item) => item.model_id === model.id
                       );
-                      const imageUrl = `${(supabase as any).supabaseUrl}/storage/v1/object/public/${model.image_bucket}/${model.image_path}`;
+                      const imageUrl = getPublicModelImageUrl(model);
                       return (
                         <div
                           key={model.id}
                           className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
                         >
                           <div className="h-16 w-16 rounded bg-muted flex-shrink-0">
-                            <img
-                              src={imageUrl}
-                              alt={model.name}
-                              className="h-full w-full object-cover rounded"
-                            />
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={model.name}
+                                className="h-full w-full object-cover rounded"
+                              />
+                            ) : null}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm line-clamp-1">{model.name}</p>
@@ -182,9 +174,9 @@ export function ManagePublicCollection({ userId }: Props) {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {collection.map((item: any) => {
+            {collection.map((item) => {
               const imageUrl = item.models
-                ? `${(supabase as any).supabaseUrl}/storage/v1/object/public/${item.models.image_bucket}/${item.models.image_path}`
+                ? getPublicModelImageUrl(item.models)
                 : null;
               return (
                 <div key={item.id} className="border rounded-lg overflow-hidden">

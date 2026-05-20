@@ -37,6 +37,25 @@ export type PublicCollectionItem = {
   display_order: number;
 };
 
+export type PublicCollectionModel = {
+  name: string;
+  image_path: string | null;
+  image_bucket: string | null;
+  franchise: string | null;
+};
+
+export type PublicCollectionEntry = PublicCollectionItem & {
+  models: PublicCollectionModel | null;
+};
+
+export type AvailablePublicCollectionModel = {
+  id: string;
+  name: string;
+  image_path: string | null;
+  image_bucket: string | null;
+  franchise: string | null;
+};
+
 type UserBadgeQueryRow = {
   earned_at: string;
   collector_badges: {
@@ -173,7 +192,28 @@ export async function getPublicCollection(userId: string) {
     .order("added_at", { ascending: false });
 
   if (error) throw error;
+  return (data || []) as PublicCollectionEntry[];
+}
+
+export async function searchAvailablePublicCollectionModels(
+  searchQuery: string
+): Promise<AvailablePublicCollectionModel[]> {
+  const { data, error } = await supabase
+    .from("models")
+    .select("id, name, image_path, image_bucket, franchise")
+    .ilike("name", `%${searchQuery}%`)
+    .limit(10);
+
+  if (error) throw error;
   return data || [];
+}
+
+export function getPublicModelImageUrl(model: PublicCollectionModel): string | null {
+  if (!model.image_bucket || !model.image_path) {
+    return null;
+  }
+
+  return supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl;
 }
 
 /**
