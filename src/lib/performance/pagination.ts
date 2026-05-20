@@ -12,7 +12,48 @@
  */
 
 import { errorTracking, DatabaseError, ErrorCategory } from '@/lib/error-tracking';
-import type { SupabaseClient } from '@supabase/supabase-js';
+
+type PaginationQueryError = {
+  message: string;
+};
+
+type PaginationCountResult = {
+  count: number | null;
+  error: PaginationQueryError | null;
+};
+
+type PaginationDataResult<T> = {
+  data: T[] | null;
+  error: PaginationQueryError | null;
+};
+
+type OffsetPaginatedQuery<T> = {
+  select(
+    columns: string,
+    options: { count: 'exact'; head: true }
+  ): PromiseLike<PaginationCountResult>;
+  range(from: number, to: number): PromiseLike<PaginationDataResult<T>>;
+};
+
+type CursorRow = Record<string, unknown>;
+
+type CursorPaginatedQuery<T extends CursorRow> = {
+  gt(column: string, value: string): CursorPaginatedQuery<T>;
+  order(
+    column: string,
+    options: { ascending: boolean }
+  ): {
+    limit(count: number): PromiseLike<PaginationDataResult<T>>;
+  };
+};
+
+function toCursor(value: unknown): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  return undefined;
+}
 
 /**
  * Pagination parameters
@@ -96,7 +137,7 @@ export function calculateTotalPages(totalItems: number, pageSize: number): numbe
  * @returns Paginated result
  */
 export async function paginateQuery<T>(
-  query: any, // Supabase query builder
+  query: OffsetPaginatedQuery<T>,
   params: PaginationParams = {}
 ): Promise<PaginationResult<T>> {
   const { page, pageSize } = normalizePaginationParams(params);
@@ -154,8 +195,8 @@ export async function paginateQuery<T>(
  * @param cursorColumn - Column to use for cursor (must be unique and indexed)
  * @returns Paginated result with cursors
  */
-export async function paginateWithCursor<T extends Record<string, any>>(
-  query: any,
+export async function paginateWithCursor<T extends CursorRow>(
+  query: CursorPaginatedQuery<T>,
   params: PaginationParams = {},
   cursorColumn: string = 'id'
 ): Promise<PaginationResult<T>> {
@@ -190,7 +231,7 @@ export async function paginateWithCursor<T extends Record<string, any>>(
 
     // Generate cursors
     const nextCursor = hasNextPage && resultItems.length > 0
-      ? resultItems[resultItems.length - 1][cursorColumn]
+      ? toCursor(resultItems[resultItems.length - 1][cursorColumn])
       : undefined;
 
     return {
@@ -298,8 +339,8 @@ export function generatePageLinks(
  * @returns Next page parameters
  */
 export function getNextPageParams(
-  lastPage: PaginationResult<any>,
-  allPages: PaginationResult<any>[]
+  lastPage: PaginationResult<unknown>,
+  _allPages: PaginationResult<unknown>[]
 ): PaginationParams | undefined {
   if (!lastPage.pagination.hasNextPage) {
     return undefined;
