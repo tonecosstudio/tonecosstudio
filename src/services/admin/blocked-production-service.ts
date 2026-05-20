@@ -3,7 +3,9 @@ import {
   fetchProductionQueue,
   type Priority,
   type ProductionStage,
+  unblockProduction,
 } from "@/services/admin/production-service";
+import { calculateEstimatedCompletion } from "@/services/admin/stage-service";
 
 export interface BlockedProductionItem {
   id: string;
@@ -17,6 +19,17 @@ export interface BlockedProductionItem {
   blockedDurationHours: number;
   assignedToName: string | null;
   priority: Priority;
+}
+
+export interface ProductionBlockInfo {
+  blockReason: string;
+  blockedAt: string;
+  currentStage: ProductionStage;
+}
+
+export interface UnblockBlockedProductionItemInput {
+  productionQueueId: string;
+  resolutionNotes?: string;
 }
 
 export async function fetchBlockedProductionItems(): Promise<BlockedProductionItem[]> {
@@ -56,4 +69,62 @@ export async function fetchBlockedProductionItems(): Promise<BlockedProductionIt
   );
 
   return blockedItems.sort((a, b) => b.blockedDurationHours - a.blockedDurationHours);
+}
+
+export async function fetchProductionBlockInfo(
+  productionQueueId: string
+): Promise<ProductionBlockInfo> {
+  const { data: queueItem, error: queueError } = await supabase
+    .from("production_queue")
+    .select("current_stage, production_notes")
+    .eq("id", productionQueueId)
+    .single();
+
+  if (queueError || !queueItem) {
+    throw new Error("Erro ao buscar informacoes do item");
+  }
+
+  const currentStage = queueItem.current_stage as ProductionStage;
+  const { data: stageData } = await supabase
+    .from("production_stages")
+    .select("block_reason, blocked_at")
+    .eq("production_queue_id", productionQueueId)
+    .eq("stage_name", currentStage)
+    .eq("is_blocked", true)
+    .maybeSingle();
+
+  return {
+    blockReason: stageData?.block_reason || queueItem.production_notes || "Motivo nao especificado",
+    blockedAt: stageData?.blocked_at || new Date().toISOString(),
+    currentStage,
+  };
+}
+
+export async function fetchEstimatedProductionCompletion(productionQueueId: string): Promise<Date> {
+  return calculateEstimatedCompletion(productionQueueId);
+}
+
+export async function unblockBlockedProductionItem({
+  productionQueueId,
+  resolutionNotes,
+}: UnblockBlockedProductionItemInput) {
+  const blockInfo = await fetchProductionBlockInfo(productionQueueId);
+  const notes = resolutionNotes?.trim();
+
+  if (notes) {
+    const { error } = await supabase
+      .from("production_stages")
+      .update({
+        notes,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("production_queue_id", productionQueueId)
+      .eq("stage_name", blockInfo.currentStage);
+
+    if (error) {
+      throw new Error(`Erro ao registrar notas de resolucao: ${error.message}`);
+    }
+  }
+
+  return unblockProduction(productionQueueId);
 }
