@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, Info, Coins, Loader2, TrendingDown } from "lucide-react";
@@ -10,7 +9,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
 
 export interface Collection {
   id: string;
@@ -58,7 +56,10 @@ export function CollectionSelector({
 
   // Component to display collection price
   function CollectionPrice({ collectionId }: { collectionId: string }) {
-    const { data: price, isLoading: priceLoading } = useCollectionPrice(collectionId, user?.id);
+    const { data: price, isLoading: priceLoading } = useCollectionPrice({
+      collectionId,
+      userId: user?.id,
+    });
     
     if (priceLoading) {
       return (
@@ -82,7 +83,7 @@ export function CollectionSelector({
               hasDiscount ? 'text-green-600' : 'text-primary'
             }`}>
               <Coins className="h-3 w-3" />
-              <span>{price} 🪙 por personagem</span>
+              <span>{price} coins por personagem</span>
               {hasDiscount && <TrendingDown className="h-3 w-3" />}
             </div>
           </TooltipTrigger>
@@ -90,7 +91,7 @@ export function CollectionSelector({
             <p className="font-semibold mb-1">Preço Contextual</p>
             <p className="text-xs">
               Este preço é calculado baseado no seu plano de assinatura e nas coleções que você escolheu.
-              Cada personagem desta coleção custará {price} 🪙.
+              Cada personagem desta coleção custará {price} coins.
             </p>
           </TooltipContent>
         </Tooltip>
