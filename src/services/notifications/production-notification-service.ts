@@ -13,6 +13,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { logInfo, logError, logDebug } from '@/lib/logger';
 import { emailService } from '../email-service';
 
@@ -20,12 +21,75 @@ import { emailService } from '../email-service';
 // Types
 // ============================================================================
 
+type NotificationType =
+  | 'choice_reminder'
+  | 'choice_approval'
+  | 'choice_rejection'
+  | 'stage_update'
+  | 'delay_notification';
+
+type NotificationData = Record<string, Json>;
+
+type ChoiceReminderNotificationData = {
+  userName: string;
+  collectionName: string;
+  deadline: string;
+  orderId: string;
+  orderType: string;
+  reminderType: 'first' | 'second' | 'final';
+} & NotificationData;
+
+type ChoiceApprovalNotificationData = {
+  userName: string;
+  collectionName: string;
+  characterName: string;
+  characterImageUrl: string | null;
+} & NotificationData;
+
+type ChoiceRejectionNotificationData = {
+  userName: string;
+  collectionName: string;
+  characterName: string;
+  rejectionReason: string;
+  orderId: string;
+  orderType: string;
+} & NotificationData;
+
+type StageUpdateNotificationData = {
+  userName: string;
+  collectionName: string;
+  characterName: string | null;
+  stage: string;
+  stageName: string;
+  estimatedCompletion: string | null;
+} & NotificationData;
+
+type DelayNotificationData = {
+  userName: string;
+  collectionName: string;
+  characterName: string | null;
+  reason: string;
+  newEstimatedDate: string | null;
+} & NotificationData;
+
+interface NotificationProfile {
+  email: string;
+  raw_user_meta_data?: {
+    full_name?: string;
+  } | null;
+}
+
+interface NamedRelation {
+  name: string;
+  image_url?: string | null;
+}
+
 export interface NotificationQueueItem {
   id: string;
-  type: 'choice_reminder' | 'choice_approval' | 'choice_rejection' | 'stage_update' | 'delay_notification';
+  type: NotificationType;
   recipientEmail: string;
   recipientName: string | null;
-  data: Record<string, any>;
+  data: NotificationData;
   priority: 'high' | 'normal' | 'low';
   scheduledFor: Date;
   status: 'pending' | 'sent' | 'failed';
@@ -151,18 +215,18 @@ class NotificationQueue {
   /**
    * Generate email HTML based on notification type
    */
-  private generateEmailHTML(type: string, data: any): string {
+  private generateEmailHTML(type: NotificationType, data: NotificationData): string {
     switch (type) {
       case 'choice_reminder':
-        return generateChoiceReminderHTML(data);
+        return generateChoiceReminderHTML(data as ChoiceReminderNotificationData);
       case 'choice_approval':
-        return generateChoiceApprovalHTML(data);
+        return generateChoiceApprovalHTML(data as ChoiceApprovalNotificationData);
       case 'choice_rejection':
-        return generateChoiceRejectionHTML(data);
+        return generateChoiceRejectionHTML(data as ChoiceRejectionNotificationData);
       case 'stage_update':
-        return generateStageUpdateHTML(data);
+        return generateStageUpdateHTML(data as StageUpdateNotificationData);
       case 'delay_notification':
-        return generateDelayNotificationHTML(data);
+        return generateDelayNotificationHTML(data as DelayNotificationData);
       default:
         throw new Error(`Unknown notification type: ${type}`);
     }
@@ -171,7 +235,7 @@ class NotificationQueue {
   /**
    * Generate email subject based on notification type
    */
-  private generateEmailSubject(type: string, data: any): string {
+  private generateEmailSubject(type: NotificationType, data: NotificationData): string {
     switch (type) {
       case 'choice_reminder':
         return data.reminderType === 'final'
@@ -967,11 +1031,15 @@ class ProductionNotificationService {
         throw new Error(`Failed to fetch character choice: ${error?.message}`);
       }
 
-      const profile = choice.profiles as any;
-      const collection = choice.collections as any;
+      const profile = choice.profiles as unknown as NotificationProfile | null;
+      const collection = choice.collections as unknown as NamedRelation | null;
 
       if (!profile?.email) {
         throw new Error('User email not found');
+      }
+
+      if (!collection?.name) {
+        throw new Error('Collection not found');
       }
 
       // Calculate days remaining
@@ -1041,12 +1109,16 @@ class ProductionNotificationService {
         throw new Error(`Failed to fetch character choice: ${error?.message}`);
       }
 
-      const profile = choice.profiles as any;
-      const collection = choice.collections as any;
-      const character = choice.collection_characters as any;
+      const profile = choice.profiles as unknown as NotificationProfile | null;
+      const collection = choice.collections as unknown as NamedRelation | null;
+      const character = choice.collection_characters as unknown as NamedRelation | null;
 
       if (!profile?.email) {
         throw new Error('User email not found');
+      }
+
+      if (!collection?.name) {
+        throw new Error('Collection not found');
       }
 
       // Queue notification
@@ -1100,12 +1172,16 @@ class ProductionNotificationService {
         throw new Error(`Failed to fetch character choice: ${error?.message}`);
       }
 
-      const profile = choice.profiles as any;
-      const collection = choice.collections as any;
-      const character = choice.collection_characters as any;
+      const profile = choice.profiles as unknown as NotificationProfile | null;
+      const collection = choice.collections as unknown as NamedRelation | null;
+      const character = choice.collection_characters as unknown as NamedRelation | null;
 
       if (!profile?.email) {
         throw new Error('User email not found');
+      }
+
+      if (!collection?.name) {
+        throw new Error('Collection not found');
       }
 
       // Queue notification
@@ -1161,12 +1237,16 @@ class ProductionNotificationService {
         throw new Error(`Failed to fetch production queue item: ${error?.message}`);
       }
 
-      const profile = queueItem.profiles as any;
-      const collection = queueItem.collections as any;
-      const character = queueItem.collection_characters as any;
+      const profile = queueItem.profiles as unknown as NotificationProfile | null;
+      const collection = queueItem.collections as unknown as NamedRelation | null;
+      const character = queueItem.collection_characters as unknown as NamedRelation | null;
 
       if (!profile?.email) {
         throw new Error('User email not found');
+      }
+
+      if (!collection?.name) {
+        throw new Error('Collection not found');
       }
 
       // Check if user has opted in for stage updates (non-critical notification)
@@ -1201,12 +1281,8 @@ class ProductionNotificationService {
           })
         : null;
 
-      // Determine notification type based on stage
-      // Shipped notifications have their own preference setting
-      let notificationType: string;
+      // Shipped notifications have their own preference setting.
       if (stage === 'shipped') {
-        notificationType = 'item_shipped';
-        // Check if user has opted in for shipped notifications
         const { data: shouldSendShipped } = await supabase.rpc('should_send_notification', {
           user_id: queueItem.customer_id,
           notification_type: 'item_shipped',
@@ -1215,9 +1291,6 @@ class ProductionNotificationService {
           logDebug('User opted out of shipped notifications', { customerId: queueItem.customer_id }, 'notifications');
           return;
         }
-      } else {
-        notificationType = 'stage_update';
-        // Already checked above for stage_update preference
       }
 
       // Queue notification
@@ -1273,12 +1346,16 @@ class ProductionNotificationService {
         throw new Error(`Failed to fetch production queue item: ${error?.message}`);
       }
 
-      const profile = queueItem.profiles as any;
-      const collection = queueItem.collections as any;
-      const character = queueItem.collection_characters as any;
+      const profile = queueItem.profiles as unknown as NotificationProfile | null;
+      const collection = queueItem.collections as unknown as NamedRelation | null;
+      const character = queueItem.collection_characters as unknown as NamedRelation | null;
 
       if (!profile?.email) {
         throw new Error('User email not found');
+      }
+
+      if (!collection?.name) {
+        throw new Error('Collection not found');
       }
 
       // Format new estimated date
