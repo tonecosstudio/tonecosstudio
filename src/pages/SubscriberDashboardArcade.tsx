@@ -1,17 +1,18 @@
 import { Page } from "@/components/layouts/Page";
-import { ArcadeHero, ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
+import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
-  Package, Clock, Truck, CheckCircle2, AlertCircle, Eye,
-  Calendar, ExternalLink, RefreshCw, Gift, Pause, XCircle
+  Package, Clock, Truck, CheckCircle2, AlertCircle,
+  ExternalLink, Gift
 } from "lucide-react";
 import { CutoffCountdown, useIsBeforeCutoff } from "@/components/CutoffCountdown";
-import { CharacterChoiceStatus } from "@/components/customer/CharacterChoiceStatus";
+import {
+  listActiveSubscriberSubscriptions,
+  listSubscriberDeliveries,
+  type SubscriberDelivery,
+} from "@/services/subscriber-dashboard-service";
 
 export default function SubscriberDashboardArcade() {
   const { user } = useAuth();
@@ -20,38 +21,20 @@ export default function SubscriberDashboardArcade() {
   const subscriptionsQuery = useQuery({
     queryKey: ["my-subscriptions", user?.id],
     enabled: Boolean(user?.id),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("*, collections (id, name, slug, description)")
-        .eq("user_id", user!.id)
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => listActiveSubscriberSubscriptions(user!.id),
   });
 
   const deliveriesQuery = useQuery({
     queryKey: ["my-deliveries", user?.id],
     enabled: Boolean(user?.id) && (subscriptionsQuery.data?.length ?? 0) > 0,
-    queryFn: async () => {
-      const ids = subscriptionsQuery.data?.map((s: any) => s.id) || [];
-      if (!ids.length) return [];
-      const { data, error } = await supabase
-        .from("subscription_deliveries")
-        .select("*, collection_characters (name, description), collections (id, name)")
-        .in("subscription_id", ids)
-        .order("delivery_order", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () =>
+      listSubscriberDeliveries(subscriptionsQuery.data?.map((subscription) => subscription.id) ?? []),
   });
 
   const sub = subscriptionsQuery.data?.[0];
   const deliveries = deliveriesQuery.data || [];
-  const completed = deliveries.filter((d: any) => d.status === "delivered");
-  const upcoming = deliveries.filter((d: any) => d.status !== "delivered");
+  const completed = deliveries.filter((delivery) => delivery.status === "delivered");
+  const upcoming = deliveries.filter((delivery) => delivery.status !== "delivered");
   const next = upcoming[0];
 
   const getStatusStyle = (status: string) => {
@@ -172,14 +155,14 @@ export default function SubscriberDashboardArcade() {
                 <ArcadeCard hover={false} className="p-6">
                   <ArcadeSectionTitle>ENTREGAS ANTERIORES</ArcadeSectionTitle>
                   <div className="space-y-2">
-                    {completed.map((d: any) => {
-                      const s = getStatusStyle(d.status);
+                    {completed.map((delivery: SubscriberDelivery) => {
+                      const s = getStatusStyle(delivery.status);
                       const Icon = s.icon;
                       return (
-                        <div key={d.id} className="flex items-center gap-3 p-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors">
+                        <div key={delivery.id} className="flex items-center gap-3 p-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors">
                           <Icon className={`w-4 h-4 ${s.color}`} />
                           <span className="font-mono text-xs text-[hsl(0,0%,70%)] flex-1">
-                            {d.collections?.name || d.collection_characters?.name || "—"}
+                            {delivery.collections?.name || delivery.collection_characters?.name || "—"}
                           </span>
                           <span className="font-mono text-[10px] text-[hsl(0,0%,40%)]">{s.label}</span>
                         </div>

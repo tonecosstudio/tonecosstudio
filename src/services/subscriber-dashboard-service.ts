@@ -1,0 +1,123 @@
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+
+type SubscriptionRow = Tables<"subscriptions">;
+type DeliveryRow = Tables<"subscription_deliveries">;
+
+export interface SubscriberCollectionSummary {
+  id: string;
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+}
+
+export type SubscriberSubscription = Pick<
+  SubscriptionRow,
+  | "id"
+  | "user_id"
+  | "plan_type"
+  | "status"
+  | "deliveries_completed"
+  | "deliveries_total"
+  | "total_paid"
+> & {
+  collections: SubscriberCollectionSummary | null;
+};
+
+export type SubscriberDelivery = Pick<
+  DeliveryRow,
+  "id" | "status" | "delivery_number" | "delivery_order" | "tracking_code"
+> & {
+  collections: Pick<SubscriberCollectionSummary, "id" | "name"> | null;
+  collection_characters: {
+    name: string | null;
+    description: string | null;
+  } | null;
+};
+
+type SubscriptionQueryRow = Omit<SubscriberSubscription, "collections"> & {
+  collections: SubscriberCollectionSummary | SubscriberCollectionSummary[] | null;
+};
+
+type DeliveryQueryRow = Omit<SubscriberDelivery, "collections" | "collection_characters"> & {
+  collections:
+    | Pick<SubscriberCollectionSummary, "id" | "name">
+    | Pick<SubscriberCollectionSummary, "id" | "name">[]
+    | null;
+  collection_characters:
+    | SubscriberDelivery["collection_characters"]
+    | NonNullable<SubscriberDelivery["collection_characters"]>[]
+    | null;
+};
+
+function firstRelation<T>(value: T | T[] | null): T | null {
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
+
+export async function listActiveSubscriberSubscriptions(userId: string): Promise<SubscriberSubscription[]> {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select(`
+      id,
+      user_id,
+      plan_type,
+      status,
+      deliveries_completed,
+      deliveries_total,
+      total_paid,
+      collections (
+        id,
+        name,
+        slug,
+        description
+      )
+    `)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as SubscriptionQueryRow[]).map((subscription) => ({
+    ...subscription,
+    collections: firstRelation(subscription.collections),
+  }));
+}
+
+export async function listSubscriberDeliveries(subscriptionIds: string[]): Promise<SubscriberDelivery[]> {
+  if (subscriptionIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("subscription_deliveries")
+    .select(`
+      id,
+      status,
+      delivery_number,
+      delivery_order,
+      tracking_code,
+      collection_characters (
+        name,
+        description
+      ),
+      collections (
+        id,
+        name
+      )
+    `)
+    .in("subscription_id", subscriptionIds)
+    .order("delivery_order", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as DeliveryQueryRow[]).map((delivery) => ({
+    ...delivery,
+    collections: firstRelation(delivery.collections),
+    collection_characters: firstRelation(delivery.collection_characters),
+  }));
+}
