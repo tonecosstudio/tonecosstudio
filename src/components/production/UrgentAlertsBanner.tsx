@@ -1,10 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchProductionMetrics } from "@/services/admin/production-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Clock, Ban, TrendingUp, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useUrgentAlerts } from "@/hooks/admin/useUrgentAlerts";
 
 export type AlertType = "deadline_critical" | "deadline_urgent" | "blocked" | "overdue";
 
@@ -15,11 +14,7 @@ interface UrgentAlertsBannerProps {
 export function UrgentAlertsBanner({ onAlertClick }: UrgentAlertsBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
-  const { data: metrics } = useQuery({
-    queryKey: ["production-metrics"],
-    queryFn: fetchProductionMetrics,
-    refetchInterval: 30000,
-  });
+  const { data: metrics } = useUrgentAlerts();
 
   if (!metrics || dismissed) return null;
 
