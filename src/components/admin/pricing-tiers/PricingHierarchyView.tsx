@@ -13,6 +13,7 @@ import { EditTierDialog } from "./EditTierDialog";
 import { PurchaseModesConfig } from "../pricing-restructure/PurchaseModesConfig";
 import { useDeletePricingTier, usePricingHierarchy } from "@/hooks/admin/usePricingHierarchy";
 import type { PricingTierWithStats } from "@/types/pricing-tiers";
+import { log } from "@/lib/logger";
 
 interface CollectionByTierRow {
   collection_id: string;
@@ -47,7 +48,7 @@ export function PricingHierarchyView() {
       await deleteTierMutation.mutateAsync(tierId);
       refetchHierarchy();
     } catch (error) {
-      console.error("Erro ao deletar nivel:", error);
+      log.error("Erro ao deletar nivel de preco", { error, tierId });
     }
   };
 

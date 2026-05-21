@@ -36,6 +36,7 @@ import {
   type Order,
   type OrderProductionStage,
 } from "@/lib/services/integrationService";
+import { log } from "@/lib/logger";
 
 interface OrdersListProps {
   orders: Order[];
@@ -66,7 +67,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
       setShowStatusDialog(false);
       onRefresh();
     } catch (error) {
-      console.error("Error updating order status:", error);
+      log.error("Error updating order status", { error, orderId: selectedOrder.id, newStatus });
       toast.error("Erro ao atualizar status do pedido");
     } finally {
       setUpdating(false);
@@ -84,7 +85,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
       const stages = await getOrderProductionStages(order.id);
       setProductionStages(stages);
     } catch (error) {
-      console.error("Error loading production stages:", error);
+      log.error("Error loading production stages", { error, orderId: order.id });
     }
   };
 

@@ -23,6 +23,7 @@ import {
   useSupportAttachmentPublicUrl,
   useSupportChatCurrentUser,
 } from "@/hooks/admin/useSupportChatSession";
+import { log } from "@/lib/logger";
 import type { Message, Conversation } from "@/types/support";
 
 interface ChatInterfaceProps {
@@ -66,7 +67,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
         const conv = await conversationService.getConversation(conversationId);
         setConversation(conv);
       } catch (error) {
-        console.error("Erro ao carregar conversa:", error);
+        log.error("Erro ao carregar conversa de suporte", { error, conversationId });
       }
     };
     loadConversation();
@@ -217,7 +218,7 @@ export function ChatInterface({ conversationId, onOpenUserSidebar }: ChatInterfa
       const conv = await conversationService.getConversation(conversationId);
       setConversation(conv);
     } catch (error) {
-      console.error("Erro ao recarregar conversa:", error);
+      log.error("Erro ao recarregar conversa de suporte", { error, conversationId });
     }
   };
 

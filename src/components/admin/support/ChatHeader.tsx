@@ -19,6 +19,7 @@ import { ConversationStatusSelector } from "./ConversationStatusSelector";
 import { ConversationTagsSelector } from "./ConversationTagsSelector";
 import type { ConversationReminder } from "@/lib/reminder-service";
 import type { Conversation } from "@/types/support";
+import { log } from "@/lib/logger";
 
 interface ChatHeaderProps {
   conversationId: string;
@@ -97,7 +98,7 @@ export function ChatHeader({
                       await conversationService.updateStatus(conversationId, "closed");
                       handleUpdate();
                     } catch (error) {
-                      console.error("Erro ao encerrar:", error);
+                      log.error("Erro ao encerrar atendimento", { error, conversationId });
                     }
                   }
                 }}

@@ -49,6 +49,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useQuickRepliesManager } from "@/hooks/admin/useQuickRepliesManager";
 import type { QuickReply } from "@/hooks/admin/useQuickRepliesManager";
+import { log } from "@/lib/logger";
 
 const CATEGORIES = [
   { value: "saudacao", label: "SaudaÃ§Ã£o" },
@@ -170,7 +171,7 @@ export function QuickRepliesManager() {
       setIsDialogOpen(false);
       await reload();
     } catch (error) {
-      console.error("Erro ao salvar resposta rÃ¡pida:", error);
+      log.error("Erro ao salvar resposta rapida", { error, replyId: editingReply?.id });
       toast.error("Erro ao salvar resposta rÃ¡pida");
     }
   };
@@ -185,7 +186,7 @@ export function QuickRepliesManager() {
       toast.success("Resposta rÃ¡pida deletada com sucesso");
       await reload();
     } catch (error) {
-      console.error("Erro ao deletar resposta rÃ¡pida:", error);
+      log.error("Erro ao deletar resposta rapida", { error, replyId: id });
       toast.error("Erro ao deletar resposta rÃ¡pida");
     }
   };
@@ -196,7 +197,7 @@ export function QuickRepliesManager() {
       toast.success(reply.is_active ? "Resposta desativada" : "Resposta ativada");
       await reload();
     } catch (error) {
-      console.error("Erro ao alterar status:", error);
+      log.error("Erro ao alterar status da resposta rapida", { error, replyId: reply.id });
       toast.error("Erro ao alterar status");
     }
   };
@@ -231,7 +232,7 @@ export function QuickRepliesManager() {
       await reorderReplies(updates);
       toast.success("Ordem atualizada com sucesso");
     } catch (error) {
-      console.error("Erro ao reordenar:", error);
+      log.error("Erro ao reordenar respostas rapidas", { error, count: updates.length });
       toast.error("Erro ao reordenar respostas");
       await reload();
     }

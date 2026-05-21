@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { conversationService } from "@/lib/services/conversationService";
 import type { ConversationStatus } from "@/types/support";
 import { getStatusLabel, CONVERSATION_STATUSES } from "@/types/support";
+import { log } from "@/lib/logger";
 
 interface ConversationStatusSelectorProps {
   conversationId: string;
@@ -50,7 +51,7 @@ export function ConversationStatusSelector({
       onUpdate?.(newStatus);
       toast.success(`Status atualizado para: ${getStatusLabel(newStatus)}`);
     } catch (error) {
-      console.error("Erro ao atualizar status:", error);
+      log.error("Erro ao atualizar status da conversa", { error, conversationId, newStatus });
       toast.error("Erro ao atualizar status");
     }
   };

@@ -34,6 +34,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { createReminder, type ConversationReminder } from "@/lib/reminder-service";
 import { useToast } from "@/components/ui/use-toast";
+import { log } from "@/lib/logger";
 
 interface ReminderSchedulerProps {
   conversationId: string;
@@ -107,7 +108,7 @@ export function ReminderScheduler({
       // Fechar modal
       onOpenChange(false);
     } catch (error) {
-      console.error("Erro ao criar lembrete:", error);
+      log.error("Erro ao criar lembrete", { error, conversationId, reminderType });
       toast({
         title: "Erro ao agendar lembrete",
         description: error instanceof Error ? error.message : "Ocorreu um erro desconhecido.",

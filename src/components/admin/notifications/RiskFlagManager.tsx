@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { conversationService } from "@/lib/services/conversationService";
 import type { RiskFlag } from "@/types/support";
 import { getRiskFlagLabel } from "@/types/support";
+import { log } from "@/lib/logger";
 
 interface RiskFlagManagerProps {
   conversationId: string;
@@ -39,7 +40,7 @@ export function RiskFlagManager({ conversationId, riskFlags, onUpdate }: RiskFla
       onUpdate?.(newFlags);
       toast.success(flags.includes(flag) ? "Flag de risco removida" : "Flag de risco adicionada");
     } catch (error) {
-      console.error("Erro ao atualizar flags de risco:", error);
+      log.error("Erro ao atualizar flags de risco", { error, conversationId, flag });
       toast.error("Erro ao atualizar flags de risco");
     }
   };

@@ -6,6 +6,7 @@ import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateFileUpload } from "@/lib/security/input-sanitizer";
 import { useAdminImageUpload } from "@/hooks/admin/useAdminImageUpload";
+import { log } from "@/lib/logger";
 
 interface ImageUploadProps {
   label: string;
@@ -65,7 +66,7 @@ export default function ImageUpload({
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Não foi possível enviar a imagem";
-      console.error("Erro no upload:", error);
+      log.error("Erro no upload de imagem admin", { error, bucket, folder });
       toast({
         title: "Erro no upload",
         description: message,

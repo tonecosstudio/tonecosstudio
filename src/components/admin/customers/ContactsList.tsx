@@ -13,6 +13,7 @@ import { Search, RefreshCw, MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import { useContacts } from "@/hooks/admin/useContacts";
 import type { Contact } from "@/hooks/admin/useContacts";
+import { log } from "@/lib/logger";
 
 interface ContactsListProps {
   onStartConversation: (userId: string, userName: string, userEmail: string) => void;
@@ -30,7 +31,7 @@ export function ContactsList({ onStartConversation }: ContactsListProps) {
     try {
       await loadContacts();
     } catch (error) {
-      console.error("Erro ao carregar contatos:", error);
+      log.error("Erro ao carregar contatos", { error });
       toast.error("Erro ao carregar contatos");
     }
   };

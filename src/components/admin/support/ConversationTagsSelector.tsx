@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { conversationService } from "@/lib/services/conversationService";
 import type { ConversationTag } from "@/types/support";
 import { getTagLabel, CONVERSATION_TAGS } from "@/types/support";
+import { log } from "@/lib/logger";
 
 interface ConversationTagsSelectorProps {
   conversationId: string;
@@ -54,7 +55,7 @@ export function ConversationTagsSelector({
           : `Tag "${getTagLabel(tag)}" adicionada`
       );
     } catch (error) {
-      console.error("Erro ao atualizar tags:", error);
+      log.error("Erro ao atualizar tags da conversa", { error, conversationId, tag });
       toast.error("Erro ao atualizar tags");
     }
   };

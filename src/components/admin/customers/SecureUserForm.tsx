@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSanitizedForm } from '@/hooks/useSanitizedInput';
 import { sanitizeEmail, sanitizePhoneNumber } from '@/lib/security/input-sanitizer';
 import { checkRateLimit, RATE_LIMITS, getUserRateLimitKey } from '@/lib/security/rate-limiter';
+import { log } from '@/lib/logger';
 
 // Validation schema
 const userFormSchema = z.object({
@@ -111,7 +112,7 @@ export function SecureUserForm({
         description: 'Dados salvos com sucesso!'
       });
     } catch (error) {
-      console.error('Form submission error:', error);
+      log.error('Form submission error', { error, userId });
 
       if (error instanceof Error) {
         toast({

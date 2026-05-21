@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { log } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
 export type PeriodPreset = "today" | "week" | "month" | "year" | "custom";
@@ -94,7 +95,7 @@ export function PeriodFilter({
         handlePresetChange(savedPreset, false);
       }
     } catch (error) {
-      console.error("Erro ao carregar preferencia de periodo:", error);
+      log.error("Erro ao carregar preferencia de periodo", { error, persistKey });
     }
   }, [handlePresetChange, onChange, persistKey]);
 

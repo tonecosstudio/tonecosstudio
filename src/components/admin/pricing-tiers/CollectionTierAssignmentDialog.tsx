@@ -19,6 +19,7 @@ import {
   useCollectionsForTierAssignment,
   useSaveCollectionsForTierAssignment,
 } from "@/hooks/admin/useCollectionTierAssignmentDialog";
+import { log } from "@/lib/logger";
 
 interface CollectionTierAssignmentDialogProps {
   tierId: string;
@@ -68,7 +69,11 @@ export function CollectionTierAssignmentDialog({
 
       onSuccess?.();
     } catch (error) {
-      console.error("Erro ao atribuir coleções:", error);
+      log.error("Erro ao atribuir colecoes ao nivel", {
+        error,
+        tierId,
+        count: selectedCollections.length,
+      });
       toast({
         title: "Erro",
         description: "Não foi possível atribuir as coleções",

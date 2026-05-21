@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { log } from "@/lib/logger";
 
 export type ExportFormat = "csv" | "excel" | "json";
 type ExportRow = Record<string, unknown>;
@@ -239,7 +240,7 @@ export function ExportButton({
         description: `Dados exportados com sucesso em formato ${format.toUpperCase()}.`,
       });
     } catch (error) {
-      console.error("Erro ao exportar:", error);
+      log.error("Erro ao exportar dados admin", { error, filename, format });
       toast({
         title: "Erro na exportação",
         description: "Não foi possível exportar os dados. Tente novamente.",

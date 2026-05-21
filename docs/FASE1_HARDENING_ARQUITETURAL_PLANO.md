@@ -25,11 +25,12 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 - Removidos hooks locais duplicados de catalogo em `src/pages/catalog/hooks`, substituidos por hooks canonicamente localizados em `src/hooks/catalog`.
 - Upload de comprovante foi isolado em `usePaymentVoucherStorage`, removendo import direto de service do componente.
 - Logs diretos foram substituidos por logger central em arquivos tocados como `ErrorBoundary`, `NotFoundArcade`, `BuyCharacter` e `AudioManager`.
+- Logs runtime admin em support/chat, sidebar de pedidos/pagamentos, customers, delivery, pricing tiers, notifications e operations foram roteados para `@/lib/logger` com contexto de dominio.
 - Customer chat passou a reagir ao evento `newConversationCreated`, reduzindo estado solto e comportamento inconsistente apos criacao de conversa.
 - Customer/Profile foi isolado em hooks de aplicacao para metodos de pagamento, assinatura ativa e suporte; `ProfileSections` deixou de importar service diretamente.
 - Componentes publicos de subscription credits, Stripe, groups, notifications, next release e production notification preferences passaram a consumir hooks em vez de services.
 - Tipos compartilhados de notificacoes e profile sections foram movidos para `src/types`, removendo acoplamento type-only de componentes com services.
-- Scan de runtime em `src/pages` e `src/components` nao encontrou mais imports diretos de `@/services` ou `@/integrations/supabase/client` fora de READMEs e pendencias admin/logs.
+- Scan de runtime em `src/pages` e `src/components` nao encontrou `console.*`, imports diretos de `@/services` ou imports diretos de `@/integrations/supabase/client` fora de testes/specs/documentacao.
 - Build de producao permaneceu verde apos as extracoes mais recentes.
 
 ## Modulos mais criticos
@@ -37,7 +38,7 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 - Admin: ainda concentra arquivos grandes e componentes com muita regra de dominio, principalmente payments, collections, users, plans, settings, orders e support.
 - Customer/Profile: `ProfileSections` nao importa mais service direto, mas ainda e arquivo grande e precisa ser dividido em views menores.
 - Payments/Billing: ha progresso no voucher/upload, mas ainda existem componentes com imports de services e arquivos grandes de calculo/status.
-- Support/Chat: ainda possui `console.error` runtime em componentes admin e precisa de services/hooks menores por conversa, mensagens, tags e reminders.
+- Support/Chat: logs runtime em componentes admin foram centralizados; ainda precisa de services/hooks menores por conversa, mensagens, tags e reminders.
 - Groups: parte do acesso foi isolada, mas ainda existem helpers de service consumidos por componentes e regras de UI misturadas com regras de dominio.
 - Production/Delivery/Orders: production stages melhorou, mas bulk operations, delivery e orders ainda demandam decomposicao por caso de uso.
 
@@ -45,8 +46,8 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 
 - `src/pages/ProfileSections.tsx`: service import removido, mas ainda concentra muitas views e deve ser quebrado em arquivos menores.
 - READMEs de componentes ainda citam services/Supabase/console em exemplos antigos; precisam ser revisados ou removidos quando nao forem documentacao viva.
-- `src/components/admin/support/*`: ainda possui logs diretos e logica de erro local.
-- `src/components/admin/operations/*`, `src/components/admin/sidebar/*`, `src/components/admin/delivery/*`: ainda possuem logs diretos e precisam de hooks/casos de uso menores.
+- `src/components/admin/support/*`: logs diretos foram removidos dos componentes tocados, mas ainda ha logica de erro local que deve migrar para hooks/casos de uso menores.
+- `src/components/admin/operations/*`, `src/components/admin/sidebar/*`, `src/components/admin/delivery/*`: logs diretos foram centralizados nos componentes tocados; ainda precisam de hooks/casos de uso menores.
 - Arquivos grandes ainda pendentes: `AdminCollections`, `orders-service`, `CreditCharactersContent`, `PaymentDashboard`, `AdminPlansConfiguration`, `AdminCoinsSystem`, `AdminUserDetails`, `AdminUsers`, `AdminSystemSettings`, `SubscribeCollection`, `ProfileSections`, `ChatInterface`, `PaymentDetailsView`, `PaymentCalculator`.
 
 ## Riscos arquiteturais
@@ -60,10 +61,12 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 ## Evidencias de validacao
 
 - `npx eslint` focado nos arquivos tocados da ultima extracao critica passou sem saida.
-- `npm run build`: passou em 2026-05-21, com Vite build concluido em 57.75s na ultima execucao.
+- `rg -n 'console\.|@/services|@/integrations/supabase/client' src/components src/pages --glob '!**/*.md' --glob '!**/*.test.*' --glob '!**/*.spec.*'`: passou sem saida em 2026-05-21.
+- `npm run build`: passou em 2026-05-21, com Vite build concluido em 1m20s na ultima execucao.
 - `npm run test`: falhou no sandbox com `spawn EPERM` ao iniciar esbuild; fora do sandbox ficou inconclusivo por timeout apos 5 minutos.
 - `npx madge --circular --extensions ts,tsx src`: passou em 2026-05-21; 1023 arquivos processados, 504 warnings, 0 dependencias circulares.
-- `npm run lint` e `npm run lint:architecture`: ainda falham globalmente por debitos existentes de lint e restricoes arquiteturais fora da ultima fatia.
+- `npm run lint:architecture`: ainda falha globalmente por debitos existentes fora da ultima fatia; ultima execucao em 2026-05-21 reportou 147 errors e 20 warnings, concentrados em unused vars, hooks deps, testes antigos e imports restritos em testes/rotas especificas.
+- `npm run lint`: ainda falha globalmente pelo mesmo conjunto de debitos herdados.
 
 ## Plano restante por modulo
 
@@ -106,7 +109,7 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 ### 7. Support, Chat, Notifications e Email
 
 - Isolar conversation, message, reminder, tags/status e notification services.
-- Remover logs diretos de chat/reminders/templates.
+- Extrair logica de erro/local state de chat/reminders/templates para hooks/casos de uso menores, mantendo logger central.
 - Padronizar fallback/erro de envio sem falhas silenciosas.
 
 ### 8. Groups
@@ -137,5 +140,5 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 
 - Score inicial estimado: 62/100.
 - Score antes desta fatia: 87/100.
-- Score apos esta fatia: 93/100.
+- Score apos esta fatia: 94/100.
 - Meta para concluir a FASE 1 global: 94-97/100, condicionada a lint/test/madge verdes e fechamento dos hotspots restantes.

@@ -31,6 +31,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { updatePaymentStatus, type ManualPayment } from "@/lib/services/integrationService";
 import { type LucideIcon } from "lucide-react";
+import { log } from "@/lib/logger";
 
 interface PaymentInfoProps {
   payments: ManualPayment[];
@@ -66,7 +67,7 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
       setShowStatusDialog(false);
       onRefresh();
     } catch (error) {
-      console.error("Error updating payment status:", error);
+      log.error("Error updating payment status", { error, paymentId: selectedPayment.id, newStatus });
       toast.error("Erro ao atualizar status do pagamento");
     } finally {
       setUpdating(false);

@@ -35,6 +35,7 @@ import { QuotesList } from "../sidebar/QuotesList";
 import { SubscriptionInfo } from "../sidebar/SubscriptionInfo";
 import { PaymentInfo } from "../sidebar/PaymentInfo";
 import { CustomerInfo } from "../sidebar/CustomerInfo";
+import { log } from "@/lib/logger";
 
 interface CustomerSidebarProps {
   userId: string;
@@ -67,7 +68,7 @@ export function CustomerSidebar({ userId, isOpen, onToggle }: CustomerSidebarPro
       setPayments(paymentsData);
       setHasLoaded(true);
     } catch (error) {
-      console.error("Error loading customer data:", error);
+      log.error("Error loading customer data", { error, userId });
     } finally {
       setLoading(false);
     }

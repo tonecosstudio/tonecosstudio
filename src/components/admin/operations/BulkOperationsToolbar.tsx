@@ -54,6 +54,7 @@ import {
   getBulkOperationStatus,
 } from "@/lib/admin-payment-service";
 import { useAuth } from "@/lib/auth";
+import { log } from "@/lib/logger";
 
 interface BulkOperationsToolbarProps {
   selectedPayments: string[];
@@ -348,7 +349,7 @@ export function BulkOperationsToolbar({
           }
         }
       } catch (error) {
-        console.error("Error polling operation status:", error);
+        log.error("Error polling operation status", { error, operationId });
         clearInterval(interval);
       }
     }, 2000); // Poll every 2 seconds

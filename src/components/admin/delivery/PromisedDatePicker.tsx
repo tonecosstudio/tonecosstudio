@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { conversationService } from "@/lib/services/conversationService";
+import { log } from "@/lib/logger";
 
 interface PromisedDatePickerProps {
   conversationId: string;
@@ -43,7 +44,7 @@ export function PromisedDatePicker({
       onUpdate?.(selectedDate.toISOString());
       toast.success("Data prometida atualizada");
     } catch (error) {
-      console.error("Erro ao atualizar data prometida:", error);
+      log.error("Erro ao atualizar data prometida", { error, conversationId });
       toast.error("Erro ao atualizar data prometida");
     }
   };
@@ -56,7 +57,7 @@ export function PromisedDatePicker({
       onUpdate?.(null);
       toast.success("Data prometida removida");
     } catch (error) {
-      console.error("Erro ao remover data prometida:", error);
+      log.error("Erro ao remover data prometida", { error, conversationId });
       toast.error("Erro ao remover data prometida");
     }
   };
