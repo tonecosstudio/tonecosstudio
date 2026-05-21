@@ -8,7 +8,7 @@ import { AdminProductionTimelineEditor } from "@/pages/admin/quotes/AdminProduct
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import SEOHead from "@/components/SEOHead";
 import { useAdminQuotesData } from "@/hooks/admin/useAdminQuotesData";
-import { updateQuoteStatus } from "@/services/admin/admin-quotes-service";
+import type { ModelMini, QuoteItemRow } from "@/hooks/admin/useAdminQuotesData";
 
 function fmtDate(iso: string) {
   try {
@@ -26,7 +26,7 @@ function fmtDate(iso: string) {
 
 export default function AdminQuotesPage() {
   const { toast } = useToast();
-  const { quotesQuery, itemsQuery, modelsQuery } = useAdminQuotesData();
+  const { quotesQuery, itemsQuery, modelsQuery, updateStatusMutation } = useAdminQuotesData();
 
   const modelsById = useMemo(() => {
     const m = new Map<string, ModelMini>();
@@ -46,9 +46,8 @@ export default function AdminQuotesPage() {
 
   const setStatus = async (id: string, status: string) => {
     try {
-      await updateQuoteStatus(id, status);
+      await updateStatusMutation.mutateAsync({ id, status });
       toast({ title: "Atualizado", description: `Status alterado para: ${status}` });
-      quotesQuery.refetch();
     } catch (e) {
       toast({
         title: "Falha",
