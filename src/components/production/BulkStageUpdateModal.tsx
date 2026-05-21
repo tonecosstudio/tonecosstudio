@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import type { ProductionStage } from '@/services/admin/production-service';
+import type { ProductionStage } from '@/types/production';
 
 interface BulkStageUpdateModalProps {
   open: boolean;
@@ -108,8 +108,8 @@ export function BulkStageUpdateModal({
       await onConfirm(selectedStage);
       onOpenChange(false);
       setSelectedStage('');
-    } catch (error) {
-      console.error('Erro ao atualizar estágios:', error);
+    } catch {
+      // Parent handlers own user-facing error feedback.
     } finally {
       setIsSubmitting(false);
     }

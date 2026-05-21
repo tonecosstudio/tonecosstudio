@@ -28,6 +28,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - Labels, cores e ordem visual dos estágios de produção consolidados em `src/components/production/production-stage-display.ts`, removendo duplicação entre modal, histórico e tracker.
 - `ProductionHub` passou a consumir fila, invalidação e bulk operations por hooks (`useProductionPipelineQueue`, `useInvalidateProductionQueries`, `useProductionBulkActions`), removendo acoplamento direto com services/admin e logs de console.
 - Pages de notificações admin (`AdminNotificationSettings` e `AdminNotificationHistory`) passaram a consumir `useAdminNotificationManagement`, removendo query/mutation/service direto da UI.
+- Componentes de produção com imports apenas tipados (`ProductionListView`, `BulkStageUpdateModal`) passaram a usar `src/types/production`, com remoção de `any` explícito no sort da lista.
 
 ## Plano de execução restante
 
@@ -76,5 +77,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **78/100**.
+- Score após correções já aplicadas: **79/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.

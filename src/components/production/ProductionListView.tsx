@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { ProductionQueueItem } from '@/services/admin/production-service';
+import type { ProductionQueueItem } from '@/types/production';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -54,8 +54,8 @@ export function ProductionListView({
 
   // Sort items based on current sort column and direction
   const sortedItems = [...(items || [])].sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
+    let aValue: string | number;
+    let bValue: string | number;
 
     switch (sortColumn) {
       case 'customer':
