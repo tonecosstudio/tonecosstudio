@@ -18,8 +18,8 @@ import { toast } from "@/components/ui/use-toast";
 import { Upload, X, Loader2, Image as ImageIcon, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import imageCompression from "browser-image-compression";
-import { supabase } from "@/integrations/supabase/client";
-import { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/security/input-sanitizer";
+import { validateFileUpload, sanitizeFilename } from "@/lib/security/input-sanitizer";
+import { useProductionPhotoStorage } from "@/hooks/admin/useProductionPhotoStorage";
 
 // ============================================================================
 // Types
@@ -101,6 +101,7 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
   allowCustomerVisibleToggle = false,
   defaultCustomerVisible = false,
 }) => {
+  const { uploadPhoto } = useProductionPhotoStorage();
   const [photos, setPhotos] = useState<PhotoItem[]>(() =>
     currentPhotos.map((photo, index) => {
       if (typeof photo === 'string') {
@@ -165,23 +166,11 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
     const fileName = `${timestamp}-${randomId}.${extension}`;
     const filePath = `${folder}/${fileName}`;
 
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type,
+    return uploadPhoto({
+      bucket,
+      filePath,
+      file,
     });
-
-    if (uploadError) {
-      throw new Error(`Erro no upload: ${uploadError.message}`);
-    }
-
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-    return publicUrl;
   };
 
   // ============================================================================

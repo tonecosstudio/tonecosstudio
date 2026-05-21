@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useProductionPhotoStorage } from "@/hooks/admin/useProductionPhotoStorage";
 
 // ============================================================================
 // Types
@@ -77,6 +77,7 @@ export const PhotoGalleryComponent: React.FC<PhotoGalleryComponentProps> = ({
   isAdmin = false,
   customerViewOnly = false,
 }) => {
+  const { removePhoto } = useProductionPhotoStorage();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -138,23 +139,10 @@ export const PhotoGalleryComponent: React.FC<PhotoGalleryComponentProps> = ({
     setIsDeleting(true);
 
     try {
-      // Extract file path from URL
-      const url = new URL(photoUrl);
-      const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
-      
-      if (pathMatch) {
-        const filePath = pathMatch[1];
-        const bucket = "production-photos"; // Default bucket
-
-        // Delete from Supabase Storage
-        const { error: deleteError } = await supabase.storage
-          .from(bucket)
-          .remove([filePath]);
-
-        if (deleteError) {
-          throw new Error(`Erro ao excluir do storage: ${deleteError.message}`);
-        }
-      }
+      await removePhoto({
+        bucket: "production-photos",
+        photoUrl,
+      });
 
       // Call parent callback to update state
       onPhotoDelete(photoUrl);
@@ -173,7 +161,7 @@ export const PhotoGalleryComponent: React.FC<PhotoGalleryComponentProps> = ({
           setCurrentPhotoIndex((prev) => (prev >= filteredPhotos.length - 1 ? prev - 1 : prev));
         }
       }
-    } catch (error) {
+    } catch {
       const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro ao Excluir",
@@ -206,7 +194,7 @@ export const PhotoGalleryComponent: React.FC<PhotoGalleryComponentProps> = ({
         title: "Download Iniciado",
         description: "A foto está sendo baixada.",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro no Download",
         description: "Não foi possível baixar a foto.",
