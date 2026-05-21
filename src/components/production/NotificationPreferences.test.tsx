@@ -5,14 +5,19 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NotificationPreferences } from "./NotificationPreferences";
-import * as notificationService from "@/services/notifications/alert-notification-service";
 
-// Mock the notification service
-vi.mock("@/services/notifications/alert-notification-service", () => ({
+const notificationService = vi.hoisted(() => ({
   getNotificationPreferences: vi.fn(),
   saveNotificationPreferences: vi.fn(),
   requestNotificationPermission: vi.fn(),
   canShowNotifications: vi.fn(),
+}));
+
+vi.mock("@/services/notifications/alert-notification-service", () => ({
+  getNotificationPreferences: notificationService.getNotificationPreferences,
+  saveNotificationPreferences: notificationService.saveNotificationPreferences,
+  requestNotificationPermission: notificationService.requestNotificationPermission,
+  canShowNotifications: notificationService.canShowNotifications,
 }));
 
 // Mock the toast hook
@@ -38,10 +43,10 @@ describe("NotificationPreferences Component", () => {
   it("should render all notification preference options", () => {
     render(<NotificationPreferences />);
 
-    expect(screen.getByText("Preferências de Notificação")).toBeInTheDocument();
-    expect(screen.getByText("Notificações do Navegador")).toBeInTheDocument();
-    expect(screen.getByText("Notificações Sonoras")).toBeInTheDocument();
-    expect(screen.getByText("Resumo Diário por Email")).toBeInTheDocument();
+    expect(screen.getByText("Preferencias de Notificacao")).toBeInTheDocument();
+    expect(screen.getByText("Notificacoes do Navegador")).toBeInTheDocument();
+    expect(screen.getByText("Notificacoes Sonoras")).toBeInTheDocument();
+    expect(screen.getByText("Resumo Diario por Email")).toBeInTheDocument();
   });
 
   it("should load preferences from service on mount", () => {
@@ -55,7 +60,7 @@ describe("NotificationPreferences Component", () => {
 
     render(<NotificationPreferences />);
 
-    expect(screen.getByText("Permitir Notificações")).toBeInTheDocument();
+    expect(screen.getByText("Permitir Notificacoes")).toBeInTheDocument();
   });
 
   it("should not show 'Permitir Notificações' button when permission granted", () => {
@@ -68,7 +73,7 @@ describe("NotificationPreferences Component", () => {
 
     render(<NotificationPreferences />);
 
-    expect(screen.queryByText("Permitir Notificações")).not.toBeInTheDocument();
+    expect(screen.queryByText("Permitir Notificacoes")).not.toBeInTheDocument();
   });
 
   it("should request permission when 'Permitir Notificações' button is clicked", async () => {
@@ -76,7 +81,7 @@ describe("NotificationPreferences Component", () => {
 
     render(<NotificationPreferences />);
 
-    const button = screen.getByText("Permitir Notificações");
+    const button = screen.getByText("Permitir Notificacoes");
     fireEvent.click(button);
 
     await waitFor(() => {
@@ -89,12 +94,12 @@ describe("NotificationPreferences Component", () => {
 
     render(<NotificationPreferences />);
 
-    const button = screen.getByText("Permitir Notificações");
+    const button = screen.getByText("Permitir Notificacoes");
     fireEvent.click(button);
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
-        title: "Permissão Concedida",
+        title: "Permissao Concedida",
         description: expect.any(String),
       });
     });
@@ -105,12 +110,12 @@ describe("NotificationPreferences Component", () => {
 
     render(<NotificationPreferences />);
 
-    const button = screen.getByText("Permitir Notificações");
+    const button = screen.getByText("Permitir Notificacoes");
     fireEvent.click(button);
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
-        title: "Permissão Negada",
+        title: "Permissao Negada",
         description: expect.any(String),
         variant: "destructive",
       });
@@ -120,7 +125,7 @@ describe("NotificationPreferences Component", () => {
   it("should toggle sound notifications and save preferences", async () => {
     render(<NotificationPreferences />);
 
-    const soundSwitch = screen.getByRole("switch", { name: /notificações sonoras/i });
+    const soundSwitch = screen.getByRole("switch", { name: /notificacoes sonoras/i });
     fireEvent.click(soundSwitch);
 
     await waitFor(() => {
@@ -132,15 +137,15 @@ describe("NotificationPreferences Component", () => {
     });
 
     expect(mockToast).toHaveBeenCalledWith({
-      title: "Preferências Atualizadas",
-      description: "Notificações sonoras ativadas.",
+      title: "Preferencias Atualizadas",
+      description: "Notificacoes sonoras ativadas.",
     });
   });
 
   it("should toggle email digest and save preferences", async () => {
     render(<NotificationPreferences />);
 
-    const emailSwitch = screen.getByRole("switch", { name: /resumo diário por email/i });
+    const emailSwitch = screen.getByRole("switch", { name: /resumo diario por email/i });
     fireEvent.click(emailSwitch);
 
     await waitFor(() => {
@@ -152,8 +157,8 @@ describe("NotificationPreferences Component", () => {
     });
 
     expect(mockToast).toHaveBeenCalledWith({
-      title: "Preferências Atualizadas",
-      description: "Resumo diário por email desativado.",
+      title: "Preferencias Atualizadas",
+      description: "Resumo diario por email desativado.",
     });
   });
 
@@ -169,7 +174,7 @@ describe("NotificationPreferences Component", () => {
     render(<NotificationPreferences />);
 
     // The switch is disabled when permission is not granted, so we need to click the button instead
-    const button = screen.getByText("Permitir Notificações");
+    const button = screen.getByText("Permitir Notificacoes");
     fireEvent.click(button);
 
     await waitFor(() => {
@@ -184,12 +189,12 @@ describe("NotificationPreferences Component", () => {
     render(<NotificationPreferences />);
 
     // Click the "Permitir Notificações" button which will request permission
-    const button = screen.getByText("Permitir Notificações");
+    const button = screen.getByText("Permitir Notificacoes");
     fireEvent.click(button);
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
-        title: "Permissão Negada",
+        title: "Permissao Negada",
         description: expect.any(String),
         variant: "destructive",
       });
@@ -209,9 +214,9 @@ describe("NotificationPreferences Component", () => {
 
     render(<NotificationPreferences />);
 
-    const browserSwitch = screen.getByRole("switch", { name: /notificações do navegador/i });
-    const soundSwitch = screen.getByRole("switch", { name: /notificações sonoras/i });
-    const emailSwitch = screen.getByRole("switch", { name: /resumo diário por email/i });
+    const browserSwitch = screen.getByRole("switch", { name: /notificacoes do navegador/i });
+    const soundSwitch = screen.getByRole("switch", { name: /notificacoes sonoras/i });
+    const emailSwitch = screen.getByRole("switch", { name: /resumo diario por email/i });
 
     expect(browserSwitch).toBeChecked();
     expect(soundSwitch).toBeChecked();

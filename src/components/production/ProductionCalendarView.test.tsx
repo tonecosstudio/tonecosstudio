@@ -15,8 +15,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProductionCalendarView } from './ProductionCalendarView';
-import type { ProductionQueueItem } from '@/services/admin/production-service';
+import type { ProductionQueueItem } from '@/types/production';
 
 // Mock CSS import
 vi.mock('react-big-calendar/lib/css/react-big-calendar.css', () => ({}));
@@ -34,6 +35,17 @@ vi.mock('@/hooks/use-toast', () => ({
 vi.mock('@/services/admin/production-service', () => ({
   updateProductionSchedule: vi.fn().mockResolvedValue({}),
 }));
+
+function renderCalendar(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 // Helper function to create mock production items
 const createMockItem = (overrides: Partial<ProductionQueueItem> = {}): ProductionQueueItem => ({
@@ -83,7 +95,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-2', customerName: 'Maria Santos', priority: 'critical', scheduledProductionDate: '2024-03-16' }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -108,7 +120,7 @@ describe('ProductionCalendarView', () => {
     });
 
     it('should render loading state', () => {
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={[]}
           isLoading={true}
@@ -120,7 +132,7 @@ describe('ProductionCalendarView', () => {
     });
 
     it('should render empty state when no items', () => {
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={[]}
           onItemClick={mockOnItemClick}
@@ -137,7 +149,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-2', scheduledProductionDate: null }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -152,7 +164,7 @@ describe('ProductionCalendarView', () => {
     it('should display priority legend with correct colors', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -173,7 +185,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-3', scheduledProductionDate: '2024-03-17' }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -186,7 +198,7 @@ describe('ProductionCalendarView', () => {
     it('should display singular form for single item', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -201,7 +213,7 @@ describe('ProductionCalendarView', () => {
     it('should have week view button', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -215,7 +227,7 @@ describe('ProductionCalendarView', () => {
     it('should have day view button', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -229,7 +241,7 @@ describe('ProductionCalendarView', () => {
     it('should have month view button', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -245,7 +257,7 @@ describe('ProductionCalendarView', () => {
     it('should have today button', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -258,7 +270,7 @@ describe('ProductionCalendarView', () => {
     it('should have previous and next navigation buttons', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -275,7 +287,7 @@ describe('ProductionCalendarView', () => {
       const item = createMockItem({ id: 'item-1', customerName: 'João Silva' });
       const items = [item];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -295,7 +307,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-3', scheduledProductionDate: '2024-03-16' }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -314,7 +326,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-4', priority: 'low', scheduledProductionDate: '2024-03-18' }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -336,7 +348,7 @@ describe('ProductionCalendarView', () => {
         }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -354,7 +366,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-3', customerName: 'Pedro Costa', scheduledProductionDate: '2024-03-15' }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -369,7 +381,7 @@ describe('ProductionCalendarView', () => {
     it('should render all view options', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -390,7 +402,7 @@ describe('ProductionCalendarView', () => {
 
       // Should not throw error
       expect(() => {
-        render(
+        renderCalendar(
           <ProductionCalendarView
             items={items}
             onItemClick={mockOnItemClick}
@@ -404,7 +416,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-1', customerName: '', collectionName: 'Coleção Teste' }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -420,7 +432,7 @@ describe('ProductionCalendarView', () => {
         createMockItem({ id: 'item-1', customerName: 'João Silva', collectionName: '' }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -436,7 +448,7 @@ describe('ProductionCalendarView', () => {
     it('should support drag and drop functionality', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -450,7 +462,7 @@ describe('ProductionCalendarView', () => {
     it('should support day selection', () => {
       const items = [createMockItem()];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}
@@ -471,7 +483,7 @@ describe('ProductionCalendarView', () => {
         }),
       ];
 
-      render(
+      renderCalendar(
         <ProductionCalendarView
           items={items}
           onItemClick={mockOnItemClick}

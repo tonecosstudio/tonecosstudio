@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ProductionListView } from './ProductionListView';
-import type { ProductionQueueItem } from '@/services/admin/production-service';
+import type { ProductionQueueItem } from '@/types/production';
 
 const mockItems: ProductionQueueItem[] = [
   {

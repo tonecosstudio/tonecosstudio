@@ -3,11 +3,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UrgentAlertsBar } from "./UrgentAlertsBar";
-import * as productionService from "@/services/admin/production-service";
 
-// Mock the production service
-vi.mock("@/services/admin/production-service", () => ({
+const productionService = vi.hoisted(() => ({
   fetchProductionMetrics: vi.fn(),
+}));
+
+vi.mock("@/services/admin/production-service", () => ({
+  fetchProductionMetrics: productionService.fetchProductionMetrics,
 }));
 
 // Mock Supabase client

@@ -12,7 +12,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StageTransitionModal } from "../StageTransitionModal";
-import type { ProductionStageRecord } from "@/services/admin/stage-service";
+import type { ProductionStageRecord } from "@/hooks/admin/useProductionStages";
 
 // Mock the services
 vi.mock("@/services/admin/stage-service", () => ({

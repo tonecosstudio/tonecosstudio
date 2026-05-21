@@ -7,13 +7,16 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProductionStageTracker } from "./ProductionStageTracker";
-import * as stageService from "@/services/admin/stage-service";
-import type { ProductionStageRecord } from "@/services/admin/stage-service";
+import type { ProductionStageRecord } from "@/hooks/admin/useProductionStages";
 
-// Mock the stage service
-vi.mock("@/services/admin/stage-service", () => ({
+const stageService = vi.hoisted(() => ({
   getStageHistory: vi.fn(),
   completeStage: vi.fn(),
+}));
+
+vi.mock("@/services/admin/stage-service", () => ({
+  getStageHistory: stageService.getStageHistory,
+  completeStage: stageService.completeStage,
 }));
 
 vi.mock("@/services/admin/stage-validation", () => ({

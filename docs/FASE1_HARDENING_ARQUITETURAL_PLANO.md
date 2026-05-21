@@ -62,11 +62,12 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 
 - `npx eslint` focado nos arquivos tocados da ultima extracao critica passou sem saida.
 - `rg -n 'console\.|@/services|@/integrations/supabase/client' src/components src/pages --glob '!**/*.md' --glob '!**/*.test.*' --glob '!**/*.spec.*'`: passou sem saida em 2026-05-21.
-- `npm run build`: passou em 2026-05-21, com Vite build concluido em 55.92s na ultima execucao.
+- `npm run build`: passou em 2026-05-21, com Vite build concluido em 2m 11s na ultima execucao.
 - `npm run test`: ficou inconclusivo por timeout apos 5 minutos na ultima execucao; sem saida util antes do encerramento.
 - `npx madge --circular --extensions ts,tsx src`: passou em 2026-05-21; 1024 arquivos processados, 504 warnings, 0 dependencias circulares.
-- `npm run lint:architecture`: passou em 2026-05-21 com exit code 0; ainda reporta 18 warnings em testes de componentes que mockam services diretamente e devem migrar para mocks de hooks/use-cases.
-- `npm run lint`: passou em 2026-05-21 com exit code 0; ainda reporta warnings herdados de `any` em testes e Supabase Edge Functions.
+- `npm run lint:architecture`: passou em 2026-05-21 com exit code 0 e sem warnings apos migracao dos testes de componentes para mocks hoisted e tipos SSOT.
+- `npm run lint`: passou em 2026-05-21 com exit code 0; ainda reporta 687 warnings herdados de `any` em testes e Supabase Edge Functions.
+- Suite focada dos testes de componentes customer/production tocados nesta fatia (`npx vitest run ...` com 14 arquivos): passou em 2026-05-21; 182 testes verdes apos alinhamento dos testes aos boundaries atuais e mocks de hooks/services.
 
 ## Plano restante por modulo
 
@@ -134,12 +135,11 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 
 - Atualizar testes para o novo boundary.
 - Quebrar suites gigantes por responsabilidade.
-- Fechar warnings restantes de testes que importam services diretamente.
 - Fechar warnings restantes de `any` em testes/edge functions e concluir `npm run test` sem timeout.
 
 ## Score
 
 - Score inicial estimado: 62/100.
 - Score antes desta fatia: 87/100.
-- Score apos esta fatia: 95/100.
+- Score apos esta fatia: 96/100.
 - Meta para concluir a FASE 1 global: 94-97/100, condicionada a lint/test/madge verdes e fechamento dos hotspots restantes.

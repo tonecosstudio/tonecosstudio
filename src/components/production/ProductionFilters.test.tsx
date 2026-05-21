@@ -15,7 +15,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProductionFilters } from "./ProductionFilters";
-import type { ProductionFilters as ProductionFiltersType } from "@/services/admin/production-service";
+import type { ProductionFilters as ProductionFiltersType } from "@/types/production";
 
 // Mock Supabase
 vi.mock("@/integrations/supabase/client", () => ({
@@ -256,8 +256,8 @@ describe("ProductionFilters", () => {
     );
 
     expect(screen.getByText("Aguardando Escolha")).toBeInTheDocument();
-    expect(screen.getByText("Design")).toBeInTheDocument();
-    expect(screen.getByText("Produção")).toBeInTheDocument();
+    expect(screen.getByText("Preparação do Modelo")).toBeInTheDocument();
+    expect(screen.getByText("Em Impressão 3D")).toBeInTheDocument();
     expect(screen.getByText("Controle de Qualidade")).toBeInTheDocument();
     expect(screen.getByText("Embalagem")).toBeInTheDocument();
     expect(screen.getByText("Enviado")).toBeInTheDocument();
@@ -274,12 +274,12 @@ describe("ProductionFilters", () => {
       />
     );
 
-    const productionCheckbox = screen.getByLabelText("Produção");
+    const productionCheckbox = screen.getByLabelText("Em Impressão 3D");
     await user.click(productionCheckbox);
 
     expect(mockOnFiltersChange).toHaveBeenCalledWith({
       ...defaultFilters,
-      stages: ["production"],
+      stages: ["printing"],
     });
   });
 

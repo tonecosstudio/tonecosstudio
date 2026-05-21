@@ -6,12 +6,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StageHistoryPanel } from "./StageHistoryPanel";
-import * as stageService from "@/services/admin/stage-service";
-import type { ProductionStageRecord } from "@/services/admin/stage-service";
+import type { ProductionStageRecord } from "@/hooks/admin/useProductionStages";
 
-// Mock the stage service
-vi.mock("@/services/admin/stage-service", () => ({
+const stageService = vi.hoisted(() => ({
   getStageHistory: vi.fn(),
+}));
+
+vi.mock("@/services/admin/stage-service", () => ({
+  getStageHistory: stageService.getStageHistory,
 }));
 
 // Helper to create a test wrapper with QueryClient

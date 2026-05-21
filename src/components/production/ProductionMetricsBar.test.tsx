@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProductionMetricsBar } from "./ProductionMetricsBar";
-import * as productionService from "@/services/admin/production-service";
 
-// Mock the production service
-vi.mock("@/services/admin/production-service", () => ({
+const productionService = vi.hoisted(() => ({
   fetchProductionMetrics: vi.fn(),
+}));
+
+vi.mock("@/services/admin/production-service", () => ({
+  fetchProductionMetrics: productionService.fetchProductionMetrics,
 }));
 
 // Mock Supabase client
@@ -67,8 +69,8 @@ describe("ProductionMetricsBar", () => {
     const mockMetrics = {
       stages: {
         awaiting_choice: 5,
-        design: 3,
-        production: 10,
+        model_preparation: 3,
+        printing: 10,
         quality_check: 2,
         packaging: 4,
         shipped: 8,
@@ -106,8 +108,8 @@ describe("ProductionMetricsBar", () => {
         thisMonth: 50,
       },
       avgStageDurations: {
-        design: 24.5,
-        production: 48.2,
+        model_preparation: 24.5,
+        printing: 48.2,
         quality_check: 12.3,
       },
       overall: {
@@ -130,8 +132,8 @@ describe("ProductionMetricsBar", () => {
 
     // Check stage counts
     expect(screen.getByText("Aguardando Escolha")).toBeInTheDocument();
-    expect(screen.getAllByText("Design").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Produção").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Preparação do Modelo").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Em Impressão 3D").length).toBeGreaterThan(0);
 
     // Check scheduled items
     expect(screen.getByText("Itens Agendados")).toBeInTheDocument();

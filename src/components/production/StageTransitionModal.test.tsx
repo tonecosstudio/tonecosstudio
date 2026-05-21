@@ -15,13 +15,16 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StageTransitionModal } from "./StageTransitionModal";
-import type { ProductionStageRecord } from "@/services/admin/stage-service";
-import * as stageService from "@/services/admin/stage-service";
+import type { ProductionStageRecord } from "@/hooks/admin/useProductionStages";
 
-// Mock the stage service
-vi.mock("@/services/admin/stage-service", () => ({
+const stageService = vi.hoisted(() => ({
   completeStage: vi.fn(),
   uploadStagePhoto: vi.fn(),
+}));
+
+vi.mock("@/services/admin/stage-service", () => ({
+  completeStage: stageService.completeStage,
+  uploadStagePhoto: stageService.uploadStagePhoto,
 }));
 
 // Mock stage validation

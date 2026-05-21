@@ -7,11 +7,15 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NotificationPreferences } from './NotificationPreferences';
-import * as preferencesService from '@/services/customer/notification-preferences-service';
 import type { NotificationPreferences as NotificationPreferencesType } from '@/types/notification-preferences';
 
-// Mock the service
-vi.mock('@/services/customer/notification-preferences-service');
+const preferencesService = vi.hoisted(() => ({
+  fetchNotificationPreferences: vi.fn(),
+  updateNotificationPreferences: vi.fn(),
+  resetNotificationPreferences: vi.fn(),
+}));
+
+vi.mock('@/services/customer/notification-preferences-service', () => preferencesService);
 
 const mockPreferences: NotificationPreferencesType = {
   production_stage_updates: true,
