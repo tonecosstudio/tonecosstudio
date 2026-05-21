@@ -46,8 +46,8 @@ export function BulkAssignModal({
       await onConfirm(selectedUserId);
       onOpenChange(false);
       setSelectedUserId('');
-    } catch (error) {
-      console.error('Erro ao atribuir itens:', error);
+    } catch {
+      // Parent handlers own user-facing error feedback.
     } finally {
       setIsSubmitting(false);
     }

@@ -68,8 +68,7 @@ export function TeamWorkloadView() {
         title: "Item reatribuido",
         description: "O item foi reatribuido com sucesso.",
       });
-    } catch (error) {
-      console.error("Erro ao reatribuir item:", error);
+    } catch {
       toast({
         title: "Erro",
         description: "Nao foi possivel reatribuir o item.",

@@ -29,6 +29,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - `ProductionHub` passou a consumir fila, invalidação e bulk operations por hooks (`useProductionPipelineQueue`, `useInvalidateProductionQueries`, `useProductionBulkActions`), removendo acoplamento direto com services/admin e logs de console.
 - Pages de notificações admin (`AdminNotificationSettings` e `AdminNotificationHistory`) passaram a consumir `useAdminNotificationManagement`, removendo query/mutation/service direto da UI.
 - Componentes de produção com imports apenas tipados (`ProductionListView`, `BulkStageUpdateModal`) passaram a usar `src/types/production`, com remoção de `any` explícito no sort da lista.
+- Componentes de fluxo de produção (`BulkAssignModal`, `ProductionPipelineView`, `TeamWorkloadView`) deixaram de fazer logging direto via console; feedback de erro fica nos toasts ou handlers proprietários.
 
 ## Plano de execução restante
 
@@ -77,5 +78,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **79/100**.
+- Score após correções já aplicadas: **80/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.

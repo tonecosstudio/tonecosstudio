@@ -224,8 +224,7 @@ export function ProductionPipelineView({ filters }: ProductionPipelineViewProps)
         description: `${group.count} ${group.count === 1 ? "item movido" : "itens movidos"} para ${STAGE_LABELS[targetStage]}`,
       });
 
-    } catch (error) {
-      console.error("Erro ao mover itens:", error);
+    } catch {
       toast({
         title: "Erro",
         description: "Não foi possível mover os itens. Tente novamente.",
