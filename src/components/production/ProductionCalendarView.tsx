@@ -34,9 +34,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { ProductionQueueItem } from '@/services/admin/production-service';
-import { updateProductionSchedule } from '@/services/admin/production-service';
+import type { ProductionQueueItem } from '@/types/production';
 import { useToast } from '@/hooks/use-toast';
+import { useRescheduleProduction } from '@/hooks/admin/useProductionActions';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import './ProductionCalendarView.css';
@@ -108,6 +108,7 @@ export function ProductionCalendarView({
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
   const { toast } = useToast();
+  const rescheduleProductionMutation = useRescheduleProduction();
 
   // Transform production items into calendar events
   const events = useMemo<CalendarEvent[]>(() => {
@@ -154,7 +155,10 @@ export function ProductionCalendarView({
     
     try {
       // Update the scheduled production date
-      await updateProductionSchedule(event.id, format(start, 'yyyy-MM-dd'));
+      await rescheduleProductionMutation.mutateAsync({
+        itemId: event.id,
+        date: format(start, 'yyyy-MM-dd'),
+      });
       
       toast({
         title: 'Item reagendado',
@@ -169,7 +173,7 @@ export function ProductionCalendarView({
     } finally {
       setIsRescheduling(false);
     }
-  }, [toast]);
+  }, [rescheduleProductionMutation, toast]);
 
   // Handle view change
   const handleViewChange = (view: View) => {
@@ -251,7 +255,14 @@ export function ProductionCalendarView({
   };
 
   // Custom toolbar component
-  const CustomToolbar = (toolbar: any) => {
+  interface CalendarToolbarProps {
+    date: Date;
+    view: View;
+    onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
+    onView: (view: View) => void;
+  }
+
+  const CustomToolbar = (toolbar: CalendarToolbarProps) => {
     const goToBack = () => {
       toolbar.onNavigate('PREV');
     };

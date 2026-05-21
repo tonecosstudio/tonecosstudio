@@ -1,39 +1,20 @@
-/**
- * BlockProductionModal Component
- *
- * Modal for blocking production items when issues arise.
- * Features:
- * - Reason textarea (required)
- * - Estimated resolution time input
- * - "Block" button
- * - Shows impact on estimated completion date
- *
- * Integrates with production-service.ts blockProduction function
- */
-
-import React, { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
-import { AlertTriangle, Loader2, Clock, Calendar } from "lucide-react";
-import { blockProduction } from "@/services/admin/production-service";
-import { calculateEstimatedCompletion } from "@/services/admin/stage-service";
+import { AlertTriangle, Calendar, Clock, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-// ============================================================================
-// Types
-// ============================================================================
+import { useBlockProduction } from "@/hooks/admin/useProductionActions";
 
 interface BlockProductionModalProps {
   isOpen: boolean;
@@ -43,92 +24,53 @@ interface BlockProductionModalProps {
   onBlock?: () => void;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
-export const BlockProductionModal: React.FC<BlockProductionModalProps> = ({
+export function BlockProductionModal({
   isOpen,
   onOpenChange,
   productionQueueId,
   currentEstimatedCompletion,
   onBlock,
-}) => {
-  const queryClient = useQueryClient();
+}: BlockProductionModalProps) {
   const [reason, setReason] = useState("");
-  const [estimatedResolutionHours, setEstimatedResolutionHours] = useState<string>("");
+  const [estimatedResolutionHours, setEstimatedResolutionHours] = useState("");
   const [newEstimatedCompletion, setNewEstimatedCompletion] = useState<Date | null>(null);
 
-  // Calculate new estimated completion date when resolution time changes
   useEffect(() => {
-    if (currentEstimatedCompletion && estimatedResolutionHours) {
-      const hours = parseFloat(estimatedResolutionHours);
-      if (!isNaN(hours) && hours > 0) {
-        const newDate = new Date(currentEstimatedCompletion);
-        newDate.setHours(newDate.getHours() + hours);
-        setNewEstimatedCompletion(newDate);
-      } else {
-        setNewEstimatedCompletion(null);
-      }
-    } else {
+    if (!currentEstimatedCompletion || !estimatedResolutionHours) {
       setNewEstimatedCompletion(null);
+      return;
     }
+
+    const hours = parseFloat(estimatedResolutionHours);
+    if (Number.isNaN(hours) || hours <= 0) {
+      setNewEstimatedCompletion(null);
+      return;
+    }
+
+    const newDate = new Date(currentEstimatedCompletion);
+    newDate.setHours(newDate.getHours() + hours);
+    setNewEstimatedCompletion(newDate);
   }, [currentEstimatedCompletion, estimatedResolutionHours]);
 
-  // Block production mutation
-  const blockProductionMutation = useMutation({
-    mutationFn: async () => {
-      if (!reason.trim()) {
-        throw new Error("O motivo do bloqueio é obrigatório");
-      }
-
-      // Build reason with resolution time if provided
-      let fullReason = reason.trim();
-      if (estimatedResolutionHours) {
-        const hours = parseFloat(estimatedResolutionHours);
-        if (!isNaN(hours) && hours > 0) {
-          fullReason += ` | Tempo estimado de resolução: ${formatDuration(hours)}`;
-        }
-      }
-
-      return blockProduction(productionQueueId, fullReason);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Produção Bloqueada",
-        description: "O item foi marcado como bloqueado e o cliente será notificado.",
-      });
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["production-queue"] });
-      queryClient.invalidateQueries({ queryKey: ["production-stages", productionQueueId] });
-
-      // Call callback if provided
-      if (onBlock) {
-        onBlock();
-      }
-
-      // Reset form and close modal
-      resetForm();
-      onOpenChange(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao Bloquear Produção",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Reset form
   const resetForm = () => {
     setReason("");
     setEstimatedResolutionHours("");
     setNewEstimatedCompletion(null);
   };
 
-  // Handle modal close
+  const blockProductionMutation = useBlockProduction({
+    productionQueueId,
+    onSuccess: () => {
+      toast({
+        title: "Producao bloqueada",
+        description: "O item foi marcado como bloqueado e o cliente sera notificado.",
+      });
+      onBlock?.();
+      resetForm();
+      onOpenChange(false);
+    },
+  });
+
   const handleOpenChange = (open: boolean) => {
     if (!open && !blockProductionMutation.isPending) {
       resetForm();
@@ -136,38 +78,53 @@ export const BlockProductionModal: React.FC<BlockProductionModalProps> = ({
     onOpenChange(open);
   };
 
-  // Format duration
   const formatDuration = (hours: number): string => {
-    if (hours < 1) {
-      return `${Math.round(hours * 60)} minutos`;
-    } else if (hours < 24) {
-      return `${Math.round(hours)} horas`;
-    } else {
-      const days = Math.floor(hours / 24);
-      const remainingHours = Math.round(hours % 24);
-      return remainingHours > 0 ? `${days} dias e ${remainingHours} horas` : `${days} dias`;
-    }
+    if (hours < 1) return `${Math.round(hours * 60)} minutos`;
+    if (hours < 24) return `${Math.round(hours)} horas`;
+
+    const days = Math.floor(hours / 24);
+    const remainingHours = Math.round(hours % 24);
+    return remainingHours > 0 ? `${days} dias e ${remainingHours} horas` : `${days} dias`;
   };
 
-  // Format date
-  const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleString("pt-BR", {
+  const formatDate = (date: Date): string =>
+    new Date(date).toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
-  // Calculate delay in days
-  const calculateDelay = (): number | null => {
-    if (!currentEstimatedCompletion || !newEstimatedCompletion) return null;
-    const diffMs = newEstimatedCompletion.getTime() - new Date(currentEstimatedCompletion).getTime();
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  };
+  const delay =
+    currentEstimatedCompletion && newEstimatedCompletion
+      ? Math.ceil(
+          (newEstimatedCompletion.getTime() - new Date(currentEstimatedCompletion).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      : null;
 
-  const delay = calculateDelay();
+  const handleBlockProduction = () => {
+    if (!reason.trim()) return;
+
+    let fullReason = reason.trim();
+    if (estimatedResolutionHours) {
+      const hours = parseFloat(estimatedResolutionHours);
+      if (!Number.isNaN(hours) && hours > 0) {
+        fullReason += ` | Tempo estimado de resolucao: ${formatDuration(hours)}`;
+      }
+    }
+
+    blockProductionMutation.mutate(fullReason, {
+      onError: (error: Error) => {
+        toast({
+          title: "Erro ao bloquear producao",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -175,49 +132,39 @@ export const BlockProductionModal: React.FC<BlockProductionModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            Bloquear Produção
+            Bloquear Producao
           </DialogTitle>
           <DialogDescription>
-            Bloqueie este item de produção quando houver problemas que impeçam o progresso.
-            O cliente será notificado sobre o atraso.
+            Bloqueie este item quando houver problemas que impecam o progresso.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Warning Alert */}
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Atenção</AlertTitle>
+            <AlertTitle>Atencao</AlertTitle>
             <AlertDescription>
-              Bloquear a produção irá pausar o progresso deste item e notificar o cliente sobre o atraso.
-              Certifique-se de fornecer uma explicação clara do problema.
+              O bloqueio pausa o fluxo deste item e dispara notificacao para o cliente.
             </AlertDescription>
           </Alert>
 
-          {/* Reason Textarea */}
           <div className="space-y-2">
             <Label htmlFor="reason">
-              Motivo do Bloqueio <span className="text-destructive">*</span>
+              Motivo do bloqueio <span className="text-destructive">*</span>
             </Label>
             <Textarea
               id="reason"
-              placeholder="Ex: Aguardando material em falta, equipamento quebrado, problema de qualidade..."
+              placeholder="Ex: aguardando material, equipamento quebrado, problema de qualidade..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={4}
               className="resize-none"
               required
             />
-            <p className="text-xs text-muted-foreground">
-              Este motivo será compartilhado com o cliente. Seja claro e profissional.
-            </p>
           </div>
 
-          {/* Estimated Resolution Time */}
           <div className="space-y-2">
-            <Label htmlFor="resolution-time">
-              Tempo Estimado de Resolução (Opcional)
-            </Label>
+            <Label htmlFor="resolution-time">Tempo estimado de resolucao (opcional)</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="resolution-time"
@@ -231,36 +178,24 @@ export const BlockProductionModal: React.FC<BlockProductionModalProps> = ({
               />
               <span className="text-sm text-muted-foreground">horas</span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Informe quanto tempo você estima para resolver o problema.
-            </p>
           </div>
 
-          {/* Impact on Estimated Completion Date */}
           {currentEstimatedCompletion && (
-            <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-              <div className="font-medium flex items-center gap-2">
+            <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
+              <div className="flex items-center gap-2 font-medium">
                 <Calendar className="h-4 w-4" />
-                Impacto na Data de Conclusão
+                Impacto na data estimada
               </div>
-
               <div className="grid grid-cols-2 gap-4">
-                {/* Current Estimated Date */}
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Data Atual Estimada</div>
-                  <div className="text-sm font-medium">
-                    {formatDate(currentEstimatedCompletion)}
-                  </div>
+                  <div className="mb-1 text-sm text-muted-foreground">Data atual</div>
+                  <div className="text-sm font-medium">{formatDate(currentEstimatedCompletion)}</div>
                 </div>
-
-                {/* New Estimated Date */}
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Nova Data Estimada</div>
+                  <div className="mb-1 text-sm text-muted-foreground">Nova data</div>
                   <div className="text-sm font-medium">
                     {newEstimatedCompletion ? (
-                      <span className="text-destructive">
-                        {formatDate(newEstimatedCompletion)}
-                      </span>
+                      <span className="text-destructive">{formatDate(newEstimatedCompletion)}</span>
                     ) : (
                       <span className="text-muted-foreground">
                         {formatDate(currentEstimatedCompletion)}
@@ -269,18 +204,13 @@ export const BlockProductionModal: React.FC<BlockProductionModalProps> = ({
                   </div>
                 </div>
               </div>
-
-              {/* Delay Warning */}
               {delay !== null && delay > 0 && (
-                <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <Clock className="h-4 w-4 text-destructive mt-0.5" />
+                <div className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3">
+                  <Clock className="mt-0.5 h-4 w-4 text-destructive" />
                   <div className="text-sm">
                     <span className="font-medium text-destructive">
                       Atraso de {delay} {delay === 1 ? "dia" : "dias"}
                     </span>
-                    <p className="text-muted-foreground mt-1">
-                      O cliente será notificado sobre o novo prazo estimado.
-                    </p>
                   </div>
                 </div>
               )}
@@ -298,18 +228,18 @@ export const BlockProductionModal: React.FC<BlockProductionModalProps> = ({
           </Button>
           <Button
             variant="destructive"
-            onClick={() => blockProductionMutation.mutate()}
+            onClick={handleBlockProduction}
             disabled={blockProductionMutation.isPending || !reason.trim()}
           >
             {blockProductionMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Bloqueando...
               </>
             ) : (
               <>
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Bloquear Produção
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Bloquear Producao
               </>
             )}
           </Button>
@@ -317,6 +247,6 @@ export const BlockProductionModal: React.FC<BlockProductionModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default BlockProductionModal;
