@@ -33,6 +33,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - Gestão admin de métodos de pagamento passou a executar exclusão real via `payment-method-service` e `useAdminPaymentMethods`, removendo callback morto e log direto da page.
 - Upload de fotos de produção passou a registrar falha não fatal de compressão pelo logger central, sem `console.*` no componente.
 - `AdminQuotesPage` deixou de importar `admin-quotes-service` diretamente; alteração de status agora passa pelo hook `useAdminQuotesData`.
+- `AdminCycleManager` deixou de consultar `admin-production-gateway` diretamente; leitura de ciclos foi isolada em `admin-cycles-service` e `useAdminCycles`.
 
 ## Plano de execução restante
 
@@ -81,5 +82,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **82/100**.
+- Score após correções já aplicadas: **83/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.

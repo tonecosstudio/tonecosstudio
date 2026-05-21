@@ -5,7 +5,6 @@
  * Usa a tabela real `cycles` do banco de dados
  */
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,26 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, Package, TrendingUp, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { adminProductionGateway as supabase } from '@/services/admin/admin-production-gateway';
 import { useState } from 'react';
+import { useAdminCycles } from '@/hooks/admin/useAdminCycles';
 
 export default function AdminCycleManager() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-
-  // Fetch cycles from real table
-  const { data: cycles, isLoading } = useQuery({
-    queryKey: ['admin-cycles', selectedYear],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cycles')
-        .select('*')
-        .eq('year', selectedYear)
-        .order('month', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const { data: cycles, isLoading } = useAdminCycles(selectedYear);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string }> = {
