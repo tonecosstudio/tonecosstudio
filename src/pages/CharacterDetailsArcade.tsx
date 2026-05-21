@@ -6,9 +6,12 @@
  */
 
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import {
+  type RelatedCharacter,
+  useCharacterDetails,
+  useRelatedCharacters,
+} from "@/hooks/collections/usePublicCollections";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
@@ -36,37 +39,6 @@ import {
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
-type CharacterData = {
-  id: string;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  image_urls: string[] | null;
-  status: string;
-  is_catalog: boolean;
-  collection_id: string;
-  franchise: string | null;
-  price_category_id: string | null;
-  price_categories: {
-    display_name: string;
-    price_coins: number;
-    price_standalone: number;
-  } | null;
-  collections: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-  } | null;
-};
-
-type RelatedCharacter = {
-  id: string;
-  name: string;
-  image_url: string | null;
-  status: string;
-};
-
 // ─── Stat Bar Component ──────────────────────────────────────
 function StatBar({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType }) {
   return (
@@ -229,45 +201,8 @@ export default function CharacterDetailsArcade() {
   const { slug, characterId } = useParams<{ slug: string; characterId: string }>();
   const navigate = useNavigate();
 
-  // Fetch character
-  const { data: character, isLoading } = useQuery({
-    queryKey: ["character-details-arcade", characterId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collection_characters")
-        .select(`
-          id, name, description, image_url, image_urls, status, is_catalog,
-          collection_id, franchise, price_category_id,
-          price_categories (display_name, price_coins, price_standalone),
-          collections (id, name, slug, description)
-        `)
-        .eq("id", characterId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as CharacterData | null;
-    },
-    enabled: !!characterId,
-  });
-
-  // Fetch related characters from same collection
-  const { data: relatedChars } = useQuery({
-    queryKey: ["related-characters", character?.collection_id, characterId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collection_characters")
-        .select("id, name, image_url, status")
-        .eq("collection_id", character!.collection_id)
-        .neq("id", characterId!)
-        .eq("status", "released")
-        .order("display_order", { ascending: true })
-        .limit(6);
-
-      if (error) throw error;
-      return (data ?? []) as RelatedCharacter[];
-    },
-    enabled: !!character?.collection_id && !!characterId,
-  });
+  const { data: character, isLoading } = useCharacterDetails(characterId);
+  const { data: relatedChars } = useRelatedCharacters(character?.collection_id, characterId);
 
   const collectionSlug = character?.collections?.slug || slug || "";
   const collectionName = character?.collections?.name || "";

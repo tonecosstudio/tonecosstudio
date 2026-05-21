@@ -1,8 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
-import { useAuth } from "@/lib/auth";
+import { useShowcaseCollections } from "@/hooks/collections/usePublicCollections";
 import { Page } from "@/components/layouts/Page";
 import {
   ArrowRight,
@@ -99,25 +97,13 @@ function RarityBadge({ characters }: { characters: number }) {
 
 export default function CollectionsShowcase() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance();
 
-  const { data: collections, isLoading } = useQuery({
-    queryKey: ["collections-showcase"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select("id, name, slug, description, cover_image_url, total_characters, is_active")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: collections, isLoading } = useShowcaseCollections();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);

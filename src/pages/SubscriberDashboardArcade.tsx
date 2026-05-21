@@ -1,7 +1,6 @@
 import { Page } from "@/components/layouts/Page";
 import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { useAuth } from "@/lib/auth";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   Package, Clock, Truck, CheckCircle2, AlertCircle,
@@ -9,33 +8,19 @@ import {
 } from "lucide-react";
 import { CutoffCountdown, useIsBeforeCutoff } from "@/components/CutoffCountdown";
 import {
-  listActiveSubscriberSubscriptions,
-  listSubscriberDeliveries,
   type SubscriberDelivery,
-} from "@/services/subscriber-dashboard-service";
+  useSubscriberDashboardData,
+} from "@/hooks/subscription/useSubscriberDashboardData";
 
 export default function SubscriberDashboardArcade() {
   const { user } = useAuth();
   const isBeforeCutoff = useIsBeforeCutoff();
-
-  const subscriptionsQuery = useQuery({
-    queryKey: ["my-subscriptions", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: () => listActiveSubscriberSubscriptions(user!.id),
-  });
-
-  const deliveriesQuery = useQuery({
-    queryKey: ["my-deliveries", user?.id],
-    enabled: Boolean(user?.id) && (subscriptionsQuery.data?.length ?? 0) > 0,
-    queryFn: () =>
-      listSubscriberDeliveries(subscriptionsQuery.data?.map((subscription) => subscription.id) ?? []),
-  });
-
-  const sub = subscriptionsQuery.data?.[0];
-  const deliveries = deliveriesQuery.data || [];
-  const completed = deliveries.filter((delivery) => delivery.status === "delivered");
-  const upcoming = deliveries.filter((delivery) => delivery.status !== "delivered");
-  const next = upcoming[0];
+  const {
+    subscription: sub,
+    completed,
+    nextDelivery: next,
+    progress,
+  } = useSubscriberDashboardData(user?.id);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -47,8 +32,6 @@ export default function SubscriberDashboardArcade() {
       default: return { icon: AlertCircle, color: "text-[hsl(0,0%,40%)]", label: status.toUpperCase() };
     }
   };
-
-  const progress = sub ? Math.round((sub.deliveries_completed / (sub.deliveries_total || 1)) * 100) : 0;
 
   return (
     <Page title="Painel do Assinante | ORDAX" description="Gerencie sua assinatura e acompanhe entregas">

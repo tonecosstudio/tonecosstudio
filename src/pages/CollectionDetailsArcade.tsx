@@ -6,25 +6,23 @@
  */
 
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import {
+  type CollectionDetailsCharacter,
+  useCollectionDetails,
+} from "@/hooks/collections/usePublicCollections";
 import { Page } from "@/components/layouts/Page";
 import {
-  ArcadeHero,
   ArcadeCard,
   ArcadeSectionTitle,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
-  Users,
   Star,
   Package,
-  Coins,
   Crown,
   Sparkles,
   Calendar,
@@ -39,26 +37,7 @@ const MONTHS = [
 ];
 
 // ─── Types ───────────────────────────────────────────────────
-type Character = {
-  id: string;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  release_order: number | null;
-  release_month: number | null;
-  is_catalog: boolean | null;
-  status: string | null;
-};
-
-type Collection = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  cover_image_url: string | null;
-  is_active: boolean;
-  collection_characters: Character[];
-};
+type Character = CollectionDetailsCharacter;
 
 // ─── Character Card ──────────────────────────────────────────
 function CharacterCard({
@@ -308,33 +287,7 @@ export default function CollectionDetailsArcade() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
-  const { data: collection, isLoading } = useQuery({
-    queryKey: ["collection-details-arcade", slug],
-    queryFn: async () => {
-      const { data: collectionData, error: collectionError } = await supabase
-        .from("collections")
-        .select("id, name, slug, description, cover_image_url, is_active")
-        .eq("slug", slug)
-        .maybeSingle();
-
-      if (collectionError) throw collectionError;
-      if (!collectionData) return null;
-
-      const { data: charactersData, error: charactersError } = await supabase
-        .from("collection_characters")
-        .select("id, name, description, image_url, release_order, release_month, is_catalog, status")
-        .eq("collection_id", collectionData.id)
-        .order("release_month", { ascending: true, nullsFirst: false });
-
-      if (charactersError) throw charactersError;
-
-      return {
-        ...collectionData,
-        collection_characters: charactersData || [],
-      } as Collection;
-    },
-    enabled: !!slug,
-  });
+  const { data: collection, isLoading } = useCollectionDetails(slug);
 
   // Loading state
   if (isLoading) {

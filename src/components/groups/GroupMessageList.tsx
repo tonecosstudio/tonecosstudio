@@ -4,7 +4,6 @@ import { messageService } from "@/lib/services/messageService";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
 import { MessageSquare, Search, X, MoreVertical, Edit, Trash2 } from "lucide-react";
 import type { GroupMessage, GroupAttachment } from "@/types/groups";
 import { Input } from "@/components/ui/input";
@@ -35,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useGroupNotifications } from "@/hooks/useGroupNotifications";
+import { getGroupAttachmentPublicUrl } from "@/services/groups/group-management-service";
 
 interface GroupMessageListProps {
   groupId: string;
@@ -59,12 +59,6 @@ function isMessageDateFilter(value: string): value is MessageDateFilter {
 /**
  * Converte file_path para URL pública do Supabase Storage
  */
-function getAttachmentUrl(filePath: string): string {
-  const BUCKET_NAME = "group-attachments";
-  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
-  return data.publicUrl;
-}
-
 /**
  * Detecta URLs no texto e as torna clicáveis
  */
@@ -441,7 +435,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                   <div className="mt-3 space-y-2">
                     {msg.attachments.map((attachment: GroupAttachment) => {
                       const isImage = attachment.file_type?.startsWith("image/");
-                      const publicUrl = getAttachmentUrl(attachment.file_path);
+                      const publicUrl = getGroupAttachmentPublicUrl(attachment.file_path);
 
                       if (isImage) {
                         return (

@@ -29,6 +29,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { log } from "@/lib/logger";
 import { fileUploadService } from "@/lib/file-upload-service";
 import type { PaymentFile, FileValidationResult } from "@/types/manual-payment";
 
@@ -181,7 +182,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
       // This works on mobile devices with camera support
       cameraInputRef.current.click();
     } catch (error) {
-      console.error("Camera access error:", error);
+      log.error("Camera access error", { error, paymentId });
       setValidationErrors((prev) => [
         ...prev,
         "Unable to access camera. Please check permissions.",
@@ -274,7 +275,11 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
 
         uploadedFiles.push(uploadedFile);
       } catch (error) {
-        console.error("Upload error:", error);
+        log.error("Payment proof upload error", {
+          error,
+          paymentId,
+          fileName: uploadFile.file.name,
+        });
 
         // Update status to error
         setFiles((prev) =>

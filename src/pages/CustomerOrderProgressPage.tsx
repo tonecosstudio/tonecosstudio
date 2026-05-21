@@ -15,8 +15,10 @@ import { ProgressTimeline } from "@/components/customer/ProgressTimeline";
 import { EstimatedDatesCard } from "@/components/customer/EstimatedDatesCard";
 import { TrackingCard } from "@/components/customer/TrackingCard";
 import { useOrderProgressRealtime } from "@/hooks/customer/useOrderProgressRealtime";
-import { useCustomerOrderProgress } from "@/hooks/customer/useCustomerOrderProgress";
-import type { CustomerOrderType } from "@/services/customer/order-progress-service";
+import {
+  useCustomerOrderProgress,
+  type CustomerOrderType,
+} from "@/hooks/customer/useCustomerOrderProgress";
 
 export default function CustomerOrderProgressPage() {
   const { orderId, orderType } = useParams<{ orderId: string; orderType: string }>();

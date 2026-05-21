@@ -1,14 +1,12 @@
-import { useState, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { messageService } from "@/lib/services/messageService";
+import { useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Paperclip, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Send, Paperclip, X, ChevronDown, ChevronUp } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useSendGroupBroadcastMessage } from "@/hooks/groups/useSendGroupBroadcastMessage";
 import { MessageTemplates } from "./MessageTemplates";
 import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 
@@ -18,7 +16,7 @@ interface SendMessageFormProps {
 
 export function SendMessageForm({ groupId }: SendMessageFormProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const sendGroupBroadcast = useSendGroupBroadcastMessage(groupId);
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -28,53 +26,18 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const sendMutation = useMutation({
-    mutationFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+  const resetForm = () => {
+    setMessage("");
+    setAttachments([]);
+    setActionButtonText("");
+    setActionButtonUrl("");
+    setLinkText("");
+    setLinkUrl("");
+    setShowAdvanced(false);
+  };
 
-      const richFields = {
-        action_button_text: actionButtonText || undefined,
-        action_button_url: actionButtonUrl || undefined,
-        link_text: linkText || undefined,
-        link_url: linkUrl || undefined,
-      };
-
-      return messageService.sendBroadcastMessage(
-        groupId,
-        user.id,
-        message,
-        richFields,
-        attachments
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["group-messages", groupId] });
-      toast({
-        title: "Mensagem enviada",
-        description: "A mensagem foi enviada para todos os membros do grupo.",
-      });
-      setMessage("");
-      setAttachments([]);
-      setActionButtonText("");
-      setActionButtonUrl("");
-      setLinkText("");
-      setLinkUrl("");
-      setShowAdvanced(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro ao enviar mensagem",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
 
     if (!message.trim() && attachments.length === 0) {
       toast({
@@ -88,22 +51,34 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
     if (message.length > 5000) {
       toast({
         title: "Mensagem muito longa",
-        description: "A mensagem não pode ter mais de 5000 caracteres.",
+        description: "A mensagem nao pode ter mais de 5000 caracteres.",
         variant: "destructive",
       });
       return;
     }
 
-    sendMutation.mutate();
+    sendGroupBroadcast.sendMessage(
+      {
+        message,
+        richFields: {
+          action_button_text: actionButtonText || undefined,
+          action_button_url: actionButtonUrl || undefined,
+          link_text: linkText || undefined,
+          link_url: linkUrl || undefined,
+        },
+        attachments,
+      },
+      { onSuccess: resetForm },
+    );
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
 
     if (files.length + attachments.length > 5) {
       toast({
         title: "Limite de anexos",
-        description: "Você pode anexar no máximo 5 arquivos por mensagem.",
+        description: "Voce pode anexar no maximo 5 arquivos por mensagem.",
         variant: "destructive",
       });
       return;
@@ -117,7 +92,7 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
   };
 
   const removeAttachment = (index: number) => {
-    setAttachments(attachments.filter((_, i) => i !== index));
+    setAttachments(attachments.filter((_, currentIndex) => currentIndex !== index));
   };
 
   return (
@@ -147,8 +122,8 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
           <Textarea
             placeholder="Digite sua mensagem..."
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            disabled={sendMutation.isPending}
+            onChange={(event) => setMessage(event.target.value)}
+            disabled={sendGroupBroadcast.isSending}
             rows={4}
             className="resize-none"
           />
@@ -171,7 +146,7 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
             ) : (
               <ChevronDown className="w-3 h-3 mr-1" />
             )}
-            Opções Avançadas
+            Opcoes Avancadas
           </Button>
 
           {showAdvanced && (
@@ -179,27 +154,27 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="actionButtonText" className="text-xs">
-                    Texto do Botão
+                    Texto do Botao
                   </Label>
                   <Input
                     id="actionButtonText"
                     placeholder="Ex: Ver mais"
                     value={actionButtonText}
-                    onChange={(e) => setActionButtonText(e.target.value)}
-                    disabled={sendMutation.isPending}
+                    onChange={(event) => setActionButtonText(event.target.value)}
+                    disabled={sendGroupBroadcast.isSending}
                     className="h-8 text-sm"
                   />
                 </div>
                 <div>
                   <Label htmlFor="actionButtonUrl" className="text-xs">
-                    URL do Botão
+                    URL do Botao
                   </Label>
                   <Input
                     id="actionButtonUrl"
                     placeholder="https://..."
                     value={actionButtonUrl}
-                    onChange={(e) => setActionButtonUrl(e.target.value)}
-                    disabled={sendMutation.isPending}
+                    onChange={(event) => setActionButtonUrl(event.target.value)}
+                    disabled={sendGroupBroadcast.isSending}
                     className="h-8 text-sm"
                   />
                 </div>
@@ -214,8 +189,8 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
                     id="linkText"
                     placeholder="Ex: Saiba mais"
                     value={linkText}
-                    onChange={(e) => setLinkText(e.target.value)}
-                    disabled={sendMutation.isPending}
+                    onChange={(event) => setLinkText(event.target.value)}
+                    disabled={sendGroupBroadcast.isSending}
                     className="h-8 text-sm"
                   />
                 </div>
@@ -227,8 +202,8 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
                     id="linkUrl"
                     placeholder="https://..."
                     value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    disabled={sendMutation.isPending}
+                    onChange={(event) => setLinkUrl(event.target.value)}
+                    disabled={sendGroupBroadcast.isSending}
                     className="h-8 text-sm"
                   />
                 </div>
@@ -245,30 +220,18 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
             accept="image/*,.pdf"
             onChange={handleFileSelect}
             className="hidden"
-            disabled={sendMutation.isPending || attachments.length >= 5}
+            disabled={sendGroupBroadcast.isSending || attachments.length >= 5}
           />
 
           <MessageTemplates onSelect={(content) => setMessage(content)} />
 
-          <ScheduleMessageDialog
-            groupId={groupId}
-            message={message}
-            onScheduled={() => {
-              setMessage("");
-              setAttachments([]);
-              setActionButtonText("");
-              setActionButtonUrl("");
-              setLinkText("");
-              setLinkUrl("");
-              setShowAdvanced(false);
-            }}
-          />
+          <ScheduleMessageDialog groupId={groupId} message={message} onScheduled={resetForm} />
 
           <Button
             type="button"
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
-            disabled={sendMutation.isPending || attachments.length >= 5}
+            disabled={sendGroupBroadcast.isSending || attachments.length >= 5}
           >
             <Paperclip className="w-4 h-4 mr-2" />
             Anexar
@@ -276,11 +239,11 @@ export function SendMessageForm({ groupId }: SendMessageFormProps) {
 
           <Button
             type="submit"
-            disabled={sendMutation.isPending || (!message.trim() && attachments.length === 0)}
+            disabled={sendGroupBroadcast.isSending || (!message.trim() && attachments.length === 0)}
             className="flex-1"
           >
             <Send className="w-4 h-4 mr-2" />
-            {sendMutation.isPending ? "Enviando..." : "Enviar"}
+            {sendGroupBroadcast.isSending ? "Enviando..." : "Enviar"}
           </Button>
         </div>
       </form>

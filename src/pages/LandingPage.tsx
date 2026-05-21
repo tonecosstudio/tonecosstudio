@@ -1,19 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Crosshair, Shield, Zap, Eye, Trophy, ChevronDown, Coins, Gamepad2, Flame, Star } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { ArrowRight, Crosshair, Shield, Zap, Eye, Trophy, ChevronDown, Gamepad2, Star } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
-  ArcadeHero,
   ArcadeSectionTitle,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
-import { CoinCounter } from "@/components/arcade/CoinCounter";
-import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useAuth } from "@/lib/auth";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
+import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -222,35 +219,8 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fetch featured collections
-  const collectionsQuery = useQuery({
-    queryKey: ["landing-featured-collections"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select("id, name, description, slug, cover_image_url, total_characters")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(3);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch recent models
-  const modelsQuery = useQuery({
-    queryKey: ["landing-recent-models"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("models")
-        .select("id, name, franchise, image_bucket, image_path")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const collectionsQuery = useActiveCollectionPreviews(3);
+  const modelsQuery = useLandingCatalogModels(6);
 
   const collections = collectionsQuery.data || [];
   const models = modelsQuery.data || [];
@@ -393,9 +363,7 @@ export default function LandingPage() {
             <ArcadeSectionTitle>Novos no Arsenal</ArcadeSectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               {models.map((m) => {
-                const imgUrl = m.image_bucket && m.image_path
-                  ? supabase.storage.from(m.image_bucket).getPublicUrl(m.image_path).data.publicUrl
-                  : null;
+                const imgUrl = m.imageUrl;
                 return (
                   <div
                     key={m.id}

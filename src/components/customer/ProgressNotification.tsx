@@ -16,6 +16,7 @@
  */
 
 import { useToast } from "@/hooks/use-toast";
+import { log } from "@/lib/logger";
 import type { ProductionStage } from "@/types/production";
 
 // ============================================================================
@@ -93,7 +94,7 @@ function playNotificationSound(): void {
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.5);
   } catch (error) {
-    console.warn("[ProgressNotification] Failed to play sound:", error);
+    log.warn("Progress notification sound failed", { error });
   }
 }
 
@@ -203,7 +204,7 @@ export function useProgressNotification() {
         break;
 
       default:
-        console.warn("[ProgressNotification] Unknown notification type:", type);
+        log.warn("Unknown progress notification type", { type });
     }
   };
 

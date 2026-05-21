@@ -1,40 +1,42 @@
-/**
- * Contato Arcade — estética gaming com formulário integrado.
- */
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle, Loader2, Mail, MessageSquare, Send, User } from "lucide-react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Loader2, Send, AlertCircle, MessageSquare, Mail, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { conversationService } from "@/lib/services/conversationService";
-import { messageService } from "@/lib/services/messageService";
-import { contactFormSchema } from "@/lib/validations/support";
-import { useSanitizedForm } from "@/hooks/useSanitizedInput";
-import { checkRateLimit } from "@/lib/security/rate-limiter";
-import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
-import { Page } from "@/components/layouts/Page";
 import {
-  ArcadeHero,
-  ArcadeSectionTitle,
   ArcadeCard,
   ArcadeCTA,
+  ArcadeHero,
+  ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
+import { Page } from "@/components/layouts/Page";
+import { useContactFormSubmission } from "@/hooks/customer/useContactFormSubmission";
+import { useSanitizedForm } from "@/hooks/useSanitizedInput";
+import { contactFormSchema } from "@/lib/validations/support";
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
 export default function ContactArcade() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { formData, setValue, getSanitizedData } = useSanitizedForm<ContactFormData>(
     { name: "", email: "", message: "" },
-    { name: "text", email: "email", message: "html" }
+    { name: "text", email: "email", message: "html" },
   );
+
+  const { submitContactForm, isSubmitting } = useContactFormSubmission({
+    onRequiresAuth: () => {
+      setError("Faca login para enviar mensagem.");
+      setTimeout(() => navigate("/login?returnTo=/contato"), 2000);
+    },
+    onSuccess: () => {
+      navigate("/perfil?section=support");
+    },
+    onError: setError,
+  });
 
   const {
     register,
@@ -45,60 +47,24 @@ export default function ContactArcade() {
     values: formData,
   });
 
-  const onSubmit = async (data: ContactFormData) => {
-    const rateLimit = checkRateLimit("contact-form-submit", FORM_RATE_LIMITS.contactForm);
-    if (!rateLimit.allowed) {
-      setError(`Limite excedido. Aguarde ${rateLimit.retryAfter}s.`);
-      return;
-    }
-
-    setIsSubmitting(true);
+  const onSubmit = async () => {
     setError(null);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError("Faça login para enviar mensagem.");
-        setTimeout(() => navigate("/login?returnTo=/contato"), 2000);
-        return;
-      }
-
-      const sanitizedData = getSanitizedData();
-      const conversation = await conversationService.createConversation({
-        user_id: user.id,
-        subject: `Contato: ${sanitizedData.name}`,
-        status: "waiting_admin",
-        tags: ["duvida"],
-      });
-
-      await messageService.sendMessage({
-        conversation_id: conversation.id,
-        sender_id: user.id,
-        sender_type: "customer",
-        message: sanitizedData.message,
-      });
-
-      navigate("/perfil?section=support");
-    } catch {
-      setError("Erro ao enviar. Tente novamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    const sanitizedData = getSanitizedData();
+    await submitContactForm({
+      name: sanitizedData.name,
+      message: sanitizedData.message,
+    });
   };
 
   return (
     <Page
       title="Contato | ORDAX Comms"
-      description="Entre em contato conosco. Canal direto para dúvidas e solicitações."
+      description="Entre em contato conosco. Canal direto para duvidas e solicitacoes."
     >
-      <ArcadeHero
-        badge="Canal Aberto"
-        title="CONTATO"
-        subtitle=">> TRANSMITA SUA MENSAGEM."
-      />
+      <ArcadeHero badge="Canal Aberto" title="CONTATO" subtitle=">> TRANSMITA SUA MENSAGEM." />
 
       <section className="max-w-2xl mx-auto px-4 md:px-6 pb-16 relative z-10">
-        <ArcadeSectionTitle>Transmissão</ArcadeSectionTitle>
+        <ArcadeSectionTitle>Transmissao</ArcadeSectionTitle>
 
         <ArcadeCard hover={false}>
           <div className="p-6 md:p-8 relative overflow-hidden">
@@ -108,11 +74,12 @@ export default function ContactArcade() {
               {error && (
                 <div className="flex items-center gap-3 p-3 border border-[hsl(0,70%,50%)/0.4] bg-[hsl(0,70%,50%)/0.08]">
                   <AlertCircle className="w-4 h-4 text-[hsl(0,70%,60%)] shrink-0" />
-                  <span className="font-mono text-[11px] text-[hsl(0,70%,60%)] tracking-wider">{error}</span>
+                  <span className="font-mono text-[11px] text-[hsl(0,70%,60%)] tracking-wider">
+                    {error}
+                  </span>
                 </div>
               )}
 
-              {/* Name */}
               <div>
                 <label className="flex items-center gap-2 font-mono text-[9px] text-[hsl(var(--gold-accent)/0.7)] tracking-widest uppercase mb-2">
                   <User className="w-3 h-3" /> Nome *
@@ -120,17 +87,18 @@ export default function ContactArcade() {
                 <input
                   {...register("name")}
                   value={formData.name}
-                  onChange={(e) => setValue("name", e.target.value)}
+                  onChange={(event) => setValue("name", event.target.value)}
                   disabled={isSubmitting}
                   placeholder="Seu nome completo"
                   className="w-full h-12 px-4 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-sm tracking-wider placeholder:text-[hsl(0,0%,25%)] focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none transition-colors disabled:opacity-50"
                 />
                 {errors.name && (
-                  <p className="font-mono text-[10px] text-[hsl(0,70%,60%)] mt-1 tracking-wider">{errors.name.message}</p>
+                  <p className="font-mono text-[10px] text-[hsl(0,70%,60%)] mt-1 tracking-wider">
+                    {errors.name.message}
+                  </p>
                 )}
               </div>
 
-              {/* Email */}
               <div>
                 <label className="flex items-center gap-2 font-mono text-[9px] text-[hsl(var(--gold-accent)/0.7)] tracking-widest uppercase mb-2">
                   <Mail className="w-3 h-3" /> Email *
@@ -139,17 +107,18 @@ export default function ContactArcade() {
                   {...register("email")}
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setValue("email", e.target.value)}
+                  onChange={(event) => setValue("email", event.target.value)}
                   disabled={isSubmitting}
                   placeholder="seu@email.com"
                   className="w-full h-12 px-4 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-sm tracking-wider placeholder:text-[hsl(0,0%,25%)] focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none transition-colors disabled:opacity-50"
                 />
                 {errors.email && (
-                  <p className="font-mono text-[10px] text-[hsl(0,70%,60%)] mt-1 tracking-wider">{errors.email.message}</p>
+                  <p className="font-mono text-[10px] text-[hsl(0,70%,60%)] mt-1 tracking-wider">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
 
-              {/* Message */}
               <div>
                 <label className="flex items-center gap-2 font-mono text-[9px] text-[hsl(var(--gold-accent)/0.7)] tracking-widest uppercase mb-2">
                   <MessageSquare className="w-3 h-3" /> Mensagem *
@@ -157,18 +126,19 @@ export default function ContactArcade() {
                 <textarea
                   {...register("message")}
                   value={formData.message}
-                  onChange={(e) => setValue("message", e.target.value)}
+                  onChange={(event) => setValue("message", event.target.value)}
                   disabled={isSubmitting}
                   rows={6}
-                  placeholder="Descreva sua dúvida ou solicitação..."
+                  placeholder="Descreva sua duvida ou solicitacao..."
                   className="w-full px-4 py-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-sm tracking-wider placeholder:text-[hsl(0,0%,25%)] focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none transition-colors resize-none disabled:opacity-50"
                 />
                 {errors.message && (
-                  <p className="font-mono text-[10px] text-[hsl(0,70%,60%)] mt-1 tracking-wider">{errors.message.message}</p>
+                  <p className="font-mono text-[10px] text-[hsl(0,70%,60%)] mt-1 tracking-wider">
+                    {errors.message.message}
+                  </p>
                 )}
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -180,7 +150,7 @@ export default function ContactArcade() {
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" /> Enviar Transmissão
+                    <Send className="w-4 h-4" /> Enviar Transmissao
                   </>
                 )}
               </button>
@@ -188,20 +158,27 @@ export default function ContactArcade() {
           </div>
         </ArcadeCard>
 
-        {/* Info cards */}
         <div className="grid sm:grid-cols-2 gap-4 mt-6">
           <ArcadeCard>
             <div className="p-5 text-center">
               <Mail className="w-5 h-5 text-[hsl(var(--gold-accent))] mx-auto mb-3" />
-              <h3 className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider mb-1">Email Direto</h3>
-              <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">contato@ordax.com.br</p>
+              <h3 className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider mb-1">
+                Email Direto
+              </h3>
+              <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">
+                contato@ordax.com.br
+              </p>
             </div>
           </ArcadeCard>
           <ArcadeCard>
             <div className="p-5 text-center">
               <MessageSquare className="w-5 h-5 text-[hsl(var(--gold-accent))] mx-auto mb-3" />
-              <h3 className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider mb-1">Chat no Perfil</h3>
-              <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">Acesse seu perfil para suporte</p>
+              <h3 className="font-mono text-xs text-[hsl(0,0%,80%)] tracking-wider mb-1">
+                Chat no Perfil
+              </h3>
+              <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">
+                Acesse seu perfil para suporte
+              </p>
             </div>
           </ArcadeCard>
         </div>
@@ -210,9 +187,9 @@ export default function ContactArcade() {
       <ArcadeCTA
         badge="Explore"
         title="VOLTAR AO ARSENAL"
-        description="Confira nosso catálogo e coleções disponíveis."
-        primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo" }}
-        secondaryAction={{ label: "VER COLEÇÕES", href: "/colecoes" }}
+        description="Confira nosso catalogo e colecoes disponiveis."
+        primaryAction={{ label: "VER CATALOGO", href: "/catalogo" }}
+        secondaryAction={{ label: "VER COLECOES", href: "/colecoes" }}
       />
     </Page>
   );

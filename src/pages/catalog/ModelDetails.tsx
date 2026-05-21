@@ -5,8 +5,6 @@
  */
 
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,21 +22,9 @@ import { useToast } from "@/hooks/use-toast";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
 import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
 import { buildModelTitle } from "@/pages/catalog/catalogUtils";
+import { useModelDetails } from "@/hooks/catalog/useModelDetails";
 
 // ─── Types ───────────────────────────────────────────────────
-type ModelRow = {
-  id: string;
-  name: string;
-  franchise: string | null;
-  category: string | null;
-  subcategory: string | null;
-  tags: string[] | null;
-  description: string | null;
-  image_bucket: string | null;
-  image_path: string | null;
-  created_at: string;
-};
-
 export default function ModelDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -46,22 +32,7 @@ export default function ModelDetails() {
   const { user } = useAuth();
 
   // ─── Fetch model ────────────────────────────────────────────
-  const { data: model, isLoading } = useQuery({
-    queryKey: ["model-details-arcade", id],
-    queryFn: async () => {
-      if (!id) return null;
-      const { data, error } = await supabase
-        .from("models")
-        .select(
-          "id,name,franchise,category,subcategory,tags,description,image_bucket,image_path,created_at"
-        )
-        .eq("id", id)
-        .maybeSingle();
-      if (error) throw error;
-      return (data ?? null) as ModelRow | null;
-    },
-    enabled: !!id,
-  });
+  const { data: model, isLoading } = useModelDetails(id);
 
   // ─── Likes ──────────────────────────────────────────────────
   const likesQuery = useLikedModelIdsQuery(user?.id);
@@ -97,10 +68,7 @@ export default function ModelDetails() {
     ? `Veja detalhes do modelo ${title}. Estatueta artesanal da Tonecos Studios.`
     : "Veja detalhes do modelo. Estatueta artesanal da Tonecos Studios.";
 
-  const imageUrl =
-    model?.image_bucket && model?.image_path
-      ? supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl
-      : null;
+  const imageUrl = model?.imageUrl ?? null;
 
   const infoLine = model
     ? [model.franchise, model.category, model.subcategory].filter(Boolean).join(" • ")

@@ -156,3 +156,8 @@ export function subscribeToCustomerChatUpdates(
 export function unsubscribeFromCustomerChatUpdates(channel: RealtimeChannel): void {
   void supabase.removeChannel(channel);
 }
+
+export function getSupportAttachmentPublicUrl(filePath: string): string {
+  const { data } = supabase.storage.from("support-attachments").getPublicUrl(filePath);
+  return data.publicUrl;
+}

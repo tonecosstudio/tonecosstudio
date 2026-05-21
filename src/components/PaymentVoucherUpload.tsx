@@ -16,16 +16,10 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Upload, X, FileText, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Upload, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { validateFileUpload, sanitizeFilename, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from '@/lib/security/input-sanitizer';
-
-// Constants
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, 'application/pdf'] as const;
-const STORAGE_BUCKET = 'payment-vouchers';
+import { usePaymentVoucherStorage } from '@/hooks/payments/usePaymentVoucherStorage';
 
 export interface PaymentVoucherUploadProps {
   /** Callback when file is successfully uploaded */
@@ -78,14 +72,16 @@ export const PaymentVoucherUpload: React.FC<PaymentVoucherUploadProps> = ({
   });
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { validatePaymentVoucherFile, uploadPaymentVoucherToStorage } = usePaymentVoucherStorage({
+    userId,
+    pathPrefix,
+  });
 
   /**
    * Validate file type and size using centralized validation
    */
   const validateFile = (file: File): { valid: boolean; error?: string } => {
-    // Use centralized validation from input-sanitizer
-    const validation = validateFileUpload(file, ALLOWED_TYPES, MAX_FILE_SIZE);
-    return validation;
+    return validatePaymentVoucherFile(file);
   };
 
   /**
@@ -102,38 +98,7 @@ export const PaymentVoucherUpload: React.FC<PaymentVoucherUploadProps> = ({
    * Upload file to Supabase Storage with sanitized filename
    */
   const uploadToStorage = async (file: File): Promise<string> => {
-    // Sanitize the filename
-    const sanitizedName = sanitizeFilename(file.name);
-    
-    // If sanitization resulted in empty filename, generate a safe one
-    const finalName = sanitizedName || `file-${Date.now()}`;
-    
-    const fileExt = finalName.split('.').pop()?.toLowerCase() || 'bin';
-    const timestamp = Date.now();
-    const randomId = Math.random().toString(36).substring(2, 9);
-    const fileName = userId 
-      ? `${userId}-${timestamp}-${randomId}.${fileExt}`
-      : `${timestamp}-${randomId}.${fileExt}`;
-    const filePath = `${pathPrefix}/${fileName}`;
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, file, {
-        upsert: false,
-        contentType: file.type,
-      });
-
-    if (uploadError) {
-      throw new Error(`Falha no upload: ${uploadError.message}`);
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(filePath);
-
-    return publicUrl;
+    return uploadPaymentVoucherToStorage(file);
   };
 
   /**
@@ -279,19 +244,6 @@ export const PaymentVoucherUpload: React.FC<PaymentVoucherUploadProps> = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  /**
-   * Get file icon based on type
-   */
-  const getFileIcon = () => {
-    if (!state.file) return <Upload className="w-8 h-8" />;
-    
-    if (state.file.type.startsWith('image/')) {
-      return <ImageIcon className="w-8 h-8" />;
-    }
-    
-    return <FileText className="w-8 h-8" />;
   };
 
   /**

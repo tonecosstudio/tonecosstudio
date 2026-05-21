@@ -8,12 +8,12 @@ import { useState } from "react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import { Send, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { messageService } from "@/lib/services/messageService";
-import { conversationService } from "@/lib/services/conversationService";
 import { fileUploadService } from "@/lib/services/fileUploadService";
+import { log } from "@/lib/logger";
 import { validateMessage } from "@/lib/validations/support";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { createCustomerSupportConversation } from "@/services/customer-chat-button-service";
 import { toast } from "sonner";
 
 type OptimisticAttachmentStatus = "uploading" | "uploaded" | "error";
@@ -108,10 +108,7 @@ export function CustomerMessageInput({
       // Stop typing indicator immediately when sending
       stopTyping();
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+      if (!currentUserId) {
         toast.error("Você precisa estar autenticado");
         return;
       }
@@ -121,7 +118,7 @@ export function CustomerMessageInput({
       // Enviar mensagem primeiro
       const messageData = await messageService.sendMessage({
         conversation_id: conversationId,
-        sender_id: user.id,
+        sender_id: currentUserId,
         sender_type: "customer",
         message: messageText,
         is_internal: false,
@@ -134,9 +131,10 @@ export function CustomerMessageInput({
 
       // Upload de anexos com optimistic updates
       if (filesToUpload.length > 0 && addOptimisticAttachment && updateOptimisticAttachment) {
-        console.log(
-          `[CustomerMessageInput] Enviando ${filesToUpload.length} anexos com optimistic updates`
-        );
+        log.debug("Sending customer attachments with optimistic updates", {
+          conversationId,
+          count: filesToUpload.length,
+        });
 
         for (const file of filesToUpload) {
           // Criar optimistic attachment
@@ -147,10 +145,15 @@ export function CustomerMessageInput({
               file,
               conversationId,
               messageData.id,
-              user.id
+              currentUserId
             );
 
-            console.log(`[CustomerMessageInput] Anexo enviado com sucesso:`, uploadResult);
+            log.debug("Customer attachment uploaded", {
+              conversationId,
+              messageId: messageData.id,
+              fileName: file.name,
+              url: uploadResult.public_url,
+            });
 
             // Marcar como uploaded (será substituído pelo real via Realtime)
             updateOptimisticAttachment(messageData.id, tempId, {
@@ -159,7 +162,12 @@ export function CustomerMessageInput({
               url: uploadResult.public_url,
             });
           } catch (error) {
-            console.error("Erro ao fazer upload:", error);
+            log.error("Erro ao fazer upload de anexo customer", {
+              error,
+              conversationId,
+              messageId: messageData.id,
+              fileName: file.name,
+            });
 
             // Marcar como erro
             updateOptimisticAttachment(messageData.id, tempId, {
@@ -172,14 +180,20 @@ export function CustomerMessageInput({
         }
       } else if (filesToUpload.length > 0) {
         // Fallback: upload sem optimistic updates (compatibilidade)
-        console.log(
-          `[CustomerMessageInput] Enviando ${filesToUpload.length} anexos (modo compatibilidade)`
-        );
+        log.debug("Sending customer attachments in compatibility mode", {
+          conversationId,
+          count: filesToUpload.length,
+        });
         for (const file of filesToUpload) {
           try {
-            await fileUploadService.uploadFile(file, conversationId, messageData.id, user.id);
+            await fileUploadService.uploadFile(file, conversationId, messageData.id, currentUserId);
           } catch (error) {
-            console.error("Erro ao fazer upload:", error);
+            log.error("Erro ao fazer upload de anexo customer", {
+              error,
+              conversationId,
+              messageId: messageData.id,
+              fileName: file.name,
+            });
             toast.error(`Erro ao enviar ${file.name}`);
           }
         }
@@ -189,13 +203,11 @@ export function CustomerMessageInput({
 
       // DEPRECATED: Callback será removido em versão futura
       if (onMessageSent) {
-        console.warn(
-          "[CustomerMessageInput] onMessageSent callback is deprecated and will be removed"
-        );
+        log.warn("CustomerMessageInput onMessageSent callback is deprecated");
         onMessageSent();
       }
     } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
+      log.error("Erro ao enviar mensagem customer", { error, conversationId, currentUserId });
       toast.error("Erro ao enviar mensagem");
     } finally {
       setIsSending(false);
@@ -222,20 +234,13 @@ export function CustomerMessageInput({
           variant="default"
           onClick={async () => {
             try {
-              const {
-                data: { user },
-              } = await supabase.auth.getUser();
-              if (!user) {
+              if (!currentUserId) {
                 toast.error("Você precisa estar autenticado");
                 return;
               }
 
               // Criar nova conversa
-              const newConversation = await conversationService.createConversation({
-                user_id: user.id,
-                subject: "Nova Solicitação",
-                status: "new",
-              });
+              const newConversation = await createCustomerSupportConversation(currentUserId);
 
               toast.success("Nova conversa iniciada!");
 
@@ -246,7 +251,7 @@ export function CustomerMessageInput({
                 })
               );
             } catch (error) {
-              console.error("Erro ao criar nova conversa:", error);
+              log.error("Erro ao criar nova conversa customer", { error, currentUserId });
               toast.error("Erro ao criar nova solicitação");
             }
           }}

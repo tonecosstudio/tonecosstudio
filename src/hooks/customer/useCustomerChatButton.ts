@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { log } from "@/lib/logger";
 import type { Conversation } from "@/types/support";
 import { toast } from "sonner";
 import {
@@ -25,7 +26,7 @@ export function useCustomerChatButton() {
       const count = await countUnreadCustomerSupportMessages(user.id);
       setUnreadCount(count);
     } catch (error) {
-      console.error("Erro ao carregar contador:", error);
+      log.error("Erro ao carregar contador do chat customer", { error, userId: user.id });
     }
   }, [user]);
 
@@ -38,7 +39,7 @@ export function useCustomerChatButton() {
       setSelectedConversationId(newConversation.id);
       toast.success("Nova conversa iniciada!");
     } catch (error) {
-      console.error("Erro ao criar conversa:", error);
+      log.error("Erro ao criar conversa customer", { error, userId: user.id });
       toast.error("Erro ao criar conversa");
     }
   }, [user]);
@@ -68,7 +69,7 @@ export function useCustomerChatButton() {
           setSelectedConversationId(data[0].id);
         }
       } catch (error) {
-        console.error("Erro ao carregar conversas:", error);
+        log.error("Erro ao carregar conversas customer", { error, userId: user.id });
         toast.error("Erro ao carregar conversas");
       } finally {
         setLoading(false);
@@ -77,6 +78,27 @@ export function useCustomerChatButton() {
 
     loadConversations();
   }, [isOpen, user]);
+
+  useEffect(() => {
+    const handleNewConversation = (event: Event) => {
+      const conversation = (event as CustomEvent<{ conversation?: Conversation }>).detail
+        ?.conversation;
+
+      if (!conversation) return;
+
+      setConversations((prev) => [
+        conversation,
+        ...prev.filter((current) => current.id !== conversation.id),
+      ]);
+      setSelectedConversationId(conversation.id);
+    };
+
+    window.addEventListener("newConversationCreated", handleNewConversation);
+
+    return () => {
+      window.removeEventListener("newConversationCreated", handleNewConversation);
+    };
+  }, []);
 
   const selectedConversation = conversations.find(
     (conversation) => conversation.id === selectedConversationId
@@ -91,6 +113,7 @@ export function useCustomerChatButton() {
     unreadCount,
     conversations,
     selectedConversationId,
+    setSelectedConversationId,
     selectedConversation,
     isClosed,
     loading,

@@ -6,9 +6,13 @@
  */
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import {
+  type ArcadeCollection,
+  type CatalogCharacterGroup,
+  useArcadeCollections,
+  useReleasedCatalogCharacterGroups,
+} from "@/hooks/collections/usePublicCollections";
 import { Page } from "@/components/layouts/Page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,41 +26,12 @@ import {
   Zap,
   Shield,
   Coins,
-  Lock,
   Gift,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
-type Collection = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  image_url: string | null;
-  is_active: boolean;
-  character_count?: number;
-};
-
-type CatalogCharacter = {
-  id: string;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  is_catalog: boolean;
-  price_category_id: string | null;
-  price_category_name?: string | null;
-  price_category_display_name: string | null;
-  price_coins: number | null;
-  price_standalone: number | null;
-  price_category_order?: number;
-  status: string;
-};
-
-type CatalogGroup = {
-  name: string;
-  order: number;
-  characters: CatalogCharacter[];
-};
+type Collection = ArcadeCollection;
+type CatalogCharacter = CatalogCharacterGroup["characters"][number];
 
 // ─── Collection Card Component ───────────────────────────────
 function CollectionCard({ collection, index }: { collection: Collection; index: number }) {
@@ -492,97 +467,8 @@ function LoadingSkeleton() {
 
 // ─── Main Page ───────────────────────────────────────────────
 export default function CollectionsArcade() {
-  const { data: collections, isLoading } = useQuery({
-    queryKey: ["collections-arcade"],
-    queryFn: async () => {
-      // Fetch collections
-      const { data: collectionsData, error: collectionsError } = await supabase
-        .from("collections")
-        .select("id, name, slug, description, image_url, is_active")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-
-      if (collectionsError) throw collectionsError;
-
-      // Fetch character counts for each collection
-      const collectionsWithCounts = await Promise.all(
-        (collectionsData || []).map(async (collection) => {
-          const { count, error: countError } = await supabase
-            .from("collection_characters")
-            .select("*", { count: "exact", head: true })
-            .eq("collection_id", collection.id)
-            .eq("is_catalog", false); // Only collection characters, not catalog
-
-          if (countError) {
-            console.error("Error counting characters:", countError);
-            return { ...collection, character_count: 0 };
-          }
-
-          return { ...collection, character_count: count || 0 };
-        })
-      );
-
-      return collectionsWithCounts as Collection[];
-    },
-  });
-
-  // Fetch catalog characters
-  const { data: catalogCharacters, isLoading: isLoadingCatalog } = useQuery({
-    queryKey: ["catalog-characters"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collection_characters")
-        .select(`
-          id,
-          name,
-          description,
-          image_url,
-          is_catalog,
-          price_category_id,
-          status,
-          price_categories (
-            name,
-            display_name,
-            price_coins,
-            price_standalone,
-            display_order
-          )
-        `)
-        .eq("is_catalog", true)
-        .eq("status", "released")
-        .order("name", { ascending: true });
-
-      if (error) throw error;
-
-      // Transform data
-      const characters = (data || []).map((char: any) => ({
-        ...char,
-        price_category_name: char.price_categories?.name,
-        price_category_display_name: char.price_categories?.display_name,
-        price_coins: char.price_categories?.price_coins,
-        price_standalone: char.price_categories?.price_standalone,
-        price_category_order: char.price_categories?.display_order || 999,
-        price_categories: undefined,
-      })) as CatalogCharacter[];
-
-      // Group by category
-      const grouped = characters.reduce((acc: any, char) => {
-        const category = char.price_category_display_name || "Outros";
-        if (!acc[category]) {
-          acc[category] = {
-            name: category,
-            order: char.price_category_order,
-            characters: [],
-          };
-        }
-        acc[category].characters.push(char);
-        return acc;
-      }, {});
-
-      // Convert to array and sort by order
-      return Object.values(grouped).sort((a: any, b: any) => a.order - b.order);
-    },
-  });
+  const { data: collections, isLoading } = useArcadeCollections();
+  const { data: catalogCharacters } = useReleasedCatalogCharacterGroups();
 
   return (
     <Page
@@ -741,7 +627,7 @@ export default function CollectionsArcade() {
 
               {/* Catalog by Tier */}
               <div className="space-y-12">
-                {catalogCharacters.map((group: CatalogGroup, groupIndex: number) => (
+                {catalogCharacters.map((group: CatalogCharacterGroup, groupIndex: number) => (
                   <div key={groupIndex}>
                     {/* Tier Header */}
                     <div className="flex items-center gap-3 mb-6">

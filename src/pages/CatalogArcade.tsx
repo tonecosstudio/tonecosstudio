@@ -8,24 +8,22 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   X,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Heart,
   ArrowRight,
   Crosshair,
 } from "lucide-react";
 
 import type { ModelRow } from "@/pages/catalog/catalogTypes";
-import { useCatalogModels, type CatalogSort } from "@/pages/catalog/hooks/useCatalogModels";
+import { useCatalogModels, type CatalogSort } from "@/hooks/catalog/useCatalogModels";
 import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
 import { useProfileQuery } from "@/pages/catalog/hooks/useProfileQuery";
-import { useForYouModels } from "@/pages/catalog/hooks/useForYouModels";
+import { useForYouModels } from "@/hooks/catalog/useForYouModels";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeHero,
@@ -198,7 +196,7 @@ export default function CatalogArcade() {
         <section className="max-w-7xl mx-auto px-4 md:px-6 mb-12">
           <ArcadeSectionTitle>Para Você</ArcadeSectionTitle>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {forYouQuery.data.slice(0, 6).map((m: any) => (
+            {forYouQuery.data.slice(0, 6).map((m) => (
               <ModelArcadeCard
                 key={m.id}
                 model={m}
@@ -301,9 +299,7 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
 }) {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
-  const imageUrl = model.image_bucket && model.image_path
-    ? supabase.storage.from(model.image_bucket).getPublicUrl(model.image_path).data.publicUrl
-    : null;
+  const imageUrl = model.imageUrl;
 
   return (
     <ArcadeCard>

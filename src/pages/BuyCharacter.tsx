@@ -14,6 +14,7 @@ import {
   createStandalonePurchaseReservation,
   getStandalonePurchaseCollectionBySlug,
 } from "@/lib/standalone-purchase-service";
+import { log } from "@/lib/logger";
 
 export default function BuyCharacter() {
   const { slug } = useParams<{ slug: string }>();
@@ -321,7 +322,11 @@ export default function BuyCharacter() {
                                 navigate(`/meus-pedidos`);
                               }, 1500);
                             } catch (error) {
-                              console.error("Erro ao criar compra:", error);
+                              log.error("Erro ao criar compra avulsa", {
+                                error,
+                                collectionId: collection.id,
+                                characterId: currentMonthCharacter.id,
+                              });
 
                               let errorMessage = "Ocorreu um erro ao criar sua compra.";
                               const message = error instanceof Error ? error.message : "";

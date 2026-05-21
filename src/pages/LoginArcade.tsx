@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
+import { useAuthSessionActions } from "@/hooks/auth/useAuthSessionActions";
 import { Mail, Lock, ArrowRight, User, Phone, Shield, Zap } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
-  ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 
@@ -23,6 +22,11 @@ const GoogleIcon = () => (
 export default function LoginArcade() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const {
+    signInWithGoogleOAuth,
+    signInWithPasswordCredentials,
+    signUpWithPasswordCredentials,
+  } = useAuthSessionActions();
   const [params] = useSearchParams();
   const next = useMemo(() => {
     const raw = params.get("next") || "/";
@@ -50,31 +54,20 @@ export default function LoginArcade() {
     try {
       const sanitizedData = getSanitizedData();
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({
+        await signInWithPasswordCredentials({
           email: sanitizedData.email,
           password,
         });
-        if (error) throw error;
         toast({ title: "Bem-vindo de volta!", description: "Login realizado com sucesso." });
         navigate(next);
       } else {
-        const { error } = await supabase.auth.signUp({
+        await signUpWithPasswordCredentials({
           email: sanitizedData.email,
           password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: {
-              full_name: sanitizedData.name,
-              ...(sanitizedData.phone ? { phone: sanitizedData.phone } : {}),
-            },
-          },
+          fullName: sanitizedData.name,
+          phone: sanitizedData.phone,
+          emailRedirectTo: window.location.origin,
         });
-        if (error) {
-          if (error.message.includes("429") || error.message.includes("rate limit")) {
-            throw new Error("Muitas tentativas. Aguarde alguns minutos.");
-          }
-          throw error;
-        }
         toast({
           title: "Conta criada!",
           description: "Você já pode entrar com seu e-mail e senha.",
@@ -97,13 +90,7 @@ export default function LoginArcade() {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}${next}`,
-        },
-      });
-      if (error) throw error;
+      await signInWithGoogleOAuth(`${window.location.origin}${next}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro inesperado";
       toast({ title: "Erro ao entrar com Google", description: msg, variant: "destructive" });

@@ -4,6 +4,7 @@ import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects
 import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { Page } from "@/components/layouts/Page";
 import { AlertTriangle, Home, ArrowLeft, RotateCcw } from "lucide-react";
+import { log } from "@/lib/logger";
 
 export default function NotFoundArcade() {
   const location = useLocation();
@@ -20,7 +21,7 @@ export default function NotFoundArcade() {
   };
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    log.warn("Rota inexistente acessada", { pathname: location.pathname });
   }, [location.pathname]);
 
   useEffect(() => {

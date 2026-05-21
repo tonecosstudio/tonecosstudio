@@ -1,47 +1,50 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle, Loader2, Send } from "lucide-react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Send, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { conversationService } from "@/lib/services/conversationService";
-import { messageService } from "@/lib/services/messageService";
-import { contactFormSchema } from "@/lib/validations/support";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useContactFormSubmission } from "@/hooks/customer/useContactFormSubmission";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
-import { checkRateLimit } from "@/lib/security/rate-limiter";
-import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
+import { contactFormSchema } from "@/lib/validations/support";
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
 export function ContactForm() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Setup sanitized form
-  const {
-    formData,
-    setValue,
-    getSanitizedData
-  } = useSanitizedForm<ContactFormData>(
+  const { formData, setValue, getSanitizedData } = useSanitizedForm<ContactFormData>(
     {
-      name: '',
-      email: '',
-      message: ''
+      name: "",
+      email: "",
+      message: "",
     },
     {
-      name: 'text',
-      email: 'email',
-      message: 'html'
-    }
+      name: "text",
+      email: "email",
+      message: "html",
+    },
   );
+
+  const { submitContactForm, isSubmitting } = useContactFormSubmission({
+    onRequiresAuth: () => {
+      setError("Para entrar em contato, por favor faca login ou crie uma conta.");
+      setTimeout(() => {
+        navigate("/login?returnTo=/contato");
+      }, 2000);
+    },
+    onSuccess: () => {
+      navigate("/perfil?section=support");
+    },
+    onError: setError,
+  });
 
   const {
     register,
@@ -49,66 +52,16 @@ export function ContactForm() {
     formState: { errors },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
-    values: formData
+    values: formData,
   });
 
-  const onSubmit = async (data: ContactFormData) => {
-    // Check rate limit (5 requests/hour)
-    const rateLimitKey = 'contact-form-submit';
-    const rateLimit = checkRateLimit(rateLimitKey, FORM_RATE_LIMITS.contactForm);
-    
-    if (!rateLimit.allowed) {
-      setError(`Limite de requisições excedido. Aguarde ${rateLimit.retryAfter}s antes de tentar novamente.`);
-      return;
-    }
-    
-    setIsSubmitting(true);
+  const onSubmit = async () => {
     setError(null);
-
-    try {
-      // Check if user is authenticated
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        // User is not authenticated
-        // Redirect to login with return URL
-        setError("Para entrar em contato, por favor faça login ou crie uma conta.");
-        setIsSubmitting(false);
-        setTimeout(() => {
-          navigate("/login?returnTo=/contato");
-        }, 2000);
-        return;
-      }
-
-      // Get sanitized data
-      const sanitizedData = getSanitizedData();
-
-      // Create conversation with tag 'duvida'
-      const conversation = await conversationService.createConversation({
-        user_id: user.id,
-        subject: `Contato: ${sanitizedData.name}`,
-        status: "waiting_admin",
-        tags: ["duvida"],
-      });
-
-      // Send initial message
-      await messageService.sendMessage({
-        conversation_id: conversation.id,
-        sender_id: user.id,
-        sender_type: "customer",
-        message: sanitizedData.message,
-      });
-
-      // Redirect to chat
-      navigate("/perfil?section=support");
-    } catch (err) {
-      console.error("Error submitting contact form:", err);
-      setError("Erro ao enviar mensagem. Por favor, tente novamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    const sanitizedData = getSanitizedData();
+    await submitContactForm({
+      name: sanitizedData.name,
+      message: sanitizedData.message,
+    });
   };
 
   return (
@@ -116,7 +69,7 @@ export function ContactForm() {
       <CardHeader>
         <CardTitle>Entre em Contato</CardTitle>
         <CardDescription>
-          Preencha o formulário abaixo e entraremos em contato o mais breve possível.
+          Preencha o formulario abaixo e entraremos em contato o mais breve possivel.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -136,7 +89,7 @@ export function ContactForm() {
               placeholder="Seu nome completo"
               {...register("name")}
               value={formData.name}
-              onChange={(e) => setValue('name', e.target.value)}
+              onChange={(event) => setValue("name", event.target.value)}
               disabled={isSubmitting}
             />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
@@ -150,7 +103,7 @@ export function ContactForm() {
               placeholder="seu@email.com"
               {...register("email")}
               value={formData.email}
-              onChange={(e) => setValue('email', e.target.value)}
+              onChange={(event) => setValue("email", event.target.value)}
               disabled={isSubmitting}
             />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
@@ -160,11 +113,11 @@ export function ContactForm() {
             <Label htmlFor="message">Mensagem *</Label>
             <Textarea
               id="message"
-              placeholder="Descreva sua dúvida ou solicitação..."
+              placeholder="Descreva sua duvida ou solicitacao..."
               rows={6}
               {...register("message")}
               value={formData.message}
-              onChange={(e) => setValue('message', e.target.value)}
+              onChange={(event) => setValue("message", event.target.value)}
               disabled={isSubmitting}
             />
             {errors.message && <p className="text-sm text-destructive">{errors.message.message}</p>}

@@ -7,14 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Page } from '@/components/layouts/Page';
+import { log } from '@/lib/logger';
+import { useOrderMigrationSubmission } from '@/hooks/customer/useOrderMigrationSubmission';
 
 export default function MigratePedido() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const migrationMutation = useOrderMigrationSubmission();
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -33,24 +34,8 @@ export default function MigratePedido() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const { error } = await supabase
-        .from('order_migrations')
-        .insert({
-          user_id: user?.id,
-          full_name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone || null,
-          old_order_number: formData.oldOrderNumber || null,
-          order_description: formData.orderDescription,
-          status: 'pending',
-        });
-
-      if (error) throw error;
+      await migrationMutation.mutateAsync(formData);
 
       setSubmitted(true);
       toast({
@@ -58,14 +43,12 @@ export default function MigratePedido() {
         description: 'Analisaremos seu pedido e entraremos em contato em breve.',
       });
     } catch (error) {
-      console.error('Erro ao enviar solicitação:', error);
+      log.error('Error submitting order migration request', { error });
       toast({
         title: 'Erro ao enviar',
         description: 'Tente novamente mais tarde.',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -266,10 +249,10 @@ export default function MigratePedido() {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={migrationMutation.isPending}
               className="w-full bg-amber-600 hover:bg-amber-700 text-white py-6 text-lg border-2 border-amber-500"
             >
-              {loading ? 'Enviando...' : 'Enviar Solicitação'}
+              {migrationMutation.isPending ? 'Enviando...' : 'Enviar Solicitação'}
             </Button>
           </form>
         </Card>

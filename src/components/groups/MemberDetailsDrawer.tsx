@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Mail, Phone, User, MapPin, Calendar, Loader2, MessageSquare } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Calendar, Loader2, Mail, MapPin, MessageSquare, Phone, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useGroupMemberProfile } from "@/hooks/groups/useGroupMemberProfile";
 
 interface MemberDetailsDrawerProps {
   userId: string | null;
@@ -13,51 +12,8 @@ interface MemberDetailsDrawerProps {
   onClose: () => void;
 }
 
-interface ProfileData {
-  id: string;
-  email?: string;
-  full_name?: string;
-  phone?: string;
-  cpf?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-  created_at: string;
-  username?: string;
-  display_name?: string;
-  collector_level?: number;
-}
-
 export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDrawerProps) {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (userId && isOpen) {
-      loadProfile();
-    }
-  }, [userId, isOpen]);
-
-  const loadProfile = async () => {
-    if (!userId) return;
-
-    setLoading(true);
-    try {
-      const { data: profileData, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      if (error) throw error;
-      setProfile(profileData);
-    } catch (error) {
-      console.error("Erro ao carregar dados do membro:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: profile, isLoading } = useGroupMemberProfile(userId, isOpen);
 
   const displayName = profile?.full_name || profile?.display_name || profile?.username || "Membro";
   const memberSince = profile?.created_at
@@ -68,16 +24,15 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-[400px] sm:w-[540px]">
         <SheetHeader>
-          <SheetTitle>Informações do Membro</SheetTitle>
+          <SheetTitle>Informacoes do Membro</SheetTitle>
         </SheetHeader>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : profile ? (
           <div className="mt-6 space-y-6">
-            {/* Nome e Badge */}
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-xl">{displayName}</h3>
@@ -86,11 +41,10 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
                 )}
               </div>
               {profile.collector_level && profile.collector_level > 1 && (
-                <Badge variant="secondary">Nível {profile.collector_level}</Badge>
+                <Badge variant="secondary">Nivel {profile.collector_level}</Badge>
               )}
             </div>
 
-            {/* Informações de Contato */}
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground uppercase">Contato</h4>
 
@@ -135,10 +89,9 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
               )}
             </div>
 
-            {/* Endereço */}
             {(profile.address || profile.city || profile.state) && (
               <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-muted-foreground uppercase">Endereço</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase">Endereco</h4>
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
                     <MapPin className="h-5 w-5 text-orange-600" />
@@ -158,7 +111,6 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
               </div>
             )}
 
-            {/* Data de Cadastro */}
             <div className="pt-4 border-t">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
@@ -171,7 +123,6 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
               </div>
             </div>
 
-            {/* Ações */}
             <div className="pt-4 space-y-2">
               <Button variant="outline" className="w-full" asChild>
                 <a href={`mailto:${profile.email}`}>
@@ -195,7 +146,7 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
           </div>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
-            Dados do membro não encontrados
+            Dados do membro nao encontrados
           </div>
         )}
       </SheetContent>

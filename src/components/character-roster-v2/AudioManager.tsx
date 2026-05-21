@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { log } from "@/lib/logger";
 
 interface AudioManagerProps {
   ambientSound?: string;
@@ -31,7 +32,9 @@ export function AudioManager({
     ambientAudioRef.current = audio;
 
     // Fade in
-    audio.play().catch(console.error);
+    audio.play().catch((error) => {
+      log.warn("Falha ao iniciar audio ambiente", { error, ambientSound });
+    });
 
     return () => {
       // Fade out and cleanup
@@ -48,7 +51,7 @@ export function AudioManager({
     };
   }, [ambientSound, volume, enabled]);
 
-  const playSelectSound = () => {
+  const _playSelectSound = () => {
     if (!enabled || !selectSound) return;
 
     if (!selectAudioRef.current) {
@@ -57,7 +60,9 @@ export function AudioManager({
     }
 
     selectAudioRef.current.currentTime = 0;
-    selectAudioRef.current.play().catch(console.error);
+    selectAudioRef.current.play().catch((error) => {
+      log.warn("Falha ao tocar audio de selecao", { error, selectSound });
+    });
   };
 
   // Expose play function via ref or context if needed

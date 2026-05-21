@@ -1,5 +1,4 @@
 import type { ModelRow } from "../catalogTypes";
-import { supabase } from "@/integrations/supabase/client";
 import { ModelCard } from "./ModelCard";
 
 export function CatalogForYouSection(props: {
@@ -20,14 +19,12 @@ export function CatalogForYouSection(props: {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {models.map((m) => {
-          const imageUrl = supabase.storage.from(m.image_bucket).getPublicUrl(m.image_path)
-            .data.publicUrl;
           const isLiked = getIsLiked(m.id);
           return (
             <ModelCard
               key={m.id}
               model={m}
-              imageUrl={imageUrl}
+              imageUrl={m.imageUrl ?? ""}
               variant="forYou"
               isLiked={isLiked}
               onToggleLike={() => onToggleLike(m, isLiked)}

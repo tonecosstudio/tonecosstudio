@@ -17,11 +17,25 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { log } from "@/lib/logger";
+import {
+  createSupportConversation,
+  deleteProfilePaymentMethod,
+  getActiveSubscription,
+  listProfilePaymentMethods,
+  listSupportConversations,
+  listSupportMessages,
+  markSupportMessagesRead,
+  sendSupportMessage,
+  setDefaultProfilePaymentMethod,
+  subscribeToSupportMessages,
+  type SupportConversation,
+  type SupportMessage,
+} from "@/services/customer/profile-sections-service";
 
 // Seção de Dados Pessoais
 export function PersonalDataSection({
@@ -181,25 +195,11 @@ export function PaymentSection({ userId }: { userId: string }) {
   const paymentMethodsQuery = useQuery({
     queryKey: ["payment-methods", userId],
     enabled: Boolean(userId), // Só executa quando userId estiver disponível
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payment_methods")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .order("is_default", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => listProfilePaymentMethods(userId),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("payment_methods").delete().eq("id", id);
-
-      if (error) throw error;
-    },
+    mutationFn: deleteProfilePaymentMethod,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payment-methods"] });
       toast({ title: "Método de pagamento removido" });
@@ -210,14 +210,7 @@ export function PaymentSection({ userId }: { userId: string }) {
   });
 
   const setDefaultMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("payment_methods")
-        .update({ is_default: true })
-        .eq("id", id);
-
-      if (error) throw error;
-    },
+    mutationFn: setDefaultProfilePaymentMethod,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payment-methods"] });
       toast({ title: "Método padrão atualizado" });
@@ -255,7 +248,7 @@ export function PaymentSection({ userId }: { userId: string }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {methods.map((method: any) => (
+            {methods.map((method) => (
               <div
                 key={method.id}
                 className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
@@ -393,29 +386,7 @@ export function SubscriptionSection({ userId }: { userId: string }) {
   const subscriptionQuery = useQuery({
     queryKey: ["user-subscription", userId],
     enabled: Boolean(userId), // Só executa quando userId estiver disponível
-    queryFn: async () => {
-      // Buscar assinatura
-      const { data: subscription, error: subError } = await supabase
-        .from("subscriptions")
-        .select(
-          `
-          id,
-          user_id,
-          plan_type,
-          status,
-          created_at,
-          updated_at
-        `
-        )
-        .eq("user_id", userId)
-        .eq("status", "active")
-        .single();
-
-      if (subError && subError.code !== "PGRST116") throw subError;
-      if (!subscription) return null;
-
-      return subscription;
-    },
+    queryFn: () => getActiveSubscription(userId),
   });
 
   if (!subscriptionQuery.data) {
@@ -488,8 +459,8 @@ export function SubscriptionSection({ userId }: { userId: string }) {
 
 // Seção de Suporte
 export function SupportSection({ userId }: { userId: string }) {
-  const [selectedConversation, setSelectedConversation] = useState<any | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<SupportConversation | null>(null);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [newFirstMessage, setNewFirstMessage] = useState("");
@@ -501,16 +472,7 @@ export function SupportSection({ userId }: { userId: string }) {
   const conversationsQuery = useQuery({
     queryKey: ["user-conversations", userId],
     enabled: Boolean(userId), // Só executa quando userId estiver disponível
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("support_conversations")
-        .select("*")
-        .eq("user_id", userId)
-        .order("last_message_at", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => listSupportConversations(userId),
   });
 
   // Buscar mensagens da conversa selecionada
@@ -518,48 +480,30 @@ export function SupportSection({ userId }: { userId: string }) {
     if (!selectedConversation) return;
 
     const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from("support_messages")
-        .select("*")
-        .eq("conversation_id", selectedConversation.id)
-        .eq("is_internal", false)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("Erro ao buscar mensagens:", error);
-        toast({ title: "Erro ao carregar mensagens", variant: "destructive" });
-      } else {
-        setMessages(data || []);
+      try {
+        const data = await listSupportMessages(selectedConversation.id);
+        setMessages(data);
         scrollToBottom();
         markAsRead();
+      } catch (error) {
+        log.error("Error loading support messages", {
+          error,
+          conversationId: selectedConversation.id,
+        });
+        toast({ title: "Erro ao carregar mensagens", variant: "destructive" });
       }
     };
 
     fetchMessages();
 
-    // Realtime subscription
-    const channel = supabase
-      .channel(`support_messages_${selectedConversation.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "support_messages",
-          filter: `conversation_id=eq.${selectedConversation.id}`,
-        },
-        (payload) => {
-          if (!payload.new.is_internal) {
-            setMessages((prev) => [...prev, payload.new as any]);
-            scrollToBottom();
-            markAsRead();
-          }
-        }
-      )
-      .subscribe();
+    const unsubscribe = subscribeToSupportMessages(selectedConversation.id, (message) => {
+      setMessages((prev) => [...prev, message]);
+      scrollToBottom();
+      markAsRead();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   });
 
@@ -572,12 +516,10 @@ export function SupportSection({ userId }: { userId: string }) {
   const markAsRead = async () => {
     if (!selectedConversation || !userId) return;
 
-    await supabase
-      .from("support_messages")
-      .update({ read_by_customer: true, read_at: new Date().toISOString() })
-      .eq("conversation_id", selectedConversation.id)
-      .eq("read_by_customer", false)
-      .neq("sender_id", userId);
+    await markSupportMessagesRead({
+      conversationId: selectedConversation.id,
+      userId,
+    });
   };
 
   const handleCreateConversation = async () => {
@@ -589,27 +531,11 @@ export function SupportSection({ userId }: { userId: string }) {
     setSending(true);
 
     try {
-      // Criar conversa
-      const { data: conversation, error: convError } = await supabase
-        .from("support_conversations")
-        .insert({
-          user_id: userId,
-          subject: newSubject.trim(),
-          status: "waiting_admin",
-        })
-        .select()
-        .single();
-
-      if (convError) throw convError;
-
-      // Criar primeira mensagem
-      const { error: msgError } = await supabase.from("support_messages").insert({
-        conversation_id: conversation.id,
-        sender_id: userId,
-        message: newFirstMessage.trim(),
+      const conversation = await createSupportConversation({
+        userId,
+        subject: newSubject.trim(),
+        firstMessage: newFirstMessage.trim(),
       });
-
-      if (msgError) throw msgError;
 
       toast({ title: "Mensagem enviada! Responderemos em até 48h úteis." });
       setNewSubject("");
@@ -618,7 +544,7 @@ export function SupportSection({ userId }: { userId: string }) {
       setShowNewConversationForm(false);
       conversationsQuery.refetch();
     } catch (error) {
-      console.error("Erro ao criar conversa:", error);
+      log.error("Error creating support conversation", { error, userId });
       toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
     } finally {
       setSending(false);
@@ -631,18 +557,20 @@ export function SupportSection({ userId }: { userId: string }) {
     setSending(true);
 
     try {
-      const { error } = await supabase.from("support_messages").insert({
-        conversation_id: selectedConversation.id,
-        sender_id: userId,
+      await sendSupportMessage({
+        conversationId: selectedConversation.id,
+        userId,
         message: newMessage.trim(),
       });
-
-      if (error) throw error;
 
       setNewMessage("");
       toast({ title: "Mensagem enviada!" });
     } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
+      log.error("Error sending support message", {
+        error,
+        conversationId: selectedConversation.id,
+        userId,
+      });
       toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
     } finally {
       setSending(false);
@@ -752,7 +680,7 @@ export function SupportSection({ userId }: { userId: string }) {
             {!selectedConversation && conversations.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Suas Conversas</h3>
-                {conversations.map((conv: any) => (
+                {conversations.map((conv) => (
                   <div
                     key={conv.id}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
@@ -795,7 +723,7 @@ export function SupportSection({ userId }: { userId: string }) {
 
                 {/* Mensagens */}
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {messages.map((msg: any) => (
+                {messages.map((msg) => (
                     <div
                       key={msg.id}
                       className={`flex ${msg.sender_id === userId ? "justify-end" : "justify-start"}`}

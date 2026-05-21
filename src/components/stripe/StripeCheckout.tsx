@@ -24,8 +24,8 @@ import type { FormEvent } from "react";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { PaymentIntent } from "@stripe/stripe-js";
 import { stripePromise } from "@/lib/stripe/stripe-client";
-import { supabase } from "@/integrations/supabase/client";
 import { logInfo, logError } from "@/lib/logger";
+import { createStripePaymentIntent } from "@/services/payments/stripe-checkout-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -150,25 +150,15 @@ export function StripeCheckout(props: StripeCheckoutProps) {
           currency
         }, 'stripe-checkout');
 
-        const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-          body: {
-            amount,
-            currency: currency || 'brl',
-            description,
-            metadata,
-          },
+        const paymentIntentClientSecret = await createStripePaymentIntent({
+          amount,
+          currency,
+          description,
+          metadata,
         });
 
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        if (!data?.clientSecret) {
-          throw new Error('Resposta de pagamento invalida');
-        }
-
         if (!isMounted) return;
-        setClientSecret(data.clientSecret);
+        setClientSecret(paymentIntentClientSecret);
         setIsLoading(false);
       } catch (error) {
         if (!isMounted) return;

@@ -1,0 +1,281 @@
+import { supabase } from "@/integrations/supabase/client";
+import { groupService } from "@/lib/services/groupService";
+import { messageService } from "@/lib/services/messageService";
+import type { CreateGroupInput, Group, GroupAttachment, GroupMessage, MembershipCriteria } from "@/types/groups";
+
+type RpcError = { message?: string } | null;
+
+interface AutomaticGroupsRpcClient {
+  rpc(functionName: "sync_all_automatic_groups"): PromiseLike<{
+    data: unknown;
+    error: RpcError;
+  }>;
+}
+
+const automaticGroupsRpc = supabase as unknown as AutomaticGroupsRpcClient;
+
+export interface GroupCollectionOption {
+  id: string;
+  name: string;
+}
+
+export interface GroupMemberProfile {
+  id: string;
+  email?: string;
+  full_name?: string;
+  phone?: string;
+  cpf?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  created_at: string;
+  username?: string;
+  display_name?: string;
+  collector_level?: number;
+}
+
+export interface GroupCreationFormValues {
+  name: string;
+  type: CreateGroupInput["type"];
+  subscriptionCollectionId?: string;
+  subscriptionPlan?: string;
+  collectionId?: string;
+  launchCriteria?: "all_users" | "previous_buyers";
+  orderStatuses?: string[];
+  orderDateFrom?: string;
+  orderDateTo?: string;
+}
+
+export interface GroupRichMessageFields {
+  action_button_text?: string;
+  action_button_url?: string;
+  link_text?: string;
+  link_url?: string;
+}
+
+export interface ImportGroupMembersResult {
+  total: number;
+  success: number;
+  failed: number;
+  errors: string[];
+}
+
+interface ImportGroupMembersInput {
+  groupId: string;
+  importedBy: string;
+  file: File;
+  onProgress?: (progress: number) => void;
+}
+
+interface ProfileLookupRow {
+  id: string;
+  email: string;
+}
+
+function buildMembershipCriteria(data: GroupCreationFormValues): MembershipCriteria {
+  if (data.type === "assinantes") {
+    return {
+      type: "assinantes",
+      subscriptionStatus: "active",
+      ...(data.subscriptionCollectionId && {
+        collectionId: data.subscriptionCollectionId,
+      }),
+      ...(data.subscriptionPlan && { plan: data.subscriptionPlan }),
+    };
+  }
+
+  if (data.type === "colecao") {
+    if (!data.collectionId) {
+      throw new Error("Selecione uma colecao");
+    }
+
+    return {
+      type: "colecao",
+      collectionId: data.collectionId,
+    };
+  }
+
+  if (data.type === "lancamentos") {
+    if (!data.launchCriteria) {
+      throw new Error("Selecione um criterio de lancamento");
+    }
+
+    return {
+      type: "lancamentos",
+      criteria: data.launchCriteria,
+    };
+  }
+
+  if (data.type === "pedidos") {
+    return {
+      type: "pedidos",
+      ...(data.orderStatuses && data.orderStatuses.length > 0 && { status: data.orderStatuses }),
+      ...(data.orderDateFrom && { dateFrom: data.orderDateFrom }),
+      ...(data.orderDateTo && { dateTo: data.orderDateTo }),
+    };
+  }
+
+  return null;
+}
+
+function parseImportMembersCsv(csv: string) {
+  const lines = csv.split("\n").filter((line) => line.trim());
+
+  if (lines.length < 2) {
+    throw new Error("Arquivo vazio ou invalido");
+  }
+
+  const header = lines[0].toLowerCase().split(",");
+  const emailIndex = header.findIndex((column) => column.trim() === "email");
+  const nameIndex = header.findIndex((column) => column.trim() === "nome");
+
+  if (emailIndex === -1) {
+    throw new Error("Coluna 'email' nao encontrada no CSV");
+  }
+
+  const members: Array<{ email: string; name?: string }> = [];
+  const errors: string[] = [];
+
+  for (let index = 1; index < lines.length; index++) {
+    const columns = lines[index].split(",").map((column) => column.trim());
+    const email = columns[emailIndex];
+    const name = nameIndex !== -1 ? columns[nameIndex] : undefined;
+
+    if (!email || !email.includes("@")) {
+      errors.push(`Linha ${index + 1}: Email invalido "${email}"`);
+      continue;
+    }
+
+    members.push({ email, name });
+  }
+
+  return { members, errors };
+}
+
+export async function syncAllAutomaticGroups(): Promise<void> {
+  const { error } = await automaticGroupsRpc.rpc("sync_all_automatic_groups");
+
+  if (error) {
+    throw new Error(error.message ?? "Erro ao sincronizar grupos");
+  }
+}
+
+export async function listCollectionsForGroupRules(): Promise<GroupCollectionOption[]> {
+  const { data, error } = await supabase.from("collections").select("id, name").order("name");
+
+  if (error) throw error;
+  return (data ?? []) as GroupCollectionOption[];
+}
+
+export async function createGroupFromForm(
+  data: GroupCreationFormValues,
+  createdBy: string,
+): Promise<Group> {
+  return groupService.createGroup({
+    name: data.name,
+    type: data.type,
+    membership_criteria: buildMembershipCriteria(data),
+    created_by: createdBy,
+  });
+}
+
+export async function getGroupMemberProfile(userId: string): Promise<GroupMemberProfile> {
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+
+  if (error) throw error;
+  return data as GroupMemberProfile;
+}
+
+export function getGroupAttachmentPublicUrl(filePath: string): string {
+  const { data } = supabase.storage.from("group-attachments").getPublicUrl(filePath);
+  return data.publicUrl;
+}
+
+export async function sendGroupBroadcastMessage(input: {
+  groupId: string;
+  senderId: string;
+  message: string;
+  richFields?: GroupRichMessageFields;
+  attachments?: File[];
+}): Promise<GroupMessage & { attachments: GroupAttachment[] }> {
+  return messageService.sendBroadcastMessage(
+    input.groupId,
+    input.senderId,
+    input.message,
+    input.richFields,
+    input.attachments,
+  );
+}
+
+export async function importGroupMembersFromCsv({
+  groupId,
+  importedBy,
+  file,
+  onProgress,
+}: ImportGroupMembersInput): Promise<ImportGroupMembersResult> {
+  const { members, errors } = parseImportMembersCsv(await file.text());
+  const batchSize = 50;
+  let successCount = 0;
+  let failedCount = 0;
+
+  for (let index = 0; index < members.length; index += batchSize) {
+    const batch = members.slice(index, index + batchSize);
+
+    const { data: users, error: usersError } = await supabase
+      .from("profiles")
+      .select("id, email")
+      .in(
+        "email",
+        batch.map((member) => member.email),
+      );
+
+    if (usersError) {
+      errors.push(`Erro ao buscar usuarios: ${usersError.message}`);
+      failedCount += batch.length;
+      continue;
+    }
+
+    const emailToUserId = new Map(
+      ((users ?? []) as ProfileLookupRow[]).map((user) => [user.email, user.id]),
+    );
+
+    const membersToAdd = batch
+      .filter((member) => emailToUserId.has(member.email))
+      .map((member) => ({
+        group_id: groupId,
+        user_id: emailToUserId.get(member.email)!,
+        added_by: importedBy,
+      }));
+
+    if (membersToAdd.length > 0) {
+      const { error: insertError } = await supabase
+        .from("chat_group_members")
+        .insert(membersToAdd)
+        .select();
+
+      if (insertError && !insertError.message.includes("duplicate")) {
+        errors.push(`Erro ao adicionar membros: ${insertError.message}`);
+        failedCount += membersToAdd.length;
+      } else {
+        successCount += membersToAdd.length;
+      }
+    }
+
+    batch.forEach((member) => {
+      if (!emailToUserId.has(member.email)) {
+        errors.push(`Email nao encontrado no sistema: ${member.email}`);
+        failedCount++;
+      }
+    });
+
+    onProgress?.(Math.round(((index + batch.length) / members.length) * 100));
+  }
+
+  return {
+    total: members.length,
+    success: successCount,
+    failed: failedCount,
+    errors: errors.slice(0, 10),
+  };
+}

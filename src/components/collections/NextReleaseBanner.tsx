@@ -1,56 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "./Countdown";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-
-type RpcError = { message?: string } | null;
-
-interface NextReleaseRow {
-  collection_id: string | null;
-  collection_slug?: string | null;
-  collection_name: string;
-  character_name: string;
-  character_image: string | null;
-  release_date: string;
-  days_until_release: number;
-}
-
-interface NextReleaseRpcClient {
-  rpc(functionName: "get_next_release"): PromiseLike<{
-    data: NextReleaseRow[] | null;
-    error: RpcError;
-  }>;
-}
-
-const nextReleaseRpc = supabase as unknown as NextReleaseRpcClient;
+import { getNextRelease } from "@/services/collections/next-release-service";
 
 export function NextReleaseBanner() {
   const { data: nextRelease, isLoading } = useQuery({
     queryKey: ["next-release"],
-    queryFn: async () => {
-      const { data, error } = await nextReleaseRpc.rpc("get_next_release");
-
-      if (error) throw error;
-
-      // Buscar o slug da coleção
-      if (data?.[0]?.collection_id) {
-        const { data: collectionData } = await supabase
-          .from("collections")
-          .select("slug")
-          .eq("id", data[0].collection_id)
-          .maybeSingle();
-
-        if (collectionData) {
-          data[0].collection_slug = collectionData.slug;
-        }
-      }
-
-      return data?.[0] || null;
-    },
+    queryFn: getNextRelease,
     refetchInterval: 60000, // Atualizar a cada minuto
   });
 

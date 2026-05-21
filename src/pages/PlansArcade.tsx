@@ -2,8 +2,6 @@
  * Planos Arcade — estética gaming consistente com a página de coleções.
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Check, Zap, Crown, Sparkles, Shield, ArrowRight, Coins } from "lucide-react";
 import { useContentSettings } from "@/hooks/useContentSettings";
@@ -16,8 +14,8 @@ import {
   ArcadeCard,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
-import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 import { useState } from "react";
+import { useActiveSubscriptionPlans } from "@/hooks/subscription/useActiveSubscriptionPlans";
 
 export default function PlansArcade() {
   const navigate = useNavigate();
@@ -25,18 +23,7 @@ export default function PlansArcade() {
   const { data: settings } = useSystemSettings();
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
-  const plansQuery = useQuery({
-    queryKey: ["subscription-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscription_plans")
-        .select("*, pricing_tiers(*)")
-        .eq("is_active", true)
-        .order("display_order");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const plansQuery = useActiveSubscriptionPlans();
 
   const plans = plansQuery.data || [];
 

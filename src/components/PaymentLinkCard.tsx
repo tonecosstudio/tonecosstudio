@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { AlertCircle, Check, CheckCircle2, Copy, ExternalLink } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Copy, Check, CheckCircle2, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { usePaymentConfirmation } from "@/hooks/payments/usePaymentConfirmation";
 
 interface PaymentLinkCardProps {
   quoteId: string;
@@ -26,45 +25,8 @@ export function PaymentLinkCard({
   customerPaidNotificationAt,
 }: PaymentLinkCardProps) {
   const { toast } = useToast();
-  const qc = useQueryClient();
   const [copiedPix, setCopiedPix] = useState(false);
-
-  const notifyPaidMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from("quotes")
-        .update({
-          customer_paid_notification_at: new Date().toISOString(),
-        })
-        .eq("id", quoteId);
-
-      if (error) throw error;
-
-      // Criar notificação para admin
-      const { error: notifError } = await supabase.from("notifications").insert({
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-        title: "Cliente Confirmou Pagamento",
-        message: `O cliente informou que realizou o pagamento de R$ ${amount.toFixed(2)}`,
-        type: "payment",
-      });
-
-      if (notifError) console.error("Erro ao criar notificação:", notifError);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["quote-tracking", quoteId] });
-      toast({
-        title: "Confirmação enviada!",
-        description: "Avisamos o admin. Aguarde a confirmação.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao confirmar",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const paymentConfirmation = usePaymentConfirmation({ quoteId, amount });
 
   const copyPixKey = () => {
     if (pixKey) {
@@ -85,24 +47,21 @@ export function PaymentLinkCard({
     <Alert className="border-primary bg-primary/5">
       <AlertCircle className="h-5 w-5 text-primary" />
       <AlertTitle className="text-primary font-bold text-lg">
-        💳 Link de Pagamento Disponível
+        Link de Pagamento Disponivel
       </AlertTitle>
       <AlertDescription>
         <div className="space-y-4 mt-4">
-          {/* Valor */}
           <div className="p-4 rounded-lg bg-background border">
             <p className="text-sm text-muted-foreground mb-1">Valor a Pagar</p>
             <p className="text-3xl font-bold text-primary">R$ {amount.toFixed(2)}</p>
           </div>
 
-          {/* Instruções */}
           {instructions && (
             <div className="p-4 rounded-lg bg-background border">
               <p className="text-sm whitespace-pre-wrap">{instructions}</p>
             </div>
           )}
 
-          {/* Link de Pagamento */}
           {paymentLink && (
             <div>
               <p className="text-sm font-medium mb-2">Link de Pagamento:</p>
@@ -115,7 +74,6 @@ export function PaymentLinkCard({
             </div>
           )}
 
-          {/* Chave PIX */}
           {pixKey && (
             <div>
               <p className="text-sm font-medium mb-2">Chave PIX:</p>
@@ -139,35 +97,34 @@ export function PaymentLinkCard({
             </div>
           )}
 
-          {/* Botão Já Paguei */}
           <div className="pt-4 border-t">
             {alreadyNotified ? (
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle2 className="h-5 w-5" />
                 <span className="font-medium">
-                  Confirmação enviada! Aguardando verificação do admin.
+                  Confirmacao enviada! Aguardando verificacao do admin.
                 </span>
               </div>
             ) : (
               <Button
-                onClick={() => notifyPaidMutation.mutate()}
-                disabled={notifyPaidMutation.isPending}
+                onClick={() => paymentConfirmation.notifyPaid()}
+                disabled={paymentConfirmation.isPending}
                 variant="default"
                 size="lg"
                 className="w-full bg-green-600 hover:bg-green-700"
               >
-                {notifyPaidMutation.isPending ? (
+                {paymentConfirmation.isPending ? (
                   "Enviando..."
                 ) : (
                   <>
                     <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Já Paguei - Avisar Admin
+                    Ja Paguei - Avisar Admin
                   </>
                 )}
               </Button>
             )}
             <p className="text-xs text-center text-muted-foreground mt-2">
-              Clique após realizar o pagamento para avisarmos o admin
+              Clique apos realizar o pagamento para avisarmos o admin
             </p>
           </div>
         </div>

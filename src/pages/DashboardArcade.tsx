@@ -1,7 +1,5 @@
 import { useAuth } from "@/lib/auth";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
+import { useCustomerDashboardData } from "@/hooks/customer/useCustomerDashboardData";
 import { Link } from "react-router-dom";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -9,78 +7,31 @@ import {
   ArcadeCard,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { CoinCounter } from "@/components/arcade/CoinCounter";
-import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import {
   Package,
   Heart,
   Star,
   Trophy,
-  Clock,
   Gift,
-  TrendingUp,
   Crosshair,
   Swords,
 } from "lucide-react";
 
 export default function DashboardArcade() {
   const { user } = useAuth();
-  const { data: balanceData, isLoading: balanceLoading } = useCoinsBalance();
-
-  const statsQuery = useQuery({
-    queryKey: ["dashboard-stats", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: async () => {
-      const [quotesRes, likesRes, wishlistRes, collectorRes] = await Promise.all([
-        supabase
-          .from("quotes")
-          .select("id, status, created_at")
-          .eq("user_id", user!.id)
-          .order("created_at", { ascending: false })
-          .limit(5),
-        supabase.from("model_likes").select("id").eq("user_id", user!.id),
-        supabase.from("wishlist").select("id").eq("user_id", user!.id),
-        supabase
-          .from("profiles")
-          .select("collector_level, collector_xp, pieces_owned, total_spent")
-          .eq("id", user!.id)
-          .maybeSingle(),
-      ]);
-      return {
-        quotes: quotesRes.data || [],
-        totalQuotes: quotesRes.data?.length || 0,
-        totalLikes: likesRes.data?.length || 0,
-        totalWishlist: wishlistRes.data?.length || 0,
-        collector: collectorRes.data || null,
-      };
-    },
-  });
-
-  const notificationsQuery = useQuery({
-    queryKey: ["dashboard-notifications", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("is_read", false)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return data || [];
-    },
-  });
-
-  const stats = statsQuery.data;
-  const notifications = notificationsQuery.data || [];
+  const { stats, notifications } = useCustomerDashboardData(user?.id);
   const collector = stats?.collector;
-  const xpPercent = collector ? Math.min((collector.collector_xp % 100), 100) : 0;
+  const collectorLevel = collector?.collector_level ?? 1;
+  const collectorXp = collector?.collector_xp ?? 0;
+  const piecesOwned = collector?.pieces_owned ?? 0;
+  const totalSpent = collector?.total_spent ?? 0;
+  const xpPercent = collector ? Math.min(collectorXp % 100, 100) : 0;
 
   const hudStats = [
     { value: stats?.totalQuotes || 0, label: "Pedidos", icon: <Package className="w-5 h-5" /> },
     { value: stats?.totalLikes || 0, label: "Favoritos", icon: <Heart className="w-5 h-5" /> },
     { value: stats?.totalWishlist || 0, label: "Wishlist", icon: <Star className="w-5 h-5" /> },
-    { value: collector?.collector_level || 1, label: "Nível", icon: <Trophy className="w-5 h-5" /> },
+    { value: collectorLevel, label: "Nível", icon: <Trophy className="w-5 h-5" /> },
   ];
 
   return (
@@ -114,11 +65,11 @@ export default function DashboardArcade() {
                   <div className="flex items-center gap-3">
                     <Swords className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
                     <span className="font-mono text-sm text-[hsl(0,0%,80%)] uppercase tracking-wider">
-                      Nível {collector.collector_level}
+                      Nível {collectorLevel}
                     </span>
                   </div>
                   <span className="font-mono text-xs text-[hsl(var(--gold-accent))] tabular-nums">
-                    {collector.collector_xp} XP
+                    {collectorXp} XP
                   </span>
                 </div>
                 <div className="w-full h-3 bg-[hsl(0,0%,10%)] border border-[hsl(0,0%,15%)] overflow-hidden">
@@ -128,8 +79,8 @@ export default function DashboardArcade() {
                   />
                 </div>
                 <div className="flex justify-between mt-3 font-mono text-[10px] text-[hsl(0,0%,35%)]">
-                  <span>{collector.pieces_owned} peças coletadas</span>
-                  <span>R$ {(collector.total_spent || 0).toFixed(2)} investido</span>
+                  <span>{piecesOwned} peças coletadas</span>
+                  <span>R$ {totalSpent.toFixed(2)} investido</span>
                 </div>
               </div>
             </ArcadeCard>
@@ -144,7 +95,7 @@ export default function DashboardArcade() {
               <div className="p-6">
                 {stats?.quotes && stats.quotes.length > 0 ? (
                   <div className="space-y-3">
-                    {stats.quotes.map((q: any) => (
+                    {stats.quotes.map((q) => (
                       <div
                         key={q.id}
                         className="flex items-center justify-between p-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors"
@@ -195,7 +146,7 @@ export default function DashboardArcade() {
                 )}
                 {notifications.length > 0 ? (
                   <div className="space-y-3">
-                    {notifications.slice(0, 5).map((n: any) => (
+                    {notifications.slice(0, 5).map((n) => (
                       <div key={n.id} className="p-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors">
                         <p className="font-mono text-xs text-[hsl(0,0%,80%)] mb-1">{n.title}</p>
                         <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] line-clamp-2">{n.message}</p>

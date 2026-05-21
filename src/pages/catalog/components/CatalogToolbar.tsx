@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { CatalogSort } from "@/pages/catalog/hooks/useCatalogModels";
+import type { CatalogSort } from "@/hooks/catalog/useCatalogModels";
 
 export function CatalogToolbar(props: {
   q: string;

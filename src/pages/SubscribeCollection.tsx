@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import {
+  useSubscribeCollectionCheckout,
+  type SubscriptionPaymentMethod,
+} from "@/hooks/subscription/useSubscribeCollectionCheckout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioGroup } from "@/components/ui/radio-group";
 import {
-  Check, Package, Crown, Sparkles, Gift, AlertCircle, 
-  ArrowRight, Star, Shield, Truck, Calendar, ChevronRight,
-  Info, TrendingDown, Lock
+  Check, Crown, Sparkles, Gift,
+  ArrowRight, Star, Shield, Truck, Calendar,
+  Info, TrendingDown
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PaymentVoucherUpload } from "@/components/PaymentVoucherUpload";
@@ -24,53 +26,23 @@ export default function SubscribeCollection() {
   const { toast } = useToast();
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
+  const [paymentMethod, setPaymentMethod] = useState<SubscriptionPaymentMethod>("pix");
   const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
   const [paymentVoucherUrl, setPaymentVoucherUrl] = useState<string | null>(null);
 
   // Buscar planos disponíveis
-  const { data: plans, isLoading: plansLoading } = useQuery({
-    queryKey: ["subscription-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscription_plans")
-        .select("*")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const {
+    plans,
+    plansLoading,
+    collections,
+    collectionsLoading,
+    initialCollection,
+    createCheckout,
+  } = useSubscribeCollectionCheckout(slug);
 
   // Buscar coleções ativas
-  const { data: collections, isLoading: collectionsLoading } = useQuery({
-    queryKey: ["active-collections"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select(`*, collection_characters (id, name, status)`)
-        .eq("is_active", true)
-        .order("name", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   // Buscar coleção específica se veio de uma
-  const { data: initialCollection } = useQuery({
-    queryKey: ["collection", slug],
-    enabled: Boolean(slug),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select("*")
-        .eq("slug", slug)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
 
   // Auto-selecionar primeira coleção como ativa
   useEffect(() => {
@@ -88,8 +60,8 @@ export default function SubscribeCollection() {
   }, [plans, selectedPlanId]);
 
   // Criar assinatura
-  const subscribeMutation = useMutation({
-    mutationFn: async () => {
+  const handleSubscribe = async () => {
+    try {
       if (!user) {
         navigate("/login");
         throw new Error("Faça login para continuar");
@@ -102,65 +74,27 @@ export default function SubscribeCollection() {
         throw new Error("Selecione uma coleção ativa");
       }
 
-      // Calcular coins iniciais baseado no plano
-      const coinsInitial = selectedPlan.plan_type === "trimestral" ? 600
-        : selectedPlan.plan_type === "semestral" ? 1300
-        : 2800;
+      const data = await createCheckout.mutateAsync({
+        userId: user.id,
+        selectedPlan,
+        activeCollectionId,
+        paymentMethod,
+        paymentVoucherUrl,
+      });
 
-      // Criar assinatura
-      const { data: subscription, error: subError } = await supabase
-        .from("subscriptions")
-        .insert({
-          user_id: user.id,
-          plan_id: selectedPlan.id,
-          plan_type: selectedPlan.plan_type,
-          status: "pending_payment",
-          collection_id: activeCollectionId,
-          payment_method: paymentMethod,
-          notes: paymentVoucherUrl ? `Comprovante: ${paymentVoucherUrl}` : null,
-        })
-        .select()
-        .single();
-
-      if (subError) throw subError;
-
-      // Criar pagamento
-      const amount = paymentMethod === "pix" ? selectedPlan.price_pix : selectedPlan.price_full;
-      const paymentStatus = paymentVoucherUrl ? "under_review" : "pending";
-      
-      const { data: payment, error: payError } = await supabase
-        .from("manual_payments")
-        .insert({
-          user_id: user.id,
-          amount: Number(amount),
-          reference_type: "subscription",
-          reference_id: subscription.id,
-          status: paymentStatus,
-          payment_method: paymentMethod,
-          notes: paymentVoucherUrl ? `Comprovante: ${paymentVoucherUrl}` : null,
-        })
-        .select()
-        .single();
-
-      if (payError) throw payError;
-
-      return { subscription, payment };
-    },
-    onSuccess: (data) => {
       toast({
         title: "Assinatura criada!",
         description: "Redirecionando para pagamento...",
       });
       navigate(`/pagamentos/${data.payment.id}`);
-    },
-    onError: (error: any) => {
+    } catch (error) {
       toast({
         title: "Erro ao criar assinatura",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Erro inesperado",
         variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
   if (plansLoading || collectionsLoading) {
     return (
@@ -228,7 +162,7 @@ export default function SubscribeCollection() {
 
                 <RadioGroup value={selectedPlanId || ""} onValueChange={setSelectedPlanId}>
                   <div className="grid md:grid-cols-3 gap-4">
-                    {plans?.map((plan: any) => {
+                    {plans?.map((plan) => {
                       const isSelected = selectedPlanId === plan.id;
                       const isPopular = plan.plan_type === "trimestral";
                       const isBestValue = plan.plan_type === "anual";
@@ -338,7 +272,7 @@ export default function SubscribeCollection() {
                 </Alert>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  {collections?.map((col: any) => {
+                  {collections?.map((col) => {
                     const isSelected = activeCollectionId === col.id;
                     const characterCount = col.collection_characters?.length || 0;
 
@@ -586,15 +520,15 @@ export default function SubscribeCollection() {
                     <Button
                       size="lg"
                       className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-6 text-base shadow-xl"
-                      onClick={() => subscribeMutation.mutate()}
+                      onClick={handleSubscribe}
                       disabled={
-                        subscribeMutation.isPending ||
+                        createCheckout.isPending ||
                         !selectedPlanId ||
                         !activeCollectionId ||
                         !paymentVoucherUrl
                       }
                     >
-                      {subscribeMutation.isPending ? (
+                      {createCheckout.isPending ? (
                         "Processando..."
                       ) : !paymentVoucherUrl ? (
                         "Envie o comprovante"

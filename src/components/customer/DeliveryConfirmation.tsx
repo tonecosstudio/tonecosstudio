@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CheckCircle2, Package, Calendar as CalendarIcon, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { log } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
@@ -64,7 +65,7 @@ export const DeliveryConfirmation: React.FC<DeliveryConfirmationProps> = ({
       }
       setShowConfirmation(true);
     } catch (error) {
-      console.error("Error confirming delivery:", error);
+      log.error("Error confirming delivery", { error, orderId });
     } finally {
       setIsSubmitting(false);
     }

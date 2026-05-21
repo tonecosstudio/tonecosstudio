@@ -1,97 +1,30 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
+import { Link } from "react-router-dom";
 import { Bell, Check, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
-
-interface NotificationItem {
-  id: string;
-  user_id: string;
-  type: string | null;
-  title: string;
-  message: string;
-  link: string | null;
-  is_read: boolean | null;
-  created_at: string;
-}
+import { useNotificationCenterData } from "@/hooks/notifications/useNotificationCenterData";
+import type { NotificationCenterItem } from "@/services/notifications/notification-center-service";
 
 export function NotificationCenter() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const {
+    user,
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    isMarkingAllAsRead,
+  } = useNotificationCenterData();
 
-  const notificationsQuery = useQuery({
-    queryKey: ["notifications", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: async (): Promise<NotificationItem[]> => {
-      if (!user?.id) return [];
-
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      return data || [];
-    },
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
-  });
-
-  const markAsReadMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("mark_notification_as_read", {
-        notification_id: id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-    },
-  });
-
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("mark_all_notifications_as_read");
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-      toast({ title: "Todas as notificações foram marcadas como lidas" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("notifications").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-      toast({ title: "Notificação removida" });
-    },
-  });
-
-  const notifications = notificationsQuery.data || [];
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  const getNotificationIcon = () => {
-    // Você pode adicionar ícones específicos por tipo
-    return "🔔";
-  };
-
-  const handleNotificationClick = (notification: NotificationItem) => {
+  const handleNotificationClick = (notification: NotificationCenterItem) => {
     if (!notification.is_read) {
-      markAsReadMutation.mutate(notification.id);
+      markAsRead(notification.id);
     }
+
     if (notification.link) {
       setOpen(false);
     }
@@ -116,13 +49,13 @@ export function NotificationCenter() {
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Notificações</h3>
+          <h3 className="font-semibold">Notificacoes</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => markAllAsReadMutation.mutate()}
-              disabled={markAllAsReadMutation.isPending}
+              onClick={() => markAllAsRead()}
+              disabled={isMarkingAllAsRead}
             >
               <Check className="h-4 w-4 mr-2" />
               Marcar todas como lidas
@@ -134,7 +67,7 @@ export function NotificationCenter() {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Bell className="h-12 w-12 mb-4 opacity-50" />
-              <p className="text-sm">Nenhuma notificação</p>
+              <p className="text-sm">Nenhuma notificacao</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -147,7 +80,7 @@ export function NotificationCenter() {
                 >
                   <div className="flex gap-3">
                     <div className="text-2xl flex-shrink-0">
-                      {getNotificationIcon(notification.type)}
+                      <Bell className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       {notification.link ? (
@@ -191,7 +124,7 @@ export function NotificationCenter() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => markAsReadMutation.mutate(notification.id)}
+                          onClick={() => markAsRead(notification.id)}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -200,7 +133,7 @@ export function NotificationCenter() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => deleteMutation.mutate(notification.id)}
+                        onClick={() => deleteNotification(notification.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

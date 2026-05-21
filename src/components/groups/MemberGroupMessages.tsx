@@ -6,8 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useGroupMessages } from "@/hooks/useGroupMessages";
 import { RefreshCw, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { sanitizeText } from "@/lib/utils/sanitize";
+import { getGroupAttachmentPublicUrl } from "@/services/groups/group-management-service";
 import { GroupErrorBoundary } from "./GroupErrorBoundary";
 
 interface MemberGroupMessagesProps {
@@ -17,12 +17,6 @@ interface MemberGroupMessagesProps {
 /**
  * Converte file_path para URL pública do Supabase Storage
  */
-function getAttachmentUrl(filePath: string): string {
-  const BUCKET_NAME = "group-attachments";
-  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
-  return data.publicUrl;
-}
-
 function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
   const { messages, loading, messagesEndRef, refresh } = useGroupMessages({
     groupId,
@@ -86,7 +80,7 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
                       {message.attachments.map((attachment) => (
                         <a
                           key={attachment.id}
-                          href={getAttachmentUrl(attachment.file_path)}
+                          href={getGroupAttachmentPublicUrl(attachment.file_path)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-primary hover:underline block"

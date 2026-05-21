@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { log } from "@/lib/logger";
 import { fileUploadService } from "@/lib/file-upload-service";
 import type { PaymentFile } from "@/types/manual-payment";
 
@@ -83,7 +84,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
       // Generate signed URLs for all files
       generateSignedUrls(loadedFiles);
     } catch (err) {
-      console.error("Failed to load files:", err);
+      log.error("Failed to load payment files", { error: err, paymentId });
       setError(err instanceof Error ? err.message : "Failed to load files");
     } finally {
       setLoading(false);
@@ -110,7 +111,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
           )
         );
       } catch (err) {
-        console.error(`Failed to generate URL for file ${file.id}:`, err);
+        log.error("Failed to generate payment file URL", { error: err, fileId: file.id });
         setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, isLoadingUrl: false } : f)));
       }
     }
@@ -132,7 +133,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
       onFileDelete(fileId);
       setFiles((prev) => prev.filter((f) => f.id !== fileId));
     } catch (err) {
-      console.error("Failed to delete file:", err);
+      log.error("Failed to delete payment file", { error: err, fileId });
       setError(err instanceof Error ? err.message : "Failed to delete file");
     }
   };

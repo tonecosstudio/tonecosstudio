@@ -2,23 +2,15 @@ import { Page } from "@/components/layouts/Page";
 import { ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Check, Sparkles, Package, Shield, Clock, Zap } from "lucide-react";
+import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
+import { ArrowRight, Sparkles, Package, Shield, Zap } from "lucide-react";
 
 const DEPOSIT_AMOUNT = 100.00;
 
 export default function PreLaunchArcade() {
   const navigate = useNavigate();
 
-  const { data: collections } = useQuery({
-    queryKey: ["collections-active"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("collections").select("*").eq("is_active", true).limit(3);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: collections } = useActiveCollectionPreviews(3);
 
   const benefits = [
     { icon: Zap, title: "ACESSO PRIORITÁRIO", desc: "Seja o primeiro a escolher personagens" },
@@ -117,7 +109,7 @@ export default function PreLaunchArcade() {
           <>
             <ArcadeSectionTitle>COLEÇÕES DISPONÍVEIS</ArcadeSectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {collections.map((c: any) => (
+              {collections.map((c) => (
                 <ArcadeCard key={c.id} className="overflow-hidden cursor-pointer" hover>
                   <div className="aspect-video bg-[hsl(0,0%,8%)]">
                     {c.cover_image_url ? (

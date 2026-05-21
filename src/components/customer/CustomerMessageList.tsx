@@ -6,19 +6,16 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Attachment, Message } from "@/types/support";
-import { supabase } from "@/integrations/supabase/client";
-import { conversationService } from "@/lib/services/conversationService";
+import { log } from "@/lib/logger";
+import {
+  createCustomerSupportConversation,
+  getSupportAttachmentPublicUrl,
+} from "@/services/customer-chat-button-service";
 import { toast } from "sonner";
 
 /**
  * Converte file_path para URL pública do Supabase Storage
  */
-function getAttachmentUrl(filePath: string): string {
-  const BUCKET_NAME = "support-attachments";
-  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
-  return data.publicUrl;
-}
-
 /**
  * CustomerMessageList Component
  *
@@ -91,20 +88,13 @@ export function CustomerMessageList({
             size="sm"
             onClick={async () => {
               try {
-                const {
-                  data: { user },
-                } = await supabase.auth.getUser();
-                if (!user) {
+                if (!currentUserId) {
                   toast.error("Você precisa estar autenticado");
                   return;
                 }
 
                 // Criar nova conversa
-                const newConversation = await conversationService.createConversation({
-                  user_id: user.id,
-                  subject: "Nova Solicitação",
-                  status: "new",
-                });
+                const newConversation = await createCustomerSupportConversation(currentUserId);
 
                 toast.success("Nova conversa iniciada!");
 
@@ -115,7 +105,7 @@ export function CustomerMessageList({
                   })
                 );
               } catch (error) {
-                console.error("Erro ao criar nova conversa:", error);
+                log.error("Erro ao criar nova conversa customer", { error, currentUserId });
                 toast.error("Erro ao criar nova solicitação");
               }
             }}
@@ -181,12 +171,11 @@ function CustomerMessageBubble({
   const isCustomer = message.sender_type === "customer";
   const isSystem = message.sender_type === "system";
 
-  // Debug: log attachments
   if (message.attachments && message.attachments.length > 0) {
-    console.log(
-      `[CustomerMessageBubble] Mensagem ${message.id} tem ${message.attachments.length} anexos:`,
-      message.attachments
-    );
+    log.debug("Customer message attachments rendered", {
+      messageId: message.id,
+      attachmentCount: message.attachments.length,
+    });
   }
 
   // System messages (order status updates, etc.)
@@ -292,7 +281,7 @@ function CustomerMessageBubble({
           <div className="mt-2 space-y-2">
             {message.attachments.map((attachment: Attachment) => {
               const isImage = attachment.file_type?.startsWith("image/");
-              const publicUrl = getAttachmentUrl(attachment.file_path);
+              const publicUrl = getSupportAttachmentPublicUrl(attachment.file_path);
 
               if (isImage) {
                 return (

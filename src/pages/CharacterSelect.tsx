@@ -6,9 +6,12 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  type CharacterSelectCharacter,
+  type CharacterSelectCollection,
+  useCollectionsWithCharacters,
+} from "@/hooks/collections/usePublicCollections";
 import { Page } from "@/components/layouts/Page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,24 +30,8 @@ import {
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
-type Character = {
-  id: string;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  release_order: number;
-  status: string;
-};
-
-type Collection = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  image_url: string | null;
-  is_active: boolean;
-  collection_characters: Character[];
-};
+type Character = CharacterSelectCharacter;
+type Collection = CharacterSelectCollection;
 
 // ─── Character Slot Component ────────────────────────────────
 function CharacterSlot({
@@ -371,24 +358,7 @@ function LoadingSkeleton() {
 
 // ─── Main Page ───────────────────────────────────────────────
 export default function CharacterSelect() {
-  const { data: collections, isLoading } = useQuery({
-    queryKey: ["collections-with-characters"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select(
-          `
-          id, name, slug, description, image_url, is_active,
-          collection_characters (id, name, description, image_url, release_order, status)
-        `
-        )
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-
-      if (error) throw error;
-      return (data || []) as Collection[];
-    },
-  });
+  const { data: collections, isLoading } = useCollectionsWithCharacters();
 
   return (
     <Page
