@@ -92,7 +92,7 @@ describe("ReminderScheduler", () => {
   });
 
   it("deve fechar o modal ao clicar em Cancelar", async () => {
-    userEvent.setup();
+    const user = userEvent.setup();
 
     render(
       <ReminderScheduler
@@ -109,7 +109,7 @@ describe("ReminderScheduler", () => {
   });
 
   it("deve validar que a data é obrigatória", async () => {
-    userEvent.setup();
+    const user = userEvent.setup();
 
     render(
       <ReminderScheduler
@@ -140,7 +140,7 @@ describe("ReminderScheduler", () => {
   });
 
   it("deve permitir alterar a hora do lembrete", async () => {
-    userEvent.setup();
+    const user = userEvent.setup();
 
     render(
       <ReminderScheduler

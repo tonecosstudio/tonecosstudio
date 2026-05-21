@@ -13,8 +13,10 @@
  * - Error recovery strategies
  * - User-friendly error messages
  * 
- * Note: Sentry is optional. If not installed, only console logging will be used.
+ * Note: Sentry is optional. If not installed, only centralized logging will be used.
  */
+
+import { log } from "@/lib/logger";
 
 // Sentry types (for when Sentry is available)
 type SeverityLevel = 'debug' | 'info' | 'warning' | 'error' | 'fatal';
@@ -211,30 +213,20 @@ class ErrorTrackingService {
   }
 
   /**
-   * Log error to console with formatting
+   * Log error through the centralized logger.
    */
   private logToConsole(error: Error | AppError, additionalContext?: Record<string, unknown>): void {
     const isAppError = error instanceof AppError;
-    
-    console.group(`🔴 ${error.name}: ${error.message}`);
-    
-    if (isAppError) {
-      console.log('Category:', error.category);
-      console.log('Severity:', error.severity);
-      console.log('Recoverable:', error.recoverable);
-      console.log('User Message:', error.getUserMessage());
-      
-      if (error.context) {
-        console.log('Context:', error.context);
-      }
-    }
-    
-    if (additionalContext) {
-      console.log('Additional Context:', additionalContext);
-    }
-    
-    console.log('Stack:', error.stack);
-    console.groupEnd();
+
+    log.error(`${error.name}: ${error.message}`, {
+      category: isAppError ? error.category : ErrorCategory.UNKNOWN,
+      severity: isAppError ? error.severity : ErrorSeverity.ERROR,
+      recoverable: isAppError ? error.recoverable : true,
+      userMessage: isAppError ? error.getUserMessage() : undefined,
+      context: isAppError ? error.context : undefined,
+      additionalContext,
+      stack: error.stack,
+    });
   }
 
   /**
@@ -290,8 +282,16 @@ class ErrorTrackingService {
     context?: Record<string, unknown>
   ): void {
     if (this.isDevelopment) {
-      const emoji = this.getEmojiForLevel(level);
-      console.log(`${emoji} [${level.toUpperCase()}] ${message}`, context || '');
+      const meta = { severity: level, context };
+      if (level === ErrorSeverity.ERROR || level === ErrorSeverity.FATAL) {
+        log.error(message, meta);
+      } else if (level === ErrorSeverity.WARNING) {
+        log.warn(message, meta);
+      } else if (level === ErrorSeverity.DEBUG) {
+        log.debug(message, meta);
+      } else {
+        log.info(message, meta);
+      }
     }
 
     const Sentry = getSentry();

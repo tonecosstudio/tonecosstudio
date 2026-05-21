@@ -17,6 +17,7 @@
  */
 
 import React from "react";
+import { log } from "@/lib/logger";
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 
@@ -38,7 +39,7 @@ export function initSentry() {
  */
 export function captureError(error: Error, context?: Record<string, unknown>) {
   if (!SENTRY_ENABLED) {
-    console.error("Error:", error, context);
+    log.error("Captured error without Sentry", { error, context });
     return;
   }
 }
@@ -48,7 +49,13 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
  */
 export function captureMessage(message: string, level: "info" | "warning" | "error" = "info") {
   if (!SENTRY_ENABLED) {
-    console[level === "error" ? "error" : level === "warning" ? "warn" : "log"](message);
+    if (level === "error") {
+      log.error(message);
+    } else if (level === "warning") {
+      log.warn(message);
+    } else {
+      log.info(message);
+    }
     return;
   }
 }

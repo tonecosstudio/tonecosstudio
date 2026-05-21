@@ -8,6 +8,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 
 type RpcError = { message?: string } | null;
 type CutoffRpcClient = {
@@ -105,13 +106,13 @@ export async function isBeforeCutoff(): Promise<boolean> {
     const { data: beforeCutoff, error } = await cutoffRpc.rpc("is_before_cutoff");
 
     if (error) {
-      console.error("Failed to check cutoff:", error);
+      log.error("Failed to check cutoff", { error });
       return false;
     }
 
     return beforeCutoff === true;
   } catch (error) {
-    console.error("Failed to check cutoff:", error);
+    log.error("Failed to check cutoff", { error });
     return false;
   }
 }

@@ -26,6 +26,7 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 - Upload de comprovante foi isolado em `usePaymentVoucherStorage`, removendo import direto de service do componente.
 - Logs diretos foram substituidos por logger central em arquivos tocados como `ErrorBoundary`, `NotFoundArcade`, `BuyCharacter` e `AudioManager`.
 - Logs runtime admin em support/chat, sidebar de pedidos/pagamentos, customers, delivery, pricing tiers, notifications e operations foram roteados para `@/lib/logger` com contexto de dominio.
+- Logs runtime remanescentes em `lib` e `services` foram roteados para `@/lib/logger` em auth, cutoff, Sentry no-op, reminders, Stripe server, label service, email template loader e error tracking.
 - Customer chat passou a reagir ao evento `newConversationCreated`, reduzindo estado solto e comportamento inconsistente apos criacao de conversa.
 - Customer/Profile foi isolado em hooks de aplicacao para metodos de pagamento, assinatura ativa e suporte; `ProfileSections` deixou de importar service diretamente.
 - Componentes publicos de subscription credits, Stripe, groups, notifications, next release e production notification preferences passaram a consumir hooks em vez de services.
@@ -62,11 +63,13 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 
 - `npx eslint` focado nos arquivos tocados da ultima extracao critica passou sem saida.
 - `rg -n 'console\.|@/services|@/integrations/supabase/client' src/components src/pages --glob '!**/*.md' --glob '!**/*.test.*' --glob '!**/*.spec.*'`: passou sem saida em 2026-05-21.
-- `npm run build`: passou em 2026-05-21, com Vite build concluido em 2m 11s na ultima execucao.
+- `npm run build`: passou em 2026-05-21, com Vite build concluido em 1m 25s na ultima execucao.
 - `npm run test`: ficou inconclusivo por timeout apos 5 minutos na ultima execucao; sem saida util antes do encerramento.
 - `npx madge --circular --extensions ts,tsx src`: passou em 2026-05-21; 1024 arquivos processados, 504 warnings, 0 dependencias circulares.
 - `npm run lint:architecture`: passou em 2026-05-21 com exit code 0 e sem warnings apos migracao dos testes de componentes para mocks hoisted e tipos SSOT.
 - `npm run lint`: passou em 2026-05-21 com exit code 0; ainda reporta 687 warnings herdados de `any` em testes e Supabase Edge Functions.
+- `rg -n '^[^*\r\n]*console\.' src/services src/lib src/hooks --glob '!**/*.test.*' --glob '!**/*.spec.*' --glob '!**/*.md'`: passou em 2026-05-21 com ocorrencias reais apenas em `src/lib/logger.ts`.
+- Suite focada de logging/support (`label-service`, `cutoff-middleware`, `ReminderScheduler`, `stripe-service`, `sanitization-logging`): passou em 2026-05-21; 5 arquivos e 69 testes verdes.
 - Suite focada dos testes de componentes customer/production tocados nesta fatia (`npx vitest run ...` com 14 arquivos): passou em 2026-05-21; 182 testes verdes apos alinhamento dos testes aos boundaries atuais e mocks de hooks/services.
 
 ## Plano restante por modulo

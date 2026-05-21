@@ -521,9 +521,9 @@ export function openLabelsInTabs(
 
   // Avisar se há mais etiquetas do que o limite
   if (labelResults.length > maxTabs) {
-    console.warn(
-      `Apenas ${maxTabs} etiquetas foram abertas. ` +
-      `${labelResults.length - maxTabs} etiquetas restantes não foram abertas automaticamente.`
-    );
+    log.warn('Label tab opening limited by browser safety cap', {
+      opened: maxTabs,
+      remaining: labelResults.length - maxTabs,
+    });
   }
 }

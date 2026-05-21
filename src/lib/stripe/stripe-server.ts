@@ -7,12 +7,13 @@
  */
 
 import Stripe from 'stripe';
+import { log } from '@/lib/logger';
 
 const secretKey = process.env.STRIPE_SECRET_KEY || '';
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 if (!secretKey && typeof window === 'undefined') {
-  console.error('STRIPE_SECRET_KEY is not configured');
+  log.error('STRIPE_SECRET_KEY is not configured');
 }
 
 export const stripe = new Stripe(secretKey, {

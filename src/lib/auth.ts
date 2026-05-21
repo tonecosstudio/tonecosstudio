@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 
 type AuthState = {
   session: Session | null;
@@ -41,7 +42,7 @@ export function useAuth() {
         initialLoadDone = true;
         
         if (error) {
-          console.error('Failed to get session:', error);
+          log.error('Failed to get session', { error });
           setState({
             session: null,
             user: null,
@@ -62,7 +63,7 @@ export function useAuth() {
         if (!mounted || initialLoadDone) return;
         
         initialLoadDone = true;
-        console.error('Exception while getting session:', error);
+        log.error('Exception while getting session', { error });
         
         setState({
           session: null,

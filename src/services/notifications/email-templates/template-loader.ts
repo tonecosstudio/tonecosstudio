@@ -15,6 +15,8 @@
  * ```
  */
 
+import { log } from "@/lib/logger";
+
 export type ReminderType = 'first' | 'second' | 'final';
 
 export interface ReminderTemplateData {
@@ -104,7 +106,7 @@ export class EmailTemplateLoader {
     // Check for unreplaced variables (useful for debugging)
     const unreplacedVars = result.match(/{{[^}]+}}/g);
     if (unreplacedVars && unreplacedVars.length > 0) {
-      console.warn('Warning: Unreplaced template variables found:', unreplacedVars);
+      log.warn('Unreplaced template variables found', { unreplacedVars });
     }
     
     return result;

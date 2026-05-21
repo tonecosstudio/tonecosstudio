@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { log } from "@/lib/logger";
 
 /**
  * Reminder structure from conversation_reminders table
@@ -142,13 +143,13 @@ export async function processReminders(): Promise<ProcessRemindersResult> {
           reminderId: reminder.id,
           error: error instanceof Error ? error.message : "Unknown error",
         });
-        console.error(`Failed to process reminder ${reminder.id}:`, error);
+        log.error("Failed to process reminder", { reminderId: reminder.id, error });
       }
     }
 
     return result;
   } catch (error) {
-    console.error("Failed to process reminders:", error);
+    log.error("Failed to process reminders", { error });
     throw error;
   }
 }
