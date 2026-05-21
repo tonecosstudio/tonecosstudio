@@ -10,11 +10,28 @@ import type { ProductionFilters, ProductionQueueItem, ProductionStage } from "@/
 
 export { STAGE_LABELS, STAGE_ORDER };
 
-export function useProductionPipelineQueue(filters: ProductionFilters) {
+interface UseProductionPipelineQueueOptions {
+  enabled?: boolean;
+}
+
+export function useProductionPipelineQueue(
+  filters: ProductionFilters,
+  options: UseProductionPipelineQueueOptions = {}
+) {
   return useQuery({
     queryKey: ["production-queue", filters],
     queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
+    enabled: options.enabled,
   });
+}
+
+export function useInvalidateProductionQueries() {
+  const queryClient = useQueryClient();
+
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: ["production-queue"] });
+    void queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
+  };
 }
 
 export function useMoveProductionPipelineItems() {

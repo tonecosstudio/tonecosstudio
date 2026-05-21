@@ -53,14 +53,21 @@ import { BulkProgressModal } from "@/components/production/BulkProgressModal";
 // Componentes de Escolhas
 import { CharacterChoicesContent } from "@/components/admin/production/CharacterChoicesContent";
 import { useProductionMetrics } from "@/hooks/admin/useProductionMetrics";
-
-// Services
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProductionQueue } from "@/services/admin/production-service";
-import { bulkAssignProduction, bulkUpdateStage } from "@/services/admin/bulk-operations-service";
+import {
+  useBulkAssignProductionItems,
+  useBulkUpdateProductionStages,
+} from "@/hooks/admin/useProductionBulkActions";
+import {
+  useInvalidateProductionQueries,
+  useProductionPipelineQueue,
+} from "@/hooks/admin/useProductionPipeline";
 import { exportProductionItemsToCSV } from "@/lib/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
-import type { ProductionFilters as ProductionFiltersType, ProductionStage, ProductionQueueItem } from "@/services/admin/production-service";
+import type {
+  ProductionFilters as ProductionFiltersType,
+  ProductionQueueItem,
+  ProductionStage,
+} from "@/types/production";
 import type { AlertType } from "@/components/production/UrgentAlertsBanner";
 
 function ProductionHub() {
@@ -89,7 +96,9 @@ function ProductionHub() {
     errors: [] as string[],
   });
 
-  const queryClient = useQueryClient();
+  const bulkAssignMutation = useBulkAssignProductionItems();
+  const bulkStageUpdateMutation = useBulkUpdateProductionStages();
+  const invalidateProductionQueries = useInvalidateProductionQueries();
   const { toast } = useToast();
 
   // Sincronizar tab com URL
@@ -112,9 +121,7 @@ function ProductionHub() {
   });
 
   // Fetch production queue
-  const { data: queueData, isLoading } = useQuery({
-    queryKey: ["production-queue", filters],
-    queryFn: () => fetchProductionQueue(filters, { page: 1, pageSize: 1000 }),
+  const { data: queueData, isLoading } = useProductionPipelineQueue(filters, {
     enabled: ["pipeline", "kanban", "list", "calendar"].includes(activeTab),
   });
 
@@ -168,7 +175,7 @@ function ProductionHub() {
     setShowProgressModal(true);
 
     try {
-      const result = await bulkAssignProduction(itemIds, userId);
+      const result = await bulkAssignMutation.mutateAsync({ itemIds, userId });
 
       setProgressState({
         title: 'Atribuindo Itens',
@@ -180,7 +187,6 @@ function ProductionHub() {
         errors: result.errors,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['production-queue'] });
       setSelectedIds(new Set());
 
       if (result.failed === 0) {
@@ -195,8 +201,7 @@ function ProductionHub() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
-      console.error('Erro na atribuição em massa:', error);
+    } catch {
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao atribuir os itens.',
@@ -220,7 +225,7 @@ function ProductionHub() {
     setShowProgressModal(true);
 
     try {
-      const result = await bulkUpdateStage(itemIds, newStage);
+      const result = await bulkStageUpdateMutation.mutateAsync({ itemIds, newStage });
 
       setProgressState({
         title: 'Atualizando Estágios',
@@ -232,7 +237,6 @@ function ProductionHub() {
         errors: result.errors,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['production-queue'] });
       setSelectedIds(new Set());
 
       if (result.failed === 0) {
@@ -247,8 +251,7 @@ function ProductionHub() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
-      console.error('Erro na atualização em massa:', error);
+    } catch {
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao atualizar os estágios.',
@@ -270,8 +273,7 @@ function ProductionHub() {
         title: 'Exportado com sucesso',
         description: `${selectedItems.length} ${selectedItems.length === 1 ? 'item exportado' : 'itens exportados'} para CSV.`,
       });
-    } catch (error) {
-      console.error('Erro ao exportar CSV:', error);
+    } catch {
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao exportar os dados.',
@@ -539,10 +541,7 @@ function ProductionHub() {
               <div className="mt-6">
                 <ProductionItemDetails
                   item={selectedItem}
-                  onUpdate={() => {
-                    queryClient.invalidateQueries({ queryKey: ['production-queue'] });
-                    queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
-                  }}
+                  onUpdate={invalidateProductionQueries}
                 />
               </div>
             </SheetContent>
