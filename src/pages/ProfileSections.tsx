@@ -15,31 +15,48 @@ import {
   Send,
   CheckCircle,
 } from "lucide-react";
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { log } from "@/lib/logger";
 import {
-  createSupportConversation,
-  deleteProfilePaymentMethod,
-  getActiveSubscription,
-  listProfilePaymentMethods,
-  listSupportConversations,
-  listSupportMessages,
-  markSupportMessagesRead,
-  sendSupportMessage,
-  setDefaultProfilePaymentMethod,
-  subscribeToSupportMessages,
-  type SupportConversation,
-  type SupportMessage,
-} from "@/services/customer/profile-sections-service";
+  useActiveProfileSubscription,
+  useProfilePaymentMethods,
+  useProfileSupport,
+} from "@/hooks/customer/useProfileSectionsData";
 
 // Seção de Dados Pessoais
+type SaveMutationLike = {
+  mutate: () => void;
+  isPending: boolean;
+};
+
+interface PersonalDataSectionProps {
+  profileQuery?: unknown;
+  fullName: string;
+  setFullName: (value: string) => void;
+  phone: string;
+  setPhone: (value: string) => void;
+  whatsapp: string;
+  setWhatsapp: (value: string) => void;
+  cpf: string;
+  setCpf: (value: string) => void;
+  birthDate: string;
+  setBirthDate: (value: string) => void;
+  saveMutation: SaveMutationLike;
+}
+
+interface NotificationsSectionProps {
+  emailNotifications: boolean;
+  setEmailNotifications: (value: boolean) => void;
+  orderUpdates: boolean;
+  setOrderUpdates: (value: boolean) => void;
+  marketingEmails: boolean;
+  setMarketingEmails: (value: boolean) => void;
+  saveMutation: SaveMutationLike;
+}
+
 export function PersonalDataSection({
-  profileQuery,
+  profileQuery: _profileQuery,
   fullName,
   setFullName,
   phone,
@@ -51,7 +68,7 @@ export function PersonalDataSection({
   birthDate,
   setBirthDate,
   saveMutation,
-}: any) {
+}: PersonalDataSectionProps) {
   // Formatar CPF
   const formatCPF = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -188,39 +205,13 @@ export function PersonalDataSection({
 
 // Seção de Métodos de Pagamento
 export function PaymentSection({ userId }: { userId: string }) {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-  const [isAdding, setIsAdding] = useState(false);
-
-  const paymentMethodsQuery = useQuery({
-    queryKey: ["payment-methods", userId],
-    enabled: Boolean(userId), // Só executa quando userId estiver disponível
-    queryFn: () => listProfilePaymentMethods(userId),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteProfilePaymentMethod,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payment-methods"] });
-      toast({ title: "Método de pagamento removido" });
-    },
-    onError: () => {
-      toast({ title: "Erro ao remover", variant: "destructive" });
-    },
-  });
-
-  const setDefaultMutation = useMutation({
-    mutationFn: setDefaultProfilePaymentMethod,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payment-methods"] });
-      toast({ title: "Método padrão atualizado" });
-    },
-    onError: () => {
-      toast({ title: "Erro ao atualizar", variant: "destructive" });
-    },
-  });
-
-  const methods = paymentMethodsQuery.data || [];
+  const {
+    methods,
+    deletePaymentMethod,
+    setDefaultPaymentMethod,
+    isDeleting,
+    isSettingDefault,
+  } = useProfilePaymentMethods(userId);
 
   return (
     <Card>
@@ -233,7 +224,7 @@ export function PaymentSection({ userId }: { userId: string }) {
             </CardTitle>
             <CardDescription>Gerencie seus cartões e formas de pagamento</CardDescription>
           </div>
-          <Button size="sm" onClick={() => setIsAdding(true)} className="gap-2">
+          <Button size="sm" disabled className="gap-2">
             <Plus className="h-4 w-4" />
             Adicionar
           </Button>
@@ -284,8 +275,8 @@ export function PaymentSection({ userId }: { userId: string }) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setDefaultMutation.mutate(method.id)}
-                      disabled={setDefaultMutation.isPending}
+                      onClick={() => setDefaultPaymentMethod(method.id)}
+                      disabled={isSettingDefault}
                     >
                       <Check className="h-4 w-4 mr-1" />
                       Tornar Padrão
@@ -294,8 +285,8 @@ export function PaymentSection({ userId }: { userId: string }) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => deleteMutation.mutate(method.id)}
-                    disabled={deleteMutation.isPending}
+                    onClick={() => deletePaymentMethod(method.id)}
+                    disabled={isDeleting}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -325,7 +316,7 @@ export function NotificationsSection({
   marketingEmails,
   setMarketingEmails,
   saveMutation,
-}: any) {
+}: NotificationsSectionProps) {
   return (
     <Card>
       <CardHeader>
@@ -379,15 +370,11 @@ export function NotificationsSection({
 }
 
 // Seção de Assinaturas
-import { Package, Calendar, ExternalLink, Mail, MessageSquare } from "lucide-react";
+import { Package, ExternalLink, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function SubscriptionSection({ userId }: { userId: string }) {
-  const subscriptionQuery = useQuery({
-    queryKey: ["user-subscription", userId],
-    enabled: Boolean(userId), // Só executa quando userId estiver disponível
-    queryFn: () => getActiveSubscription(userId),
-  });
+  const subscriptionQuery = useActiveProfileSubscription(userId);
 
   if (!subscriptionQuery.data) {
     return (
@@ -459,123 +446,24 @@ export function SubscriptionSection({ userId }: { userId: string }) {
 
 // Seção de Suporte
 export function SupportSection({ userId }: { userId: string }) {
-  const [selectedConversation, setSelectedConversation] = useState<SupportConversation | null>(null);
-  const [messages, setMessages] = useState<SupportMessage[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [newSubject, setNewSubject] = useState("");
-  const [newFirstMessage, setNewFirstMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [showNewConversationForm, setShowNewConversationForm] = useState(false);
-  const messagesEndRef = useState<HTMLDivElement | null>(null);
-  const { toast } = useToast();
-
-  const conversationsQuery = useQuery({
-    queryKey: ["user-conversations", userId],
-    enabled: Boolean(userId), // Só executa quando userId estiver disponível
-    queryFn: () => listSupportConversations(userId),
-  });
-
-  // Buscar mensagens da conversa selecionada
-  useState(() => {
-    if (!selectedConversation) return;
-
-    const fetchMessages = async () => {
-      try {
-        const data = await listSupportMessages(selectedConversation.id);
-        setMessages(data);
-        scrollToBottom();
-        markAsRead();
-      } catch (error) {
-        log.error("Error loading support messages", {
-          error,
-          conversationId: selectedConversation.id,
-        });
-        toast({ title: "Erro ao carregar mensagens", variant: "destructive" });
-      }
-    };
-
-    fetchMessages();
-
-    const unsubscribe = subscribeToSupportMessages(selectedConversation.id, (message) => {
-      setMessages((prev) => [...prev, message]);
-      scrollToBottom();
-      markAsRead();
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  });
-
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef[0]?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
-
-  const markAsRead = async () => {
-    if (!selectedConversation || !userId) return;
-
-    await markSupportMessagesRead({
-      conversationId: selectedConversation.id,
-      userId,
-    });
-  };
-
-  const handleCreateConversation = async () => {
-    if (!newSubject.trim() || !newFirstMessage.trim() || !userId) {
-      toast({ title: "Preencha o assunto e a mensagem", variant: "destructive" });
-      return;
-    }
-
-    setSending(true);
-
-    try {
-      const conversation = await createSupportConversation({
-        userId,
-        subject: newSubject.trim(),
-        firstMessage: newFirstMessage.trim(),
-      });
-
-      toast({ title: "Mensagem enviada! Responderemos em até 48h úteis." });
-      setNewSubject("");
-      setNewFirstMessage("");
-      setSelectedConversation(conversation);
-      setShowNewConversationForm(false);
-      conversationsQuery.refetch();
-    } catch (error) {
-      log.error("Error creating support conversation", { error, userId });
-      toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !userId) return;
-
-    setSending(true);
-
-    try {
-      await sendSupportMessage({
-        conversationId: selectedConversation.id,
-        userId,
-        message: newMessage.trim(),
-      });
-
-      setNewMessage("");
-      toast({ title: "Mensagem enviada!" });
-    } catch (error) {
-      log.error("Error sending support message", {
-        error,
-        conversationId: selectedConversation.id,
-        userId,
-      });
-      toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
-    } finally {
-      setSending(false);
-    }
-  };
+  const {
+    conversations,
+    selectedConversation,
+    setSelectedConversation,
+    messages,
+    newMessage,
+    setNewMessage,
+    newSubject,
+    setNewSubject,
+    newFirstMessage,
+    setNewFirstMessage,
+    sending,
+    showNewConversationForm,
+    setShowNewConversationForm,
+    messagesEndRef,
+    createConversation,
+    sendMessage,
+  } = useProfileSupport(userId);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -590,7 +478,6 @@ export function SupportSection({ userId }: { userId: string }) {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const conversations = conversationsQuery.data || [];
 
   return (
     <Card>
@@ -664,7 +551,7 @@ export function SupportSection({ userId }: { userId: string }) {
                 </Button>
               )}
               <Button
-                onClick={handleCreateConversation}
+                onClick={createConversation}
                 disabled={sending || !newSubject.trim() || !newFirstMessage.trim()}
                 className="flex-1"
               >
@@ -744,7 +631,7 @@ export function SupportSection({ userId }: { userId: string }) {
                       </div>
                     </div>
                   ))}
-                  <div ref={(el) => (messagesEndRef[1] = el)} />
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input de Nova Mensagem */}
@@ -758,7 +645,7 @@ export function SupportSection({ userId }: { userId: string }) {
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
-                          handleSendMessage();
+                          sendMessage();
                         }
                       }}
                       className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
@@ -768,7 +655,7 @@ export function SupportSection({ userId }: { userId: string }) {
                         Pressione Enter para enviar, Shift+Enter para nova linha
                       </p>
                       <Button
-                        onClick={handleSendMessage}
+                        onClick={sendMessage}
                         disabled={sending || !newMessage.trim()}
                         size="sm"
                       >

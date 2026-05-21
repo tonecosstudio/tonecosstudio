@@ -4,7 +4,6 @@
  */
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +11,7 @@ import { Coins, History, TrendingDown, TrendingUp, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CreditsBalanceResponse } from '@/types/subscription-credit-system';
-import { subscriptionCreditAPI } from '@/services/subscription-credit-api';
+import { useSubscriptionCreditTransactions } from '@/hooks/subscription/useSubscriptionCreditQueries';
 import {
   Dialog,
   DialogContent,
@@ -106,11 +105,7 @@ function TransactionHistoryDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const transactionsQuery = useQuery({
-    queryKey: ['subscription-credit', 'transactions'],
-    queryFn: () => subscriptionCreditAPI.getCreditTransactions(1, 50),
-    enabled: isOpen,
-  });
+  const transactionsQuery = useSubscriptionCreditTransactions(isOpen);
 
   const transactions = transactionsQuery.data?.transactions || [];
 

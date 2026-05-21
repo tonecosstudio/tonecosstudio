@@ -13,19 +13,19 @@
  * ```tsx
  * <StripeCheckout
  *   amount={10000}
- *   onSuccess={(paymentIntent) => console.log('Pagamento aprovado', paymentIntent)}
- *   onError={(error) => console.error('Erro no pagamento', error)}
+ *   onSuccess={handlePaymentSuccess}
+ *   onError={handlePaymentError}
  * />
  * ```
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { PaymentIntent } from "@stripe/stripe-js";
 import { stripePromise } from "@/lib/stripe/stripe-client";
 import { logInfo, logError } from "@/lib/logger";
-import { createStripePaymentIntent } from "@/services/payments/stripe-checkout-service";
+import { useStripePaymentIntent } from "@/hooks/payments/useStripePaymentIntent";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -135,46 +135,10 @@ function CheckoutForm({ amount, currency, onSuccess, onError }: StripeCheckoutPr
  */
 export function StripeCheckout(props: StripeCheckoutProps) {
   const { amount, currency, description, metadata, onError } = props;
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Criar Payment Intent no servidor ao montar o componente.
-  useEffect(() => {
-    let isMounted = true;
-
-    const createPaymentIntent = async () => {
-      try {
-        logInfo('Creating payment intent', {
-          amount,
-          currency
-        }, 'stripe-checkout');
-
-        const paymentIntentClientSecret = await createStripePaymentIntent({
-          amount,
-          currency,
-          description,
-          metadata,
-        });
-
-        if (!isMounted) return;
-        setClientSecret(paymentIntentClientSecret);
-        setIsLoading(false);
-      } catch (error) {
-        if (!isMounted) return;
-        const normalizedError = toError(error, "Erro ao inicializar pagamento");
-        logError('Failed to create payment intent', normalizedError, 'stripe-checkout');
-        setError(normalizedError.message);
-        setIsLoading(false);
-        onError?.(normalizedError);
-      }
-    };
-
-    createPaymentIntent();
-    return () => {
-      isMounted = false;
-    };
-  }, [amount, currency, description, metadata, onError]);
+  const { clientSecret, isLoading, error } = useStripePaymentIntent(
+    { amount, currency, description, metadata },
+    onError
+  );
 
   if (isLoading) {
     return (

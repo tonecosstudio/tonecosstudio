@@ -3,7 +3,6 @@
  * Displays the automatic order with character list
  */
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,29 +10,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Package, Calendar, Lock, AlertTriangle, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { subscriptionCreditAPI } from '@/services/subscription-credit-api';
+import { useAutomaticSubscriptionOrder } from '@/hooks/subscription/useSubscriptionCreditQueries';
 
 interface MyAutomaticOrderSectionProps {
   subscriptionId: number;
 }
 
 export function MyAutomaticOrderSection({ subscriptionId }: MyAutomaticOrderSectionProps) {
-  // Fetch user's orders to find the automatic order
-  const ordersQuery = useQuery({
-    queryKey: ['subscription-credit', 'orders', subscriptionId],
-    queryFn: () => subscriptionCreditAPI.getUserOrders(),
-  });
-
-  // Find the automatic order (most recent one)
-  const automaticOrder = ordersQuery.data?.orders.find((order) => order.order_type === 'automatic');
-
-  // Fetch current cycle
-  const cycleQuery = useQuery({
-    queryKey: ['subscription-credit', 'current-cycle'],
-    queryFn: () => subscriptionCreditAPI.getCurrentCycle(),
-  });
-
-  const cycle = cycleQuery.data;
+  const { automaticOrder, cycle } = useAutomaticSubscriptionOrder(subscriptionId);
 
   if (!automaticOrder) {
     return (

@@ -5,14 +5,9 @@
  * Customers can opt-out of non-critical notifications.
  */
 
-import React, { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import React from 'react';
 import { Bell, BellOff, Info, RotateCcw } from 'lucide-react';
-import {
-  fetchNotificationPreferences,
-  updateNotificationPreferences,
-  resetNotificationPreferences,
-} from '@/services/customer/notification-preferences-service';
+import { useCustomerNotificationPreferences } from '@/hooks/customer/useCustomerNotificationPreferences';
 import type { NotificationPreferences } from '@/types/notification-preferences';
 import {
   getNotificationLabel,
@@ -25,44 +20,29 @@ interface NotificationPreferencesProps {
 }
 
 export function NotificationPreferences({ onUpdate }: NotificationPreferencesProps) {
-  const queryClient = useQueryClient();
-  const [showInfo, setShowInfo] = useState(false);
-
-  // Fetch current preferences
-  const { data: preferences, isLoading, error } = useQuery({
-    queryKey: ['notification-preferences'],
-    queryFn: fetchNotificationPreferences,
-  });
-
-  // Update preferences mutation
-  const updateMutation = useMutation({
-    mutationFn: updateNotificationPreferences,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
-      onUpdate?.(data);
-    },
-  });
-
-  // Reset preferences mutation
-  const resetMutation = useMutation({
-    mutationFn: resetNotificationPreferences,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
-      onUpdate?.(data);
-    },
-  });
+  const {
+    preferences,
+    isLoading,
+    error,
+    updatePreferences,
+    resetPreferences,
+    isUpdating,
+    isResetting,
+    updateSucceeded,
+    updateFailed,
+  } = useCustomerNotificationPreferences({ onUpdate });
 
   const handleToggle = (key: keyof NotificationPreferences) => {
     if (!preferences) return;
     
-    updateMutation.mutate({
+    updatePreferences({
       [key]: !preferences[key],
     });
   };
 
   const handleReset = () => {
     if (confirm('Reset all notification preferences to defaults?')) {
-      resetMutation.mutate();
+      resetPreferences();
     }
   };
 
@@ -103,7 +83,7 @@ export function NotificationPreferences({ onUpdate }: NotificationPreferencesPro
         </div>
         <button
           onClick={handleReset}
-          disabled={resetMutation.isPending}
+          disabled={isResetting}
           className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <RotateCcw className="h-4 w-4" />
@@ -150,7 +130,7 @@ export function NotificationPreferences({ onUpdate }: NotificationPreferencesPro
                 {/* Toggle Switch */}
                 <button
                   onClick={() => handleToggle(key)}
-                  disabled={updateMutation.isPending}
+                  disabled={isUpdating}
                   className={`
                     relative inline-flex h-6 w-11 items-center rounded-full
                     transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
@@ -175,7 +155,7 @@ export function NotificationPreferences({ onUpdate }: NotificationPreferencesPro
       </div>
 
       {/* Status Message */}
-      {updateMutation.isSuccess && (
+      {updateSucceeded && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-green-800 text-sm">
             ✓ Notification preferences updated successfully
@@ -183,7 +163,7 @@ export function NotificationPreferences({ onUpdate }: NotificationPreferencesPro
         </div>
       )}
 
-      {updateMutation.isError && (
+      {updateFailed && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800 text-sm">
             Failed to update preferences. Please try again.

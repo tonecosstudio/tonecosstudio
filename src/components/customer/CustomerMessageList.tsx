@@ -8,10 +8,9 @@ import { ptBR } from "date-fns/locale";
 import type { Attachment, Message } from "@/types/support";
 import { log } from "@/lib/logger";
 import {
-  createCustomerSupportConversation,
-  getSupportAttachmentPublicUrl,
-} from "@/services/customer-chat-button-service";
-import { toast } from "sonner";
+  useCreateCustomerSupportConversation,
+  useSupportAttachmentPublicUrl,
+} from "@/hooks/customer/useCustomerSupportConversationActions";
 
 /**
  * Converte file_path para URL pública do Supabase Storage
@@ -50,6 +49,7 @@ export function CustomerMessageList({
     messagesEndRef,
     optimisticAttachments,
   } = useMessages({ conversationId, autoScroll: true });
+  const { createConversation, isCreating } = useCreateCustomerSupportConversation(currentUserId);
 
   // Typing indicator
   const { typingText } = useTypingIndicator({
@@ -86,31 +86,10 @@ export function CustomerMessageList({
           <Button
             variant="outline"
             size="sm"
-            onClick={async () => {
-              try {
-                if (!currentUserId) {
-                  toast.error("Você precisa estar autenticado");
-                  return;
-                }
-
-                // Criar nova conversa
-                const newConversation = await createCustomerSupportConversation(currentUserId);
-
-                toast.success("Nova conversa iniciada!");
-
-                // Disparar evento customizado para o CustomerChat atualizar
-                window.dispatchEvent(
-                  new CustomEvent("newConversationCreated", {
-                    detail: { conversation: newConversation },
-                  })
-                );
-              } catch (error) {
-                log.error("Erro ao criar nova conversa customer", { error, currentUserId });
-                toast.error("Erro ao criar nova solicitação");
-              }
-            }}
+            onClick={createConversation}
+            disabled={isCreating}
           >
-            Nova Solicitação
+            {isCreating ? "Criando..." : "Nova Solicitação"}
           </Button>
         </div>
       )}
@@ -168,6 +147,7 @@ function CustomerMessageBubble({
   formatTimestamp,
   optimisticAttachments = [],
 }: CustomerMessageBubbleProps) {
+  const getSupportAttachmentPublicUrl = useSupportAttachmentPublicUrl();
   const isCustomer = message.sender_type === "customer";
   const isSystem = message.sender_type === "system";
 

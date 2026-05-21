@@ -28,7 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserNotificationCenterData } from "@/hooks/notifications/useUserNotificationCenterData";
 import { cn } from "@/lib/utils";
-import type { UserNotificationCenterItem } from "@/services/notifications/notification-center-service";
+import type { UserNotificationCenterItem } from "@/types/notifications";
 
 const iconMap: Record<string, LucideIcon> = {
   Package,

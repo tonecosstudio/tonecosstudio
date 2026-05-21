@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotificationCenterData } from "@/hooks/notifications/useNotificationCenterData";
-import type { NotificationCenterItem } from "@/services/notifications/notification-center-service";
+import type { NotificationCenterItem } from "@/types/notifications";
 
 export function NotificationCenter() {
   const [open, setOpen] = useState(false);

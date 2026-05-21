@@ -5,13 +5,8 @@ import {
   listUserNotifications,
   markAllUserNotificationsAsRead,
   markUserNotificationAsRead,
-  type UserNotificationFilter,
 } from "@/services/notifications/notification-center-service";
-
-export type {
-  UserNotificationCenterItem,
-  UserNotificationFilter,
-} from "@/services/notifications/notification-center-service";
+import type { UserNotificationFilter } from "@/types/notifications";
 
 export function useUserNotificationCenterData(filter: UserNotificationFilter, searchQuery = "") {
   const { toast } = useToast();

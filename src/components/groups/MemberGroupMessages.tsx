@@ -7,7 +7,7 @@ import { ptBR } from "date-fns/locale";
 import { useGroupMessages } from "@/hooks/useGroupMessages";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { sanitizeText } from "@/lib/utils/sanitize";
-import { getGroupAttachmentPublicUrl } from "@/services/groups/group-management-service";
+import { useGroupAttachmentPublicUrl } from "@/hooks/groups/useGroupAttachmentPublicUrl";
 import { GroupErrorBoundary } from "./GroupErrorBoundary";
 
 interface MemberGroupMessagesProps {
@@ -18,6 +18,7 @@ interface MemberGroupMessagesProps {
  * Converte file_path para URL pública do Supabase Storage
  */
 function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
+  const getGroupAttachmentPublicUrl = useGroupAttachmentPublicUrl();
   const { messages, loading, messagesEndRef, refresh } = useGroupMessages({
     groupId,
     autoScroll: true,

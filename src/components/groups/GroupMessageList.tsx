@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useGroupNotifications } from "@/hooks/useGroupNotifications";
-import { getGroupAttachmentPublicUrl } from "@/services/groups/group-management-service";
+import { useGroupAttachmentPublicUrl } from "@/hooks/groups/useGroupAttachmentPublicUrl";
 
 interface GroupMessageListProps {
   groupId: string;
@@ -101,6 +101,7 @@ function linkifyText(text: string): React.ReactNode {
 export function GroupMessageList({ groupId }: GroupMessageListProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const getGroupAttachmentPublicUrl = useGroupAttachmentPublicUrl();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<MessageDateFilter>("all");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);

@@ -13,7 +13,7 @@ import { fileUploadService } from "@/lib/services/fileUploadService";
 import { log } from "@/lib/logger";
 import { validateMessage } from "@/lib/validations/support";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
-import { createCustomerSupportConversation } from "@/services/customer-chat-button-service";
+import { useCreateCustomerSupportConversation } from "@/hooks/customer/useCustomerSupportConversationActions";
 import { toast } from "sonner";
 
 type OptimisticAttachmentStatus = "uploading" | "uploaded" | "error";
@@ -52,6 +52,7 @@ export function CustomerMessageInput({
   const [isSending, setIsSending] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const { createConversation, isCreating } = useCreateCustomerSupportConversation(currentUserId);
 
   // Typing indicator
   const { startTyping, stopTyping } = useTypingIndicator({
@@ -232,31 +233,10 @@ export function CustomerMessageInput({
         </div>
         <Button
           variant="default"
-          onClick={async () => {
-            try {
-              if (!currentUserId) {
-                toast.error("Você precisa estar autenticado");
-                return;
-              }
-
-              // Criar nova conversa
-              const newConversation = await createCustomerSupportConversation(currentUserId);
-
-              toast.success("Nova conversa iniciada!");
-
-              // Disparar evento customizado para o CustomerChat atualizar
-              window.dispatchEvent(
-                new CustomEvent("newConversationCreated", {
-                  detail: { conversation: newConversation },
-                })
-              );
-            } catch (error) {
-              log.error("Erro ao criar nova conversa customer", { error, currentUserId });
-              toast.error("Erro ao criar nova solicitação");
-            }
-          }}
+          onClick={createConversation}
+          disabled={isCreating}
         >
-          Nova Solicitação
+          {isCreating ? "Criando..." : "Nova Solicitação"}
         </Button>
       </div>
     );

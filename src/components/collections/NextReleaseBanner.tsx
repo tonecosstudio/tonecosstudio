@@ -1,18 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
 import { Countdown } from "./Countdown";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getNextRelease } from "@/services/collections/next-release-service";
+import { useNextRelease } from "@/hooks/collections/useNextRelease";
 
 export function NextReleaseBanner() {
-  const { data: nextRelease, isLoading } = useQuery({
-    queryKey: ["next-release"],
-    queryFn: getNextRelease,
-    refetchInterval: 60000, // Atualizar a cada minuto
-  });
+  const { data: nextRelease, isLoading } = useNextRelease();
 
   if (isLoading) {
     return (
