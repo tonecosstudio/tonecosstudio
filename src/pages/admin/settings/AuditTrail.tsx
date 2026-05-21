@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +24,16 @@ import SEOHead from "@/components/SEOHead";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
-import { getAllCollectionChanges, searchCollectionChangesBySubscriber } from "@/services/audit-trail-service";
 import { toBahiaTime } from "@/lib/timezone";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { ValidationFeedback } from "@/components/ui/validation-feedback";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useAuditTrailRecords,
+  useAuditTrailSearch,
+  type AuditRecord,
+  type AuditTrailFilters,
+} from "@/hooks/admin/useAuditTrail";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -40,25 +43,6 @@ const ORDER_TYPE_LABELS: Record<string, string> = {
   manual_payment: "Pagamento Manual",
   quote: "Orçamento",
 };
-
-interface AuditTrailFilters {
-  limit: number;
-  offset: number;
-  changeReason?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
-interface AuditTrailRecord {
-  id: string;
-  created_at: string;
-  order_type: string;
-  order_id?: string | null;
-  old_status?: string | null;
-  new_status?: string | null;
-  changed_by_name?: string | null;
-  notes?: string | null;
-}
 
 export default function AuditTrail() {
   const { toast } = useToast();
@@ -70,46 +54,22 @@ export default function AuditTrail() {
 
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  const auditQuery = useQuery({
-    queryKey: ["audit-trail", orderTypeFilter, startDate, endDate, currentPage],
-    queryFn: async () => {
-      const filters: AuditTrailFilters = {
-        limit: ITEMS_PER_PAGE,
-        offset,
-      };
+  const filters: AuditTrailFilters = {
+    limit: ITEMS_PER_PAGE,
+    offset,
+    ...(orderTypeFilter !== "all" ? { changeReason: orderTypeFilter } : {}),
+    ...(startDate ? { startDate: new Date(startDate).toISOString() } : {}),
+    ...(endDate ? { endDate: new Date(endDate).toISOString() } : {}),
+  };
 
-      if (orderTypeFilter !== "all") {
-        filters.changeReason = orderTypeFilter;
-      }
+  const auditQuery = useAuditTrailRecords(filters);
 
-      if (startDate) {
-        filters.startDate = new Date(startDate).toISOString();
-      }
-
-      if (endDate) {
-        filters.endDate = new Date(endDate).toISOString();
-      }
-
-      return getAllCollectionChanges(filters);
-    },
-  });
-
-  const searchQuery = useQuery({
-    queryKey: ["audit-trail-search", searchTermSanitized],
-    enabled: searchTermSanitized.length >= 3,
-    queryFn: async () => {
-      const rateLimit = checkRateLimit('search-audit-trail', RATE_LIMITS.search);
-      if (!rateLimit.allowed) {
-        toast({
-          title: 'Limite de busca excedido',
-          description: `Aguarde ${rateLimit.retryAfter} segundos antes de buscar novamente.`,
-          variant: 'destructive'
-        });
-        throw new Error('Rate limit exceeded');
-      }
-
-      return searchCollectionChangesBySubscriber(searchTermSanitized, ITEMS_PER_PAGE);
-    },
+  const searchQuery = useAuditTrailSearch(searchTermSanitized, ITEMS_PER_PAGE, (retryAfter) => {
+    toast({
+      title: "Limite de busca excedido",
+      description: `Aguarde ${retryAfter} segundos antes de buscar novamente.`,
+      variant: "destructive",
+    });
   });
 
   const displayData = searchTermSanitized.length >= 3
@@ -251,7 +211,7 @@ export default function AuditTrail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {displayData.data.map((record: AuditTrailRecord) => (
+                      {displayData.data.map((record: AuditRecord) => (
                         <TableRow key={record.id}>
                           <TableCell className="font-mono text-xs whitespace-nowrap">
                             {formatBahiaDate(record.created_at)}
