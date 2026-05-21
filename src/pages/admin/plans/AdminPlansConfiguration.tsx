@@ -1,5 +1,4 @@
 import { useState, useEffect, type ComponentType } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import SEOHead from "@/components/SEOHead";
-import { adminPlansGateway as supabase } from "@/services/admin/admin-plans-gateway";
+import {
+  useAdminPlansConfiguration,
+  useCoinExchangeRate,
+  useSavePricingTierPlan,
+} from "@/hooks/admin/useAdminPlansConfiguration";
+import type { PricingTierPlan } from "@/hooks/admin/useAdminPlansConfiguration";
 import {
   Coins,
   Calculator,
@@ -67,42 +71,19 @@ function CoinExchangeRateCard() {
   const [reaisAmount, setReaisAmount] = useState(500);
   const [coinsAmount, setCoinsAmount] = useState(100);
 
-  // Fetch exchange rate from price_categories (coin_value_in_cents)
-  const exchangeRateQuery = useQuery({
-    queryKey: ["coin-exchange-rate"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('price_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true })
-        .limit(1);
-
-      if (error) throw error;
-      const cat = data?.[0];
-      return {
-        id: cat?.id || null,
-        reais_amount: cat ? (cat.coin_value_in_cents / 100) * 100 : 500,
-        coins_amount: 100,
-      };
-    },
-  });
+  const exchangeRateQuery = useCoinExchangeRate();
 
   const rate = exchangeRateQuery.data;
   const coinUnitValue = rate ? (rate.reais_amount / rate.coins_amount) : 5;
 
   // Update exchange rate - disabled since we derive from price_categories
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      toast({
-        title: "Info",
-        description: "A cotação é derivada das categorias de preço. Edite as categorias de preço para alterar.",
-      });
-    },
-    onSuccess: () => {
-      setIsEditing(false);
-    },
-  });
+  const handleExchangeRateSave = () => {
+    toast({
+      title: "Info",
+      description: "A cotação é derivada das categorias de preço. Edite as categorias de preço para alterar.",
+    });
+    setIsEditing(false);
+  };
 
   // Set initial values when data loads
   useEffect(() => {
@@ -194,11 +175,10 @@ function CoinExchangeRateCard() {
               </Button>
               <Button
                 size="lg"
-                onClick={() => updateMutation.mutate()}
-                disabled={updateMutation.isPending}
+                onClick={handleExchangeRateSave}
                 className="shadow-md"
               >
-                {updateMutation.isPending ? "Salvando..." : "Salvar Cotação"}
+                Salvar Cotação
               </Button>
             </div>
           </div>
@@ -241,31 +221,17 @@ function CoinExchangeRateCard() {
 }
 
 export default function AdminPlansConfiguration() {
-  const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState("subscription-plans");
-
-  // Fetch plans from pricing_tiers (real table)
-  const plansQuery = useQuery({
-    queryKey: ["admin-plans-configuration"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pricing_tiers')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const plansQuery = useAdminPlansConfiguration();
 
   const plans = plansQuery.data || [];
 
   // Calculate totals from pricing_tiers
   const totalMonthlyRevenue = plans
-    .filter((p: { is_active: boolean }) => p.is_active)
-    .reduce((sum: number, p: { price_full: number | null }) => sum + (p.price_full || 0), 0);
+    .filter((p) => p.is_active)
+    .reduce((sum, p) => sum + (p.price_full || 0), 0);
 
-  const totalPieces = plans.filter((p: { is_active: boolean }) => p.is_active).length;
+  const totalPieces = plans.filter((p) => p.is_active).length;
 
   const totalCoins = 0; // Coins are managed separately via coin_transactions
 
@@ -396,7 +362,9 @@ export default function AdminPlansConfiguration() {
                     key={planType.key}
                     planType={planType}
                     existingPlan={existingPlan}
-                    onUpdate={() => qc.invalidateQueries({ queryKey: ["admin-plans-configuration"] })}
+                    onUpdate={() => {
+                      void plansQuery.refetch();
+                    }}
                   />
                 );
               })}
@@ -420,17 +388,10 @@ interface PlanTypeMeta {
   color: string;
 }
 
-interface ExistingPlanLike {
+interface ExistingPlanLike extends Partial<PricingTierPlan> {
   id?: string;
-  plan_type: string;
-  name?: string;
-  price?: number;
-  pieces_per_subscription?: number;
-  base_credits?: number;
-  bonus_credits?: number;
-  deposit_amount?: number;
-  is_active?: boolean;
-  bonus_type?: "pieces" | "coins";
+  plan_type?: string | null;
+  bonus_type?: "pieces" | "coins" | null;
 }
 
 interface PlanConfigCardProps {
@@ -442,6 +403,7 @@ interface PlanConfigCardProps {
 function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const saveMutation = useSavePricingTierPlan();
 
   const [formData, setFormData] = useState<PlanConfig>({
     id: existingPlan?.id,
@@ -511,53 +473,43 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
     setFormData(updated);
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const totalPrice = formData.total_price || formData.price_per_month;
+  const handleSavePlan = () => {
+    const totalPrice = formData.total_price || formData.price_per_month;
 
-      const saveData = {
-        name: formData.name,
-        display_name: formData.name, // Adicionar display_name obrigatório
-        price_coins: Math.round(totalPrice / 5), // Calcular coins baseado no preço (R$5 por coin)
-        price_brl: totalPrice, // Adicionar price_brl obrigatório
-        price_full: totalPrice,
-        price_pix: totalPrice * 0.95,
-        deposit_amount: formData.deposit_amount || 0,
-        is_active: formData.is_active,
-        description: `Plano ${planType.label}`,
-      };
-
-      if (existingPlan?.id) {
-        const { error } = await supabase
-          .from('pricing_tiers')
-          .update(saveData)
-          .eq('id', existingPlan.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('pricing_tiers')
-          .insert([saveData]);
-
-        if (error) throw error;
+    saveMutation.mutate(
+      {
+        id: existingPlan?.id,
+        data: {
+          name: formData.name,
+          display_name: formData.name,
+          price_coins: Math.round(totalPrice / 5),
+          price_brl: totalPrice,
+          price_full: totalPrice,
+          price_pix: totalPrice * 0.95,
+          deposit_amount: formData.deposit_amount || 0,
+          is_active: formData.is_active,
+          description: `Plano ${planType.label}`,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Plano salvo com sucesso!",
+            description: `${formData.name} foi atualizado.`,
+          });
+          setIsEditing(false);
+          onUpdate();
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "Erro ao salvar plano",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
       }
-    },
-    onSuccess: () => {
-      toast({
-        title: "Plano salvo com sucesso!",
-        description: `${formData.name} foi atualizado.`,
-      });
-      setIsEditing(false);
-      onUpdate();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao salvar plano",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    );
+  };
 
   const IconComponent = planType.icon;
   const isAvulso = planType.key === 'avulso';
@@ -1038,7 +990,7 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
             </Button>
             <Button
               size="lg"
-              onClick={() => saveMutation.mutate()}
+              onClick={handleSavePlan}
               disabled={saveMutation.isPending}
               className="w-full sm:w-auto shadow-md"
             >

@@ -34,6 +34,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - Upload de fotos de produção passou a registrar falha não fatal de compressão pelo logger central, sem `console.*` no componente.
 - `AdminQuotesPage` deixou de importar `admin-quotes-service` diretamente; alteração de status agora passa pelo hook `useAdminQuotesData`.
 - `AdminCycleManager` deixou de consultar `admin-production-gateway` diretamente; leitura de ciclos foi isolada em `admin-cycles-service` e `useAdminCycles`.
+- `AdminPlansConfiguration` deixou de acessar `admin-plans-gateway` diretamente; leitura/salvamento de tiers e cotação derivada foram isolados em service/hook admin.
 
 ## Plano de execução restante
 
@@ -82,5 +83,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **83/100**.
+- Score após correções já aplicadas: **84/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.
