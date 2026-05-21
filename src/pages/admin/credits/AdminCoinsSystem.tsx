@@ -1,5 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { adminCoinsGateway as supabase } from "@/services/admin/admin-coins-gateway";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,82 +26,11 @@ import {
 import { EditPricingForm } from "@/components/admin/payments/EditPricingForm";
 import { ContextualPricingManager } from "@/components/admin/contextual-pricing";
 import { EditStandalonePricingForm } from "@/components/admin/payments/EditStandalonePricingForm";
+import { useAdminCoinsPricingConfig, useAdminCoinsStats } from "@/hooks/admin/useAdminCoinsSystem";
+
 export default function AdminCoinsSystem() {
-  // Buscar estatísticas de coins usando coin_transactions (tabela real)
-  const { data: stats } = useQuery({
-    queryKey: ["admin-coins-stats"],
-    queryFn: async () => {
-      // Calcular saldos a partir de coin_transactions
-      const { data: allTx } = await supabase
-        .from("coin_transactions")
-        .select("amount, transaction_type, user_id");
-
-      let totalEarned = 0;
-      let totalSpent = 0;
-      const userSet = new Set<string>();
-      (allTx || []).forEach(tx => {
-        userSet.add(tx.user_id);
-        if (tx.transaction_type === 'credit') totalEarned += tx.amount;
-        else totalSpent += tx.amount;
-      });
-
-      const totalBalance = totalEarned - totalSpent;
-
-      // Transações recentes
-      const { data: transactions } = await supabase
-        .from("coin_transactions")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      // Pacotes de coins
-      const { data: packages } = await supabase
-        .from("coin_packages")
-        .select("*")
-        .eq("is_active", true)
-        .order("amount", { ascending: true });
-
-      // Compras com coins (coin_transactions do tipo debit com reference_type = character_purchase)
-      const { count: purchaseCount } = await supabase
-        .from("coin_transactions")
-        .select("*", { count: "exact", head: true })
-        .eq("transaction_type", "debit")
-        .eq("reference_type", "character_purchase");
-
-      return {
-        totalBalance,
-        totalEarned,
-        totalSpent,
-        totalUsers: userSet.size,
-        transactions: transactions || [],
-        packages: packages || [],
-        totalPurchases: purchaseCount || 0,
-      };
-    },
-  });
-
-  // Buscar configurações de preços do banco (SSOT)
-  const { data: pricingConfig } = useQuery({
-    queryKey: ["admin-coins-pricing-config"],
-    queryFn: async () => {
-      // Buscar preços base gerais (catálogos)
-      const { data: basePrices } = await supabase
-        .from("collection_base_pricing")
-        .select(`
-          base_price_coins,
-          collection_types (name)
-        `)
-        .eq("is_active", true);
-
-      // Buscar multiplicadores
-      const { data: multipliers } = await supabase
-        .from("pricing_context_multipliers")
-        .select("*")
-        .eq("is_active", true);
-
-      return { basePrices, multipliers };
-    },
-  });
+  const { data: stats } = useAdminCoinsStats();
+  const { data: pricingConfig } = useAdminCoinsPricingConfig();
 
   // Calcular preços reais baseado na configuração do banco
   const calculatePrices = () => {

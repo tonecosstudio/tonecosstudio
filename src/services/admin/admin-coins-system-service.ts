@@ -1,0 +1,125 @@
+import { adminCoinsGateway } from "@/services/admin/admin-coins-gateway";
+
+interface CoinTransactionSummaryRow {
+  amount: number;
+  transaction_type: string;
+  user_id: string;
+}
+
+export interface AdminCoinTransactionRow {
+  id: string;
+  amount: number;
+  transaction_type: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface AdminCoinPackageRow {
+  id: string;
+  amount: number;
+  price_brl: number | null;
+  is_active: boolean;
+}
+
+export interface AdminCoinsStats {
+  totalBalance: number;
+  totalEarned: number;
+  totalSpent: number;
+  totalUsers: number;
+  transactions: AdminCoinTransactionRow[];
+  packages: AdminCoinPackageRow[];
+  totalPurchases: number;
+}
+
+export interface AdminCoinsBasePrice {
+  base_price_coins: number;
+  collection_types: { name: string } | null;
+}
+
+export interface AdminCoinsPricingMultiplier {
+  id: string;
+  user_context: string;
+  multiplier: number;
+  is_active: boolean;
+}
+
+export interface AdminCoinsPricingConfig {
+  basePrices: AdminCoinsBasePrice[];
+  multipliers: AdminCoinsPricingMultiplier[];
+}
+
+export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
+  const { data: allTransactions, error: transactionsError } = await adminCoinsGateway
+    .from("coin_transactions")
+    .select("amount, transaction_type, user_id");
+
+  if (transactionsError) throw transactionsError;
+
+  let totalEarned = 0;
+  let totalSpent = 0;
+  const userSet = new Set<string>();
+
+  ((allTransactions as CoinTransactionSummaryRow[] | null) ?? []).forEach((transaction) => {
+    userSet.add(transaction.user_id);
+    if (transaction.transaction_type === "credit") totalEarned += transaction.amount;
+    else totalSpent += transaction.amount;
+  });
+
+  const { data: transactions, error: recentTransactionsError } = await adminCoinsGateway
+    .from("coin_transactions")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (recentTransactionsError) throw recentTransactionsError;
+
+  const { data: packages, error: packagesError } = await adminCoinsGateway
+    .from("coin_packages")
+    .select("*")
+    .eq("is_active", true)
+    .order("amount", { ascending: true });
+
+  if (packagesError) throw packagesError;
+
+  const { count: purchaseCount, error: purchasesError } = await adminCoinsGateway
+    .from("coin_transactions")
+    .select("*", { count: "exact", head: true })
+    .eq("transaction_type", "debit")
+    .eq("reference_type", "character_purchase");
+
+  if (purchasesError) throw purchasesError;
+
+  return {
+    totalBalance: totalEarned - totalSpent,
+    totalEarned,
+    totalSpent,
+    totalUsers: userSet.size,
+    transactions: (transactions ?? []) as AdminCoinTransactionRow[],
+    packages: (packages ?? []) as AdminCoinPackageRow[],
+    totalPurchases: purchaseCount ?? 0,
+  };
+}
+
+export async function fetchAdminCoinsPricingConfig(): Promise<AdminCoinsPricingConfig> {
+  const { data: basePrices, error: basePricesError } = await adminCoinsGateway
+    .from("collection_base_pricing")
+    .select(`
+      base_price_coins,
+      collection_types (name)
+    `)
+    .eq("is_active", true);
+
+  if (basePricesError) throw basePricesError;
+
+  const { data: multipliers, error: multipliersError } = await adminCoinsGateway
+    .from("pricing_context_multipliers")
+    .select("*")
+    .eq("is_active", true);
+
+  if (multipliersError) throw multipliersError;
+
+  return {
+    basePrices: (basePrices ?? []) as AdminCoinsBasePrice[],
+    multipliers: (multipliers ?? []) as AdminCoinsPricingMultiplier[],
+  };
+}

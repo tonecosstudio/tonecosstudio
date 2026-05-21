@@ -35,6 +35,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - `AdminQuotesPage` deixou de importar `admin-quotes-service` diretamente; alteração de status agora passa pelo hook `useAdminQuotesData`.
 - `AdminCycleManager` deixou de consultar `admin-production-gateway` diretamente; leitura de ciclos foi isolada em `admin-cycles-service` e `useAdminCycles`.
 - `AdminPlansConfiguration` deixou de acessar `admin-plans-gateway` diretamente; leitura/salvamento de tiers e cotação derivada foram isolados em service/hook admin.
+- `AdminCoinsSystem` deixou de acessar `admin-coins-gateway` diretamente; estatísticas e configuração de pricing foram isoladas em service/hook admin.
 
 ## Plano de execução restante
 
@@ -83,5 +84,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **84/100**.
+- Score após correções já aplicadas: **85/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.
