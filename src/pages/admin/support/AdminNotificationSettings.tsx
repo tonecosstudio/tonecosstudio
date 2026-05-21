@@ -1,66 +1,71 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Bell, History, Loader2, Mail, Smartphone, Volume2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
-  fetchAdminNotificationSettings,
-  sendAdminNotificationTest,
-  updateAdminNotificationSettings,
+  useAdminNotificationSettings,
+  useSendAdminNotificationTest,
+  useUpdateAdminNotificationSettings,
   type AdminNotificationSettings,
-} from "@/services/admin/admin-notifications-service";
+} from "@/hooks/admin/useAdminNotificationManagement";
 
 export default function AdminNotificationSettings() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { data: settings, isLoading } = useAdminNotificationSettings();
+  const updateSettingsMutation = useUpdateAdminNotificationSettings();
+  const testNotificationMutation = useSendAdminNotificationTest();
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["admin-notification-settings"],
-    queryFn: fetchAdminNotificationSettings,
-  });
+  const update = (updates: Partial<AdminNotificationSettings>) => {
+    updateSettingsMutation.mutate(updates, {
+      onSuccess: () => {
+        toast({
+          title: "Configurações salvas",
+          description: "Suas preferências de notificação foram atualizadas.",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar as configurações. Tente novamente.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (updates: Partial<AdminNotificationSettings>) => {
-      await updateAdminNotificationSettings(updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-notification-settings"] });
-      toast({
-        title: "Configurações salvas",
-        description: "Suas preferências de notificação foram atualizadas.",
-      });
-    },
-    onError: (error) => {
-      console.error(error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar as configurações. Tente novamente.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const testNotificationMutation = useMutation({
-    mutationFn: sendAdminNotificationTest,
-    onSuccess: () => {
-      toast({
-        title: "Notificação de teste enviada",
-        description: "Verifique o ícone de notificações no header.",
-      });
-    },
-  });
-
-  const update = (updates: Partial<AdminNotificationSettings>) => updateSettingsMutation.mutate(updates);
+  const sendTestNotification = () => {
+    testNotificationMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast({
+          title: "Notificação de teste enviada",
+          description: "Verifique o ícone de notificações no header.",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Erro ao enviar teste",
+          description: "Não foi possível enviar a notificação de teste.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -71,10 +76,12 @@ export default function AdminNotificationSettings() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Configurações de Notificações</h2>
-          <p className="text-muted-foreground">Gerencie como você recebe notificações do sistema</p>
+          <p className="text-muted-foreground">
+            Gerencie como você recebe notificações do sistema
+          </p>
         </div>
         <Button variant="outline" onClick={() => navigate("/admin/comunicacao?tab=history")}>
-          <History className="h-4 w-4 mr-2" />
+          <History className="mr-2 h-4 w-4" />
           Ver Histórico
         </Button>
       </div>
@@ -258,15 +265,15 @@ export default function AdminNotificationSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => testNotificationMutation.mutate()} disabled={testNotificationMutation.isPending}>
+          <Button onClick={sendTestNotification} disabled={testNotificationMutation.isPending}>
             {testNotificationMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Enviando...
               </>
             ) : (
               <>
-                <Bell className="h-4 w-4 mr-2" />
+                <Bell className="mr-2 h-4 w-4" />
                 Enviar Notificação de Teste
               </>
             )}
@@ -286,7 +293,14 @@ type NotificationToggleProps = {
   disabled?: boolean;
 };
 
-function NotificationToggle({ id, label, description, checked, onChange, disabled }: NotificationToggleProps) {
+function NotificationToggle({
+  id,
+  label,
+  description,
+  checked,
+  onChange,
+  disabled,
+}: NotificationToggleProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="space-y-0.5">
@@ -297,4 +311,3 @@ function NotificationToggle({ id, label, description, checked, onChange, disable
     </div>
   );
 }
-

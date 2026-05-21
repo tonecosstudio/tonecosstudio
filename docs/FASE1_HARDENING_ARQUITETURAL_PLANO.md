@@ -27,6 +27,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - Fluxo de estágios de produção isolado em `src/hooks/admin/useProductionStages.ts`, removendo imports diretos de service/validation dos componentes `StageTransitionModal`, `StageHistoryPanel` e `ProductionStageTracker`.
 - Labels, cores e ordem visual dos estágios de produção consolidados em `src/components/production/production-stage-display.ts`, removendo duplicação entre modal, histórico e tracker.
 - `ProductionHub` passou a consumir fila, invalidação e bulk operations por hooks (`useProductionPipelineQueue`, `useInvalidateProductionQueries`, `useProductionBulkActions`), removendo acoplamento direto com services/admin e logs de console.
+- Pages de notificações admin (`AdminNotificationSettings` e `AdminNotificationHistory`) passaram a consumir `useAdminNotificationManagement`, removendo query/mutation/service direto da UI.
 
 ## Plano de execução restante
 
@@ -75,5 +76,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **77/100**.
+- Score após correções já aplicadas: **78/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.
