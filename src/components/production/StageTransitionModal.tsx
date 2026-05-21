@@ -4,7 +4,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
@@ -12,8 +19,8 @@ import {
   ProductionStageValidationError,
   useCompleteProductionStage,
   type ProductionStageRecord,
-  type StageType,
 } from "@/hooks/admin/useProductionStages";
+import { PRODUCTION_STAGE_TOTAL, getProductionStageLabel } from "./production-stage-display";
 
 interface StageTransitionModalProps {
   isOpen: boolean;
@@ -34,21 +41,6 @@ interface ValidationError {
   canOverride: boolean;
   requiresJustification: boolean;
 }
-
-const STAGE_LABELS: Record<StageType, string> = {
-  awaiting_payment: "Aguardando pagamento",
-  payment_confirmed: "Pagamento confirmado",
-  awaiting_choice: "Aguardando escolha",
-  model_preparation: "Preparacao do modelo",
-  printing: "Impressao 3D",
-  post_processing: "Limpeza e preparacao",
-  painting: "Pintura artesanal",
-  quality_check: "Controle de qualidade",
-  packaging: "Embalagem",
-  ready_to_ship: "Pronto para envio",
-  shipped: "Enviado",
-  delivered: "Entregue",
-};
 
 export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
   isOpen,
@@ -92,8 +84,8 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
 
     if (photos.length + selectedFiles.length > 5) {
       toast({
-        title: "Limite de fotos excedido",
-        description: "Voce pode adicionar no maximo 5 fotos.",
+        title: "Limite de Fotos Excedido",
+        description: "Você pode adicionar no máximo 5 fotos.",
         variant: "destructive",
       });
       return;
@@ -103,7 +95,7 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
       if (!file.type.startsWith("image/")) {
         toast({
           title: "Tipo de arquivo invalido",
-          description: "Apenas arquivos de imagem sao permitidos.",
+          description: "Apenas arquivos de imagem são permitidos.",
           variant: "destructive",
         });
         return;
@@ -112,8 +104,8 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         toast({
-          title: "Arquivo muito grande",
-          description: "O tamanho maximo por foto e 5MB.",
+          title: "Arquivo Muito Grande",
+          description: "O tamanho máximo por foto é 5MB.",
           variant: "destructive",
         });
         return;
@@ -152,8 +144,8 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
       {
         onSuccess: (updatedStage) => {
           toast({
-            title: "Estagio completado",
-            description: `${STAGE_LABELS[updatedStage.stageName]} foi marcado como completo.`,
+            title: "Estágio Completado",
+            description: `${getProductionStageLabel(updatedStage.stageName)} foi marcado como completo.`,
           });
 
           onComplete?.(updatedStage);
@@ -170,7 +162,7 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
           }
 
           toast({
-            title: "Erro ao completar estagio",
+            title: "Erro ao Completar Estágio",
             description: error.message,
             variant: "destructive",
           });
@@ -192,14 +184,17 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Completar estagio de producao</DialogTitle>
+          <DialogTitle>Completar Estágio de Produção</DialogTitle>
+          <DialogDescription>
+            Registre notas e fotos antes de avançar o item para o próximo estágio.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {validationError && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Validacao bloqueada</AlertTitle>
+              <AlertTitle>Validação bloqueada</AlertTitle>
               <AlertDescription>
                 <p className="mb-2">{validationError.message}</p>
                 {validationError.canOverride && (
@@ -220,7 +215,7 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
                         htmlFor="enable-override"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
-                        Autorizar override administrativo
+                        Autorizar Override Administrativo
                       </label>
                     </div>
 
@@ -231,14 +226,14 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
                         </Label>
                         <Textarea
                           id="override-justification"
-                          placeholder="Explique por que esta validacao precisa ser ignorada."
+                          placeholder="Explique por que esta validação precisa ser ignorada."
                           value={overrideJustification}
                           onChange={(event) => setOverrideJustification(event.target.value)}
                           rows={3}
                           className="resize-none"
                         />
                         <p className="text-xs text-muted-foreground">
-                          A justificativa sera registrada na trilha de auditoria.
+                          A justificativa será registrada na trilha de auditoria.
                         </p>
                       </div>
                     )}
@@ -250,16 +245,18 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
 
           <div className="flex items-center justify-between rounded-lg bg-muted p-4">
             <div className="flex-1">
-              <div className="mb-1 text-sm text-muted-foreground">Estagio atual</div>
-              <div className="text-lg font-semibold">{STAGE_LABELS[currentStage.stageName]}</div>
+              <div className="mb-1 text-sm text-muted-foreground">Estágio Atual</div>
+              <div className="text-lg font-semibold">
+                {getProductionStageLabel(currentStage.stageName)}
+              </div>
             </div>
 
             <ChevronRight className="mx-4 h-6 w-6 text-muted-foreground" />
 
             <div className="flex-1 text-right">
-              <div className="mb-1 text-sm text-muted-foreground">Proximo estagio</div>
+              <div className="mb-1 text-sm text-muted-foreground">Próximo Estágio</div>
               <div className="text-lg font-semibold">
-                {nextStage ? STAGE_LABELS[nextStage.stageName] : "Concluido"}
+                {nextStage ? getProductionStageLabel(nextStage.stageName) : "Concluído"}
               </div>
             </div>
           </div>
@@ -269,7 +266,7 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
               <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
                 <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Tempo estimado para o proximo estagio
+                  Tempo Estimado para o Próximo Estágio
                 </div>
                 <div className="text-sm text-blue-700 dark:text-blue-300">
                   {formatDuration(nextStage.estimatedDuration)}
@@ -279,22 +276,22 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notas opcionais</Label>
+            <Label htmlFor="notes">Notas (Opcional)</Label>
             <Textarea
               id="notes"
-              placeholder="Adicione observacoes sobre este estagio."
+              placeholder="Adicione observações sobre este estágio..."
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               rows={4}
               className="resize-none"
             />
             <p className="text-xs text-muted-foreground">
-              Registre informacoes relevantes sobre a conclusao deste estagio.
+              Adicione informações relevantes sobre a conclusão deste estágio.
             </p>
           </div>
 
           <div className="space-y-3">
-            <Label>Fotos opcionais ({photos.length}/5)</Label>
+            <Label>Fotos (Opcional - Máximo 5)</Label>
 
             {photos.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
@@ -341,23 +338,23 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
                   onClick={() => photoInputRef.current?.click()}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  Adicionar fotos
+                  Adicionar Fotos ({photos.length}/5)
                 </Button>
               </div>
             )}
 
             <p className="text-xs text-muted-foreground">
-              Fotos do progresso ou resultado deste estagio. Maximo 5MB por foto.
+              Adicione fotos do progresso ou resultado deste estágio. Máximo 5MB por foto.
             </p>
           </div>
 
           <div className="rounded-lg border bg-muted/50 p-4">
             <div className="flex items-start justify-between">
               <div>
-                <div className="mb-1 text-sm font-medium">Informacoes do estagio</div>
+                <div className="mb-1 text-sm font-medium">Informações do Estágio</div>
                 {currentStage.assignedToName && (
                   <div className="text-sm text-muted-foreground">
-                    Atribuido a: {currentStage.assignedToName}
+                    Atribuído a: {currentStage.assignedToName}
                   </div>
                 )}
                 {currentStage.startedAt && (
@@ -366,7 +363,9 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
                   </div>
                 )}
               </div>
-              <Badge variant="secondary">Estagio {currentStage.stageOrder}</Badge>
+              <Badge variant="secondary">
+                Estágio {currentStage.stageOrder} de {PRODUCTION_STAGE_TOTAL}
+              </Badge>
             </div>
           </div>
         </div>
@@ -391,7 +390,7 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
             ) : (
               <>
                 <ChevronRight className="mr-2 h-4 w-4" />
-                {enableOverride ? "Concluir com override" : "Completar e avancar"}
+                {enableOverride ? "Concluir com Override" : "Completar & Avançar para Próximo Estágio"}
               </>
             )}
           </Button>

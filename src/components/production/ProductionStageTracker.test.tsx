@@ -16,6 +16,14 @@ vi.mock("@/services/admin/stage-service", () => ({
   completeStage: vi.fn(),
 }));
 
+vi.mock("@/services/admin/stage-validation", () => ({
+  validateStageTransition: vi.fn().mockResolvedValue({
+    isValid: true,
+    canOverride: false,
+    requiresJustification: false,
+  }),
+}));
+
 // Mock toast
 vi.mock("@/components/ui/use-toast", () => ({
   toast: vi.fn(),

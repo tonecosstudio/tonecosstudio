@@ -15,8 +15,11 @@ import { Separator } from "@/components/ui/separator";
 import {
   useProductionStageHistory,
   type ProductionStageRecord,
-  type StageType,
 } from "@/hooks/admin/useProductionStages";
+import {
+  getProductionStageColor,
+  getProductionStageLabel,
+} from "./production-stage-display";
 
 // ============================================================================
 // Types
@@ -25,22 +28,6 @@ import {
 interface StageHistoryPanelProps {
   productionQueueId: string;
 }
-
-// Stage display configuration
-const STAGE_CONFIG: Record<StageType, { label: string; color: string }> = {
-  awaiting_payment: { label: "Aguardando Pagamento", color: "bg-slate-500" },
-  payment_confirmed: { label: "Pagamento Confirmado", color: "bg-emerald-500" },
-  awaiting_choice: { label: "Aguardando Escolha", color: "bg-yellow-500" },
-  model_preparation: { label: "Preparação do Modelo", color: "bg-blue-500" },
-  printing: { label: "Em Impressão 3D", color: "bg-indigo-500" },
-  post_processing: { label: "Limpeza e Preparação", color: "bg-violet-500" },
-  painting: { label: "Pintura Artesanal", color: "bg-pink-500" },
-  quality_check: { label: "Controle de Qualidade", color: "bg-green-500" },
-  packaging: { label: "Embalagem", color: "bg-orange-500" },
-  ready_to_ship: { label: "Pronto para Envio", color: "bg-amber-500" },
-  shipped: { label: "Enviado", color: "bg-cyan-500" },
-  delivered: { label: "Entregue", color: "bg-gray-500" },
-};
 
 // ============================================================================
 // Component
@@ -169,7 +156,7 @@ export const StageHistoryPanel: React.FC<StageHistoryPanelProps> = ({
           {stages
             .sort((a, b) => a.stageOrder - b.stageOrder)
             .map((stage, index) => {
-              const config = STAGE_CONFIG[stage.stageName];
+              const stageLabel = getProductionStageLabel(stage.stageName);
               const isCompleted = stage.status === "completed";
               const isSlow = isSlowerThanAverage(stage);
 
@@ -182,7 +169,7 @@ export const StageHistoryPanel: React.FC<StageHistoryPanelProps> = ({
                       <div
                         className={cn(
                           "flex items-center justify-center w-10 h-10 rounded-full text-white font-semibold",
-                          config?.color || "bg-gray-500"
+                          getProductionStageColor(stage.stageName)
                         )}
                       >
                         {stage.stageOrder}
@@ -191,7 +178,7 @@ export const StageHistoryPanel: React.FC<StageHistoryPanelProps> = ({
                       {/* Stage info */}
                       <div>
                         <h3 className="font-semibold text-lg">
-                          {config?.label || stage.stageName}
+                          {stageLabel}
                         </h3>
 
                         {/* Status badge */}
@@ -319,7 +306,7 @@ export const StageHistoryPanel: React.FC<StageHistoryPanelProps> = ({
                             >
                               <img
                                 src={photoUrl}
-                                alt={`Foto ${photoIndex + 1} do estágio ${config?.label}`}
+                                alt={`Foto ${photoIndex + 1} do estágio ${stageLabel}`}
                                 className="w-full h-full object-cover"
                               />
                             </a>

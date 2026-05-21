@@ -25,6 +25,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - Hooks de mensagens, grupos e typing indicator endurecidos com guards e limpeza de timers/subscriptions.
 - Plano e relatórios antigos revisados para remover diagnósticos obsoletos.
 - Fluxo de estágios de produção isolado em `src/hooks/admin/useProductionStages.ts`, removendo imports diretos de service/validation dos componentes `StageTransitionModal`, `StageHistoryPanel` e `ProductionStageTracker`.
+- Labels, cores e ordem visual dos estágios de produção consolidados em `src/components/production/production-stage-display.ts`, removendo duplicação entre modal, histórico e tracker.
 
 ## Plano de execução restante
 
@@ -73,5 +74,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **75/100**.
+- Score após correções já aplicadas: **76/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.

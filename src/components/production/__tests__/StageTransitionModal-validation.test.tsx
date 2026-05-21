@@ -94,7 +94,7 @@ describe("StageTransitionModal - Validation", () => {
     await userEvent.click(completeButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/validation error/i)).toBeInTheDocument();
+      expect(screen.getByText(/validação bloqueada/i)).toBeInTheDocument();
       expect(
         screen.getByText(/cannot skip stages/i)
       ).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe("StageTransitionModal - Validation", () => {
     await userEvent.click(completeButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/enable admin override/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/autorizar override administrativo/i)).toBeInTheDocument();
     });
   });
 
@@ -157,14 +157,14 @@ describe("StageTransitionModal - Validation", () => {
     await userEvent.click(completeButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/enable admin override/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/autorizar override administrativo/i)).toBeInTheDocument();
     });
 
-    const overrideCheckbox = screen.getByLabelText(/enable admin override/i);
+    const overrideCheckbox = screen.getByLabelText(/autorizar override administrativo/i);
     await userEvent.click(overrideCheckbox);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/justification/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/justificativa/i)).toBeInTheDocument();
     });
   });
 
@@ -194,10 +194,10 @@ describe("StageTransitionModal - Validation", () => {
     await userEvent.click(completeButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/enable admin override/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/autorizar override administrativo/i)).toBeInTheDocument();
     });
 
-    const overrideCheckbox = screen.getByLabelText(/enable admin override/i);
+    const overrideCheckbox = screen.getByLabelText(/autorizar override administrativo/i);
     await userEvent.click(overrideCheckbox);
 
     await waitFor(() => {
@@ -236,17 +236,17 @@ describe("StageTransitionModal - Validation", () => {
     await userEvent.click(completeButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/enable admin override/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/autorizar override administrativo/i)).toBeInTheDocument();
     });
 
-    const overrideCheckbox = screen.getByLabelText(/enable admin override/i);
+    const overrideCheckbox = screen.getByLabelText(/autorizar override administrativo/i);
     await userEvent.click(overrideCheckbox);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/justification/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/justificativa/i)).toBeInTheDocument();
     });
 
-    const justificationTextarea = screen.getByLabelText(/justification/i);
+    const justificationTextarea = screen.getByLabelText(/justificativa/i);
     await userEvent.type(justificationTextarea, "Emergency production deadline");
 
     const overrideButton = screen.getByRole("button", { name: /override/i });

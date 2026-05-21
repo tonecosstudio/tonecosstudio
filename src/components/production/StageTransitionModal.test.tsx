@@ -189,7 +189,7 @@ describe("StageTransitionModal", () => {
     );
 
     expect(screen.getByText("Atribuído a: João Silva")).toBeInTheDocument();
-    expect(screen.getByText("Estágio 2 de 6")).toBeInTheDocument();
+    expect(screen.getByText("Estágio 2 de 12")).toBeInTheDocument();
   });
 
   it("shows photo upload button with count", () => {

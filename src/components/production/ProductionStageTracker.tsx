@@ -16,9 +16,9 @@ import { toast } from "@/components/ui/use-toast";
 import {
   useProductionStageHistory,
   type ProductionStageRecord,
-  type StageType,
 } from "@/hooks/admin/useProductionStages";
 import { StageTransitionModal } from "./StageTransitionModal";
+import { getProductionStageLabel } from "./production-stage-display";
 
 // ============================================================================
 // Types
@@ -28,25 +28,6 @@ interface ProductionStageTrackerProps {
   productionQueueId: string;
   onStageComplete?: (stage: ProductionStageRecord) => void;
 }
-
-// Stage display configuration
-const STAGE_CONFIG: Record<
-  StageType,
-  { label: string; order: number; color: string }
-> = {
-  awaiting_payment: { label: "Aguardando Pagamento", order: 1, color: "bg-slate-500" },
-  payment_confirmed: { label: "Pagamento Confirmado", order: 2, color: "bg-emerald-500" },
-  awaiting_choice: { label: "Aguardando Escolha", order: 3, color: "bg-yellow-500" },
-  model_preparation: { label: "Preparação do Modelo", order: 4, color: "bg-blue-500" },
-  printing: { label: "Em Impressão 3D", order: 5, color: "bg-indigo-500" },
-  post_processing: { label: "Limpeza e Preparação", order: 6, color: "bg-violet-500" },
-  painting: { label: "Pintura Artesanal", order: 7, color: "bg-pink-500" },
-  quality_check: { label: "Controle de Qualidade", order: 8, color: "bg-green-500" },
-  packaging: { label: "Embalagem", order: 9, color: "bg-orange-500" },
-  ready_to_ship: { label: "Pronto para Envio", order: 10, color: "bg-amber-500" },
-  shipped: { label: "Enviado", order: 11, color: "bg-cyan-500" },
-  delivered: { label: "Entregue", order: 12, color: "bg-gray-500" },
-};
 
 // ============================================================================
 // Component
@@ -197,7 +178,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
             {stages
               .sort((a, b) => a.stageOrder - b.stageOrder)
               .map((stage) => {
-                const config = STAGE_CONFIG[stage.stageName];
+                const stageLabel = getProductionStageLabel(stage.stageName);
                 const isCompleted = stage.status === "completed";
                 const isCurrent = currentStage?.id === stage.id;
                 const isBlocked = stage.isBlocked;
@@ -237,7 +218,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
                           !isCurrent && !isCompleted && "text-muted-foreground"
                         )}
                       >
-                        {config?.label || stage.stageName}
+                        {stageLabel}
                       </div>
 
                       {/* Time spent */}
@@ -275,7 +256,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
             <div className="flex items-start justify-between">
               <div>
                 <h4 className="font-semibold">
-                  Estágio Atual: {STAGE_CONFIG[currentStage.stageName]?.label || currentStage.stageName}
+                  Estágio Atual: {getProductionStageLabel(currentStage.stageName)}
                 </h4>
                 {currentStage.assignedToName && (
                   <p className="text-sm text-muted-foreground mt-1">
