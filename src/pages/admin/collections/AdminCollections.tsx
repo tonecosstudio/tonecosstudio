@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import * as adminCollectionsService from "@/services/admin/admin-collections-service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { MONTHS } from "./admin-collections.constants";
 import { slugifyCollectionName } from "./admin-collections.utils";
 import { useAdminCollectionsData } from "@/hooks/admin/useAdminCollectionsData";
+import { useAdminCollectionsOperations } from "@/hooks/admin/useAdminCollectionsOperations";
 
 type RotationType = "fixed" | "odd_months" | "even_months";
 
@@ -116,6 +116,7 @@ function getErrorMessage(error: unknown): string {
 export default function AdminCollectionsV2() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const adminCollectionsService = useAdminCollectionsOperations();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<CollectionItem | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
@@ -463,6 +464,7 @@ export default function AdminCollectionsV2() {
 // Componente: Card de Coleção Premium
 function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuccess }: CollectionCardPremiumProps) {
   const { toast } = useToast();
+  const adminCollectionsService = useAdminCollectionsOperations();
 
 
   const deleteMutation = useMutation({
@@ -578,6 +580,7 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
 // Componente: Card de Personagem Premium
 function CharacterCardPremium({ character, onSuccess }: CharacterCardPremiumProps) {
   const { toast } = useToast();
+  const adminCollectionsService = useAdminCollectionsOperations();
   const [isEditing, setIsEditing] = useState(false);
 
   const deleteMutation = useMutation({
@@ -765,6 +768,7 @@ function CalendarView({ characters }: CalendarViewProps) {
 function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateCollectionDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const adminCollectionsService = useAdminCollectionsOperations();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -994,6 +998,7 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateColle
 function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: EditCollectionDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const adminCollectionsService = useAdminCollectionsOperations();
   const [name, setName] = useState(collection.name);
   const [slug, setSlug] = useState(collection.slug);
   const [description, setDescription] = useState(collection.description || "");
@@ -1197,6 +1202,7 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
 function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: CreateCharacterDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const adminCollectionsService = useAdminCollectionsOperations();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -1423,6 +1429,7 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
 function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: EditCharacterDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const adminCollectionsService = useAdminCollectionsOperations();
   const [name, setName] = useState(character.name);
   const [description, setDescription] = useState(character.description || "");
   const [releaseOrder, setReleaseOrder] = useState(String(character.release_order));
