@@ -843,6 +843,34 @@ export async function updateProductionSchedule(
   return transformProductionQueueItem(updatedItem);
 }
 
+/**
+ * Atualiza notas de producao de um item da fila.
+ */
+export async function updateProductionNotes(
+  id: string,
+  notes: string | null
+): Promise<ProductionQueueItem> {
+  const normalizedNotes = notes?.trim() || null;
+
+  const { data: updatedItem, error: updateError } = await supabase
+    .from("production_queue")
+    .update({
+      production_notes: normalizedNotes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (updateError || !updatedItem) {
+    throw new Error(
+      `Erro ao atualizar notas de producao: ${updateError?.message || "Falha na atualizacao"}`
+    );
+  }
+
+  return transformProductionQueueItem(updatedItem);
+}
+
 // ============================================================================
 // Funções Auxiliares
 // ============================================================================

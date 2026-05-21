@@ -1,11 +1,4 @@
-/**
- * EditProductionModal Component
- * 
- * Modal for editing production queue items
- */
-
-import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import type { ProductionQueueItem } from "@/services/admin/production-service";
+import type { ProductionQueueItem } from "@/types/production";
+import { useUpdateProductionNotes } from "@/hooks/admin/useProductionActions";
 
 interface EditProductionModalProps {
   isOpen: boolean;
@@ -37,7 +30,7 @@ export function EditProductionModal({
 }: EditProductionModalProps) {
   const [notes, setNotes] = useState("");
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const updateMutation = useUpdateProductionNotes(item.id);
 
   useEffect(() => {
     if (isOpen && item) {
@@ -45,57 +38,42 @@ export function EditProductionModal({
     }
   }, [isOpen, item]);
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase
-        .from("production_queue")
-        .update({
-          production_notes: notes.trim() || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", item.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["production-queue"] });
-      toast({
-        title: "Item atualizado",
-        description: "As alterações foram salvas com sucesso.",
-      });
-      onOpenChange(false);
-      if (onSuccess) onSuccess();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao atualizar",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const handleSave = () => {
+    updateMutation.mutate(notes.trim() || null, {
+      onSuccess: () => {
+        toast({
+          title: "Item atualizado",
+          description: "As alteracoes foram salvas com sucesso.",
+        });
+        onOpenChange(false);
+        onSuccess?.();
+      },
+      onError: (error: Error) => {
+        toast({
+          title: "Erro ao atualizar",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Editar Item de Produção</DialogTitle>
-          <DialogDescription>
-            Atualize as informações do item de produção
-          </DialogDescription>
+          <DialogTitle>Editar Item de Producao</DialogTitle>
+          <DialogDescription>Atualize as informacoes do item de producao</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="notes">Notas de Produção</Label>
+            <Label htmlFor="notes">Notas de Producao</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Adicione observações sobre este item..."
+              placeholder="Adicione observacoes sobre este item..."
               rows={5}
               disabled={updateMutation.isPending}
             />
@@ -110,17 +88,14 @@ export function EditProductionModal({
           >
             Cancelar
           </Button>
-          <Button
-            onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}
-          >
+          <Button onClick={handleSave} disabled={updateMutation.isPending}>
             {updateMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Salvando...
               </>
             ) : (
-              "Salvar Alterações"
+              "Salvar Alteracoes"
             )}
           </Button>
         </DialogFooter>

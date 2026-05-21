@@ -18,15 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
 import { Users } from 'lucide-react';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  workload: number;
-}
+import { useProductionAssignmentTeamMembers } from '@/hooks/admin/useProductionAssignmentOptions';
 
 interface BulkAssignModalProps {
   open: boolean;
@@ -42,59 +35,8 @@ export function BulkAssignModal({
   onConfirm
 }: BulkAssignModalProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Fetch team members when modal opens
-  useEffect(() => {
-    if (open) {
-      fetchTeamMembers();
-    }
-  }, [open]);
-
-  const fetchTeamMembers = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch all profiles (team members)
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .order('full_name');
-
-      if (profilesError) throw profilesError;
-
-      // Fetch workload for each team member
-      const { data: workloadData, error: workloadError } = await supabase
-        .from('production_queue')
-        .select('assigned_to')
-        .not('assigned_to', 'is', null)
-        .in('production_status', ['ready_for_production', 'in_production']);
-
-      if (workloadError) throw workloadError;
-
-      // Count workload per team member
-      const workloadMap = new Map<string, number>();
-      workloadData?.forEach((item) => {
-        const count = workloadMap.get(item.assigned_to) || 0;
-        workloadMap.set(item.assigned_to, count + 1);
-      });
-
-      // Combine profiles with workload
-      const members: TeamMember[] = (profiles || []).map((profile) => ({
-        id: profile.id,
-        name: profile.full_name || profile.email || 'Sem nome',
-        email: profile.email || '',
-        workload: workloadMap.get(profile.id) || 0,
-      }));
-
-      setTeamMembers(members);
-    } catch (error) {
-      console.error('Erro ao buscar membros da equipe:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: teamMembers = [], isLoading } = useProductionAssignmentTeamMembers(open);
 
   const handleConfirm = async () => {
     if (!selectedUserId) return;
@@ -110,6 +52,12 @@ export function BulkAssignModal({
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedUserId('');
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

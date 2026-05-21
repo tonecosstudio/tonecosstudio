@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   blockProduction,
+  updateProductionNotes,
   updateProductionSchedule,
 } from "@/services/admin/production-service";
 
@@ -37,6 +38,21 @@ export function useRescheduleProduction() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["production-queue"] });
       void queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
+    },
+  });
+}
+
+export function useUpdateProductionNotes(productionQueueId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (notes: string | null) => updateProductionNotes(productionQueueId, notes),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["production-queue"] });
+      void queryClient.invalidateQueries({ queryKey: ["production-metrics"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["production-stages", productionQueueId],
+      });
     },
   });
 }
