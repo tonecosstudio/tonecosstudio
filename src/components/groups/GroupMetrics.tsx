@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Users, MessageSquare, Eye, TrendingUp } from "lucide-react";
+import { Users, MessageSquare, Eye } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { metricsService } from "@/lib/services/metricsService";

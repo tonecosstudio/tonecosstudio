@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
@@ -36,7 +36,6 @@ import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects
 // ─── MAIN ────────────────────────────────────────────────────────────
 
 export default function CatalogArcade() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 

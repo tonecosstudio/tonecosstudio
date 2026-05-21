@@ -8,8 +8,14 @@
  * Task: 11.2 Implementar full-text search no PostgreSQL
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { supabase } from '@/integrations/supabase/client';
+
+type SearchUnifiedOrderResult = {
+  order_id: string;
+  order_type: string;
+  rank: number;
+};
 
 describe('Full-Text Search - PostgreSQL', () => {
   // Skip tests if not in integration test environment
@@ -85,7 +91,7 @@ describe('Full-Text Search - PostgreSQL', () => {
         return;
       }
       
-      const { data, error } = await supabase.rpc('search_unified_orders', {
+      const { error } = await supabase.rpc('search_unified_orders', {
         search_query: 'João',
         order_type_filter: 'all'
       });
@@ -100,7 +106,7 @@ describe('Full-Text Search - PostgreSQL', () => {
         return;
       }
       
-      const { data, error } = await supabase.rpc('search_unified_orders', {
+      const { error } = await supabase.rpc('search_unified_orders', {
         search_query: 'example.com',
         order_type_filter: 'all'
       });
@@ -115,7 +121,7 @@ describe('Full-Text Search - PostgreSQL', () => {
         return;
       }
       
-      const { data, error } = await supabase.rpc('search_unified_orders', {
+      const { error } = await supabase.rpc('search_unified_orders', {
         search_query: 'BR123',
         order_type_filter: 'all'
       });
@@ -140,7 +146,7 @@ describe('Full-Text Search - PostgreSQL', () => {
       
       // All results should be subscription_delivery type
       if (data && data.length > 0) {
-        data.forEach((result: any) => {
+        data.forEach((result: SearchUnifiedOrderResult) => {
           expect(result.order_type).toBe('subscription_delivery');
         });
       }
@@ -162,7 +168,7 @@ describe('Full-Text Search - PostgreSQL', () => {
       
       // All results should be standalone_purchase type
       if (data && data.length > 0) {
-        data.forEach((result: any) => {
+        data.forEach((result: SearchUnifiedOrderResult) => {
           expect(result.order_type).toBe('standalone_purchase');
         });
       }
@@ -174,7 +180,7 @@ describe('Full-Text Search - PostgreSQL', () => {
         return;
       }
       
-      const { data, error } = await supabase.rpc('search_unified_orders', {
+      const { error } = await supabase.rpc('search_unified_orders', {
         search_query: 'test',
         order_type_filter: 'all'
       });
@@ -184,7 +190,7 @@ describe('Full-Text Search - PostgreSQL', () => {
       
       // Each result should have order_id, order_type, and rank
       if (data && data.length > 0) {
-        data.forEach((result: any) => {
+        data.forEach((result: SearchUnifiedOrderResult) => {
           expect(result).toHaveProperty('order_id');
           expect(result).toHaveProperty('order_type');
           expect(result).toHaveProperty('rank');
@@ -234,7 +240,7 @@ describe('Full-Text Search - PostgreSQL', () => {
       
       const startTime = Date.now();
       
-      const { data, error } = await supabase.rpc('search_unified_orders', {
+      const { error } = await supabase.rpc('search_unified_orders', {
         search_query: 'test',
         order_type_filter: 'all'
       });

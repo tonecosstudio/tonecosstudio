@@ -36,7 +36,6 @@ import {
   bulkSendMessage,
 } from "@/lib/admin-payment-service";
 import { fileUploadService } from "@/lib/file-upload-service";
-import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
 
 // Skip these tests if not in integration test environment
 const isIntegrationTestEnv = process.env.VITEST_INTEGRATION === "true";

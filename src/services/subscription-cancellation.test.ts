@@ -5,7 +5,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { supabase } from '@/integrations/supabase/client';
 
 describe('Subscription Cancellation - Capacity Release', () => {
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('Subscription Cancellation - Capacity Release', () => {
     // - Each delivery has a cycle_id
     // - Current time is before cutoff (is_before_cutoff returns true)
     
-    const mockSubscriptionId = 'sub-123';
+    const _mockSubscriptionId = 'sub-123';
     const mockDeliveries = [
       { id: 'del-1', cycle_id: 'cycle-1', status: 'scheduled' },
       { id: 'del-2', cycle_id: 'cycle-2', status: 'pending_choice' },
@@ -28,7 +27,7 @@ describe('Subscription Cancellation - Capacity Release', () => {
 
     // Mock Supabase calls
     const mockRpc = vi.fn();
-    const mockFrom = vi.fn(() => ({
+    const _mockFrom = vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           in: vi.fn(() => ({
@@ -66,12 +65,12 @@ describe('Subscription Cancellation - Capacity Release', () => {
     // - Subscription with future deliveries
     // - Current time is after cutoff (is_before_cutoff returns false)
     
-    const mockDeliveries = [
+    const _mockDeliveries = [
       { id: 'del-1', cycle_id: 'cycle-1', status: 'scheduled' },
     ];
 
     // Mock is_before_cutoff to return false
-    const mockRpc = vi.fn().mockImplementation((fnName: string) => {
+    const _mockRpc = vi.fn().mockImplementation((fnName: string) => {
       if (fnName === 'is_before_cutoff') {
         return Promise.resolve({ data: false, error: null });
       }
@@ -118,7 +117,7 @@ describe('Subscription Cancellation - Capacity Release', () => {
 
     // Mock release_capacity to fail for first delivery
     let callCount = 0;
-    const mockRpc = vi.fn().mockImplementation((fnName: string) => {
+    const _mockRpc = vi.fn().mockImplementation((fnName: string) => {
       if (fnName === 'release_capacity') {
         callCount++;
         if (callCount === 1) {

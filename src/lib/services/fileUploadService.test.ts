@@ -9,7 +9,7 @@
  * - Property 17: File Validation Before Upload
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { FileUploadService } from "./fileUploadService";
 
 describe("FileUploadService", () => {
@@ -102,9 +102,6 @@ describe("FileUploadService", () => {
     it("should handle thumbnail generation for images", async () => {
       // Note: This test is skipped in test environment due to canvas limitations
       // The actual thumbnail generation is tested in integration tests
-      const file = new File(["fake-image-data"], "test.jpg", { type: "image/jpeg" });
-      const conversationId = "test-conversation-id";
-
       // In a real browser environment, this would work
       // In test environment, we just verify the method exists
       expect(service.generateThumbnail).toBeDefined();

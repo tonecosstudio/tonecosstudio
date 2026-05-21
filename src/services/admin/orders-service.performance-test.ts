@@ -9,31 +9,14 @@
  * Run with: npm run test -- orders-service.performance-test.ts
  */
 
-import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { fetchUnifiedOrders } from './orders-service';
-import type { OrderFilters, PaginationParams } from '@/types/admin/orders';
+import { describe, it, expect } from 'vitest';
 
 describe('Query Optimization - Task 11.3', () => {
   describe('Join Optimization', () => {
     it('should fetch subscription deliveries with profile data in a single query', async () => {
       // Mock Supabase to track query calls
-      const queryCalls: string[] = [];
-      
       // This test verifies that we don't make separate profile queries
       // In the optimized version, profiles come from the join
-      
-      const filters: OrderFilters = {
-        type: 'subscription_delivery',
-        status: [],
-        dateFrom: null,
-        dateTo: null,
-        searchQuery: ''
-      };
-      
-      const pagination: PaginationParams = {
-        page: 1,
-        pageSize: 20
-      };
       
       // Note: This is a conceptual test. In a real implementation,
       // you would mock the Supabase client to verify the queries
@@ -42,19 +25,6 @@ describe('Query Optimization - Task 11.3', () => {
     });
 
     it('should fetch standalone purchases with profile data in a single query', async () => {
-      const filters: OrderFilters = {
-        type: 'standalone_purchase',
-        status: [],
-        dateFrom: null,
-        dateTo: null,
-        searchQuery: ''
-      };
-      
-      const pagination: PaginationParams = {
-        page: 1,
-        pageSize: 20
-      };
-      
       // Verify no separate profile query is made
       expect(true).toBe(true); // Placeholder
     });
@@ -62,19 +32,6 @@ describe('Query Optimization - Task 11.3', () => {
     it('should not make N+1 queries when fetching multiple orders', async () => {
       // This test would verify that regardless of the number of orders,
       // we only make 2 queries (deliveries + purchases), not 2 + N profile queries
-      
-      const filters: OrderFilters = {
-        type: 'all',
-        status: [],
-        dateFrom: null,
-        dateTo: null,
-        searchQuery: ''
-      };
-      
-      const pagination: PaginationParams = {
-        page: 1,
-        pageSize: 100 // Large page size
-      };
       
       // Expected: 2 queries (deliveries with joins, purchases with joins)
       // Not expected: 2 + 100 queries (deliveries, purchases, then 100 profile queries)
@@ -88,27 +45,8 @@ describe('Query Optimization - Task 11.3', () => {
       // This test would measure query time with a large dataset
       // Expected: < 2 seconds for first page (Requirement 11.1)
       
-      const filters: OrderFilters = {
-        type: 'all',
-        status: [],
-        dateFrom: null,
-        dateTo: null,
-        searchQuery: ''
-      };
-      
-      const pagination: PaginationParams = {
-        page: 1,
-        pageSize: 20
-      };
-      
-      const startTime = Date.now();
-      
       // In a real test, this would query a test database with 1000+ orders
       // await fetchUnifiedOrders(filters, pagination);
-      
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
       // Should load in less than 2 seconds (Requirement 11.1)
       // expect(duration).toBeLessThan(2000);
       
@@ -131,19 +69,6 @@ describe('Query Optimization - Task 11.3', () => {
     it('should include all required profile fields in results', async () => {
       // Verify that profile data (name, email) is present in results
       // even though it comes from joins now
-      
-      const filters: OrderFilters = {
-        type: 'all',
-        status: [],
-        dateFrom: null,
-        dateTo: null,
-        searchQuery: ''
-      };
-      
-      const pagination: PaginationParams = {
-        page: 1,
-        pageSize: 20
-      };
       
       // In a real test:
       // const result = await fetchUnifiedOrders(filters, pagination);

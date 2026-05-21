@@ -5,8 +5,8 @@
  * neon accents and pixel-art inspired UI elements.
  */
 
-import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   type CharacterSelectCharacter,
   type CharacterSelectCollection,
@@ -144,14 +144,14 @@ function CollectionSection({ collection }: { collection: Collection }) {
   );
   const selected = characters[selectedIdx] || null;
 
-  const navigate = (dir: -1 | 1) => {
+  const navigate = useCallback((dir: -1 | 1) => {
     setSelectedIdx((prev) => {
       const next = prev + dir;
       if (next < 0) return characters.length - 1;
       if (next >= characters.length) return 0;
       return next;
     });
-  };
+  }, [characters.length]);
 
   // Keyboard nav
   useEffect(() => {
@@ -161,7 +161,7 @@ function CollectionSection({ collection }: { collection: Collection }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [characters.length]);
+  }, [navigate]);
 
   if (characters.length === 0) return null;
 

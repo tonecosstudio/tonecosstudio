@@ -3,10 +3,8 @@
  */
 
 import { useNavigate } from "react-router-dom";
-import { Check, Zap, Crown, Sparkles, Shield, ArrowRight, Coins } from "lucide-react";
-import { useContentSettings } from "@/hooks/useContentSettings";
-import { processContentVariables } from "@/lib/services/contentService";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { Check, Crown, Sparkles, Shield, ArrowRight, Coins } from "lucide-react";
+import { useContentVariable } from "@/hooks/useContentSettings";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeHero,
@@ -19,8 +17,7 @@ import { useActiveSubscriptionPlans } from "@/hooks/subscription/useActiveSubscr
 
 export default function PlansArcade() {
   const navigate = useNavigate();
-  const { data: content } = useContentSettings();
-  const { data: settings } = useSystemSettings();
+  const faqFirstDelivery = useContentVariable("faqFirstDelivery", "Carregando...");
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
   const plansQuery = useActiveSubscriptionPlans();
@@ -41,7 +38,7 @@ export default function PlansArcade() {
   const faqs = [
     { q: "Como funciona a assinatura?", a: "Escolha um plano e selecione as coleções. Todo mês, receba uma peça surpresa." },
     { q: "Posso trocar de coleção?", a: "Sim! Troque quantas vezes quiser antes da produção do próximo lote." },
-    { q: "Quando recebo a primeira peça?", a: content ? processContentVariables(content.faqFirstDelivery, content) : "Carregando..." },
+    { q: "Quando recebo a primeira peça?", a: faqFirstDelivery },
     { q: "Posso cancelar a qualquer momento?", a: "Sim, cancele quando quiser. Peças já pagas serão entregues normalmente." },
     { q: "O que é revelação surpresa?", a: "Você escolhe a coleção e o personagem é revelado no envio — cada peça é única." },
   ];

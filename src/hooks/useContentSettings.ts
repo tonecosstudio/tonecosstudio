@@ -4,7 +4,11 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchContentSettings, type ContentSettings } from "@/lib/services/contentService";
+import {
+  fetchContentSettings,
+  processContentVariables,
+  type ContentSettings,
+} from "@/lib/services/contentService";
 
 export function useContentSettings() {
   return useQuery<ContentSettings>({
@@ -14,4 +18,15 @@ export function useContentSettings() {
     gcTime: 10 * 60 * 1000, // 10 minutos (garbage collection time)
     refetchOnWindowFocus: false,
   });
+}
+
+export function useContentVariable(field: keyof ContentSettings, fallback = "") {
+  const query = useContentSettings();
+  const value = query.data?.[field];
+
+  if (!query.data || typeof value !== "string") {
+    return fallback;
+  }
+
+  return processContentVariables(value, query.data);
 }

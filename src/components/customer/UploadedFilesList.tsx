@@ -10,7 +10,7 @@
  * - Show upload status (uploading, complete, error)
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,41 +59,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load files if not provided via props
-  useEffect(() => {
-    if (propFiles) {
-      setFiles(propFiles.map((file) => ({ ...file, isLoadingUrl: true })));
-      // Generate signed URLs for all files
-      generateSignedUrls(propFiles);
-    } else {
-      loadFiles();
-    }
-  }, [paymentId, propFiles]);
-
-  const loadFiles = async () => {
-    if (!paymentId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const loadedFiles = await fileUploadService.listByPayment(paymentId);
-      const filesWithUrls = loadedFiles.map((file) => ({ ...file, isLoadingUrl: true }));
-      setFiles(filesWithUrls);
-
-      // Generate signed URLs for all files
-      generateSignedUrls(loadedFiles);
-    } catch (err) {
-      log.error("Failed to load payment files", { error: err, paymentId });
-      setError(err instanceof Error ? err.message : "Failed to load files");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateSignedUrls = async (filesToProcess: PaymentFile[]) => {
-    const updatedFiles = [...files];
-
+  const generateSignedUrls = useCallback(async (filesToProcess: PaymentFile[]) => {
     for (const file of filesToProcess) {
       try {
         // Generate signed URL for the main file
@@ -115,7 +81,39 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
         setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, isLoadingUrl: false } : f)));
       }
     }
-  };
+  }, []);
+
+  const loadFiles = useCallback(async () => {
+    if (!paymentId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const loadedFiles = await fileUploadService.listByPayment(paymentId);
+      const filesWithUrls = loadedFiles.map((file) => ({ ...file, isLoadingUrl: true }));
+      setFiles(filesWithUrls);
+
+      // Generate signed URLs for all files
+      generateSignedUrls(loadedFiles);
+    } catch (err) {
+      log.error("Failed to load payment files", { error: err, paymentId });
+      setError(err instanceof Error ? err.message : "Failed to load files");
+    } finally {
+      setLoading(false);
+    }
+  }, [generateSignedUrls, paymentId]);
+
+  // Load files if not provided via props
+  useEffect(() => {
+    if (propFiles) {
+      setFiles(propFiles.map((file) => ({ ...file, isLoadingUrl: true })));
+      // Generate signed URLs for all files
+      generateSignedUrls(propFiles);
+    } else {
+      loadFiles();
+    }
+  }, [generateSignedUrls, loadFiles, paymentId, propFiles]);
 
   const handleFileClick = (file: FileWithUrl) => {
     if (onFileClick && file.signedUrl) {

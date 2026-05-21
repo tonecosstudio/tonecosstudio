@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { deliveryService, Delivery, DeliveryStatus, PlanType } from './deliveryService';
+import { deliveryService, Delivery, PlanType } from './deliveryService';
 import { cycleService, Cycle } from './cycleService';
 
 // Mock do Supabase

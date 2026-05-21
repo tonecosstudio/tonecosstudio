@@ -62,11 +62,11 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 
 - `npx eslint` focado nos arquivos tocados da ultima extracao critica passou sem saida.
 - `rg -n 'console\.|@/services|@/integrations/supabase/client' src/components src/pages --glob '!**/*.md' --glob '!**/*.test.*' --glob '!**/*.spec.*'`: passou sem saida em 2026-05-21.
-- `npm run build`: passou em 2026-05-21, com Vite build concluido em 1m20s na ultima execucao.
-- `npm run test`: falhou no sandbox com `spawn EPERM` ao iniciar esbuild; fora do sandbox ficou inconclusivo por timeout apos 5 minutos.
-- `npx madge --circular --extensions ts,tsx src`: passou em 2026-05-21; 1023 arquivos processados, 504 warnings, 0 dependencias circulares.
-- `npm run lint:architecture`: ainda falha globalmente por debitos existentes fora da ultima fatia; ultima execucao em 2026-05-21 reportou 147 errors e 20 warnings, concentrados em unused vars, hooks deps, testes antigos e imports restritos em testes/rotas especificas.
-- `npm run lint`: ainda falha globalmente pelo mesmo conjunto de debitos herdados.
+- `npm run build`: passou em 2026-05-21, com Vite build concluido em 55.92s na ultima execucao.
+- `npm run test`: ficou inconclusivo por timeout apos 5 minutos na ultima execucao; sem saida util antes do encerramento.
+- `npx madge --circular --extensions ts,tsx src`: passou em 2026-05-21; 1024 arquivos processados, 504 warnings, 0 dependencias circulares.
+- `npm run lint:architecture`: passou em 2026-05-21 com exit code 0; ainda reporta 18 warnings em testes de componentes que mockam services diretamente e devem migrar para mocks de hooks/use-cases.
+- `npm run lint`: passou em 2026-05-21 com exit code 0; ainda reporta warnings herdados de `any` em testes e Supabase Edge Functions.
 
 ## Plano restante por modulo
 
@@ -134,11 +134,12 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 
 - Atualizar testes para o novo boundary.
 - Quebrar suites gigantes por responsabilidade.
-- Fechar gates globais: `npm run lint`, `npm run lint:architecture`, `npm run test` e `madge`.
+- Fechar warnings restantes de testes que importam services diretamente.
+- Fechar warnings restantes de `any` em testes/edge functions e concluir `npm run test` sem timeout.
 
 ## Score
 
 - Score inicial estimado: 62/100.
 - Score antes desta fatia: 87/100.
-- Score apos esta fatia: 94/100.
+- Score apos esta fatia: 95/100.
 - Meta para concluir a FASE 1 global: 94-97/100, condicionada a lint/test/madge verdes e fechamento dos hotspots restantes.

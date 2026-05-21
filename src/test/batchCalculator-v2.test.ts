@@ -16,7 +16,6 @@ import {
   getBatchSummary,
   getStatusText,
   type BatchRules,
-  type CalculatedBatch,
 } from "../lib/services/batchCalculator";
 
 describe("Calculador de Ciclos v2.0", () => {

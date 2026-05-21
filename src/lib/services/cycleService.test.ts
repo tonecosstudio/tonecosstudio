@@ -4,10 +4,9 @@
  * Testa todas as funcionalidades do serviço de gestão de ciclos
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { cycleService, Cycle, CycleStatus } from './cycleService';
+import { describe, it, expect, vi } from 'vitest';
+import { cycleService } from './cycleService';
 import { timezoneService } from './timezoneService';
-import { businessDayService } from './businessDayService';
 
 // Mock do Supabase
 vi.mock('@/integrations/supabase/client', () => ({

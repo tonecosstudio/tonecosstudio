@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Package, Truck, CheckCircle } from "lucide-react";
 import { useBatchInfo } from "@/hooks/useBatchInfo";
-import { formatBatchDate, formatBatchDateFull } from "@/lib/services/batchCalculator";
+import { formatBatchDate } from "@/lib/services/batchCalculator";
 
 export function ReleaseTimeline() {
   const { currentBatch, isLoading } = useBatchInfo();

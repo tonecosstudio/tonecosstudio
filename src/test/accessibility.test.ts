@@ -128,7 +128,7 @@ describe("Accessibility Requirements - WCAG 2.1 AA", () => {
       };
 
       // All colors must be validated with WebAIM Contrast Checker
-      Object.entries(colorPalette).forEach(([key, colors]) => {
+      Object.entries(colorPalette).forEach(([_key, colors]) => {
         expect(colors.bg).toMatch(/^#[0-9a-f]{6}$/i);
         expect(colors.fg).toMatch(/^#[0-9a-f]{6}$/i);
       });

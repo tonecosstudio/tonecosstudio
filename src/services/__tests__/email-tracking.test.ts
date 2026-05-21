@@ -92,7 +92,7 @@ describe('Email Tracking', () => {
           'user-123',
           { subscription_id: 'sub-123' }
         );
-      } catch (error) {
+      } catch (_error) {
         // Expected to fail due to mock setup, but log should be created
       }
 
@@ -138,7 +138,7 @@ describe('Email Tracking', () => {
           '<p>Test</p>',
           'character_revelation'
         );
-      } catch (error) {
+      } catch (_error) {
         // Expected
       }
 
@@ -187,7 +187,7 @@ describe('Email Tracking', () => {
           'user-123',
           metadata
         );
-      } catch (error) {
+      } catch (_error) {
         // Expected
       }
 
@@ -232,7 +232,7 @@ describe('Email Tracking', () => {
           '<p>Test</p>',
           'welcome'
         );
-      } catch (error) {
+      } catch (_error) {
         // May fail due to provider config, but should still update log
       }
 
@@ -279,7 +279,7 @@ describe('Email Tracking', () => {
           '<p>Test</p>',
           'welcome'
         );
-      } catch (error) {
+      } catch (_error) {
         // Expected to throw
       }
 
@@ -332,7 +332,7 @@ describe('Email Tracking', () => {
           '<p>Test</p>',
           'welcome'
         );
-      } catch (error) {
+      } catch (_error) {
         // May throw or succeed depending on retry logic
       }
 
@@ -377,7 +377,7 @@ describe('Email Tracking', () => {
           '<p>Welcome</p>',
           'welcome'
         );
-      } catch (error) {
+      } catch (_error) {
         // Expected
       }
 
@@ -419,7 +419,7 @@ describe('Email Tracking', () => {
           '<p>Shipped</p>',
           'shipping_notification'
         );
-      } catch (error) {
+      } catch (_error) {
         // Expected
       }
 
@@ -464,7 +464,7 @@ describe('Email Tracking', () => {
           '<p>Test</p>',
           'welcome'
         );
-      } catch (error) {
+      } catch (_error) {
         // May throw due to provider config, but that's OK
         // The important thing is it tried to send
       }

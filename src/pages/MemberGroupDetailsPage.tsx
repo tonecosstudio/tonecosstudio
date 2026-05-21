@@ -1,20 +1,15 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { groupService } from "@/lib/services/groupService";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { MemberGroupMessages } from "@/components/groups/MemberGroupMessages";
 import { getGroupTypeLabel } from "@/types/groups";
+import { useMemberGroupDetails } from "@/hooks/groups/useMemberGroupDetails";
 
 export default function MemberGroupDetailsPage() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
 
-  const { data: group, isLoading } = useQuery({
-    queryKey: ["group", groupId],
-    queryFn: () => groupService.getGroupById(groupId!),
-    enabled: !!groupId,
-  });
+  const { data: group, isLoading } = useMemberGroupDetails(groupId);
 
   if (isLoading) {
     return (

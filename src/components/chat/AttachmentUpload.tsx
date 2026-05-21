@@ -12,10 +12,9 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Upload, File, Image as ImageIcon, X, AlertCircle, Paperclip } from "lucide-react";
+import { Upload, File, X, AlertCircle, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateFile } from "@/lib/validations/support";
 
@@ -34,7 +33,6 @@ interface FileWithPreview {
   error?: string;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 const ACCEPTED_PDF_TYPE = "application/pdf";
 const ACCEPTED_TYPES = [...ACCEPTED_IMAGE_TYPES, ACCEPTED_PDF_TYPE];

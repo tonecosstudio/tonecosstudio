@@ -198,7 +198,7 @@ describe('Property-Based Tests (Monthly Cycles)', () => {
           }),
           // Generate random plan type
           fc.constantFrom('trimestral' as const, 'semestral' as const),
-          (entryCycle, planType) => {
+          (entryCycle, _planType) => {
             // Calculate expected delivery count
             const expectedCount = planType === 'trimestral' ? 3 : 6;
             
@@ -274,7 +274,7 @@ describe('Property-Based Tests (Monthly Cycles)', () => {
             year: fc.integer({ min: 2024, max: 2029 }),
           }),
           fc.constantFrom('trimestral' as const, 'semestral' as const),
-          (entryCycle, planType) => {
+          (entryCycle, _planType) => {
             const expectedCount = planType === 'trimestral' ? 3 : 6;
             
             // Calculate first delivery month
@@ -333,7 +333,7 @@ describe('Property-Based Tests (Monthly Cycles)', () => {
             year: fc.integer({ min: 2024, max: 2030 }),
           }),
           fc.constantFrom('trimestral' as const, 'semestral' as const),
-          (entryCycle, planType) => {
+          (entryCycle, _planType) => {
             // Calculate first delivery month
             let firstMonth = entryCycle.month + 1;
             let firstYear = entryCycle.year;

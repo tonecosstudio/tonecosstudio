@@ -16,7 +16,7 @@
  * - Complete lifecycle: creation → delivery → choice → cutoff → production → shipping → delivery
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { supabase } from '@/integrations/supabase/client';
 import { checkAvailability, reserveCapacity, releaseCapacity } from '@/services/capacity-service';
 import { applyAutomaticMaintenance } from '@/services/automatic-maintenance-service';

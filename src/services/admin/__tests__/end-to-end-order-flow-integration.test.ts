@@ -10,9 +10,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { 
   fetchProductionQueue, 
   updateProductionStage,
-  assignProduction,
-  ProductionQueueItem,
-  ProductionStage
+  assignProduction
 } from "../production-service";
 import { supabase } from "@/integrations/supabase/client";
 import { submitCharacterChoice } from "@/services/customer/choice-service";

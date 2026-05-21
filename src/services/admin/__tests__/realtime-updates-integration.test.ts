@@ -120,8 +120,6 @@ describe("Real-Time Updates Integration Test", () => {
 
     // Step 2: Simulate Realtime subscription setup
     // This would normally be done in a React component/hook
-    const mockRealtimeCallback = vi.fn();
-    
     // Configure channel to call callback when update is received
     mockChannel.on.mockImplementation((event: string, callback: (payload: any) => void) => {
       if (event === "postgres_changes") {

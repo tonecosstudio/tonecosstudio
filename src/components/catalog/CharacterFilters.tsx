@@ -9,7 +9,7 @@
  * @module components/catalog/CharacterFilters
  */
 
-import { Filter, Coins, TrendingUp, Package } from "lucide-react";
+import { Filter, Coins, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

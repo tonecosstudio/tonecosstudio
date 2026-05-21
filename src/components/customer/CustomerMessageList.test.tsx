@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CustomerMessageList } from "./CustomerMessageList";
 import type { Message } from "@/types/support";
@@ -11,7 +11,7 @@ vi.mock("@/hooks/useMessages", () => ({
 
 // Mock date-fns
 vi.mock("date-fns", () => ({
-  formatDistanceToNow: vi.fn((date) => "2 minutos atrás"),
+  formatDistanceToNow: vi.fn((_date) => "2 minutos atrás"),
 }));
 
 vi.mock("date-fns/locale", () => ({

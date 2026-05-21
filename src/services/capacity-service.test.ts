@@ -337,7 +337,7 @@ describe('Property-Based Tests', () => {
             currentUsage: fc.integer({ min: 0, max: 200 }),
             requestedQuantity: fc.integer({ min: 1, max: 10 })
           }),
-          async ({ maxCapacity, currentUsage, requestedQuantity }) => {
+          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
             // Setup: Mock the database to return our test scenario
             const cycleId = 'test-cycle-' + Math.random();
             const hasCapacity = (currentUsage + requestedQuantity) <= maxCapacity;
@@ -379,7 +379,7 @@ describe('Property-Based Tests', () => {
             // Only test cases where capacity would be exceeded
             (currentUsage + requestedQuantity) > maxCapacity
           ),
-          async ({ maxCapacity, currentUsage, requestedQuantity }) => {
+          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
             const cycleId = 'test-cycle-' + Math.random();
             
             // Mock checkAvailability to return false (capacity exceeded)
@@ -412,7 +412,7 @@ describe('Property-Based Tests', () => {
           }).filter(({ maxCapacity, currentUsage, requestedQuantity }) => 
             (currentUsage + requestedQuantity) > maxCapacity
           ),
-          async ({ maxCapacity, currentUsage, requestedQuantity }) => {
+          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
             const cycleId = 'test-cycle-' + Math.random();
             const referenceId = 'ref-' + Math.random();
             
@@ -446,7 +446,7 @@ describe('Property-Based Tests', () => {
             // Only test cases where capacity is available
             (currentUsage + requestedQuantity) <= maxCapacity
           ),
-          async ({ maxCapacity, currentUsage, requestedQuantity }) => {
+          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
             const cycleId = 'test-cycle-' + Math.random();
             
             // Mock checkAvailability to return true

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface CountdownProps {
@@ -15,9 +15,7 @@ interface TimeLeft {
 }
 
 export function Countdown({ targetDate, className, compact = false }: CountdownProps) {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(calculateTimeLeft());
-
-  function calculateTimeLeft(): TimeLeft | null {
+  const calculateTimeLeft = useCallback((): TimeLeft | null => {
     const target = typeof targetDate === "string" ? new Date(targetDate) : targetDate;
     const difference = +target - +new Date();
 
@@ -30,7 +28,9 @@ export function Countdown({ targetDate, className, compact = false }: CountdownP
       };
     }
     return null;
-  }
+  }, [targetDate]);
+
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(calculateTimeLeft());
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -38,7 +38,7 @@ export function Countdown({ targetDate, className, compact = false }: CountdownP
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [calculateTimeLeft]);
 
   if (!timeLeft) {
     return (

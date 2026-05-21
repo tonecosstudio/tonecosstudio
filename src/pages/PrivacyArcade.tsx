@@ -6,7 +6,7 @@ import {
   ArcadeSectionTitle,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
-import { Eye, Database, Lock, Users, Server, UserCheck, Cookie, Baby, RefreshCw, Building } from "lucide-react";
+import { Eye, Database, Lock, Users, UserCheck, Cookie, Baby, RefreshCw, Building } from "lucide-react";
 
 export default function PrivacyArcade() {
   const { data: settings } = useSystemSettings();

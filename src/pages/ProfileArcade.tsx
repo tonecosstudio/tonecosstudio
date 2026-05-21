@@ -1,13 +1,14 @@
 import { Page } from "@/components/layouts/Page";
-import { ArcadeHero, ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
+import { ArcadeCard, ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
-  User, Shield, Bell, MapPin, Heart, Settings, CreditCard, Package,
+  User, Bell, MapPin, Heart, Settings, CreditCard, Package,
   RefreshCw, MessageSquare, Trophy, ExternalLink, Save, Loader2
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -24,17 +25,12 @@ import {
   checkUsernameAvailability,
 } from "@/lib/collector";
 import {
-  PersonalDataSection,
   PaymentSection,
   NotificationsSection,
   SubscriptionSection,
   SupportSection,
 } from "./ProfileSections";
 import { profileNavigationConfig } from "@/config/profile-navigation.config";
-
-const sectionIcons: Record<string, any> = {
-  User, Trophy, Bell, Heart, Settings, MapPin, CreditCard, Package, RefreshCw, MessageSquare
-};
 
 type SectionId = "info" | "personal" | "collector" | "preferences" | "address" | "subscriptions" | "support" | "orders" | "collection" | "payment" | "notifications";
 
@@ -133,15 +129,9 @@ export default function ProfileArcade() {
   });
 
   const profile = profileQuery.data;
-  const collector = collectorQuery.data;
   const completion = profile?.profile_completion || 0;
 
-  const navItems = profileNavigationConfig.flatMap(s => s.subSections.map(sub => ({
-    ...sub,
-    sectionTitle: s.title,
-  })));
-
-  const iconLookup: Record<string, any> = {
+  const iconLookup: Record<string, LucideIcon> = {
     User, Star: Trophy, Bell, Settings: Heart, Grid: Settings,
     MapPin, CreditCard, ShoppingBag: Package, RefreshCw, HelpCircle: MessageSquare
   };

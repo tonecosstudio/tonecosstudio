@@ -119,7 +119,6 @@ describe("Alert Notification Service", () => {
       };
 
       // Mock notification functions
-      const mockNotify = vi.fn();
       global.Notification = vi.fn() as any;
       global.Notification.permission = "granted";
 

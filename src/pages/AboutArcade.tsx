@@ -2,7 +2,6 @@
  * Sobre Arcade — estética gaming consistente.
  */
 
-import { useNavigate } from "react-router-dom";
 import {
   Shield,
   Sparkles,
@@ -21,7 +20,6 @@ import {
   ArcadeCard,
   ArcadeCTA,
   FloatingParticles,
-  GlitchText,
 } from "@/components/arcade/ArcadeLayout";
 import { Page } from "@/components/layouts/Page";
 import { useState } from "react";
@@ -139,7 +137,7 @@ export default function AboutArcade() {
         <ArcadeSectionTitle>Nossos Stats</ArcadeSectionTitle>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {VALUES.map(({ icon: Icon, title, desc }, i) => (
+          {VALUES.map(({ icon: Icon, title, desc }) => (
             <ArcadeCard key={title}>
               <div className="p-5 text-center">
                 <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">

@@ -31,7 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { log } from "@/lib/logger";
 import { fileUploadService } from "@/lib/file-upload-service";
-import type { PaymentFile, FileValidationResult } from "@/types/manual-payment";
+import type { PaymentFile } from "@/types/manual-payment";
 
 interface FileUploadComponentProps {
   paymentId: string;
@@ -75,7 +75,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
     "mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices;
 
   // Validate a single file
-  const validateFile = (file: File): string[] => {
+  const validateFile = useCallback((file: File): string[] => {
     const errors: string[] = [];
 
     // Validate file size
@@ -110,7 +110,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
     }
 
     return errors;
-  };
+  }, [acceptedTypes, maxSizeBytes]);
 
   const handleFiles = useCallback(
     (fileList: FileList | File[]) => {
@@ -161,7 +161,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
         setValidationErrors((prev) => [...prev, ...newErrors]);
       }
     },
-    [files, maxFiles, maxSizeBytes, acceptedTypes, disabled]
+    [files, maxFiles, disabled, validateFile]
   );
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

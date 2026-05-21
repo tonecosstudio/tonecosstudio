@@ -8,15 +8,13 @@
  * - Transition logging
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   validateStageTransition,
   canUserOverride,
   getNextStage,
   getPreviousStage,
-  type StageValidationResult,
 } from "../stage-validation";
-import type { StageType } from "../stage-service";
 
 // Mock Supabase client
 vi.mock("@/integrations/supabase/client", () => ({

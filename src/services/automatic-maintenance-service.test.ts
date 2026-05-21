@@ -102,7 +102,7 @@ describe('Automatic Maintenance Service', () => {
         return Promise.resolve({ data: null, error: null });
       });
 
-      (supabase.from as any).mockImplementation((table: string) => {
+      (supabase.from as any).mockImplementation((_table: string) => {
         if (table === 'subscription_deliveries') {
           return {
             select: mockSelect,
@@ -205,7 +205,7 @@ describe('Automatic Maintenance Service', () => {
         return Promise.resolve({ data: null, error: null });
       });
 
-      (supabase.from as any).mockImplementation((table: string) => {
+      (supabase.from as any).mockImplementation((_table: string) => {
         return {
           select: mockSelect
         };

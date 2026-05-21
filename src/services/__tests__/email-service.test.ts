@@ -100,7 +100,7 @@ describe('EmailService', () => {
       try {
         await emailService.sendEmail('test@example.com', 'Subject', '<p>Body</p>');
         expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
-      } catch (error) {
+      } catch (_error) {
         // If it fails, retries should still have been attempted
         expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
       }
@@ -146,7 +146,7 @@ describe('EmailService', () => {
       try {
         await emailService.sendEmail('invalid', 'Subject', '<p>Body</p>');
         expect.fail('Should have thrown an error');
-      } catch (error) {
+      } catch (_error) {
         expect((error as Error).message).toBeTruthy();
         expect((error as Error).message.length).toBeGreaterThan(0);
       }
@@ -170,7 +170,7 @@ describe('EmailService', () => {
       try {
         await emailService.sendEmail('test@example.com', 'Subject', htmlContent);
         expect(true).toBe(true); // Success
-      } catch (error) {
+      } catch (_error) {
         // If it fails, it should not be due to HTML content
         expect((error as Error).message).not.toContain('HTML');
       }
@@ -192,7 +192,7 @@ describe('EmailService', () => {
       try {
         await emailService.sendEmail('test@example.com', 'Subject', htmlContent);
         expect(true).toBe(true); // Success
-      } catch (error) {
+      } catch (_error) {
         // If it fails, it should not be due to special characters
         expect((error as Error).message).not.toContain('character');
       }

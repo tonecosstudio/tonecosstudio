@@ -508,14 +508,6 @@ describe("PhotoGalleryComponent", () => {
     });
 
     it("should handle invalid date formats", () => {
-      const photoWithInvalidDate: PhotoItem[] = [
-        {
-          url: "https://example.com/photo.jpg",
-          uploadedAt: "invalid-date",
-          uploaderName: "Test User",
-        },
-      ];
-
       // Should not crash - component should handle invalid dates gracefully
       // Note: This test expects the component to handle invalid dates without crashing
       // The component currently throws an error, so we skip rendering metadata

@@ -44,7 +44,7 @@ describe("Bulk Operations Integration Test", () => {
     const teamMemberId = "team-789";
     const teamMemberName = "Team Member";
     
-    const mockItems = itemIds.map((id, index) => ({
+    const _mockItems = itemIds.map((id, index) => ({
       id,
       order_id: `order-${index + 1}`,
       order_type: "subscription_delivery",
@@ -86,7 +86,7 @@ describe("Bulk Operations Integration Test", () => {
     };
 
     // Mock update queries for each item
-    const createMockUpdateQuery = (itemId: string) => ({
+    const createMockUpdateQuery = (_itemId: string) => ({
       eq: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
     });
@@ -258,7 +258,7 @@ describe("Bulk Operations Integration Test", () => {
     });
 
     // Mock update queries (only for valid transitions)
-    const createMockUpdateQuery = (shouldSucceed: boolean) => ({
+    const _createMockUpdateQuery = (_shouldSucceed: boolean) => ({
       eq: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
     });
@@ -316,7 +316,7 @@ describe("Bulk Operations Integration Test", () => {
     ];
 
     // Mock items from other collections (should not be included)
-    const mockOtherItems = [
+    const _mockOtherItems = [
       {
         id: "prod-queue-003",
         order_id: "order-003",
@@ -419,7 +419,7 @@ describe("Bulk Operations Integration Test", () => {
     // Test scenario where multiple bulk operations happen concurrently
     const itemIds = ["prod-queue-001", "prod-queue-002"];
     const teamMember1Id = "team-789";
-    const teamMember2Id = "team-456";
+    const _teamMember2Id = "team-456";
     const newStage = "production";
     
     // Mock user fetches

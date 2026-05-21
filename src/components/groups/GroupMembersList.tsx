@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { GroupMember } from "@/types/groups";
 
 interface GroupMembersListProps {
   groupId: string;
@@ -25,7 +24,7 @@ export function GroupMembersList({ groupId, onAddMember }: GroupMembersListProps
   const members = data?.members || [];
 
   const removeMutation = useMutation({
-    mutationFn: ({ memberId, userId }: { memberId: string; userId: string }) =>
+    mutationFn: ({ userId }: { userId: string }) =>
       membershipService.removeMember(groupId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-members", groupId] });
@@ -47,7 +46,7 @@ export function GroupMembersList({ groupId, onAddMember }: GroupMembersListProps
 
   const handleRemove = (memberId: string, userId: string) => {
     setRemovingId(memberId);
-    removeMutation.mutate({ memberId, userId });
+    removeMutation.mutate({ userId });
   };
 
   if (isLoading) {

@@ -386,7 +386,7 @@ export function sanitizeURLWithResult(
       wasModified: modifications.length > 0,
       modifications: modifications.length > 0 ? modifications : undefined
     };
-  } catch (error) {
+  } catch {
     errors.push('Invalid URL format');
     return {
       value: url,

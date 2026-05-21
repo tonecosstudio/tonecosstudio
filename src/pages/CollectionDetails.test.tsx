@@ -1,8 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import CollectionDetails from './CollectionDetails';
 
 // Mock the router params
 vi.mock('react-router-dom', async () => {
@@ -31,20 +27,6 @@ vi.mock('@/integrations/supabase/client', () => ({
 vi.mock('@/services/collection-service', () => ({
   getRotationSchedule: vi.fn(() => Promise.resolve([1, 3, 5, 7, 9, 11])),
 }));
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: false },
-  },
-});
-
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  </BrowserRouter>
-);
 
 describe('CollectionDetails - Revelation Status', () => {
   it('should show mystery placeholder for unrevealed characters', () => {

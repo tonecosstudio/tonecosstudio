@@ -31,8 +31,7 @@ export function PriorityDistributionChart({ data }: PriorityDistributionChartPro
       {/* Donut Chart Simulation */}
       <div className="flex items-center justify-center">
         <div className="relative w-48 h-48">
-          {sortedEntries.map(([priority, count], index) => {
-            const percentage = total > 0 ? (count / total) * 100 : 0;
+          {sortedEntries.map(([priority], index) => {
             return (
               <div
                 key={priority}

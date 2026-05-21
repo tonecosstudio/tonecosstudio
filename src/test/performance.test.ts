@@ -146,7 +146,7 @@ describePerformance("Performance: Dashboard Load with 100+ Payments", () => {
   it("should load dashboard with 100 pending payments in ≤ 2 seconds", async () => {
     // Requirement 18.1: Dashboard loads in ≤ 2 seconds with 100 pending payments
 
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select(
@@ -181,7 +181,7 @@ describePerformance("Performance: Dashboard Load with 100+ Payments", () => {
   it("should apply filters efficiently", async () => {
     // Test filtering performance
 
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select("*")
@@ -219,7 +219,7 @@ describePerformance("Performance: Dashboard Load with 100+ Payments", () => {
       return;
     }
 
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select("*")
@@ -274,7 +274,7 @@ describePerformance("Performance: Payment Details View Load", () => {
   it("should load payment details in ≤ 1 second", async () => {
     // Requirement 18.2: Payment details view loads in ≤ 1 second
 
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select(
@@ -300,7 +300,7 @@ describePerformance("Performance: Payment Details View Load", () => {
   });
 
   it("should load audit trail efficiently", async () => {
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("payment_audit_log")
         .select("*")
@@ -432,7 +432,7 @@ describePerformance("Performance: Pagination", () => {
   it("should return exactly 25 items per page", async () => {
     // Requirement 18.5: Pagination: 25 items per page
 
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select("*")
@@ -452,7 +452,7 @@ describePerformance("Performance: Pagination", () => {
   });
 
   it("should efficiently load second page", async () => {
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select("*")
@@ -472,7 +472,7 @@ describePerformance("Performance: Pagination", () => {
   });
 
   it("should count total items efficiently", async () => {
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { count, error } = await supabase
         .from("manual_payments")
         .select("*", { count: "exact", head: true });
@@ -611,7 +611,7 @@ describePerformance("Performance: Bulk Operations with 50+ Payments", () => {
   });
 
   it("should perform bulk query on 50+ payments efficiently", async () => {
-    const { result, duration } = await measureTime(async () => {
+    const { duration } = await measureTime(async () => {
       const { data, error } = await supabase
         .from("manual_payments")
         .select("*")

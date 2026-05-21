@@ -11,7 +11,7 @@
  */
 
 import { ValidationError, ErrorCategory, errorTracking } from '@/lib/error-tracking';
-import { sanitizeFilename, validateFileUpload, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from './input-sanitizer';
+import { validateFileUpload, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from './input-sanitizer';
 
 /**
  * Image processing options

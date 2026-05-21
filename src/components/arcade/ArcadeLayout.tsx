@@ -7,7 +7,6 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Coins, Menu, Bell, X } from "lucide-react";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { useEffect, useState, type PropsWithChildren } from "react";
-import { ArcadeFooter } from "@/components/arcade/ArcadeFooter";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/lib/roles";
 

@@ -27,7 +27,6 @@ vi.mock("@/lib/validations/support", () => ({
 
 describe("AttachmentUpload", () => {
   const mockOnFilesSelected = vi.fn();
-  const mockOnRemoveFile = vi.fn();
 
   // Mock URL.createObjectURL and revokeObjectURL
   beforeEach(() => {

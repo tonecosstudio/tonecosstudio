@@ -11,10 +11,9 @@
  * - Audit log completeness
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
 import { fileUploadService, FileUploadError } from "@/lib/file-upload-service";
-import { paymentService } from "@/lib/payment-service";
 
 describe("Security Audit Tests", () => {
   describe("1. File Upload Security", () => {
@@ -183,7 +182,7 @@ describe("Security Audit Tests", () => {
       it("should generate unique file names", () => {
         // Test that file names are unique
         const paymentId = "test-payment-id";
-        const originalName = "test.jpg";
+        const _originalName = "test.jpg";
 
         // Generate multiple file names
         const names = new Set();
@@ -653,7 +652,7 @@ describe("Security Audit Tests", () => {
       it("should sanitize HTML in messages", () => {
         // Example of what should be implemented
         const dangerousInput = '<script>alert("XSS")</script>';
-        const expectedOutput = ""; // Should be stripped
+        const _expectedOutput = ""; // Should be stripped
 
         // This test documents the requirement
         expect(dangerousInput).toContain("script");

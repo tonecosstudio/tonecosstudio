@@ -305,7 +305,7 @@ describe('Task 29.6 - Enhancements Phase Checkpoint', () => {
   describe('Integration Tests', () => {
     it('should complete full Semestral subscription flow with bonus piece', () => {
       // Verify complete flow
-      const subscription = {
+      const _subscriptionFixture = {
         plan_type: 'semestral',
         total_deliveries: 6,
         deliveries_completed: 0,

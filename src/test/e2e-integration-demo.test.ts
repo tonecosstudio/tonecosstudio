@@ -11,13 +11,13 @@
  * and set VITEST_INTEGRATION=true environment variable.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // =====================================================
 // MOCK DATA AND HELPERS
 // =====================================================
 
-const mockPaymentMethod = {
+const _mockPaymentMethod = {
   id: "pm-123",
   name: "PIX Test",
   type: "pix" as const,
@@ -26,26 +26,26 @@ const mockPaymentMethod = {
   is_default: true,
 };
 
-const mockCustomer = {
+const _mockCustomer = {
   id: "user-123",
   email: "customer@test.com",
   full_name: "Test Customer",
 };
 
-const mockAdmin = {
+const _mockAdmin = {
   id: "admin-123",
   email: "admin@test.com",
   full_name: "Test Admin",
 };
 
-const mockQuote = {
+const _mockQuote = {
   id: "quote-123",
   user_id: "user-123",
   status: "pending",
   total_amount: 100.0,
 };
 
-const mockPayment = {
+const _mockPayment = {
   id: "payment-123",
   reference_number: "PAY-20240101-1234",
   user_id: "user-123",

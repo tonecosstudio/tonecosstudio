@@ -283,7 +283,6 @@ export function isBusinessDay(date: Date, holidays: Date[] = []): boolean {
  * // Returns March 11 (skips weekend and holiday)
  */
 export function addBusinessDays(startDate: Date, businessDays: number, holidays: Date[] = []): Date {
-  const result = new Date(startDate);
   let daysAdded = 0;
   const currentDate = new Date(startDate);
   

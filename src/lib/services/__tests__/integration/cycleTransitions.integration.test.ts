@@ -74,7 +74,7 @@ describe('Integration: Cycle Status Transitions', () => {
       };
 
       // Act & Assert
-      Object.entries(validTransitions).forEach(([current, allowed]) => {
+      Object.entries(validTransitions).forEach(([_current, allowed]) => {
         expect(Array.isArray(allowed)).toBe(true);
       });
     });

@@ -4,8 +4,7 @@
  */
 
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
 import { FileUploadComponent } from "./FileUploadComponent";
 import { fileUploadService } from "@/lib/file-upload-service";
 
@@ -187,7 +186,7 @@ describe("FileUploadComponent", () => {
       writable: true,
     });
 
-    const { rerender } = render(
+    render(
       <FileUploadComponent
         paymentId={mockPaymentId}
         onUploadComplete={mockOnUploadComplete}

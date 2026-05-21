@@ -34,12 +34,6 @@ describe("UnblockProductionModal", () => {
   const mockOnOpenChange = vi.fn();
   const mockOnUnblock = vi.fn();
 
-  const mockBlockInfo = {
-    blockReason: "Aguardando material em falta",
-    blockedAt: "2024-01-15T10:00:00Z",
-    currentStage: "production",
-  };
-
   const mockProductionQueueItem = {
     id: "queue-1",
     current_stage: "production",

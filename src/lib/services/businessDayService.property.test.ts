@@ -99,7 +99,7 @@ describe('BusinessDayService - Property-Based Tests', () => {
               // O dia deve ser <= último dia do mês
               const lastDay = new Date(year, month, 0).getDate();
               expect(day).toBeLessThanOrEqual(lastDay);
-            } catch (error) {
+            } catch (_error) {
               // Alguns meses podem não ter N dias úteis suficientes
               // Isso é aceitável
               if (error instanceof Error && !error.message.includes('Não há')) {
@@ -128,7 +128,7 @@ describe('BusinessDayService - Property-Based Tests', () => {
               // Dia da semana deve ser 1-5 (segunda a sexta)
               expect(dayOfWeek).toBeGreaterThanOrEqual(1);
               expect(dayOfWeek).toBeLessThanOrEqual(5);
-            } catch (error) {
+            } catch (_error) {
               // Aceitar erro se não houver dias úteis suficientes
               if (error instanceof Error && !error.message.includes('Não há')) {
                 throw error;
@@ -192,7 +192,7 @@ describe('BusinessDayService - Property-Based Tests', () => {
               const fifthDay = await businessDayService.calculateNthBusinessDay(month, year, 5);
               
               expect(fifthDay.getTime()).toBeGreaterThan(fourthDay.getTime());
-            } catch (error) {
+            } catch (_error) {
               // Aceitar erro se não houver dias úteis suficientes
               if (error instanceof Error && !error.message.includes('Não há')) {
                 throw error;
@@ -285,7 +285,7 @@ describe('BusinessDayService - Property-Based Tests', () => {
             
             try {
               await businessDayService.calculateNthBusinessDay(month, year, 5);
-            } catch (error) {
+            } catch (_error) {
               // Ignorar erros de dias insuficientes
             }
             
