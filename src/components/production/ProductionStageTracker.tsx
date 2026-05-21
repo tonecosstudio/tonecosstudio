@@ -7,7 +7,6 @@
  */
 
 import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import {
-  getStageHistory,
+  useProductionStageHistory,
   type ProductionStageRecord,
   type StageType,
-} from "@/services/admin/stage-service";
+} from "@/hooks/admin/useProductionStages";
 import { StageTransitionModal } from "./StageTransitionModal";
 
 // ============================================================================
@@ -57,7 +56,6 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
   productionQueueId,
   onStageComplete,
 }) => {
-  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch stage history
@@ -65,11 +63,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
     data: stages = [],
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ["production-stages", productionQueueId],
-    queryFn: () => getStageHistory(productionQueueId),
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
+  } = useProductionStageHistory(productionQueueId);
 
   // Find current stage (first non-completed stage)
   const currentStage = stages.find(
@@ -202,7 +196,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
           <div className="relative flex justify-between">
             {stages
               .sort((a, b) => a.stageOrder - b.stageOrder)
-              .map((stage, index) => {
+              .map((stage) => {
                 const config = STAGE_CONFIG[stage.stageName];
                 const isCompleted = stage.status === "completed";
                 const isCurrent = currentStage?.id === stage.id;

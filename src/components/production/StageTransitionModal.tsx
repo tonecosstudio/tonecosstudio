@@ -1,38 +1,19 @@
-/**
- * StageTransitionModal Component
- *
- * Modal for transitioning between production stages with:
- * - Current and next stage display
- * - Notes textarea for stage completion
- * - Photo upload (up to 5 photos)
- * - Estimated time for next stage
- * - Complete & Move to Next Stage button
- *
- * Integrates with ProductionStageTracker and uses stage-service.ts backend
- */
-
-import React, { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import React, { useRef, useState } from "react";
+import { AlertTriangle, ChevronRight, Clock, Loader2, Upload, X } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import { Upload, X, Loader2, ChevronRight, Clock, AlertTriangle } from "lucide-react";
 import {
-  completeStage,
-  uploadStagePhoto,
+  ProductionStageValidationError,
+  useCompleteProductionStage,
   type ProductionStageRecord,
   type StageType,
-} from "@/services/admin/stage-service";
-import { validateStageTransition } from "@/services/admin/stage-validation";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
-
-// ============================================================================
-// Types
-// ============================================================================
+} from "@/hooks/admin/useProductionStages";
 
 interface StageTransitionModalProps {
   isOpen: boolean;
@@ -46,8 +27,6 @@ interface StageTransitionModalProps {
 interface PhotoUpload {
   file: File;
   preview: string;
-  uploading: boolean;
-  url?: string;
 }
 
 interface ValidationError {
@@ -56,25 +35,20 @@ interface ValidationError {
   requiresJustification: boolean;
 }
 
-// Stage display configuration
 const STAGE_LABELS: Record<StageType, string> = {
-  awaiting_payment: "Aguardando Pagamento",
-  payment_confirmed: "Pagamento Confirmado",
-  awaiting_choice: "Aguardando Escolha",
-  model_preparation: "Preparação do Modelo",
-  printing: "Em Impressão 3D",
-  post_processing: "Limpeza e Preparação",
-  painting: "Pintura Artesanal",
-  quality_check: "Controle de Qualidade",
+  awaiting_payment: "Aguardando pagamento",
+  payment_confirmed: "Pagamento confirmado",
+  awaiting_choice: "Aguardando escolha",
+  model_preparation: "Preparacao do modelo",
+  printing: "Impressao 3D",
+  post_processing: "Limpeza e preparacao",
+  painting: "Pintura artesanal",
+  quality_check: "Controle de qualidade",
   packaging: "Embalagem",
-  ready_to_ship: "Pronto para Envio",
+  ready_to_ship: "Pronto para envio",
   shipped: "Enviado",
   delivered: "Entregue",
 };
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
   isOpen,
@@ -84,197 +58,148 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
   productionQueueId,
   onComplete,
 }) => {
-  const queryClient = useQueryClient();
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const completeStageMutation = useCompleteProductionStage();
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<PhotoUpload[]>([]);
   const [validationError, setValidationError] = useState<ValidationError | null>(null);
   const [enableOverride, setEnableOverride] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
-  const [isValidating, setIsValidating] = useState(false);
 
-  // Complete stage mutation
-  const completeCurrentStageMutation = useMutation({
-    mutationFn: async () => {
-      // Validate stage transition first (unless override is enabled)
-      if (!enableOverride) {
-        setIsValidating(true);
-        const validation = await validateStageTransition(productionQueueId, currentStage.id);
-        setIsValidating(false);
+  const isSubmitting = completeStageMutation.isPending;
 
-        if (!validation.isValid) {
-          setValidationError({
-            message: validation.error || "Validation failed",
-            canOverride: validation.canOverride,
-            requiresJustification: validation.requiresJustification,
-          });
-          throw new Error(validation.error || "Validation failed");
-        }
-      } else {
-        // If override is enabled, check justification
-        if (!overrideJustification.trim()) {
-          throw new Error("Justification is required for admin override");
-        }
-      }
-
-      // Upload all photos first
-      const uploadedUrls: string[] = [];
-      
-      for (const photo of photos) {
-        if (!photo.url) {
-          try {
-            const url = await uploadStagePhoto(currentStage.id, photo.file);
-            uploadedUrls.push(url);
-          } catch (error) {
-            throw new Error(`Erro ao fazer upload da foto: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
-          }
-        } else {
-          uploadedUrls.push(photo.url);
-        }
-      }
-
-      // Complete stage with notes and photo URLs
-      return completeStage(
-        currentStage.id,
-        notes || undefined,
-        uploadedUrls.length > 0 ? uploadedUrls : undefined,
-        enableOverride,
-        enableOverride ? overrideJustification : undefined
-      );
-    },
-    onSuccess: (updatedStage) => {
-      toast({
-        title: "Estágio Completado",
-        description: `${STAGE_LABELS[updatedStage.stageName]} foi marcado como completo.`,
-      });
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["production-stages", productionQueueId] });
-      queryClient.invalidateQueries({ queryKey: ["production-queue"] });
-
-      // Call callback if provided
-      if (onComplete) {
-        onComplete(updatedStage);
-      }
-
-      // Reset form and close modal
-      resetForm();
-      onOpenChange(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao Completar Estágio",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle file selection
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    // Check if adding these files would exceed the limit
-    if (photos.length + files.length > 5) {
-      toast({
-        title: "Limite de Fotos Excedido",
-        description: "Você pode adicionar no máximo 5 fotos.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Process each file
-    Array.from(files).forEach((file) => {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast({
-          title: "Tipo de Arquivo Inválido",
-          description: "Apenas arquivos de imagem são permitidos.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast({
-          title: "Arquivo Muito Grande",
-          description: "O tamanho máximo por foto é 5MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotos((prev) => [
-          ...prev,
-          {
-            file,
-            preview: reader.result as string,
-            uploading: false,
-          },
-        ]);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Reset input
-    event.target.value = "";
-  };
-
-  // Remove photo
-  const handleRemovePhoto = (index: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Reset form
   const resetForm = () => {
     setNotes("");
     setPhotos([]);
     setValidationError(null);
     setEnableOverride(false);
     setOverrideJustification("");
-    setIsValidating(false);
   };
 
-  // Handle modal close
   const handleOpenChange = (open: boolean) => {
-    if (!open && !completeCurrentStageMutation.isPending) {
+    if (!open && !isSubmitting) {
       resetForm();
     }
+
     onOpenChange(open);
   };
 
-  // Format duration
-  const formatDuration = (hours: number): string => {
-    if (hours < 1) {
-      return `${Math.round(hours * 60)} minutos`;
-    } else if (hours < 24) {
-      return `${Math.round(hours)} horas`;
-    } else {
-      const days = Math.floor(hours / 24);
-      const remainingHours = Math.round(hours % 24);
-      return remainingHours > 0 ? `${days} dias e ${remainingHours} horas` : `${days} dias`;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    if (selectedFiles.length === 0) return;
+
+    if (photos.length + selectedFiles.length > 5) {
+      toast({
+        title: "Limite de fotos excedido",
+        description: "Voce pode adicionar no maximo 5 fotos.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    selectedFiles.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Tipo de arquivo invalido",
+          description: "Apenas arquivos de imagem sao permitidos.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "O tamanho maximo por foto e 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotos((currentPhotos) => [
+          ...currentPhotos,
+          {
+            file,
+            preview: reader.result as string,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setPhotos((currentPhotos) => currentPhotos.filter((_, photoIndex) => photoIndex !== index));
+  };
+
+  const handleCompleteStage = () => {
+    setValidationError(null);
+
+    completeStageMutation.mutate(
+      {
+        productionQueueId,
+        stageId: currentStage.id,
+        notes: notes.trim() || undefined,
+        photos: photos.map((photo) => photo.file),
+        enableOverride,
+        overrideJustification: enableOverride ? overrideJustification.trim() : undefined,
+      },
+      {
+        onSuccess: (updatedStage) => {
+          toast({
+            title: "Estagio completado",
+            description: `${STAGE_LABELS[updatedStage.stageName]} foi marcado como completo.`,
+          });
+
+          onComplete?.(updatedStage);
+          resetForm();
+          onOpenChange(false);
+        },
+        onError: (error: Error) => {
+          if (error instanceof ProductionStageValidationError) {
+            setValidationError({
+              message: error.message,
+              canOverride: error.validation.canOverride,
+              requiresJustification: error.validation.requiresJustification,
+            });
+          }
+
+          toast({
+            title: "Erro ao completar estagio",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  const formatDuration = (hours: number): string => {
+    if (hours < 1) return `${Math.round(hours * 60)} minutos`;
+    if (hours < 24) return `${Math.round(hours)} horas`;
+
+    const days = Math.floor(hours / 24);
+    const remainingHours = Math.round(hours % 24);
+    return remainingHours > 0 ? `${days} dias e ${remainingHours} horas` : `${days} dias`;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Completar Estágio de Produção</DialogTitle>
+          <DialogTitle>Completar estagio de producao</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Validation Error Alert */}
           {validationError && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Validation Error</AlertTitle>
+              <AlertTitle>Validacao bloqueada</AlertTitle>
               <AlertDescription>
                 <p className="mb-2">{validationError.message}</p>
                 {validationError.canOverride && (
@@ -284,8 +209,9 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
                         id="enable-override"
                         checked={enableOverride}
                         onCheckedChange={(checked) => {
-                          setEnableOverride(checked as boolean);
-                          if (!checked) {
+                          const shouldEnableOverride = checked === true;
+                          setEnableOverride(shouldEnableOverride);
+                          if (!shouldEnableOverride) {
                             setOverrideJustification("");
                           }
                         }}
@@ -294,24 +220,25 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
                         htmlFor="enable-override"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
-                        Enable Admin Override
+                        Autorizar override administrativo
                       </label>
                     </div>
+
                     {enableOverride && validationError.requiresJustification && (
                       <div className="space-y-2">
                         <Label htmlFor="override-justification">
-                          Justification (Required) <span className="text-destructive">*</span>
+                          Justificativa <span className="text-destructive">*</span>
                         </Label>
                         <Textarea
                           id="override-justification"
-                          placeholder="Explain why you need to skip this validation..."
+                          placeholder="Explique por que esta validacao precisa ser ignorada."
                           value={overrideJustification}
-                          onChange={(e) => setOverrideJustification(e.target.value)}
+                          onChange={(event) => setOverrideJustification(event.target.value)}
                           rows={3}
                           className="resize-none"
                         />
                         <p className="text-xs text-muted-foreground">
-                          This justification will be logged in the audit trail.
+                          A justificativa sera registrada na trilha de auditoria.
                         </p>
                       </div>
                     )}
@@ -321,32 +248,28 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
             </Alert>
           )}
 
-          {/* Current and Next Stage Display */}
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+          <div className="flex items-center justify-between rounded-lg bg-muted p-4">
             <div className="flex-1">
-              <div className="text-sm text-muted-foreground mb-1">Estágio Atual</div>
-              <div className="font-semibold text-lg">
-                {STAGE_LABELS[currentStage.stageName]}
-              </div>
+              <div className="mb-1 text-sm text-muted-foreground">Estagio atual</div>
+              <div className="text-lg font-semibold">{STAGE_LABELS[currentStage.stageName]}</div>
             </div>
 
-            <ChevronRight className="h-6 w-6 text-muted-foreground mx-4" />
+            <ChevronRight className="mx-4 h-6 w-6 text-muted-foreground" />
 
             <div className="flex-1 text-right">
-              <div className="text-sm text-muted-foreground mb-1">Próximo Estágio</div>
-              <div className="font-semibold text-lg">
-                {nextStage ? STAGE_LABELS[nextStage.stageName] : "Concluído"}
+              <div className="mb-1 text-sm text-muted-foreground">Proximo estagio</div>
+              <div className="text-lg font-semibold">
+                {nextStage ? STAGE_LABELS[nextStage.stageName] : "Concluido"}
               </div>
             </div>
           </div>
 
-          {/* Estimated Time for Next Stage */}
           {nextStage && (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
               <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
                 <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Tempo Estimado para o Próximo Estágio
+                  Tempo estimado para o proximo estagio
                 </div>
                 <div className="text-sm text-blue-700 dark:text-blue-300">
                   {formatDuration(nextStage.estimatedDuration)}
@@ -355,53 +278,41 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
             </div>
           )}
 
-          {/* Notes Textarea */}
           <div className="space-y-2">
-            <Label htmlFor="notes">
-              Notas (Opcional)
-            </Label>
+            <Label htmlFor="notes">Notas opcionais</Label>
             <Textarea
               id="notes"
-              placeholder="Adicione observações sobre este estágio..."
+              placeholder="Adicione observacoes sobre este estagio."
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(event) => setNotes(event.target.value)}
               rows={4}
               className="resize-none"
             />
             <p className="text-xs text-muted-foreground">
-              Adicione informações relevantes sobre a conclusão deste estágio.
+              Registre informacoes relevantes sobre a conclusao deste estagio.
             </p>
           </div>
 
-          {/* Photo Upload */}
           <div className="space-y-3">
-            <Label>
-              Fotos (Opcional - Máximo 5)
-            </Label>
+            <Label>Fotos opcionais ({photos.length}/5)</Label>
 
-            {/* Photo Grid */}
             {photos.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
                 {photos.map((photo, index) => (
                   <div
-                    key={index}
-                    className="relative aspect-square rounded-lg overflow-hidden border bg-muted group"
+                    key={`${photo.file.name}-${index}`}
+                    className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
                   >
                     <img
                       src={photo.preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                     />
-                    {photo.uploading && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-white" />
-                      </div>
-                    )}
                     <button
                       type="button"
                       onClick={() => handleRemovePhoto(index)}
-                      className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      disabled={completeCurrentStageMutation.isPending}
+                      className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                      disabled={isSubmitting}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -410,49 +321,43 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
               </div>
             )}
 
-            {/* Upload Button */}
             {photos.length < 5 && (
               <div>
                 <input
+                  ref={photoInputRef}
                   type="file"
                   id="photo-upload"
                   accept="image/*"
                   multiple
                   onChange={handleFileSelect}
                   className="hidden"
-                  disabled={completeCurrentStageMutation.isPending}
+                  disabled={isSubmitting}
                 />
-                <label htmlFor="photo-upload">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={completeCurrentStageMutation.isPending}
-                    onClick={() => document.getElementById("photo-upload")?.click()}
-                    asChild
-                  >
-                    <span>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Adicionar Fotos ({photos.length}/5)
-                    </span>
-                  </Button>
-                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={isSubmitting}
+                  onClick={() => photoInputRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Adicionar fotos
+                </Button>
               </div>
             )}
 
             <p className="text-xs text-muted-foreground">
-              Adicione fotos do progresso ou resultado deste estágio. Máximo 5MB por foto.
+              Fotos do progresso ou resultado deste estagio. Maximo 5MB por foto.
             </p>
           </div>
 
-          {/* Current Stage Info */}
-          <div className="p-4 border rounded-lg bg-muted/50">
+          <div className="rounded-lg border bg-muted/50 p-4">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-sm font-medium mb-1">Informações do Estágio</div>
+                <div className="mb-1 text-sm font-medium">Informacoes do estagio</div>
                 {currentStage.assignedToName && (
                   <div className="text-sm text-muted-foreground">
-                    Atribuído a: {currentStage.assignedToName}
+                    Atribuido a: {currentStage.assignedToName}
                   </div>
                 )}
                 {currentStage.startedAt && (
@@ -461,39 +366,32 @@ export const StageTransitionModal: React.FC<StageTransitionModalProps> = ({
                   </div>
                 )}
               </div>
-              <Badge variant="secondary">
-                Estágio {currentStage.stageOrder} de 6
-              </Badge>
+              <Badge variant="secondary">Estagio {currentStage.stageOrder}</Badge>
             </div>
           </div>
         </div>
 
         <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={completeCurrentStageMutation.isPending || isValidating}
-          >
+          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
           <Button
-            onClick={() => completeCurrentStageMutation.mutate()}
+            onClick={handleCompleteStage}
             disabled={
-              completeCurrentStageMutation.isPending ||
-              isValidating ||
+              isSubmitting ||
               currentStage.isBlocked ||
               (enableOverride && !overrideJustification.trim())
             }
           >
-            {completeCurrentStageMutation.isPending || isValidating ? (
+            {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                {isValidating ? "Validating..." : "Processando..."}
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processando...
               </>
             ) : (
               <>
-                <ChevronRight className="h-4 w-4 mr-2" />
-                {enableOverride ? "Override & Complete Stage" : "Completar & Avançar para Próximo Estágio"}
+                <ChevronRight className="mr-2 h-4 w-4" />
+                {enableOverride ? "Concluir com override" : "Completar e avancar"}
               </>
             )}
           </Button>

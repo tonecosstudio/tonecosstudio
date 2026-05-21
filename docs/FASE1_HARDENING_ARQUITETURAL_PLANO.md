@@ -24,6 +24,7 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - Services de notificações, uploads, métricas, prazos e preços normalizados.
 - Hooks de mensagens, grupos e typing indicator endurecidos com guards e limpeza de timers/subscriptions.
 - Plano e relatórios antigos revisados para remover diagnósticos obsoletos.
+- Fluxo de estágios de produção isolado em `src/hooks/admin/useProductionStages.ts`, removendo imports diretos de service/validation dos componentes `StageTransitionModal`, `StageHistoryPanel` e `ProductionStageTracker`.
 
 ## Plano de execução restante
 
@@ -72,5 +73,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **74/100**.
+- Score após correções já aplicadas: **75/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.

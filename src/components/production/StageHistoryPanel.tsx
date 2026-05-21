@@ -7,17 +7,16 @@
  */
 
 import React, { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Clock, FileText, Image as ImageIcon, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  getStageHistory,
+  useProductionStageHistory,
   type ProductionStageRecord,
   type StageType,
-} from "@/services/admin/stage-service";
+} from "@/hooks/admin/useProductionStages";
 
 // ============================================================================
 // Types
@@ -55,11 +54,7 @@ export const StageHistoryPanel: React.FC<StageHistoryPanelProps> = ({
     data: stages = [],
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ["production-stages", productionQueueId],
-    queryFn: () => getStageHistory(productionQueueId),
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
+  } = useProductionStageHistory(productionQueueId);
 
   // Calculate average duration for completed stages
   const averageDuration = useMemo(() => {
