@@ -30,6 +30,8 @@ Estabelecer uma fundação arquitetural sólida antes de novas expansões funcio
 - Pages de notificações admin (`AdminNotificationSettings` e `AdminNotificationHistory`) passaram a consumir `useAdminNotificationManagement`, removendo query/mutation/service direto da UI.
 - Componentes de produção com imports apenas tipados (`ProductionListView`, `BulkStageUpdateModal`) passaram a usar `src/types/production`, com remoção de `any` explícito no sort da lista.
 - Componentes de fluxo de produção (`BulkAssignModal`, `ProductionPipelineView`, `TeamWorkloadView`) deixaram de fazer logging direto via console; feedback de erro fica nos toasts ou handlers proprietários.
+- Gestão admin de métodos de pagamento passou a executar exclusão real via `payment-method-service` e `useAdminPaymentMethods`, removendo callback morto e log direto da page.
+- Upload de fotos de produção passou a registrar falha não fatal de compressão pelo logger central, sem `console.*` no componente.
 
 ## Plano de execução restante
 
@@ -78,5 +80,5 @@ O relatório final deve conter:
 
 ## Score
 - Score inicial estimado: **62/100**.
-- Score após correções já aplicadas: **80/100**.
+- Score após correções já aplicadas: **81/100**.
 - Meta da FASE 1: **75+** com redução real de risco estrutural.

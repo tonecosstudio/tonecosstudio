@@ -17,6 +17,7 @@ import {
   updatePaymentMethod,
   setDefaultPaymentMethod,
   togglePaymentMethodActive,
+  deletePaymentMethod,
   clearPaymentMethodCache,
   listAllPaymentMethods,
 } from "./payment-method-service";
@@ -32,6 +33,12 @@ vi.mock("@/integrations/supabase/client", () => ({
 import { supabase } from "@/integrations/supabase/client";
 
 describe("PaymentMethodService", () => {
+  const mockPaymentMethodTable = (tableMock: unknown) => {
+    (supabase.from as unknown as { mockReturnValue: (value: unknown) => void }).mockReturnValue(
+      tableMock
+    );
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     clearPaymentMethodCache();
@@ -68,7 +75,7 @@ describe("PaymentMethodService", () => {
       const mockEq = vi.fn().mockReturnThis();
       const mockOrder = vi.fn().mockResolvedValue({ data: mockData, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         select: mockSelect,
         eq: mockEq,
         order: mockOrder,
@@ -102,7 +109,7 @@ describe("PaymentMethodService", () => {
       const mockEq = vi.fn().mockReturnThis();
       const mockOrder = vi.fn().mockResolvedValue({ data: mockData, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         select: mockSelect,
         eq: mockEq,
         order: mockOrder,
@@ -123,7 +130,7 @@ describe("PaymentMethodService", () => {
       const mockEq = vi.fn().mockReturnThis();
       const mockOrder = vi.fn().mockResolvedValue({ data: null, error: mockError });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         select: mockSelect,
         eq: mockEq,
         order: mockOrder,
@@ -153,7 +160,7 @@ describe("PaymentMethodService", () => {
       const mockEq = vi.fn().mockReturnThis();
       const mockMaybeSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         select: mockSelect,
         eq: mockEq,
         maybeSingle: mockMaybeSingle,
@@ -171,7 +178,7 @@ describe("PaymentMethodService", () => {
       const mockEq = vi.fn().mockReturnThis();
       const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         select: mockSelect,
         eq: mockEq,
         maybeSingle: mockMaybeSingle,
@@ -213,7 +220,7 @@ describe("PaymentMethodService", () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         insert: mockInsert,
         select: mockSelect,
         single: mockSingle,
@@ -238,11 +245,11 @@ describe("PaymentMethodService", () => {
     });
 
     it("should throw error if type is missing", async () => {
-      const input: any = {
+      const input = {
         name: "PIX",
         instructions: "Transfer to PIX key",
         is_active: true,
-      };
+      } as unknown as PaymentMethodInput;
 
       await expect(createPaymentMethod(input)).rejects.toThrow("Payment method type is required");
     });
@@ -283,7 +290,7 @@ describe("PaymentMethodService", () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         insert: mockInsert,
         select: mockSelect,
         single: mockSingle,
@@ -315,7 +322,7 @@ describe("PaymentMethodService", () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         update: mockUpdate,
         eq: mockEq,
         select: mockSelect,
@@ -350,7 +357,7 @@ describe("PaymentMethodService", () => {
       const mockUpdate = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockResolvedValue({ error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         update: mockUpdate,
         eq: mockEq,
       });
@@ -367,7 +374,7 @@ describe("PaymentMethodService", () => {
       const mockUpdate = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockResolvedValue({ error: mockError });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         update: mockUpdate,
         eq: mockEq,
       });
@@ -383,7 +390,7 @@ describe("PaymentMethodService", () => {
       const mockUpdate = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockResolvedValue({ error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         update: mockUpdate,
         eq: mockEq,
       });
@@ -398,7 +405,7 @@ describe("PaymentMethodService", () => {
       const mockUpdate = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockResolvedValue({ error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         update: mockUpdate,
         eq: mockEq,
       });
@@ -407,6 +414,39 @@ describe("PaymentMethodService", () => {
 
       expect(mockUpdate).toHaveBeenCalledWith({ is_active: false });
       expect(mockEq).toHaveBeenCalledWith("id", "1");
+    });
+  });
+
+  describe("deletePaymentMethod", () => {
+    it("should delete payment method by id", async () => {
+      const mockDelete = vi.fn().mockReturnThis();
+      const mockEq = vi.fn().mockResolvedValue({ error: null });
+
+      mockPaymentMethodTable({
+        delete: mockDelete,
+        eq: mockEq,
+      });
+
+      await deletePaymentMethod("1");
+
+      expect(supabase.from).toHaveBeenCalledWith("admin_payment_methods");
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockEq).toHaveBeenCalledWith("id", "1");
+    });
+
+    it("should throw error on database failure", async () => {
+      const mockError = { message: "Database error" };
+      const mockDelete = vi.fn().mockReturnThis();
+      const mockEq = vi.fn().mockResolvedValue({ error: mockError });
+
+      mockPaymentMethodTable({
+        delete: mockDelete,
+        eq: mockEq,
+      });
+
+      await expect(deletePaymentMethod("1")).rejects.toThrow(
+        "Failed to delete payment method: Database error"
+      );
     });
   });
 
@@ -440,7 +480,7 @@ describe("PaymentMethodService", () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockOrder = vi.fn().mockResolvedValue({ data: mockData, error: null });
 
-      (supabase.from as any).mockReturnValue({
+      mockPaymentMethodTable({
         select: mockSelect,
         order: mockOrder,
       });

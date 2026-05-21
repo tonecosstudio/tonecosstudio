@@ -4,6 +4,7 @@ import { toast } from "@/hooks/use-toast";
 import type { PaymentMethod } from "@/types/manual-payment";
 import {
   clearPaymentMethodCache,
+  deletePaymentMethod,
   listAllPaymentMethods,
   setDefaultPaymentMethod,
   togglePaymentMethodActive,
@@ -95,6 +96,25 @@ export function useAdminPaymentMethods() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deletePaymentMethod(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
+      clearPaymentMethodCache();
+      toast({
+        title: "Método excluído",
+        description: "Método de pagamento excluído com sucesso.",
+      });
+    },
+    onError: (mutationError: Error) => {
+      toast({
+        title: "Erro",
+        description: `Falha ao excluir método de pagamento: ${mutationError.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     methods,
     setMethods,
@@ -103,5 +123,6 @@ export function useAdminPaymentMethods() {
     toggleActiveMutation,
     setDefaultMutation,
     updateOrderMutation,
+    deleteMutation,
   };
 }

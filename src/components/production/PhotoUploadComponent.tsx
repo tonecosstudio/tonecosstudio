@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import imageCompression from "browser-image-compression";
 import { validateFileUpload, sanitizeFilename } from "@/lib/security/input-sanitizer";
 import { useProductionPhotoStorage } from "@/hooks/admin/useProductionPhotoStorage";
+import { log } from "@/lib/logger";
 
 // ============================================================================
 // Types
@@ -147,8 +148,7 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
       const compressedFile = await imageCompression(file, COMPRESSION_OPTIONS);
       return compressedFile;
     } catch (error) {
-      console.error("Error compressing image:", error);
-      // If compression fails, return original file
+      log.warn("Image compression failed; using original file.", { error });
       return file;
     }
   };

@@ -22,11 +22,6 @@ export default function AdminPaymentMethods() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (method: PaymentMethod) => {
-    // Delete is handled by PaymentMethodList component
-    console.log("Delete method:", method.id);
-  };
-
   const handleFormClose = () => {
     setIsFormOpen(false);
     setSelectedMethod(null);
@@ -61,7 +56,7 @@ export default function AdminPaymentMethods() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <PaymentMethodList onEdit={handleEdit} onDelete={handleDelete} />
+          <PaymentMethodList onEdit={handleEdit} />
         </CardContent>
       </Card>
 

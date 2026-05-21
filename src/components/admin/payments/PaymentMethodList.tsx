@@ -68,7 +68,6 @@ import { useAdminPaymentMethods } from "@/hooks/admin/useAdminPaymentMethods";
 
 interface PaymentMethodListProps {
   onEdit?: (method: PaymentMethod) => void;
-  onDelete?: (method: PaymentMethod) => void;
 }
 
 interface SortableRowProps {
@@ -170,7 +169,7 @@ function SortableRow({ method, onToggleActive, onSetDefault, onEdit, onDelete }:
   );
 }
 
-export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) {
+export function PaymentMethodList({ onEdit }: PaymentMethodListProps) {
   const {
     methods,
     setMethods,
@@ -179,6 +178,7 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
     toggleActiveMutation,
     setDefaultMutation,
     updateOrderMutation,
+    deleteMutation,
   } = useAdminPaymentMethods();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -226,12 +226,28 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (methodToDelete && onDelete) {
-      onDelete(methodToDelete);
+  const handleDeleteDialogOpenChange = (open: boolean) => {
+    if (deleteMutation.isPending) {
+      return;
     }
-    setDeleteDialogOpen(false);
-    setMethodToDelete(null);
+
+    setDeleteDialogOpen(open);
+    if (!open) {
+      setMethodToDelete(null);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (!methodToDelete) {
+      return;
+    }
+
+    deleteMutation.mutate(methodToDelete.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setMethodToDelete(null);
+      },
+    });
   };
 
   if (isLoading) {
@@ -312,7 +328,7 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
         </p>
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={handleDeleteDialogOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir metodo de pagamento</AlertDialogTitle>
@@ -323,8 +339,15 @@ export function PaymentMethodList({ onEdit, onDelete }: PaymentMethodListProps) 
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -265,6 +265,25 @@ export async function togglePaymentMethodActive(id: string, isActive: boolean): 
 }
 
 /**
+ * Delete a payment method.
+ *
+ * @param id - Payment method UUID
+ * @throws Error if database delete fails
+ */
+export async function deletePaymentMethod(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("admin_payment_methods")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Failed to delete payment method: ${error.message}`);
+  }
+
+  clearPaymentMethodCache();
+}
+
+/**
  * Clear the payment methods cache
  * Should be called after any mutation operation
  */
