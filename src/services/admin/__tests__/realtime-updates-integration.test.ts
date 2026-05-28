@@ -32,6 +32,27 @@ vi.mock("../../notifications/production-notification-service", () => ({
   })),
 }));
 
+type ProductionQueueQueryResult = {
+  data: unknown[];
+  error: { message: string } | null;
+  count: number;
+};
+
+function createProductionQueueQuery(getResult: () => ProductionQueueQueryResult) {
+  const query: Record<string, unknown> = {};
+
+  query.select = vi.fn(() => query);
+  query.in = vi.fn(() => query);
+  query.eq = vi.fn(() => query);
+  query.gte = vi.fn(() => query);
+  query.lte = vi.fn(() => query);
+  query.or = vi.fn(() => query);
+  query.order = vi.fn(() => query);
+  query.range = vi.fn(() => getResult());
+
+  return query;
+}
+
 describe("Real-Time Updates Integration Test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -95,22 +116,12 @@ describe("Real-Time Updates Integration Test", () => {
     (supabase.channel as any).mockReturnValue(mockChannel);
 
     // Mock fetchProductionQueue to return initial data
-    const mockQueueQuery = {
-      select: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      gte: vi.fn().mockReturnThis(),
-      lte: vi.fn().mockReturnThis(),
-      or: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
-    };
-
-    mockQueueQuery.select.mockResolvedValue({
+    let queueResult: ProductionQueueQueryResult = {
       data: mockInitialItems,
       error: null,
       count: 1,
-    });
+    };
+    const mockQueueQuery = createProductionQueueQuery(() => queueResult);
 
     (supabase.from as any).mockReturnValue(mockQueueQuery);
 
@@ -136,6 +147,14 @@ describe("Real-Time Updates Integration Test", () => {
       return mockChannel;
     });
 
+    const receivedUpdates: any[] = [];
+    await supabase
+      .channel("production_queue_changes")
+      .on("postgres_changes", (payload: any) => {
+        receivedUpdates.push(payload);
+      })
+      .subscribe();
+
     // Step 3: Simulate receiving real-time update
     // In a real app, this would trigger a refetch or state update
     await new Promise(resolve => setTimeout(resolve, 150));
@@ -147,119 +166,68 @@ describe("Real-Time Updates Integration Test", () => {
       expect.any(Function)
     );
     expect(mockChannel.subscribe).toHaveBeenCalled();
+    expect(receivedUpdates[0]?.new.current_stage).toBe("quality_check");
 
     // Step 4: Verify that after real-time update, fetching shows new data
     // Mock fetch to return updated data
-    mockQueueQuery.select.mockResolvedValue({
+    queueResult = {
       data: [mockUpdatedItem],
       error: null,
       count: 1,
-    });
+    };
 
     const updatedQueue = await fetchProductionQueue({}, { page: 1, pageSize: 10 });
     expect(updatedQueue.data[0].currentStage).toBe("quality_check");
   });
 
   it("should update production metrics in real-time", async () => {
-    // Mock initial metrics
-    const mockInitialMetrics = {
-      stages: {
-        awaiting_choice: 5,
-        design: 3,
-        production: 8,
-        quality_check: 2,
-        packaging: 1,
-        shipped: 10,
+    const initialRows = [
+      {
+        id: "prod-1",
+        current_stage: "shipped",
+        production_status: "completed",
+        priority: "normal",
+        choice_status: "approved",
       },
-      statuses: {
-        awaiting_choice: 5,
-        ready_for_production: 3,
-        in_production: 11,
-        completed: 10,
-        on_hold: 2,
-        cancelled: 0,
+      {
+        id: "prod-2",
+        current_stage: "production",
+        production_status: "in_production",
+        priority: "high",
+        choice_status: "approved",
       },
-      priorities: {
-        critical: 3,
-        high: 5,
-        normal: 15,
-        low: 2,
+    ];
+    const updatedRows = [
+      { ...initialRows[0] },
+      {
+        ...initialRows[1],
+        current_stage: "shipped",
+        production_status: "completed",
       },
-      choices: {
-        pending: 5,
-        submitted: 2,
-        approved: 20,
-        rejected: 1,
-        locked: 15,
-      },
-      urgent: {
-        deadlineCritical: 2,
-        deadlineUrgent: 3,
-        blocked: 2,
-        overdue: 1,
-      },
-      scheduled: {
-        today: 3,
-        thisWeek: 8,
-        thisMonth: 15,
-      },
-      avgStageDurations: {
-        design: 24,
-        production: 48,
-        quality_check: 12,
-        packaging: 6,
-      },
-      overall: {
-        totalItems: 25,
-        avgProductionTimeHours: 45,
-        completionRate: 0.4,
-        avgPriorityScore: 65,
-      },
-      generatedAt: new Date().toISOString(),
-    };
+    ];
+    const metricsResults = [
+      { data: initialRows, error: null },
+      { data: updatedRows, error: null },
+    ];
 
-    // Mock updated metrics (after an item moves to shipped)
-    const mockUpdatedMetrics = {
-      ...mockInitialMetrics,
-      stages: {
-        ...mockInitialMetrics.stages,
-        shipped: 11, // Increased by 1
-        production: 7, // Decreased by 1
-      },
-      statuses: {
-        ...mockInitialMetrics.statuses,
-        completed: 11, // Increased by 1
-        in_production: 10, // Decreased by 1
-      },
-      overall: {
-        ...mockInitialMetrics.overall,
-        totalItems: 25,
-        avgProductionTimeHours: 44,
-        completionRate: 0.44, // 11/25
-        avgPriorityScore: 65,
-      },
-      generatedAt: new Date(Date.now() + 1000).toISOString(),
-    };
-
-    // Mock RPC function for metrics
-    (supabase.rpc as any)
-      .mockResolvedValueOnce({ data: mockInitialMetrics, error: null }) // First call
-      .mockResolvedValueOnce({ data: mockUpdatedMetrics, error: null }); // Second call
+    (supabase.from as any).mockImplementation(() => ({
+      select: vi.fn(() => Promise.resolve(metricsResults.shift() ?? metricsResults[0])),
+    }));
 
     // Step 1: Fetch initial metrics
     const initialMetrics = await fetchProductionMetrics();
-    expect(initialMetrics.stages.shipped).toBe(10);
-    expect(initialMetrics.statuses.completed).toBe(10);
-    expect(initialMetrics.overall.completionRate).toBe(0.4);
+    expect(initialMetrics.stages.shipped).toBe(1);
+    expect(initialMetrics.statuses.completed).toBe(1);
+    expect(initialMetrics.overall.completionRate).toBe(50);
 
     // Step 2: Simulate real-time update that would trigger metrics recalculation
     // In a real app, this would happen automatically via database triggers or application logic
     
     // Step 3: Fetch updated metrics (simulating real-time refresh)
     const updatedMetrics = await fetchProductionMetrics();
-    expect(updatedMetrics.stages.shipped).toBe(11);
-    expect(updatedMetrics.statuses.completed).toBe(11);
-    expect(updatedMetrics.overall.completionRate).toBe(0.44);
+    expect(updatedMetrics.stages.shipped).toBe(2);
+    expect(updatedMetrics.statuses.completed).toBe(2);
+    expect(updatedMetrics.overall.completionRate).toBe(100);
   });
 
   it("should handle customer order progress real-time updates", async () => {
@@ -435,22 +403,11 @@ describe("Real-Time Updates Integration Test", () => {
     (supabase.channel as any).mockReturnValue(mockChannel);
 
     // Mock fetchProductionQueue as fallback
-    const mockQueueQuery = {
-      select: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      gte: vi.fn().mockReturnThis(),
-      lte: vi.fn().mockReturnThis(),
-      or: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
-    };
-
-    mockQueueQuery.select.mockResolvedValue({
+    const mockQueueQuery = createProductionQueueQuery(() => ({
       data: [{ id: "prod-queue-001", current_stage: "production" }],
       error: null,
       count: 1,
-    });
+    }));
 
     (supabase.from as any).mockReturnValue(mockQueueQuery);
 

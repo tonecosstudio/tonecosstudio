@@ -71,7 +71,7 @@ export default function PublicProfileArcade() {
           {/* Avatar */}
           <div className="w-24 h-24 mx-auto mb-4 border-2 border-[hsl(var(--gold-accent)/0.5)] overflow-hidden">
             {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" loading="eager" fetchpriority="high" />
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
             ) : (
               <div className="w-full h-full bg-[hsl(0,0%,12%)] flex items-center justify-center font-mono text-2xl text-[hsl(var(--gold-accent))]">
                 {(profile.display_name || profile.username || "?")[0].toUpperCase()}
@@ -144,7 +144,7 @@ export default function PublicProfileArcade() {
                   <ArcadeCard key={item.id} className="overflow-hidden">
                     <div className="aspect-square bg-[hsl(0,0%,8%)]">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={model?.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                        <img src={imageUrl} alt={model?.name ?? ""} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Trophy className="w-8 h-8 text-[hsl(0,0%,15%)]" />

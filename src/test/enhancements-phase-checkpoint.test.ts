@@ -16,6 +16,7 @@ import { bonusPieceService } from '@/lib/services/bonusPieceService';
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
     auth: {
       getUser: vi.fn(),
     },
@@ -33,25 +34,19 @@ describe('Task 29.6 - Enhancements Phase Checkpoint', () => {
       const subscriptionId = 'test-semestral-sub-1';
       const description = 'Exclusive bonus piece for 6th delivery';
 
-      const singleMock = vi.fn().mockResolvedValue({
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({
         data: {
           id: 'bonus-1',
           subscription_id: subscriptionId,
+          delivery_id: null,
           description,
           status: 'pending',
           created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          prepared_at: null,
+          shipped_at: null,
         },
         error: null,
-      });
-
-      const insertMock = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: singleMock,
-        }),
-      });
-
-      (supabase.from as any).mockReturnValue({
-        insert: insertMock,
       });
 
       // Execute
@@ -62,6 +57,10 @@ describe('Task 29.6 - Enhancements Phase Checkpoint', () => {
       expect(bonus.subscription_id).toBe(subscriptionId);
       expect(bonus.description).toBe(description);
       expect(bonus.status).toBe('pending');
+      expect(supabase.rpc).toHaveBeenCalledWith('admin_create_bonus_piece', {
+        p_subscription_id: subscriptionId,
+        p_description: description,
+      });
     });
 
     it('should link bonus piece to 6th delivery', async () => {
@@ -69,24 +68,21 @@ describe('Task 29.6 - Enhancements Phase Checkpoint', () => {
       const bonusId = 'bonus-1';
       const deliveryId = 'delivery-6';
 
-      const eqMock = vi.fn().mockResolvedValue({
-        data: null,
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({
+        data: {
+          id: bonusId,
+          delivery_id: deliveryId,
+        },
         error: null,
-      });
-
-      const updateMock = vi.fn().mockReturnValue({
-        eq: eqMock,
-      });
-
-      (supabase.from as any).mockReturnValue({
-        update: updateMock,
       });
 
       // Execute
       await bonusPieceService.linkBonusToDelivery(bonusId, deliveryId);
 
-      // Verify - no error thrown means success
-      expect(updateMock).toHaveBeenCalled();
+      expect(supabase.rpc).toHaveBeenCalledWith('admin_link_bonus_piece_to_delivery', {
+        p_bonus_id: bonusId,
+        p_delivery_id: deliveryId,
+      });
     });
 
     it('should update bonus piece status to prepared', async () => {
@@ -94,29 +90,22 @@ describe('Task 29.6 - Enhancements Phase Checkpoint', () => {
       const bonusId = 'bonus-1';
       const status = 'prepared';
 
-      const eqMock = vi.fn().mockResolvedValue({
-        data: null,
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({
+        data: {
+          id: bonusId,
+          status,
+          prepared_at: new Date().toISOString(),
+        },
         error: null,
-      });
-
-      const updateMock = vi.fn().mockReturnValue({
-        eq: eqMock,
-      });
-
-      (supabase.from as any).mockReturnValue({
-        update: updateMock,
       });
 
       // Execute
       await bonusPieceService.updateBonusStatus(bonusId, status);
 
-      // Verify
-      expect(updateMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: 'prepared',
-          prepared_at: expect.any(String),
-        })
-      );
+      expect(supabase.rpc).toHaveBeenCalledWith('admin_update_bonus_piece_status', {
+        p_bonus_id: bonusId,
+        p_status: 'prepared',
+      });
     });
 
     it('should retrieve bonus piece by subscription', async () => {

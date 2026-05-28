@@ -2,6 +2,19 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CollectionSelector, Collection } from "./CollectionSelector";
 
+vi.mock("@/hooks/useCollectionPrice", () => ({
+  useCollectionPrice: vi.fn(() => ({
+    data: null,
+    isLoading: false,
+  })),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { id: "user-123" },
+  }),
+}));
+
 const mockCollections: Collection[] = [
   {
     id: "col-1",
@@ -116,7 +129,7 @@ describe("CollectionSelector", () => {
       />
     );
 
-    const marvelCard = screen.getByText("Marvel").closest("div");
+    const marvelCard = screen.getByRole("button", { name: /Marvel/i });
     fireEvent.click(marvelCard!);
 
     expect(onCollectionSelect).toHaveBeenCalledWith("col-1");
@@ -133,11 +146,11 @@ describe("CollectionSelector", () => {
       />
     );
 
-    const marvelCard = screen.getByText("Marvel").closest("div");
+    const marvelCard = screen.getByRole("button", { name: /Marvel/i });
     expect(marvelCard).toHaveClass("border-primary");
   });
 
-  it("shows check icon for selected collection", () => {
+  it("marks selected collection as pressed for assistive technologies", () => {
     render(
       <CollectionSelector
         planId="plan-1"
@@ -148,8 +161,10 @@ describe("CollectionSelector", () => {
       />
     );
 
-    const checkIcons = screen.getAllByTestId("check-icon");
-    expect(checkIcons.length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /Marvel/i })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("disables selection when disabled prop is true", () => {
@@ -164,10 +179,11 @@ describe("CollectionSelector", () => {
       />
     );
 
-    const marvelCard = screen.getByText("Marvel").closest("div");
+    const marvelCard = screen.getByRole("button", { name: /Marvel/i });
     fireEvent.click(marvelCard!);
 
     expect(onCollectionSelect).not.toHaveBeenCalled();
+    expect(marvelCard).toHaveAttribute("aria-disabled", "true");
   });
 
   it("shows info alert about unlimited changes", () => {
@@ -180,9 +196,9 @@ describe("CollectionSelector", () => {
       />
     );
 
-    expect(
-      screen.getByText(/Você poderá trocar de personagem ILIMITADAMENTE/)
-    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Você poderá trocar de personagem ILIMITADAMENTE/
+    );
   });
 
   it("renders empty state when no collections available", () => {

@@ -24,7 +24,7 @@ POST /functions/v1/admin-create-collection
 
 Requires admin role. The endpoint validates:
 1. Valid JWT token in Authorization header
-2. User has 'admin' role in user_roles table
+2. User has `admin` or `super_admin` in `profiles.role`
 
 ## Request Body
 

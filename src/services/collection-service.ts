@@ -20,12 +20,20 @@ import type { Database } from "@/integrations/supabase/types";
 import { 
   ValidationError, 
   DatabaseError, 
-  errorTracking,
-  ErrorCategory 
+  errorTracking
 } from "@/lib/error-tracking";
 
 // Type aliases for better readability
 type CollectionRow = Database['public']['Tables']['collections']['Row'];
+type RotationType = "fixed" | "odd_months" | "even_months";
+
+function isRotationType(value: string | null | undefined): value is RotationType {
+  return value === "fixed" || value === "odd_months" || value === "even_months";
+}
+
+function getActiveRotationTypes(month: number): RotationType[] {
+  return month % 2 === 0 ? ["fixed", "even_months"] : ["fixed", "odd_months"];
+}
 
 /**
  * Custom error types for better error handling
@@ -76,7 +84,6 @@ export async function getActiveCollections(
   if (!Number.isInteger(month) || month < 1 || month > 12) {
     const error = new ValidationError(
       `Month must be an integer between 1 and 12, got ${month}`,
-      ErrorCategory.VALIDATION,
       { month, year },
       'Mês inválido. Deve ser entre 1 e 12.'
     );
@@ -87,7 +94,6 @@ export async function getActiveCollections(
   if (!Number.isInteger(year) || year < 2024 || year > 2030) {
     const error = new ValidationError(
       `Year must be an integer between 2024 and 2030, got ${year}`,
-      ErrorCategory.VALIDATION,
       { month, year },
       'Ano inválido. Deve ser entre 2024 e 2030.'
     );
@@ -103,18 +109,17 @@ export async function getActiveCollections(
       { month, year }
     );
 
-    // Call the database function get_active_collections
-    // Now properly typed without any assertions
+    const activeRotationTypes = getActiveRotationTypes(month);
     const { data, error } = await supabase
-      .rpc('get_active_collections', {
-        p_month: month,
-        p_year: year
-      });
+      .from("collections")
+      .select("*")
+      .eq("is_active", true)
+      .in("rotation_type", activeRotationTypes)
+      .order("name", { ascending: true });
 
     if (error) {
       const dbError = new DatabaseError(
         `Failed to get active collections: ${error.message}`,
-        ErrorCategory.DATABASE,
         { error, month, year },
         'Erro ao buscar coleções ativas. Tente novamente.'
       );
@@ -133,7 +138,6 @@ export async function getActiveCollections(
     // Wrap unexpected errors
     const unexpectedError = new DatabaseError(
       'Unexpected error while fetching active collections',
-      ErrorCategory.DATABASE,
       { error, month, year },
       'Erro inesperado ao buscar coleções. Tente novamente.'
     );
@@ -182,7 +186,11 @@ export async function isCollectionActive(
     return activeCollections.some(collection => collection.id === collectionId);
   } catch (error) {
     // Re-throw custom errors
-    if (error instanceof CollectionServiceError) {
+    if (
+      error instanceof CollectionServiceError ||
+      error instanceof ValidationError ||
+      error instanceof DatabaseError
+    ) {
       throw error;
     }
     
@@ -251,7 +259,7 @@ export async function getRotationSchedule(
     const rotationType = collection.rotation_type;
 
     // Validate rotation type
-    if (!rotationType || !['fixed', 'odd_months', 'even_months'].includes(rotationType)) {
+    if (!isRotationType(rotationType)) {
       throw new ValidationError(
         `Invalid rotation type: ${rotationType}`,
         { collectionId, rotationType }
@@ -282,7 +290,11 @@ export async function getRotationSchedule(
     }
   } catch (error) {
     // Re-throw custom errors
-    if (error instanceof CollectionServiceError) {
+    if (
+      error instanceof CollectionServiceError ||
+      error instanceof ValidationError ||
+      error instanceof DatabaseError
+    ) {
       throw error;
     }
     

@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { useGroupNotifications } from "@/hooks/useGroupNotifications";
 import { useGroupAttachmentPublicUrl } from "@/hooks/groups/useGroupAttachmentPublicUrl";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 interface GroupMessageListProps {
   groupId: string;
@@ -56,6 +57,18 @@ function isMessageDateFilter(value: string): value is MessageDateFilter {
   return value === "all" || value === "today" || value === "week" || value === "month";
 }
 
+function getSafeExternalUrl(url?: string | null): string | null {
+  if (!url) return null;
+
+  const normalized = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+
+  try {
+    return sanitizeURL(normalized, ["http", "https"]);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Converte file_path para URL pública do Supabase Storage
  */
@@ -74,12 +87,9 @@ function linkifyText(text: string): React.ReactNode {
 
     // Verifica se é uma URL
     if (part.match(urlRegex)) {
-      let url = part;
+      const url = getSafeExternalUrl(part);
 
-      // Adiciona https:// se não tiver protocolo
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        url = "https://" + url;
-      }
+      if (!url) return <span key={index}>{part}</span>;
 
       return (
         <a
@@ -137,7 +147,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
   const editMutation = useMutation({
     mutationFn: async ({ messageId, newText }: { messageId: string; newText: string }) => {
       if (!user) throw new Error("Usuário não autenticado");
-      await messageService.editGroupMessage(messageId, newText, user.id);
+      await messageService.editGroupMessage(messageId, newText);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-messages", groupId] });
@@ -154,7 +164,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
   const deleteMutation = useMutation({
     mutationFn: async (messageId: string) => {
       if (!user) throw new Error("Usuário não autenticado");
-      await messageService.deleteGroupMessage(messageId, user.id);
+      await messageService.deleteGroupMessage(messageId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-messages", groupId] });
@@ -331,6 +341,8 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
         filteredMessages.map((message) => {
           const isCurrentUser = message.sender_id === user?.id;
           const msg = message;
+          const safeLinkUrl = getSafeExternalUrl(msg.link_url);
+          const safeActionButtonUrl = getSafeExternalUrl(msg.action_button_url);
 
           return (
             <div key={msg.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
@@ -408,9 +420,9 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                 )}
 
                 {/* Highlighted Link */}
-                {msg.link_text && msg.link_url && (
+                {msg.link_text && safeLinkUrl && (
                   <a
-                    href={msg.link_url}
+                    href={safeLinkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 mt-3 text-sm font-medium underline text-blue-600 hover:text-blue-700"
@@ -420,9 +432,9 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                 )}
 
                 {/* Action Button */}
-                {msg.action_button_text && msg.action_button_url && (
+                {msg.action_button_text && safeActionButtonUrl && (
                   <a
-                    href={msg.action_button_url}
+                    href={safeActionButtonUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 mt-3 px-4 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-600 text-white hover:bg-blue-700"
@@ -437,18 +449,21 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                     {msg.attachments.map((attachment: GroupAttachment) => {
                       const isImage = attachment.file_type?.startsWith("image/");
                       const publicUrl = getGroupAttachmentPublicUrl(attachment.file_path);
+                      const safePublicUrl = getSafeExternalUrl(publicUrl);
+
+                      if (!safePublicUrl) return null;
 
                       if (isImage) {
                         return (
                           <a
                             key={attachment.id}
-                            href={publicUrl}
+                            href={safePublicUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block"
                           >
                             <img
-                              src={publicUrl}
+                              src={safePublicUrl}
                               alt={attachment.file_name}
                               className="max-w-full max-h-64 rounded-lg border-2 border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
                               loading="lazy"
@@ -463,7 +478,7 @@ export function GroupMessageList({ groupId }: GroupMessageListProps) {
                       return (
                         <a
                           key={attachment.id}
-                          href={publicUrl}
+                          href={safePublicUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs font-medium underline block p-2 rounded-md border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"

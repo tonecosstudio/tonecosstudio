@@ -9,7 +9,11 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
-import { fetchUnifiedOrders } from '@/services/admin/orders-service';
+import {
+  countOrdersByStatus,
+  fetchOrderById,
+  fetchUnifiedOrders,
+} from '@/services/admin/orders-service';
 import type {
   UnifiedOrder,
   OrderFilters,
@@ -213,8 +217,6 @@ export function useClearOrdersCache() {
 export function useOrdersCountByStatus(
   type: 'all' | 'subscription_delivery' | 'standalone_purchase'
 ) {
-  const { countOrdersByStatus } = require('@/services/admin/orders-service');
-
   return useQuery({
     queryKey: [ORDERS_QUERY_KEY, 'count-by-status', type],
     queryFn: () => countOrdersByStatus(type),
@@ -241,8 +243,6 @@ export function useOrderById({
   orderType,
   enabled = true
 }: UseOrderByIdOptions) {
-  const { fetchOrderById } = require('@/services/admin/orders-service');
-
   return useQuery({
     queryKey: [ORDERS_QUERY_KEY, 'detail', orderId, orderType],
     queryFn: () => fetchOrderById(orderId, orderType),

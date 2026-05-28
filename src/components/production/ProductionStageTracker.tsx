@@ -297,7 +297,7 @@ export const ProductionStageTracker: React.FC<ProductionStageTrackerProps> = ({
           isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
           currentStage={currentStage}
-          nextStage={nextStage}
+          nextStage={nextStage ?? null}
           productionQueueId={productionQueueId}
           onComplete={handleStageComplete}
         />

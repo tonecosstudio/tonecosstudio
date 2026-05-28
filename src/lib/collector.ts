@@ -1,9 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import { assertCurrentUserId } from "@/services/auth/current-user";
+import {
+  addPublicCollectionItemRpc,
+  removePublicCollectionItemRpc,
+  updateCollectorProfileRpc,
+  updatePublicCollectionNotesRpc,
+  updatePublicCollectionOrderRpc,
+} from "@/services/collector-mutations-service";
 
 type CollectorBadgeRarity = "common" | "rare" | "epic" | "legendary";
-type PublicCollectionInsert =
-  Database["public"]["Tables"]["public_collection"]["Insert"];
 
 export type CollectorProfile = {
   id: string;
@@ -102,14 +107,8 @@ export async function updateCollectorProfile(
     is_public?: boolean;
   }
 ) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(updates)
-    .eq("id", userId)
-    .select()
-    .single();
-
-  if (error) throw error;
+  await assertCurrentUserId(userId);
+  const data = await updateCollectorProfileRpc(updates);
   return data as CollectorProfile;
 }
 
@@ -220,19 +219,8 @@ export function getPublicModelImageUrl(model: PublicCollectionModel): string | n
  * Adiciona um modelo à coleção pública
  */
 export async function addToPublicCollection(userId: string, modelId: string, notes?: string) {
-  const insert: PublicCollectionInsert = {
-    user_id: userId,
-    model_id: modelId,
-    notes: notes || null,
-  };
-
-  const { data, error } = await supabase
-    .from("public_collection")
-    .insert(insert)
-    .select()
-    .single();
-
-  if (error) throw error;
+  await assertCurrentUserId(userId);
+  const data = await addPublicCollectionItemRpc({ modelId, notes });
   return data;
 }
 
@@ -240,46 +228,21 @@ export async function addToPublicCollection(userId: string, modelId: string, not
  * Remove um modelo da coleção pública
  */
 export async function removeFromPublicCollection(collectionId: string) {
-  const { error } = await supabase
-    .from("public_collection")
-    .delete()
-    .eq("id", collectionId);
-
-  if (error) throw error;
+  await removePublicCollectionItemRpc(collectionId);
 }
 
 /**
  * Atualiza notas de um item da coleção
  */
 export async function updateCollectionNotes(collectionId: string, notes: string) {
-  const { data, error } = await supabase
-    .from("public_collection")
-    .update({ notes })
-    .eq("id", collectionId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  return updatePublicCollectionNotesRpc(collectionId, notes);
 }
 
 /**
  * Atualiza a ordem de exibição dos itens
  */
 export async function updateCollectionOrder(items: Array<{ id: string; display_order: number }>) {
-  const promises = items.map((item) =>
-    supabase
-      .from("public_collection")
-      .update({ display_order: item.display_order })
-      .eq("id", item.id)
-  );
-
-  const results = await Promise.all(promises);
-  const errors = results.filter((r) => r.error);
-
-  if (errors.length > 0) {
-    throw errors[0].error;
-  }
+  await updatePublicCollectionOrderRpc(items);
 }
 
 /**

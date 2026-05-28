@@ -57,7 +57,7 @@ export default function AuditTrail() {
   const filters: AuditTrailFilters = {
     limit: ITEMS_PER_PAGE,
     offset,
-    ...(orderTypeFilter !== "all" ? { changeReason: orderTypeFilter } : {}),
+    ...(orderTypeFilter !== "all" ? { orderType: orderTypeFilter } : {}),
     ...(startDate ? { startDate: new Date(startDate).toISOString() } : {}),
     ...(endDate ? { endDate: new Date(endDate).toISOString() } : {}),
   };

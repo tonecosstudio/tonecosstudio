@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { log } from "@/lib/logger";
 import type { ProductionStage, ChoiceStatus } from "@/services/admin/production-service";
+import { getProductionStageLabel } from "@/config/production-stages";
 
 // ============================================================================
 // Types
@@ -57,16 +58,6 @@ interface CharacterChoiceUpdate {
   rejected_at: string | null;
   rejection_reason: string | null;
 }
-
-// Stage display names in Portuguese
-const STAGE_NAMES: Record<ProductionStage, string> = {
-  awaiting_choice: "Aguardando Escolha",
-  design: "Design",
-  production: "Produção",
-  quality_check: "Controle de Qualidade",
-  packaging: "Embalagem",
-  shipped: "Enviado",
-};
 
 // ============================================================================
 // Hook
@@ -143,7 +134,7 @@ export function useOrderProgressRealtime(options: UseOrderProgressRealtimeOption
 
           // Show toast notification for stage changes
           if (enableToast && previousStageRef.current && previousStageRef.current !== newData.current_stage) {
-            const stageName = STAGE_NAMES[newData.current_stage] || newData.current_stage;
+            const stageName = getProductionStageLabel(newData.current_stage);
 
             toast({
               title: "Pedido Atualizado",

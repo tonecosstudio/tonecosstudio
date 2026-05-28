@@ -6,13 +6,13 @@
  * Requirements: 13.1-13.15
  */
 
-import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CustomerPaymentDetails } from "@/components/customer/CustomerPaymentDetails";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Page } from "@/components/layouts/Page";
+import { AUTH_ROUTES } from "@/config/routes";
 
 export default function PaymentDetails() {
   const { paymentId } = useParams<{ paymentId: string }>();
@@ -21,7 +21,7 @@ export default function PaymentDetails() {
 
   // Handle going back to my payments
   const handleBackToMyPayments = () => {
-    navigate("/pagamentos");
+    navigate(AUTH_ROUTES.payments);
   };
 
   if (!paymentId) {

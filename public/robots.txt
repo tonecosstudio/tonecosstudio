@@ -6,4 +6,4 @@ Disallow: /perfil
 Disallow: /login
 
 # Sitemap
-Sitemap: https://pabxpvqwtvbjaunjejud.supabase.co/sitemap.xml
+Sitemap: https://ordax.com.br/sitemap.xml

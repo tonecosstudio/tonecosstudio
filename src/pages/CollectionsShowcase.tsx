@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useRef } from "react";
+import { PUBLIC_ROUTES, collectionDetailsPath } from "@/config/routes";
 
 // ─── ARCADE EFFECTS ──────────────────────────────────────────────────
 
@@ -184,7 +185,7 @@ export default function CollectionsShowcase() {
             <div className="w-px h-10 bg-[hsl(0,0%,20%)]" />
             <div className="text-center">
               <p className="text-2xl md:text-3xl font-bold text-[hsl(0,0%,98%)] tabular-nums">
-                {isLoading ? "--" : collections?.reduce((sum, c) => sum + c.total_characters, 0) ?? 0}
+                {isLoading ? "--" : collections?.reduce((sum, c) => sum + (c.total_characters ?? 0), 0) ?? 0}
               </p>
               <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">Peças</p>
             </div>
@@ -244,7 +245,7 @@ export default function CollectionsShowcase() {
               return (
                 <Link
                   key={collection.id}
-                  to={`/colecoes/${collection.slug}`}
+                  to={collectionDetailsPath(collection.slug)}
                   className="group relative flex flex-col border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] hover:border-[hsl(var(--gold-accent)/0.6)] transition-all duration-500 overflow-hidden"
                   onMouseEnter={() => setHoveredCard(collection.id)}
                   onMouseLeave={() => setHoveredCard(null)}
@@ -299,14 +300,14 @@ export default function CollectionsShowcase() {
                       <div className="font-mono text-[10px] text-[hsl(var(--gold-accent))] bg-[hsl(0,0%,5%)]/90 px-2 py-1 tracking-widest border border-[hsl(var(--gold-accent)/0.3)]">
                         #{String(index + 1).padStart(2, "0")}
                       </div>
-                      <RarityBadge characters={collection.total_characters} />
+                      <RarityBadge characters={collection.total_characters ?? 0} />
                     </div>
 
                     {/* Coin price indicator */}
                     <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-[hsl(0,0%,5%)]/90 px-2.5 py-1 border border-[hsl(var(--gold-accent)/0.3)] z-10">
                       <Coins className="w-3.5 h-3.5 text-[hsl(var(--gold-accent))]" />
                       <span className="font-mono text-xs font-bold text-[hsl(var(--gold-accent))] tabular-nums">
-                        {(collection.total_characters * 100).toLocaleString("pt-BR")}
+                        {((collection.total_characters ?? 0) * 100).toLocaleString("pt-BR")}
                       </span>
                     </div>
 
@@ -397,7 +398,7 @@ export default function CollectionsShowcase() {
                   VOLTAR À BASE
                 </Button>
                 <Button
-                  onClick={() => navigate("/catalogo")}
+                  onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                   variant="outline"
                   className="border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-[0.15em] text-xs h-11 px-8 rounded-none"
                 >
@@ -437,7 +438,7 @@ export default function CollectionsShowcase() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
-              onClick={() => navigate("/planos")}
+              onClick={() => navigate(PUBLIC_ROUTES.plans)}
               className="bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-12 px-10 rounded-none border-0 shadow-[0_0_20px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_30px_hsl(var(--gold-accent)/0.4)] transition-all"
             >
               <Zap className="w-4 h-4 mr-2" />

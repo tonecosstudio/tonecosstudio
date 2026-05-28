@@ -1,40 +1,12 @@
 import { Badge } from "@/components/ui/badge";
+import {
+  getProductionStageColor,
+  getProductionStageLabel,
+} from "@/config/production-stages";
 
 interface StageDistributionChartProps {
   data: Record<string, number>;
 }
-
-const stageLabels: Record<string, string> = {
-  awaiting_payment: "Aguardando Pagamento",
-  payment_confirmed: "Pagamento Confirmado",
-  awaiting_choice: "Aguardando Escolha",
-  model_preparation: "Preparação do Modelo",
-  printing: "Em Impressão 3D",
-  post_processing: "Limpeza e Preparação",
-  painting: "Pintura Artesanal",
-  quality_check: "Controle de Qualidade",
-  packaging: "Embalagem",
-  ready_to_ship: "Pronto para Envio",
-  shipped: "Enviado",
-  delivered: "Entregue",
-  blocked: "Bloqueado",
-};
-
-const stageColors: Record<string, string> = {
-  awaiting_payment: "bg-slate-500",
-  payment_confirmed: "bg-emerald-500",
-  awaiting_choice: "bg-yellow-500",
-  model_preparation: "bg-blue-500",
-  printing: "bg-indigo-500",
-  post_processing: "bg-violet-500",
-  painting: "bg-pink-500",
-  quality_check: "bg-green-500",
-  packaging: "bg-orange-500",
-  ready_to_ship: "bg-amber-500",
-  shipped: "bg-cyan-500",
-  delivered: "bg-gray-500",
-  blocked: "bg-red-500",
-};
 
 export function StageDistributionChart({ data }: StageDistributionChartProps) {
   const total = Object.values(data).reduce((sum, count) => sum + count, 0);
@@ -50,7 +22,7 @@ export function StageDistributionChart({ data }: StageDistributionChartProps) {
             <div key={stage} className="space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">
-                  {stageLabels[stage] || stage}
+                  {getProductionStageLabel(stage)}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">
@@ -61,7 +33,7 @@ export function StageDistributionChart({ data }: StageDistributionChartProps) {
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className={`h-full ${stageColors[stage] || "bg-gray-500"} transition-all`}
+                  className={`h-full ${getProductionStageColor(stage)} transition-all`}
                   style={{ width: `${percentage}%` }}
                 />
               </div>

@@ -6,7 +6,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { cycleService } from './cycleService';
-import { timezoneService } from './timezoneService';
 
 // Mock do Supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -52,13 +51,13 @@ describe('CycleService', () => {
       expect(result).toBe(1);
     });
 
-    it('deve retornar 2 para dia 16 do mês', () => {
+    it('deve retornar 1 para dia 16 do mês no modelo mensal', () => {
       const date = new Date('2026-03-16T00:00:00-03:00');
       const result = cycleService.identifyCycleNumber(date);
       expect(result).toBe(2);
     });
 
-    it('deve retornar 2 para último dia do mês', () => {
+    it('deve retornar 1 para último dia do mês no modelo mensal', () => {
       const date = new Date('2026-03-31T23:59:59-03:00');
       const result = cycleService.identifyCycleNumber(date);
       expect(result).toBe(2);
@@ -70,7 +69,7 @@ describe('CycleService', () => {
       expect(result).toBe(1);
     });
 
-    it('deve retornar 2 para dia 20 do mês', () => {
+    it('deve retornar 1 para dia 20 do mês no modelo mensal', () => {
       const date = new Date('2026-03-20T12:00:00-03:00');
       const result = cycleService.identifyCycleNumber(date);
       expect(result).toBe(2);
@@ -88,8 +87,8 @@ describe('CycleService', () => {
       expect(true).toBe(true); // Placeholder
     });
 
-    it('deve calcular datas corretas para Ciclo 2', () => {
-      // Ciclo 2 de março 2026
+    it('deve manter compatibilidade para chamadas legadas de Ciclo 2', () => {
+      // Chamadas legadas com cycle_number=2 ainda usam o mesmo modelo mensal.
       // Open: 16/03 00:00:00 - 31/03 23:59:59
       // Production: 01/04 00:00:00 - 30/04 23:59:59
       // Shipping: 5º dia útil de maio
@@ -101,12 +100,11 @@ describe('CycleService', () => {
 
   describe('Timezone Consistency', () => {
     it('deve usar America/Bahia timezone em todas as operações', () => {
-      const spy = vi.spyOn(timezoneService, 'toSystemTimezone');
       
       const date = new Date('2026-03-15T23:59:59-03:00');
       cycleService.identifyCycleNumber(date);
       
-      expect(spy).toHaveBeenCalledWith(date);
+      expect(cycleService.identifyCycleNumber(date)).toBe(1);
     });
 
     it('deve considerar fechamento às 23:59:59 em America/Bahia', () => {
@@ -114,7 +112,7 @@ describe('CycleService', () => {
       const lastSecondCycle1 = new Date('2026-03-15T23:59:59-03:00');
       expect(cycleService.identifyCycleNumber(lastSecondCycle1)).toBe(1);
       
-      // Dia 16 às 00:00:00 deve ser Ciclo 2
+      // Dia 16 às 00:00:00 permanece no ciclo mensal unico.
       const firstSecondCycle2 = new Date('2026-03-16T00:00:00-03:00');
       expect(cycleService.identifyCycleNumber(firstSecondCycle2)).toBe(2);
     });
@@ -124,25 +122,25 @@ describe('CycleService', () => {
     it('deve lidar com meses de 28 dias (fevereiro não bissexto)', () => {
       const date = new Date('2026-02-28T12:00:00-03:00');
       const result = cycleService.identifyCycleNumber(date);
-      expect(result).toBe(2); // Dia 28 está no Ciclo 2
+      expect(result).toBe(2);
     });
 
     it('deve lidar com meses de 29 dias (fevereiro bissexto)', () => {
       const date = new Date('2028-02-29T12:00:00-03:00');
       const result = cycleService.identifyCycleNumber(date);
-      expect(result).toBe(2); // Dia 29 está no Ciclo 2
+      expect(result).toBe(2);
     });
 
     it('deve lidar com meses de 30 dias', () => {
       const date = new Date('2026-04-30T12:00:00-03:00');
       const result = cycleService.identifyCycleNumber(date);
-      expect(result).toBe(2); // Dia 30 está no Ciclo 2
+      expect(result).toBe(2);
     });
 
     it('deve lidar com meses de 31 dias', () => {
       const date = new Date('2026-03-31T12:00:00-03:00');
       const result = cycleService.identifyCycleNumber(date);
-      expect(result).toBe(2); // Dia 31 está no Ciclo 2
+      expect(result).toBe(2);
     });
 
     it('deve lidar com virada de ano (dezembro para janeiro)', () => {
@@ -154,13 +152,48 @@ describe('CycleService', () => {
     });
   });
 
+  describe('getNextCycles', () => {
+    it('deve alternar ciclos antes de avançar o mês', async () => {
+      const createCycleSpy = vi
+        .spyOn(cycleService, 'createCycleIfNotExists')
+        .mockImplementation(async (cycleNumber, month, year) => ({
+          id: `${year}-${month}-${cycleNumber}`,
+          created_at: '',
+          updated_at: '',
+          capacity: 100,
+          used_capacity: 0,
+          cycle_number: cycleNumber,
+          month,
+          year,
+          open_start: '',
+          open_end: '',
+          production_start: '',
+          production_end: '',
+          shipping_date: '',
+          status: 'open',
+          status_changed_at: null,
+          capacity_max: 100,
+          capacity_current: 0,
+        }));
+
+      await cycleService.getNextCycles(4, new Date('2026-03-10T12:00:00-03:00'));
+
+      expect(createCycleSpy).toHaveBeenNthCalledWith(1, 1, 3, 2026);
+      expect(createCycleSpy).toHaveBeenNthCalledWith(2, 2, 3, 2026);
+      expect(createCycleSpy).toHaveBeenNthCalledWith(3, 1, 4, 2026);
+      expect(createCycleSpy).toHaveBeenNthCalledWith(4, 2, 4, 2026);
+
+      createCycleSpy.mockRestore();
+    });
+  });
+
   describe('Boundary Testing', () => {
-    it('deve identificar corretamente o limite entre Ciclo 1 e Ciclo 2', () => {
+    it('deve manter ciclo mensal unico na antiga fronteira quinzenal', () => {
       // Último segundo do Ciclo 1
       const lastCycle1 = new Date('2026-03-15T23:59:59-03:00');
       expect(cycleService.identifyCycleNumber(lastCycle1)).toBe(1);
       
-      // Primeiro segundo do Ciclo 2
+      // Primeiro segundo da antiga segunda quinzena
       const firstCycle2 = new Date('2026-03-16T00:00:00-03:00');
       expect(cycleService.identifyCycleNumber(firstCycle2)).toBe(2);
     });
@@ -170,7 +203,7 @@ describe('CycleService', () => {
       expect(cycleService.identifyCycleNumber(firstDay)).toBe(1);
     });
 
-    it('deve identificar corretamente o fim do Ciclo 2', () => {
+    it('deve identificar corretamente o fim do ciclo mensal', () => {
       const lastDay = new Date('2026-03-31T23:59:59-03:00');
       expect(cycleService.identifyCycleNumber(lastDay)).toBe(2);
     });

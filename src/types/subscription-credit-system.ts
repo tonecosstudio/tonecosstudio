@@ -6,8 +6,17 @@
  * For new code, use types from @/types/admin/orders instead.
  */
 
-export type PlanType = 'trimestral' | 'semestral';
-export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
+export const SUBSCRIPTION_CREDIT_PLAN_TYPES = ['trimestral', 'semestral'] as const;
+export type PlanType = (typeof SUBSCRIPTION_CREDIT_PLAN_TYPES)[number];
+
+export const SUBSCRIPTION_CREDIT_SUBSCRIPTION_STATUSES = [
+  'active',
+  'expired',
+  'cancelled',
+] as const;
+export type SubscriptionStatus =
+  (typeof SUBSCRIPTION_CREDIT_SUBSCRIPTION_STATUSES)[number];
+
 export type CancellationType = 'with_refund' | 'no_renewal';
 
 // Legacy types - use specific types from @/types/admin/orders for new code
@@ -17,11 +26,54 @@ export type CancellationType = 'with_refund' | 'no_renewal';
 export type OrderType = 'individual' | 'automatic';
 // REMOVED: OrderStatus - use OrderStatus from @/types/admin/orders instead
 
-export type TransactionType = 'allocation' | 'debit_immediate' | 'debit_cycle_close' | 'expiration' | 'adjustment';
-export type CycleStatus = 'open' | 'full' | 'closed';
+export const SUBSCRIPTION_CREDIT_TRANSACTION_TYPES = [
+  'allocation',
+  'debit_immediate',
+  'debit_cycle_close',
+  'expiration',
+  'adjustment',
+] as const;
+export type TransactionType = (typeof SUBSCRIPTION_CREDIT_TRANSACTION_TYPES)[number];
+
+export const SUBSCRIPTION_CREDIT_CYCLE_STATUSES = ['open', 'full', 'closed'] as const;
+export type CycleStatus = (typeof SUBSCRIPTION_CREDIT_CYCLE_STATUSES)[number];
+
+const SUBSCRIPTION_CREDIT_PLAN_TYPE_SET = new Set<string>(
+  SUBSCRIPTION_CREDIT_PLAN_TYPES
+);
+const SUBSCRIPTION_CREDIT_SUBSCRIPTION_STATUS_SET = new Set<string>(
+  SUBSCRIPTION_CREDIT_SUBSCRIPTION_STATUSES
+);
+const SUBSCRIPTION_CREDIT_TRANSACTION_TYPE_SET = new Set<string>(
+  SUBSCRIPTION_CREDIT_TRANSACTION_TYPES
+);
+
+export function isSubscriptionCreditPlanType(value: unknown): value is PlanType {
+  return (
+    typeof value === 'string' && SUBSCRIPTION_CREDIT_PLAN_TYPE_SET.has(value)
+  );
+}
+
+export function isSubscriptionCreditSubscriptionStatus(
+  value: unknown
+): value is SubscriptionStatus {
+  return (
+    typeof value === 'string' &&
+    SUBSCRIPTION_CREDIT_SUBSCRIPTION_STATUS_SET.has(value)
+  );
+}
+
+export function isSubscriptionCreditTransactionType(
+  value: unknown
+): value is TransactionType {
+  return (
+    typeof value === 'string' &&
+    SUBSCRIPTION_CREDIT_TRANSACTION_TYPE_SET.has(value)
+  );
+}
 
 export interface SubscriptionPlan {
-  id: number;
+  id: string;
   plan_type: PlanType;
   name: string;
   duration_months: number;
@@ -34,8 +86,8 @@ export interface SubscriptionPlan {
 }
 
 export interface Subscription {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   plan_type: PlanType;
   status: SubscriptionStatus;
   start_date: string;
@@ -50,9 +102,9 @@ export interface Subscription {
 }
 
 export interface UserCredits {
-  id: number;
-  user_id: number;
-  subscription_id: number;
+  id: string;
+  user_id: string;
+  subscription_id: string;
   total_credits: number;
   used_credits: number;
   available_credits: number;
@@ -62,20 +114,20 @@ export interface UserCredits {
 }
 
 export interface CreditTransaction {
-  id: number;
-  user_id: number;
-  subscription_id: number;
+  id: string;
+  user_id: string;
+  subscription_id: string;
   transaction_type: TransactionType;
   credits_amount: number;
-  character_id: number | null;
-  order_id: number | null;
-  production_cycle_id: number | null;
+  character_id: string | null;
+  order_id: string | null;
+  production_cycle_id: string | null;
   description: string | null;
   created_at: string;
 }
 
 export interface Character {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   price_cash: number;
@@ -89,7 +141,7 @@ export interface Character {
 }
 
 export interface ProductionCycle {
-  id: number;
+  id: string;
   name: string;
   capacity_limit: number;
   current_count: number;
@@ -101,10 +153,10 @@ export interface ProductionCycle {
 }
 
 export interface Order {
-  id: number;
-  user_id: number;
-  subscription_id: number;
-  production_cycle_id: number;
+  id: string;
+  user_id: string;
+  subscription_id: string;
+  production_cycle_id: string;
   order_type: OrderType;
   status: string; // Use OrderStatus from @/types/admin/orders for type safety
   is_priority: boolean;
@@ -117,9 +169,9 @@ export interface Order {
 }
 
 export interface OrderItem {
-  id: number;
-  order_id: number;
-  character_id: number;
+  id: string;
+  order_id: string;
+  character_id: string;
   credits_cost: number;
   created_at: string;
   character?: Character;
@@ -135,6 +187,7 @@ export interface CreditsBalanceResponse {
   total_credits: number;
   used_credits: number;
   available_credits: number;
+  expired_credits: number;
   subscription_status: SubscriptionStatus;
 }
 
@@ -151,28 +204,36 @@ export interface TransactionsResponse {
 }
 
 export interface SubscriptionActivationResponse {
-  subscription_id: number;
+  subscription_id: string;
   credits_allocated: number;
-  order_id: number;
+  order_id: string | null;
+  message?: string;
 }
 
 export interface PlanChangeResponse {
+  subscription_id: string;
   pending_plan_change: PlanType;
   effective_date: string;
+  message?: string;
 }
 
 export interface CancelWithRefundResponse {
+  subscription_id: string;
   refund_amount: number;
   credits_expired: number;
+  message?: string;
 }
 
 export interface NoRenewalResponse {
+  subscription_id: string;
   end_date: string;
   credits_valid_until: string;
+  message?: string;
 }
 
 export interface UserCycleCountResponse {
-  current_count: number;
-  limit: number;
-  cycle_id: number;
+  cycle_count: number;
+  current_count?: number;
+  limit?: number;
+  cycle_id?: string;
 }

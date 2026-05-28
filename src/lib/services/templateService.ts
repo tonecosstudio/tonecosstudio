@@ -6,6 +6,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import { parseSystemSettingNumber } from "@/lib/system-settings-values";
+import { BATCH, PRICING } from "@/config/constants";
+import { fetchOrdersByUserId } from "@/services/admin/orders-service";
 
 export interface TemplateVariable {
   key: string;
@@ -237,12 +240,12 @@ export const TEMPLATE_VARIABLES: TemplateVariable[] = [
  */
 export async function fetchSystemSettings(): Promise<SystemSettings> {
   const settings: SystemSettings = {
-    pixDiscountPercentage: 5,
-    defaultPriceFull: 500,
-    defaultPricePix: 475,
-    defaultDepositAmount: 100,
-    monthlyProductionLimit: 20,
-    salesOpenDay: 15,
+    pixDiscountPercentage: PRICING.PIX_DISCOUNT_PERCENTAGE,
+    defaultPriceFull: PRICING.DEFAULT_PRICE_FULL,
+    defaultPricePix: PRICING.DEFAULT_PRICE_PIX,
+    defaultDepositAmount: PRICING.DEFAULT_DEPOSIT_AMOUNT,
+    monthlyProductionLimit: BATCH.MONTHLY_PRODUCTION_LIMIT,
+    salesOpenDay: BATCH.SALES_OPEN_DAY,
   };
 
   try {
@@ -261,7 +264,7 @@ export async function fetchSystemSettings(): Promise<SystemSettings> {
 
     if (!error && systemSettings) {
       systemSettings.forEach((setting) => {
-        const value = parseFloat(setting.value);
+        const value = parseSystemSettingNumber(setting.key, setting.value);
         switch (setting.key) {
           case "pix_discount_percentage":
             settings.pixDiscountPercentage = value;
@@ -330,8 +333,8 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
         .maybeSingle();
 
       if (!error && profile) {
-        customerData.name = profile.full_name;
-        customerData.email = profile.email;
+        customerData.name = profile.full_name ?? undefined;
+        customerData.email = profile.email ?? undefined;
       }
     } catch (error) {
       log.debug("Dados de perfil indisponíveis para template", { error, userId });
@@ -369,18 +372,15 @@ export async function fetchCustomerData(userId: string): Promise<CustomerData> {
       log.debug("Pagamentos indisponíveis para template", { error, userId });
     }
 
-    // Buscar pedidos (preorders)
+    // Buscar pedidos pelo serviço unificado de pedidos
     try {
-      const { data: orders, error } = await supabase
-        .from("preorders")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (!error) {
-        customerData.orders = (orders || []) as CustomerOrderTemplateData[];
-      }
+      const orders = await fetchOrdersByUserId(userId);
+      customerData.orders = orders.slice(0, 5).map((order) => ({
+        id: order.id,
+        status: order.status,
+        tracking_code: order.trackingCode,
+        created_at: order.createdAt,
+      }));
     } catch (error) {
       log.debug("Pedidos indisponíveis para template", { error, userId });
     }

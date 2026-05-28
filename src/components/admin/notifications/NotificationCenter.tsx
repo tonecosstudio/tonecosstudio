@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ADMIN_ROUTES, isSafeInAppPath } from "@/config/routes";
 import {
   Bell,
   Check,
@@ -46,11 +47,11 @@ const iconMap: Record<string, LucideIcon> = {
   MessageSquare,
 };
 
-const priorityColors = {
+const priorityColors: Record<AdminNotification["priority"], string> = {
   low: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
   medium: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   high: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  critical: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  urgent: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
 export function NotificationCenter() {
@@ -81,7 +82,7 @@ export function NotificationCenter() {
       markAsReadMutation.mutate(notification.id);
     }
 
-    if (notification.action_url) {
+    if (notification.action_url && isSafeInAppPath(notification.action_url)) {
       navigate(notification.action_url);
       setIsOpen(false);
     }
@@ -193,8 +194,8 @@ export function NotificationCenter() {
                                 variant="outline"
                                 className={cn("text-xs", priorityColors[notification.priority])}
                               >
-                                {notification.priority === "critical"
-                                  ? "Crítico"
+                                {notification.priority === "urgent"
+                                  ? "Urgente"
                                   : notification.priority === "high"
                                     ? "Alta"
                                     : "Baixa"}
@@ -230,7 +231,7 @@ export function NotificationCenter() {
               variant="ghost"
               className="w-full"
               onClick={() => {
-                navigate("/admin/notificacoes");
+                navigate(`${ADMIN_ROUTES.communication}?tab=notifications`);
                 setIsOpen(false);
               }}
             >

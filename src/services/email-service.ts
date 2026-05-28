@@ -13,8 +13,16 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
+import { CONTACT } from '@/config/constants';
 import { logDebug, logError, logInfo, logWarn } from '@/lib/logger';
+import { normalizeAddressBR, type DeliveryAddress } from '@/lib/profile';
+import { buildTrackingUrl } from '@/lib/tracking-links';
 import { notificationPreferencesService, EmailType } from './notification-preferences-service';
+import {
+  createEmailDeliveryLogRpc,
+  type EmailDeliveryLogUpdate,
+  updateEmailDeliveryLogRpc,
+} from './email-log-mutations-service';
 
 interface EmailOptions {
   to: string;
@@ -33,14 +41,6 @@ interface EmailConfig {
 }
 
 type EmailMetadata = Record<string, Json>;
-
-interface EmailLogUpdate {
-  status?: string;
-  sent_at?: string;
-  error_message?: string;
-  retry_count?: number;
-  provider_message_id?: string;
-}
 
 interface EmailUser {
   id: string;
@@ -62,9 +62,9 @@ interface EmailCollection {
 
 interface EmailSubscription {
   id?: string;
-  plan_type: string;
-  shipping_address?: ShippingAddress | null;
-  user?: EmailUser | null;
+  plan_type: string | null;
+  deliveries_total?: number | null;
+  total_paid?: number | null;
 }
 
 interface ShippingAddress {
@@ -75,6 +75,62 @@ interface ShippingAddress {
   city?: string;
   state?: string;
   zip_code?: string;
+}
+
+interface EmailProfileRow {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  display_name: string | null;
+  delivery_address: Json | null;
+}
+
+interface EmailSubscriptionRow {
+  id: string;
+  user_id: string;
+  collection_id: string | null;
+  plan_type: string | null;
+  deliveries_total: number | null;
+  total_paid: number | null;
+}
+
+interface EmailDeliveryRow {
+  id: string;
+  subscription_id: string;
+  delivery_number: number | null;
+  delivery_order: number;
+  shipping_date: string | null;
+  reveal_date: string | null;
+  actual_delivery_date: string | null;
+  delivered_date: string | null;
+  updated_at: string;
+  shipping_carrier: string | null;
+  tracking_code: string | null;
+}
+
+interface EmailStandalonePurchaseRow {
+  id: string;
+  user_id: string;
+  collection_id: string | null;
+  amount: number;
+  paid_amount: number | null;
+  balance_amount: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface EmailDeliveryContext {
+  delivery: EmailDeliveryRow;
+  subscription: EmailSubscription;
+  user: EmailUser;
+  collection: EmailCollection | null;
+  shippingAddress: ShippingAddress;
+}
+
+interface EmailStandalonePurchaseContext {
+  purchase: EmailStandalonePurchaseRow;
+  user: EmailUser;
+  collection: EmailCollection | null;
 }
 
 class EmailServiceError extends Error {
@@ -103,7 +159,7 @@ export class EmailService {
    * Load email configuration from environment variables
    */
   private loadConfig(): EmailConfig {
-    const from = import.meta.env.VITE_EMAIL_FROM || import.meta.env.VITE_SUPPORT_EMAIL || 'noreply@ordax.com.br';
+    const from = import.meta.env.VITE_EMAIL_FROM || CONTACT.SUPPORT_EMAIL;
     const fromName = import.meta.env.VITE_EMAIL_FROM_NAME || import.meta.env.VITE_COMPANY_NAME || 'ORDAX';
     const maxRetries = parseInt(import.meta.env.VITE_EMAIL_MAX_RETRIES || '3', 10);
     const retryDelay = parseInt(import.meta.env.VITE_EMAIL_RETRY_DELAY || '2000', 10);
@@ -114,6 +170,239 @@ export class EmailService {
       fromName,
       maxRetries,
       retryDelay,
+    };
+  }
+
+  private toEmailUser(profile: EmailProfileRow): EmailUser {
+    return {
+      id: profile.id,
+      email: profile.email ?? '',
+      raw_user_meta_data: {
+        full_name: profile.full_name ?? profile.display_name ?? undefined,
+      },
+    };
+  }
+
+  private toShippingAddress(profile: EmailProfileRow): ShippingAddress {
+    const normalized = normalizeAddressBR(
+      profile.delivery_address as DeliveryAddress | null
+    );
+
+    return {
+      street: normalized?.rua,
+      number: normalized?.numero,
+      complement: normalized?.complemento,
+      neighborhood: normalized?.bairro,
+      city: normalized?.cidade,
+      state: normalized?.uf,
+      zip_code: normalized?.cep,
+    };
+  }
+
+  private getDeliveryReferenceDate(delivery: EmailDeliveryRow): string | null {
+    return (
+      delivery.shipping_date ??
+      delivery.reveal_date ??
+      delivery.actual_delivery_date ??
+      delivery.delivered_date
+    );
+  }
+
+  private formatMonthYear(date: string | null): string {
+    return date
+      ? new Date(date).toLocaleDateString('pt-BR', {
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'A definir';
+  }
+
+  private formatLongDate(date: string | null): string {
+    return date
+      ? new Date(date).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'A definir';
+  }
+
+  private formatDateAfterDays(days: number): string {
+    if (!Number.isFinite(days)) return 'A definir';
+
+    const date = new Date();
+    date.setDate(date.getDate() + Math.max(0, Math.ceil(days)));
+    return this.formatLongDate(date.toISOString());
+  }
+
+  private getDeliveryNumber(delivery: EmailDeliveryRow): number {
+    return delivery.delivery_number ?? delivery.delivery_order;
+  }
+
+  private getStandalonePurchaseAmounts(purchase: EmailStandalonePurchaseRow): {
+    balanceAmount: number;
+    depositAmount: number;
+    totalAmount: number;
+  } {
+    const totalAmount = purchase.amount;
+    const balanceAmount = purchase.balance_amount ?? 0;
+    const depositAmount = purchase.paid_amount ?? Math.max(totalAmount - balanceAmount, 0);
+
+    return {
+      balanceAmount,
+      depositAmount,
+      totalAmount,
+    };
+  }
+
+  private async fetchProfileById(userId: string): Promise<EmailProfileRow> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, display_name, delivery_address')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      throw new EmailServiceError(
+        `Failed to fetch profile: ${error?.message}`,
+        'USER_EMAIL_NOT_FOUND',
+        false
+      );
+    }
+
+    return data as EmailProfileRow;
+  }
+
+  private async fetchProfileByEmail(email: string): Promise<EmailProfileRow | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, display_name, delivery_address')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) {
+      throw new EmailServiceError(
+        `Failed to fetch profile: ${error.message}`,
+        'USER_EMAIL_NOT_FOUND',
+        false
+      );
+    }
+
+    return data as EmailProfileRow | null;
+  }
+
+  private async fetchCollectionById(collectionId: string | null): Promise<EmailCollection | null> {
+    if (!collectionId) return null;
+
+    const { data, error } = await supabase
+      .from('collections')
+      .select('id, name, description, cover_image_url')
+      .eq('id', collectionId)
+      .maybeSingle();
+
+    if (error) {
+      throw new EmailServiceError(
+        `Failed to fetch collection: ${error.message}`,
+        'COLLECTION_NOT_FOUND',
+        false
+      );
+    }
+
+    return data
+      ? {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          image_url: data.cover_image_url,
+        }
+      : null;
+  }
+
+  private async fetchSubscriptionEmailContext(
+    subscriptionId: string
+  ): Promise<Omit<EmailDeliveryContext, 'delivery'>> {
+    const { data: subscription, error } = await supabase
+      .from('subscriptions')
+      .select('id, user_id, collection_id, plan_type, deliveries_total, total_paid')
+      .eq('id', subscriptionId)
+      .single();
+
+    if (error || !subscription) {
+      throw new EmailServiceError(
+        `Failed to fetch subscription: ${error?.message}`,
+        'SUBSCRIPTION_NOT_FOUND',
+        false
+      );
+    }
+
+    const subscriptionRow = subscription as EmailSubscriptionRow;
+    const profile = await this.fetchProfileById(subscriptionRow.user_id);
+    const collection = await this.fetchCollectionById(subscriptionRow.collection_id);
+
+    return {
+      subscription: {
+        id: subscriptionRow.id,
+        plan_type: subscriptionRow.plan_type,
+        deliveries_total: subscriptionRow.deliveries_total,
+        total_paid: subscriptionRow.total_paid,
+      },
+      user: this.toEmailUser(profile),
+      collection,
+      shippingAddress: this.toShippingAddress(profile),
+    };
+  }
+
+  private async fetchDeliveryEmailContext(deliveryId: string): Promise<EmailDeliveryContext> {
+    const { data: delivery, error } = await supabase
+      .from('subscription_deliveries')
+      .select(
+        'id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code'
+      )
+      .eq('id', deliveryId)
+      .single();
+
+    if (error || !delivery) {
+      throw new EmailServiceError(
+        `Failed to fetch delivery: ${error?.message}`,
+        'DELIVERY_NOT_FOUND',
+        false
+      );
+    }
+
+    const deliveryRow = delivery as EmailDeliveryRow;
+    const context = await this.fetchSubscriptionEmailContext(deliveryRow.subscription_id);
+
+    return {
+      delivery: deliveryRow,
+      ...context,
+    };
+  }
+
+  private async fetchStandalonePurchaseEmailContext(
+    purchaseId: string
+  ): Promise<EmailStandalonePurchaseContext> {
+    const { data: purchase, error } = await supabase
+      .from('standalone_purchases')
+      .select('id, user_id, collection_id, amount, paid_amount, balance_amount, created_at, updated_at')
+      .eq('id', purchaseId)
+      .single();
+
+    if (error || !purchase) {
+      throw new EmailServiceError(
+        `Failed to fetch standalone purchase: ${error?.message}`,
+        'PURCHASE_NOT_FOUND',
+        false
+      );
+    }
+
+    const purchaseRow = purchase as EmailStandalonePurchaseRow;
+    const profile = await this.fetchProfileById(purchaseRow.user_id);
+    const collection = await this.fetchCollectionById(purchaseRow.collection_id);
+
+    return {
+      purchase: purchaseRow,
+      user: this.toEmailUser(profile),
+      collection,
     };
   }
 
@@ -222,27 +511,7 @@ export class EmailService {
     metadata: EmailMetadata;
   }): Promise<string> {
     try {
-      const { data: log, error } = await supabase
-        .from('email_delivery_logs')
-        .insert({
-          user_id: data.userId || null,
-          recipient_email: data.recipientEmail,
-          email_type: data.emailType,
-          subject: data.subject,
-          status: data.status,
-          provider: data.provider,
-          metadata: data.metadata
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        logError('Failed to create email log', error, 'email');
-        // Return a dummy ID if logging fails - don't block email sending
-        return 'log-failed';
-      }
-
-      return log.id;
+      return await createEmailDeliveryLogRpc(data);
     } catch (error) {
       logError('Failed to create email log', error, 'email');
       return 'log-failed';
@@ -264,7 +533,7 @@ export class EmailService {
     }
 
     try {
-      const updateData: EmailLogUpdate = {};
+      const updateData: EmailDeliveryLogUpdate = {};
 
       if (updates.status) updateData.status = updates.status;
       if (updates.sentAt) updateData.sent_at = updates.sentAt;
@@ -272,14 +541,7 @@ export class EmailService {
       if (updates.retryCount !== undefined) updateData.retry_count = updates.retryCount;
       if (updates.providerMessageId) updateData.provider_message_id = updates.providerMessageId;
 
-      const { error } = await supabase
-        .from('email_delivery_logs')
-        .update(updateData)
-        .eq('id', logId);
-
-      if (error) {
-        logError('Failed to update email log', error, 'email');
-      }
+      await updateEmailDeliveryLogRpc(logId, updateData);
     } catch (error) {
       logError('Failed to update email log', error, 'email');
     }
@@ -399,34 +661,8 @@ export class EmailService {
       const Handlebars = (await import('handlebars')).default;
       const { welcomeTemplate } = await import('@/email-templates/welcome-template');
 
-      // Fetch subscription details with user and deliveries
-      const { data: subscription, error: subError } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          user:user_id (
-            id,
-            email,
-            raw_user_meta_data
-          ),
-          collection:collection_id (
-            id,
-            name
-          )
-        `)
-        .eq('id', subscriptionId)
-        .single();
+      const { subscription, user } = await this.fetchSubscriptionEmailContext(subscriptionId);
 
-      if (subError || !subscription) {
-        throw new EmailServiceError(
-          `Failed to fetch subscription: ${subError?.message}`,
-          'SUBSCRIPTION_NOT_FOUND',
-          false
-        );
-      }
-
-      // Type assertion for user data
-      const user = subscription.user as unknown as EmailUser | null;
       if (!user || !user.email) {
         throw new EmailServiceError(
           'User email not found',
@@ -445,7 +681,7 @@ export class EmailService {
       // Fetch deliveries for this subscription
       const { data: deliveries, error: delError } = await supabase
         .from('subscription_deliveries')
-        .select('*')
+        .select('id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code')
         .eq('subscription_id', subscriptionId)
         .order('delivery_number', { ascending: true });
 
@@ -471,29 +707,26 @@ export class EmailService {
         'anual': 'Anual (12 entregas)'
       };
 
-      const deliveryData = deliveries?.map((delivery) => {
-        const expectedDate = delivery.expected_delivery_date
-          ? new Date(delivery.expected_delivery_date).toLocaleDateString('pt-BR', {
-              month: 'long',
-              year: 'numeric'
-            })
-          : 'A definir';
+      const deliveryData = ((deliveries ?? []) as EmailDeliveryRow[]).map((delivery) => {
+        const expectedDate = this.formatMonthYear(this.getDeliveryReferenceDate(delivery));
 
         return {
-          deliveryNumber: delivery.delivery_number,
+          deliveryNumber: delivery.delivery_number ?? delivery.delivery_order,
           expectedDate,
-          isBonusPiece: subscription.plan_type === 'semestral' && delivery.delivery_number === 6
+          isBonusPiece: subscription.plan_type === 'semestral' && (delivery.delivery_number ?? delivery.delivery_order) === 6
         };
-      }) || [];
+      });
 
       const dashboardUrl = `${window.location.origin}/my-subscriptions`;
-      const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
+      const supportEmail = CONTACT.SUPPORT_EMAIL;
 
       const templateData = {
         userName,
-        planType: planTypeMap[subscription.plan_type] || subscription.plan_type,
-        deliveriesTotal: subscription.deliveries_total,
-        totalPaid: subscription.total_paid.toFixed(2),
+        planType: subscription.plan_type
+          ? planTypeMap[subscription.plan_type] || subscription.plan_type
+          : 'Plano não informado',
+        deliveriesTotal: subscription.deliveries_total ?? deliveryData.length,
+        totalPaid: (subscription.total_paid ?? 0).toFixed(2),
         deliveries: deliveryData,
         dashboardUrl,
         supportEmail
@@ -579,54 +812,73 @@ export class EmailService {
       // Compile template
       const template = Handlebars.compile(templateHtml);
 
-      const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
+      const supportEmail = CONTACT.SUPPORT_EMAIL;
       const dashboardUrl = `${window.location.origin}/my-subscriptions`;
 
       // Send email to each subscriber
       const emailPromises = subscriberEmails.map(async (email) => {
         try {
+          const profile = await this.fetchProfileByEmail(email);
+
+          if (!profile) {
+            logWarn('Skipping character revelation email - profile not found', { email }, 'email');
+            return;
+          }
+
           // Check email preferences first
-          const shouldSend = await this.checkEmailPreference(email, 'revelation');
+          const shouldSend = await this.checkEmailPreference(profile.id, 'revelation');
           if (!shouldSend) {
             logDebug('Skipping character revelation email - user preference disabled', { email }, 'email');
             return;
           }
 
-          // Fetch user details for personalization
-          const { data: users } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('email', email)
-            .single();
+          const recipientEmail = profile.email ?? email;
 
-          const userName = users?.full_name ||
-                          email.split('@')[0] ||
+          const userName = profile?.full_name ||
+                          profile?.display_name ||
+                          recipientEmail.split('@')[0] ||
                           'Cliente';
 
-          // Fetch delivery details for this user and collection
-          const { data: delivery } = await supabase
-            .from('subscription_deliveries')
-            .select(`
-              delivery_number,
-              expected_delivery_date,
-              subscription:subscription_id (
-                user:user_id (
-                  email
-                )
-              )
-            `)
+          const { data: subscription, error: subscriptionError } = await supabase
+            .from('subscriptions')
+            .select('id')
+            .eq('user_id', profile.id)
             .eq('collection_id', collectionId)
-            .eq('subscription.user.email', email)
-            .order('delivery_number', { ascending: true })
-            .limit(1)
-            .single();
+            .maybeSingle();
 
-          const deliveryNumber = delivery?.delivery_number || 1;
-          const expectedShippingDate = delivery?.expected_delivery_date
-            ? new Date(delivery.expected_delivery_date).toLocaleDateString('pt-BR', {
-                month: 'long',
-                year: 'numeric'
-              })
+          if (subscriptionError) {
+            throw new EmailServiceError(
+              `Failed to fetch subscription: ${subscriptionError.message}`,
+              'SUBSCRIPTION_NOT_FOUND',
+              false
+            );
+          }
+
+          let deliveryRow: EmailDeliveryRow | null = null;
+
+          if (subscription) {
+            const { data: delivery, error: deliveryError } = await supabase
+              .from('subscription_deliveries')
+              .select('id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code')
+              .eq('subscription_id', subscription.id)
+              .order('delivery_order', { ascending: true })
+              .limit(1)
+              .maybeSingle();
+
+            if (deliveryError) {
+              throw new EmailServiceError(
+                `Failed to fetch delivery: ${deliveryError.message}`,
+                'DELIVERY_NOT_FOUND',
+                false
+              );
+            }
+
+            deliveryRow = delivery as EmailDeliveryRow | null;
+          }
+
+          const deliveryNumber = deliveryRow ? this.getDeliveryNumber(deliveryRow) : 1;
+          const expectedShippingDate = deliveryRow
+            ? this.formatMonthYear(this.getDeliveryReferenceDate(deliveryRow))
             : 'A definir';
 
           // Prepare template data
@@ -647,15 +899,15 @@ export class EmailService {
 
           // Send email
           await this.sendEmail(
-            email,
+            recipientEmail,
             `✨ Revelação: ${collectionData.character_name} - ${collectionData.name}`,
             html,
             'character_revelation',
-            undefined,
+            profile.id,
             { collection_id: collectionId, delivery_number: deliveryNumber }
           );
 
-          logInfo('Character revelation email sent successfully', { email }, 'email');
+          logInfo('Character revelation email sent successfully', { email: recipientEmail }, 'email');
         } catch (error) {
           logError('Failed to send character revelation email', { email, error }, 'email');
           // Continue with other emails even if one fails
@@ -696,38 +948,7 @@ export class EmailService {
         return a === b;
       });
 
-      // Fetch delivery details with subscription and user
-      const { data: delivery, error: deliveryError } = await supabase
-        .from('subscription_deliveries')
-        .select(`
-          *,
-          collection:collection_id (
-            id,
-            name
-          ),
-          subscription:subscription_id (
-            id,
-            user:user_id (
-              id,
-              email,
-              raw_user_meta_data
-            )
-          )
-        `)
-        .eq('id', deliveryId)
-        .single();
-
-      if (deliveryError || !delivery) {
-        throw new EmailServiceError(
-          `Failed to fetch delivery: ${deliveryError?.message}`,
-          'DELIVERY_NOT_FOUND',
-          false
-        );
-      }
-
-      // Type assertion for nested data
-      const subscription = delivery.subscription as unknown as EmailSubscription | null;
-      const user = subscription?.user ?? null;
+      const { delivery, user, collection } = await this.fetchDeliveryEmailContext(deliveryId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
@@ -735,6 +956,12 @@ export class EmailService {
           'USER_EMAIL_NOT_FOUND',
           false
         );
+      }
+
+      const shouldSend = await this.checkEmailPreference(user.id, 'reminder');
+      if (!shouldSend) {
+        logDebug('Skipping choice reminder email - user preference disabled', { email: user.email }, 'email');
+        return;
       }
 
       // Load the HTML template
@@ -758,26 +985,18 @@ export class EmailService {
 
       const isUrgent = daysUntilCutoff <= 3;
 
-      // Format expected shipping date
-      const expectedShippingDate = delivery.expected_delivery_date
-        ? new Date(delivery.expected_delivery_date).toLocaleDateString('pt-BR', {
-            month: 'long',
-            year: 'numeric'
-          })
-        : 'A definir';
-
-      const currentCollection = delivery.collection
-        ? (delivery.collection as unknown as EmailCollection).name
-        : null;
+      const deliveryNumber = this.getDeliveryNumber(delivery);
+      const expectedShippingDate = this.formatMonthYear(this.getDeliveryReferenceDate(delivery));
+      const currentCollection = collection?.name ?? null;
 
       const collectionSelectionUrl = `${window.location.origin}/my-subscriptions`;
-      const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
+      const supportEmail = CONTACT.SUPPORT_EMAIL;
 
       const templateData = {
         userName,
         isUrgent,
         daysUntilCutoff,
-        deliveryNumber: delivery.delivery_number,
+        deliveryNumber,
         expectedShippingDate,
         currentCollection,
         collectionSelectionUrl,
@@ -799,7 +1018,11 @@ export class EmailService {
         html,
         'choice_reminder',
         user.id,
-        { delivery_id: deliveryId, days_until_cutoff: daysUntilCutoff }
+        {
+          delivery_id: deliveryId,
+          days_until_cutoff: daysUntilCutoff,
+          collection_id: collection?.id ?? null,
+        }
       );
 
       logInfo('Choice reminder email sent successfully',
@@ -829,41 +1052,12 @@ export class EmailService {
       // Import Handlebars dynamically
       const Handlebars = (await import('handlebars')).default;
 
-      // Fetch delivery details with subscription, user, and collection
-      const { data: delivery, error: deliveryError } = await supabase
-        .from('subscription_deliveries')
-        .select(`
-          *,
-          collection:collection_id (
-            id,
-            name,
-            description
-          ),
-          subscription:subscription_id (
-            id,
-            plan_type,
-            user:user_id (
-              id,
-              email,
-              raw_user_meta_data
-            )
-          )
-        `)
-        .eq('id', deliveryId)
-        .single();
-
-      if (deliveryError || !delivery) {
-        throw new EmailServiceError(
-          `Failed to fetch delivery: ${deliveryError?.message}`,
-          'DELIVERY_NOT_FOUND',
-          false
-        );
-      }
-
-      // Type assertions for nested data
-      const subscription = delivery.subscription as unknown as EmailSubscription | null;
-      const user = subscription?.user ?? null;
-      const collectionData = delivery.collection as unknown as EmailCollection | null;
+      const {
+        delivery,
+        subscription,
+        user,
+        collection: collectionData,
+      } = await this.fetchDeliveryEmailContext(deliveryId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
@@ -882,7 +1076,7 @@ export class EmailService {
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.email, 'shipping');
+      const shouldSend = await this.checkEmailPreference(user.id, 'shipping');
       if (!shouldSend) {
         logDebug(`Skipping production started email - user preference disabled`, { email: user.email }, 'email');
         return;
@@ -907,23 +1101,19 @@ export class EmailService {
                        user.email?.split('@')[0] ||
                        'Cliente';
 
-      const expectedShippingDate = delivery.expected_delivery_date
-        ? new Date(delivery.expected_delivery_date).toLocaleDateString('pt-BR', {
-            month: 'long',
-            year: 'numeric'
-          })
-        : 'A definir';
+      const deliveryNumber = this.getDeliveryNumber(delivery);
+      const expectedShippingDate = this.formatMonthYear(this.getDeliveryReferenceDate(delivery));
 
-      const isBonusPiece = subscription?.plan_type === 'semestral' && delivery.delivery_number === 6;
+      const isBonusPiece = subscription.plan_type === 'semestral' && deliveryNumber === 6;
 
       const trackingUrl = `${window.location.origin}/my-subscriptions`;
-      const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
+      const supportEmail = CONTACT.SUPPORT_EMAIL;
 
       const templateData = {
         userName,
         collectionName: collectionData.name,
         characterName: collectionData?.character_name || null,
-        deliveryNumber: delivery.delivery_number,
+        deliveryNumber,
         expectedShippingDate,
         isBonusPiece,
         trackingUrl,
@@ -969,41 +1159,13 @@ export class EmailService {
       // Import Handlebars dynamically
       const Handlebars = (await import('handlebars')).default;
 
-      // Fetch delivery details with all related data
-      const { data: delivery, error: deliveryError } = await supabase
-        .from('subscription_deliveries')
-        .select(`
-          *,
-          collection:collection_id (
-            id,
-            name
-          ),
-          subscription:subscription_id (
-            id,
-            plan_type,
-            shipping_address,
-            user:user_id (
-              id,
-              email,
-              raw_user_meta_data
-            )
-          )
-        `)
-        .eq('id', deliveryId)
-        .single();
-
-      if (deliveryError || !delivery) {
-        throw new EmailServiceError(
-          `Failed to fetch delivery: ${deliveryError?.message}`,
-          'DELIVERY_NOT_FOUND',
-          false
-        );
-      }
-
-      // Type assertions for nested data
-      const subscription = delivery.subscription as unknown as EmailSubscription | null;
-      const user = subscription?.user ?? null;
-      const collectionData = delivery.collection as unknown as EmailCollection | null;
+      const {
+        delivery,
+        subscription,
+        user,
+        collection: collectionData,
+        shippingAddress,
+      } = await this.fetchDeliveryEmailContext(deliveryId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
@@ -1022,7 +1184,7 @@ export class EmailService {
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.email, 'shipping');
+      const shouldSend = await this.checkEmailPreference(user.id, 'shipping');
       if (!shouldSend) {
         logDebug(`Skipping shipping notification email - user preference disabled`, { email: user.email }, 'email');
         return;
@@ -1059,22 +1221,13 @@ export class EmailService {
             year: 'numeric'
           });
 
-      const estimatedDeliveryDate = delivery.expected_delivery_date
-        ? new Date(delivery.expected_delivery_date).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          })
-        : 'A definir';
+      const deliveryNumber = this.getDeliveryNumber(delivery);
+      const estimatedDeliveryDate = this.formatLongDate(this.getDeliveryReferenceDate(delivery));
+      const isBonusPiece = subscription.plan_type === 'semestral' && deliveryNumber === 6;
 
-      const isBonusPiece = subscription?.plan_type === 'semestral' && delivery.delivery_number === 6;
-
-      // Parse shipping address
-      const shippingAddress = subscription?.shipping_address || {};
-
-      const trackingUrl = `https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${trackingCode}`;
+      const trackingUrl = buildTrackingUrl(trackingCode, delivery.shipping_carrier) || '';
       const dashboardUrl = `${window.location.origin}/my-subscriptions`;
-      const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
+      const supportEmail = CONTACT.SUPPORT_EMAIL;
 
       const templateData = {
         userName,
@@ -1083,8 +1236,8 @@ export class EmailService {
         trackingUrl,
         collectionName: collectionData.name,
         characterName: collectionData?.character_name || null,
-        deliveryNumber: delivery.delivery_number,
-        carrier: 'Correios',
+        deliveryNumber,
+        carrier: delivery.shipping_carrier || 'Transportadora',
         estimatedDeliveryDate,
         isBonusPiece,
         shippingAddress: {
@@ -1144,35 +1297,8 @@ export class EmailService {
         return a === b;
       });
 
-      // Fetch standalone purchase details with user and collection
-      const { data: purchase, error: purchaseError } = await supabase
-        .from('standalone_purchases')
-        .select(`
-          *,
-          collection:collection_id (
-            id,
-            name
-          ),
-          user:user_id (
-            id,
-            email,
-            raw_user_meta_data
-          )
-        `)
-        .eq('id', purchaseId)
-        .single();
-
-      if (purchaseError || !purchase) {
-        throw new EmailServiceError(
-          `Failed to fetch standalone purchase: ${purchaseError?.message}`,
-          'PURCHASE_NOT_FOUND',
-          false
-        );
-      }
-
-      // Type assertions for nested data
-      const user = purchase.user as unknown as EmailUser | null;
-      const collectionData = purchase.collection as unknown as EmailCollection | null;
+      const { purchase, user, collection: collectionData } =
+        await this.fetchStandalonePurchaseEmailContext(purchaseId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
@@ -1191,7 +1317,7 @@ export class EmailService {
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.email, 'payment');
+      const shouldSend = await this.checkEmailPreference(user.id, 'payment');
       if (!shouldSend) {
         logDebug('Skipping balance reminder email - user preference disabled', { email: user.email }, 'email');
         return;
@@ -1218,23 +1344,19 @@ export class EmailService {
 
       const isUrgent = daysRemaining <= 1;
 
-      const balanceDueDate = purchase.balance_due_date
-        ? new Date(purchase.balance_due_date).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          })
-        : 'A definir';
+      const balanceDueDate = this.formatDateAfterDays(daysRemaining);
+      const { balanceAmount, depositAmount, totalAmount } =
+        this.getStandalonePurchaseAmounts(purchase);
 
       const paymentUrl = `${window.location.origin}/pay-balance/${purchaseId}`;
-      const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
+      const supportEmail = CONTACT.SUPPORT_EMAIL;
 
       const templateData = {
         userName,
         isUrgent,
-        balanceAmount: purchase.balance_amount.toFixed(2),
-        depositAmount: purchase.deposit_amount.toFixed(2),
-        totalAmount: purchase.total_amount.toFixed(2),
+        balanceAmount: balanceAmount.toFixed(2),
+        depositAmount: depositAmount.toFixed(2),
+        totalAmount: totalAmount.toFixed(2),
         balanceDueDate,
         daysRemaining,
         orderId: purchase.id.substring(0, 8).toUpperCase(),
@@ -1290,35 +1412,8 @@ export class EmailService {
       // Import Handlebars dynamically
       const Handlebars = (await import('handlebars')).default;
 
-      // Fetch standalone purchase details with user and collection
-      const { data: purchase, error: purchaseError } = await supabase
-        .from('standalone_purchases')
-        .select(`
-          *,
-          collection:collection_id (
-            id,
-            name
-          ),
-          user:user_id (
-            id,
-            email,
-            raw_user_meta_data
-          )
-        `)
-        .eq('id', purchaseId)
-        .single();
-
-      if (purchaseError || !purchase) {
-        throw new EmailServiceError(
-          `Failed to fetch standalone purchase: ${purchaseError?.message}`,
-          'PURCHASE_NOT_FOUND',
-          false
-        );
-      }
-
-      // Type assertions for nested data
-      const user = purchase.user as unknown as EmailUser | null;
-      const collectionData = purchase.collection as unknown as EmailCollection | null;
+      const { purchase, user, collection: collectionData } =
+        await this.fetchStandalonePurchaseEmailContext(purchaseId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
@@ -1337,7 +1432,7 @@ export class EmailService {
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.email, 'payment');
+      const shouldSend = await this.checkEmailPreference(user.id, 'payment');
       if (!shouldSend) {
         logDebug('Skipping cancellation notice email - user preference disabled', { email: user.email }, 'email');
         return;
@@ -1362,36 +1457,14 @@ export class EmailService {
                        user.email?.split('@')[0] ||
                        'Cliente';
 
-      const cancellationDate = purchase.cancelled_at
-        ? new Date(purchase.cancelled_at).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          })
-        : new Date().toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          });
-
-      const purchaseDate = purchase.created_at
-        ? new Date(purchase.created_at).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          })
-        : 'Data não disponível';
-
-      const balanceDueDate = purchase.balance_due_date
-        ? new Date(purchase.balance_due_date).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          })
-        : 'Data não disponível';
+      const cancellationDate = this.formatLongDate(purchase.updated_at);
+      const purchaseDate = this.formatLongDate(purchase.created_at);
+      const balanceDueDate = 'Data não disponível';
+      const { balanceAmount, depositAmount, totalAmount } =
+        this.getStandalonePurchaseAmounts(purchase);
 
       const shopUrl = `${window.location.origin}/shop`;
-      const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'suporte@ordax.com.br';
+      const supportEmail = CONTACT.SUPPORT_EMAIL;
 
       const templateData = {
         userName,
@@ -1402,9 +1475,9 @@ export class EmailService {
         characterName: collectionData?.character_name || null,
         purchaseDate,
         balanceDueDate,
-        depositAmount: purchase.deposit_amount.toFixed(2),
-        balanceAmount: purchase.balance_amount.toFixed(2),
-        totalAmount: purchase.total_amount.toFixed(2),
+        depositAmount: depositAmount.toFixed(2),
+        balanceAmount: balanceAmount.toFixed(2),
+        totalAmount: totalAmount.toFixed(2),
         shopUrl,
         supportEmail
       };

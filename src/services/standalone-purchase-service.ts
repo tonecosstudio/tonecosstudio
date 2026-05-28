@@ -11,8 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { logInfo, logError } from "@/lib/logger";
 import { emailService } from "./email-service";
 import { StandalonePurchase } from "@/types/database";
-import type { Tables } from "@/integrations/supabase/types";
 import { validateBeforeCutoff, CutoffPassedError } from "@/lib/cutoff-middleware";
+import { assertCurrentUserId, requireAuthenticatedUserId } from "@/services/auth/current-user";
+import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
 
 /**
  * Parameters for creating a standalone purchase
@@ -21,10 +22,74 @@ export interface CreateStandalonePurchaseParams {
   userId: string;
   collectionId: string;
   cycleId: string;
+  characterId?: string;
   depositVoucherUrl?: string;
 }
 
-type StandalonePurchaseRow = Tables<'standalone_purchases'>;
+type RpcError = { message: string } | null;
+type RpcResponse<TData = unknown> = PromiseLike<{ data: TData; error: RpcError }>;
+
+interface StandalonePurchaseRpcClient {
+  rpc(functionName: 'check_capacity_available', args: {
+    p_cycle_id: string;
+    p_quantity: number;
+  }): RpcResponse<boolean | null>;
+  rpc(functionName: 'admin_cancel_standalone_purchase', args: {
+    p_purchase_id: string;
+    p_reason: string;
+  }): RpcResponse<Record<string, unknown> | null>;
+  rpc(functionName: 'submit_standalone_balance_voucher', args: {
+    p_purchase_id: string;
+    p_balance_voucher_url: string;
+  }): RpcResponse;
+  rpc(functionName: 'admin_mark_standalone_production_complete', args: {
+    p_purchase_id: string;
+  }): RpcResponse<Record<string, unknown> | null>;
+  rpc(functionName: 'admin_update_standalone_tracking_code', args: {
+    p_purchase_id: string;
+    p_tracking_code: string;
+    p_mark_shipped: boolean;
+  }): RpcResponse;
+  rpc(functionName: 'admin_update_standalone_fulfillment_status', args: {
+    p_purchase_id: string;
+    p_new_status: StandaloneFulfillmentStatus;
+    p_notes: string | null;
+  }): RpcResponse;
+  rpc(functionName: 'admin_approve_standalone_payment_voucher', args: {
+    p_purchase_id: string;
+    p_voucher_type: 'deposit' | 'balance';
+  }): RpcResponse;
+  rpc(functionName: 'admin_reject_standalone_payment_voucher', args: {
+    p_purchase_id: string;
+    p_voucher_type: 'deposit' | 'balance';
+    p_reason: string;
+  }): RpcResponse<Record<string, unknown> | null>;
+}
+
+const standalonePurchaseRpc = supabase as unknown as StandalonePurchaseRpcClient;
+
+type StandalonePurchaseRow = {
+  id: string;
+  status: string;
+  user_id: string;
+  collection_id: string | null;
+  cycle_id?: string | null;
+  character_id: string | null;
+  deposit_amount?: number | null;
+  balance_amount?: number | null;
+  total_amount?: number | null;
+  deposit_paid_at?: string | null;
+  balance_paid_at?: string | null;
+  balance_due_date?: string | null;
+  production_complete_at?: string | null;
+  payment_voucher_deposit_url?: string | null;
+  payment_voucher_balance_url?: string | null;
+  tracking_code: string | null;
+  expected_delivery_date?: string | null;
+  actual_delivery_date?: string | null;
+  created_at: string;
+  updated_at: string;
+} & Record<string, unknown>;
 
 export type StandalonePurchaseListItem = StandalonePurchaseRow & {
   profiles?: { id: string; full_name: string | null; email: string | null } | null;
@@ -33,7 +98,75 @@ export type StandalonePurchaseListItem = StandalonePurchaseRow & {
   collection_characters?: { id: string; name: string; image_url: string | null } | null;
 };
 
-type VoucherRejectionUpdate = Partial<Pick<StandalonePurchaseRow, 'deposit_voucher_url' | 'balance_voucher_url'>>;
+interface CreateStandalonePurchaseEdgeResponse {
+  success?: boolean;
+  error?: string;
+  purchase?: StandalonePurchase;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : {};
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[char] || char);
+}
+
+function assertHttpsUrl(value: string, fieldName: string): void {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'https:') {
+      throw new Error('HTTPS required');
+    }
+  } catch {
+    throw new Error(`${fieldName} must be a valid HTTPS URL`);
+  }
+}
+
+export type StandaloneFulfillmentStatus = 'in_production' | 'shipped' | 'delivered' | 'completed';
+
+export type StandaloneAdminTransitionStatus =
+  | 'deposit_paid'
+  | 'awaiting_balance'
+  | 'balance_paid'
+  | 'in_production'
+  | 'shipped'
+  | 'delivered'
+  | 'completed'
+  | 'cancelled';
+
+function hasControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code < 32 || code === 127) return true;
+  }
+
+  return false;
+}
+
+function assertValidTrackingCode(value: string): string {
+  const trackingCode = value.trim();
+
+  if (!trackingCode) {
+    throw new Error('Tracking code is required');
+  }
+
+  if (trackingCode.length > 100) {
+    throw new Error('Tracking code must be at most 100 characters');
+  }
+
+  if (trackingCode.includes('<') || trackingCode.includes('>') || hasControlCharacter(trackingCode)) {
+    throw new Error('Tracking code contains invalid characters');
+  }
+
+  return trackingCode;
+}
 
 /**
  * Create a standalone purchase with deposit
@@ -44,7 +177,7 @@ type VoucherRejectionUpdate = Partial<Pick<StandalonePurchaseRow, 'deposit_vouch
  * 3. Checks if capacity is available
  * 4. Reserves capacity for the cycle
  *
- * The deposit amount is fixed at R$100.00, and the balance is calculated as
+ * The deposit amount comes from the centralized pricing fallback, and the balance is calculated as
  * collection price minus deposit.
  *
  * @param params - Creation parameters
@@ -57,103 +190,33 @@ type VoucherRejectionUpdate = Partial<Pick<StandalonePurchaseRow, 'deposit_vouch
 export async function createWithDeposit(
   params: CreateStandalonePurchaseParams
 ): Promise<StandalonePurchase> {
-  const { userId, collectionId, cycleId, depositVoucherUrl } = params;
+  const { userId, collectionId, cycleId, characterId, depositVoucherUrl } = params;
+  await assertCurrentUserId(userId);
+  if (depositVoucherUrl) {
+    assertHttpsUrl(depositVoucherUrl, 'depositVoucherUrl');
+  }
 
-  // 1. Check if before cutoff (Requirement 7.6)
-  try {
-    await validateBeforeCutoff();
-  } catch (error) {
-    if (error instanceof CutoffPassedError) {
-      throw new Error("Cannot create standalone purchase - cutoff has passed. Production has started.");
+  const { data, error } = await supabase.functions.invoke<CreateStandalonePurchaseEdgeResponse>(
+    'create-standalone-purchase',
+    {
+      body: {
+        collectionId,
+        cycleId,
+        characterId,
+        depositVoucherUrl,
+      },
     }
-    throw error;
+  );
+
+  if (error) {
+    throw new Error(error.message);
   }
 
-  // 2. Check if cycle is still open (Requirement 7.6)
-  const { data: cycle, error: cycleError } = await supabase
-    .from('cycles')
-    .select('status, capacity_max, capacity_current')
-    .eq('id', cycleId)
-    .single();
-
-  if (cycleError || !cycle) {
-    throw new Error(`Failed to get cycle: ${cycleError?.message || 'Cycle not found'}`);
+  if (!data?.success || !data.purchase) {
+    throw new Error(data?.error || 'Failed to create standalone purchase');
   }
 
-  if (cycle.status !== 'open') {
-    throw new Error(`Cannot create standalone purchase - cycle is ${cycle.status}. Only open cycles accept new purchases.`);
-  }
-
-  // 3. Get collection details to calculate amounts
-  const { data: collection, error: collectionError } = await supabase
-    .from('collections')
-    .select('price_full, name')
-    .eq('id', collectionId)
-    .single();
-
-  if (collectionError || !collection) {
-    throw new Error(`Failed to get collection: ${collectionError?.message || 'Collection not found'}`);
-  }
-
-  // 4. Check capacity availability (Requirement 4.2)
-  const { data: capacityAvailable, error: capacityError } = await supabase
-    .rpc('check_capacity_available', {
-      p_cycle_id: cycleId,
-      p_quantity: 1
-    });
-
-  if (capacityError) {
-    throw new Error(`Failed to check capacity: ${capacityError.message}`);
-  }
-
-  if (!capacityAvailable) {
-    throw new Error('Capacity limit exceeded for this cycle. Cannot create standalone purchase.');
-  }
-
-  // 5. Calculate amounts (Requirement 4.1, 4.3)
-  const depositAmount = 100.00; // Fixed deposit amount
-  const balanceAmount = collection.price_full - depositAmount;
-  const totalAmount = collection.price_full;
-
-  // 6. Create standalone purchase record
-  const { data: purchase, error: createError } = await supabase
-    .from('standalone_purchases')
-    .insert({
-      user_id: userId,
-      collection_id: collectionId,
-      cycle_id: cycleId,
-      status: 'deposit_paid',
-      price_deposit: depositAmount,
-      price_balance: balanceAmount,
-      price_full: totalAmount,
-      deposit_paid_at: new Date().toISOString(),
-      deposit_voucher_url: depositVoucherUrl || null
-    })
-    .select()
-    .single();
-
-  if (createError || !purchase) {
-    throw new Error(`Failed to create standalone purchase: ${createError?.message || 'Unknown error'}`);
-  }
-
-  // 7. Reserve capacity (Requirement 4.2)
-  const { error: reserveError } = await supabase
-    .rpc('reserve_capacity', {
-      p_cycle_id: cycleId,
-      p_quantity: 1
-    });
-
-  if (reserveError) {
-    // Rollback: delete the purchase if capacity reservation fails
-    await supabase
-      .from('standalone_purchases')
-      .delete()
-      .eq('id', purchase.id);
-
-    throw new Error(`Failed to reserve capacity: ${reserveError.message}`);
-  }
-
-  return purchase as StandalonePurchase;
+  return data.purchase;
 }
 
 /**
@@ -202,7 +265,7 @@ export async function canCreateStandalonePurchase(
     };
   }
 
-  if (cycle.status !== 'open') {
+  if (!['open', 'active', 'sales'].includes(cycle.status)) {
     return {
       canCreate: false,
       reason: `Cycle is ${cycle.status} - only open cycles accept purchases`
@@ -210,7 +273,7 @@ export async function canCreateStandalonePurchase(
   }
 
   // 3. Check capacity
-  const { data: capacityAvailable, error: capacityError } = await supabase
+  const { data: capacityAvailable, error: capacityError } = await standalonePurchaseRpc
     .rpc('check_capacity_available', {
       p_cycle_id: cycleId,
       p_quantity: 1
@@ -242,6 +305,8 @@ export async function canCreateStandalonePurchase(
 export async function getUserStandalonePurchases(
   userId: string
 ): Promise<StandalonePurchase[]> {
+  await assertCurrentUserId(userId);
+
   const { data, error } = await supabase
     .from('standalone_purchases')
     .select('*')
@@ -252,7 +317,7 @@ export async function getUserStandalonePurchases(
     throw new Error(`Failed to get standalone purchases: ${error.message}`);
   }
 
-  return (data || []) as StandalonePurchase[];
+  return (data || []) as unknown as StandalonePurchase[];
 }
 
 /**
@@ -277,7 +342,7 @@ export async function getStandalonePurchase(
     throw new Error(`Failed to get standalone purchase: ${error.message}`);
   }
 
-  return data as StandalonePurchase;
+  return data as unknown as StandalonePurchase;
 }
 
 /**
@@ -298,99 +363,26 @@ export async function getStandalonePurchase(
 export async function cancelStandalonePurchase(
   purchaseId: string,
   reason?: string,
-  adminUserId?: string
+  _adminUserId?: string
 ): Promise<void> {
-  // 1. Get the purchase
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('standalone_purchases')
-    .select('id, cycle_id, status')
-    .eq('id', purchaseId)
-    .single();
-
-  if (purchaseError || !purchase) {
-    throw new Error(`Failed to get standalone purchase: ${purchaseError?.message || 'Purchase not found'}`);
-  }
-
-  // 2. Check if already cancelled
-  if (purchase.status === 'cancelled') {
-    throw new Error('Standalone purchase is already cancelled');
-  }
-
-  const previousStatus = purchase.status;
   const cancellationReason = reason || 'Cancelled by admin';
-
-  // 3. Update purchase status to cancelled
-  const { error: updateError } = await supabase
-    .from('standalone_purchases')
-    .update({
-      status: 'cancelled',
-      cancelled_at: new Date().toISOString(),
-      cancellation_reason: cancellationReason
-    })
-    .eq('id', purchaseId);
-
-  if (updateError) {
-    throw new Error(`Failed to cancel standalone purchase: ${updateError.message}`);
-  }
-
-  // 4. Release capacity if before cutoff (Requirement 3.6, 4.7)
-  let capacityReleased = false;
-  if (purchase.cycle_id) {
-    try {
-      // Check if before cutoff
-      const { data: beforeCutoff, error: cutoffError } = await supabase
-        .rpc('is_before_cutoff');
-
-      if (cutoffError) {
-        logError('Error checking cutoff', cutoffError, 'standalone-purchase');
-      } else if (beforeCutoff) {
-        // Release capacity
-        const { error: releaseError } = await supabase
-          .rpc('release_capacity', {
-            p_cycle_id: purchase.cycle_id,
-            p_quantity: 1
-          });
-
-        if (releaseError) {
-          logError(`Error releasing capacity for purchase ${purchaseId}`, releaseError, 'standalone-purchase');
-        } else {
-          logInfo(`Released capacity for standalone purchase ${purchaseId} in cycle ${purchase.cycle_id}`, null, 'standalone-purchase');
-          capacityReleased = true;
-        }
-      } else {
-        logInfo(`Cutoff has passed - capacity not released for standalone purchase ${purchaseId}`, null, 'standalone-purchase');
-      }
-    } catch (error) {
-      logError(`Exception releasing capacity for purchase ${purchaseId}`, error, 'standalone-purchase');
-      // Don't fail the cancellation if capacity release fails
+  const { data: result, error: cancelError } = await standalonePurchaseRpc.rpc(
+    'admin_cancel_standalone_purchase',
+    {
+      p_purchase_id: purchaseId,
+      p_reason: cancellationReason,
     }
+  );
+
+  if (cancelError) {
+    throw new Error(`Failed to cancel standalone purchase: ${cancelError.message}`);
   }
 
-  // 5. Log admin action for audit trail (Requirement 15.3)
-  if (adminUserId) {
-    try {
-      const { error: auditLogError } = await supabase.rpc('log_standalone_admin_action', {
-        p_purchase_id: purchaseId,
-        p_admin_user_id: adminUserId,
-        p_action_type: 'cancel_order',
-        p_previous_status: previousStatus,
-        p_new_status: 'cancelled',
-        p_notes: cancellationReason,
-        p_metadata: {
-          cancelled_at: new Date().toISOString(),
-          capacity_released: capacityReleased
-        }
-      });
+  const capacityReleased = typeof result === 'object' && result && 'capacityReleased' in result
+    ? Boolean(result.capacityReleased)
+    : false;
 
-      if (auditLogError) {
-        logError('Failed to log admin action', auditLogError, 'standalone-purchase');
-        // Don't fail the operation if logging fails
-      }
-    } catch (error) {
-      logError('Exception logging admin action', error, 'standalone-purchase');
-      // Don't fail the operation if logging fails
-    }
-  }
+  logInfo(`Cancelled standalone purchase ${purchaseId}`, { capacityReleased }, 'standalone-purchase');
 }
 
 /**
@@ -399,9 +391,7 @@ export async function cancelStandalonePurchase(
  * This function processes the balance payment for a standalone purchase with the following validations:
  * 1. Verifies the purchase exists and status is 'awaiting_balance'
  * 2. Checks that the balance_due_date has not passed
- * 3. Updates status to 'balance_paid'
- * 4. Sets balance_paid_at timestamp
- * 5. Generates a tracking code for shipping
+ * 3. Stores the voucher for admin review without changing paid status
  *
  * @param purchaseId - The purchase ID
  * @param balanceVoucherUrl - URL of the balance payment voucher
@@ -414,51 +404,33 @@ export async function processBalancePayment(
   purchaseId: string,
   balanceVoucherUrl: string
 ): Promise<void> {
-  // 1. Get the purchase
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('standalone_purchases')
-    .select('id, status, balance_due_date')
-    .eq('id', purchaseId)
-    .single();
+  await requireAuthenticatedUserId();
+  assertHttpsUrl(balanceVoucherUrl, 'balanceVoucherUrl');
 
-  if (purchaseError || !purchase) {
-    throw new Error(`Failed to get standalone purchase: ${purchaseError?.message || 'Purchase not found'}`);
-  }
+  const { error } = await standalonePurchaseRpc.rpc('submit_standalone_balance_voucher', {
+    p_purchase_id: purchaseId,
+    p_balance_voucher_url: balanceVoucherUrl
+  });
 
-  // 2. Verify status is 'awaiting_balance' (Requirement 4.5)
-  if (purchase.status !== 'awaiting_balance') {
-    throw new Error(`Cannot process balance payment - purchase status is ${purchase.status}. Expected 'awaiting_balance'.`);
-  }
-
-  // 3. Verify balance_due_date has not passed (Requirement 4.5)
-  if (purchase.balance_due_date) {
-    const dueDate = new Date(purchase.balance_due_date);
-    const now = new Date();
-
-    if (now > dueDate) {
+  if (error) {
+    const message = error.message || 'Unknown error';
+    if (message.includes('PURCHASE_NOT_FOUND')) {
+      throw new Error('Failed to get standalone purchase: Purchase not found');
+    }
+    if (message.includes('FORBIDDEN')) {
+      throw new Error('Failed to get standalone purchase: Purchase not found');
+    }
+    if (message.includes('INVALID_STATUS')) {
+      const currentStatus = message.split('INVALID_STATUS:')[1]?.trim() || 'unknown';
+      throw new Error(`Cannot process balance payment - purchase status is ${currentStatus}. Expected 'awaiting_balance'.`);
+    }
+    if (message.includes('BALANCE_DEADLINE_PASSED')) {
       throw new Error('Cannot process balance payment - payment deadline has passed.');
     }
-  }
-
-  // 4. Generate tracking code (Requirement 4.9)
-  // Format: SP-YYYYMMDD-XXXXX (SP = Standalone Purchase)
-  const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
-  const trackingCode = `SP-${timestamp}-${randomSuffix}`;
-
-  // 5. Update purchase with balance payment info (Requirement 4.5, 4.9)
-  const { error: updateError } = await supabase
-    .from('standalone_purchases')
-    .update({
-      status: 'balance_paid',
-      balance_paid_at: new Date().toISOString(),
-      balance_voucher_url: balanceVoucherUrl,
-      tracking_code: trackingCode
-    })
-    .eq('id', purchaseId);
-
-  if (updateError) {
-    throw new Error(`Failed to update standalone purchase: ${updateError.message}`);
+    if (message.includes('INVALID_BALANCE_VOUCHER_URL')) {
+      throw new Error('balanceVoucherUrl must be a valid HTTPS URL');
+    }
+    throw new Error(`Failed to submit balance payment voucher: ${message}`);
   }
 }
 
@@ -481,86 +453,110 @@ export async function processBalancePayment(
  */
 export async function markProductionComplete(
   purchaseId: string,
-  adminUserId?: string
+  _adminUserId?: string
 ): Promise<void> {
-  // 1. Get the purchase
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('standalone_purchases')
-    .select('id, status, user_id')
-    .eq('id', purchaseId)
-    .single();
+  const { data: result, error } = await standalonePurchaseRpc.rpc(
+    'admin_mark_standalone_production_complete',
+    { p_purchase_id: purchaseId }
+  );
 
-  if (purchaseError || !purchase) {
-    throw new Error(`Failed to get standalone purchase: ${purchaseError?.message || 'Purchase not found'}`);
+  if (error) {
+    throw new Error(`Failed to mark production complete: ${error.message}`);
   }
 
-  // 2. Verify status is 'deposit_paid' (Requirement 4.4)
-  if (purchase.status !== 'deposit_paid') {
-    throw new Error(`Cannot mark production complete - purchase status is ${purchase.status}. Expected 'deposit_paid'.`);
-  }
+  const resultRecord = asRecord(result);
+  const balanceDueDate = typeof resultRecord.balanceDueDate === 'string'
+    ? resultRecord.balanceDueDate
+    : undefined;
 
-  // 3. Calculate balance_due_date = production_complete_at + 5 business days (Requirement 4.4)
-  const productionCompleteAt = new Date();
-
-  // Get holidays for calculating business days
-  const { getHolidayDates } = await import('./holiday-service');
-  const { addBusinessDays } = await import('@/lib/business-days');
-
-  const currentYear = productionCompleteAt.getFullYear();
-  const holidays = await getHolidayDates(currentYear);
-
-  // Calculate 5 business days from production complete date
-  const balanceDueDate = addBusinessDays(productionCompleteAt, 5, holidays);
-
-  // 4. Update purchase with production complete info (Requirement 4.4)
-  const { error: updateError } = await supabase
-    .from('standalone_purchases')
-    .update({
-      status: 'awaiting_balance',
-      production_complete_at: productionCompleteAt.toISOString(),
-      balance_due_date: balanceDueDate.toISOString()
-    })
-    .eq('id', purchaseId);
-
-  if (updateError) {
-    throw new Error(`Failed to update standalone purchase: ${updateError.message}`);
-  }
-
-  // 5. Log admin action for audit trail (Requirement 15.3)
-  if (adminUserId) {
-    try {
-      const { error: auditLogError } = await supabase.rpc('log_standalone_admin_action', {
-        p_purchase_id: purchaseId,
-        p_admin_user_id: adminUserId,
-        p_action_type: 'mark_production_complete',
-        p_previous_status: purchase.status,
-        p_new_status: 'awaiting_balance',
-        p_notes: `Production marked complete. Balance due date: ${balanceDueDate.toISOString()}`,
-        p_metadata: {
-          production_complete_at: productionCompleteAt.toISOString(),
-          balance_due_date: balanceDueDate.toISOString()
-        }
-      });
-
-      if (auditLogError) {
-        logError('Failed to log admin action', auditLogError, 'standalone-purchase');
-        // Don't fail the operation if logging fails
-      }
-    } catch (error) {
-      logError('Exception logging admin action', error, 'standalone-purchase');
-      // Don't fail the operation if logging fails
-    }
-  }
-
-  // 6. Send email notification to customer (Requirement 4.4)
+  // Send email notification to customer (Requirement 4.4)
   try {
     await emailService.sendProductionStarted(purchaseId);
-    logInfo(`Production complete email sent to user ${purchase.user_id}`,
-      { purchaseId, balanceDueDate: balanceDueDate.toISOString() },
+    logInfo('Production complete email sent',
+      { purchaseId, balanceDueDate },
       'standalone-purchase');
   } catch (emailError) {
     logError('Failed to send production complete email', emailError, 'standalone-purchase');
     // Don't fail the operation if email fails
+  }
+}
+
+/**
+ * Update standalone tracking code through the audited admin RPC.
+ */
+export async function updateStandaloneTrackingCode(
+  purchaseId: string,
+  trackingCode: string,
+  options?: { markShipped?: boolean }
+): Promise<void> {
+  const safeTrackingCode = assertValidTrackingCode(trackingCode);
+
+  const { error } = await standalonePurchaseRpc.rpc(
+    'admin_update_standalone_tracking_code',
+    {
+      p_purchase_id: purchaseId,
+      p_tracking_code: safeTrackingCode,
+      p_mark_shipped: Boolean(options?.markShipped),
+    }
+  );
+
+  if (error) {
+    throw new Error(`Failed to update standalone tracking code: ${error.message}`);
+  }
+}
+
+/**
+ * Move a standalone purchase through post-payment fulfillment states.
+ */
+export async function updateStandaloneFulfillmentStatus(
+  purchaseId: string,
+  status: StandaloneFulfillmentStatus,
+  notes?: string
+): Promise<void> {
+  const { error } = await standalonePurchaseRpc.rpc(
+    'admin_update_standalone_fulfillment_status',
+    {
+      p_purchase_id: purchaseId,
+      p_new_status: status,
+      p_notes: notes || null,
+    }
+  );
+
+  if (error) {
+    throw new Error(`Failed to update standalone fulfillment status: ${error.message}`);
+  }
+}
+
+/**
+ * Frontend SSOT for admin standalone status changes.
+ * Payment and production transitions are delegated to their dedicated RPCs.
+ */
+export async function transitionStandalonePurchaseStatus(
+  purchaseId: string,
+  newStatus: StandaloneAdminTransitionStatus | string,
+  options?: { reason?: string; notes?: string }
+): Promise<void> {
+  switch (newStatus) {
+    case 'deposit_paid':
+      await approvePaymentVoucher(purchaseId, 'deposit');
+      return;
+    case 'awaiting_balance':
+      await markProductionComplete(purchaseId);
+      return;
+    case 'balance_paid':
+      await approvePaymentVoucher(purchaseId, 'balance');
+      return;
+    case 'cancelled':
+      await cancelStandalonePurchase(purchaseId, options?.reason || 'Cancelled by admin');
+      return;
+    case 'in_production':
+    case 'shipped':
+    case 'delivered':
+    case 'completed':
+      await updateStandaloneFulfillmentStatus(purchaseId, newStatus, options?.notes);
+      return;
+    default:
+      throw new Error(`Unsupported standalone purchase status transition: ${newStatus}`);
   }
 }
 
@@ -586,122 +582,9 @@ export async function markProductionComplete(
 export async function cancelForNonPayment(
   purchaseId: string
 ): Promise<void> {
-  // 1. Get the purchase
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('standalone_purchases')
-    .select('id, cycle_id, status, user_id')
-    .eq('id', purchaseId)
-    .single();
-
-  if (purchaseError || !purchase) {
-    throw new Error(`Failed to get standalone purchase: ${purchaseError?.message || 'Purchase not found'}`);
-  }
-
-  // 2. Verify status is 'awaiting_balance' (only cancel if waiting for balance payment)
-  if (purchase.status !== 'awaiting_balance') {
-    throw new Error(`Cannot cancel for non-payment - purchase status is ${purchase.status}. Expected 'awaiting_balance'.`);
-  }
-
-  // 3. Update purchase status to cancelled (Requirement 4.6, 4.8)
-  const cancelledAt = new Date();
-  const cancellationReason = 'Balance payment not received within deadline (Arras Confirmatórias)';
-
-  const { error: updateError } = await supabase
-    .from('standalone_purchases')
-    .update({
-      status: 'cancelled',
-      cancelled_at: cancelledAt.toISOString(),
-      cancellation_reason: cancellationReason
-    })
-    .eq('id', purchaseId);
-
-  if (updateError) {
-    throw new Error(`Failed to cancel standalone purchase: ${updateError.message}`);
-  }
-
-  // 4. Release capacity (Requirement 4.7)
-  if (purchase.cycle_id) {
-    try {
-      const { error: releaseError } = await supabase
-        .rpc('release_capacity', {
-          p_cycle_id: purchase.cycle_id,
-          p_quantity: 1
-        });
-
-      if (releaseError) {
-        logError(`Error releasing capacity for purchase ${purchaseId}`, releaseError, 'standalone-purchase');
-        // Log but don't fail the cancellation
-      } else {
-        logInfo(`Released capacity for cancelled standalone purchase ${purchaseId} in cycle ${purchase.cycle_id}`, null, 'standalone-purchase');
-      }
-    } catch (error) {
-      logError(`Exception releasing capacity for purchase ${purchaseId}`, error, 'standalone-purchase');
-      // Don't fail the cancellation if capacity release fails
-    }
-  }
-
-  // 5. Send cancellation email notification (Requirement 4.6)
-  try {
-    // Get user email
-    const { data: userData } = await supabase
-      .from('profiles')
-      .select('email, full_name')
-      .eq('id', purchase.user_id)
-      .single();
-
-    if (userData?.email) {
-      const userName = userData.full_name || userData.email.split('@')[0];
-      const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #dc2626; color: white; padding: 20px; text-align: center; }
-    .content { padding: 20px; background: #f9fafb; }
-    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Pedido Cancelado</h1>
-    </div>
-    <div class="content">
-      <p>Olá, ${userName}!</p>
-      <p>Informamos que seu pedido foi cancelado devido ao não pagamento do saldo dentro do prazo estabelecido.</p>
-      <p><strong>Motivo:</strong> ${cancellationReason}</p>
-      <p>Conforme os termos de compra, o valor do depósito foi retido como arras confirmatórias.</p>
-      <p>Se tiver dúvidas, entre em contato conosco.</p>
-    </div>
-    <div class="footer">
-      <p>&copy; ${new Date().getFullYear()} ORDAX. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-      await emailService.sendEmail(
-        userData.email,
-        'Pedido Cancelado - ORDAX',
-        html,
-        'cancellation',
-        purchase.user_id,
-        { purchase_id: purchaseId, reason: cancellationReason }
-      );
-
-      logInfo(`Cancellation email sent to user ${purchase.user_id}`,
-        { purchaseId, reason: cancellationReason },
-        'standalone-purchase');
-    }
-  } catch (emailError) {
-    logError('Failed to send cancellation email', emailError, 'standalone-purchase');
-    // Don't fail the operation if email fails
-  }
+  void purchaseId;
+  throw new Error('cancelForNonPayment is server-side only. Use the cancel-standalone-for-non-payment Edge Function.');
 }
-
 
 /**
  * Get all standalone purchases with filters for admin panel
@@ -733,14 +616,14 @@ export async function getAllStandalonePurchases(filters?: {
       collection_id,
       cycle_id,
       character_id,
-      price_deposit,
-      price_balance,
-      price_full,
+      deposit_amount,
+      balance_amount,
+      total_amount,
       deposit_paid_at,
       balance_paid_at,
       balance_due_date,
-      deposit_voucher_url,
-      balance_voucher_url,
+      payment_voucher_deposit_url,
+      payment_voucher_balance_url,
       tracking_code,
       expected_delivery_date,
       actual_delivery_date,
@@ -773,9 +656,12 @@ export async function getAllStandalonePurchases(filters?: {
 
   // Apply search term (search in user name, email, or order ID)
   if (filters?.searchTerm && filters.searchTerm.length >= 3) {
+    const searchTerm = sanitizePostgrestSearchTerm(filters.searchTerm);
     // For search, we'll use a text search or filter by ID
     // Since we can't easily search across joined tables, we'll search by ID
-    query = query.or(`id.ilike.%${filters.searchTerm}%`);
+    if (searchTerm.length >= 3) {
+      query = query.or(`id.ilike.%${searchTerm}%`);
+    }
   }
 
   // Order by created_at descending (newest first)
@@ -798,7 +684,7 @@ export async function getAllStandalonePurchases(filters?: {
   }
 
   return {
-    data: (data || []) as StandalonePurchaseListItem[],
+    data: (data || []) as unknown as StandalonePurchaseListItem[],
     count: count || 0,
   };
 }
@@ -816,11 +702,14 @@ export async function searchStandalonePurchasesByCustomer(
   searchTerm: string,
   limit: number = 50
 ): Promise<StandalonePurchaseListItem[]> {
+  const safeSearchTerm = sanitizePostgrestSearchTerm(searchTerm);
+  if (!safeSearchTerm) return [];
+
   // First, search for users matching the term
   const { data: users, error: userError } = await supabase
     .from('profiles')
     .select('id')
-    .or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+    .or(`full_name.ilike.%${safeSearchTerm}%,email.ilike.%${safeSearchTerm}%`)
     .limit(100);
 
   if (userError) {
@@ -852,7 +741,7 @@ export async function searchStandalonePurchasesByCustomer(
     throw new Error(`Failed to fetch purchases: ${error.message}`);
   }
 
-  return (data || []) as StandalonePurchaseListItem[];
+  return (data || []) as unknown as StandalonePurchaseListItem[];
 }
 
 /**
@@ -873,56 +762,16 @@ export async function approvePaymentVoucher(
   purchaseId: string,
   voucherType: 'deposit' | 'balance'
 ): Promise<void> {
-  // 1. Get the purchase
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('standalone_purchases')
-    .select('id, status, balance_due_date')
-    .eq('id', purchaseId)
-    .single();
-
-  if (purchaseError || !purchase) {
-    throw new Error(`Failed to get standalone purchase: ${purchaseError?.message || 'Purchase not found'}`);
-  }
-
-  // 2. Update based on voucher type
-  if (voucherType === 'deposit') {
-    // Approve deposit voucher
-    if (purchase.status !== 'deposit_paid') {
-      const { error: updateError } = await supabase
-        .from('standalone_purchases')
-        .update({
-          status: 'deposit_paid',
-          deposit_paid_at: new Date().toISOString()
-        })
-        .eq('id', purchaseId);
-
-      if (updateError) {
-        throw new Error(`Failed to approve deposit voucher: ${updateError.message}`);
-      }
+  const { error } = await standalonePurchaseRpc.rpc(
+    'admin_approve_standalone_payment_voucher',
+    {
+      p_purchase_id: purchaseId,
+      p_voucher_type: voucherType,
     }
-  } else if (voucherType === 'balance') {
-    // Approve balance voucher - similar to processBalancePayment but without voucher URL
-    if (purchase.status !== 'awaiting_balance') {
-      throw new Error(`Cannot approve balance voucher - purchase status is ${purchase.status}. Expected 'awaiting_balance'.`);
-    }
+  );
 
-    // Generate tracking code
-    const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
-    const trackingCode = `SP-${timestamp}-${randomSuffix}`;
-
-    const { error: updateError } = await supabase
-      .from('standalone_purchases')
-      .update({
-        status: 'balance_paid',
-        balance_paid_at: new Date().toISOString(),
-        tracking_code: trackingCode
-      })
-      .eq('id', purchaseId);
-
-    if (updateError) {
-      throw new Error(`Failed to approve balance voucher: ${updateError.message}`);
-    }
+  if (error) {
+    throw new Error(`Failed to approve ${voucherType} voucher: ${error.message}`);
   }
 }
 
@@ -945,46 +794,36 @@ export async function rejectPaymentVoucher(
   voucherType: 'deposit' | 'balance',
   rejectionReason: string
 ): Promise<void> {
-  // 1. Get the purchase
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('standalone_purchases')
-    .select('id, user_id, status')
-    .eq('id', purchaseId)
-    .single();
+  const { data: result, error } = await standalonePurchaseRpc.rpc(
+    'admin_reject_standalone_payment_voucher',
+    {
+      p_purchase_id: purchaseId,
+      p_voucher_type: voucherType,
+      p_reason: rejectionReason,
+    }
+  );
 
-  if (purchaseError || !purchase) {
-    throw new Error(`Failed to get standalone purchase: ${purchaseError?.message || 'Purchase not found'}`);
+  if (error) {
+    throw new Error(`Failed to reject voucher: ${error.message}`);
   }
 
-  // 2. Clear the voucher URL to allow re-upload
-  const updateData: VoucherRejectionUpdate = {};
+  const resultRecord = asRecord(result);
+  const userId = typeof resultRecord.userId === 'string' ? resultRecord.userId : null;
 
-  if (voucherType === 'deposit') {
-    updateData.deposit_voucher_url = null;
-  } else if (voucherType === 'balance') {
-    updateData.balance_voucher_url = null;
-  }
-
-  const { error: updateError } = await supabase
-    .from('standalone_purchases')
-    .update(updateData)
-    .eq('id', purchaseId);
-
-  if (updateError) {
-    throw new Error(`Failed to reject voucher: ${updateError.message}`);
-  }
-
-  // 3. Send notification to customer (Requirement 25.8)
+  // Send notification to customer (Requirement 25.8)
   try {
+    if (!userId) return;
+
     // Get user email
     const { data: userData } = await supabase
       .from('profiles')
       .select('email, full_name')
-      .eq('id', purchase.user_id)
+      .eq('id', userId)
       .single();
 
     if (userData?.email) {
-      const userName = userData.full_name || userData.email.split('@')[0];
+      const userName = escapeHtml(userData.full_name || userData.email.split('@')[0]);
+      const safeRejectionReason = escapeHtml(rejectionReason);
       const voucherTypeName = voucherType === 'deposit' ? 'Depósito' : 'Saldo';
 
       const html = `
@@ -1011,7 +850,7 @@ export async function rejectPaymentVoucher(
       <p>Infelizmente, o comprovante de pagamento do <strong>${voucherTypeName}</strong> foi rejeitado.</p>
       <div class="reason">
         <strong>Motivo:</strong><br>
-        ${rejectionReason}
+        ${safeRejectionReason}
       </div>
       <p>Por favor, envie um novo comprovante válido para prosseguir com seu pedido.</p>
       <p>Se tiver dúvidas, entre em contato conosco.</p>
@@ -1028,11 +867,11 @@ export async function rejectPaymentVoucher(
         `Comprovante de ${voucherTypeName} Rejeitado - ORDAX`,
         html,
         'voucher_rejection',
-        purchase.user_id,
+        userId,
         { purchase_id: purchaseId, voucher_type: voucherType, reason: rejectionReason }
       );
 
-      logInfo(`Voucher rejection notification sent to user ${purchase.user_id}`,
+      logInfo(`Voucher rejection notification sent to user ${userId}`,
         { purchaseId, voucherType, reason: rejectionReason },
         'standalone-purchase');
     }

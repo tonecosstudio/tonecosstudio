@@ -52,6 +52,7 @@ import ImageUpload from "../shared/ImageUpload";
 import { CollectionTierAssignment } from "../pricing-tiers/CollectionTierAssignment";
 import { CollectionCharactersManager, type CharacterData } from "./CollectionCharactersManager";
 import { useCollectionFormPricingTiers } from "@/hooks/admin/useCollectionFormPricingTiers";
+import { useCollectionTierAssignment } from "@/hooks/useCollectionTierAssignment";
 
 // Zod validation schema
 const collectionSchema = z.object({
@@ -111,15 +112,11 @@ export function CollectionForm({
 
   // Pricing tiers
   const { data: pricingTiers = [] } = useCollectionFormPricingTiers(open);
+  const { data: currentTierAssignment, isLoading: isTierAssignmentLoading } =
+    useCollectionTierAssignment(open && collection?.id ? collection.id : null);
 
   // Validation state
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (selectedTierId || pricingTiers.length === 0) return;
-    const defaultTier = pricingTiers.find((tier) => tier.is_default) || pricingTiers[0];
-    setSelectedTierId(defaultTier.id);
-  }, [pricingTiers, selectedTierId]);
 
   // Reset form when collection changes
   useEffect(() => {
@@ -130,7 +127,7 @@ export function CollectionForm({
       setRotationType((collection.rotation_type as "fixed" | "odd_months" | "even_months") || "fixed");
       setIsActive(collection.is_active);
       setCharacters([]);
-      // TODO: Load tier from collection_tier_assignments
+      setSelectedTierId("");
     } else {
       setName("");
       setDescription("");
@@ -138,11 +135,33 @@ export function CollectionForm({
       setRotationType("fixed");
       setIsActive(true);
       setCharacters([]); // Começa sem personagens
+      setSelectedTierId("");
     }
     setErrors({});
     setValidationWarnings([]);
     setActiveTab("basic");
   }, [collection, open]);
+
+  useEffect(() => {
+    if (!open || selectedTierId || pricingTiers.length === 0) return;
+
+    if (collection && currentTierAssignment?.tier_id) {
+      setSelectedTierId(currentTierAssignment.tier_id);
+      return;
+    }
+
+    if (!collection || !isTierAssignmentLoading) {
+      const defaultTier = pricingTiers.find((tier) => tier.is_default) || pricingTiers[0];
+      setSelectedTierId(defaultTier.id);
+    }
+  }, [
+    collection,
+    currentTierAssignment,
+    isTierAssignmentLoading,
+    open,
+    pricingTiers,
+    selectedTierId,
+  ]);
 
   // Validate characters for conflicts
   useEffect(() => {

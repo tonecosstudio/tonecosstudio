@@ -27,6 +27,7 @@ import type { PaymentMethod, PaymentMethodInput } from "@/types/manual-payment";
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
@@ -42,6 +43,7 @@ describe("PaymentMethodService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearPaymentMethodCache();
+    (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
   });
 
   describe("listActivePaymentMethods", () => {
@@ -216,20 +218,17 @@ describe("PaymentMethodService", () => {
         updated_at: "2024-01-01",
       };
 
-      const mockInsert = vi.fn().mockReturnThis();
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
-
-      mockPaymentMethodTable({
-        insert: mockInsert,
-        select: mockSelect,
-        single: mockSingle,
-      });
+      (supabase.rpc as any).mockResolvedValue({ data: mockData, error: null });
 
       const result = await createPaymentMethod(input);
 
-      expect(supabase.from).toHaveBeenCalledWith("admin_payment_methods");
-      expect(mockInsert).toHaveBeenCalled();
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_create_payment_method", {
+        p_data: expect.objectContaining({
+          name: "PIX Ordax",
+          type: "pix",
+          pix_key: "12345678900",
+        }),
+      });
       expect(result).toEqual(mockData);
     });
 
@@ -286,15 +285,7 @@ describe("PaymentMethodService", () => {
         updated_at: "2024-01-01",
       };
 
-      const mockInsert = vi.fn().mockReturnThis();
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
-
-      mockPaymentMethodTable({
-        insert: mockInsert,
-        select: mockSelect,
-        single: mockSingle,
-      });
+      (supabase.rpc as any).mockResolvedValue({ data: mockData, error: null });
 
       const result = await createPaymentMethod(input);
 
@@ -317,25 +308,20 @@ describe("PaymentMethodService", () => {
         updated_at: "2024-01-02",
       };
 
-      const mockUpdate = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
-
-      mockPaymentMethodTable({
-        update: mockUpdate,
-        eq: mockEq,
-        select: mockSelect,
-        single: mockSingle,
-      });
+      (supabase.rpc as any).mockResolvedValue({ data: mockData, error: null });
 
       const result = await updatePaymentMethod("1", {
         name: "PIX Updated",
         instructions: "New instructions",
       });
 
-      expect(mockUpdate).toHaveBeenCalled();
-      expect(mockEq).toHaveBeenCalledWith("id", "1");
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_payment_method", {
+        p_method_id: "1",
+        p_data: expect.objectContaining({
+          name: "PIX Updated",
+          instructions: "New instructions",
+        }),
+      });
       expect(result).toEqual(mockData);
     });
 
@@ -354,29 +340,17 @@ describe("PaymentMethodService", () => {
 
   describe("setDefaultPaymentMethod", () => {
     it("should set payment method as default", async () => {
-      const mockUpdate = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
-
-      mockPaymentMethodTable({
-        update: mockUpdate,
-        eq: mockEq,
-      });
-
       await setDefaultPaymentMethod("1");
 
-      expect(supabase.from).toHaveBeenCalledWith("admin_payment_methods");
-      expect(mockUpdate).toHaveBeenCalledWith({ is_default: true });
-      expect(mockEq).toHaveBeenCalledWith("id", "1");
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_set_default_payment_method", {
+        p_method_id: "1",
+      });
     });
 
     it("should throw error on database failure", async () => {
-      const mockError = { message: "Database error" };
-      const mockUpdate = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockResolvedValue({ error: mockError });
-
-      mockPaymentMethodTable({
-        update: mockUpdate,
-        eq: mockEq,
+      (supabase.rpc as any).mockResolvedValue({
+        data: null,
+        error: { message: "Database error" },
       });
 
       await expect(setDefaultPaymentMethod("1")).rejects.toThrow(
@@ -387,61 +361,37 @@ describe("PaymentMethodService", () => {
 
   describe("togglePaymentMethodActive", () => {
     it("should toggle payment method to active", async () => {
-      const mockUpdate = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
-
-      mockPaymentMethodTable({
-        update: mockUpdate,
-        eq: mockEq,
-      });
-
       await togglePaymentMethodActive("1", true);
 
-      expect(mockUpdate).toHaveBeenCalledWith({ is_active: true });
-      expect(mockEq).toHaveBeenCalledWith("id", "1");
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_toggle_payment_method_active", {
+        p_method_id: "1",
+        p_is_active: true,
+      });
     });
 
     it("should toggle payment method to inactive", async () => {
-      const mockUpdate = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
-
-      mockPaymentMethodTable({
-        update: mockUpdate,
-        eq: mockEq,
-      });
-
       await togglePaymentMethodActive("1", false);
 
-      expect(mockUpdate).toHaveBeenCalledWith({ is_active: false });
-      expect(mockEq).toHaveBeenCalledWith("id", "1");
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_toggle_payment_method_active", {
+        p_method_id: "1",
+        p_is_active: false,
+      });
     });
   });
 
   describe("deletePaymentMethod", () => {
     it("should delete payment method by id", async () => {
-      const mockDelete = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
-
-      mockPaymentMethodTable({
-        delete: mockDelete,
-        eq: mockEq,
-      });
-
       await deletePaymentMethod("1");
 
-      expect(supabase.from).toHaveBeenCalledWith("admin_payment_methods");
-      expect(mockDelete).toHaveBeenCalled();
-      expect(mockEq).toHaveBeenCalledWith("id", "1");
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_delete_payment_method", {
+        p_method_id: "1",
+      });
     });
 
     it("should throw error on database failure", async () => {
-      const mockError = { message: "Database error" };
-      const mockDelete = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockResolvedValue({ error: mockError });
-
-      mockPaymentMethodTable({
-        delete: mockDelete,
-        eq: mockEq,
+      (supabase.rpc as any).mockResolvedValue({
+        data: null,
+        error: { message: "Database error" },
       });
 
       await expect(deletePaymentMethod("1")).rejects.toThrow(

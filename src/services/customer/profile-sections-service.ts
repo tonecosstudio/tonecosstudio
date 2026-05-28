@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import { createSupportConversationRpc } from "@/lib/services/supportConversationMutationsService";
+import {
+  assertCurrentUserId,
+  requireAuthenticatedUserId,
+} from "@/services/auth/current-user";
 import type {
   ActiveSubscription,
   ProfilePaymentMethod,
@@ -6,8 +11,79 @@ import type {
   SupportMessage,
 } from "@/types/profile-sections";
 
-export async function listProfilePaymentMethods(userId: string): Promise<ProfilePaymentMethod[]> {
+interface ProfileSectionRpcError {
+  message: string;
+}
+
+interface ProfileSectionRpcClient {
+  rpc(
+    name: "delete_profile_payment_method",
+    args: { p_payment_method_id: string }
+  ): Promise<{ data: string | null; error: ProfileSectionRpcError | null }>;
+  rpc(
+    name: "set_default_profile_payment_method",
+    args: { p_payment_method_id: string }
+  ): Promise<{ data: string | null; error: ProfileSectionRpcError | null }>;
+  rpc(
+    name: "mark_customer_support_conversation_read",
+    args: { p_conversation_id: string }
+  ): Promise<{ data: number | null; error: ProfileSectionRpcError | null }>;
+  rpc(
+    name: "send_support_message",
+    args: {
+      p_conversation_id: string;
+      p_sender_type: "customer";
+      p_message: string;
+      p_is_internal: false;
+    }
+  ): Promise<{ data: SupportMessage | null; error: ProfileSectionRpcError | null }>;
+}
+
+const profileSectionRpc = supabase as unknown as ProfileSectionRpcClient;
+
+interface ProfilePaymentMethodsQuery extends PromiseLike<{
+  data: ProfilePaymentMethod[] | null;
+  error: { message: string } | null;
+}> {
+  eq(column: string, value: string | boolean): ProfilePaymentMethodsQuery;
+  order(column: string, options?: { ascending?: boolean }): ProfilePaymentMethodsQuery;
+}
+
+interface SupportMessagesQuery extends PromiseLike<{
+  data: SupportMessage[] | null;
+  error: { message: string } | null;
+}> {
+  eq(column: string, value: string | boolean): SupportMessagesQuery;
+  order(column: string, options?: { ascending?: boolean }): SupportMessagesQuery;
+}
+
+interface ProfileSectionsGateway {
+  from(table: "payment_methods"): {
+    select(columns: "*"): ProfilePaymentMethodsQuery;
+  };
+  from(table: "support_messages"): {
+    select(columns: "*"): SupportMessagesQuery;
+  };
+}
+
+const profileSectionsGateway = supabase as unknown as ProfileSectionsGateway;
+
+async function ensureOwnSupportConversation(conversationId: string, userId: string): Promise<void> {
   const { data, error } = await supabase
+    .from("support_conversations")
+    .select("id")
+    .eq("id", conversationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("Conversa de suporte nao encontrada");
+}
+
+export async function listProfilePaymentMethods(userId: string): Promise<ProfilePaymentMethod[]> {
+  await assertCurrentUserId(userId);
+
+  const { data, error } = await profileSectionsGateway
     .from("payment_methods")
     .select("*")
     .eq("user_id", userId)
@@ -15,24 +91,32 @@ export async function listProfilePaymentMethods(userId: string): Promise<Profile
     .order("is_default", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []) as ProfilePaymentMethod[];
+  return data ?? [];
 }
 
 export async function deleteProfilePaymentMethod(paymentMethodId: string): Promise<void> {
-  const { error } = await supabase.from("payment_methods").delete().eq("id", paymentMethodId);
+  await requireAuthenticatedUserId();
+
+  const { error } = await profileSectionRpc.rpc("delete_profile_payment_method", {
+    p_payment_method_id: paymentMethodId,
+  });
+
   if (error) throw error;
 }
 
 export async function setDefaultProfilePaymentMethod(paymentMethodId: string): Promise<void> {
-  const { error } = await supabase
-    .from("payment_methods")
-    .update({ is_default: true })
-    .eq("id", paymentMethodId);
+  await requireAuthenticatedUserId();
+
+  const { error } = await profileSectionRpc.rpc("set_default_profile_payment_method", {
+    p_payment_method_id: paymentMethodId,
+  });
 
   if (error) throw error;
 }
 
 export async function getActiveSubscription(userId: string): Promise<ActiveSubscription | null> {
+  await assertCurrentUserId(userId);
+
   const { data, error } = await supabase
     .from("subscriptions")
     .select("id,user_id,plan_type,status,created_at,updated_at")
@@ -45,6 +129,8 @@ export async function getActiveSubscription(userId: string): Promise<ActiveSubsc
 }
 
 export async function listSupportConversations(userId: string): Promise<SupportConversation[]> {
+  await assertCurrentUserId(userId);
+
   const { data, error } = await supabase
     .from("support_conversations")
     .select("*")
@@ -56,7 +142,10 @@ export async function listSupportConversations(userId: string): Promise<SupportC
 }
 
 export async function listSupportMessages(conversationId: string): Promise<SupportMessage[]> {
-  const { data, error } = await supabase
+  const userId = await requireAuthenticatedUserId();
+  await ensureOwnSupportConversation(conversationId, userId);
+
+  const { data, error } = await profileSectionsGateway
     .from("support_messages")
     .select("*")
     .eq("conversation_id", conversationId)
@@ -64,7 +153,7 @@ export async function listSupportMessages(conversationId: string): Promise<Suppo
     .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return (data ?? []) as SupportMessage[];
+  return data ?? [];
 }
 
 export function subscribeToSupportMessages(
@@ -97,12 +186,12 @@ export async function markSupportMessagesRead(params: {
   conversationId: string;
   userId: string;
 }): Promise<void> {
-  const { error } = await supabase
-    .from("support_messages")
-    .update({ read_by_customer: true, read_at: new Date().toISOString() })
-    .eq("conversation_id", params.conversationId)
-    .eq("read_by_customer", false)
-    .neq("sender_id", params.userId);
+  await assertCurrentUserId(params.userId);
+  await ensureOwnSupportConversation(params.conversationId, params.userId);
+
+  const { error } = await profileSectionRpc.rpc("mark_customer_support_conversation_read", {
+    p_conversation_id: params.conversationId,
+  });
 
   if (error) throw error;
 }
@@ -112,25 +201,17 @@ export async function createSupportConversation(params: {
   subject: string;
   firstMessage: string;
 }): Promise<SupportConversation> {
-  const { data: conversation, error: convError } = await supabase
-    .from("support_conversations")
-    .insert({
-      user_id: params.userId,
-      subject: params.subject,
-      status: "waiting_admin",
-    })
-    .select()
-    .single();
+  await assertCurrentUserId(params.userId);
 
-  if (convError) throw convError;
-
-  const { error: msgError } = await supabase.from("support_messages").insert({
-    conversation_id: conversation.id,
-    sender_id: params.userId,
-    message: params.firstMessage,
+  const conversation = await createSupportConversationRpc({
+    userId: params.userId,
+    subject: params.subject,
+    status: "waiting_admin",
+    priority: "normal",
+    tags: ["duvida"],
+    firstMessage: params.firstMessage,
   });
 
-  if (msgError) throw msgError;
   return conversation as SupportConversation;
 }
 
@@ -139,10 +220,13 @@ export async function sendSupportMessage(params: {
   userId: string;
   message: string;
 }): Promise<void> {
-  const { error } = await supabase.from("support_messages").insert({
-    conversation_id: params.conversationId,
-    sender_id: params.userId,
-    message: params.message,
+  await assertCurrentUserId(params.userId);
+
+  const { error } = await profileSectionRpc.rpc("send_support_message", {
+    p_conversation_id: params.conversationId,
+    p_sender_type: "customer",
+    p_message: params.message,
+    p_is_internal: false,
   });
 
   if (error) throw error;

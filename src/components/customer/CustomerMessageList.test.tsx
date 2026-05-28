@@ -4,9 +4,22 @@ import userEvent from "@testing-library/user-event";
 import { CustomerMessageList } from "./CustomerMessageList";
 import type { Message } from "@/types/support";
 
+const supportActionsMock = vi.hoisted(() => ({
+  createConversation: vi.fn(),
+  getPublicUrl: vi.fn((filePath: string) => `https://storage.ordax.test/${filePath}`),
+}));
+
 // Mock the useMessages hook
 vi.mock("@/hooks/useMessages", () => ({
   useMessages: vi.fn(),
+}));
+
+vi.mock("@/hooks/customer/useCustomerSupportConversationActions", () => ({
+  useCreateCustomerSupportConversation: () => ({
+    createConversation: supportActionsMock.createConversation,
+    isCreating: false,
+  }),
+  useSupportAttachmentPublicUrl: () => supportActionsMock.getPublicUrl,
 }));
 
 // Mock date-fns
@@ -356,7 +369,7 @@ describe("CustomerMessageList", () => {
               id: "att-1",
               message_id: "msg-1",
               file_name: "comprovante.pdf",
-              file_path: "/storage/comprovante.pdf",
+              file_path: "conv-1/comprovante.pdf",
               file_size: 1024,
               file_type: "application/pdf",
               uploaded_by: "user-1",
@@ -381,7 +394,10 @@ describe("CustomerMessageList", () => {
 
       const attachmentLink = screen.getByText("📎 comprovante.pdf");
       expect(attachmentLink).toBeInTheDocument();
-      expect(attachmentLink).toHaveAttribute("href", "/storage/comprovante.pdf");
+      expect(attachmentLink).toHaveAttribute(
+        "href",
+        "https://storage.ordax.test/conv-1/comprovante.pdf"
+      );
       expect(attachmentLink).toHaveAttribute("target", "_blank");
     });
 

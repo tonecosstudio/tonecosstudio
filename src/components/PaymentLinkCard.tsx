@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { usePaymentConfirmation } from "@/hooks/payments/usePaymentConfirmation";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 interface PaymentLinkCardProps {
   quoteId: string;
@@ -13,6 +14,16 @@ interface PaymentLinkCardProps {
   instructions?: string | null;
   paymentLinkSentAt?: string | null;
   customerPaidNotificationAt?: string | null;
+}
+
+function getSafePaymentLink(paymentLink?: string | null): string | null {
+  if (!paymentLink) return null;
+
+  try {
+    return sanitizeURL(paymentLink, ["http", "https"]);
+  } catch {
+    return null;
+  }
 }
 
 export function PaymentLinkCard({
@@ -42,6 +53,7 @@ export function PaymentLinkCard({
   }
 
   const alreadyNotified = Boolean(customerPaidNotificationAt);
+  const safePaymentLink = getSafePaymentLink(paymentLink);
 
   return (
     <Alert className="border-primary bg-primary/5">
@@ -62,11 +74,11 @@ export function PaymentLinkCard({
             </div>
           )}
 
-          {paymentLink && (
+          {safePaymentLink && (
             <div>
               <p className="text-sm font-medium mb-2">Link de Pagamento:</p>
               <Button asChild className="w-full" size="lg">
-                <a href={paymentLink} target="_blank" rel="noopener noreferrer">
+                <a href={safePaymentLink} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Abrir Link de Pagamento
                 </a>

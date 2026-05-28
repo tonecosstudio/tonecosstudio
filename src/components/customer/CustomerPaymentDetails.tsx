@@ -7,7 +7,7 @@
  * Task: 18.2 Criar componente CustomerPaymentDetails
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,7 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FileUploadComponent } from "@/components/customer/FileUploadComponent";
 import { UploadedFilesList } from "@/components/customer/UploadedFilesList";
 import { useToast } from "@/hooks/use-toast";
-import { getPaymentById } from "@/lib/payment-service";
+import { getMyPaymentById } from "@/lib/payment-service";
 import type { PaymentAuditLog, PaymentDetails, PaymentFile, PaymentStatus } from "@/types/manual-payment";
 
 interface CustomerPaymentDetailsProps {
@@ -59,7 +59,13 @@ export function CustomerPaymentDetails({ paymentId, userId: _userId, onBack }: C
     refetch,
   } = useQuery({
     queryKey: ["payment-details", paymentId],
-    queryFn: async (): Promise<PaymentDetails> => getPaymentById(paymentId),
+    queryFn: async (): Promise<PaymentDetails> => {
+      const result = await getMyPaymentById(paymentId);
+      if (!result) {
+        throw new Error("Pagamento não encontrado");
+      }
+      return result;
+    },
     enabled: !!paymentId,
   });
 
@@ -135,7 +141,7 @@ export function CustomerPaymentDetails({ paymentId, userId: _userId, onBack }: C
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="status" aria-label="Carregando detalhes do pagamento">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />

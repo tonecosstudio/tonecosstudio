@@ -25,8 +25,6 @@ export function usePaymentRealtimeDashboard(options: UsePaymentRealtimeDashboard
 
   const queryClient = useQueryClient();
   const {
-    isConnected,
-    error,
     hasNewUpdates,
     newUpdateCount,
     incrementUpdateCount,
@@ -97,10 +95,10 @@ export function usePaymentRealtimeDashboard(options: UsePaymentRealtimeDashboard
 
   return {
     // Estado da conexão
-    isConnected,
+    isConnected: paymentRealtime.isConnected,
     isReconnecting: paymentRealtime.isReconnecting,
-    hasError: !!error,
-    error,
+    hasError: !!paymentRealtime.error,
+    error: paymentRealtime.error,
 
     // Indicadores de atualização
     hasNewUpdates,
@@ -117,7 +115,7 @@ export function usePaymentRealtimeDashboard(options: UsePaymentRealtimeDashboard
     // Estatísticas
     stats: {
       totalUpdates: newUpdateCount,
-      isConnected,
+      isConnected: paymentRealtime.isConnected,
       lastUpdate: new Date().toISOString(),
     },
   };
@@ -127,9 +125,6 @@ export function usePaymentRealtimeDashboard(options: UsePaymentRealtimeDashboard
 export function useAdminDashboardRealtime() {
   const queryClient = useQueryClient();
   const {
-    isConnected,
-    isReconnecting,
-    error,
     hasNewUpdates,
     newUpdateCount,
     incrementUpdateCount,
@@ -137,7 +132,7 @@ export function useAdminDashboardRealtime() {
   } = useRealtimeIndicator();
 
   // Hook para novos pagamentos
-  usePaymentSystemRealtime({
+  const paymentRealtime = usePaymentSystemRealtime({
     paymentOptions: {
       status: ["pending", "under_review", "requires_info"],
       events: ["INSERT", "UPDATE"],
@@ -170,14 +165,22 @@ export function useAdminDashboardRealtime() {
     },
   });
 
+  const refreshData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
+    queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-payments"] });
+    resetUpdateCount();
+  }, [queryClient, resetUpdateCount]);
+
   return {
-    isConnected,
-    isReconnecting,
+    isConnected: paymentRealtime.isConnected,
+    isReconnecting: paymentRealtime.isReconnecting,
     hasNewUpdates,
     newUpdateCount,
     resetUpdateCount,
-    hasError: !!error,
-    error,
+    hasError: !!paymentRealtime.error,
+    error: paymentRealtime.error,
+    refreshData,
   };
 }
 

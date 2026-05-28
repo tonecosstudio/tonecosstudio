@@ -7,25 +7,33 @@
 import { Link } from "react-router-dom";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { Mail, Phone, MessageCircle, ExternalLink } from "lucide-react";
+import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/config/routes";
+import { CONTACT } from "@/config/constants";
+import { buildSafeMailtoHref, buildSafeWhatsAppHref } from "@/lib/security/safe-open";
 
 const navLinks = [
-  { to: "/", label: "Início" },
-  { to: "/catalogo", label: "Catálogo" },
-  { to: "/colecoes", label: "Coleções" },
-  { to: "/planos", label: "Planos" },
-  { to: "/sobre", label: "Sobre" },
-  { to: "/contato", label: "Contato" },
+  { to: PUBLIC_ROUTES.home, label: "Início" },
+  { to: PUBLIC_ROUTES.catalog, label: "Catálogo" },
+  { to: PUBLIC_ROUTES.collections, label: "Coleções" },
+  { to: PUBLIC_ROUTES.plans, label: "Planos" },
+  { to: PUBLIC_ROUTES.about, label: "Sobre" },
+  { to: PUBLIC_ROUTES.contact, label: "Contato" },
 ];
 
 const accountLinks = [
-  { to: "/perfil", label: "Minha Conta" },
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/pagamentos", label: "Pagamentos" },
-  { to: "/wishlist", label: "Wishlist" },
+  { to: AUTH_ROUTES.profile, label: "Minha Conta" },
+  { to: AUTH_ROUTES.dashboard, label: "Dashboard" },
+  { to: AUTH_ROUTES.payments, label: "Pagamentos" },
+  { to: AUTH_ROUTES.wishlist, label: "Wishlist" },
 ];
 
 export function ArcadeFooter() {
   const { data: settings } = useSystemSettings();
+  const contactEmail = settings?.contact_email || CONTACT.CONTACT_EMAIL;
+  const contactEmailHref = buildSafeMailtoHref(contactEmail);
+  const whatsAppHref = settings?.phone_whatsapp
+    ? buildSafeWhatsAppHref(settings.phone_whatsapp)
+    : null;
 
   return (
     <footer className="relative border-t border-[hsl(var(--gold-accent)/0.1)] bg-[hsl(0,0%,3%)] overflow-hidden">
@@ -140,17 +148,17 @@ export function ArcadeFooter() {
               Contato
             </h4>
             <ul className="space-y-3">
-              <li>
-                <a
-                  href={`mailto:${settings?.contact_email || "contato@ordax.com.br"}`}
-                  className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
-                >
-                  <Mail className="w-3.5 h-3.5 text-[hsl(0,0%,30%)] group-hover:text-[hsl(var(--gold-accent))] transition-colors" />
-                  <span className="tracking-wider">
-                    {settings?.contact_email || "contato@ordax.com.br"}
-                  </span>
-                </a>
-              </li>
+              {contactEmailHref && (
+                <li>
+                  <a
+                    href={contactEmailHref}
+                    className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-[hsl(0,0%,30%)] group-hover:text-[hsl(var(--gold-accent))] transition-colors" />
+                    <span className="tracking-wider">{contactEmail}</span>
+                  </a>
+                </li>
+              )}
               {settings?.phone_primary && (
                 <li>
                   <a
@@ -162,10 +170,10 @@ export function ArcadeFooter() {
                   </a>
                 </li>
               )}
-              {settings?.phone_whatsapp && (
+              {settings?.phone_whatsapp && whatsAppHref && (
                 <li>
                   <a
-                    href={`https://wa.me/${settings.phone_whatsapp.replace(/\D/g, "")}`}
+                    href={whatsAppHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-mono text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors group"
@@ -188,14 +196,14 @@ export function ArcadeFooter() {
 
           <div className="flex items-center gap-4">
             <Link
-              to="/termos"
+              to={PUBLIC_ROUTES.terms}
               className="text-[10px] font-mono text-[hsl(0,0%,30%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase"
             >
               Termos
             </Link>
             <span className="text-[hsl(0,0%,15%)]">•</span>
             <Link
-              to="/privacidade"
+              to={PUBLIC_ROUTES.privacy}
               className="text-[10px] font-mono text-[hsl(0,0%,30%)] hover:text-[hsl(var(--gold-accent))] transition-colors tracking-wider uppercase"
             >
               Privacidade

@@ -14,6 +14,7 @@ vi.mock('@/integrations/supabase/client', () => ({
           single: vi.fn(() => Promise.resolve({
             data: {
               id: 'test-id',
+              customer_id: 'user-123',
               user_id: 'user-123',
               order_id: 'order-123',
               order_type: 'subscription_delivery',

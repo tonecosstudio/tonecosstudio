@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 
 export type ModelLikeRow = {
   model_id: string;
@@ -6,11 +7,22 @@ export type ModelLikeRow = {
   created_at: string;
 };
 
+interface ModelLikesRpcClient {
+  rpc(
+    fn: "like_catalog_model" | "unlike_catalog_model",
+    args: { p_model_id: string }
+  ): Promise<{ error: { message?: string } | null }>;
+}
+
+const modelLikesRpc = supabase as unknown as ModelLikesRpcClient;
+
 /**
  * DB expectation (Cloud SQL): table model_likes(user_id uuid, model_id uuid, created_at timestamptz)
  * with unique(user_id, model_id) and RLS so users can read/write only their own likes.
  */
 export async function listLikedModelIds(userId: string) {
+  await assertCurrentUserId(userId);
+
   const { data, error } = await supabase
     .from("model_likes")
     .select("model_id")
@@ -21,17 +33,19 @@ export async function listLikedModelIds(userId: string) {
 }
 
 export async function likeModel(userId: string, modelId: string) {
-  const { error } = await supabase
-    .from("model_likes")
-    .insert({ user_id: userId, model_id: modelId });
+  await assertCurrentUserId(userId);
+
+  const { error } = await modelLikesRpc.rpc("like_catalog_model", {
+    p_model_id: modelId,
+  });
   if (error) throw error;
 }
 
 export async function unlikeModel(userId: string, modelId: string) {
-  const { error } = await supabase
-    .from("model_likes")
-    .delete()
-    .eq("user_id", userId)
-    .eq("model_id", modelId);
+  await assertCurrentUserId(userId);
+
+  const { error } = await modelLikesRpc.rpc("unlike_catalog_model", {
+    p_model_id: modelId,
+  });
   if (error) throw error;
 }

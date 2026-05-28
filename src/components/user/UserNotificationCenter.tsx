@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserNotificationCenterData } from "@/hooks/notifications/useUserNotificationCenterData";
 import { cn } from "@/lib/utils";
+import { AUTH_ROUTES, isSafeInAppPath } from "@/config/routes";
 import type { UserNotificationCenterItem } from "@/types/notifications";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -71,7 +72,7 @@ export function UserNotificationCenter() {
       markAsRead(notification.id);
     }
 
-    if (notification.action_url) {
+    if (notification.action_url && isSafeInAppPath(notification.action_url)) {
       navigate(notification.action_url);
       setIsOpen(false);
     }
@@ -252,7 +253,7 @@ export function UserNotificationCenter() {
               variant="ghost"
               className="w-full"
               onClick={() => {
-                navigate("/notificacoes");
+                navigate(AUTH_ROUTES.notifications);
                 setIsOpen(false);
               }}
             >

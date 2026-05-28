@@ -12,7 +12,7 @@ export interface UserNotification {
   id: string;
   user_id: string;
   type: string;
-  priority: "low" | "medium" | "high" | "critical";
+  priority: "low" | "medium" | "high" | "urgent";
   title: string;
   message: string;
   icon?: string;
@@ -47,9 +47,15 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["user-notifications-unread"],
     queryFn: async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return [];
+
       const { data, error } = await supabase
         .from("user_notifications")
         .select("*")
+        .eq("user_id", user.id)
         .eq("is_read", false)
         .order("created_at", { ascending: false });
 
@@ -87,7 +93,7 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
   const playNotificationSound = useCallback(() => {
     playAudioNotification({
       enabled: soundEnabled,
-      volume: (settings?.sound_volume ?? 50) / 100,
+      volume: Math.min(1, Math.max(0, settings?.sound_volume ?? 0.5)),
       context: "user-notifications",
     });
   }, [settings?.sound_volume, soundEnabled]);
@@ -124,7 +130,7 @@ export function useUserNotifications(options: UseUserNotificationsOptions = {}) 
               toast({
                 title: newNotification.title,
                 description: newNotification.message,
-                variant: newNotification.priority === "critical" ? "destructive" : "default",
+                variant: newNotification.priority === "urgent" ? "destructive" : "default",
               });
             }
 

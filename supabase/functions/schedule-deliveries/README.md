@@ -298,7 +298,7 @@ Esta função é projetada para ser usada pelo Admin Panel para:
 - `subscription_deliveries`: Entregas
 - `cycles`: Ciclos de produção
 - `collection_characters`: Personagens
-- `user_roles`: Verificação de admin
+- `profiles.role`: Verificação de admin (`admin` ou `super_admin`)
 
 ## Testes
 

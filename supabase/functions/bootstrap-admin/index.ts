@@ -1,12 +1,36 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { corsHeaders, getCorsHeaders, handleOptions } from "../_shared/cors.ts";
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
+
+function mapBootstrapRpcError(message: string): { status: number; error: string } {
+  if (message.includes("ADMIN_ALREADY_EXISTS")) {
+    return { status: 403, error: "Admin already exists" };
+  }
+  if (message.includes("PROFILE_NOT_FOUND")) {
+    return { status: 404, error: "Profile not found" };
+  }
+  if (message.includes("USER_ID_REQUIRED")) {
+    return { status: 400, error: "User id is required" };
+  }
+  if (message.includes("FORBIDDEN")) {
+    return { status: 403, error: "Bootstrap is disabled" };
+  }
+  return { status: 500, error: "Internal server error" };
+}
 
 serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ ok: false, error: "method not allowed" }), {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { claims } = await getClaims(req);
     const userId = String(claims.sub);
     const bootstrapSecret = Deno.env.get("BOOTSTRAP_ADMIN_SECRET");
@@ -20,26 +44,24 @@ serve(async (req) => {
     }
 
     const service = getServiceClient();
-    const { count, error: cErr } = await service.from("user_roles").select("id", { count: "exact", head: true });
-    if (cErr) throw cErr;
-
-    if ((count ?? 0) > 0) {
-      return new Response(JSON.stringify({ ok: false, error: "Admin already exists" }), {
-        status: 403,
+    const { data: profile, error: bootstrapErr } = await service.rpc("bootstrap_first_admin", {
+      p_user_id: userId,
+    });
+    if (bootstrapErr) {
+      const mapped = mapBootstrapRpcError(bootstrapErr.message || "");
+      return new Response(JSON.stringify({ ok: false, error: mapped.error }), {
+        status: mapped.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { error: insErr } = await service.from("user_roles").insert({ user_id: userId, role: "admin" });
-    if (insErr) throw insErr;
-
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, profile: profile ?? { id: userId, role: "admin" } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     const status = msg === "Unauthorized" ? 401 : 500;
-    return new Response(JSON.stringify({ ok: false, error: msg }), {
+    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

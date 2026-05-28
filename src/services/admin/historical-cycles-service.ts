@@ -10,8 +10,10 @@ export interface HistoricalCycle {
   production_start: string;
   production_end: string;
   shipping_date: string;
-  status: "open" | "production" | "shipping" | "completed";
+  status: "open" | "active" | "sales" | "production" | "shipping" | "completed";
   status_changed_at: string | null;
+  capacity: number;
+  used_capacity: number;
   capacity_max: number;
   capacity_current: number;
   created_at: string;
@@ -46,6 +48,16 @@ export async function fetchHistoricalCycles(
   const { data, error } = await query;
   if (error) throw error;
 
-  return ((data as HistoricalCycle[] | null) || []);
-}
+  return ((data || []) as Array<Record<string, unknown>>).map((cycle) => {
+    const capacity = Number(cycle.capacity ?? cycle.capacity_max ?? cycle.capacity_limit ?? 100);
+    const usedCapacity = Math.max(Number(cycle.used_capacity ?? cycle.capacity_current ?? cycle.reserved_capacity ?? 0), 0);
 
+    return {
+      ...(cycle as unknown as HistoricalCycle),
+      capacity,
+      used_capacity: usedCapacity,
+      capacity_max: capacity,
+      capacity_current: usedCapacity,
+    };
+  });
+}

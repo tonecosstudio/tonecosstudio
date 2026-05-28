@@ -36,7 +36,7 @@ interface RateLimitEntry {
  */
 class RateLimiterStore {
   private store: Map<string, RateLimitEntry> = new Map();
-  private cleanupInterval: NodeJS.Timeout | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     // Cleanup old entries every 5 minutes
@@ -100,6 +100,13 @@ class RateLimiterStore {
    */
   get size(): number {
     return this.store.size;
+  }
+
+  /**
+   * Get a snapshot of all entries.
+   */
+  entries(): RateLimitEntry[] {
+    return Array.from(this.store.values());
   }
 }
 
@@ -200,7 +207,7 @@ export function getRateLimiterStats(): {
   const now = Date.now();
   let activeKeys = 0;
 
-  for (const entry of store.get.values()) {
+  for (const entry of store.entries()) {
     if (entry && entry.resetTime > now) {
       activeKeys++;
     }
@@ -341,25 +348,57 @@ export function getAnonymousRateLimitKey(fingerprint: string, action: string): s
   return `anon:${fingerprint}:${action}`;
 }
 
+function getSessionRateLimitFingerprint(): string {
+  const fallback = 'session';
+
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  const storageKey = 'ordax_rate_limit_fingerprint';
+  const webCrypto = globalThis.crypto;
+  const fingerprint = webCrypto?.randomUUID
+    ? webCrypto.randomUUID()
+    : webCrypto?.getRandomValues
+      ? Array.from(webCrypto.getRandomValues(new Uint8Array(16)), (byte: number) =>
+          byte.toString(16).padStart(2, '0')
+        ).join('')
+      : `${Date.now()}-${fallback}`;
+
+  try {
+    const existing = window.sessionStorage.getItem(storageKey);
+
+    if (existing) {
+      return existing;
+    }
+
+    window.sessionStorage.setItem(storageKey, fingerprint);
+  } catch {
+    return fingerprint;
+  }
+
+  return fingerprint;
+}
+
 /**
  * React hook for rate limiting
  * 
  * @param action - Action name
  * @param config - Rate limit configuration
+ * @param subjectKey - User ID or other stable subject key when available
  * @returns Rate limit check function
  */
 export function useRateLimit(
   action: string,
-  config: RateLimitConfig
+  config: RateLimitConfig,
+  subjectKey?: string
 ): {
   checkLimit: () => RateLimitResult;
   resetLimit: () => void;
 } {
-  // Get user ID from auth context (implement based on your auth system)
-  // For now, use a placeholder
-  const userId = 'current-user-id'; // Replace with actual user ID
-
-  const key = getUserRateLimitKey(userId, action);
+  const key = subjectKey
+    ? getUserRateLimitKey(subjectKey, action)
+    : getAnonymousRateLimitKey(getSessionRateLimitFingerprint(), action);
 
   return {
     checkLimit: () => checkRateLimit(key, config),

@@ -4,13 +4,16 @@ import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { useNavigate } from "react-router-dom";
 import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
 import { ArrowRight, Sparkles, Package, Shield, Zap } from "lucide-react";
-
-const DEPOSIT_AMOUNT = 100.00;
+import { PUBLIC_ROUTES } from "@/config/routes";
+import { PRICING } from "@/config/constants";
+import { usePricingSettings } from "@/hooks/usePricingSettings";
 
 export default function PreLaunchArcade() {
   const navigate = useNavigate();
 
   const { data: collections } = useActiveCollectionPreviews(3);
+  const { data: pricingSettings } = usePricingSettings();
+  const depositAmount = pricingSettings?.defaultDepositAmount ?? PRICING.DEFAULT_DEPOSIT_AMOUNT;
 
   const benefits = [
     { icon: Zap, title: "ACESSO PRIORITÁRIO", desc: "Seja o primeiro a escolher personagens" },
@@ -21,7 +24,7 @@ export default function PreLaunchArcade() {
 
   return (
     <Page
-      title="Pré-Lançamento ORDAX - Voucher R$ 100"
+      title={`Voucher ORDAX R$ ${depositAmount.toFixed(0)}`}
       description="Garanta seu voucher e acesso prioritário às coleções exclusivas"
       keywords={["pré-lançamento", "voucher", "coleções", "ordax"]}
     >
@@ -44,27 +47,27 @@ export default function PreLaunchArcade() {
           </h1>
 
           <p className="font-mono text-[10px] md:text-xs text-[hsl(0,0%,50%)] tracking-[0.15em] max-w-lg mx-auto mb-8" style={{ fontFamily: "'Press Start 2P', monospace" }}>
-            GARANTA SEU VOUCHER DE R$ {DEPOSIT_AMOUNT.toFixed(0)}
+            GARANTA SEU VOUCHER DE R$ {depositAmount.toFixed(0)}
           </p>
 
           <div className="inline-block mb-8">
             <div className="text-center">
               <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider mb-1">VOUCHER</p>
               <p className="text-5xl md:text-6xl font-black text-[hsl(var(--gold-accent))]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                R$ {DEPOSIT_AMOUNT.toFixed(0)}
+                R$ {depositAmount.toFixed(0)}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate(PUBLIC_ROUTES.login)}
               className="inline-flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-12 px-10 shadow-[0_0_20px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_30px_hsl(var(--gold-accent)/0.4)] transition-all"
             >
               GARANTIR MEU VOUCHER <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => navigate("/planos")}
+              onClick={() => navigate(PUBLIC_ROUTES.plans)}
               className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-[0.15em] text-xs h-11 px-8 transition-all"
             >
               VER PLANOS
@@ -91,7 +94,7 @@ export default function PreLaunchArcade() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
           {[
             { step: "01", title: "CADASTRE-SE", desc: "Crie sua conta e garanta seu lugar" },
-            { step: "02", title: "PAGUE O VOUCHER", desc: `Deposite R$ ${DEPOSIT_AMOUNT.toFixed(0)} via PIX` },
+            { step: "02", title: "PAGUE O VOUCHER", desc: `Deposite R$ ${depositAmount.toFixed(0)} via PIX` },
             { step: "03", title: "RECEBA PRIMEIRO", desc: "Acesso prioritário quando lançarmos" },
           ].map((s, i) => (
             <ArcadeCard key={i} className="p-5">

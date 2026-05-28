@@ -1,5 +1,6 @@
 import { conversationService } from "@/lib/services/conversationService";
 import { messageService } from "@/lib/services/messageService";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 
 export interface CustomerContactSubmission {
   userId: string;
@@ -12,6 +13,8 @@ export async function submitCustomerContact({
   name,
   message,
 }: CustomerContactSubmission): Promise<void> {
+  await assertCurrentUserId(userId);
+
   const conversation = await conversationService.createConversation({
     user_id: userId,
     subject: `Contato: ${name}`,

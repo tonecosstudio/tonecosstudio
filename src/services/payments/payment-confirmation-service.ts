@@ -1,43 +1,28 @@
 import { supabase } from "@/integrations/supabase/client";
-import { log } from "@/lib/logger";
 
 interface NotifyQuotePaymentInput {
   quoteId: string;
   amount: number;
 }
 
+interface QuotePaymentNotificationRpcError {
+  message: string;
+}
+
+interface QuotePaymentNotificationRpcClient {
+  rpc(
+    name: "notify_quote_payment_for_current_user",
+    args: { p_quote_id: string; p_amount: number }
+  ): Promise<{ data: null; error: QuotePaymentNotificationRpcError | null }>;
+}
+
+const quotePaymentNotificationRpc = supabase as unknown as QuotePaymentNotificationRpcClient;
+
 export async function notifyQuotePayment(input: NotifyQuotePaymentInput): Promise<void> {
-  const { error } = await supabase
-    .from("quotes")
-    .update({
-      customer_paid_notification_at: new Date().toISOString(),
-    })
-    .eq("id", input.quoteId);
-
-  if (error) throw error;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user?.id) {
-    log.warn("Payment confirmation notification skipped without authenticated user", {
-      quoteId: input.quoteId,
-    });
-    return;
-  }
-
-  const { error: notificationError } = await supabase.from("notifications").insert({
-    user_id: user.id,
-    title: "Cliente Confirmou Pagamento",
-    message: `O cliente informou que realizou o pagamento de R$ ${input.amount.toFixed(2)}`,
-    type: "payment",
+  const { error } = await quotePaymentNotificationRpc.rpc("notify_quote_payment_for_current_user", {
+    p_quote_id: input.quoteId,
+    p_amount: input.amount,
   });
 
-  if (notificationError) {
-    log.warn("Failed to create payment confirmation notification", {
-      error: notificationError,
-      quoteId: input.quoteId,
-    });
-  }
+  if (error) throw error;
 }

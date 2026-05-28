@@ -17,8 +17,17 @@ import PaymentCalculator from "./PaymentCalculator";
  * - PaymentCalculator (Calculadora MP)
  */
 export default function AdminPaymentHub() {
-  const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get("tab") || "payments";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const currentTab = ["payments", "methods", "keys", "calculator"].includes(tabParam ?? "")
+    ? tabParam!
+    : "payments";
+
+  const handleTabChange = (value: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", value);
+    setSearchParams(nextParams);
+  };
 
   return (
     <AdminLayout>
@@ -37,7 +46,7 @@ export default function AdminPaymentHub() {
         </div>
 
         {/* Tabs Unificadas */}
-        <Tabs defaultValue={defaultTab} className="space-y-6">
+        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="payments">
               <Wallet className="h-4 w-4 mr-2" />

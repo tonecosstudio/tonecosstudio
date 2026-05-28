@@ -6,6 +6,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Package, ShoppingCart, CreditCard, FileText } from 'lucide-react';
+import { getOrderTypeLabel, getShortOrderTypeLabel } from '@/config/admin-order-status';
 
 interface OrderTypeIndicatorProps {
   type: 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote';
@@ -22,25 +23,25 @@ export function OrderTypeIndicator({
     switch (type) {
       case 'subscription_delivery':
         return {
-          label: 'Assinatura',
+          label: getShortOrderTypeLabel(type),
           icon: Package,
           colorClass: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-50'
         };
       case 'standalone_purchase':
         return {
-          label: 'Avulsa',
+          label: getShortOrderTypeLabel(type),
           icon: ShoppingCart,
           colorClass: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50'
         };
       case 'manual_payment':
         return {
-          label: 'Pagamento Manual',
+          label: getShortOrderTypeLabel(type),
           icon: CreditCard,
           colorClass: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-50'
         };
       case 'quote':
         return {
-          label: 'Orçamento',
+          label: getShortOrderTypeLabel(type),
           icon: FileText,
           colorClass: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50'
         };
@@ -70,25 +71,25 @@ export function OrderTypeIcon({ type }: { type: 'subscription_delivery' | 'stand
         return {
           icon: Package,
           colorClass: 'bg-purple-100 text-purple-700',
-          title: 'Entrega de Assinatura'
+          title: getOrderTypeLabel(type)
         };
       case 'standalone_purchase':
         return {
           icon: ShoppingCart,
           colorClass: 'bg-blue-100 text-blue-700',
-          title: 'Compra Avulsa'
+          title: getOrderTypeLabel(type)
         };
       case 'manual_payment':
         return {
           icon: CreditCard,
           colorClass: 'bg-green-100 text-green-700',
-          title: 'Pagamento Manual'
+          title: getOrderTypeLabel(type)
         };
       case 'quote':
         return {
           icon: FileText,
           colorClass: 'bg-orange-100 text-orange-700',
-          title: 'Orçamento'
+          title: getOrderTypeLabel(type)
         };
     }
   };
@@ -112,29 +113,29 @@ export function useTypeInfo(type: 'subscription_delivery' | 'standalone_purchase
   switch (type) {
     case 'subscription_delivery':
       return {
-        label: 'Assinatura',
-        fullLabel: 'Entrega de Assinatura',
+        label: getShortOrderTypeLabel(type),
+        fullLabel: getOrderTypeLabel(type),
         icon: Package,
         colorClass: 'bg-purple-50 text-purple-700 border-purple-200'
       };
     case 'standalone_purchase':
       return {
-        label: 'Avulsa',
-        fullLabel: 'Compra Avulsa',
+        label: getShortOrderTypeLabel(type),
+        fullLabel: getOrderTypeLabel(type),
         icon: ShoppingCart,
         colorClass: 'bg-blue-50 text-blue-700 border-blue-200'
       };
     case 'manual_payment':
       return {
-        label: 'Pagamento Manual',
-        fullLabel: 'Pagamento Manual',
+        label: getShortOrderTypeLabel(type),
+        fullLabel: getOrderTypeLabel(type),
         icon: CreditCard,
         colorClass: 'bg-green-50 text-green-700 border-green-200'
       };
     case 'quote':
       return {
-        label: 'Orçamento',
-        fullLabel: 'Orçamento',
+        label: getShortOrderTypeLabel(type),
+        fullLabel: getOrderTypeLabel(type),
         icon: FileText,
         colorClass: 'bg-orange-50 text-orange-700 border-orange-200'
       };

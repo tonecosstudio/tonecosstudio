@@ -17,6 +17,7 @@ vi.mock("@/integrations/supabase/client", () => ({
       from: vi.fn(),
     },
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
@@ -46,9 +47,42 @@ describe("FileUploadService", () => {
   const mockUserId = "user-123";
   const mockPaymentId = "payment-456";
 
+  const mockUploadedFileRecord = () => ({
+    id: "file-123",
+    payment_id: mockPaymentId,
+    file_name: "test.jpg",
+    file_path: `${mockPaymentId}/test.jpg`,
+    file_size: 1024,
+    file_type: "image/jpeg",
+    uploaded_by: mockUserId,
+    created_at: new Date().toISOString(),
+  });
+
+  const mockPaymentOwnerQuery = (userId = mockUserId) => ({
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: { user_id: userId },
+          error: null,
+        }),
+      }),
+    }),
+  });
+
   beforeEach(() => {
     service = new FileUploadService();
     vi.clearAllMocks();
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      data: { user: { id: mockUserId } as any },
+      error: null,
+    });
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: {
+        file: mockUploadedFileRecord(),
+        firstFile: false,
+      },
+      error: null,
+    });
   });
 
   describe("validateFile", () => {
@@ -164,6 +198,13 @@ describe("FileUploadService", () => {
         data: { user: { id: mockUserId } as any },
         error: null,
       });
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: {
+          file: mockUploadedFileRecord(),
+          firstFile: false,
+        },
+        error: null,
+      });
 
       // Mock storage upload
       const mockStorageFrom = vi.fn().mockReturnValue({
@@ -176,25 +217,31 @@ describe("FileUploadService", () => {
       vi.mocked(supabase.storage.from).mockImplementation(mockStorageFrom);
 
       // Mock database operations
-      const mockDbFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: {
-            id: "file-123",
-            payment_id: mockPaymentId,
-            file_name: "test.jpg",
-            file_path: `${mockPaymentId}/test.jpg`,
-            file_size: 1024,
-            file_type: "image/jpeg",
-            uploaded_by: mockUserId,
-            created_at: new Date().toISOString(),
-          },
-          error: null,
-        }),
-        count: "exact",
-        head: true,
+      const mockDbFrom = vi.fn((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          insert: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: "file-123",
+              payment_id: mockPaymentId,
+              file_name: "test.jpg",
+              file_path: `${mockPaymentId}/test.jpg`,
+              file_size: 1024,
+              file_type: "image/jpeg",
+              uploaded_by: mockUserId,
+              created_at: new Date().toISOString(),
+            },
+            error: null,
+          }),
+          count: "exact",
+          head: true,
+        };
       });
       vi.mocked(supabase.from).mockImplementation(mockDbFrom);
     });
@@ -224,6 +271,10 @@ describe("FileUploadService", () => {
 
       // Override for count query
       vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
         if (table === "payment_files") {
           const chain = {
             select: vi.fn().mockReturnThis(),
@@ -283,6 +334,10 @@ describe("FileUploadService", () => {
     it("should reject upload when max files reached", async () => {
       // Mock count returning 5 files
       vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
         if (table === "payment_files") {
           return {
             select: vi.fn().mockReturnValue({
@@ -304,6 +359,10 @@ describe("FileUploadService", () => {
     it("should track upload progress", async () => {
       // Mock file count check
       vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
         if (table === "payment_files") {
           const chain = {
             select: vi.fn().mockReturnThis(),
@@ -420,11 +479,17 @@ describe("FileUploadService", () => {
         },
       ];
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: mockFiles, error: null }),
-      } as any);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: mockFiles, error: null }),
+        } as any;
+      });
 
       const files = await service.listByPayment(mockPaymentId);
 
@@ -434,11 +499,17 @@ describe("FileUploadService", () => {
     });
 
     it("should return empty array when no files exist", async () => {
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: [], error: null }),
-      } as any);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        } as any;
+      });
 
       const files = await service.listByPayment(mockPaymentId);
 
@@ -446,14 +517,20 @@ describe("FileUploadService", () => {
     });
 
     it("should throw error when database query fails", async () => {
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({
-          data: null,
-          error: new Error("Database error"),
-        }),
-      } as any);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({
+            data: null,
+            error: new Error("Database error"),
+          }),
+        } as any;
+      });
 
       await expect(service.listByPayment(mockPaymentId)).rejects.toThrow(
         "Failed to retrieve files"
@@ -472,6 +549,10 @@ describe("FileUploadService", () => {
       });
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === "manual_payments") {
+          return mockPaymentOwnerQuery();
+        }
+
         if (table === "payment_files") {
           const chain = {
             select: vi.fn().mockReturnThis(),

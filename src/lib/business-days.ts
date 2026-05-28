@@ -236,21 +236,46 @@ export function getPreviousBusinessDay(date: Date, holidays: Date[] = []): Date 
  * 
  * Validates: Requirements 1.7, 9.7
  */
+export function calculateNthBusinessDayOfMonth(
+  month: number,
+  year: number,
+  nthBusinessDay: number,
+  holidays: Date[] = []
+): Date {
+  if (month < 1 || month > 12) {
+    throw new Error('Month must be between 1 and 12');
+  }
+
+  if (!Number.isInteger(nthBusinessDay) || nthBusinessDay < 1) {
+    throw new Error('nthBusinessDay must be a positive integer');
+  }
+
+  const lastDay = new Date(year, month, 0).getDate();
+  let businessDaysSeen = 0;
+
+  for (let day = 1; day <= lastDay; day++) {
+    const current = toBahiaTime(new Date(year, month - 1, day));
+
+    if (!isBusinessDay(current, holidays)) {
+      continue;
+    }
+
+    businessDaysSeen++;
+
+    if (businessDaysSeen === nthBusinessDay) {
+      return current;
+    }
+  }
+
+  throw new Error(`Month ${month}/${year} has fewer than ${nthBusinessDay} business days`);
+}
+
 export function calculate5thBusinessDay(
   month: number,
   year: number,
   holidays: Date[] = []
 ): Date {
-  // Validate month
-  if (month < 1 || month > 12) {
-    throw new Error('Month must be between 1 and 12');
-  }
-  
-  // Start from the 1st of the month
-  const firstOfMonth = new Date(year, month - 1, 1);
-  const bahiaFirstOfMonth = toBahiaTime(firstOfMonth);
-  
-  return calculateBusinessDays(bahiaFirstOfMonth, 5, holidays);
+  return calculateNthBusinessDayOfMonth(month, year, 5, holidays);
 }
 
 /**
@@ -327,6 +352,7 @@ export default {
   addBusinessDays,
   getNextBusinessDay,
   getPreviousBusinessDay,
+  calculateNthBusinessDayOfMonth,
   calculate5thBusinessDay,
   countBusinessDays,
 };

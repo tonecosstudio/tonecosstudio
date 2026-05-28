@@ -14,6 +14,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TrackingCard } from "./TrackingCard";
+import {
+  CORREIOS_TRACKING_BASE_URL,
+  JADLOG_TRACKING_BASE_URL,
+} from "@/lib/tracking-links";
 
 // Mock toast
 const mockToast = vi.fn();
@@ -192,7 +196,7 @@ describe("TrackingCard", () => {
       await user.click(trackButton);
 
       expect(mockWindowOpen).toHaveBeenCalledWith(
-        `https://rastreamento.correios.com.br/app/index.php?codigo=${trackingCode}`,
+        `${CORREIOS_TRACKING_BASE_URL}?objeto=${trackingCode}`,
         "_blank",
         "noopener,noreferrer"
       );
@@ -214,7 +218,7 @@ describe("TrackingCard", () => {
       await user.click(trackButton);
 
       expect(mockWindowOpen).toHaveBeenCalledWith(
-        `https://www.jadlog.com.br/tracking/${trackingCode}`,
+        `${JADLOG_TRACKING_BASE_URL}/${trackingCode}`,
         "_blank",
         "noopener,noreferrer"
       );
@@ -236,7 +240,7 @@ describe("TrackingCard", () => {
       await user.click(trackButton);
 
       expect(mockWindowOpen).toHaveBeenCalledWith(
-        `https://rastreamento.correios.com.br/app/index.php?codigo=${trackingCode}`,
+        `${CORREIOS_TRACKING_BASE_URL}?objeto=${trackingCode}`,
         "_blank",
         "noopener,noreferrer"
       );

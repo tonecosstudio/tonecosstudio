@@ -30,20 +30,15 @@ When a delivery is marked as delivered:
 - `actual_delivery_date` is set to the delivery timestamp from carrier
 - `updated_at` is updated to current timestamp
 
-## Mock Implementation
+## Carrier API Integration
 
-**IMPORTANT**: The current implementation uses a **mock carrier API** for development and testing purposes.
+This function requires a configured carrier tracking API. It does not simulate delivery
+updates when `CARRIER_TRACKING_API_URL` is missing.
 
-### Mock Behavior
+The configured endpoint receives a `POST` body with `{ "trackingCode": "..." }` and must
+return the normalized tracking payload documented below.
 
-The `getTrackingStatusFromCarrier()` function currently:
-- Simulates API call delays
-- Returns mock tracking statuses based on tracking code pattern
-- Does NOT make real API calls
-
-### Production Integration
-
-To integrate with real carrier APIs, replace the mock function with actual API calls to:
+### Supported Providers
 
 #### Correios (Brazilian Post)
 - API Documentation: https://www.correios.com.br/enviar/rastreamento
@@ -59,8 +54,8 @@ To integrate with real carrier APIs, replace the mock function with actual API c
 
 ```typescript
 async function getTrackingStatusFromCarrier(trackingCode: string): Promise<TrackingStatus> {
-  const carrierApiUrl = Deno.env.get('CARRIER_API_URL');
-  const carrierApiKey = Deno.env.get('CARRIER_API_KEY');
+  const carrierApiUrl = Deno.env.get('CARRIER_TRACKING_API_URL');
+  const carrierApiKey = Deno.env.get('CARRIER_TRACKING_API_TOKEN');
   
   const response = await fetch(`${carrierApiUrl}/tracking/${trackingCode}`, {
     headers: {
@@ -179,9 +174,8 @@ Required environment variables:
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# For production carrier API integration:
-CARRIER_API_URL=https://api.carrier.com
-CARRIER_API_KEY=your-carrier-api-key
+CARRIER_TRACKING_API_URL=https://api.carrier.com/tracking
+CARRIER_TRACKING_API_TOKEN=your-carrier-api-token
 ```
 
 ## Dependencies

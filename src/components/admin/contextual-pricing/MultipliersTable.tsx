@@ -176,7 +176,9 @@ export function MultipliersTable() {
                       <TableCell className="text-right">
                         <Button
                           size="sm"
-                          onClick={() => handleSaveMultiplier(context.user_context, context.description)}
+                          onClick={() =>
+                            handleSaveMultiplier(context.user_context, context.description ?? context.user_context)
+                          }
                           disabled={!isEditing || updateMultiplierMutation.isPending}
                         >
                           {updateMultiplierMutation.isPending ? (

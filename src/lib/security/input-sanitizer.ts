@@ -12,8 +12,8 @@
  * - File upload validation
  */
 
-import DOMPurify from 'dompurify';
-import { ValidationError, ErrorCategory, errorTracking, ErrorSeverity } from '@/lib/error-tracking';
+import DOMPurify, { type Config as DOMPurifyConfig } from 'dompurify';
+import { ValidationError, errorTracking, ErrorSeverity } from '@/lib/error-tracking';
 
 /**
  * Result of sanitization operation
@@ -45,11 +45,33 @@ export const ALLOWED_DOCUMENT_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 ] as const;
 
+export const ALLOWED_PAYMENT_PROOF_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'application/pdf'
+] as const;
+
+export const ALLOWED_PAYMENT_PROOF_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'pdf'
+] as const;
+
+export const ALLOWED_PRODUCTION_PHOTO_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp'
+] as const;
+
 /**
  * Maximum file sizes (in bytes)
  */
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 export const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024; // 20MB
+export const MAX_PAYMENT_PROOF_SIZE = 5 * 1024 * 1024; // 5MB
+export const MAX_PRODUCTION_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB before compression
 
 /**
  * Dangerous file extensions that should ALWAYS be rejected,
@@ -103,7 +125,7 @@ export function sanitizeHTMLWithResult(html: string, allowedTags?: string[]): Sa
     };
   }
 
-  const config: DOMPurify.Config = {
+  const config: DOMPurifyConfig = {
     ALLOWED_TAGS: allowedTags || [
       'p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li',
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre'
@@ -113,7 +135,7 @@ export function sanitizeHTMLWithResult(html: string, allowedTags?: string[]): Sa
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
   };
 
-  const sanitized = DOMPurify.sanitize(html, config);
+  const sanitized = String(DOMPurify.sanitize(html, config));
   const modifications: string[] = [];
 
   // Check if content was modified
@@ -256,7 +278,6 @@ export function sanitizeEmail(email: string): string {
   if (result.errors && result.errors.length > 0) {
     throw new ValidationError(
       result.errors[0],
-      ErrorCategory.VALIDATION,
       { email },
       result.errors[0]
     );
@@ -330,7 +351,6 @@ export function sanitizeURL(
   if (result.errors && result.errors.length > 0) {
     throw new ValidationError(
       result.errors[0],
-      ErrorCategory.VALIDATION,
       { url, allowedProtocols },
       result.errors[0]
     );
@@ -778,7 +798,6 @@ export function sanitizePhoneNumber(phone: string): string {
   if (result.errors && result.errors.length > 0) {
     throw new ValidationError(
       result.errors[0],
-      ErrorCategory.VALIDATION,
       { phone },
       result.errors[0]
     );

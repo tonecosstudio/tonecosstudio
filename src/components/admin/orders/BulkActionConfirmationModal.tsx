@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UnifiedOrder } from '@/types/admin/orders';
+import type { UnifiedOrder } from '@/types/admin/orders';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -86,8 +86,15 @@ function getConfirmButtonText(actionType: BulkActionType): string {
 /**
  * Formata o tipo de pedido para exibição
  */
-function formatOrderType(type: 'subscription_delivery' | 'standalone_purchase'): string {
-  return type === 'subscription_delivery' ? 'Entrega de Assinatura' : 'Compra Avulsa';
+function formatOrderType(type: UnifiedOrder["type"]): string {
+  const labels: Record<UnifiedOrder["type"], string> = {
+    manual_payment: "Pagamento Manual",
+    quote: "Orçamento",
+    standalone_purchase: "Compra Avulsa",
+    subscription_delivery: "Entrega de Assinatura",
+  };
+
+  return labels[type];
 }
 
 export function BulkActionConfirmationModal({
@@ -160,7 +167,7 @@ export function BulkActionConfirmationModal({
                       {order.customer.name}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {order.collection.name}
+                      {order.collection?.name ?? "Sem coleção vinculada"}
                     </p>
                   </div>
                   

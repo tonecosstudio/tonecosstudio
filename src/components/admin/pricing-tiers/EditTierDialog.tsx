@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { usePricingTiers } from "@/hooks/usePricingTiers";
+import { useUpdatePricingTier } from "@/hooks/usePricingTiers";
 import { updatePricingTierSchema } from "@/lib/validations/pricing-tiers";
 import type { PricingTierWithStats, UpdatePricingTierInput } from "@/types/pricing-tiers";
 import { toast } from "sonner";
@@ -47,7 +47,7 @@ export function EditTierDialog({
   tier,
   onClose,
 }: EditTierDialogProps) {
-  const { updateTier } = usePricingTiers();
+  const updateTier = useUpdatePricingTier();
   const [calculatedPricePix, setCalculatedPricePix] = useState<number>(0);
   const [priceWillChange, setPriceWillChange] = useState(false);
 
@@ -104,7 +104,7 @@ export function EditTierDialog({
     if (!tier) return;
 
     try {
-      await updateTier.mutateAsync({ id: tier.id, data });
+      await updateTier.mutateAsync({ tierId: tier.id, input: data });
       toast.success("Nível atualizado com sucesso");
       onClose();
     } catch (_error) {

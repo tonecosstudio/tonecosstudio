@@ -1,0 +1,2 @@
+# Stripe verifies requests with Stripe-Signature instead of Supabase JWT.
+verify_jwt = false

@@ -1,433 +1,115 @@
-/**
- * Unit tests for production assignment logic
- * Tests assignment, reassignment, logging, and notifications
- */
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { assignProduction } from "../production-service";
+import { supabase } from "@/integrations/supabase/client";
+import { ProductionNotificationService } from "@/services/notifications/production-notification-service";
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { assignProduction } from '../production-service';
-import { supabase } from '@/integrations/supabase/client';
-
-// Mock Supabase client
-vi.mock('@/integrations/supabase/client', () => ({
+vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
-    auth: {
-      getUser: vi.fn(),
-    },
+    rpc: vi.fn(),
   },
 }));
 
-// Mock notification service
-vi.mock('@/services/notifications/production-notification-service', () => ({
+vi.mock("@/services/notifications/production-notification-service", () => ({
   ProductionNotificationService: vi.fn().mockImplementation(() => ({
     sendAssignmentNotification: vi.fn().mockResolvedValue(undefined),
   })),
 }));
 
-describe('Production Assignment Logic', () => {
+function productionRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "prod-123",
+    order_id: "order-1",
+    order_type: "standalone",
+    customer_id: "customer-1",
+    user_id: "customer-1",
+    customer_name: "Cliente Teste",
+    customer_email: "cliente@example.com",
+    collection_id: "collection-1",
+    collection_name: "Colecao Teste",
+    character_id: null,
+    character_name: null,
+    production_status: "in_production",
+    current_stage: "modeling",
+    choice_status: "completed",
+    choice_deadline: null,
+    choice_made_at: null,
+    priority: "normal",
+    priority_score: 0,
+    scheduled_production_date: null,
+    estimated_completion_date: null,
+    assigned_to: "user-456",
+    assigned_to_name: "Joao Silva",
+    assigned_at: "2026-03-01T10:00:00Z",
+    production_started_at: null,
+    production_completed_at: null,
+    production_notes: null,
+    customer_notes: null,
+    internal_flags: [],
+    created_at: "2026-03-01T09:00:00Z",
+    updated_at: "2026-03-01T10:00:00Z",
+    ...overrides,
+  };
+}
+
+function mockCurrentAssignment(current: Record<string, unknown> | null) {
+  vi.mocked(supabase.from).mockReturnValue({
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: current, error: null }),
+      }),
+    }),
+  } as any);
+}
+
+describe("Production Assignment Logic", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCurrentAssignment({ assigned_to: null, assigned_to_name: null });
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: productionRow(), error: null } as any);
   });
 
-  describe('assignProduction', () => {
-    it('should assign production item to a user', async () => {
-      const mockProductionItem = {
-        id: 'prod-123',
-        assigned_to: null,
-        assigned_to_name: null,
-      };
+  it("assigns production through the centralized admin RPC", async () => {
+    const result = await assignProduction("prod-123", "user-456");
 
-      const mockUser = {
-        id: 'user-456',
-        full_name: 'João Silva',
-        email: 'joao@example.com',
-      };
-
-      const mockUpdatedItem = {
-        ...mockProductionItem,
-        assigned_to: mockUser.id,
-        assigned_to_name: mockUser.full_name,
-        assigned_at: new Date().toISOString(),
-      };
-
-      // Mock current item query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockProductionItem,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock user query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockUser,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock update query
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: mockUpdatedItem,
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
-
-      // Mock log insert
-      (supabase.from as any).mockReturnValueOnce({
-        insert: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
-        }),
-      });
-
-      // Mock auth user
-      (supabase.auth.getUser as any).mockResolvedValue({
-        data: { user: { id: 'admin-789' } },
-      });
-
-      const result = await assignProduction('prod-123', 'user-456');
-
-      expect(result).toBeDefined();
-      expect(result.assignedTo).toBe('user-456');
-      expect(result.assignedToName).toBe('João Silva');
+    expect(result.assignedTo).toBe("user-456");
+    expect(result.assignedToName).toBe("Joao Silva");
+    expect(supabase.rpc).toHaveBeenCalledWith("admin_assign_production", {
+      p_queue_id: "prod-123",
+      p_user_id: "user-456",
+      p_reason: null,
     });
+  });
 
-    it('should handle reassignment with reason', async () => {
-      const mockProductionItem = {
-        id: 'prod-123',
-        assigned_to: 'user-old',
-        assigned_to_name: 'Maria Santos',
-      };
+  it("passes reassignment reason to the admin RPC", async () => {
+    mockCurrentAssignment({ assigned_to: "user-old", assigned_to_name: "Maria Santos" });
 
-      const mockUser = {
-        id: 'user-456',
-        full_name: 'João Silva',
-        email: 'joao@example.com',
-      };
+    await assignProduction("prod-123", "user-456", "Balanceamento de carga");
 
-      const mockUpdatedItem = {
-        ...mockProductionItem,
-        assigned_to: mockUser.id,
-        assigned_to_name: mockUser.full_name,
-        assigned_at: new Date().toISOString(),
-      };
-
-      // Mock current item query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockProductionItem,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock user query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockUser,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock update query
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: mockUpdatedItem,
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
-
-      // Mock log insert
-      const mockInsert = vi.fn().mockResolvedValue({
-        data: null,
-        error: null,
-      });
-      (supabase.from as any).mockReturnValueOnce({
-        insert: mockInsert,
-      });
-
-      // Mock auth user
-      (supabase.auth.getUser as any).mockResolvedValue({
-        data: { user: { id: 'admin-789' } },
-      });
-
-      const result = await assignProduction('prod-123', 'user-456', 'Balanceamento de carga');
-
-      expect(result).toBeDefined();
-      expect(mockInsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          is_reassignment: true,
-          previous_assignee: 'user-old',
-          previous_assignee_name: 'Maria Santos',
-          reason: 'Balanceamento de carga',
-        })
-      );
+    expect(supabase.rpc).toHaveBeenCalledWith("admin_assign_production", {
+      p_queue_id: "prod-123",
+      p_user_id: "user-456",
+      p_reason: "Balanceamento de carga",
     });
+  });
 
-    it('should throw error if user not found', async () => {
-      // Mock current item query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { id: 'prod-123', assigned_to: null },
-              error: null,
-            }),
-          }),
-        }),
-      });
+  it("throws when assignment RPC fails", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: null,
+      error: { message: "Update failed" },
+    } as any);
 
-      // Mock user query with error
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: 'User not found' },
-            }),
-          }),
-        }),
-      });
+    await expect(assignProduction("prod-123", "user-456")).rejects.toThrow("Update failed");
+  });
 
-      await expect(assignProduction('prod-123', 'invalid-user')).rejects.toThrow(
-        'Erro ao buscar usuário'
-      );
-    });
+  it("continues when assignment notification fails", async () => {
+    vi.mocked(ProductionNotificationService).mockImplementationOnce(
+      () =>
+        ({
+          sendAssignmentNotification: vi.fn().mockRejectedValue(new Error("Notification failed")),
+        }) as any
+    );
 
-    it('should throw error if update fails', async () => {
-      const mockUser = {
-        id: 'user-456',
-        full_name: 'João Silva',
-        email: 'joao@example.com',
-      };
-
-      // Mock current item query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { id: 'prod-123', assigned_to: null },
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock user query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockUser,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock update query with error
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: { message: 'Update failed' },
-              }),
-            }),
-          }),
-        }),
-      });
-
-      await expect(assignProduction('prod-123', 'user-456')).rejects.toThrow(
-        'Erro ao atribuir produção'
-      );
-    });
-
-    it('should continue even if logging fails', async () => {
-      const mockProductionItem = {
-        id: 'prod-123',
-        assigned_to: null,
-        assigned_to_name: null,
-      };
-
-      const mockUser = {
-        id: 'user-456',
-        full_name: 'João Silva',
-        email: 'joao@example.com',
-      };
-
-      const mockUpdatedItem = {
-        ...mockProductionItem,
-        assigned_to: mockUser.id,
-        assigned_to_name: mockUser.full_name,
-        assigned_at: new Date().toISOString(),
-      };
-
-      // Mock current item query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockProductionItem,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock user query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockUser,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock update query
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: mockUpdatedItem,
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
-
-      // Mock log insert with error
-      (supabase.from as any).mockReturnValueOnce({
-        insert: vi.fn().mockRejectedValue(new Error('Log insert failed')),
-      });
-
-      // Mock auth user
-      (supabase.auth.getUser as any).mockResolvedValue({
-        data: { user: { id: 'admin-789' } },
-      });
-
-      // Should not throw even if logging fails
-      const result = await assignProduction('prod-123', 'user-456');
-      expect(result).toBeDefined();
-    });
-
-    it('should continue even if notification fails', async () => {
-      const mockProductionItem = {
-        id: 'prod-123',
-        assigned_to: null,
-        assigned_to_name: null,
-      };
-
-      const mockUser = {
-        id: 'user-456',
-        full_name: 'João Silva',
-        email: 'joao@example.com',
-      };
-
-      const mockUpdatedItem = {
-        ...mockProductionItem,
-        assigned_to: mockUser.id,
-        assigned_to_name: mockUser.full_name,
-        assigned_at: new Date().toISOString(),
-      };
-
-      // Mock current item query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockProductionItem,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock user query
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockUser,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock update query
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: mockUpdatedItem,
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
-
-      // Mock log insert
-      (supabase.from as any).mockReturnValueOnce({
-        insert: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
-        }),
-      });
-
-      // Mock auth user
-      (supabase.auth.getUser as any).mockResolvedValue({
-        data: { user: { id: 'admin-789' } },
-      });
-
-      // Mock notification service to throw error
-      const { ProductionNotificationService } = await import(
-        '@/services/notifications/production-notification-service'
-      );
-      (ProductionNotificationService as any).mockImplementationOnce(() => ({
-        sendAssignmentNotification: vi.fn().mockRejectedValue(new Error('Notification failed')),
-      }));
-
-      // Should not throw even if notification fails
-      const result = await assignProduction('prod-123', 'user-456');
-      expect(result).toBeDefined();
-    });
+    await expect(assignProduction("prod-123", "user-456")).resolves.toBeDefined();
   });
 });

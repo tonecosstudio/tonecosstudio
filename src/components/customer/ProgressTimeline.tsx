@@ -14,27 +14,17 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getProductionStageLabel } from "@/config/production-stages";
+import type { ProductionStage } from "@/types/production";
+
+export type { ProductionStage };
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type ProductionStage =
-  | "awaiting_payment"
-  | "payment_confirmed"
-  | "awaiting_choice"
-  | "model_preparation"
-  | "printing"
-  | "post_processing"
-  | "painting"
-  | "quality_check"
-  | "packaging"
-  | "ready_to_ship"
-  | "shipped"
-  | "delivered";
-
 export interface StageInfo {
-  name: ProductionStage;
+  name: string;
   displayName: string;
   status: "completed" | "current" | "upcoming";
   completedAt: string | null;
@@ -66,6 +56,17 @@ const STAGE_CONFIG: Record<
   delivered: { label: "Entregue", emoji: "🏠", order: 12 },
 };
 
+function getStageConfig(stage: StageInfo) {
+  const configured = STAGE_CONFIG[stage.name as ProductionStage];
+  const stageLabel = getProductionStageLabel(stage.name);
+
+  return {
+    label: configured?.label ?? (stageLabel !== stage.name ? stageLabel : stage.displayName || stageLabel),
+    emoji: configured?.emoji ?? "?",
+    order: configured?.order ?? stage.order,
+  };
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -79,7 +80,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
 
   // Calculate progress percentage
   const completedCount = sortedStages.filter((s) => s.status === "completed").length;
-  const progressPercentage = (completedCount / sortedStages.length) * 100;
+  const progressPercentage = sortedStages.length > 0 ? (completedCount / sortedStages.length) * 100 : 0;
 
   return (
     <div className={cn("w-full", className)}>
@@ -97,7 +98,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
           {/* Stages */}
           <div className="relative flex justify-between">
             {sortedStages.map((stage) => {
-              const config = STAGE_CONFIG[stage.name];
+              const config = getStageConfig(stage);
               const isCompleted = stage.status === "completed";
               const isCurrent = stage.status === "current";
 
@@ -172,7 +173,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
       {/* Mobile View - Vertical Timeline */}
       <div className="md:hidden space-y-4">
         {sortedStages.map((stage, index) => {
-          const config = STAGE_CONFIG[stage.name];
+          const config = getStageConfig(stage);
           const isCompleted = stage.status === "completed";
           const isCurrent = stage.status === "current";
           const isLast = index === sortedStages.length - 1;

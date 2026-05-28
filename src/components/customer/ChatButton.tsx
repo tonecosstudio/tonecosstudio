@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CustomerMessageList } from "./CustomerMessageList";
 import { CustomerMessageInput } from "./CustomerMessageInput";
 import { useCustomerChatButton } from "@/hooks/customer/useCustomerChatButton";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 export function ChatButton() {
   const location = useLocation();
@@ -99,7 +100,7 @@ export function ChatButton() {
                     Você ainda não iniciou nenhuma conversa com nosso suporte.
                   </p>
                   <button
-                    onClick={() => navigate("/contato")}
+                    onClick={() => navigate(PUBLIC_ROUTES.contact)}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                   >
                     Ir para Contato

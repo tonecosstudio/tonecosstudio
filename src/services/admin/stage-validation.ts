@@ -8,6 +8,8 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import log from "@/lib/logger";
+import { userHasAdminAccess } from "@/services/auth/current-user";
+import { PRODUCTION_STAGE_ORDER, getProductionStageLabel } from "@/config/production-stages";
 import type { StageType } from "./stage-types";
 
 // ============================================================================
@@ -33,21 +35,97 @@ export interface StageTransitionLog {
   justification: string | null;
 }
 
-// Stage order mapping
-const STAGE_ORDER: Record<StageType, number> = {
-  awaiting_payment: 1,
-  payment_confirmed: 2,
-  awaiting_choice: 3,
-  model_preparation: 4,
-  printing: 5,
-  post_processing: 6,
-  painting: 7,
-  quality_check: 8,
-  packaging: 9,
-  ready_to_ship: 10,
-  shipped: 11,
-  delivered: 12,
+interface StageTransitionRpcError {
+  message: string;
+}
+
+interface StageTransitionRpcClient {
+  rpc(
+    name: "admin_log_stage_transition",
+    args: {
+      p_production_queue_id: string;
+      p_from_stage: StageType | null;
+      p_to_stage: StageType;
+      p_is_override: boolean;
+      p_justification: string | null;
+    }
+  ): Promise<{ data: string | null; error: StageTransitionRpcError | null }>;
+}
+
+const stageTransitionRpc = supabase as unknown as StageTransitionRpcClient;
+
+const ORDERED_STAGES: StageType[] = [...PRODUCTION_STAGE_ORDER];
+
+interface StageValidationQueryError {
+  message: string;
+}
+
+interface StageValidationQuery<T> extends PromiseLike<{
+  data: T[] | null;
+  error: StageValidationQueryError | null;
+}> {
+  eq(column: string, value: string): StageValidationQuery<T>;
+  order(
+    column: string,
+    options: { ascending: boolean }
+  ): Promise<{ data: T[] | null; error: StageValidationQueryError | null }>;
+}
+
+interface StageValidationGateway {
+  from(table: "production_stages"): {
+    select(columns: string): StageValidationQuery<ProductionStageValidationRow>;
+  };
+  from(table: "stage_transition_logs"): {
+    select(columns: string): StageValidationQuery<StageTransitionLogRow>;
+  };
+}
+
+interface ProductionStageValidationRow {
+  id: string;
+  stage_name: string;
+  status: string;
+  is_blocked: boolean;
+  stage_order: number | null;
+}
+
+interface StageTransitionLogRow {
+  id: string;
+  production_queue_id: string;
+  from_stage: string | null;
+  to_stage: string;
+  user_id: string;
+  user_name: string;
+  timestamp: string;
+  is_override: boolean;
+  justification: string | null;
+}
+
+type OrderedProductionStageValidationRow = ProductionStageValidationRow & {
+  resolvedStageOrder: number;
 };
+
+const stageValidationGateway = supabase as unknown as StageValidationGateway;
+
+function isStageType(value: unknown): value is StageType {
+  return typeof value === "string" && ORDERED_STAGES.includes(value as StageType);
+}
+
+function requireStageType(value: unknown, context: string): StageType {
+  if (isStageType(value)) {
+    return value;
+  }
+
+  throw new Error(`Invalid production stage in ${context}: ${String(value)}`);
+}
+
+function resolveStageOrder(stage: ProductionStageValidationRow): number {
+  if (typeof stage.stage_order === "number") {
+    return stage.stage_order;
+  }
+
+  const index = ORDERED_STAGES.indexOf(requireStageType(stage.stage_name, stage.id));
+  return index + 1;
+}
 
 // ============================================================================
 // Validation Functions
@@ -66,9 +144,9 @@ export async function validateStageTransition(
 ): Promise<StageValidationResult> {
   try {
     // Fetch all stages for this production item
-    const { data: stages, error } = await supabase
+    const { data: stageRows, error } = await stageValidationGateway
       .from("production_stages")
-      .select("*")
+      .select("id, stage_name, status, is_blocked, stage_order")
       .eq("production_queue_id", productionQueueId)
       .order("stage_order", { ascending: true });
 
@@ -76,7 +154,7 @@ export async function validateStageTransition(
       throw new Error(`Failed to fetch stages: ${error.message}`);
     }
 
-    if (!stages || stages.length === 0) {
+    if (!stageRows || stageRows.length === 0) {
       return {
         isValid: false,
         error: "No stages found for this production item",
@@ -84,6 +162,11 @@ export async function validateStageTransition(
         requiresJustification: false,
       };
     }
+
+    const stages: OrderedProductionStageValidationRow[] = stageRows.map((stage) => ({
+      ...stage,
+      resolvedStageOrder: resolveStageOrder(stage),
+    }));
 
     // Find the target stage
     const targetStage = stages.find((s) => s.id === targetStageId);
@@ -117,11 +200,13 @@ export async function validateStageTransition(
     }
 
     // Find the previous stage (if any)
-    const previousStage = stages.find((s) => s.stage_order === targetStage.stage_order - 1);
+    const previousStage = stages.find(
+      (s) => s.resolvedStageOrder === targetStage.resolvedStageOrder - 1
+    );
 
     // Check if any earlier stages are not completed (stage skipping)
     const incompleteEarlierStages = stages.filter(
-      (s) => s.stage_order < targetStage.stage_order && s.status !== "completed"
+      (s) => s.resolvedStageOrder < targetStage.resolvedStageOrder && s.status !== "completed"
     );
 
     if (incompleteEarlierStages.length > 0) {
@@ -167,18 +252,7 @@ export async function validateStageTransition(
  */
 export async function canUserOverride(userId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .single();
-
-    if (error) {
-      return false;
-    }
-
-    return !!data;
+    return await userHasAdminAccess(userId);
   } catch {
     return false;
   }
@@ -209,15 +283,15 @@ export async function logStageTransition(
   justification: string | null = null
 ): Promise<void> {
   try {
-    const { error } = await supabase.from("stage_transition_logs").insert({
-      production_queue_id: productionQueueId,
-      from_stage: fromStage,
-      to_stage: toStage,
-      user_id: userId,
-      user_name: userName,
-      is_override: isOverride,
-      justification: justification,
-      timestamp: new Date().toISOString(),
+    void userId;
+    void userName;
+
+    const { error } = await stageTransitionRpc.rpc("admin_log_stage_transition", {
+      p_production_queue_id: productionQueueId,
+      p_from_stage: fromStage,
+      p_to_stage: toStage,
+      p_is_override: isOverride,
+      p_justification: justification,
     });
 
     if (error) {
@@ -240,9 +314,9 @@ export async function getTransitionHistory(
   productionQueueId: string
 ): Promise<StageTransitionLog[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await stageValidationGateway
       .from("stage_transition_logs")
-      .select("*")
+      .select("id, production_queue_id, from_stage, to_stage, user_id, user_name, timestamp, is_override, justification")
       .eq("production_queue_id", productionQueueId)
       .order("timestamp", { ascending: false });
 
@@ -253,8 +327,8 @@ export async function getTransitionHistory(
     return (data || []).map((log) => ({
       id: log.id,
       productionQueueId: log.production_queue_id,
-      fromStage: log.from_stage,
-      toStage: log.to_stage,
+      fromStage: log.from_stage ? requireStageType(log.from_stage, log.id) : null,
+      toStage: requireStageType(log.to_stage, log.id),
       userId: log.user_id,
       userName: log.user_name,
       timestamp: log.timestamp,
@@ -276,37 +350,21 @@ export async function getTransitionHistory(
  * Gets a human-readable stage name
  */
 function getStageName(stage: string): string {
-  const names: Record<string, string> = {
-    awaiting_payment: "Aguardando Pagamento",
-    payment_confirmed: "Pagamento Confirmado",
-    awaiting_choice: "Aguardando Escolha",
-    model_preparation: "Preparação do Modelo",
-    printing: "Em Impressão 3D",
-    post_processing: "Limpeza e Preparação",
-    painting: "Pintura Artesanal",
-    quality_check: "Controle de Qualidade",
-    packaging: "Embalagem",
-    ready_to_ship: "Pronto para Envio",
-    shipped: "Enviado",
-    delivered: "Entregue",
-  };
-  return names[stage] || stage;
+  return getProductionStageLabel(stage);
 }
 
 /**
  * Gets the next stage in sequence
  */
 export function getNextStage(currentStage: StageType): StageType | null {
-  const order = STAGE_ORDER[currentStage];
-  const nextStageEntry = Object.entries(STAGE_ORDER).find(([_, o]) => o === order + 1);
-  return nextStageEntry ? (nextStageEntry[0] as StageType) : null;
+  const currentIndex = ORDERED_STAGES.indexOf(currentStage);
+  return currentIndex >= 0 ? ORDERED_STAGES[currentIndex + 1] ?? null : null;
 }
 
 /**
  * Gets the previous stage in sequence
  */
 export function getPreviousStage(currentStage: StageType): StageType | null {
-  const order = STAGE_ORDER[currentStage];
-  const prevStageEntry = Object.entries(STAGE_ORDER).find(([_, o]) => o === order - 1);
-  return prevStageEntry ? (prevStageEntry[0] as StageType) : null;
+  const currentIndex = ORDERED_STAGES.indexOf(currentStage);
+  return currentIndex > 0 ? ORDERED_STAGES[currentIndex - 1] : null;
 }

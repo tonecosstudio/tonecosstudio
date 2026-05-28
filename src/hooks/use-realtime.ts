@@ -5,6 +5,8 @@
  * do sistema de pagamento manual.
  */
 
+import { supabase } from "@/integrations/supabase/client";
+
 // Exportar tipos e interfaces
 export type {
   RealtimeConnectionState,
@@ -54,7 +56,6 @@ export function useRealtimeAvailable(): boolean {
   // Verificar se o Supabase está configurado com realtime
   // Esta é uma verificação básica - em produção, pode ser mais complexa
   try {
-    const { supabase } = require("@/integrations/supabase/client");
     return !!supabase && typeof supabase.channel === "function";
   } catch {
     return false;

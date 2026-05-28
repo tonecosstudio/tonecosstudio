@@ -7,6 +7,8 @@ import {
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { FileText, Shield, AlertTriangle, Scale } from "lucide-react";
+import { PUBLIC_ROUTES } from "@/config/routes";
+import { CONTACT } from "@/config/constants";
 
 export default function TermsArcade() {
   const { data: settings } = useSystemSettings();
@@ -123,7 +125,7 @@ export default function TermsArcade() {
                 Contato Legal
               </p>
               <p className="text-[hsl(var(--gold-accent))] font-mono text-sm">
-                {settings?.contact_email || "contato@ordax.com.br"}
+                {settings?.contact_email || CONTACT.CONTACT_EMAIL}
               </p>
               <p className="text-[hsl(0,0%,25%)] font-mono text-[9px] mt-3">
                 © {new Date().getFullYear()} {settings?.company_name || "Tonecos Studios"}
@@ -137,8 +139,8 @@ export default function TermsArcade() {
         badge="Voltar"
         title="EXPLORAR CATÁLOGO"
         description="Conheça nossas peças artesanais"
-        primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo" }}
-        secondaryAction={{ label: "INÍCIO", href: "/" }}
+        primaryAction={{ label: "VER CATÁLOGO", href: PUBLIC_ROUTES.catalog }}
+        secondaryAction={{ label: "INÍCIO", href: PUBLIC_ROUTES.home }}
       />
     </Page>
   );

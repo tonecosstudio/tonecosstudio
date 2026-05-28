@@ -64,7 +64,7 @@ export async function createStandalonePurchaseReservation(input: {
   const { data: currentCycle, error: cycleError } = await supabase
     .from("cycles")
     .select("id")
-    .eq("status", "open")
+    .in("status", ["open", "active", "sales"])
     .single<OpenCycleRow>();
 
   if (cycleError || !currentCycle) {

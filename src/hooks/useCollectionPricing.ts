@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { parseSystemSettingNumber } from "@/lib/system-settings-values";
 
 /**
  * Interface para preços de coleção
@@ -63,7 +64,7 @@ export function useGlobalPricingSettings() {
 
       return data.reduce(
         (acc, setting) => {
-          acc[setting.key] = parseFloat(setting.value);
+          acc[setting.key] = parseSystemSettingNumber(setting.key, setting.value);
           return acc;
         },
         {} as Record<string, number>

@@ -1,17 +1,18 @@
 /**
  * Badge de Status de Pedido
- * 
- * Exibe o status do pedido com cores apropriadas e ícones
+ *
+ * Exibe o status do pedido com cores apropriadas e icones.
  */
 
 import { Badge } from '@/components/ui/badge';
 import type { OrderStatus } from '@/types/admin/orders';
-import { 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  Package, 
-  Truck, 
+import { getOrderStatusLabel } from '@/config/admin-order-status';
+import {
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  Package,
+  Truck,
   Home,
   Eye,
   DollarSign,
@@ -25,42 +26,6 @@ interface OrderStatusBadgeProps {
   className?: string;
   showIcon?: boolean;
 }
-
-/**
- * Mapeamento de status para labels em português
- */
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  // Entregas de assinatura
-  scheduled: 'Agendada',
-  pending_choice: 'Aguardando Escolha',
-  confirmed: 'Confirmada',
-  in_production: 'Em Produção',
-  shipped: 'Enviada',
-  delivered: 'Entregue',
-  revealed: 'Revelada',
-  
-  // Compras avulsas
-  awaiting_deposit: 'Aguardando Depósito',
-  deposit_paid: 'Depósito Pago',
-  awaiting_balance: 'Aguardando Saldo',
-  balance_paid: 'Saldo Pago',
-  completed: 'Completa',
-  
-  // Pagamentos manuais
-  pending: 'Pendente',
-  under_review: 'Em Análise',
-  requires_info: 'Requer Informações',
-  approved: 'Aprovado',
-  rejected: 'Rejeitado',
-  
-  // Orçamentos
-  reviewing: 'Em Análise',
-  answered: 'Respondido',
-  archived: 'Arquivado',
-  
-  // Comum
-  cancelled: 'Cancelada'
-};
 
 /**
  * Mapeamento de status para ícones
@@ -126,7 +91,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
 };
 
 export function OrderStatusBadge({ status, className, showIcon = true }: OrderStatusBadgeProps) {
-  const label = STATUS_LABELS[status] || status;
+  const label = getOrderStatusLabel(status);
   const colorClass = STATUS_COLORS[status];
   const Icon = STATUS_ICONS[status];
 
@@ -146,7 +111,7 @@ export function OrderStatusBadge({ status, className, showIcon = true }: OrderSt
  */
 export function useStatusInfo(status: OrderStatus) {
   return {
-    label: STATUS_LABELS[status] || status,
+    label: getOrderStatusLabel(status),
     colorClass: STATUS_COLORS[status],
     Icon: STATUS_ICONS[status]
   };

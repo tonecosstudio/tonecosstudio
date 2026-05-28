@@ -27,10 +27,6 @@ interface CapacityRpcClient {
     name: "release_capacity",
     args: { p_cycle_id: string; p_quantity: number }
   ): Promise<{ data: unknown; error: CapacityRpcError | null }>;
-  rpc(name: "get_or_create_current_cycle"): Promise<{
-    data: CurrentCycleRow | null;
-    error: CapacityRpcError | null;
-  }>;
 }
 
 interface CurrentCycleRow {
@@ -40,9 +36,8 @@ interface CurrentCycleRow {
 }
 
 interface CycleCapacityRow {
-  capacity_max: number | null;
-  capacity_current: number | null;
-  reserved_capacity: number | null;
+  capacity: number | null;
+  used_capacity: number | null;
 }
 
 const capacityRpc = supabase as unknown as CapacityRpcClient;
@@ -100,10 +95,10 @@ export async function checkAvailability(
 }
 
 /**
- * Reserve capacity for a subscription or standalone purchase
+ * Reserve capacity for a subscription or standalone purchase.
  *
- * This function increments the cycle's capacity_current by the specified
- * quantity. It will fail if the capacity limit would be exceeded.
+ * This function increments the canonical used_capacity value by the specified
+ * quantity through the database RPC. It will fail if capacity would be exceeded.
  *
  * @param cycleId - The ID of the cycle to reserve capacity in
  * @param quantity - The number of pieces to reserve
@@ -135,10 +130,10 @@ export async function reserveCapacity(
 }
 
 /**
- * Release capacity when a purchase is cancelled before cutoff
+ * Release capacity when a purchase is cancelled before cutoff.
  *
- * This function decrements the cycle's capacity_current by the specified
- * quantity. It ensures capacity_current never goes below 0.
+ * This function decrements the canonical used_capacity value by the specified
+ * quantity through the database RPC. It ensures usage never goes below 0.
  *
  * @param cycleId - The ID of the cycle to release capacity from
  * @param quantity - The number of pieces to release
@@ -174,7 +169,8 @@ export async function releaseCapacity(
  *
  * This function retrieves the capacity information for a cycle and
  * calculates the available capacity and usage percentage.
- * Available capacity accounts for reserved capacity.
+ * Available capacity is calculated from the canonical capacity and used_capacity
+ * columns. Legacy aliases are synchronized in the database migration.
  *
  * @param cycleId - The ID of the cycle to query
  * @returns Promise<CapacityUsage> - Capacity usage information
@@ -190,7 +186,7 @@ export async function releaseCapacity(
 export async function getCapacityUsage(cycleId: string): Promise<CapacityUsage> {
   const { data: cycle, error } = await supabase
     .from('cycles')
-    .select('capacity_max, capacity_current, reserved_capacity')
+    .select('capacity, used_capacity')
     .eq('id', cycleId)
     .single<CycleCapacityRow>();
 
@@ -202,13 +198,10 @@ export async function getCapacityUsage(cycleId: string): Promise<CapacityUsage> 
     throw new Error(`Cycle not found: ${cycleId}`);
   }
 
-  // Use capacity_max (capacity_limit will be used once types are regenerated)
-  const max = cycle.capacity_max ?? 100;
-  const current = cycle.capacity_current ?? 0;
-  const reserved = cycle.reserved_capacity ?? 0;
+  const max = cycle.capacity ?? 100;
+  const current = cycle.used_capacity ?? 0;
 
-  // Available capacity = max - current - reserved
-  const available = Math.max(0, max - current - reserved);
+  const available = Math.max(0, max - current);
   const percentage = max > 0 ? Math.round((current / max) * 100) : 0;
 
   return {
@@ -216,7 +209,7 @@ export async function getCapacityUsage(cycleId: string): Promise<CapacityUsage> 
     current,
     available,
     percentage,
-    reserved
+    reserved: 0
   };
 }
 
@@ -307,16 +300,28 @@ function calculateDeliveryCycles(
 export async function checkSubscriptionCapacity(
   deliveryCount: number
 ): Promise<SubscriptionCapacityCheck> {
-  // Get current cycle
-  const { data: currentCycle, error: cycleError } = await capacityRpc.rpc('get_or_create_current_cycle');
+  const now = new Date();
+  const fallbackCycle: CurrentCycleRow = {
+    cycle_number: 1,
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+  };
+
+  const { data: openCycle, error: cycleError } = await supabase
+    .from('cycles')
+    .select('cycle_number, month, year')
+    .eq('month', fallbackCycle.month)
+    .eq('year', fallbackCycle.year)
+    .in('status', ['open', 'active', 'sales'])
+    .order('cycle_number', { ascending: true })
+    .limit(1)
+    .maybeSingle<CurrentCycleRow>();
 
   if (cycleError) {
     throw new Error(`Failed to get current cycle: ${cycleError.message}`);
   }
 
-  if (!currentCycle) {
-    throw new Error('Could not get current cycle');
-  }
+  const currentCycle = openCycle ?? fallbackCycle;
 
   // Calculate which cycles will be used for deliveries
   const deliveryCycles = calculateDeliveryCycles(
@@ -335,7 +340,7 @@ export async function checkSubscriptionCapacity(
     // Try to find existing cycle
     const { data: existingCycle } = await supabase
       .from('cycles')
-      .select('id, capacity_current, capacity_max')
+      .select('id')
       .eq('cycle_number', cycleInfo.cycleNumber)
       .eq('month', cycleInfo.month)
       .eq('year', cycleInfo.year)

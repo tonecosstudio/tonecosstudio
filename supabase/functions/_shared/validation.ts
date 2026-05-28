@@ -61,9 +61,13 @@ interface FieldDef {
   required?: boolean;
   maxLength?: number; // strings
   minLength?: number; // strings
+  trim?: boolean; // strings
+  rejectHtml?: boolean; // strings
   min?: number; // numbers
   max?: number; // numbers
+  minItems?: number; // arrays
   maxItems?: number; // arrays
+  uniqueItems?: boolean; // arrays
   itemType?: FieldType; // array item type
   sanitize?: boolean; // auto-sanitize string (default false)
 }
@@ -149,6 +153,13 @@ export function validateBody(body: unknown, schema: Schema): ValidationResult {
           break;
         }
         let str = value;
+        if (def.trim) {
+          str = str.trim();
+        }
+        if (def.rejectHtml && /<[^>]*>/g.test(str)) {
+          errors.push(`'${key}' cannot contain HTML tags`);
+          break;
+        }
         if (def.sanitize) {
           str = sanitizeString(str, def.maxLength ?? 1000);
         }
@@ -196,8 +207,16 @@ export function validateBody(body: unknown, schema: Schema): ValidationResult {
           errors.push(`'${key}' must be an array`);
           break;
         }
+        if (def.minItems && value.length < def.minItems) {
+          errors.push(`'${key}' must contain at least ${def.minItems} item(s)`);
+          break;
+        }
         if (def.maxItems && value.length > def.maxItems) {
           errors.push(`'${key}' exceeds max items of ${def.maxItems}`);
+          break;
+        }
+        if (def.uniqueItems && new Set(value).size !== value.length) {
+          errors.push(`'${key}' cannot contain duplicate items`);
           break;
         }
         if (def.itemType === "uuid") {

@@ -18,6 +18,66 @@ import type {
 } from "@/types/manual-payment";
 import { getNotificationService } from "./notification-service";
 import { log } from "@/lib/logger";
+import { assertCurrentUserId, requireAuthenticatedUserId } from "@/services/auth/current-user";
+import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
+
+type RpcError = { message?: string } | null;
+
+interface ManualPaymentCreationRpcClient {
+  rpc(functionName: "create_manual_payment_for_current_user", args: {
+    p_payment_method_id: string;
+    p_quote_id: string | null;
+    p_subscription_id: string | null;
+    p_amount: number;
+    p_currency: string;
+    p_payment_type: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+}
+
+const manualPaymentCreationRpc = supabase as unknown as ManualPaymentCreationRpcClient;
+
+type QuotePaymentFallbackRow = {
+  id: string;
+  quote_id: string;
+  user_id: string | null;
+  payment_type: string | null;
+  amount: number;
+  status: string | null;
+  payment_method: string | null;
+  paid_at: string | null;
+  recorded_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+interface QuotePaymentsFallbackClient {
+  from(table: "quote_payments"): {
+    select(columns: string): {
+      eq(column: "id", value: string): {
+        maybeSingle(): PromiseLike<{ data: QuotePaymentFallbackRow | null; error: RpcError }>;
+      };
+    };
+  };
+}
+
+const quotePaymentsFallback = supabase as unknown as QuotePaymentsFallbackClient;
+
+function mapCreatePaymentError(message: string | undefined): string {
+  const value = message ?? "";
+  if (value.includes("PAYMENT_METHOD_REQUIRED")) return "Payment method is required";
+  if (value.includes("INVALID_PAYMENT_AMOUNT")) return "Payment amount must be greater than zero";
+  if (value.includes("INVALID_PAYMENT_TYPE")) return "Payment type is required";
+  if (value.includes("PAYMENT_LINK_TARGET_REQUIRED")) {
+    return "Payment must be linked to either a quote or subscription, but not both";
+  }
+  if (value.includes("PAYMENT_METHOD_NOT_FOUND")) return "Payment method not found";
+  if (value.includes("PAYMENT_QUOTE_NOT_FOUND")) return "Quote not found";
+  if (value.includes("PAYMENT_SUBSCRIPTION_NOT_FOUND")) return "Subscription not found";
+  if (value.includes("PAYMENT_REFERENCE_EXHAUSTED")) {
+    return "Failed to generate payment reference";
+  }
+  return `Failed to create payment: ${value || "Unknown error"}`;
+}
 
 /**
  * Helper para tentar usar manual_payments, com fallback para quote_payments
@@ -58,34 +118,6 @@ function mapQuotePaymentStatus(quoteStatus: string): PaymentStatus {
 
 
 /**
- * Valid status transitions for payment workflow
- * Requirements: 8.1-8.10
- */
-const VALID_STATUS_TRANSITIONS: Record<PaymentStatus, PaymentStatus[]> = {
-  pending: ["under_review"],
-  under_review: ["requires_info", "approved", "rejected"],
-  requires_info: ["under_review"],
-  approved: [], // Terminal state - no transitions allowed
-  rejected: ["under_review"], // Allow re-submission
-};
-
-/**
- * Validate if a status transition is allowed
- *
- * @param currentStatus - Current payment status
- * @param newStatus - Desired new status
- * @returns true if transition is valid
- */
-function isValidStatusTransition(currentStatus: PaymentStatus, newStatus: PaymentStatus): boolean {
-  if (currentStatus === newStatus) {
-    return true; // Same status is always valid
-  }
-
-  const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus];
-  return allowedTransitions.includes(newStatus);
-}
-
-/**
  * Create a new manual payment
  * Automatically generates a unique reference number
  *
@@ -94,6 +126,8 @@ function isValidStatusTransition(currentStatus: PaymentStatus, newStatus: Paymen
  * @throws Error if validation fails or database insert fails
  */
 export async function createPayment(input: ManualPaymentInput): Promise<ManualPayment> {
+  await requireAuthenticatedUserId();
+
   // Validate required fields
   if (!input.payment_method_id) {
     throw new Error("Payment method is required");
@@ -115,34 +149,17 @@ export async function createPayment(input: ManualPaymentInput): Promise<ManualPa
     throw new Error("Payment must be linked to either a quote or subscription, but not both");
   }
 
-  // Generate reference number using database function
-  const { data: refData, error: refError } = await supabase.rpc("generate_payment_reference");
-
-  if (refError) {
-    throw new Error(`Failed to generate payment reference: ${refError.message}`);
-  }
-
-  // Prepare data for insertion
-  const insertData = {
-    reference_number: refData as string,
-    user_id: (await supabase.auth.getUser()).data.user?.id,
-    payment_method_id: input.payment_method_id,
-    quote_id: input.quote_id || null,
-    subscription_id: input.subscription_id || null,
-    amount: input.amount,
-    currency: input.currency || "BRL",
-    payment_type: input.payment_type,
-    status: "pending" as PaymentStatus,
-  };
-
-  const { data, error } = await supabase
-    .from("manual_payments")
-    .insert(insertData)
-    .select("*")
-    .single();
+  const { data, error } = await manualPaymentCreationRpc.rpc("create_manual_payment_for_current_user", {
+    p_payment_method_id: input.payment_method_id,
+    p_quote_id: input.quote_id || null,
+    p_subscription_id: input.subscription_id || null,
+    p_amount: input.amount,
+    p_currency: input.currency || "BRL",
+    p_payment_type: input.payment_type,
+  });
 
   if (error) {
-    throw new Error(`Failed to create payment: ${error.message}`);
+    throw new Error(mapCreatePaymentError(error.message));
   }
 
   const payment = data as ManualPayment;
@@ -167,8 +184,8 @@ export async function createPayment(input: ManualPaymentInput): Promise<ManualPa
  * @returns Payment details with related data or null if not found
  * @throws Error if database query fails
  */
-export async function getPaymentById(id: string): Promise<PaymentDetails | null> {
-  const result = await tryWithFallback(
+async function fetchPaymentById(id: string): Promise<PaymentDetails | null> {
+  const result = await tryWithFallback<PaymentDetails | null>(
     async () => {
       const { data, error } = await supabase
         .from("manual_payments")
@@ -191,11 +208,11 @@ export async function getPaymentById(id: string): Promise<PaymentDetails | null>
         return null;
       }
 
-      return data;
+      return data as unknown as PaymentDetails;
     },
     async () => {
       // Fallback para quote_payments
-      const { data, error } = await supabase
+      const { data, error } = await quotePaymentsFallback
         .from("quote_payments")
         .select(
           `
@@ -215,19 +232,37 @@ export async function getPaymentById(id: string): Promise<PaymentDetails | null>
       }
 
       // Mapear para o formato de ManualPayment
-      const mappedData = {
-        ...data,
+      const paymentMethodName = data.payment_method || "manual";
+      const mappedData: PaymentDetails = {
+        id: data.id,
         reference_number: `QUOTE-${data.id.substring(0, 8)}`,
-        status: mapQuotePaymentStatus(data.status),
+        user_id: data.user_id ?? "",
+        payment_method_id: paymentMethodName,
+        quote_id: data.quote_id,
+        subscription_id: null,
+        amount: data.amount,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        approved_at: data.paid_at,
+        approved_by: data.recorded_by,
+        rejection_reason: null,
+        status: mapQuotePaymentStatus(data.status ?? "pending"),
         payment_type: "one_time",
         currency: "BRL",
         payment_method: {
-          name: data.payment_method || "Não especificado",
-          type: data.payment_method || "unknown",
+          id: paymentMethodName,
+          name: paymentMethodName,
+          type: "other",
+          instructions: "",
+          is_active: true,
+          is_default: false,
+          display_order: 0,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         },
         files: [],
         audit_logs: [],
-      } as PaymentDetails;
+      };
 
       return mappedData;
     }
@@ -251,6 +286,25 @@ export async function getPaymentById(id: string): Promise<PaymentDetails | null>
   } as PaymentDetails;
 }
 
+export async function getPaymentById(id: string): Promise<PaymentDetails | null> {
+  return fetchPaymentById(id);
+}
+
+export async function getMyPaymentById(id: string): Promise<PaymentDetails | null> {
+  const userId = await requireAuthenticatedUserId();
+  const payment = await fetchPaymentById(id);
+
+  if (!payment) {
+    return null;
+  }
+
+  if (payment.user_id !== userId) {
+    throw new Error("Payment not found");
+  }
+
+  return payment;
+}
+
 /**
  * List payments by user with optional filtering
  *
@@ -263,6 +317,8 @@ export async function listPaymentsByUser(
   userId: string,
   filters?: PaymentFilters
 ): Promise<ManualPayment[]> {
+  await assertCurrentUserId(userId);
+
   let query = supabase.from("manual_payments").select("*").eq("user_id", userId);
 
   // Apply filters
@@ -283,7 +339,10 @@ export async function listPaymentsByUser(
   }
 
   if (filters?.search) {
-    query = query.or(`reference_number.ilike.%${filters.search}%`);
+    const search = sanitizePostgrestSearchTerm(filters.search);
+    if (search) {
+      query = query.or(`reference_number.ilike.%${search}%`);
+    }
   }
 
   // Order by creation date (newest first)
@@ -327,48 +386,24 @@ export async function updatePaymentStatus(
 
   const currentStatus = currentPayment.status as PaymentStatus;
 
+  const [{ validateStatusTransition }, { updateManualPaymentStatus }] = await Promise.all([
+    import("@/services/admin/orders-validator"),
+    import("@/services/admin/admin-order-status-service"),
+  ]);
+
   // Validate status transition
-  if (!isValidStatusTransition(currentStatus, newStatus)) {
-    throw new Error(`Invalid status transition from '${currentStatus}' to '${newStatus}'`);
+  const validationError = validateStatusTransition(currentStatus, newStatus, "manual_payment");
+  if (validationError) {
+    throw new Error(validationError.message);
   }
 
-  // Update payment status
-  const updateData: Partial<ManualPayment> = {
-    status: newStatus,
-  };
-
-  // Set approved_at and approved_by for approved status
-  if (newStatus === "approved") {
-    updateData.approved_at = new Date().toISOString();
-    updateData.approved_by = adminId;
-  }
-
-  const { error: updateError } = await supabase
-    .from("manual_payments")
-    .update(updateData)
-    .eq("id", id);
-
-  if (updateError) {
-    throw new Error(`Failed to update payment status: ${updateError.message}`);
-  }
-
-  // Record audit log (if notes provided or admin action)
-  if (notes || adminId) {
-    await supabase.from("payment_audit_log").insert({
-      payment_id: id,
-      action_type: "status_changed",
-      admin_id: adminId || null,
-      old_status: currentStatus,
-      new_status: newStatus,
-      notes: notes || null,
-    });
-  }
+  void adminId;
+  await updateManualPaymentStatus(id, newStatus, newStatus === "rejected" ? notes?.trim() || null : null);
 }
 
 /**
  * Approve a payment
- * Updates payment status to 'approved', creates audit log, sends message to conversation,
- * and integrates with quote/subscription systems
+ * Delegates approval and customer notification to the admin RPC boundary.
  *
  * Requirements: 7.1-7.15, 15.1-15.15
  *
@@ -377,48 +412,16 @@ export async function updatePaymentStatus(
  * @throws Error if payment cannot be approved
  */
 export async function approvePayment(id: string, adminId: string): Promise<void> {
-  // Get payment details to access conversation
-  const payment = await getPaymentById(id);
-
-  if (!payment) {
-    throw new Error("Payment not found");
-  }
-
-  // Update payment status to approved
-  await updatePaymentStatus(id, "approved", "Payment approved", adminId);
-
-  // Create audit log entry
-  const { error: auditError } = await supabase.from("payment_audit_log").insert({
-    payment_id: id,
-    action_type: "approved",
-    admin_id: adminId,
-    old_status: payment.status,
-    new_status: "approved",
-    notes: "Payment approved by admin",
-  });
-
-  if (auditError) {
-    log.error("Failed to create payment approval audit log", { error: auditError, paymentId: id });
-    // Don't throw - audit log failure shouldn't block approval
-  }
-
-  // Note: quote/subscription integration is handled via Edge Functions
-
-  // Note: conversation messages are handled via Edge Functions
-
-  // Send payment approval notification
-  try {
-    const notificationService = getNotificationService();
-    await notificationService.sendPaymentApproved(id);
-  } catch (error) {
-    // Don't fail payment approval if notification fails
-    log.error("Failed to send payment approval notification", { error, paymentId: id });
-  }
+  void adminId;
+  const { approveManualPaymentWithNotification } = await import(
+    "@/services/admin/admin-order-status-service"
+  );
+  await approveManualPaymentWithNotification(id);
 }
 
 /**
  * Reject a payment
- * Updates payment status to 'rejected', stores reason, creates audit log, and sends message
+ * Delegates rejection reason persistence and customer notification to the admin RPC boundary.
  *
  * Requirements: 7.1-7.15
  *
@@ -432,56 +435,16 @@ export async function rejectPayment(id: string, adminId: string, reason: string)
     throw new Error("Rejection reason is required");
   }
 
-  // Get payment details to access conversation and current status
-  const payment = await getPaymentById(id);
-
-  if (!payment) {
-    throw new Error("Payment not found");
-  }
-
-  // Update status and rejection reason
-  const { error } = await supabase
-    .from("manual_payments")
-    .update({
-      status: "rejected",
-      rejection_reason: reason.trim(),
-    })
-    .eq("id", id);
-
-  if (error) {
-    throw new Error(`Failed to reject payment: ${error.message}`);
-  }
-
-  // Create audit log entry
-  const { error: auditError } = await supabase.from("payment_audit_log").insert({
-    payment_id: id,
-    action_type: "rejected",
-    admin_id: adminId,
-    old_status: payment.status,
-    new_status: "rejected",
-    notes: reason.trim(),
-  });
-
-  if (auditError) {
-    log.error("Failed to create payment rejection audit log", { error: auditError, paymentId: id });
-    // Don't throw - audit log failure shouldn't block rejection
-  }
-
-  // Note: conversation messages are handled via Edge Functions
-
-  // Send payment rejection notification
-  try {
-    const notificationService = getNotificationService();
-    await notificationService.sendPaymentRejected(id, reason);
-  } catch (error) {
-    // Don't fail payment rejection if notification fails
-    log.error("Failed to send payment rejection notification", { error, paymentId: id });
-  }
+  void adminId;
+  const { rejectManualPaymentWithNotification } = await import(
+    "@/services/admin/admin-order-status-service"
+  );
+  await rejectManualPaymentWithNotification(id, reason.trim());
 }
 
 /**
  * Request more information from customer
- * Updates payment status to 'requires_info', creates audit log, and sends message to conversation
+ * Delegates info request persistence and customer notification to the admin RPC boundary.
  *
  * Requirements: 7.1-7.15
  *
@@ -499,39 +462,9 @@ export async function requestPaymentInfo(
     throw new Error("Message is required when requesting more information");
   }
 
-  // Get payment details to access conversation and current status
-  const payment = await getPaymentById(id);
-
-  if (!payment) {
-    throw new Error("Payment not found");
-  }
-
-  // Update payment status to requires_info
-  await updatePaymentStatus(id, "requires_info", message.trim(), adminId);
-
-  // Create audit log entry
-  const { error: auditError } = await supabase.from("payment_audit_log").insert({
-    payment_id: id,
-    action_type: "info_requested",
-    admin_id: adminId,
-    old_status: payment.status,
-    new_status: "requires_info",
-    notes: message.trim(),
-  });
-
-  if (auditError) {
-    log.error("Failed to create payment info request audit log", { error: auditError, paymentId: id });
-    // Don't throw - audit log failure shouldn't block request
-  }
-
-  // Note: conversation messages are handled via Edge Functions
-
-  // Send info requested notification
-  try {
-    const notificationService = getNotificationService();
-    await notificationService.sendInfoRequested(id, message);
-  } catch (error) {
-    // Don't fail info request if notification fails
-    log.error("Failed to send payment info request notification", { error, paymentId: id });
-  }
+  void adminId;
+  const { requestManualPaymentInfoRpc } = await import(
+    "@/services/admin/admin-order-status-service"
+  );
+  await requestManualPaymentInfoRpc(id, message.trim());
 }

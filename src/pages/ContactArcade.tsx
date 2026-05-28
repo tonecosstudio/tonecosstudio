@@ -15,6 +15,8 @@ import { Page } from "@/components/layouts/Page";
 import { useContactFormSubmission } from "@/hooks/customer/useContactFormSubmission";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { contactFormSchema } from "@/lib/validations/support";
+import { PUBLIC_ROUTES, loginReturnToPath, profileSectionPath } from "@/config/routes";
+import { CONTACT } from "@/config/constants";
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
@@ -30,10 +32,10 @@ export default function ContactArcade() {
   const { submitContactForm, isSubmitting } = useContactFormSubmission({
     onRequiresAuth: () => {
       setError("Faca login para enviar mensagem.");
-      setTimeout(() => navigate("/login?returnTo=/contato"), 2000);
+      setTimeout(() => navigate(loginReturnToPath(PUBLIC_ROUTES.contact)), 2000);
     },
     onSuccess: () => {
-      navigate("/perfil?section=support");
+      navigate(profileSectionPath("support"));
     },
     onError: setError,
   });
@@ -166,7 +168,7 @@ export default function ContactArcade() {
                 Email Direto
               </h3>
               <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">
-                contato@ordax.com.br
+                {CONTACT.CONTACT_EMAIL}
               </p>
             </div>
           </ArcadeCard>
@@ -188,8 +190,8 @@ export default function ContactArcade() {
         badge="Explore"
         title="VOLTAR AO ARSENAL"
         description="Confira nosso catalogo e colecoes disponiveis."
-        primaryAction={{ label: "VER CATALOGO", href: "/catalogo" }}
-        secondaryAction={{ label: "VER COLECOES", href: "/colecoes" }}
+        primaryAction={{ label: "VER CATALOGO", href: PUBLIC_ROUTES.catalog }}
+        secondaryAction={{ label: "VER COLECOES", href: PUBLIC_ROUTES.collections }}
       />
     </Page>
   );

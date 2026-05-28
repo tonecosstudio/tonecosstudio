@@ -109,8 +109,9 @@ export function transformDeliveries(
       const subscription = delivery.subscriptions!;
       const profile = profilesMap.get(subscription.user_id);
 
-      // Try to find collection from collectionsMap
-      const collectionFromMap = collectionsMap.values().next().value;
+      const collection = subscription.collection_id
+        ? collectionsMap.get(subscription.collection_id)
+        : undefined;
 
       return {
         id: delivery.id,
@@ -125,10 +126,10 @@ export function transformDeliveries(
           email: profile?.email || "Email não disponível",
         },
 
-        collection: collectionFromMap ? {
-          id: collectionFromMap.id || "",
-          name: collectionFromMap.name || "Coleção não disponível",
-          slug: collectionFromMap.slug || "",
+        collection: collection ? {
+          id: collection.id || "",
+          name: collection.name || "Coleção não disponível",
+          slug: collection.slug || "",
         } : null,
 
         amount: 0,
@@ -167,9 +168,12 @@ export function transformDeliveries(
 // Transformar Compras Avulsas
 // ============================================================================
 
-export function transformPurchases(purchases: PurchaseRow[]): UnifiedOrder[] {
+export function transformPurchases(
+  purchases: PurchaseRow[],
+  profilesMap?: Map<string, ProfileSummary>
+): UnifiedOrder[] {
   return purchases.map((purchase) => {
-    const profile = purchase.profiles || {};
+    const profile = profilesMap?.get(purchase.user_id) || purchase.profiles || null;
     const collection = purchase.collections;
 
     return {
@@ -188,7 +192,7 @@ export function transformPurchases(purchases: PurchaseRow[]): UnifiedOrder[] {
       collection: collection ? {
         id: collection.id,
         name: collection.name,
-        slug: collection.slug,
+        slug: collection.slug || "",
       } : null,
 
       amount: purchase.amount || 0,
@@ -203,7 +207,7 @@ export function transformPurchases(purchases: PurchaseRow[]): UnifiedOrder[] {
         priceBalance: purchase.balance_amount || 0,
         priceFull: purchase.amount || 0,
         depositPaidAt: null,
-        balancePaidAt: purchase.paid_amount > 0 ? purchase.updated_at : null,
+        balancePaidAt: (purchase.paid_amount ?? 0) > 0 ? purchase.updated_at : null,
         balanceDueDate: null,
         depositVoucherUrl: null,
         balanceVoucherUrl: null,

@@ -8,6 +8,10 @@
  */
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import {
+  calculateNthBusinessDayOfMonth,
+  getHolidayDatesForMonth,
+} from "./business-days.ts";
 
 /**
  * Delivery information for scheduling
@@ -263,9 +267,8 @@ async function getOrCreateCycle(
     shippingYear = nextMonth === 12 ? nextYear + 1 : nextYear;
   }
   
-  // Calculate shipping date (5th day of shipping month as placeholder)
-  // In production, this should use calculate_nth_business_day function
-  const shippingDate = new Date(shippingYear, shippingMonth - 1, 5);
+  const holidayDates = await getHolidayDatesForMonth(supabase, shippingYear, shippingMonth);
+  const shippingDate = calculateNthBusinessDayOfMonth(shippingYear, shippingMonth, 5, holidayDates);
   
   const { data: newCycle, error: createError } = await supabase
     .from('cycles')
@@ -273,14 +276,25 @@ async function getOrCreateCycle(
       cycle_number: cycleNumber,
       month,
       year,
+      name: `${year}-${String(month).padStart(2, '0')}-cycle-${cycleNumber}`,
       open_start: openStart.toISOString(),
       open_end: openEnd.toISOString(),
       production_start: productionStart.toISOString(),
       production_end: productionEnd.toISOString(),
+      sales_start_date: openStart.toISOString().split('T')[0],
+      sales_end_date: openEnd.toISOString().split('T')[0],
+      production_start_date: productionStart.toISOString().split('T')[0],
+      production_end_date: productionEnd.toISOString().split('T')[0],
       shipping_date: shippingDate.toISOString().split('T')[0], // Date only
+      shipping_start_date: shippingDate.toISOString().split('T')[0],
+      shipping_end_date: shippingDate.toISOString().split('T')[0],
       status: 'open',
-      capacity_max: 100, // Default capacity
+      capacity: 100,
+      used_capacity: 0,
+      capacity_max: 100,
       capacity_current: 0,
+      capacity_limit: 100,
+      reserved_capacity: 0,
     })
     .select('id')
     .single();

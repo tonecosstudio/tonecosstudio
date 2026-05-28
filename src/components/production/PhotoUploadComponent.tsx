@@ -18,7 +18,13 @@ import { toast } from "@/components/ui/use-toast";
 import { Upload, X, Loader2, Image as ImageIcon, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import imageCompression from "browser-image-compression";
-import { validateFileUpload, sanitizeFilename } from "@/lib/security/input-sanitizer";
+import {
+  ALLOWED_PRODUCTION_PHOTO_TYPES,
+  MAX_PRODUCTION_PHOTO_SIZE,
+  generateSecureToken,
+  validateFileUpload,
+  sanitizeFilename,
+} from "@/lib/security/input-sanitizer";
 import { useProductionPhotoStorage } from "@/hooks/admin/useProductionPhotoStorage";
 import { log } from "@/lib/logger";
 
@@ -75,13 +81,28 @@ interface PhotoItem {
 // Constants
 // ============================================================================
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB before compression
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 1, // Compress to max 1MB
   maxWidthOrHeight: 1920, // Max dimension
   useWebWorker: true,
   fileType: "image/jpeg" as const,
+};
+
+const createPreviewUrl = (file: File): string => {
+  if (typeof globalThis.URL?.createObjectURL === "function") {
+    return globalThis.URL.createObjectURL(file);
+  }
+
+  return "";
+};
+
+const revokePreviewUrl = (preview: string): void => {
+  if (
+    preview.startsWith("blob:") &&
+    typeof globalThis.URL?.revokeObjectURL === "function"
+  ) {
+    globalThis.URL.revokeObjectURL(preview);
+  }
 };
 
 // ============================================================================
@@ -136,7 +157,7 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     // Use centralized validation with dangerous file blocklist
-    return validateFileUpload(file, ALLOWED_TYPES as readonly string[], MAX_FILE_SIZE);
+    return validateFileUpload(file, ALLOWED_PRODUCTION_PHOTO_TYPES, MAX_PRODUCTION_PHOTO_SIZE);
   };
 
   // ============================================================================
@@ -160,11 +181,16 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
   const uploadToStorage = async (file: File): Promise<string> => {
     // Generate unique filename with sanitization
     const timestamp = Date.now();
-    const randomId = Math.random().toString(36).substring(2, 9);
+    const randomId = generateSecureToken(8);
     const sanitizedName = sanitizeFilename(file.name);
+    const safeFolder = folder
+      .split(/[/\\]+/)
+      .map((segment) => sanitizeFilename(segment))
+      .filter(Boolean)
+      .join("/") || "production-photos";
     const extension = sanitizedName.split(".").pop()?.toLowerCase() || "jpg";
     const fileName = `${timestamp}-${randomId}.${extension}`;
-    const filePath = `${folder}/${fileName}`;
+    const filePath = `${safeFolder}/${fileName}`;
 
     return uploadPhoto({
       bucket,
@@ -200,8 +226,8 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
     }
 
     // Create photo item with preview
-    const photoId = `new-${Date.now()}-${Math.random()}`;
-    const preview = URL.createObjectURL(file);
+    const photoId = `new-${Date.now()}-${crypto.randomUUID()}`;
+    const preview = createPreviewUrl(file);
 
     const newPhoto: PhotoItem = {
       id: photoId,
@@ -338,10 +364,7 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
     const photo = photos.find((p) => p.id === photoId);
     if (!photo) return;
 
-    // Revoke preview URL if it's a blob
-    if (photo.preview.startsWith("blob:")) {
-      URL.revokeObjectURL(photo.preview);
-    }
+    revokePreviewUrl(photo.preview);
 
     // Remove from state
     setPhotos((prev) => prev.filter((p) => p.id !== photoId));
@@ -524,7 +547,7 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept={ALLOWED_TYPES.join(",")}
+            accept={ALLOWED_PRODUCTION_PHOTO_TYPES.join(",")}
             multiple
             onChange={handleFileSelect}
             disabled={disabled || uploadingCount > 0}
@@ -539,8 +562,8 @@ export const PhotoUploadComponent: React.FC<PhotoUploadComponentProps> = ({
               Arraste fotos aqui ou clique para selecionar
             </p>
             <p className="text-xs text-muted-foreground">
-              {ALLOWED_TYPES.map((t) => t.split("/")[1].toUpperCase()).join(", ")} • Máximo{" "}
-              {MAX_FILE_SIZE / (1024 * 1024)}MB
+              {ALLOWED_PRODUCTION_PHOTO_TYPES.map((t) => t.split("/")[1].toUpperCase()).join(", ")} • Máximo{" "}
+              {MAX_PRODUCTION_PHOTO_SIZE / (1024 * 1024)}MB
             </p>
             {uploadingCount > 0 && (
               <p className="text-xs text-muted-foreground mt-2">

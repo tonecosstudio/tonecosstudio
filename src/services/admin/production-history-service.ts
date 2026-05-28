@@ -10,7 +10,19 @@ export interface ProductionHistoryEntry {
   user_email: string;
 }
 
-type ProductionHistoryRow = Omit<ProductionHistoryEntry, "user_email">;
+type ProductionQueueOrderRef = {
+  order_id: string;
+  order_type: string;
+};
+
+type ProductionHistoryRow = {
+  id: string;
+  created_at: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  changed_by_name: string | null;
+};
 
 type UserProfileEmailRow = {
   id: string;
@@ -20,10 +32,22 @@ type UserProfileEmailRow = {
 export async function fetchProductionHistory(
   productionQueueId: string
 ): Promise<ProductionHistoryEntry[]> {
+  const { data: productionItem, error: productionItemError } = await supabase
+    .from("production_queue")
+    .select("order_id, order_type")
+    .eq("id", productionQueueId)
+    .maybeSingle();
+
+  if (productionItemError) throw productionItemError;
+  if (!productionItem) return [];
+
+  const orderRef = productionItem as ProductionQueueOrderRef;
+
   const { data, error } = await supabase
-    .from("production_queue_history")
-    .select("id, created_at, action, old_value, new_value, changed_by")
-    .eq("production_queue_id", productionQueueId)
+    .from("order_status_history")
+    .select("id, created_at, old_status, new_status, changed_by, changed_by_name")
+    .eq("order_id", orderRef.order_id)
+    .eq("order_type", orderRef.order_type)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -50,9 +74,14 @@ export async function fetchProductionHistory(
   }
 
   return entries.map((entry) => ({
-    ...entry,
+    id: entry.id,
+    created_at: entry.created_at,
+    action: "status_change",
+    old_value: entry.old_status,
+    new_value: entry.new_status,
+    changed_by: entry.changed_by,
     user_email: entry.changed_by
-      ? userEmailById.get(entry.changed_by) ?? "Usuario desconhecido"
+      ? entry.changed_by_name ?? userEmailById.get(entry.changed_by) ?? entry.changed_by
       : "Sistema",
   }));
 }

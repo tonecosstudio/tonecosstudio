@@ -37,6 +37,7 @@ import { SendMessageForm } from "@/components/groups/SendMessageForm";
 import { GroupAnalytics } from "@/components/groups/GroupAnalytics";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useAdminGroupServices } from "@/hooks/admin/useAdminGroupServices";
+import { ADMIN_ROUTES, adminGroupDetailsPath } from "@/config/routes";
 
 /**
  * AdminGroupDetailsPage - Three-column layout for group management
@@ -95,7 +96,7 @@ export default function AdminGroupDetailsPage() {
     onSuccess: () => {
       toast.success("Grupo deletado com sucesso");
       queryClient.invalidateQueries({ queryKey: ["admin-groups"] });
-      navigate("/admin/grupos");
+      navigate(`${ADMIN_ROUTES.communication}?tab=groups`);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Erro ao deletar grupo");
@@ -184,7 +185,7 @@ export default function AdminGroupDetailsPage() {
         <div className="border-b bg-card">
           <div className="p-4">
             <div className="flex items-center gap-3 mb-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/admin/grupos")}>
+              <Button variant="ghost" size="icon" onClick={() => navigate(`${ADMIN_ROUTES.communication}?tab=groups`)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex-1 min-w-0">
@@ -305,7 +306,7 @@ export default function AdminGroupDetailsPage() {
           <div className="flex-1 overflow-y-auto">
             <GroupListSidebar
               activeGroupId={groupId}
-              onGroupSelect={(id) => navigate(`/admin/grupos/${id}`)}
+              onGroupSelect={(id) => navigate(adminGroupDetailsPath(id))}
             />
           </div>
         </div>

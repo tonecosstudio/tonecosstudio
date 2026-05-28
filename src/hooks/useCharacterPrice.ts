@@ -35,6 +35,43 @@ export interface CharacterPriceResponse {
   has_multiplier: boolean;
 }
 
+type RpcError = { message: string } | null;
+
+type CharacterPricingRow = {
+  id: string;
+  name: string;
+  collection_id: string | null;
+  price_multiplier: number | null;
+};
+
+interface CharacterPriceSupabaseClient {
+  rpc(functionName: "get_character_price", args: {
+    p_character_id: string;
+    p_user_id: string | null;
+  }): PromiseLike<{ data: number | null; error: RpcError }>;
+  rpc(functionName: "get_collection_price", args: {
+    p_collection_id: string;
+    p_user_id: string | null;
+  }): PromiseLike<{ data: number | null; error: RpcError }>;
+  from(table: "characters"): {
+    select(columns: string): {
+      eq(column: "id", value: string): {
+        single(): PromiseLike<{ data: CharacterPricingRow | null; error: RpcError }>;
+      };
+    };
+  };
+}
+
+const characterPriceSupabase = supabase as unknown as CharacterPriceSupabaseClient;
+
+function requirePriceInCoins(value: number | null, context: string): PriceInCoins {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Preco do personagem indisponivel: ${context}`);
+  }
+
+  return value;
+}
+
 // =====================================================
 // QUERY KEYS
 // =====================================================
@@ -71,7 +108,7 @@ export function useCharacterPrice(params: CharacterPriceParams) {
   return useQuery({
     queryKey: characterPriceKeys.detail(characterId, userId),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_character_price", {
+      const { data, error } = await characterPriceSupabase.rpc("get_character_price", {
         p_character_id: characterId,
         p_user_id: userId || null,
       });
@@ -81,7 +118,7 @@ export function useCharacterPrice(params: CharacterPriceParams) {
       }
 
       // A função RPC retorna um INTEGER (preço final em COINS)
-      return data as PriceInCoins;
+      return requirePriceInCoins(data, characterId);
     },
     enabled: !!characterId,
     staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)
@@ -100,7 +137,7 @@ export function useCharacterPrices(characterIds: string[], userId?: string | nul
     queryFn: async () => {
       // Buscar preços em paralelo
       const pricePromises = characterIds.map(async (characterId) => {
-        const { data, error } = await supabase.rpc("get_character_price", {
+        const { data, error } = await characterPriceSupabase.rpc("get_character_price", {
           p_character_id: characterId,
           p_user_id: userId || null,
         });
@@ -110,7 +147,7 @@ export function useCharacterPrices(characterIds: string[], userId?: string | nul
           return { characterId, price: null, error: error.message };
         }
 
-        return { characterId, price: data as PriceInCoins, error: null };
+        return { characterId, price: requirePriceInCoins(data, characterId), error: null };
       });
 
       const results = await Promise.all(pricePromises);
@@ -137,7 +174,7 @@ export function useCharacterPriceDetails(characterId: string, userId?: string | 
     queryKey: [...characterPriceKeys.all, "details", characterId, userId || "anonymous"],
     queryFn: async () => {
       // Buscar dados do personagem
-      const { data: character, error: charError } = await supabase
+      const { data: character, error: charError } = await characterPriceSupabase
         .from("characters")
         .select("id, name, price_multiplier, collection_id")
         .eq("id", characterId)
@@ -147,14 +184,22 @@ export function useCharacterPriceDetails(characterId: string, userId?: string | 
         throw new Error(`Erro ao buscar personagem: ${charError.message}`);
       }
 
+      if (!character?.collection_id) {
+        throw new Error("Personagem sem colecao associada");
+      }
+
       // Buscar preço da coleção
-      const { data: collectionPrice, error: priceError } = await supabase.rpc("get_collection_price", {
+      const { data: collectionPrice, error: priceError } = await characterPriceSupabase.rpc("get_collection_price", {
         p_collection_id: character.collection_id,
         p_user_id: userId || null,
       });
 
       if (priceError) {
         throw new Error(`Erro ao calcular preço da coleção: ${priceError.message}`);
+      }
+
+      if (collectionPrice === null) {
+        throw new Error("Preco da colecao nao retornado pelo banco");
       }
 
       // Calcular preço final
@@ -185,7 +230,7 @@ export function useHasCharacterMultiplier(characterId: string) {
   return useQuery({
     queryKey: ["character-multiplier-status", characterId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await characterPriceSupabase
         .from("characters")
         .select("price_multiplier")
         .eq("id", characterId)
@@ -196,7 +241,7 @@ export function useHasCharacterMultiplier(characterId: string) {
         return false;
       }
 
-      return data.price_multiplier !== null && data.price_multiplier !== 1.0;
+      return data?.price_multiplier !== null && data?.price_multiplier !== 1.0;
     },
     enabled: !!characterId,
     staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)

@@ -22,6 +22,8 @@ import { useProductionInfo, useCharacterChoice } from '@/hooks/admin/useProducti
 import type { UnifiedOrder } from '@/types/admin/orders';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ADMIN_ROUTES } from '@/config/routes';
+import { Link } from 'react-router-dom';
 
 interface ProductionInfoSectionProps {
   order: UnifiedOrder;
@@ -29,20 +31,23 @@ interface ProductionInfoSectionProps {
 
 export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
   // Determinar se deve buscar informações de produção
-  const shouldFetchProduction = order.type === 'subscription_delivery' || order.type === 'standalone_purchase';
+  const productionOrderType =
+    order.type === 'subscription_delivery' || order.type === 'standalone_purchase'
+      ? order.type
+      : null;
   
   const { data: productionInfo, isLoading: isLoadingProduction } = useProductionInfo(
-    shouldFetchProduction ? order.id : null,
-    shouldFetchProduction ? order.type : null
+    productionOrderType ? order.id : null,
+    productionOrderType
   );
 
   const { data: characterChoice } = useCharacterChoice(
-    shouldFetchProduction ? order.id : null,
-    shouldFetchProduction ? order.type : null
+    productionOrderType ? order.id : null,
+    productionOrderType
   );
 
   // Apenas mostrar para pedidos elegíveis
-  if (!shouldFetchProduction) {
+  if (!productionOrderType) {
     return null;
   }
 
@@ -50,11 +55,6 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
   if (!isLoadingProduction && !productionInfo) {
     return null;
   }
-
-  const handleViewProductionDashboard = () => {
-    // Abrir dashboard de produção em nova aba com filtro para este pedido
-    window.open(`/admin/producao?order=${order.id}`, '_blank', 'noopener,noreferrer');
-  };
 
   return (
     <>
@@ -138,10 +138,16 @@ export function ProductionInfoSection({ order }: ProductionInfoSectionProps) {
                 variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={handleViewProductionDashboard}
+                asChild
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Ver no Dashboard de Produção
+                <Link
+                  to={`${ADMIN_ROUTES.production}?order=${encodeURIComponent(order.id)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Ver no Dashboard de Produção
+                </Link>
               </Button>
             </div>
           </div>

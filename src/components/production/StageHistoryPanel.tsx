@@ -20,6 +20,7 @@ import {
   getProductionStageColor,
   getProductionStageLabel,
 } from "./production-stage-display";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 // ============================================================================
 // Types
@@ -27,6 +28,14 @@ import {
 
 interface StageHistoryPanelProps {
   productionQueueId: string;
+}
+
+function getSafePhotoUrl(url: string): string | null {
+  try {
+    return sanitizeURL(url, ["http", "https"]);
+  } catch {
+    return null;
+  }
 }
 
 // ============================================================================
@@ -296,21 +305,27 @@ export const StageHistoryPanel: React.FC<StageHistoryPanelProps> = ({
                           </p>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                          {stage.photos.map((photoUrl, photoIndex) => (
+                          {stage.photos.map((photoUrl, photoIndex) => {
+                            const safePhotoUrl = getSafePhotoUrl(photoUrl);
+
+                            if (!safePhotoUrl) return null;
+
+                            return (
                             <a
                               key={photoIndex}
-                              href={photoUrl}
+                              href={safePhotoUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="relative aspect-square rounded-md overflow-hidden border border-border hover:border-primary transition-colors"
                             >
                               <img
-                                src={photoUrl}
+                                src={safePhotoUrl}
                                 alt={`Foto ${photoIndex + 1} do estágio ${stageLabel}`}
                                 className="w-full h-full object-cover"
                               />
                             </a>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}

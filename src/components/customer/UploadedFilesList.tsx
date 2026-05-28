@@ -28,6 +28,8 @@ import {
 import { cn } from "@/lib/utils";
 import { log } from "@/lib/logger";
 import { fileUploadService } from "@/lib/file-upload-service";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
+import { openSafeExternalUrl } from "@/lib/security/safe-open";
 import type { PaymentFile } from "@/types/manual-payment";
 
 interface UploadedFilesListProps {
@@ -63,12 +65,18 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
     for (const file of filesToProcess) {
       try {
         // Generate signed URL for the main file
-        const signedUrl = await fileUploadService.getSignedUrl(file.file_path);
+        const signedUrl = await fileUploadService.getSignedUrl(file.file_path, undefined, {
+          paymentId,
+          requireOwner: true,
+        });
 
         // Generate thumbnail URL if available
         let thumbnailUrl: string | undefined;
         if (file.thumbnail_path) {
-          thumbnailUrl = await fileUploadService.getSignedUrl(file.thumbnail_path);
+          thumbnailUrl = await fileUploadService.getSignedUrl(file.thumbnail_path, undefined, {
+            paymentId,
+            requireOwner: true,
+          });
         }
 
         setFiles((prev) =>
@@ -81,7 +89,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
         setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, isLoadingUrl: false } : f)));
       }
     }
-  }, []);
+  }, [paymentId]);
 
   const loadFiles = useCallback(async () => {
     if (!paymentId) return;
@@ -163,6 +171,46 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
 
   const isPDF = (fileType: string): boolean => {
     return fileType === "application/pdf";
+  };
+
+  const getSafeFileUrl = (url: string | undefined): string | null => {
+    if (!url) return null;
+
+    try {
+      return sanitizeURL(url, ["http", "https"]);
+    } catch (err) {
+      log.error("Blocked unsafe payment file URL", { error: err, paymentId });
+      return null;
+    }
+  };
+
+  const openFileUrl = (url: string | undefined) => {
+    if (!url) {
+      setError("Invalid file URL");
+      return;
+    }
+
+    try {
+      openSafeExternalUrl(url);
+    } catch (err) {
+      log.error("Blocked unsafe payment file URL", { error: err, paymentId });
+      setError("Invalid file URL");
+    }
+  };
+
+  const downloadFile = (file: FileWithUrl) => {
+    const safeUrl = getSafeFileUrl(file.signedUrl);
+    if (!safeUrl) {
+      setError("Invalid file URL");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = safeUrl;
+    link.download = file.file_name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getFileIcon = (fileType: string) => {
@@ -313,7 +361,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                             className="h-8 w-8"
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(file.signedUrl, "_blank");
+                              openFileUrl(file.signedUrl);
                             }}
                             title="View full size"
                           >
@@ -329,12 +377,7 @@ export const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
                             className="h-8 w-8"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const link = document.createElement("a");
-                              link.href = file.signedUrl!;
-                              link.download = file.file_name;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                              downloadFile(file);
                             }}
                             title="Download PDF"
                           >

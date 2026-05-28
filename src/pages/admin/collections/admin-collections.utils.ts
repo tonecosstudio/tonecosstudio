@@ -1,3 +1,10 @@
 export function slugifyCollectionName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, "-");
+  return name
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
 }

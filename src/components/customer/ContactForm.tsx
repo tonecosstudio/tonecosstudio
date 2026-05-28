@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useContactFormSubmission } from "@/hooks/customer/useContactFormSubmission";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { contactFormSchema } from "@/lib/validations/support";
+import { PUBLIC_ROUTES, loginReturnToPath, profileSectionPath } from "@/config/routes";
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
@@ -37,11 +38,11 @@ export function ContactForm() {
     onRequiresAuth: () => {
       setError("Para entrar em contato, por favor faca login ou crie uma conta.");
       setTimeout(() => {
-        navigate("/login?returnTo=/contato");
+        navigate(loginReturnToPath(PUBLIC_ROUTES.contact));
       }, 2000);
     },
     onSuccess: () => {
-      navigate("/perfil?section=support");
+      navigate(profileSectionPath("support"));
     },
     onError: setError,
   });

@@ -7,7 +7,6 @@
  * Displays error, warning, and info messages with appropriate styling.
  */
 
-import React from "react";
 import { AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 

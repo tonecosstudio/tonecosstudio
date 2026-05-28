@@ -10,14 +10,17 @@ export interface AdminCoinTransactionRow {
   id: string;
   amount: number;
   transaction_type: string;
+  description: string;
   user_id: string;
   created_at: string;
 }
 
 export interface AdminCoinPackageRow {
   id: string;
+  name: string;
   amount: number;
-  price_brl: number | null;
+  bonus: number;
+  price_brl: number;
   is_active: boolean;
 }
 
@@ -40,6 +43,7 @@ export interface AdminCoinsPricingMultiplier {
   id: string;
   user_context: string;
   multiplier: number;
+  description: string | null;
   is_active: boolean;
 }
 
@@ -61,8 +65,11 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
 
   ((allTransactions as CoinTransactionSummaryRow[] | null) ?? []).forEach((transaction) => {
     userSet.add(transaction.user_id);
-    if (transaction.transaction_type === "credit") totalEarned += transaction.amount;
-    else totalSpent += transaction.amount;
+    if (transaction.amount >= 0) {
+      totalEarned += transaction.amount;
+    } else {
+      totalSpent += Math.abs(transaction.amount);
+    }
   });
 
   const { data: transactions, error: recentTransactionsError } = await adminCoinsGateway
@@ -84,7 +91,7 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
   const { count: purchaseCount, error: purchasesError } = await adminCoinsGateway
     .from("coin_transactions")
     .select("*", { count: "exact", head: true })
-    .eq("transaction_type", "debit")
+    .eq("transaction_type", "spend")
     .eq("reference_type", "character_purchase");
 
   if (purchasesError) throw purchasesError;

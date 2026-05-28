@@ -9,6 +9,8 @@
  * 2. Valores padrão definidos aqui
  */
 
+import { APP_ROUTES } from "./routes";
+
 // ============================================================================
 // 🌐 CONFIGURAÇÕES DE AMBIENTE
 // ============================================================================
@@ -41,7 +43,18 @@ export const PRICING = {
 
   // Descontos
   PIX_DISCOUNT_PERCENTAGE: Number(import.meta.env.VITE_PIX_DISCOUNT_PERCENTAGE) || 5,
-  PIX_DISCOUNT_MULTIPLIER: 0.95, // 5% de desconto = 0.95
+  get PIX_DISCOUNT_MULTIPLIER() {
+    return 1 - this.PIX_DISCOUNT_PERCENTAGE / 100;
+  },
+
+  // Coins
+  COIN_EXCHANGE_REFERENCE_COINS:
+    Math.max(1, Number(import.meta.env.VITE_COIN_EXCHANGE_REFERENCE_COINS) || 100),
+  DEFAULT_COINS_PER_PIECE: Number(import.meta.env.VITE_DEFAULT_COINS_PER_PIECE) || 100,
+  COIN_PREVIEW_AMOUNT: Number(import.meta.env.VITE_COIN_PREVIEW_AMOUNT) || 1000,
+  get DEFAULT_COIN_UNIT_VALUE() {
+    return this.DEFAULT_PRICE_FULL / this.COIN_EXCHANGE_REFERENCE_COINS;
+  },
 
   // Parcelamento
   MAX_INSTALLMENTS_NO_INTEREST: Number(import.meta.env.VITE_MAX_INSTALLMENTS_NO_INTEREST) || 6,
@@ -78,6 +91,16 @@ export const BATCH = {
 
   // Limite de ciclos futuros a calcular
   FUTURE_BATCHES_COUNT: Number(import.meta.env.VITE_FUTURE_BATCHES_COUNT) || 12,
+
+  // Fallbacks de producao quando system_settings ainda nao foi carregado
+  PRODUCTION_DAYS_MIN: Number(import.meta.env.VITE_PRODUCTION_DAYS_MIN) || 15,
+  PRODUCTION_DAYS_MAX: Number(import.meta.env.VITE_PRODUCTION_DAYS_MAX) || 20,
+  SALES_DURATION_DAYS: Number(import.meta.env.VITE_SALES_DURATION_DAYS) || 30,
+  DELIVERY_INTERVAL_DAYS: Number(import.meta.env.VITE_DELIVERY_INTERVAL_DAYS) || 90,
+  CHARACTER_CHOICE_DAYS: Number(import.meta.env.VITE_CHARACTER_CHOICE_DAYS) || 7,
+  BALANCE_PAYMENT_DAYS: Number(import.meta.env.VITE_BALANCE_PAYMENT_DAYS) || 5,
+  MONTHLY_PRODUCTION_LIMIT: Number(import.meta.env.VITE_MONTHLY_PRODUCTION_LIMIT) || 20,
+  SALES_OPEN_DAY: Number(import.meta.env.VITE_SALES_OPEN_DAY) || 15,
 } as const;
 
 // ============================================================================
@@ -93,9 +116,18 @@ export const CONTACT = {
 
   // Website
   WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL || "https://ordax.com.br",
+  COMPANY_LOGO_URL: import.meta.env.VITE_COMPANY_LOGO_URL || "/logo.png",
+  FACEBOOK_URL: import.meta.env.VITE_FACEBOOK_URL || "https://facebook.com/ordax",
+  INSTAGRAM_URL: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/ordax",
+  X_URL: import.meta.env.VITE_X_URL || "https://x.com/ordax",
+  YOUTUBE_URL: import.meta.env.VITE_YOUTUBE_URL || "https://youtube.com/@ordax",
+  BUSINESS_HOURS: import.meta.env.VITE_BUSINESS_HOURS || "Segunda a Sexta, 9h às 18h",
 
   // Empresa
   COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || "Tonecos Studios",
+  LEGAL_NAME: import.meta.env.VITE_LEGAL_NAME || "Tonecos Studios LTDA",
+  CNPJ_PLACEHOLDER: import.meta.env.VITE_CNPJ_PLACEHOLDER || "00.000.000/0000-00",
+  PHONE_PLACEHOLDER: import.meta.env.VITE_PHONE_PLACEHOLDER || "+55 (11) 9999-9999",
   COMPANY_ADDRESS: import.meta.env.VITE_COMPANY_ADDRESS || "São Paulo, Brasil",
 } as const;
 
@@ -203,32 +235,7 @@ export const LOCALE = {
 // 🔗 ROTAS E URLS
 // ============================================================================
 
-export const ROUTES = {
-  // Públicas
-  HOME: "/",
-  LOGIN: "/login",
-  COLLECTIONS: "/colecoes",
-  PLANS: "/planos",
-  ABOUT: "/sobre",
-  CONTACT: "/contato",
-  TERMS: "/termos",
-  PRIVACY: "/privacidade",
-
-  // Autenticadas
-  DASHBOARD: "/dashboard",
-  PROFILE: "/perfil",
-  MY_PAYMENTS: "/meus-pagamentos",
-  MY_SUBSCRIPTIONS: "/minhas-assinaturas",
-  SUPPORT: "/suporte",
-
-  // Admin
-  ADMIN: "/admin",
-  ADMIN_COLLECTIONS: "/admin/colecoes",
-  ADMIN_PLANS: "/admin/planos",
-  ADMIN_PRICING: "/admin/precos",
-  ADMIN_PRODUCTION: "/admin/producao",
-  ADMIN_PAYMENTS: "/admin/pagamentos",
-} as const;
+export const ROUTES = APP_ROUTES;
 
 // ============================================================================
 // 🎨 CONFIGURAÇÕES DE TEMA

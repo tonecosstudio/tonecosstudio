@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { LazyImage } from '../LazyImage';
 
 describe('LazyImage Component', () => {
@@ -40,7 +40,7 @@ describe('LazyImage Component', () => {
     expect(img).toHaveClass('opacity-0');
 
     // Simulate image load
-    img.onload?.(new Event('load'));
+    fireEvent.load(img);
 
     // Should transition to opacity-100
     await waitFor(() => {

@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CharacterPricesReference } from "@/components/admin/payments/CharacterPricesReference";
 import { PurchasingPowerCalculator } from "@/components/admin/email/PurchasingPowerCalculator";
+import { PRICING } from "@/config/constants";
 interface PlanConfig {
   id?: string;
   plan_type: 'avulso' | 'bimestral' | 'trimestral' | 'semestral' | 'anual';
@@ -56,25 +57,35 @@ interface PlanConfig {
   is_active: boolean;
 }
 
+interface PlanTypeMeta {
+  key: PlanConfig["plan_type"];
+  label: string;
+  months: number;
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+}
+
 const PLAN_TYPES = [
   { key: 'avulso', label: 'Compra Avulsa', months: 0, icon: Package, color: 'bg-gray-500' },
   { key: 'bimestral', label: 'Bimestral', months: 2, icon: Calendar, color: 'bg-blue-500' },
   { key: 'trimestral', label: 'Trimestral', months: 3, icon: Calendar, color: 'bg-green-500' },
   { key: 'semestral', label: 'Semestral', months: 6, icon: Calendar, color: 'bg-purple-500' },
   { key: 'anual', label: 'Anual', months: 12, icon: Calendar, color: 'bg-orange-500' },
-];
+] satisfies readonly PlanTypeMeta[];
 
 // Coin Exchange Rate Card Component
 function CoinExchangeRateCard() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [reaisAmount, setReaisAmount] = useState(500);
-  const [coinsAmount, setCoinsAmount] = useState(100);
+  const [reaisAmount, setReaisAmount] = useState(PRICING.DEFAULT_PRICE_FULL);
+  const [coinsAmount, setCoinsAmount] = useState(PRICING.COIN_EXCHANGE_REFERENCE_COINS);
 
   const exchangeRateQuery = useCoinExchangeRate();
 
   const rate = exchangeRateQuery.data;
-  const coinUnitValue = rate ? (rate.reais_amount / rate.coins_amount) : 5;
+  const coinUnitValue = rate
+    ? rate.reais_amount / Math.max(1, rate.coins_amount)
+    : PRICING.DEFAULT_COIN_UNIT_VALUE;
 
   // Update exchange rate - disabled since we derive from price_categories
   const handleExchangeRateSave = () => {
@@ -113,8 +124,8 @@ function CoinExchangeRateCard() {
             size="lg"
             onClick={() => {
               if (isEditing) {
-                setReaisAmount(rate?.reais_amount || 500);
-                setCoinsAmount(rate?.coins_amount || 100);
+                setReaisAmount(rate?.reais_amount ?? PRICING.DEFAULT_PRICE_FULL);
+                setCoinsAmount(rate?.coins_amount ?? PRICING.COIN_EXCHANGE_REFERENCE_COINS);
               }
               setIsEditing(!isEditing);
             }}
@@ -166,8 +177,8 @@ function CoinExchangeRateCard() {
                 variant="outline"
                 size="lg"
                 onClick={() => {
-                  setReaisAmount(rate?.reais_amount || 500);
-                  setCoinsAmount(rate?.coins_amount || 100);
+                  setReaisAmount(rate?.reais_amount ?? PRICING.DEFAULT_PRICE_FULL);
+                  setCoinsAmount(rate?.coins_amount ?? PRICING.COIN_EXCHANGE_REFERENCE_COINS);
                   setIsEditing(false);
                 }}
               >
@@ -187,10 +198,10 @@ function CoinExchangeRateCard() {
             <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border-2 border-yellow-500/30 shadow-md hover:shadow-lg transition-shadow">
               <p className="text-sm text-muted-foreground mb-2 font-semibold">Equivalência</p>
               <p className="text-4xl font-bold text-yellow-600">
-                R$ {rate?.reais_amount.toFixed(2) || '500.00'}
+                R$ {(rate?.reais_amount ?? PRICING.DEFAULT_PRICE_FULL).toFixed(2)}
               </p>
               <p className="text-xl text-muted-foreground mt-2">
-                = {rate?.coins_amount || 100} coins
+                = {rate?.coins_amount ?? PRICING.COIN_EXCHANGE_REFERENCE_COINS} coins
               </p>
             </div>
 
@@ -207,10 +218,10 @@ function CoinExchangeRateCard() {
             <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border-2 border-green-500/30 shadow-md hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
               <p className="text-sm text-muted-foreground mb-2 font-semibold">Exemplo</p>
               <p className="text-2xl font-semibold text-green-600">
-                1.000 coins
+                {PRICING.COIN_PREVIEW_AMOUNT.toLocaleString("pt-BR")} coins
               </p>
               <p className="text-xl text-muted-foreground mt-2">
-                = R$ {(1000 * coinUnitValue).toFixed(2)}
+                = R$ {(PRICING.COIN_PREVIEW_AMOUNT * coinUnitValue).toFixed(2)}
               </p>
             </div>
           </div>
@@ -284,7 +295,7 @@ export default function AdminPlansConfiguration() {
               </AlertDescription>
             </Alert>
 
-            {/* Character Prices Reference - INTEGRAÇÃO COM /admin/coins */}
+            {/* Character Prices Reference - integração com o hub de créditos */}
             <CharacterPricesReference />
 
             {/* Coin Exchange Rate */}
@@ -372,25 +383,16 @@ export default function AdminPlansConfiguration() {
           </TabsContent>
 
         {/* Tab 2: Preços de Coleções - REMOVIDO */}
-        {/* Movido para /admin/coins → Aba "Preços Contextuais" */}
+        {/* Movido para o hub de créditos, aba "Preços Contextuais" */}
         {/* Esta funcionalidade pertence ao SSOT de coins, não de planos */}
       </Tabs>
     </div>
   );
 }
 
-// Plan Configuration Card Component
-interface PlanTypeMeta {
-  key: PlanConfig["plan_type"];
-  label: string;
-  months: number;
-  icon: ComponentType<{ className?: string }>;
-  color: string;
-}
-
-interface ExistingPlanLike extends Partial<PricingTierPlan> {
+interface ExistingPlanLike extends Omit<Partial<PricingTierPlan>, "plan_type"> {
   id?: string;
-  plan_type?: string | null;
+  plan_type?: PlanConfig["plan_type"] | null;
   bonus_type?: "pieces" | "coins" | null;
 }
 
@@ -404,6 +406,10 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const saveMutation = useSavePricingTierPlan();
+  const exchangeRateQuery = useCoinExchangeRate();
+  const coinUnitValue = exchangeRateQuery.data
+    ? exchangeRateQuery.data.reais_amount / Math.max(1, exchangeRateQuery.data.coins_amount)
+    : PRICING.DEFAULT_COIN_UNIT_VALUE;
 
   const [formData, setFormData] = useState<PlanConfig>({
     id: existingPlan?.id,
@@ -419,14 +425,14 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
     total_pieces: 0,
 
     // Coins
-    coins_per_piece: 100, // Padrão
-    coins_per_bonus_piece: 100, // Padrão
+    coins_per_piece: PRICING.DEFAULT_COINS_PER_PIECE,
+    coins_per_bonus_piece: PRICING.DEFAULT_COINS_PER_PIECE,
     base_credits: existingPlan?.base_credits || 0,
     bonus_credits: existingPlan?.bonus_credits || 0,
     total_credits: 0,
 
     coin_unit_cost: 0,
-    deposit_amount: existingPlan?.deposit_amount || (planType.key === 'avulso' ? 100 : 0),
+    deposit_amount: existingPlan?.deposit_amount ?? (planType.key === 'avulso' ? PRICING.DEFAULT_DEPOSIT_AMOUNT : 0),
     is_active: existingPlan?.is_active ?? false,
   });
 
@@ -479,14 +485,17 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
     saveMutation.mutate(
       {
         id: existingPlan?.id,
+        planType: planType.key,
         data: {
           name: formData.name,
           display_name: formData.name,
-          price_coins: Math.round(totalPrice / 5),
+          price_coins: Math.round(totalPrice / coinUnitValue),
           price_brl: totalPrice,
           price_full: totalPrice,
-          price_pix: totalPrice * 0.95,
+          price_pix: totalPrice * PRICING.PIX_DISCOUNT_MULTIPLIER,
           deposit_amount: formData.deposit_amount || 0,
+          coins_included: formData.total_credits,
+          deliveries_total: formData.total_pieces,
           is_active: formData.is_active,
           description: `Plano ${planType.label}`,
         },
@@ -624,7 +633,7 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
                       updateCalculations({ deposit_amount: parseFloat(e.target.value) || 0 });
                       if (!isEditing) setIsEditing(true);
                     }}
-                    placeholder="100.00"
+                    placeholder={PRICING.DEFAULT_DEPOSIT_AMOUNT.toFixed(2)}
                     className="mt-2"
                   />
                 </div>
@@ -798,7 +807,7 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
                     updateCalculations({ coins_per_piece: parseInt(e.target.value) || 0 });
                     if (!isEditing) setIsEditing(true);
                   }}
-                  placeholder="100"
+                  placeholder={String(PRICING.DEFAULT_COINS_PER_PIECE)}
                   className="mt-2"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -819,7 +828,7 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
                       updateCalculations({ coins_per_bonus_piece: parseInt(e.target.value) || 0 });
                       if (!isEditing) setIsEditing(true);
                     }}
-                    placeholder="100"
+                    placeholder={String(PRICING.DEFAULT_COINS_PER_PIECE)}
                     className="mt-2"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -948,7 +957,7 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
               </div>
             </div>
 
-            {/* Purchasing Power Calculator - INTEGRAÇÃO COM /admin/coins */}
+            {/* Purchasing Power Calculator - integração com o hub de créditos */}
             {formData.total_credits > 0 && (
               <PurchasingPowerCalculator
                 totalCoins={formData.total_credits}
@@ -980,7 +989,7 @@ function PlanConfigCard({ planType, existingPlan, onUpdate }: PlanConfigCardProp
                   total_credits: 0,
                   total_price: 0,
                   coin_unit_cost: 0,
-                  deposit_amount: existingPlan?.deposit_amount || (planType.key === 'avulso' ? 100 : 0),
+                  deposit_amount: existingPlan?.deposit_amount ?? (planType.key === 'avulso' ? PRICING.DEFAULT_DEPOSIT_AMOUNT : 0),
                   is_active: existingPlan?.is_active ?? false,
                 }));
               }}

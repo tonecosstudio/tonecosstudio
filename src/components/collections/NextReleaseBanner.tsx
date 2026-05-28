@@ -5,6 +5,7 @@ import { Calendar, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNextRelease } from "@/hooks/collections/useNextRelease";
+import { PUBLIC_ROUTES, collectionDetailsPath } from "@/config/routes";
 
 export function NextReleaseBanner() {
   const { data: nextRelease, isLoading } = useNextRelease();
@@ -109,8 +110,8 @@ export function NextReleaseBanner() {
                   <Link
                     to={
                       nextRelease.collection_slug
-                        ? `/colecoes/${nextRelease.collection_slug}`
-                        : "/colecoes"
+                        ? collectionDetailsPath(nextRelease.collection_slug)
+                        : PUBLIC_ROUTES.collections
                     }
                   >
                     <span className="flex flex-col items-center gap-1">

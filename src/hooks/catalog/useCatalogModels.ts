@@ -11,8 +11,11 @@ export function useCatalogModels(
   needle: string,
   page: number,
   filters: {
+    character: string;
     franchise: string;
     category: string;
+    sourceType: string;
+    variantType: string;
     tagsCSV: string;
     sort: CatalogSort;
   },
@@ -24,8 +27,11 @@ export function useCatalogModels(
         q: needle,
         page,
         pageSize: CATALOG_PAGE_SIZE,
+        character: filters.character,
         franchise: filters.franchise,
         category: filters.category,
+        sourceType: filters.sourceType,
+        variantType: filters.variantType,
         tagsCSV: filters.tagsCSV,
         sort: filters.sort,
       },

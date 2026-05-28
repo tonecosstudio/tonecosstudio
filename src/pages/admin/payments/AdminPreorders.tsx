@@ -24,6 +24,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
+import { PRICING } from "@/config/constants";
+import { adminOrdersPath } from "@/config/routes";
 
 export default function AdminPreorders() {
   const { toast } = useToast();
@@ -241,7 +243,7 @@ export default function AdminPreorders() {
                       </p>
                       <p className="text-sm text-muted-foreground mb-3">
                         {quote.quote_items?.length} item(ns):{" "}
-                        {quote.quote_items?.map((item) => item.models?.name).join(", ")}
+                        {quote.quote_items?.map((item) => item.name).filter(Boolean).join(", ")}
                       </p>
 
                       <div className="grid grid-cols-3 gap-4 text-sm">
@@ -266,7 +268,11 @@ export default function AdminPreorders() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/admin/orcamentos/${quote.id}`)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate(adminOrdersPath({ type: "quote", search: quote.id }))}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Ver
                       </Button>
@@ -274,7 +280,7 @@ export default function AdminPreorders() {
                       {quote.payment_status === "pending" && (
                         <SendPaymentLinkDialog
                           quoteId={quote.id}
-                          amount={quote.deposit_amount || 100}
+                          amount={quote.deposit_amount ?? PRICING.DEFAULT_DEPOSIT_AMOUNT}
                           paymentType="voucher"
                           customerName={quote.profiles?.full_name || "Cliente"}
                           customerEmail={quote.profiles?.email || ""}

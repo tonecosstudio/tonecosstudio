@@ -1,6 +1,8 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { createSupportConversationRpc } from "@/lib/services/supportConversationMutationsService";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 import type {
   Conversation,
   ConversationPriority,
@@ -62,6 +64,8 @@ function mapConversation(row: SupportConversationRow): Conversation {
 }
 
 export async function countUnreadCustomerSupportMessages(userId: string): Promise<number> {
+  await assertCurrentUserId(userId);
+
   const { data: conversations, error: conversationError } = await supabase
     .from("support_conversations")
     .select("id")
@@ -94,6 +98,8 @@ export async function countUnreadCustomerSupportMessages(userId: string): Promis
 }
 
 export async function listCustomerSupportConversations(userId: string): Promise<Conversation[]> {
+  await assertCurrentUserId(userId);
+
   const { data, error } = await supabase
     .from("support_conversations")
     .select("*")
@@ -108,21 +114,16 @@ export async function listCustomerSupportConversations(userId: string): Promise<
 }
 
 export async function createCustomerSupportConversation(userId: string): Promise<Conversation> {
-  const { data, error } = await supabase
-    .from("support_conversations")
-    .insert({
-      user_id: userId,
-      subject: "Nova Solicitação",
-      status: "new",
-    })
-    .select()
-    .single();
+  await assertCurrentUserId(userId);
 
-  if (error) {
-    throw error;
-  }
+  const conversation = await createSupportConversationRpc({
+    userId,
+    subject: "Nova solicitacao",
+    status: "new",
+    priority: "normal",
+  });
 
-  return mapConversation(data as SupportConversationRow);
+  return mapConversation(conversation as SupportConversationRow);
 }
 
 export function subscribeToCustomerChatUpdates(

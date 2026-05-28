@@ -5,7 +5,6 @@
  * Customers can opt-out of non-critical notifications.
  */
 
-import React from 'react';
 import { Bell, BellOff, Info, RotateCcw } from 'lucide-react';
 import { useCustomerNotificationPreferences } from '@/hooks/customer/useCustomerNotificationPreferences';
 import type { NotificationPreferences } from '@/types/notification-preferences';

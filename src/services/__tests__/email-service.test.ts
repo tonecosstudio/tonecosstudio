@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { EmailService } from '../email-service';
+import { supabase } from '@/integrations/supabase/client';
 
 describe('EmailService', () => {
   let emailService: EmailService;
 
   beforeEach(() => {
     emailService = new EmailService();
-    global.fetch = vi.fn();
+    vi.clearAllMocks();
+    (supabase.rpc as any).mockResolvedValue({ data: 'email-log-id', error: null });
+    (supabase.functions.invoke as any).mockResolvedValue({ data: { success: true }, error: null });
   });
 
   describe('Configuration', () => {
@@ -22,8 +25,7 @@ describe('EmailService', () => {
     it('should load configuration from environment', () => {
       const config = emailService.getConfig();
       
-      expect(config.provider).toBeDefined();
-      expect(['sendgrid', 'ses', 'smtp']).toContain(config.provider);
+      expect(config.provider).toBe('edge-function');
       expect(config.from).toMatch(/@/);
       expect(config.fromName).toBeTruthy();
       expect(config.maxRetries).toBeGreaterThanOrEqual(0);
@@ -56,30 +58,24 @@ describe('EmailService', () => {
     });
   });
 
-  describe('SendGrid Integration', () => {
-    it('should call SendGrid API when configured', async () => {
-      const config = emailService.getConfig();
-      
-      if (config.provider === 'sendgrid' && emailService.isConfigured()) {
-        const mockFetch = vi.fn().mockResolvedValue({
-          ok: true,
-          status: 202,
-        });
-        global.fetch = mockFetch;
+  describe('Edge Function Integration', () => {
+    it('should call the send-email Edge Function when configured', async () => {
+      await emailService.sendEmail(
+        'test@example.com',
+        'Test Subject',
+        '<p>Test Body</p>'
+      );
 
-        await emailService.sendEmail(
-          'test@example.com',
-          'Test Subject',
-          '<p>Test Body</p>'
-        );
-
-        expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.sendgrid.com/v3/mail/send',
-          expect.objectContaining({
-            method: 'POST',
-          })
-        );
-      }
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        'send-email',
+        expect.objectContaining({
+          body: expect.objectContaining({
+            to: 'test@example.com',
+            subject: 'Test Subject',
+            html: '<p>Test Body</p>',
+          }),
+        })
+      );
     });
   });
 
@@ -89,20 +85,23 @@ describe('EmailService', () => {
         return; // Skip if not configured
       }
 
-      const mockFetch = vi.fn()
+      (emailService as any).config.maxRetries = 1;
+      (emailService as any).config.retryDelay = 1;
+
+      const mockInvoke = vi.fn()
         .mockRejectedValueOnce(new TypeError('Network error'))
         .mockResolvedValueOnce({
-          ok: true,
-          status: 202,
+          data: { success: true },
+          error: null,
         });
-      global.fetch = mockFetch;
+      (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       try {
         await emailService.sendEmail('test@example.com', 'Subject', '<p>Body</p>');
-        expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+        expect(mockInvoke.mock.calls.length).toBeGreaterThan(1);
       } catch (_error) {
         // If it fails, retries should still have been attempted
-        expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+        expect(mockInvoke.mock.calls.length).toBeGreaterThan(1);
       }
     });
 
@@ -111,16 +110,19 @@ describe('EmailService', () => {
         return; // Skip if not configured
       }
 
-      const mockFetch = vi.fn().mockRejectedValue(new TypeError('Network error'));
-      global.fetch = mockFetch;
+      (emailService as any).config.maxRetries = 1;
+      (emailService as any).config.retryDelay = 1;
+
+      const mockInvoke = vi.fn().mockRejectedValue(new TypeError('Network error'));
+      (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       await expect(
         emailService.sendEmail('test@example.com', 'Subject', '<p>Body</p>')
       ).rejects.toThrow();
 
       const config = emailService.getConfig();
-      expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
-      expect(mockFetch.mock.calls.length).toBeLessThanOrEqual(config.maxRetries + 1);
+      expect(mockInvoke.mock.calls.length).toBeGreaterThan(1);
+      expect(mockInvoke.mock.calls.length).toBeLessThanOrEqual(config.maxRetries + 1);
     });
   });
 
@@ -130,12 +132,10 @@ describe('EmailService', () => {
         return; // Skip if not configured
       }
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        text: async () => 'Bad Request',
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: null,
+        error: { message: 'Bad Request' },
       });
-      global.fetch = mockFetch;
 
       await expect(
         emailService.sendEmail('test@example.com', 'Subject', '<p>Body</p>')
@@ -146,7 +146,7 @@ describe('EmailService', () => {
       try {
         await emailService.sendEmail('invalid', 'Subject', '<p>Body</p>');
         expect.fail('Should have thrown an error');
-      } catch (_error) {
+      } catch (error) {
         expect((error as Error).message).toBeTruthy();
         expect((error as Error).message.length).toBeGreaterThan(0);
       }
@@ -159,18 +159,12 @@ describe('EmailService', () => {
         return; // Skip if not configured
       }
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 202,
-      });
-      global.fetch = mockFetch;
-
       const htmlContent = '<html><body><h1>Test</h1></body></html>';
 
       try {
         await emailService.sendEmail('test@example.com', 'Subject', htmlContent);
         expect(true).toBe(true); // Success
-      } catch (_error) {
+      } catch (error) {
         // If it fails, it should not be due to HTML content
         expect((error as Error).message).not.toContain('HTML');
       }
@@ -181,18 +175,12 @@ describe('EmailService', () => {
         return; // Skip if not configured
       }
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 202,
-      });
-      global.fetch = mockFetch;
-
       const htmlContent = '<p>Price: R$ 100,00 &amp; more</p>';
 
       try {
         await emailService.sendEmail('test@example.com', 'Subject', htmlContent);
         expect(true).toBe(true); // Success
-      } catch (_error) {
+      } catch (error) {
         // If it fails, it should not be due to special characters
         expect((error as Error).message).not.toContain('character');
       }

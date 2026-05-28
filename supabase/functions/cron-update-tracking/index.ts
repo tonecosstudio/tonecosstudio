@@ -50,9 +50,86 @@ interface TrackingStatus {
   }>;
 }
 
+interface CarrierTrackingResponse {
+  trackingCode?: string;
+  status?: TrackingStatus["status"];
+  delivered?: boolean;
+  deliveredAt?: string;
+  lastUpdate?: string;
+  location?: string;
+  events?: Array<{
+    date?: string;
+    description?: string;
+    location?: string;
+  }>;
+}
+
+const TRACKING_STATUSES = new Set<TrackingStatus["status"]>([
+  "in_transit",
+  "out_for_delivery",
+  "delivered",
+  "failed",
+  "returned",
+  "unknown",
+]);
+
+function getCarrierTrackingApiUrl(): URL {
+  const rawUrl = Deno.env.get("CARRIER_TRACKING_API_URL");
+
+  if (!rawUrl) {
+    throw new Error(
+      "CARRIER_TRACKING_API_URL is not configured; refusing to simulate tracking updates",
+    );
+  }
+
+  const apiUrl = new URL(rawUrl);
+  const isLocalhost = apiUrl.hostname === "localhost" || apiUrl.hostname === "127.0.0.1";
+
+  if (apiUrl.protocol !== "https:" && !isLocalhost) {
+    throw new Error("CARRIER_TRACKING_API_URL must use HTTPS outside localhost");
+  }
+
+  return apiUrl;
+}
+
+function parseCarrierDate(value: string | undefined, fallback: Date): Date {
+  if (!value) return fallback;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+}
+
+function normalizeTrackingStatus(
+  trackingCode: string,
+  payload: CarrierTrackingResponse,
+): TrackingStatus {
+  const status = payload.status && TRACKING_STATUSES.has(payload.status)
+    ? payload.status
+    : "unknown";
+  const lastUpdate = parseCarrierDate(payload.lastUpdate, new Date());
+  const delivered = payload.delivered ?? status === "delivered";
+  const events = Array.isArray(payload.events)
+    ? payload.events
+      .filter((event) => typeof event.description === "string" && event.description.trim())
+      .map((event) => ({
+        date: parseCarrierDate(event.date, lastUpdate),
+        description: event.description!.trim(),
+        location: event.location,
+      }))
+    : [];
+
+  return {
+    trackingCode: payload.trackingCode || trackingCode,
+    status,
+    delivered,
+    deliveredAt: delivered ? parseCarrierDate(payload.deliveredAt, lastUpdate) : undefined,
+    lastUpdate,
+    location: payload.location,
+    events,
+  };
+}
+
 /**
  * Gets tracking status from shipping carrier API
- * This is a mock implementation - in production, integrate with real carrier APIs
  *
  * @param trackingCode - The tracking code to check
  * @returns Promise resolving to tracking status information
@@ -60,51 +137,29 @@ interface TrackingStatus {
 async function getTrackingStatus(
   trackingCode: string,
 ): Promise<TrackingStatus> {
-  // TODO: Replace with real carrier API integration
-  // For now, return mock data that simulates different delivery statuses
+  const apiUrl = getCarrierTrackingApiUrl();
+  const apiToken = Deno.env.get("CARRIER_TRACKING_API_TOKEN");
 
-  console.log(`[MOCK] Checking tracking status for: ${trackingCode}`);
-
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  // Mock logic: simulate different statuses based on tracking code pattern
-  // In production, this would be replaced with actual API calls to:
-  // - Correios API: https://www.correios.com.br/enviar/rastreamento
-  // - Private carriers: Jadlog, Total Express, etc.
-
-  const mockStatuses: TrackingStatus["status"][] = [
-    "in_transit",
-    "out_for_delivery",
-    "delivered",
-  ];
-
-  // Use tracking code to deterministically select a status (for testing)
-  const statusIndex = trackingCode.length % mockStatuses.length;
-  const status = mockStatuses[statusIndex];
-
-  const now = new Date();
-
-  const mockResponse: TrackingStatus = {
-    trackingCode,
-    status,
-    delivered: status === "delivered",
-    lastUpdate: now,
-    events: [
-      {
-        date: now,
-        description: `Status: ${status}`,
-        location: "Salvador, BA",
-      },
-    ],
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
   };
 
-  // If delivered, add delivery timestamp
-  if (status === "delivered") {
-    mockResponse.deliveredAt = now;
+  if (apiToken) {
+    headers.Authorization = `Bearer ${apiToken}`;
   }
 
-  return mockResponse;
+  const response = await fetch(apiUrl.toString(), {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ trackingCode }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Carrier tracking API returned HTTP ${response.status}`);
+  }
+
+  const payload = await response.json() as CarrierTrackingResponse;
+  return normalizeTrackingStatus(trackingCode, payload);
 }
 
 /**

@@ -3,10 +3,12 @@
 // V1 Simple Approach: Always send email to all members (respecting notification preferences)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { EmailService, getEmailConfig } from "../_shared/email.ts";
+import { getPublicBaseUrl } from "../_shared/public-url.ts";
 import { requireSharedSecret } from "../_shared/secrets.ts";
-import { assertAdmin } from "../_shared/supabase.ts";
+import { assertAdmin, errorToStatus, getServiceClient } from "../_shared/supabase.ts";
+import { isUUID } from "../_shared/validation.ts";
 
 // Types
 interface GroupEmailBatchRequest {
@@ -31,97 +33,35 @@ interface GroupMessageDetails {
   created_at: string;
 }
 
-interface EmailServiceConfig {
-  provider: "resend" | "sendgrid";
-  apiKey: string;
-  fromEmail: string;
-  fromName: string;
-  baseUrl: string;
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-// Email service abstraction (reuse from send-email)
-class EmailService {
-  constructor(private config: EmailServiceConfig) {}
+function buildGroupUrl(baseUrl: string, groupId: string): string {
+  return new URL(`/groups/${encodeURIComponent(groupId)}`, baseUrl).toString();
+}
 
-  async sendEmail(params: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<{ id: string }> {
-    if (this.config.provider === "resend") {
-      return this.sendViaResend(params);
-    } else {
-      return this.sendViaSendGrid(params);
-    }
-  }
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number,
+  corsHeaders: Record<string, string>,
+) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
-  private async sendViaResend(params: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<{ id: string }> {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${this.config.fromName} <${this.config.fromEmail}>`,
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Resend API error: ${error}`);
-    }
-
-    const data = await response.json();
-    return { id: data.id };
-  }
-
-  private async sendViaSendGrid(params: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<{ id: string }> {
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: params.to }],
-          },
-        ],
-        from: {
-          email: this.config.fromEmail,
-          name: this.config.fromName,
-        },
-        subject: params.subject,
-        content: [
-          {
-            type: "text/html",
-            value: params.html,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`SendGrid API error: ${error}`);
-    }
-
-    const messageId = response.headers.get("x-message-id") || "unknown";
-    return { id: messageId };
-  }
+function getBatchErrorStatus(message: string): number {
+  if (message.startsWith("Missing required fields")) return 400;
+  if (message.startsWith("Invalid fields")) return 400;
+  if (message === "Message not found") return 404;
+  return errorToStatus(message);
 }
 
 // Generate email HTML template for group messages
@@ -132,6 +72,14 @@ function generateGroupEmailHTML(data: {
   messagePreview: string;
   groupUrl: string;
 }): string {
+  const safe = {
+    recipientName: escapeHtml(data.recipientName),
+    groupName: escapeHtml(data.groupName),
+    senderName: escapeHtml(data.senderName),
+    messagePreview: escapeHtml(data.messagePreview),
+    groupUrl: escapeHtml(data.groupUrl),
+  };
+
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -253,20 +201,20 @@ function generateGroupEmailHTML(data: {
 <body>
   <div class="container">
     <div class="header">
-      <h1>📢 Nova Mensagem no Grupo</h1>
+      <h1>Nova Mensagem no Grupo</h1>
     </div>
     <div class="content">
-      <p class="greeting">Olá ${data.recipientName},</p>
+      <p class="greeting">Olá ${safe.recipientName},</p>
       <p>Você recebeu uma nova mensagem no grupo:</p>
-      <div class="group-badge">${data.groupName}</div>
+      <div class="group-badge">${safe.groupName}</div>
 
       <div class="message-box">
-        <div class="message-sender">${data.senderName}</div>
-        <div class="message-content">${data.messagePreview}</div>
+        <div class="message-sender">${safe.senderName}</div>
+        <div class="message-content">${safe.messagePreview}</div>
       </div>
 
       <center>
-        <a href="${data.groupUrl}" class="cta-button">Ver Mensagem Completa</a>
+        <a href="${safe.groupUrl}" class="cta-button">Ver Mensagem Completa</a>
       </center>
 
       <p style="margin-top: 24px; font-size: 14px; color: #64748b;">
@@ -415,13 +363,23 @@ serve(async (req) => {
       });
     }
 
+    if (req.method !== "POST") {
+      return jsonResponse(
+        { success: false, error: "Method not allowed" },
+        405,
+        corsHeaders,
+      );
+    }
+
     if (Deno.env.get("EMAIL_WEBHOOK_SECRET")) {
       const forbidden = requireSharedSecret(
         req,
         "EMAIL_WEBHOOK_SECRET",
         "x-webhook-secret",
       );
-      if (forbidden) return forbidden;
+      if (forbidden) {
+        return jsonResponse({ success: false, error: "Forbidden" }, 403, corsHeaders);
+      }
     } else {
       await assertAdmin(req);
     }
@@ -434,11 +392,12 @@ serve(async (req) => {
     if (!payload.groupId || !payload.messageId) {
       throw new Error("Missing required fields: groupId and messageId");
     }
+    if (!isUUID(payload.groupId) || !isUUID(payload.messageId)) {
+      throw new Error("Invalid fields: groupId and messageId must be UUIDs");
+    }
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get message details
     const messageDetails = await getGroupMessageDetails(
@@ -473,26 +432,8 @@ serve(async (req) => {
       );
     }
 
-    // Configure email service
-    const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
-    const emailApiKey = Deno.env.get("EMAIL_API_KEY");
-    const emailFrom = Deno.env.get("EMAIL_FROM") || "suporte@ordax.com.br";
-    const emailFromName = Deno.env.get("EMAIL_FROM_NAME") || "Ordax";
-    const baseUrl = Deno.env.get("BASE_URL") || "http://localhost:8080";
-
-    if (!emailApiKey) {
-      throw new Error("EMAIL_API_KEY not configured");
-    }
-
-    const emailConfig: EmailServiceConfig = {
-      provider: emailProvider as "resend" | "sendgrid",
-      apiKey: emailApiKey,
-      fromEmail: emailFrom,
-      fromName: emailFromName,
-      baseUrl: baseUrl,
-    };
-
-    const emailService = new EmailService(emailConfig);
+    const baseUrl = getPublicBaseUrl();
+    const emailService = new EmailService(getEmailConfig());
 
     // Generate message preview (first 200 chars)
     const messagePreview =
@@ -510,7 +451,7 @@ serve(async (req) => {
     for (const member of membersToNotify) {
       try {
         // Generate group URL
-        const groupUrl = `${baseUrl}/groups/${payload.groupId}`;
+        const groupUrl = buildGroupUrl(baseUrl, payload.groupId);
 
         // Generate email HTML
         const emailHTML = generateGroupEmailHTML({
@@ -555,16 +496,24 @@ serve(async (req) => {
         sent: results.sent,
         failed: results.failed,
         total: membersToNotify.length,
-        errors: results.errors.length > 0 ? results.errors : undefined,
+        errors:
+          results.errors.length > 0
+            ? ["Some email deliveries failed; check Edge logs"]
+            : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error in send-group-emails-batch function:", message);
-    return new Response(JSON.stringify({ success: false, error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const status = getBatchErrorStatus(message);
+    return jsonResponse(
+      {
+        success: false,
+        error: status >= 500 ? "Internal server error" : message,
+      },
+      status,
+      corsHeaders,
+    );
   }
 });

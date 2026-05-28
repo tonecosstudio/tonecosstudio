@@ -99,21 +99,22 @@ export function useProfileSupport(userId: string) {
   }, [userId]);
 
   useEffect(() => {
-    if (!selectedConversation) return;
+  if (!selectedConversation) return;
 
-    let isActive = true;
+  let isActive = true;
+  const selectedConversationId = selectedConversation.id;
 
-    async function fetchMessages() {
-      try {
-        const data = await listSupportMessages(selectedConversation.id);
+  async function fetchMessages() {
+    try {
+        const data = await listSupportMessages(selectedConversationId);
         if (!isActive) return;
         setMessages(data);
         scrollToBottom();
-        await markAsRead(selectedConversation.id);
+        await markAsRead(selectedConversationId);
       } catch (error) {
         log.error("Error loading support messages", {
           error,
-          conversationId: selectedConversation.id,
+          conversationId: selectedConversationId,
         });
         toast({ title: "Erro ao carregar mensagens", variant: "destructive" });
       }
@@ -121,10 +122,10 @@ export function useProfileSupport(userId: string) {
 
     fetchMessages();
 
-    const unsubscribe = subscribeToSupportMessages(selectedConversation.id, (message) => {
+    const unsubscribe = subscribeToSupportMessages(selectedConversationId, (message) => {
       setMessages((prev) => [...prev, message]);
       scrollToBottom();
-      markAsRead(selectedConversation.id);
+      markAsRead(selectedConversationId);
     });
 
     return () => {

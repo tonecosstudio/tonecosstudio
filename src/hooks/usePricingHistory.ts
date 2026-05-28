@@ -26,16 +26,43 @@ export interface PricingHistoryFilters {
 
 type PricingHistoryCsvRow = PricingHistory & {
   profiles: {
+    id?: string;
     full_name: string | null;
     email: string | null;
   } | null;
   pricing_tiers: {
+    id?: string;
     name: string | null;
   } | null;
   collections: {
+    id?: string;
     name: string | null;
   } | null;
 };
+
+type PricingHistoryQueryError = {
+  message: string;
+};
+
+interface PricingHistoryQuery extends PromiseLike<{
+  data: PricingHistoryCsvRow[] | null;
+  error: PricingHistoryQueryError | null;
+  count: number | null;
+}> {
+  eq(column: string, value: string): PricingHistoryQuery;
+  gte(column: string, value: string): PricingHistoryQuery;
+  lte(column: string, value: string): PricingHistoryQuery;
+  order(column: string, options: { ascending: boolean }): PricingHistoryQuery;
+  limit(count: number): PricingHistoryQuery;
+}
+
+interface PricingHistoryTableClient {
+  from(table: "pricing_history"): {
+    select(columns: string, options?: { count: "exact" }): PricingHistoryQuery;
+  };
+}
+
+const pricingHistorySupabase = supabase as unknown as PricingHistoryTableClient;
 
 // =====================================================
 // QUERY KEYS
@@ -68,7 +95,7 @@ export function useTierPricingHistory(
     queryFn: async () => {
       if (!tierId) return [];
 
-      let query = supabase
+      let query = pricingHistorySupabase
         .from("pricing_history")
         .select(`
           *,
@@ -102,13 +129,7 @@ export function useTierPricingHistory(
         throw new Error(`Erro ao buscar histórico do nível: ${error.message}`);
       }
 
-      return data as (PricingHistory & {
-        profiles: {
-          id: string;
-          full_name: string;
-          email: string;
-        };
-      })[];
+      return data ?? [];
     },
     enabled: !!tierId,
     staleTime: 1 * 60 * 1000, // 1 minuto
@@ -128,7 +149,7 @@ export function useCollectionPricingHistory(
     queryFn: async () => {
       if (!collectionId) return [];
 
-      let query = supabase
+      let query = pricingHistorySupabase
         .from("pricing_history")
         .select(`
           *,
@@ -162,13 +183,7 @@ export function useCollectionPricingHistory(
         throw new Error(`Erro ao buscar histórico da coleção: ${error.message}`);
       }
 
-      return data as (PricingHistory & {
-        profiles: {
-          id: string;
-          full_name: string;
-          email: string;
-        };
-      })[];
+      return data ?? [];
     },
     enabled: !!collectionId,
     staleTime: 1 * 60 * 1000, // 1 minuto
@@ -184,7 +199,7 @@ export function useAllPricingHistory(filters?: PricingHistoryFilters) {
   return useQuery({
     queryKey: pricingHistoryKeys.list(filters),
     queryFn: async () => {
-      let query = supabase
+      let query = pricingHistorySupabase
         .from("pricing_history")
         .select(`
           *,
@@ -226,21 +241,7 @@ export function useAllPricingHistory(filters?: PricingHistoryFilters) {
         throw new Error(`Erro ao buscar histórico: ${error.message}`);
       }
 
-      return data as (PricingHistory & {
-        profiles: {
-          id: string;
-          full_name: string;
-          email: string;
-        };
-        pricing_tiers: {
-          id: string;
-          name: string;
-        } | null;
-        collections: {
-          id: string;
-          name: string;
-        } | null;
-      })[];
+      return data ?? [];
     },
     staleTime: 1 * 60 * 1000, // 1 minuto
   });
@@ -255,7 +256,7 @@ export function usePricingHistoryStats(filters?: PricingHistoryFilters) {
   return useQuery({
     queryKey: [...pricingHistoryKeys.all, "stats", filters],
     queryFn: async () => {
-      let query = supabase
+      let query = pricingHistorySupabase
         .from("pricing_history")
         .select("change_type", { count: "exact" });
 
@@ -301,7 +302,7 @@ export function usePricingHistoryStats(filters?: PricingHistoryFilters) {
 export async function exportPricingHistoryToCSV(
   filters?: PricingHistoryFilters
 ): Promise<string> {
-  let query = supabase
+  let query = pricingHistorySupabase
     .from("pricing_history")
     .select(`
       *,
@@ -354,7 +355,7 @@ export async function exportPricingHistoryToCSV(
     "Alterado Por",
   ];
 
-  const rows = (data as PricingHistoryCsvRow[] | null)?.map((item) => [
+  const rows = data?.map((item) => [
     new Date(item.changed_at).toLocaleString("pt-BR"),
     item.change_type,
     item.pricing_tiers?.name || "-",

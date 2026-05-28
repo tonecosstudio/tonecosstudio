@@ -20,9 +20,44 @@ export type ProductionStage =
   | "shipped"
   | "delivered";
 
-export type Priority = "critical" | "high" | "normal" | "low";
+export const PRODUCTION_PRIORITIES = ["critical", "high", "normal", "low"] as const;
+export type Priority = (typeof PRODUCTION_PRIORITIES)[number];
 
-export type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked";
+const PRODUCTION_PRIORITY_SET = new Set<string>(PRODUCTION_PRIORITIES);
+
+export function isProductionPriority(value: unknown): value is Priority {
+  return typeof value === "string" && PRODUCTION_PRIORITY_SET.has(value);
+}
+
+export function getProductionPriorityFromScore(
+  priority: unknown,
+  priorityScore?: unknown
+): Priority {
+  if (isProductionPriority(priority)) {
+    return priority;
+  }
+
+  const score =
+    typeof priorityScore === "number"
+      ? priorityScore
+      : typeof priority === "number"
+        ? priority
+        : null;
+
+  if (score === null) return "normal";
+  if (score >= 90) return "critical";
+  if (score >= 70) return "high";
+  if (score <= 30) return "low";
+  return "normal";
+}
+
+export type ChoiceStatus =
+  | "pending"
+  | "submitted"
+  | "approved"
+  | "rejected"
+  | "locked"
+  | "expired";
 
 export interface ProductionFilters {
   collections?: string[];

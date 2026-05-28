@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isAdmin, isGroupMember, requireAdmin, requireGroupMember } from "./groupPermissions";
+import type { AdminAccessRole } from "./adminRoles";
 
 type AuthUserResponse = Awaited<ReturnType<typeof supabase.auth.getUser>>;
 type SupabaseFromResult = ReturnType<typeof supabase.from>;
@@ -11,6 +12,7 @@ vi.mock("@/integrations/supabase/client", () => ({
       getUser: vi.fn(),
     },
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
@@ -27,17 +29,11 @@ function mockCurrentUser(userId: string | null): void {
   } as unknown as AuthUserResponse);
 }
 
-function mockProfileRole(role: "admin" | "customer"): void {
-  vi.mocked(supabase.from).mockReturnValue({
-    select: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({
-          data: { role },
-          error: null,
-        }),
-      }),
-    }),
-  } as unknown as SupabaseFromResult);
+function mockProfileRole(role: AdminAccessRole | "customer"): void {
+  vi.mocked(supabase.rpc).mockResolvedValue({
+    data: role === "admin" || role === "super_admin",
+    error: null,
+  } as Awaited<ReturnType<typeof supabase.rpc>>);
 }
 
 function mockGroupMembership(memberId: string | null): void {
@@ -64,6 +60,13 @@ describe("groupPermissions", () => {
     it("returns true for admin users", async () => {
       mockCurrentUser("user-1");
       mockProfileRole("admin");
+
+      await expect(isAdmin()).resolves.toBe(true);
+    });
+
+    it("returns true for super admin users", async () => {
+      mockCurrentUser("user-1");
+      mockProfileRole("super_admin");
 
       await expect(isAdmin()).resolves.toBe(true);
     });

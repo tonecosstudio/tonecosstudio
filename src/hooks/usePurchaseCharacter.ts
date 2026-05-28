@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { userCoinsKeys } from "./useUserCoins";
 import { PriceInCoins } from "@/types/contextual-pricing";
 import { log } from "@/lib/logger";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 
 // =====================================================
 // TYPES
@@ -33,6 +34,22 @@ export interface PurchaseCharacterResponse {
     missing: PriceInCoins;
   };
 }
+
+type QueryError = { message: string } | null;
+
+interface UserCharactersSupabaseClient {
+  from(table: "user_characters"): {
+    select(columns: "id"): {
+      eq(column: "user_id", value: string): {
+        eq(column: "character_id", value: string): {
+          single(): PromiseLike<{ data: { id: string } | null; error: QueryError }>;
+        };
+      };
+    };
+  };
+}
+
+const userCharactersSupabase = supabase as unknown as UserCharactersSupabaseClient;
 
 // =====================================================
 // MUTATIONS
@@ -57,6 +74,7 @@ export function usePurchaseCharacter() {
   return useMutation({
     mutationFn: async (params: PurchaseCharacterParams): Promise<PurchaseCharacterResponse> => {
       const { characterId, userId } = params;
+      await assertCurrentUserId(userId);
 
       const { data, error } = await supabase.rpc("purchase_character_with_coins", {
         p_user_id: userId,
@@ -149,7 +167,7 @@ export async function validatePurchase(
   }
 
   // Verificar se já possui
-  const { data: existingCharacter } = await supabase
+  const { data: existingCharacter } = await userCharactersSupabase
     .from("user_characters")
     .select("id")
     .eq("user_id", userId)

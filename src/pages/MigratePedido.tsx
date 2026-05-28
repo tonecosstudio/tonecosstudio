@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Page } from '@/components/layouts/Page';
 import { log } from '@/lib/logger';
 import { useOrderMigrationSubmission } from '@/hooks/customer/useOrderMigrationSubmission';
+import { AUTH_ROUTES, PUBLIC_ROUTES } from '@/config/routes';
 
 export default function MigratePedido() {
   const navigate = useNavigate();
@@ -93,14 +94,14 @@ export default function MigratePedido() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(AUTH_ROUTES.dashboard)}
               className="bg-amber-600 hover:bg-amber-700 border-2 border-amber-500"
             >
               Ir para Dashboard
             </Button>
             
             <Button
-              onClick={() => navigate('/landing')}
+              onClick={() => navigate(PUBLIC_ROUTES.landing)}
               variant="outline"
               className="border-2 border-amber-600 text-amber-400 hover:bg-amber-600/10"
             >
@@ -260,9 +261,9 @@ export default function MigratePedido() {
         <div className="mt-8 text-center">
           <p className="text-gray-400">
             Dúvidas sobre a migração?{' '}
-            <a href="/contato" className="text-amber-400 hover:text-amber-300 underline">
+            <Link to={PUBLIC_ROUTES.contact} className="text-amber-400 hover:text-amber-300 underline">
               Entre em contato
-            </a>
+            </Link>
           </p>
         </div>
         </div>

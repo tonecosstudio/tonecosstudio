@@ -3,28 +3,42 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CustomerChat } from "./CustomerChat";
 import { supabase } from "@/integrations/supabase/client";
+import * as customerChatService from "@/services/customer-chat-button-service";
+import { renderWithProviders } from "@/test/utils/test-utils";
 
-// Mock Supabase
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
+      getSession: vi.fn(),
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      })),
     },
     from: vi.fn(),
-    channel: vi.fn(),
+    channel: vi.fn(() => {
+      const channel = {
+        on: vi.fn(),
+        subscribe: vi.fn(),
+        send: vi.fn(),
+        unsubscribe: vi.fn(),
+      };
+      channel.on.mockReturnValue(channel);
+      channel.subscribe.mockReturnValue(channel);
+      return channel;
+    }),
     removeChannel: vi.fn(),
   },
 }));
 
-// Mock services
-vi.mock("@/lib/services/conversationService", () => ({
-  conversationService: {
-    listConversations: vi.fn(),
-    getUnreadCount: vi.fn(),
-  },
+vi.mock("@/services/customer-chat-button-service", () => ({
+  countUnreadCustomerSupportMessages: vi.fn(),
+  createCustomerSupportConversation: vi.fn(),
+  listCustomerSupportConversations: vi.fn(),
+  subscribeToCustomerChatUpdates: vi.fn(() => ({})),
+  unsubscribeFromCustomerChatUpdates: vi.fn(),
 }));
 
-// Mock hooks
 vi.mock("@/hooks/useMessages", () => ({
   useMessages: vi.fn(() => ({
     messages: [],
@@ -37,16 +51,34 @@ vi.mock("@/hooks/useMessages", () => ({
 }));
 
 describe("CustomerChat", () => {
+  const authenticatedUser = {
+    id: "user-123",
+    email: "test@example.com",
+    app_metadata: {},
+    user_metadata: {},
+    aud: "authenticated",
+    created_at: new Date().toISOString(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(customerChatService.countUnreadCustomerSupportMessages).mockResolvedValue(0);
+    vi.mocked(customerChatService.listCustomerSupportConversations).mockResolvedValue([]);
   });
 
-  it("should not render if user is not authenticated", async () => {
-    // Mock unauthenticated user
+  function mockAuthSession(user: typeof authenticatedUser | null) {
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: null },
+      data: { user },
       error: null,
     });
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: user ? { user } : null },
+      error: null,
+    });
+  }
+
+  it("should not render if user is not authenticated", async () => {
+    mockAuthSession(null);
 
     const { container } = renderWithProviders(<CustomerChat />);
 
@@ -56,94 +88,29 @@ describe("CustomerChat", () => {
   });
 
   it("should render floating chat button for authenticated user", async () => {
-    // Mock authenticated user
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: {
-        user: {
-          id: "user-123",
-          email: "test@example.com",
-          app_metadata: {},
-          user_metadata: {},
-          aud: "authenticated",
-          created_at: new Date().toISOString(),
-        },
-      },
-      error: null,
-    });
-
-    // Mock empty conversations
-    const { conversationService } = await import("@/lib/services/conversationService");
-    vi.mocked(conversationService.listConversations).mockResolvedValue([]);
+    mockAuthSession(authenticatedUser);
 
     renderWithProviders(<CustomerChat />);
 
     await waitFor(() => {
-      const button = screen.getByRole("button");
-      expect(button).toBeInTheDocument();
+      expect(screen.getByRole("button")).toBeInTheDocument();
     });
   });
 
   it("should display unread count badge when there are unread messages", async () => {
-    // Mock authenticated user
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: {
-        user: {
-          id: "user-123",
-          email: "test@example.com",
-          app_metadata: {},
-          user_metadata: {},
-          aud: "authenticated",
-          created_at: new Date().toISOString(),
-        },
-      },
-      error: null,
-    });
-
-    // Mock conversations with unread messages
-    const { conversationService } = await import("@/lib/services/conversationService");
-    vi.mocked(conversationService.listConversations).mockResolvedValue([
-      {
-        id: "conv-1",
-        user_id: "user-123",
-        subject: "Test Conversation",
-        status: "waiting_customer",
-        priority: "normal",
-        tags: [],
-        risk_flags: [],
-        last_message_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ]);
-    vi.mocked(conversationService.getUnreadCount).mockResolvedValue(3);
+    mockAuthSession(authenticatedUser);
+    vi.mocked(customerChatService.countUnreadCustomerSupportMessages).mockResolvedValue(3);
 
     renderWithProviders(<CustomerChat />);
 
     await waitFor(() => {
-      const badge = screen.getByText("3");
-      expect(badge).toBeInTheDocument();
+      expect(screen.getByText("3")).toBeInTheDocument();
     });
   });
 
   it("should open chat panel when button is clicked", async () => {
-    // Mock authenticated user
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: {
-        user: {
-          id: "user-123",
-          email: "test@example.com",
-          app_metadata: {},
-          user_metadata: {},
-          aud: "authenticated",
-          created_at: new Date().toISOString(),
-        },
-      },
-      error: null,
-    });
-
-    // Mock conversations
-    const { conversationService } = await import("@/lib/services/conversationService");
-    vi.mocked(conversationService.listConversations).mockResolvedValue([
+    mockAuthSession(authenticatedUser);
+    vi.mocked(customerChatService.listCustomerSupportConversations).mockResolvedValue([
       {
         id: "conv-1",
         user_id: "user-123",
@@ -157,61 +124,36 @@ describe("CustomerChat", () => {
         updated_at: new Date().toISOString(),
       },
     ]);
-    vi.mocked(conversationService.getUnreadCount).mockResolvedValue(0);
 
     renderWithProviders(<CustomerChat />);
 
     await waitFor(() => {
-      const button = screen.getByRole("button");
-      expect(button).toBeInTheDocument();
+      expect(screen.getByRole("button")).toBeInTheDocument();
     });
 
-    // Click the button
     const user = userEvent.setup();
-    const button = screen.getByRole("button");
-    await user.click(button);
+    await user.click(screen.getByRole("button"));
 
-    // Check if panel opened
     await waitFor(() => {
       expect(screen.getByText("Suporte")).toBeInTheDocument();
     });
   });
 
   it("should display empty state when user has no conversations", async () => {
-    // Mock authenticated user
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: {
-        user: {
-          id: "user-123",
-          email: "test@example.com",
-          app_metadata: {},
-          user_metadata: {},
-          aud: "authenticated",
-          created_at: new Date().toISOString(),
-        },
-      },
-      error: null,
-    });
-
-    // Mock empty conversations
-    const { conversationService } = await import("@/lib/services/conversationService");
-    vi.mocked(conversationService.listConversations).mockResolvedValue([]);
+    mockAuthSession(authenticatedUser);
+    vi.mocked(customerChatService.listCustomerSupportConversations).mockResolvedValue([]);
 
     renderWithProviders(<CustomerChat />);
 
-    // Open chat
     await waitFor(() => {
-      const button = screen.getByRole("button");
-      expect(button).toBeInTheDocument();
+      expect(screen.getByRole("button")).toBeInTheDocument();
     });
 
     const user = userEvent.setup();
-    const button = screen.getByRole("button");
-    await user.click(button);
+    await user.click(screen.getByRole("button"));
 
-    // Check empty state
     await waitFor(() => {
-      expect(screen.getByText(/Você ainda não tem conversas/i)).toBeInTheDocument();
+      expect(screen.getByText(/Voce ainda nao tem conversas/i)).toBeInTheDocument();
     });
   });
 });

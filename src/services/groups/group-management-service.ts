@@ -10,6 +10,14 @@ interface AutomaticGroupsRpcClient {
     data: unknown;
     error: RpcError;
   }>;
+  rpc(functionName: "admin_add_chat_group_members", args: {
+    p_group_id: string;
+    p_user_ids: string[];
+    p_added_by: string;
+  }): PromiseLike<{
+    data: unknown;
+    error: RpcError;
+  }>;
 }
 
 const automaticGroupsRpc = supabase as unknown as AutomaticGroupsRpcClient;
@@ -240,25 +248,31 @@ export async function importGroupMembersFromCsv({
       ((users ?? []) as ProfileLookupRow[]).map((user) => [user.email, user.id]),
     );
 
-    const membersToAdd = batch
+    const userIdsToAdd = batch
       .filter((member) => emailToUserId.has(member.email))
-      .map((member) => ({
-        group_id: groupId,
-        user_id: emailToUserId.get(member.email)!,
-        added_by: importedBy,
-      }));
+      .map((member) => emailToUserId.get(member.email)!);
 
-    if (membersToAdd.length > 0) {
-      const { error: insertError } = await supabase
-        .from("chat_group_members")
-        .insert(membersToAdd)
-        .select();
+    if (userIdsToAdd.length > 0) {
+      const { data: importResult, error: insertError } = await automaticGroupsRpc.rpc(
+        "admin_add_chat_group_members",
+        {
+          p_group_id: groupId,
+          p_user_ids: userIdsToAdd,
+          p_added_by: importedBy,
+        },
+      );
 
-      if (insertError && !insertError.message.includes("duplicate")) {
+      if (insertError) {
         errors.push(`Erro ao adicionar membros: ${insertError.message}`);
-        failedCount += membersToAdd.length;
+        failedCount += userIdsToAdd.length;
       } else {
-        successCount += membersToAdd.length;
+        const result = (importResult ?? {}) as {
+          added?: number;
+          existing?: number;
+          invalid?: number;
+        };
+        successCount += Number(result.added ?? 0) + Number(result.existing ?? 0);
+        failedCount += Number(result.invalid ?? 0);
       }
     }
 

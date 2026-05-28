@@ -175,7 +175,7 @@ serve(async (req) => {
         if (assignError) {
           failed.push({
             id: collection_id,
-            error: assignError.message,
+            error: "Assignment failed",
           });
           console.error(
             `Failed to assign collection ${collection_id}:`,
@@ -189,7 +189,7 @@ serve(async (req) => {
         const msg = e instanceof Error ? e.message : "Unknown error";
         failed.push({
           id: collection_id,
-          error: msg,
+          error: "Assignment failed",
         });
         console.error(`Exception assigning collection ${collection_id}:`, msg);
       }
@@ -220,7 +220,7 @@ serve(async (req) => {
 
     console.error("Error in bulk assign tier:", msg);
 
-    return new Response(JSON.stringify({ ok: false, error: msg }), {
+    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

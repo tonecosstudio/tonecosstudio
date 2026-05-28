@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface AdminNotification {
   id: string;
   type: string;
-  priority: "low" | "medium" | "high" | "critical";
+  priority: "low" | "medium" | "high" | "urgent";
   title: string;
   message: string;
   icon?: string;

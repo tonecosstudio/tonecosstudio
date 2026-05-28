@@ -7,7 +7,7 @@
  * Task: 14.2 Criar componente BulkOperationsToolbar
  */
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,13 +48,8 @@ import {
   bulkApprovePayments,
   exportPaymentsToCSV,
   bulkSendMessage,
-  startAsyncBulkApprove,
-  startAsyncBulkMessage,
-  startAsyncBulkExport,
-  getBulkOperationStatus,
 } from "@/lib/admin-payment-service";
 import { useAuth } from "@/lib/auth";
-import { log } from "@/lib/logger";
 
 interface BulkOperationsToolbarProps {
   selectedPayments: string[];
@@ -76,7 +71,7 @@ interface OperationProgress {
 export function BulkOperationsToolbar({
   selectedPayments,
   payments,
-  onSelectAll: _onSelectAll,
+  onSelectAll,
   onClearSelection,
   onSelectionChange,
 }: BulkOperationsToolbarProps) {
@@ -87,13 +82,6 @@ export function BulkOperationsToolbar({
   const [activeOperation, setActiveOperation] = useState<BulkOperationType | null>(null);
   const [operationProgress, setOperationProgress] = useState<OperationProgress | null>(null);
   const [showSummary, setShowSummary] = useState(false);
-  const [asyncOperationStatus, setAsyncOperationStatus] = useState<{
-    operation_type: string;
-    status: "pending" | "processing" | "completed" | "failed";
-    success_count?: number;
-    payment_ids?: string[];
-  } | null>(null);
-
   // Check if all payments on current page are selected
   useEffect(() => {
     const allPaymentIds = payments.map((p) => p.id);
@@ -108,12 +96,20 @@ export function BulkOperationsToolbar({
       // Deselect all payments on current page
       const allPaymentIds = payments.map((p) => p.id);
       const newSelection = selectedPayments.filter((id) => !allPaymentIds.includes(id));
-      onSelectionChange?.(newSelection);
+      if (onSelectionChange) {
+        onSelectionChange(newSelection);
+      } else {
+        onSelectAll(false);
+      }
     } else {
       // Select all payments on current page
       const allPaymentIds = payments.map((p) => p.id);
       const newSelection = [...new Set([...selectedPayments, ...allPaymentIds])];
-      onSelectionChange?.(newSelection);
+      if (onSelectionChange) {
+        onSelectionChange(newSelection);
+      } else {
+        onSelectAll(true);
+      }
     }
   };
 
@@ -250,134 +246,16 @@ export function BulkOperationsToolbar({
     },
   });
 
-  // Start async bulk approve
-  const handleAsyncBulkApprove = async () => {
-    if (!user?.id) return;
-
-    try {
-      const operationId = await startAsyncBulkApprove(selectedPayments, user.id);
-      toast({
-        title: "Aprovação em lote iniciada",
-        description:
-          "A operação está sendo processada em segundo plano. Você pode continuar trabalhando.",
-      });
-
-      // Start polling for status
-      pollAsyncOperationStatus(operationId);
-    } catch (error) {
-      toast({
-        title: "Erro ao iniciar aprovação em lote",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Start async bulk message
-  const handleAsyncBulkMessage = async () => {
-    if (!user?.id || !messageText.trim()) return;
-
-    try {
-      const operationId = await startAsyncBulkMessage(selectedPayments, messageText, user.id);
-      setMessageText("");
-
-      toast({
-        title: "Mensagem em lote iniciada",
-        description:
-          "A operação está sendo processada em segundo plano. Você pode continuar trabalhando.",
-      });
-
-      // Start polling for status
-      pollAsyncOperationStatus(operationId);
-    } catch (error) {
-      toast({
-        title: "Erro ao iniciar mensagem em lote",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Start async bulk export
-  const handleAsyncBulkExport = async () => {
-    if (!user?.id) return;
-
-    try {
-      const operationId = await startAsyncBulkExport(selectedPayments, user.id);
-      toast({
-        title: "Exportação em lote iniciada",
-        description:
-          "A operação está sendo processada em segundo plano. Você será notificado quando concluir.",
-      });
-
-      // Start polling for status
-      pollAsyncOperationStatus(operationId);
-    } catch (error) {
-      toast({
-        title: "Erro ao iniciar exportação em lote",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Poll async operation status
-  const pollAsyncOperationStatus = async (operationId: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const status = await getBulkOperationStatus(operationId);
-        setAsyncOperationStatus(status);
-
-        if (status.status === "completed" || status.status === "failed") {
-          clearInterval(interval);
-
-          if (status.status === "completed") {
-            toast({
-              title: "Operação em lote concluída",
-              description: `Operação ${operationId} concluída com sucesso.`,
-            });
-
-            // Invalidate queries to refresh data
-            queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
-            queryClient.invalidateQueries({ queryKey: ["payment-stats"] });
-          } else {
-            toast({
-              title: "Operação em lote falhou",
-              description: `Operação ${operationId} falhou.`,
-              variant: "destructive",
-            });
-          }
-        }
-      } catch (error) {
-        log.error("Error polling operation status", { error, operationId });
-        clearInterval(interval);
-      }
-    }, 2000); // Poll every 2 seconds
-
-    // Cleanup after 5 minutes
-    setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
-  };
-
   // Handle bulk approve
   const handleBulkApprove = () => {
     if (!user?.id) return;
 
-    // For large selections (>10), use async processing
-    if (selectedPayments.length > 10) {
-      handleAsyncBulkApprove();
-    } else {
-      bulkApproveMutation.mutate({ paymentIds: selectedPayments, adminId: user.id });
-    }
+    bulkApproveMutation.mutate({ paymentIds: selectedPayments, adminId: user.id });
   };
 
   // Handle bulk export
   const handleBulkExport = () => {
-    // For large selections (>10), use async processing
-    if (selectedPayments.length > 10 && user?.id) {
-      handleAsyncBulkExport();
-    } else {
-      bulkExportMutation.mutate(selectedPayments);
-    }
+    bulkExportMutation.mutate(selectedPayments);
   };
 
   // Handle bulk message
@@ -391,16 +269,11 @@ export function BulkOperationsToolbar({
       return;
     }
 
-    // For large selections (>10), use async processing
-    if (selectedPayments.length > 10) {
-      handleAsyncBulkMessage();
-    } else {
-      bulkMessageMutation.mutate({
-        paymentIds: selectedPayments,
-        message: messageText,
-        adminId: user.id,
-      });
-    }
+    bulkMessageMutation.mutate({
+      paymentIds: selectedPayments,
+      message: messageText,
+      adminId: user.id,
+    });
   };
 
   // Format currency
@@ -522,8 +395,8 @@ export function BulkOperationsToolbar({
                     <p>Esta ação não pode ser desfeita.</p>
                     {selectedPayments.length > 10 && (
                       <p className="mt-2 text-amber-600">
-                        Como há mais de 10 pagamentos selecionados, a operação será processada em
-                        segundo plano para melhor performance.
+                        Como há mais de 10 pagamentos selecionados, o progresso será exibido aqui
+                        durante o processamento.
                       </p>
                     )}
                   </div>
@@ -585,8 +458,8 @@ export function BulkOperationsToolbar({
                   {selectedPayments.length > 10 && (
                     <div className="rounded-md bg-amber-50 p-3 border border-amber-200">
                       <p className="text-sm text-amber-800">
-                        Como há mais de 10 pagamentos selecionados, a operação será processada em
-                        segundo plano para melhor performance.
+                        Como há mais de 10 pagamentos selecionados, o progresso será exibido aqui
+                        durante o processamento.
                       </p>
                     </div>
                   )}
@@ -629,46 +502,6 @@ export function BulkOperationsToolbar({
           </div>
         )}
 
-        {/* Async operation status */}
-        {asyncOperationStatus && (
-          <div className="mt-4 p-3 border rounded-md bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium">
-                  Operação em segundo plano: {asyncOperationStatus.operation_type}
-                </span>
-              </div>
-              <Badge
-                variant={
-                  asyncOperationStatus.status === "completed"
-                    ? "default"
-                    : asyncOperationStatus.status === "failed"
-                      ? "destructive"
-                      : "outline"
-                }
-              >
-                {asyncOperationStatus.status === "pending" && "Pendente"}
-                {asyncOperationStatus.status === "processing" && "Processando"}
-                {asyncOperationStatus.status === "completed" && "Concluído"}
-                {asyncOperationStatus.status === "failed" && "Falhou"}
-              </Badge>
-            </div>
-
-            {asyncOperationStatus.status === "processing" && (
-              <div className="mt-2">
-                <Progress value={50} className="h-1" />
-              </div>
-            )}
-
-            {asyncOperationStatus.status === "completed" && asyncOperationStatus.success_count && (
-              <div className="mt-2 text-sm text-gray-600">
-                {asyncOperationStatus.success_count} de{" "}
-                {asyncOperationStatus.payment_ids?.length || 0} concluído(s)
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Operation summary dialog */}

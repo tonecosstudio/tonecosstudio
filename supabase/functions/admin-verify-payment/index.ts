@@ -1,138 +1,142 @@
 /// <reference lib="deno.window" />
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
-import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
-import { nowInBahia, toUTC } from "../_shared/timezone.ts";
+import { EmailService, getEmailConfig, textToHtml } from "../_shared/email.ts";
+import { assertAdmin, getClaims, getServiceClient } from "../_shared/supabase.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
-/**
- * Edge Function: admin-verify-payment
- *
- * Allows admins to approve or reject payment vouchers uploaded by customers.
- * When approved, the order status is updated to 'paid'.
- * When rejected, a notification is sent to the customer with the rejection reason.
- * All verification actions are logged with the admin user ID and timestamp for audit purposes.
- *
- * Requirements: 25.7, 25.8, 33.6
- * Task: 25.5
- */
+type OrderType = "subscription" | "standalone_purchase";
 
 interface VerifyPaymentRequest {
   orderId: string;
-  orderType: "subscription" | "standalone_purchase";
+  orderType: OrderType;
   approved: boolean;
   rejectionReason?: string;
   notes?: string;
 }
 
-/**
- * Logs admin verification action for audit trail
- */
-async function logVerificationAction(
+const VERIFY_PAYMENT_SCHEMA: Schema = {
+  orderId: { type: "uuid", required: true },
+  orderType: { type: "string", required: true, maxLength: 40, trim: true },
+  approved: { type: "boolean", required: true },
+  rejectionReason: { type: "string", maxLength: 500, trim: true, rejectHtml: true },
+  notes: { type: "string", maxLength: 1000, trim: true, rejectHtml: true },
+};
+
+function firstRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+async function shouldSendPaymentEmail(service: any, userId: string): Promise<boolean> {
+  const { data, error } = await service
+    .from("notification_preferences")
+    .select("payment_emails")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching payment email preference:", error);
+    return true;
+  }
+
+  return data?.payment_emails ?? true;
+}
+
+async function createUserPaymentNotification(
   service: any,
+  userId: string,
   orderId: string,
-  orderType: "subscription" | "standalone_purchase",
-  adminUserId: string,
+  orderType: OrderType,
   approved: boolean,
-  previousStatus: string,
-  newStatus: string,
-  notes: string | null,
+  message: string,
 ): Promise<void> {
-  const actionType = approved
-    ? orderType === "subscription"
-      ? "approve_payment_voucher"
-      : "approve_deposit_voucher"
-    : orderType === "subscription"
-      ? "reject_payment_voucher"
-      : "reject_deposit_voucher";
+  const { error } = await service.rpc("admin_insert_user_notification", {
+    p_user_id: userId,
+    p_type: approved ? "payment_approved" : "payment_rejected",
+    p_title: approved ? "Pagamento aprovado" : "Pagamento rejeitado",
+    p_message: message,
+    p_related_id: orderId,
+    p_related_type: orderType,
+    p_priority: approved ? "medium" : "high",
+  });
 
-  if (orderType === "standalone_purchase") {
-    // Log to standalone_purchase_admin_log
-    const { error } = await service
-      .from("standalone_purchase_admin_log")
-      .insert({
-        purchase_id: orderId,
-        admin_user_id: adminUserId,
-        action_type: actionType,
-        previous_status: previousStatus,
-        new_status: newStatus,
-        notes: notes,
-        created_at: toUTC(nowInBahia()).toISOString(),
-      });
-
-    if (error) {
-      console.error("Error logging standalone purchase admin action:", error);
-    }
-  } else {
-    // For subscriptions, we could create a similar log table or use a general admin_action_logs
-    // For now, we'll log to console and could extend to a subscription_admin_log table
-    console.log(`[ADMIN ACTION LOG] Subscription ${orderId}:`, {
-      admin_user_id: adminUserId,
-      action_type: actionType,
-      previous_status: previousStatus,
-      new_status: newStatus,
-      notes: notes,
-      timestamp: toUTC(nowInBahia()).toISOString(),
-    });
+  if (error) {
+    console.error("Error creating user payment notification:", error);
   }
 }
 
-/**
- * Sends notification to customer about payment verification result
- */
+async function sendPaymentEmail(to: string, subject: string, message: string): Promise<void> {
+  const emailService = new EmailService(getEmailConfig({ fromName: "ORDAX Pagamentos" }));
+  await emailService.sendEmail({
+    to,
+    subject,
+    html: `<p>${textToHtml(message)}</p>`,
+  });
+}
+
+function mapSubscriptionPaymentRpcError(message: string): string {
+  if (message.includes("SUBSCRIPTION_NOT_FOUND")) return "Assinatura nao encontrada";
+  if (message.includes("INVALID_SUBSCRIPTION_STATUS")) return "Status da assinatura invalido para verificacao";
+  if (message.includes("rejection reason") || message.includes("REJECTION")) {
+    return "Motivo de rejeicao invalido";
+  }
+  if (message.includes("ADMIN_USER_ID_REQUIRED")) return "Administrador nao identificado";
+  return "Erro ao verificar pagamento da assinatura";
+}
+
 async function notifyCustomer(
   service: any,
   orderId: string,
-  orderType: "subscription" | "standalone_purchase",
+  orderType: OrderType,
   approved: boolean,
   rejectionReason?: string,
 ): Promise<void> {
+  let userId: string | null = null;
   let customerEmail: string | null = null;
   let customerName: string | null = null;
   let orderDetails: string | null = null;
 
-  // Fetch customer information based on order type
   if (orderType === "standalone_purchase") {
     const { data: purchase, error } = await service
       .from("standalone_purchases")
-      .select(
-        `
+      .select(`
         id,
+        user_id,
         total_amount,
         collections (name),
         profiles:user_id (
           email,
           full_name
         )
-      `,
-      )
+      `)
       .eq("id", orderId)
       .single();
 
     if (error || !purchase) {
-      console.error(
-        "Error fetching standalone purchase for notification:",
-        error,
-      );
+      console.error("Error fetching standalone purchase for notification:", error);
       return;
     }
 
-    customerEmail = purchase.profiles?.email;
-    customerName = purchase.profiles?.full_name;
-    orderDetails = `Compra avulsa - ${purchase.collections?.name} (R$ ${purchase.total_amount})`;
+    const profile = firstRelation(purchase.profiles);
+    const collection = firstRelation(purchase.collections);
+    userId = purchase.user_id;
+    customerEmail = profile?.email ?? null;
+    customerName = profile?.full_name ?? null;
+    orderDetails = `Compra avulsa - ${collection?.name ?? "colecao"} (R$ ${purchase.total_amount})`;
   } else {
     const { data: subscription, error } = await service
       .from("subscriptions")
-      .select(
-        `
+      .select(`
         id,
+        user_id,
         plan_type,
         total_paid,
         profiles:user_id (
           email,
           full_name
         )
-      `,
-      )
+      `)
       .eq("id", orderId)
       .single();
 
@@ -141,49 +145,50 @@ async function notifyCustomer(
       return;
     }
 
-    customerEmail = subscription.profiles?.email;
-    customerName = subscription.profiles?.full_name;
+    const profile = firstRelation(subscription.profiles);
+    userId = subscription.user_id;
+    customerEmail = profile?.email ?? null;
+    customerName = profile?.full_name ?? null;
     orderDetails = `Assinatura ${subscription.plan_type} (R$ ${subscription.total_paid})`;
   }
 
-  if (!customerEmail) {
-    console.error("Customer email not found for notification");
+  if (!userId) {
+    console.error("Customer user id not found for payment notification");
     return;
   }
 
-  // Prepare notification message
-  let subject: string;
-  let message: string;
+  const subject = approved ? "Pagamento aprovado" : "Pagamento rejeitado";
+  const message = approved
+    ? `Ola ${customerName || "Cliente"},\n\nSeu pagamento foi aprovado com sucesso.\n\nDetalhes do pedido:\n${orderDetails}\n\nSeu pedido esta sendo processado e voce recebera atualizacoes em breve.`
+    : `Ola ${customerName || "Cliente"},\n\nSeu comprovante de pagamento foi rejeitado.\n\nDetalhes do pedido:\n${orderDetails}\n\nMotivo da rejeicao:\n${rejectionReason || "Comprovante invalido ou ilegivel"}\n\nEnvie um novo comprovante valido pelo seu painel.`;
 
-  if (approved) {
-    subject = "Pagamento Aprovado! ✅";
-    message = `Olá ${customerName || "Cliente"},\n\nSeu pagamento foi aprovado com sucesso!\n\nDetalhes do pedido:\n${orderDetails}\n\nSeu pedido está sendo processado e você receberá atualizações em breve.\n\nObrigado por escolher a Ordax!`;
-  } else {
-    subject = "Pagamento Rejeitado ❌";
-    message = `Olá ${customerName || "Cliente"},\n\nInfelizmente, seu comprovante de pagamento foi rejeitado.\n\nDetalhes do pedido:\n${orderDetails}\n\nMotivo da rejeição:\n${rejectionReason || "Comprovante inválido ou ilegível"}\n\nPor favor, faça o upload de um novo comprovante válido através do seu painel.\n\nSe tiver dúvidas, entre em contato com nosso suporte.`;
+  await createUserPaymentNotification(service, userId, orderId, orderType, approved, message);
+
+  if (!customerEmail) {
+    console.error("Customer email not found for payment notification");
+    return;
   }
 
-  // Log notification (actual email sending would be implemented via email service)
-  console.log(`[NOTIFICATION] To: ${customerEmail}`);
-  console.log(`[NOTIFICATION] Subject: ${subject}`);
-  console.log(`[NOTIFICATION] Message: ${message}`);
+  if (!(await shouldSendPaymentEmail(service, userId))) {
+    return;
+  }
 
-  // TODO: Integrate with email service when implemented
-  // await sendEmail(customerEmail, subject, message);
+  try {
+    await sendPaymentEmail(customerEmail, subject, message);
+  } catch (error) {
+    console.error("Error sending payment notification email:", error);
+  }
 }
 
-/**
- * Approves payment voucher and updates order status
- */
 async function approvePayment(
   service: any,
+  adminClient: any,
   orderId: string,
-  orderType: "subscription" | "standalone_purchase",
+  orderType: OrderType,
   adminUserId: string,
   notes?: string,
 ): Promise<any> {
   if (orderType === "standalone_purchase") {
-    // Fetch current purchase
     const { data: purchase, error: fetchError } = await service
       .from("standalone_purchases")
       .select("id, status")
@@ -191,127 +196,66 @@ async function approvePayment(
       .single();
 
     if (fetchError || !purchase) {
-      throw new Error("Compra avulsa não encontrada");
+      throw new Error("Compra avulsa nao encontrada");
     }
 
-    const previousStatus = purchase.status;
-    let newStatus: string;
+    let voucherType: "deposit" | "balance";
 
-    // Determine new status based on current status
-    if (previousStatus === "deposit_paid") {
-      newStatus = "awaiting_balance";
-    } else if (previousStatus === "awaiting_balance") {
-      newStatus = "balance_paid";
+    if (purchase.status === "deposit_paid") {
+      voucherType = "deposit";
+    } else if (purchase.status === "awaiting_balance") {
+      voucherType = "balance";
     } else {
-      throw new Error(
-        `Status inválido para aprovação de pagamento: ${previousStatus}`,
-      );
+      throw new Error(`Status invalido para aprovacao de pagamento: ${purchase.status}`);
     }
 
-    // Update purchase status and clear rejection reason
-    const updateData: any = {
-      status: newStatus,
-      updated_at: toUTC(nowInBahia()).toISOString(),
-    };
-
-    // Clear rejection reason on approval
-    if (previousStatus === "deposit_paid") {
-      updateData.deposit_rejection_reason = null;
-    } else if (previousStatus === "awaiting_balance") {
-      updateData.balance_rejection_reason = null;
-      updateData.balance_paid_at = toUTC(nowInBahia()).toISOString();
-    }
-
-    const { data: updatedPurchase, error: updateError } = await service
-      .from("standalone_purchases")
-      .update(updateData)
-      .eq("id", orderId)
-      .select()
-      .single();
+    const { data: updatedPurchase, error: updateError } = await adminClient.rpc(
+      "admin_approve_standalone_payment_voucher",
+      {
+        p_purchase_id: orderId,
+        p_voucher_type: voucherType,
+      },
+    );
 
     if (updateError) {
       throw new Error(`Erro ao atualizar status: ${updateError.message}`);
     }
 
-    // Log admin action
-    await logVerificationAction(
-      service,
-      orderId,
-      orderType,
-      adminUserId,
-      true,
-      previousStatus,
-      newStatus,
-      notes || null,
-    );
-
-    // Send notification to customer
     await notifyCustomer(service, orderId, orderType, true);
-
+    void adminUserId;
+    void notes;
     return updatedPurchase;
-  } else {
-    // Handle subscription payment approval
-    const { data: subscription, error: fetchError } = await service
-      .from("subscriptions")
-      .select("id, status")
-      .eq("id", orderId)
-      .single();
-
-    if (fetchError || !subscription) {
-      throw new Error("Assinatura não encontrada");
-    }
-
-    const previousStatus = subscription.status;
-    const newStatus = "active";
-
-    // Update subscription status to active and clear rejection reason
-    const { data: updatedSubscription, error: updateError } = await service
-      .from("subscriptions")
-      .update({
-        status: newStatus,
-        payment_rejection_reason: null,
-        updated_at: toUTC(nowInBahia()).toISOString(),
-      })
-      .eq("id", orderId)
-      .select()
-      .single();
-
-    if (updateError) {
-      throw new Error(`Erro ao atualizar status: ${updateError.message}`);
-    }
-
-    // Log admin action
-    await logVerificationAction(
-      service,
-      orderId,
-      orderType,
-      adminUserId,
-      true,
-      previousStatus,
-      newStatus,
-      notes || null,
-    );
-
-    // Send notification to customer
-    await notifyCustomer(service, orderId, orderType, true);
-
-    return updatedSubscription;
   }
+
+  const { data: updatedSubscription, error: updateError } = await adminClient.rpc(
+    "admin_verify_subscription_payment_voucher",
+    {
+      p_subscription_id: orderId,
+      p_approved: true,
+      p_rejection_reason: null,
+      p_notes: notes ?? null,
+      p_admin_user_id: adminUserId,
+    },
+  );
+
+  if (updateError) {
+    throw new Error(mapSubscriptionPaymentRpcError(updateError.message));
+  }
+
+  await notifyCustomer(service, orderId, orderType, true);
+  return updatedSubscription;
 }
 
-/**
- * Rejects payment voucher and notifies customer
- */
 async function rejectPayment(
   service: any,
+  adminClient: any,
   orderId: string,
-  orderType: "subscription" | "standalone_purchase",
+  orderType: OrderType,
   adminUserId: string,
   rejectionReason: string,
   notes?: string,
 ): Promise<any> {
   if (orderType === "standalone_purchase") {
-    // Fetch current purchase
     const { data: purchase, error: fetchError } = await service
       .from("standalone_purchases")
       .select("id, status")
@@ -319,100 +263,55 @@ async function rejectPayment(
       .single();
 
     if (fetchError || !purchase) {
-      throw new Error("Compra avulsa não encontrada");
+      throw new Error("Compra avulsa nao encontrada");
     }
 
-    const previousStatus = purchase.status;
-    // Status remains the same, but we clear the voucher URL to allow re-upload
-    // The customer will need to upload a new voucher
+    let voucherType: "deposit" | "balance";
 
-    // Update purchase - clear voucher URL and store rejection reason based on current status
-    const updateData: any = {
-      updated_at: toUTC(nowInBahia()).toISOString(),
-    };
-
-    if (previousStatus === "deposit_paid") {
-      updateData.payment_voucher_deposit_url = null;
-      updateData.deposit_rejection_reason = rejectionReason;
-    } else if (previousStatus === "awaiting_balance") {
-      updateData.payment_voucher_balance_url = null;
-      updateData.balance_rejection_reason = rejectionReason;
+    if (purchase.status === "deposit_paid") {
+      voucherType = "deposit";
+    } else if (purchase.status === "awaiting_balance") {
+      voucherType = "balance";
+    } else {
+      throw new Error(`Status invalido para rejeicao de pagamento: ${purchase.status}`);
     }
 
-    const { data: updatedPurchase, error: updateError } = await service
-      .from("standalone_purchases")
-      .update(updateData)
-      .eq("id", orderId)
-      .select()
-      .single();
+    const { data: updatedPurchase, error: updateError } = await adminClient.rpc(
+      "admin_reject_standalone_payment_voucher",
+      {
+        p_purchase_id: orderId,
+        p_voucher_type: voucherType,
+        p_reason: rejectionReason,
+      },
+    );
 
     if (updateError) {
       throw new Error(`Erro ao atualizar compra: ${updateError.message}`);
     }
 
-    // Log admin action
-    await logVerificationAction(
-      service,
-      orderId,
-      orderType,
-      adminUserId,
-      false,
-      previousStatus,
-      previousStatus, // Status doesn't change on rejection
-      `Rejeitado: ${rejectionReason}${notes ? ` | ${notes}` : ""}`,
-    );
-
-    // Send notification to customer with rejection reason
     await notifyCustomer(service, orderId, orderType, false, rejectionReason);
-
+    void adminUserId;
+    void notes;
     return updatedPurchase;
-  } else {
-    // Handle subscription payment rejection
-    const { data: subscription, error: fetchError } = await service
-      .from("subscriptions")
-      .select("id, status")
-      .eq("id", orderId)
-      .single();
-
-    if (fetchError || !subscription) {
-      throw new Error("Assinatura não encontrada");
-    }
-
-    const previousStatus = subscription.status;
-
-    // Clear payment voucher URL and store rejection reason to allow re-upload
-    const { data: updatedSubscription, error: updateError } = await service
-      .from("subscriptions")
-      .update({
-        payment_voucher_url: null,
-        payment_rejection_reason: rejectionReason,
-        updated_at: toUTC(nowInBahia()).toISOString(),
-      })
-      .eq("id", orderId)
-      .select()
-      .single();
-
-    if (updateError) {
-      throw new Error(`Erro ao atualizar assinatura: ${updateError.message}`);
-    }
-
-    // Log admin action
-    await logVerificationAction(
-      service,
-      orderId,
-      orderType,
-      adminUserId,
-      false,
-      previousStatus,
-      previousStatus, // Status doesn't change on rejection
-      `Rejeitado: ${rejectionReason}${notes ? ` | ${notes}` : ""}`,
-    );
-
-    // Send notification to customer with rejection reason
-    await notifyCustomer(service, orderId, orderType, false, rejectionReason);
-
-    return updatedSubscription;
   }
+
+  const { data: updatedSubscription, error: updateError } = await adminClient.rpc(
+    "admin_verify_subscription_payment_voucher",
+    {
+      p_subscription_id: orderId,
+      p_approved: false,
+      p_rejection_reason: rejectionReason,
+      p_notes: notes ?? null,
+      p_admin_user_id: adminUserId,
+    },
+  );
+
+  if (updateError) {
+    throw new Error(mapSubscriptionPaymentRpcError(updateError.message));
+  }
+
+  await notifyCustomer(service, orderId, orderType, false, rejectionReason);
+  return updatedSubscription;
 }
 
 serve(async (req: Request) => {
@@ -420,173 +319,50 @@ serve(async (req: Request) => {
   if (opt) return opt;
 
   try {
-    // Verify admin authorization
     const adminUser = await assertAdmin(req);
-    const adminUserId = adminUser.userId;
-
+    const { client: adminClient } = await getClaims(req);
     const service = getServiceClient();
-    const body = (await req.json().catch(() => ({}))) as VerifyPaymentRequest;
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, VERIFY_PAYMENT_SCHEMA);
+    if ("error" in validation) return validation.error;
 
-    const { orderId, orderType, approved, rejectionReason, notes } = body;
+    const { orderId, orderType, approved, rejectionReason, notes } =
+      validation.data as unknown as VerifyPaymentRequest;
 
-    // Validate input
-    if (!orderId || !orderType) {
-      return new Response(
-        JSON.stringify({ error: "orderId e orderType são obrigatórios" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    if (typeof approved !== "boolean") {
-      return new Response(
-        JSON.stringify({ error: "approved deve ser um valor booleano" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Validate order type
     if (!["subscription", "standalone_purchase"].includes(orderType)) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "orderType inválido. Use 'subscription' ou 'standalone_purchase'",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return json({ error: "orderType invalido. Use subscription ou standalone_purchase" }, 400);
     }
 
-    // If rejected, rejection reason is required and must be valid
-    if (!approved) {
-      if (!rejectionReason) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "rejectionReason é obrigatório quando o pagamento é rejeitado",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      // Validate rejection reason length and content
-      const trimmedReason = rejectionReason.trim();
-      if (trimmedReason.length === 0) {
-        return new Response(
-          JSON.stringify({
-            error: "rejectionReason não pode estar vazio",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (trimmedReason.length > 500) {
-        return new Response(
-          JSON.stringify({
-            error: "rejectionReason não pode exceder 500 caracteres",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      // Basic XSS prevention - reject if contains HTML tags
-      if (/<[^>]*>/g.test(trimmedReason)) {
-        return new Response(
-          JSON.stringify({
-            error: "rejectionReason não pode conter tags HTML",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
+    if (!approved && !rejectionReason) {
+      return json({ error: "rejectionReason e obrigatorio quando o pagamento e rejeitado" }, 400);
     }
 
-    // Validate notes if provided
-    if (notes) {
-      const trimmedNotes = notes.trim();
-      if (trimmedNotes.length > 1000) {
-        return new Response(
-          JSON.stringify({
-            error: "notes não pode exceder 1000 caracteres",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
+    const result = approved
+      ? await approvePayment(service, adminClient, orderId, orderType, adminUser.userId, notes)
+      : await rejectPayment(service, adminClient, orderId, orderType, adminUser.userId, rejectionReason!, notes);
 
-      // Basic XSS prevention
-      if (/<[^>]*>/g.test(trimmedNotes)) {
-        return new Response(
-          JSON.stringify({
-            error: "notes não pode conter tags HTML",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-    }
-
-    // Process verification
-    let result;
-    if (approved) {
-      result = await approvePayment(
-        service,
-        orderId,
-        orderType,
-        adminUserId,
-        notes,
-      );
-    } else {
-      result = await rejectPayment(
-        service,
-        orderId,
-        orderType,
-        adminUserId,
-        rejectionReason!,
-        notes,
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: approved
-          ? "Pagamento aprovado com sucesso"
-          : "Pagamento rejeitado. Cliente notificado.",
-        order: result,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return json({
+      success: true,
+      message: approved
+        ? "Pagamento aprovado com sucesso"
+        : "Pagamento rejeitado. Cliente notificado.",
+      order: result,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error in admin-verify-payment:", msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const status =
+      msg === "Unauthorized" ? 401 :
+      msg.startsWith("Forbidden") ? 403 :
+      msg.includes("obrigatorio") || msg.includes("inval") || msg.includes("cannot") ? 400 :
+      500;
+    return json({ error: status >= 500 ? "Internal server error" : msg }, status);
   }
 });
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

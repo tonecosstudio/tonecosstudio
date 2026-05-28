@@ -10,6 +10,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
+import { initializeCurrentUserCoinBalanceRpc } from '@/services/coins-mutations-service';
 import type {
   CoinsAmount,
   UserId,
@@ -64,13 +66,9 @@ export function useCoinsBalance(userId?: UserId | null) {
       let targetUserId = userId;
       
       if (!targetUserId) {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          throw new Error('Usuário não autenticado');
-        }
-        
-        targetUserId = user.id;
+        targetUserId = await requireAuthenticatedUserId();
+      } else {
+        await assertCurrentUserId(targetUserId);
       }
       
       // Busca saldo de coins
@@ -233,45 +231,12 @@ export function useInitializeBalance() {
       description: string;
     }) => {
       const { userId, initialAmount, description } = params;
-      
-      // Verifica se usuário já tem saldo
-      const { data: existing } = await supabase
-        .from('user_coins')
-        .select('user_id')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (existing) {
-        throw new Error('Usuário já possui saldo de coins');
-      }
-      
-      // Cria registro de saldo
-      const { error: insertError } = await supabase
-        .from('user_coins')
-        .insert({
-          user_id: userId,
-          balance: initialAmount,
-        });
-      
-      if (insertError) {
-        throw new Error(`Erro ao inicializar saldo: ${insertError.message}`);
-      }
-      
-      // Registra transação
-      const { error: txError } = await supabase
-        .from('coin_transactions')
-        .insert({
-          user_id: userId,
-          amount: initialAmount,
-          transaction_type: 'bonus',
-          description,
-        });
-      
-      if (txError) {
-        throw new Error(`Erro ao registrar transação: ${txError.message}`);
-      }
-      
-      return { success: true, balance: initialAmount };
+      await assertCurrentUserId(userId);
+
+      return initializeCurrentUserCoinBalanceRpc({
+        initialAmount,
+        description,
+      });
     },
     onSuccess: (data, variables) => {
       // Invalida cache do saldo

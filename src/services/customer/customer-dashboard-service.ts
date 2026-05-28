@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 
 export type CustomerDashboardQuote = {
   id: string;
@@ -29,6 +30,8 @@ export type CustomerDashboardStats = {
 };
 
 export async function getCustomerDashboardStats(userId: string): Promise<CustomerDashboardStats> {
+  await assertCurrentUserId(userId);
+
   const [quotesRes, likesRes, wishlistRes, collectorRes] = await Promise.all([
     supabase
       .from("quotes")
@@ -64,6 +67,8 @@ export async function getCustomerDashboardStats(userId: string): Promise<Custome
 export async function listCustomerDashboardNotifications(
   userId: string,
 ): Promise<CustomerDashboardNotification[]> {
+  await assertCurrentUserId(userId);
+
   const { data, error } = await supabase
     .from("notifications")
     .select("id,title,message,created_at")

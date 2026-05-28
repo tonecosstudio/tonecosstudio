@@ -1,179 +1,195 @@
-/**
- * Testes para useSystemSettings hook
- */
-
-import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import type React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useSystemSettings, useSystemSetting, fetchSystemSettings } from "./useSystemSettings";
-import React from "react";
+import { renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  fetchSystemSettings,
+  updateSystemSetting,
+  updateSystemSettings,
+  useSystemSetting,
+  useSystemSettings,
+  useSystemSettingsMultiple,
+} from "./useSystemSettings";
 
-// Mock do Supabase
+const mocks = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  from: vi.fn(),
+  select: vi.fn(),
+  single: vi.fn(),
+  loggerWarn: vi.fn(),
+  upsertAdminSystemSettings: vi.fn(),
+}));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        single: vi.fn(() =>
-          Promise.resolve({
-            data: {
-              company_name: "Test Company",
-              contact_email: "test@example.com",
-              default_price_full: 100,
-            },
-            error: null,
-          })
-        ),
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ error: null })),
-      })),
-      upsert: vi.fn(() => Promise.resolve({ error: null })),
-    })),
+    rpc: mocks.rpc,
+    from: mocks.from,
   },
 }));
 
-// Helper para criar wrapper com QueryClient
-const createWrapper = () => {
+vi.mock("@/lib/logger", () => ({
+  log: {
+    warn: mocks.loggerWarn,
+  },
+}));
+
+vi.mock("@/services/admin/admin-config-mutations-service", () => ({
+  upsertAdminSystemSettings: mocks.upsertAdminSystemSettings,
+}));
+
+function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+      queries: {
+        gcTime: 0,
+        retry: false,
+      },
     },
   });
 
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+  return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+}
 
-  return Wrapper;
-};
+function mockViewResponse(
+  response: { data: unknown; error: { message: string } | null } = { data: null, error: null }
+) {
+  mocks.single.mockResolvedValue(response);
+  mocks.select.mockReturnValue({ single: mocks.single });
+  mocks.from.mockReturnValue({ select: mocks.select });
+}
 
 describe("useSystemSettings", () => {
-  it("deve retornar configurações do sistema", async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mocks.rpc.mockResolvedValue({
+      data: {
+        company_name: "Ordax Test",
+        contact_email: "contato@ordax.test",
+        default_price_full: "150",
+      },
+      error: null,
+    });
+    mockViewResponse();
+    mocks.upsertAdminSystemSettings.mockResolvedValue(undefined);
+  });
+
+  it("retorna configuracoes vindas da RPC com defaults centralizados e numeros normalizados", async () => {
     const { result } = renderHook(() => useSystemSettings(), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
-    expect(result.current.data).toHaveProperty("company_name");
-    expect(result.current.data).toHaveProperty("contact_email");
-    expect(result.current.data).toHaveProperty("default_price_full");
+    expect(result.current.data).toMatchObject({
+      company_name: "Ordax Test",
+      contact_email: "contato@ordax.test",
+      default_price_full: 150,
+    });
+    expect(result.current.data?.support_email).toBeTruthy();
+    expect(mocks.rpc).toHaveBeenCalledWith("get_system_settings");
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 
-  it("deve ter valores padrão quando banco falha", async () => {
-    const { result } = renderHook(() => useSystemSettings(), {
-      wrapper: createWrapper(),
+  it("usa a view agrupada quando a RPC falha e desembrulha o campo settings", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "rpc unavailable" } });
+    mockViewResponse({
+      data: {
+        settings: {
+          company_name: "View Company",
+          default_price_pix: "125",
+          shipping_business_days: "12",
+        },
+      },
+      error: null,
     });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    const settings = await fetchSystemSettings();
 
-    // Deve ter todas as propriedades obrigatórias
-    expect(result.current.data).toHaveProperty("company_name");
-    expect(result.current.data).toHaveProperty("company_address");
-    expect(result.current.data).toHaveProperty("contact_email");
-    expect(result.current.data).toHaveProperty("support_email");
-    expect(result.current.data).toHaveProperty("default_price_full");
-    expect(result.current.data).toHaveProperty("shipping_business_days");
+    expect(settings.company_name).toBe("View Company");
+    expect(settings.default_price_pix).toBe(125);
+    expect(settings.shipping_business_days).toBe(12);
+    expect(mocks.from).toHaveBeenCalledWith("system_settings_grouped");
+    expect(mocks.select).toHaveBeenCalledWith("settings");
   });
 
-  it("deve cachear resultados", async () => {
-    const { result, rerender } = renderHook(() => useSystemSettings(), {
-      wrapper: createWrapper(),
-    });
+  it("retorna defaults seguros quando RPC e view falham", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "rpc unavailable" } });
+    mockViewResponse({ data: null, error: { message: "view unavailable" } });
 
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    });
+    const settings = await fetchSystemSettings();
 
-    const firstData = result.current.data;
-
-    rerender();
-
-    // Dados devem ser os mesmos (cache)
-    expect(result.current.data).toBe(firstData);
+    expect(settings.company_name).toBeTruthy();
+    expect(settings.contact_email).toBeTruthy();
+    expect(settings.default_price_full).toBeGreaterThan(0);
+    expect(settings.shipping_business_days).toBeGreaterThan(0);
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(
+      "Failed to fetch system settings view, using defaults",
+      { error: { message: "view unavailable" } }
+    );
   });
-});
 
-describe("useSystemSetting", () => {
-  it("deve retornar configuração específica", async () => {
+  it("retorna uma configuracao especifica atraves do hook derivado", async () => {
     const { result } = renderHook(() => useSystemSetting("company_name"), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current).toBeDefined();
-    });
-
-    expect(typeof result.current).toBe("string");
+    await waitFor(() => expect(result.current).toBe("Ordax Test"));
   });
 
-  it("deve retornar undefined enquanto carrega", () => {
+  it("retorna multiplas configuracoes especificas atraves do hook derivado", async () => {
+    const { result } = renderHook(
+      () => useSystemSettingsMultiple(["company_name", "default_price_full"]),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() =>
+      expect(result.current).toEqual({
+        company_name: "Ordax Test",
+        default_price_full: 150,
+      })
+    );
+  });
+
+  it("mantem undefined enquanto a configuracao especifica ainda esta carregando", () => {
+    mocks.rpc.mockReturnValueOnce(new Promise(() => undefined));
+
     const { result } = renderHook(() => useSystemSetting("contact_email"), {
       wrapper: createWrapper(),
     });
 
-    // Inicialmente undefined
     expect(result.current).toBeUndefined();
   });
-});
 
-describe("fetchSystemSettings", () => {
-  it("deve buscar configurações fora de componentes React", async () => {
-    const settings = await fetchSystemSettings();
+  it("centraliza atualizacao de uma configuracao no servico admin", async () => {
+    await expect(updateSystemSetting("company_name", "Nova Ordax")).resolves.toEqual({
+      success: true,
+    });
 
-    expect(settings).toBeDefined();
-    expect(settings).toHaveProperty("company_name");
-    expect(settings).toHaveProperty("contact_email");
-    expect(settings).toHaveProperty("default_price_full");
+    expect(mocks.upsertAdminSystemSettings).toHaveBeenCalledWith({
+      company_name: "Nova Ordax",
+    });
   });
 
-  it("deve retornar valores padrão em caso de erro", async () => {
-    const settings = await fetchSystemSettings();
+  it("centraliza atualizacao em lote no servico admin", async () => {
+    const payload = {
+      company_name: "Nova Ordax",
+      contact_email: "novo@ordax.test",
+    };
 
-    // Deve ter todas as propriedades obrigatórias
-    expect(settings.company_name).toBeDefined();
-    expect(settings.contact_email).toBeDefined();
-    expect(settings.default_price_full).toBeGreaterThan(0);
-    expect(settings.shipping_business_days).toBeGreaterThan(0);
-  });
-});
+    await expect(updateSystemSettings(payload)).resolves.toEqual({ success: true });
 
-describe("SystemSettings - Validação de Tipos", () => {
-  it("deve ter tipos corretos para preços", async () => {
-    const settings = await fetchSystemSettings();
-
-    expect(typeof settings.default_price_full).toBe("number");
-    expect(typeof settings.default_price_pix).toBe("number");
-    expect(typeof settings.default_deposit_amount).toBe("number");
-    expect(typeof settings.pix_discount_percentage).toBe("number");
+    expect(mocks.upsertAdminSystemSettings).toHaveBeenCalledWith(payload);
   });
 
-  it("deve ter tipos corretos para prazos", async () => {
-    const settings = await fetchSystemSettings();
+  it("propaga falhas de atualizacao como contrato de erro", async () => {
+    mocks.upsertAdminSystemSettings.mockRejectedValueOnce(new Error("sem permissao"));
 
-    expect(typeof settings.shipping_business_days).toBe("number");
-    expect(typeof settings.exchange_deadline_days).toBe("number");
-    expect(typeof settings.days_to_next_delivery).toBe("number");
-  });
-
-  it("deve ter tipos corretos para strings", async () => {
-    const settings = await fetchSystemSettings();
-
-    expect(typeof settings.company_name).toBe("string");
-    expect(typeof settings.contact_email).toBe("string");
-    expect(typeof settings.support_email).toBe("string");
-  });
-
-  it("deve ter valores positivos para números", async () => {
-    const settings = await fetchSystemSettings();
-
-    expect(settings.default_price_full).toBeGreaterThan(0);
-    expect(settings.default_price_pix).toBeGreaterThan(0);
-    expect(settings.shipping_business_days).toBeGreaterThan(0);
-    expect(settings.max_installments_no_interest).toBeGreaterThan(0);
+    await expect(updateSystemSetting("company_name", "Nova Ordax")).resolves.toEqual({
+      success: false,
+      error: "sem permissao",
+    });
   });
 });

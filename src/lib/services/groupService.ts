@@ -35,6 +35,52 @@ interface MemberGroupsOptimizedRow {
   last_viewed_at: string | null;
 }
 
+type RpcError = { message?: string } | null;
+
+interface GroupAdminRpcClient {
+  rpc(functionName: "admin_create_chat_group", args: {
+    p_name: string;
+    p_type: string;
+    p_membership_criteria: unknown;
+    p_created_by: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_soft_delete_chat_group", args: {
+    p_group_id: string;
+    p_deleted_by: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_add_chat_group_member", args: {
+    p_group_id: string;
+    p_user_id: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_remove_chat_group_member", args: {
+    p_group_id: string;
+    p_user_id: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "get_member_groups_optimized", args: {
+    p_user_id: string;
+  }): PromiseLike<{ data: MemberGroupsOptimizedRow[] | null; error: RpcError }>;
+}
+
+const groupAdminRpc = supabase as unknown as GroupAdminRpcClient;
+
+function mapGroupAdminError(message: string | undefined, fallback: string): string {
+  const value = message ?? "";
+  if (value.includes("GROUP_NAME_EXISTS")) return "Ja existe um grupo com este nome";
+  if (value.includes("GROUP_NOT_FOUND")) return "Grupo nao encontrado";
+  if (value.includes("GROUP_ALREADY_DELETED")) return "Grupo ja foi deletado";
+  if (value.includes("GROUP_USER_NOT_FOUND")) return "Usuario nao encontrado";
+  if (value.includes("GROUP_MEMBER_EXISTS")) return "Usuario ja e membro deste grupo";
+  if (value.includes("GROUP_MANUAL_MEMBERS_ONLY")) {
+    return "Apenas grupos manuais permitem alteracao manual de membros";
+  }
+  if (value.includes("INVALID_GROUP_NAME")) return "Nome do grupo invalido";
+  if (value.includes("INVALID_GROUP_TYPE")) return "Tipo de grupo invalido";
+  if (value.includes("GROUP_CRITERIA_REQUIRED")) {
+    return "Grupos automaticos devem ter criterios de associacao";
+  }
+  return fallback;
+}
+
 /**
  * GroupService - Service for managing chat groups.
  */
@@ -60,62 +106,30 @@ export class GroupService {
       throw new Error(criteriaValidation.error);
     }
 
-    const { data: existingGroup } = await supabase
-      .from("chat_groups")
-      .select("id")
-      .eq("name", sanitizedName)
-      .is("deleted_at", null)
-      .single();
-
-    if (existingGroup) {
-      throw new Error("Já existe um grupo com este nome");
-    }
-
-    const { data, error } = await supabase
-      .from("chat_groups")
-      .insert({
-        name: sanitizedName,
-        type: input.type,
-        membership_criteria: input.membership_criteria || null,
-        created_by: input.created_by,
-      })
-      .select()
-      .single();
+    const { data, error } = await groupAdminRpc.rpc("admin_create_chat_group", {
+      p_name: sanitizedName,
+      p_type: input.type,
+      p_membership_criteria: input.membership_criteria || null,
+      p_created_by: input.created_by,
+    });
 
     if (error) {
       log.error("Erro ao criar grupo", { error, groupName: sanitizedName });
-      throw new Error("Erro ao criar grupo");
+      throw new Error(mapGroupAdminError(error.message, "Erro ao criar grupo"));
     }
 
     return data as Group;
   }
 
   async deleteGroup(groupId: string, adminId: string): Promise<void> {
-    const { data: group, error: fetchError } = await supabase
-      .from("chat_groups")
-      .select("id, deleted_at")
-      .eq("id", groupId)
-      .single();
-
-    if (fetchError || !group) {
-      throw new Error("Grupo não encontrado");
-    }
-
-    if (group.deleted_at) {
-      throw new Error("Grupo já foi deletado");
-    }
-
-    const { error } = await supabase
-      .from("chat_groups")
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by: adminId,
-      })
-      .eq("id", groupId);
+    const { error } = await groupAdminRpc.rpc("admin_soft_delete_chat_group", {
+      p_group_id: groupId,
+      p_deleted_by: adminId,
+    });
 
     if (error) {
       log.error("Erro ao deletar grupo", { error, groupId, adminId });
-      throw new Error("Erro ao deletar grupo");
+      throw new Error(mapGroupAdminError(error.message, "Erro ao deletar grupo"));
     }
   }
 
@@ -252,86 +266,28 @@ export class GroupService {
   }
 
   async addMember(groupId: string, userId: string): Promise<GroupMember> {
-    const { data: group, error: groupError } = await supabase
-      .from("chat_groups")
-      .select("type, deleted_at")
-      .eq("id", groupId)
-      .single();
-
-    if (groupError || !group) {
-      throw new Error("Grupo não encontrado");
-    }
-
-    if (group.deleted_at) {
-      throw new Error("Não é possível adicionar membros a um grupo deletado");
-    }
-
-    if (group.type !== "manual") {
-      throw new Error("Apenas grupos manuais permitem adição manual de membros");
-    }
-
-    const { data: user, error: userError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("id", userId)
-      .single();
-
-    if (userError || !user) {
-      throw new Error("Usuário não encontrado");
-    }
-
-    const { data: existingMember } = await supabase
-      .from("chat_group_members")
-      .select("id")
-      .eq("group_id", groupId)
-      .eq("user_id", userId)
-      .single();
-
-    if (existingMember) {
-      throw new Error("Usuário já é membro deste grupo");
-    }
-
-    const { data, error } = await supabase
-      .from("chat_group_members")
-      .insert({
-        group_id: groupId,
-        user_id: userId,
-      })
-      .select()
-      .single();
+    const { data, error } = await groupAdminRpc.rpc("admin_add_chat_group_member", {
+      p_group_id: groupId,
+      p_user_id: userId,
+    });
 
     if (error) {
       log.error("Erro ao adicionar membro ao grupo", { error, groupId, userId });
-      throw new Error("Erro ao adicionar membro ao grupo");
+      throw new Error(mapGroupAdminError(error.message, "Erro ao adicionar membro ao grupo"));
     }
 
     return data as GroupMember;
   }
 
   async removeMember(groupId: string, userId: string): Promise<void> {
-    const { data: group, error: groupError } = await supabase
-      .from("chat_groups")
-      .select("type, deleted_at")
-      .eq("id", groupId)
-      .single();
-
-    if (groupError || !group) {
-      throw new Error("Grupo não encontrado");
-    }
-
-    if (group.type !== "manual") {
-      throw new Error("Apenas grupos manuais permitem remoção manual de membros");
-    }
-
-    const { error } = await supabase
-      .from("chat_group_members")
-      .delete()
-      .eq("group_id", groupId)
-      .eq("user_id", userId);
+    const { error } = await groupAdminRpc.rpc("admin_remove_chat_group_member", {
+      p_group_id: groupId,
+      p_user_id: userId,
+    });
 
     if (error) {
       log.error("Erro ao remover membro do grupo", { error, groupId, userId });
-      throw new Error("Erro ao remover membro do grupo");
+      throw new Error(mapGroupAdminError(error.message, "Erro ao remover membro do grupo"));
     }
   }
 
@@ -441,7 +397,7 @@ export class GroupService {
 
   async getMemberGroups(userId: string): Promise<MemberGroupView[]> {
     try {
-      const { data, error } = await supabase.rpc("get_member_groups_optimized", {
+      const { data, error } = await groupAdminRpc.rpc("get_member_groups_optimized", {
         p_user_id: userId,
       });
 
@@ -454,7 +410,7 @@ export class GroupService {
         return [];
       }
 
-      return (data as MemberGroupsOptimizedRow[]).map((row) => ({
+      return data.map((row) => ({
         id: row.group_id,
         name: row.group_name,
         type: row.group_type,

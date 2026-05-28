@@ -151,7 +151,7 @@ serve(async (req) => {
 
     console.error("Error propagating tier pricing:", msg);
 
-    return new Response(JSON.stringify({ ok: false, error: msg }), {
+    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  getAllCollectionChanges,
-  searchCollectionChangesBySubscriber,
+  getAuditTrailRecords,
+  searchAuditTrailByResponsible,
   type AuditRecord,
 } from "@/services/audit-trail-service";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
@@ -9,7 +9,7 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limiter";
 export interface AuditTrailFilters {
   limit: number;
   offset: number;
-  changeReason?: string;
+  orderType?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -20,13 +20,13 @@ export function useAuditTrailRecords(filters: AuditTrailFilters) {
   return useQuery({
     queryKey: [
       "audit-trail",
-      filters.changeReason ?? "all",
+      filters.orderType ?? "all",
       filters.startDate ?? "",
       filters.endDate ?? "",
       filters.limit,
       filters.offset,
     ],
-    queryFn: () => getAllCollectionChanges(filters),
+    queryFn: () => getAuditTrailRecords(filters),
   });
 }
 
@@ -41,11 +41,11 @@ export function useAuditTrailSearch(
     queryFn: () => {
       const rateLimit = checkRateLimit("search-audit-trail", RATE_LIMITS.search);
       if (!rateLimit.allowed) {
-        onRateLimit(rateLimit.retryAfter);
+        onRateLimit(rateLimit.retryAfter ?? RATE_LIMITS.search.windowMs);
         throw new Error("Rate limit exceeded");
       }
 
-      return searchCollectionChangesBySubscriber(searchTerm, limit);
+      return searchAuditTrailByResponsible(searchTerm, limit);
     },
   });
 }

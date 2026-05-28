@@ -31,7 +31,14 @@ import {
 import * as adminCreditCharactersService from "@/hooks/admin/useAdminCreditCharactersData";
 import { Plus, Edit, Trash2, Package, Coins, Layers } from "lucide-react";
 
-const supabase = adminCreditCharactersService.adminCreditCharactersSupabase;
+type CatalogCharacterStatus = "released" | "coming_soon" | "upcoming" | "revealed";
+
+const catalogCharacterStatuses = new Set<CatalogCharacterStatus>([
+  "released",
+  "coming_soon",
+  "upcoming",
+  "revealed",
+]);
 
 type PriceCategory = {
   id: string;
@@ -52,12 +59,30 @@ type CatalogCharacter = {
   price_category_id?: string | null;
   image_url?: string | null;
   is_catalog?: boolean;
-  status?: "released" | "coming_soon" | string;
+  status?: CatalogCharacterStatus | null;
   theme_category?: string | null;
   product_line?: string | null;
   release_order?: number | null;
   price_categories?: PriceCategory | null;
 };
+
+function priceCoins(category: PriceCategory | null | undefined): number {
+  return category?.price_coins ?? 0;
+}
+
+function coinValueInCents(category: PriceCategory | null | undefined): number {
+  return category?.coin_value_in_cents ?? 200;
+}
+
+function standalonePriceInCents(category: PriceCategory | null | undefined): number {
+  return category?.price_standalone ?? 0;
+}
+
+function normalizeCatalogCharacterStatus(status: string | null | undefined): CatalogCharacterStatus {
+  return status && catalogCharacterStatuses.has(status as CatalogCharacterStatus)
+    ? (status as CatalogCharacterStatus)
+    : "released";
+}
 
 type CharacterFormDialogProps = {
   character: CatalogCharacter | null;
@@ -113,7 +138,10 @@ export function CreditCharactersContent() {
     queryFn: adminCreditCharactersService.fetchPriceCategories,
   });
 
-  const characters = charactersQuery.data || [];
+  const characters: CatalogCharacter[] = (charactersQuery.data || []).map((character) => ({
+    ...character,
+    status: normalizeCatalogCharacterStatus(character.status),
+  }));
   const categories = categoriesQuery.data || [];
 
   // Filter characters by selected category
@@ -308,11 +336,11 @@ export function CreditCharactersContent() {
                         <div className="flex items-center gap-1">
                           <Coins className="h-3 w-3 text-blue-500" />
                           <span className="font-semibold text-blue-600">
-                            {character.price_categories.price_coins} coins
+                            {priceCoins(character.price_categories)} coins
                           </span>
                         </div>
                         <div className="text-muted-foreground">
-                          R$ {(character.price_categories.price_standalone / 100).toFixed(2)}
+                          R$ {(standalonePriceInCents(character.price_categories) / 100).toFixed(2)}
                         </div>
                       </div>
                     )}
@@ -372,7 +400,7 @@ export function CreditCharactersContent() {
 type CharacterFormData = {
   name: string;
   description: string;
-  status: "released" | "coming_soon";
+  status: CatalogCharacterStatus;
   price_category_id: string;
   theme_category: string;
   product_line: string;
@@ -399,7 +427,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: Cha
       setFormData({
         name: character.name || "",
         description: character.description || "",
-        status: character.status || "released",
+        status: normalizeCatalogCharacterStatus(character.status),
         price_category_id: character.price_category_id || "",
         theme_category: character.theme_category || "",
         product_line: character.product_line || "",
@@ -424,64 +452,24 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: Cha
   // Fetch price categories for dropdown
   const { data: categories } = useQuery({
     queryKey: ["admin-price-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('price_categories')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: adminCreditCharactersService.fetchPriceCategories,
   });
 
   // Fetch existing theme categories for suggestions
   const { data: existingThemes } = useQuery({
     queryKey: ["admin-theme-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('collection_characters')
-        .select('theme_category')
-        .not('theme_category', 'is', null)
-        .order('theme_category');
-      if (error) throw error;
-      // Get unique values
-      const unique = [...new Set(data?.map(d => d.theme_category).filter(Boolean))];
-      return unique;
-    },
+    queryFn: adminCreditCharactersService.fetchUniqueThemeCategories,
   });
 
   // Fetch existing product lines for suggestions
   const { data: existingProductLines } = useQuery({
     queryKey: ["admin-product-lines"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('collection_characters')
-        .select('product_line')
-        .not('product_line', 'is', null)
-        .order('product_line');
-      if (error) throw error;
-      // Get unique values
-      const unique = [...new Set(data?.map(d => d.product_line).filter(Boolean))];
-      return unique;
-    },
+    queryFn: adminCreditCharactersService.fetchUniqueProductLines,
   });
 
   const saveMutation = useMutation({
     mutationFn: async (data: CharacterFormData) => {
-      if (character) {
-        // Update
-        const { error } = await supabase
-          .from('collection_characters')
-          .update(data)
-          .eq('id', character.id);
-        if (error) throw error;
-      } else {
-        // Create
-        const { error } = await supabase
-          .from('collection_characters')
-          .insert(data);
-        if (error) throw error;
-      }
+      await adminCreditCharactersService.saveCatalogCharacter(character?.id ?? null, data);
     },
     onSuccess: () => {
       toast({ title: character ? "Personagem atualizado" : "Personagem criado" });
@@ -605,7 +593,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: Cha
                     <div className="flex items-center justify-between gap-4 w-full">
                       <span className="font-semibold">{cat.display_name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {cat.price_coins} coins • R$ {(cat.price_standalone / 100).toFixed(0)}
+                        {priceCoins(cat)} coins • R$ {(standalonePriceInCents(cat) / 100).toFixed(0)}
                       </span>
                     </div>
                   </SelectItem>
@@ -617,7 +605,7 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: Cha
                 {(() => {
                   const selectedCat = categories.find((c: PriceCategory) => c.id === formData.price_category_id);
                   if (!selectedCat) return null;
-                  return `Preço: ${selectedCat.price_coins} coins (≈ R$ ${((selectedCat.price_coins * (selectedCat.coin_value_in_cents || 200)) / 100).toFixed(2)}) ou R$ ${(selectedCat.price_standalone / 100).toFixed(2)} avulso`;
+                  return `Preço: ${priceCoins(selectedCat)} coins (≈ R$ ${((priceCoins(selectedCat) * coinValueInCents(selectedCat)) / 100).toFixed(2)}) ou R$ ${(standalonePriceInCents(selectedCat) / 100).toFixed(2)} avulso`;
                 })()}
               </p>
             )}
@@ -627,7 +615,11 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: Cha
             <Label htmlFor="status">Status *</Label>
             <Select
               value={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
+              onValueChange={(value) => {
+                if (catalogCharacterStatuses.has(value as CatalogCharacterStatus)) {
+                  setFormData({ ...formData, status: value as CatalogCharacterStatus });
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -635,6 +627,8 @@ function CharacterFormDialog({ character, isOpen, onOpenChange, onSuccess }: Cha
               <SelectContent>
                 <SelectItem value="released">Disponível</SelectItem>
                 <SelectItem value="coming_soon">Em breve</SelectItem>
+                <SelectItem value="upcoming">Planejado</SelectItem>
+                <SelectItem value="revealed">Revelado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -707,25 +701,13 @@ function PriceCategoriesSection({
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Check if any characters use this category
-      const { data: characters, error: checkError } = await supabase
-        .from('collection_characters')
-        .select('id')
-        .eq('price_category_id', id)
-        .limit(1);
+      const characterCount = await adminCreditCharactersService.countCharactersByPriceCategory(id);
 
-      if (checkError) throw checkError;
-
-      if (characters && characters.length > 0) {
+      if (characterCount > 0) {
         throw new Error('Não é possível excluir uma categoria que possui personagens vinculados');
       }
 
-      const { error } = await supabase
-        .from('price_categories')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await adminCreditCharactersService.deletePriceCategory(id);
     },
     onSuccess: () => {
       toast({ title: "Categoria excluída com sucesso" });
@@ -800,15 +782,9 @@ function PriceCategoriesSection({
 
 // Category Card Component
 function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) {
-  const [characterCount, setCharacterCount] = useState(0);
-
-  // Count characters using this category
-  useState(() => {
-    supabase
-      .from('collection_characters')
-      .select('id', { count: 'exact', head: true })
-      .eq('price_category_id', category.id)
-      .then(({ count }) => setCharacterCount(count || 0));
+  const { data: characterCount = 0 } = useQuery({
+    queryKey: ["admin-price-category-character-count", category.id],
+    queryFn: () => adminCreditCharactersService.countCharactersByPriceCategory(category.id),
   });
 
   return (
@@ -840,27 +816,27 @@ function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) {
                 <Coins className="h-3 w-3 text-blue-500" />
                 Coins
               </p>
-              <p className="text-lg font-bold text-blue-600">{category.price_coins}</p>
+              <p className="text-lg font-bold text-blue-600">{priceCoins(category)}</p>
             </div>
 
             <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
               <p className="text-xs text-muted-foreground mb-1">Em Coins</p>
               <p className="text-lg font-bold text-purple-600">
-                R$ {((category.price_coins * (category.coin_value_in_cents || 200)) / 100).toFixed(0)}
+                R$ {((priceCoins(category) * coinValueInCents(category)) / 100).toFixed(0)}
               </p>
             </div>
 
             <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
               <p className="text-xs text-muted-foreground mb-1">Avulso</p>
               <p className="text-lg font-bold text-green-600">
-                R$ {(category.price_standalone / 100).toFixed(0)}
+                R$ {(standalonePriceInCents(category) / 100).toFixed(0)}
               </p>
             </div>
           </div>
 
           {/* Conversion Rate */}
           <div className="text-xs text-muted-foreground text-center py-2 border-t border-b">
-            1 coin = R$ {((category.coin_value_in_cents || 200) / 100).toFixed(2)}
+            1 coin = R$ {(coinValueInCents(category) / 100).toFixed(2)}
           </div>
 
           {/* Stats */}
@@ -902,29 +878,14 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: Pric
     description: category?.description || "",
     price_coins: category?.price_coins || 0,
     coin_value_in_cents: category?.coin_value_in_cents || 200,
-    price_standalone: category?.price_standalone || 0,
+    price_standalone: category?.price_standalone ? category.price_standalone / 100 : 0,
     display_order: category?.display_order || 0,
     is_active: category?.is_active ?? true,
   });
 
   const saveMutation = useMutation({
     mutationFn: async (data: PriceCategoryFormData) => {
-      if (category) {
-        // Update
-        const { error } = await supabase
-          .from('price_categories')
-          .update(data)
-          .eq('id', category.id);
-        
-        if (error) throw error;
-      } else {
-        // Create
-        const { error } = await supabase
-          .from('price_categories')
-          .insert(data);
-        
-        if (error) throw error;
-      }
+      await adminCreditCharactersService.savePriceCategory(category?.id ?? null, data);
     },
     onSuccess: () => {
       toast({ title: category ? "Categoria atualizada" : "Categoria criada" });
@@ -1014,7 +975,7 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: Pric
                 type="number"
                 min="0"
                 value={formData.price_coins}
-                onChange={(e) => setFormData({ ...formData, price_coins: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, price_coins: Number(e.target.value) || 0 })}
                 required
               />
             </div>
@@ -1042,7 +1003,7 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: Pric
                 type="number"
                 min="0"
                 step="0.01"
-                value={formData.price_standalone / 100}
+                value={formData.price_standalone}
                 onChange={(e) => setFormData({ ...formData, price_standalone: parseFloat(e.target.value) || 0 })}
                 required
               />
@@ -1055,7 +1016,7 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: Pric
                 type="number"
                 min="0"
                 value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) || 0 })}
               />
             </div>
           </div>
@@ -1077,20 +1038,20 @@ function PriceCategoryDialog({ category, isOpen, onOpenChange, onSuccess }: Pric
                 <div>
                   <p className="text-muted-foreground mb-1">Preço Avulso</p>
                   <p className="text-lg font-bold text-green-600">
-                    R$ {(formData.price_standalone / 100).toFixed(2)}
+                    R$ {formData.price_standalone.toFixed(2)}
                   </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground mb-1">Diferença</p>
                   <p className={`text-lg font-bold ${
-                    (formData.price_standalone - (formData.price_coins * formData.coin_value_in_cents)) > 0 
+                    (formData.price_standalone - ((formData.price_coins * formData.coin_value_in_cents) / 100)) > 0 
                       ? 'text-green-600' 
                       : 'text-red-600'
                   }`}>
-                    R$ {Math.abs((formData.price_standalone - (formData.price_coins * formData.coin_value_in_cents)) / 100).toFixed(2)}
+                    R$ {Math.abs(formData.price_standalone - ((formData.price_coins * formData.coin_value_in_cents) / 100)).toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {(formData.price_standalone - (formData.price_coins * formData.coin_value_in_cents)) > 0 
+                    {(formData.price_standalone - ((formData.price_coins * formData.coin_value_in_cents) / 100)) > 0 
                       ? 'Economia comprando coins' 
                       : 'Mais caro em coins'}
                   </p>

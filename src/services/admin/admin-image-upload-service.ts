@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { sanitizeFilename } from "@/lib/security/input-sanitizer";
+import { generateSecureToken, sanitizeFilename } from "@/lib/security/input-sanitizer";
 
 export interface UploadAdminImageInput {
   file: File;
@@ -13,8 +13,13 @@ export async function uploadAdminImage({
   folder,
 }: UploadAdminImageInput): Promise<string> {
   const sanitizedName = sanitizeFilename(file.name);
+  const sanitizedFolder = folder
+    .split(/[/\\]+/)
+    .map((segment) => sanitizeFilename(segment))
+    .filter(Boolean)
+    .join("/") || "admin-images";
   const fileExt = sanitizedName.split(".").pop() || "jpg";
-  const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const fileName = `${sanitizedFolder}/${Date.now()}-${generateSecureToken(8)}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
     contentType: file.type,

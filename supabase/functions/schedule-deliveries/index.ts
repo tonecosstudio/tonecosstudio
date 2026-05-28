@@ -313,7 +313,7 @@ serve(async (req) => {
     console.error("Error in schedule-deliveries:", msg);
     const status =
       msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

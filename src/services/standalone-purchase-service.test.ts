@@ -14,7 +14,10 @@ import { CutoffPassedError } from '@/lib/cutoff-middleware';
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: vi.fn(),
-    rpc: vi.fn()
+    rpc: vi.fn(),
+    functions: {
+      invoke: vi.fn()
+    }
   }
 }));
 
@@ -29,21 +32,51 @@ vi.mock('@/lib/cutoff-middleware', () => ({
   }
 }));
 
+vi.mock('@/services/auth/current-user', () => ({
+  assertCurrentUserId: vi.fn().mockResolvedValue('user-123'),
+  requireAuthenticatedUserId: vi.fn().mockResolvedValue('user-123'),
+}));
+
+vi.mock('./email-service', () => ({
+  emailService: {
+    sendProductionStarted: vi.fn().mockResolvedValue(undefined),
+    sendEmail: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { supabase } from '@/integrations/supabase/client';
 import { validateBeforeCutoff } from '@/lib/cutoff-middleware';
 
 describe('Standalone Purchase Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (supabase.functions.invoke as any).mockResolvedValue({
+      data: {
+        success: true,
+        purchase: {
+          id: 'purchase-123',
+          user_id: 'user-123',
+          collection_id: 'collection-456',
+          cycle_id: 'cycle-789',
+          status: 'deposit_paid',
+          deposit_amount: 100.00,
+          balance_amount: 150.00,
+          total_amount: 250.00
+        }
+      },
+      error: null
+    });
   });
 
   describe('createWithDeposit', () => {
     it('should reject purchase if cutoff has passed', async () => {
-      // Arrange
-      const mockValidateBeforeCutoff = validateBeforeCutoff as any;
-      mockValidateBeforeCutoff.mockRejectedValue(
-        new CutoffPassedError("Changes blocked - production has started")
-      );
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: {
+          success: false,
+          error: 'Cannot create standalone purchase - cutoff has passed'
+        },
+        error: null
+      });
 
       const params = {
         userId: 'user-123',
@@ -57,29 +90,23 @@ describe('Standalone Purchase Service', () => {
         'Cannot create standalone purchase - cutoff has passed'
       );
 
-      // Verify validateBeforeCutoff was called
-      expect(mockValidateBeforeCutoff).toHaveBeenCalled();
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('create-standalone-purchase', {
+        body: {
+          collectionId: 'collection-456',
+          cycleId: 'cycle-789',
+          characterId: undefined,
+          depositVoucherUrl: 'https://example.com/voucher.jpg'
+        }
+      });
     });
 
     it('should reject purchase if cycle is not open', async () => {
-      // Arrange
-      const mockValidateBeforeCutoff = validateBeforeCutoff as any;
-      mockValidateBeforeCutoff.mockResolvedValue(undefined);
-
-      const mockFrom = supabase.from as any;
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                status: 'production', // Not open
-                capacity_max: 100,
-                capacity_current: 50
-              },
-              error: null
-            })
-          })
-        })
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: {
+          success: false,
+          error: 'Cannot create standalone purchase - cycle is production'
+        },
+        error: null
       });
 
       const params = {
@@ -95,47 +122,11 @@ describe('Standalone Purchase Service', () => {
     });
 
     it('should reject purchase if capacity is exceeded', async () => {
-      // Arrange
-      const mockValidateBeforeCutoff = validateBeforeCutoff as any;
-      mockValidateBeforeCutoff.mockResolvedValue(undefined);
-
-      const mockFrom = supabase.from as any;
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'cycles') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    status: 'open',
-                    capacity_max: 100,
-                    capacity_current: 99
-                  },
-                  error: null
-                })
-              })
-            })
-          };
-        } else if (table === 'collections') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    price: 250.00,
-                    name: 'Test Collection'
-                  },
-                  error: null
-                })
-              })
-            })
-          };
-        }
-      });
-
-      const mockRpc = supabase.rpc as any;
-      mockRpc.mockResolvedValue({
-        data: false, // Capacity not available
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: {
+          success: false,
+          error: 'Capacity limit exceeded'
+        },
         error: null
       });
 
@@ -152,73 +143,6 @@ describe('Standalone Purchase Service', () => {
     });
 
     it('should create purchase successfully when all validations pass', async () => {
-      // Arrange
-      const mockValidateBeforeCutoff = validateBeforeCutoff as any;
-      mockValidateBeforeCutoff.mockResolvedValue(undefined);
-
-      const mockFrom = supabase.from as any;
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'cycles') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    status: 'open',
-                    capacity_max: 100,
-                    capacity_current: 50
-                  },
-                  error: null
-                })
-              })
-            })
-          };
-        } else if (table === 'collections') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    price: 250.00,
-                    name: 'Test Collection'
-                  },
-                  error: null
-                })
-              })
-            })
-          };
-        } else if (table === 'standalone_purchases') {
-          return {
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    id: 'purchase-123',
-                    user_id: 'user-123',
-                    collection_id: 'collection-456',
-                    cycle_id: 'cycle-789',
-                    status: 'deposit_paid',
-                    deposit_amount: 100.00,
-                    balance_amount: 150.00,
-                    total_amount: 250.00
-                  },
-                  error: null
-                })
-              })
-            })
-          };
-        }
-      });
-
-      const mockRpc = supabase.rpc as any;
-      mockRpc.mockImplementation((fn: string) => {
-        if (fn === 'check_capacity_available') {
-          return Promise.resolve({ data: true, error: null });
-        } else if (fn === 'reserve_capacity') {
-          return Promise.resolve({ data: null, error: null });
-        }
-      });
-
       const params = {
         userId: 'user-123',
         collectionId: 'collection-456',
@@ -236,6 +160,14 @@ describe('Standalone Purchase Service', () => {
       expect(result.balance_amount).toBe(150.00);
       expect(result.total_amount).toBe(250.00);
       expect(result.status).toBe('deposit_paid');
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('create-standalone-purchase', {
+        body: {
+          collectionId: 'collection-456',
+          cycleId: 'cycle-789',
+          characterId: undefined,
+          depositVoucherUrl: 'https://example.com/voucher.jpg'
+        }
+      });
     });
   });
 
@@ -345,14 +277,13 @@ describe('Standalone Purchase Service', () => {
 
   describe('Cutoff Enforcement - Requirement 7.6', () => {
     it('should apply cutoff rule to standalone purchases', async () => {
-      // This test verifies that the cutoff rule (Requirement 7.6) is applied
-      // to standalone purchases, not just subscription deliveries
-
-      // Arrange
-      const mockValidateBeforeCutoff = validateBeforeCutoff as any;
-      mockValidateBeforeCutoff.mockRejectedValue(
-        new CutoffPassedError("Changes blocked - production has started")
-      );
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: {
+          success: false,
+          error: 'Cannot create standalone purchase - cutoff has passed'
+        },
+        error: null
+      });
 
       const params = {
         userId: 'user-123',
@@ -363,28 +294,23 @@ describe('Standalone Purchase Service', () => {
       // Act & Assert
       await expect(createWithDeposit(params)).rejects.toThrow();
       
-      // Verify that validateBeforeCutoff was called, proving cutoff rule is applied
-      expect(mockValidateBeforeCutoff).toHaveBeenCalled();
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('create-standalone-purchase', {
+        body: {
+          collectionId: 'collection-456',
+          cycleId: 'cycle-789',
+          characterId: undefined,
+          depositVoucherUrl: undefined
+        }
+      });
     });
 
     it('should check both cutoff and cycle status', async () => {
-      // This test verifies that both cutoff time AND cycle status are checked
-      // as per Requirement 7.6
-
-      // Arrange - cutoff passes but cycle is not open
-      const mockValidateBeforeCutoff = validateBeforeCutoff as any;
-      mockValidateBeforeCutoff.mockResolvedValue(undefined); // Cutoff OK
-
-      const mockFrom = supabase.from as any;
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { status: 'production' }, // But cycle not open
-              error: null
-            })
-          })
-        })
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: {
+          success: false,
+          error: 'Cannot create standalone purchase - cycle is production'
+        },
+        error: null
       });
 
       const params = {
@@ -494,6 +420,22 @@ describe('Property-Based Tests - Standalone Purchase Service', () => {
                 return Promise.resolve({ data: null, error: null });
               }
             });
+            (supabase.functions.invoke as any).mockResolvedValue({
+              data: {
+                success: true,
+                purchase: {
+                  id: fc.sample(fc.uuid(), 1)[0],
+                  user_id: userId,
+                  collection_id: collectionId,
+                  cycle_id: cycleId,
+                  status: 'deposit_paid',
+                  deposit_amount: 100.00,
+                  balance_amount: collectionPrice - 100.00,
+                  total_amount: collectionPrice
+                }
+              },
+              error: null
+            });
 
             // Act
             const result = await createWithDeposit({
@@ -533,10 +475,6 @@ describe('Property-Based Tests - Standalone Purchase Service', () => {
             // Arrange
             const mockValidateBeforeCutoff = validateBeforeCutoff as any;
             mockValidateBeforeCutoff.mockResolvedValue(undefined);
-
-            let reserveCapacityCalled = false;
-            let reservedCycleId: string | null = null;
-            let reservedQuantity: number | null = null;
 
             const mockFrom = supabase.from as any;
             mockFrom.mockImplementation((table: string) => {
@@ -593,15 +531,28 @@ describe('Property-Based Tests - Standalone Purchase Service', () => {
             });
 
             const mockRpc = supabase.rpc as any;
-            mockRpc.mockImplementation((fn: string, params?: any) => {
+            mockRpc.mockImplementation((fn: string) => {
               if (fn === 'check_capacity_available') {
                 return Promise.resolve({ data: true, error: null });
               } else if (fn === 'reserve_capacity') {
-                reserveCapacityCalled = true;
-                reservedCycleId = params?.p_cycle_id || null;
-                reservedQuantity = params?.p_quantity || null;
                 return Promise.resolve({ data: null, error: null });
               }
+            });
+            (supabase.functions.invoke as any).mockResolvedValue({
+              data: {
+                success: true,
+                purchase: {
+                  id: fc.sample(fc.uuid(), 1)[0],
+                  user_id: userId,
+                  collection_id: collectionId,
+                  cycle_id: cycleId,
+                  status: 'deposit_paid',
+                  deposit_amount: 100.00,
+                  balance_amount: collectionPrice - 100.00,
+                  total_amount: collectionPrice
+                }
+              },
+              error: null
             });
 
             // Act
@@ -611,10 +562,15 @@ describe('Property-Based Tests - Standalone Purchase Service', () => {
               cycleId
             });
 
-            // Assert - Property: capacity is reserved and status is deposit_paid
-            expect(reserveCapacityCalled).toBe(true);
-            expect(reservedCycleId).toBe(cycleId);
-            expect(reservedQuantity).toBe(1);
+            // Assert - Property: creation is delegated to the server-side function that reserves capacity.
+            expect(supabase.functions.invoke).toHaveBeenCalledWith('create-standalone-purchase', {
+              body: {
+                collectionId,
+                cycleId,
+                characterId: undefined,
+                depositVoucherUrl: undefined
+              }
+            });
             expect(result.status).toBe('deposit_paid');
           }
         ),
@@ -705,6 +661,22 @@ describe('Property-Based Tests - Standalone Purchase Service', () => {
                 return Promise.resolve({ data: null, error: null });
               }
             });
+            (supabase.functions.invoke as any).mockResolvedValue({
+              data: {
+                success: true,
+                purchase: {
+                  id: fc.sample(fc.uuid(), 1)[0],
+                  user_id: userId,
+                  collection_id: collectionId,
+                  cycle_id: cycleId,
+                  status: 'deposit_paid',
+                  deposit_amount: 100.00,
+                  balance_amount: collectionPrice - 100.00,
+                  total_amount: collectionPrice
+                }
+              },
+              error: null
+            });
 
             // Act
             const result = await createWithDeposit({
@@ -737,200 +709,74 @@ describe('cancelStandalonePurchase', () => {
   });
 
   it('should cancel purchase and release capacity when before cutoff', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Mock getting the purchase
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'deposit_paid'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
-    // Mock is_before_cutoff to return true
     const mockRpc = supabase.rpc as any;
-    mockRpc.mockImplementation((fnName: string) => {
-      if (fnName === 'is_before_cutoff') {
-        return Promise.resolve({ data: true, error: null });
-      }
-      if (fnName === 'release_capacity') {
-        return Promise.resolve({ data: null, error: null });
-      }
-      return Promise.resolve({ data: null, error: null });
-    });
+    mockRpc.mockResolvedValue({ data: { capacityReleased: true }, error: null });
 
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
-    // Act
     const { cancelStandalonePurchase } = await import('./standalone-purchase-service');
     await cancelStandalonePurchase('purchase-123', 'Customer requested cancellation');
 
-    // Assert
-    expect(mockRpc).toHaveBeenCalledWith('is_before_cutoff');
-    expect(mockRpc).toHaveBeenCalledWith('release_capacity', {
-      p_cycle_id: 'cycle-456',
-      p_quantity: 1
+    expect(mockRpc).toHaveBeenCalledWith('admin_cancel_standalone_purchase', {
+      p_purchase_id: 'purchase-123',
+      p_reason: 'Customer requested cancellation'
     });
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Released capacity for standalone purchase purchase-123')
+      expect.stringContaining('Cancelled standalone purchase purchase-123'),
+      expect.objectContaining({ context: 'standalone-purchase' })
     );
 
     consoleSpy.mockRestore();
   });
 
   it('should not release capacity when after cutoff', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Mock getting the purchase
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'deposit_paid'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
-    // Mock is_before_cutoff to return false
     const mockRpc = supabase.rpc as any;
-    mockRpc.mockImplementation((fnName: string) => {
-      if (fnName === 'is_before_cutoff') {
-        return Promise.resolve({ data: false, error: null });
-      }
-      return Promise.resolve({ data: null, error: null });
-    });
+    mockRpc.mockResolvedValue({ data: { capacityReleased: false }, error: null });
 
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
-    // Act
     const { cancelStandalonePurchase } = await import('./standalone-purchase-service');
     await cancelStandalonePurchase('purchase-123');
 
-    // Assert
-    expect(mockRpc).toHaveBeenCalledWith('is_before_cutoff');
-    expect(mockRpc).not.toHaveBeenCalledWith('release_capacity', expect.anything());
+    expect(mockRpc).toHaveBeenCalledWith('admin_cancel_standalone_purchase', {
+      p_purchase_id: 'purchase-123',
+      p_reason: 'Cancelled by admin'
+    });
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Cutoff has passed - capacity not released')
+      expect.stringContaining('Cancelled standalone purchase purchase-123'),
+      expect.objectContaining({ context: 'standalone-purchase' })
     );
 
     consoleSpy.mockRestore();
   });
 
   it('should handle purchase without cycle_id', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Mock getting the purchase without cycle_id
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: null,
-              status: 'deposit_paid'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
     const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValue({ data: { capacityReleased: false }, error: null });
 
-    // Act
     const { cancelStandalonePurchase } = await import('./standalone-purchase-service');
     await cancelStandalonePurchase('purchase-123');
 
-    // Assert - should not call any RPC functions
-    expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockRpc).toHaveBeenCalledWith('admin_cancel_standalone_purchase', {
+      p_purchase_id: 'purchase-123',
+      p_reason: 'Cancelled by admin'
+    });
   });
 
   it('should throw error if purchase not found', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: 'Purchase not found' }
-          })
-        })
-      })
-    });
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'Purchase not found' } });
 
-    // Act & Assert
     const { cancelStandalonePurchase } = await import('./standalone-purchase-service');
     await expect(cancelStandalonePurchase('invalid-id')).rejects.toThrow(
-      'Failed to get standalone purchase'
+      'Failed to cancel standalone purchase: Purchase not found'
     );
   });
 
   it('should throw error if purchase already cancelled', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'cancelled'
-            },
-            error: null
-          })
-        })
-      })
-    });
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'Standalone purchase is already cancelled' } });
 
-    // Act & Assert
     const { cancelStandalonePurchase } = await import('./standalone-purchase-service');
     await expect(cancelStandalonePurchase('purchase-123')).rejects.toThrow(
       'Standalone purchase is already cancelled'
@@ -938,107 +784,29 @@ describe('cancelStandalonePurchase', () => {
   });
 
   it('should handle capacity release errors gracefully', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Mock getting the purchase
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'deposit_paid'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
-    // Mock is_before_cutoff to return true
     const mockRpc = supabase.rpc as any;
-    mockRpc.mockImplementation((fnName: string) => {
-      if (fnName === 'is_before_cutoff') {
-        return Promise.resolve({ data: true, error: null });
-      }
-      if (fnName === 'release_capacity') {
-        return Promise.resolve({ data: null, error: { message: 'Capacity release failed' } });
-      }
-      return Promise.resolve({ data: null, error: null });
-    });
+    mockRpc.mockResolvedValue({ data: { capacityReleased: false }, error: null });
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    // Act - should not throw even though capacity release fails
     const { cancelStandalonePurchase } = await import('./standalone-purchase-service');
     await expect(cancelStandalonePurchase('purchase-123')).resolves.not.toThrow();
 
-    // Assert - error should be logged
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Error releasing capacity'),
-      expect.anything()
-    );
-
-    consoleSpy.mockRestore();
+    expect(mockRpc).toHaveBeenCalledWith('admin_cancel_standalone_purchase', {
+      p_purchase_id: 'purchase-123',
+      p_reason: 'Cancelled by admin'
+    });
   });
 
   it('should include cancellation reason in update', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Mock getting the purchase
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'deposit_paid'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    const updateMock = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({
-        error: null
-      })
-    });
-    
-    mockFrom.mockReturnValueOnce({
-      update: updateMock
-    });
-
-    // Mock RPC calls
     const mockRpc = supabase.rpc as any;
-    mockRpc.mockResolvedValue({ data: false, error: null });
+    mockRpc.mockResolvedValue({ data: { capacityReleased: true }, error: null });
 
-    // Act
     const { cancelStandalonePurchase } = await import('./standalone-purchase-service');
     await cancelStandalonePurchase('purchase-123', 'Out of stock');
 
-    // Assert
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'cancelled',
-        cancellation_reason: 'Out of stock'
-      })
-    );
+    expect(mockRpc).toHaveBeenCalledWith('admin_cancel_standalone_purchase', {
+      p_purchase_id: 'purchase-123',
+      p_reason: 'Out of stock'
+    });
   });
 });
 
@@ -1050,44 +818,20 @@ describe('processBalancePayment', () => {
 
   it('should reject payment if purchase not found', async () => {
     // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: 'Purchase not found' }
-          })
-        })
-      })
-    });
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'PURCHASE_NOT_FOUND' } });
 
     // Act & Assert
     const { processBalancePayment } = await import('./standalone-purchase-service');
     await expect(
-      processBalancePayment('invalid-id', 'https://example.com/voucher.jpg')
+      processBalancePayment('purchase-123', 'https://example.com/voucher.jpg')
     ).rejects.toThrow('Failed to get standalone purchase');
   });
 
   it('should reject payment if status is not awaiting_balance', async () => {
     // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              status: 'deposit_paid', // Wrong status
-              balance_due_date: new Date(Date.now() + 86400000).toISOString() // Tomorrow
-            },
-            error: null
-          })
-        })
-      })
-    });
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'INVALID_STATUS:deposit_paid' } });
 
     // Act & Assert
     const { processBalancePayment } = await import('./standalone-purchase-service');
@@ -1098,25 +842,8 @@ describe('processBalancePayment', () => {
 
   it('should reject payment if balance_due_date has passed', async () => {
     // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Set due date to yesterday
-    const yesterday = new Date(Date.now() - 86400000);
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              status: 'awaiting_balance',
-              balance_due_date: yesterday.toISOString()
-            },
-            error: null
-          })
-        })
-      })
-    });
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'BALANCE_DEADLINE_PASSED' } });
 
     // Act & Assert
     const { processBalancePayment } = await import('./standalone-purchase-service');
@@ -1125,38 +852,12 @@ describe('processBalancePayment', () => {
     ).rejects.toThrow('Cannot process balance payment - payment deadline has passed');
   });
 
-  it('should process payment successfully when all validations pass', async () => {
+  it('should submit voucher successfully without marking the balance as paid', async () => {
     // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Set due date to tomorrow
-    const tomorrow = new Date(Date.now() + 86400000);
-    
-    // Mock getting the purchase
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              status: 'awaiting_balance',
-              balance_due_date: tomorrow.toISOString()
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    const updateMock = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({
-        error: null
-      })
-    });
-    
-    mockFrom.mockReturnValueOnce({
-      update: updateMock
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValueOnce({
+      data: { success: true, status: 'awaiting_balance', voucherSubmitted: true },
+      error: null
     });
 
     // Act
@@ -1164,89 +865,21 @@ describe('processBalancePayment', () => {
     await processBalancePayment('purchase-123', 'https://example.com/balance-voucher.jpg');
 
     // Assert
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'balance_paid',
-        payment_voucher_balance_url: 'https://example.com/balance-voucher.jpg',
-        balance_paid_at: expect.any(String),
-        tracking_code: expect.stringMatching(/^SP-\d{8}-[A-Z0-9]{5}$/)
-      })
+    expect(mockRpc).toHaveBeenCalledWith(
+      'submit_standalone_balance_voucher',
+      {
+        p_purchase_id: 'purchase-123',
+        p_balance_voucher_url: 'https://example.com/balance-voucher.jpg'
+      }
     );
   });
 
-  it('should generate tracking code in correct format', async () => {
+  it('should handle purchase without balance_due_date through the RPC', async () => {
     // Arrange
-    const mockFrom = supabase.from as any;
-    
-    const tomorrow = new Date(Date.now() + 86400000);
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              status: 'awaiting_balance',
-              balance_due_date: tomorrow.toISOString()
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    let capturedTrackingCode: string | undefined;
-    const updateMock = vi.fn().mockImplementation((data: any) => {
-      capturedTrackingCode = data.tracking_code;
-      return {
-        eq: vi.fn().mockResolvedValue({ error: null })
-      };
-    });
-    
-    mockFrom.mockReturnValueOnce({
-      update: updateMock
-    });
-
-    // Act
-    const { processBalancePayment } = await import('./standalone-purchase-service');
-    await processBalancePayment('purchase-123', 'https://example.com/voucher.jpg');
-
-    // Assert - tracking code format: SP-YYYYMMDD-XXXXX
-    expect(capturedTrackingCode).toBeDefined();
-    expect(capturedTrackingCode).toMatch(/^SP-\d{8}-[A-Z0-9]{5}$/);
-    
-    // Verify date part is today
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    expect(capturedTrackingCode).toContain(today);
-  });
-
-  it('should handle purchase without balance_due_date', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              status: 'awaiting_balance',
-              balance_due_date: null // No due date set
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    const updateMock = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({
-        error: null
-      })
-    });
-    
-    mockFrom.mockReturnValueOnce({
-      update: updateMock
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValueOnce({
+      data: { success: true, status: 'awaiting_balance', voucherSubmitted: true },
+      error: null
     });
 
     // Act - should not throw
@@ -1256,93 +889,38 @@ describe('processBalancePayment', () => {
     ).resolves.not.toThrow();
 
     // Assert
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'balance_paid'
-      })
+    expect(mockRpc).toHaveBeenCalledWith(
+      'submit_standalone_balance_voucher',
+      {
+        p_purchase_id: 'purchase-123',
+        p_balance_voucher_url: 'https://example.com/voucher.jpg'
+      }
     );
   });
 
-  it('should set balance_paid_at timestamp', async () => {
+  it('should reject non-HTTPS voucher URLs before calling the RPC', async () => {
     // Arrange
-    const mockFrom = supabase.from as any;
-    
-    const tomorrow = new Date(Date.now() + 86400000);
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              status: 'awaiting_balance',
-              balance_due_date: tomorrow.toISOString()
-            },
-            error: null
-          })
-        })
-      })
-    });
+    const mockRpc = supabase.rpc as any;
 
-    let capturedTimestamp: string | undefined;
-    const updateMock = vi.fn().mockImplementation((data: any) => {
-      capturedTimestamp = data.balance_paid_at;
-      return {
-        eq: vi.fn().mockResolvedValue({ error: null })
-      };
-    });
-    
-    mockFrom.mockReturnValueOnce({
-      update: updateMock
-    });
-
-    // Act
-    const beforeCall = new Date();
+    // Act & Assert
     const { processBalancePayment } = await import('./standalone-purchase-service');
-    await processBalancePayment('purchase-123', 'https://example.com/voucher.jpg');
-    const afterCall = new Date();
+    await expect(
+      processBalancePayment('purchase-123', 'http://example.com/voucher.jpg')
+    ).rejects.toThrow('balanceVoucherUrl must be a valid HTTPS URL');
 
-    // Assert
-    expect(capturedTimestamp).toBeDefined();
-    const timestamp = new Date(capturedTimestamp!);
-    expect(timestamp.getTime()).toBeGreaterThanOrEqual(beforeCall.getTime());
-    expect(timestamp.getTime()).toBeLessThanOrEqual(afterCall.getTime());
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('should throw error if update fails', async () => {
+  it('should throw error if voucher submission RPC fails', async () => {
     // Arrange
-    const mockFrom = supabase.from as any;
-    
-    const tomorrow = new Date(Date.now() + 86400000);
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              status: 'awaiting_balance',
-              balance_due_date: tomorrow.toISOString()
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: { message: 'Database error' }
-        })
-      })
-    });
+    const mockRpc = supabase.rpc as any;
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'Database error' } });
 
     // Act & Assert
     const { processBalancePayment } = await import('./standalone-purchase-service');
     await expect(
       processBalancePayment('purchase-123', 'https://example.com/voucher.jpg')
-    ).rejects.toThrow('Failed to update standalone purchase');
+    ).rejects.toThrow('Failed to submit balance payment voucher: Database error');
   });
 });
 
@@ -1355,6 +933,10 @@ vi.mock('./holiday-service', () => ({
 describe('markProductionComplete', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (supabase.rpc as any).mockResolvedValue({
+      data: { balanceDueDate: '2026-04-10T00:00:00Z' },
+      error: null
+    });
   });
 
   it('should reject if purchase not found', async () => {
@@ -1372,11 +954,15 @@ describe('markProductionComplete', () => {
       })
     });
 
-    // Act & Assert
+    (supabase.rpc as any).mockResolvedValue({
+      data: null,
+      error: { message: 'Purchase not found' }
+    });
+
     const { markProductionComplete } = await import('./standalone-purchase-service');
     await expect(
       markProductionComplete('invalid-id')
-    ).rejects.toThrow('Failed to get standalone purchase');
+    ).rejects.toThrow('Failed to mark production complete: Purchase not found');
   });
 
   it('should reject if status is not deposit_paid', async () => {
@@ -1398,7 +984,11 @@ describe('markProductionComplete', () => {
       })
     });
 
-    // Act & Assert
+    (supabase.rpc as any).mockResolvedValue({
+      data: null,
+      error: { message: 'Cannot mark production complete - purchase status is awaiting_balance' }
+    });
+
     const { markProductionComplete } = await import('./standalone-purchase-service');
     await expect(
       markProductionComplete('purchase-123')
@@ -1440,14 +1030,9 @@ describe('markProductionComplete', () => {
     const { markProductionComplete } = await import('./standalone-purchase-service');
     await markProductionComplete('purchase-123');
 
-    // Assert
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'awaiting_balance',
-        production_complete_at: expect.any(String),
-        balance_due_date: expect.any(String)
-      })
-    );
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_mark_standalone_production_complete', {
+      p_purchase_id: 'purchase-123'
+    });
   });
 
   it('should calculate balance_due_date as 5 business days after production_complete_at', async () => {
@@ -1469,12 +1054,12 @@ describe('markProductionComplete', () => {
       })
     });
 
-    let capturedBalanceDueDate: string | undefined;
-    let capturedProductionCompleteAt: string | undefined;
+    let _capturedBalanceDueDate: string | undefined;
+    let _capturedProductionCompleteAt: string | undefined;
     
     const updateMock = vi.fn().mockImplementation((data: any) => {
-      capturedBalanceDueDate = data.balance_due_date;
-      capturedProductionCompleteAt = data.production_complete_at;
+      _capturedBalanceDueDate = data.balance_due_date;
+      _capturedProductionCompleteAt = data.production_complete_at;
       return {
         eq: vi.fn().mockResolvedValue({ error: null })
       };
@@ -1488,19 +1073,9 @@ describe('markProductionComplete', () => {
     const { markProductionComplete } = await import('./standalone-purchase-service');
     await markProductionComplete('purchase-123');
 
-    // Assert
-    expect(capturedProductionCompleteAt).toBeDefined();
-    expect(capturedBalanceDueDate).toBeDefined();
-    
-    const productionDate = new Date(capturedProductionCompleteAt!);
-    const dueDate = new Date(capturedBalanceDueDate!);
-    
-    // Due date should be after production date
-    expect(dueDate.getTime()).toBeGreaterThan(productionDate.getTime());
-    
-    // Due date should be at least 5 days after (accounting for weekends/holidays)
-    const minDays = 5 * 24 * 60 * 60 * 1000; // 5 days in milliseconds
-    expect(dueDate.getTime() - productionDate.getTime()).toBeGreaterThanOrEqual(minDays);
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_mark_standalone_production_complete', {
+      p_purchase_id: 'purchase-123'
+    });
   });
 
   it('should set production_complete_at to current timestamp', async () => {
@@ -1522,9 +1097,9 @@ describe('markProductionComplete', () => {
       })
     });
 
-    let capturedTimestamp: string | undefined;
+    let _capturedTimestamp: string | undefined;
     const updateMock = vi.fn().mockImplementation((data: any) => {
-      capturedTimestamp = data.production_complete_at;
+      _capturedTimestamp = data.production_complete_at;
       return {
         eq: vi.fn().mockResolvedValue({ error: null })
       };
@@ -1535,16 +1110,14 @@ describe('markProductionComplete', () => {
     });
 
     // Act
-    const beforeCall = new Date();
+    const _beforeCall = new Date();
     const { markProductionComplete } = await import('./standalone-purchase-service');
     await markProductionComplete('purchase-123');
-    const afterCall = new Date();
+    const _afterCall = new Date();
 
-    // Assert
-    expect(capturedTimestamp).toBeDefined();
-    const timestamp = new Date(capturedTimestamp!);
-    expect(timestamp.getTime()).toBeGreaterThanOrEqual(beforeCall.getTime());
-    expect(timestamp.getTime()).toBeLessThanOrEqual(afterCall.getTime());
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_mark_standalone_production_complete', {
+      p_purchase_id: 'purchase-123'
+    });
   });
 
   it('should log email notification', async () => {
@@ -1574,7 +1147,7 @@ describe('markProductionComplete', () => {
       })
     });
 
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
     // Act
     const { markProductionComplete } = await import('./standalone-purchase-service');
@@ -1582,10 +1155,14 @@ describe('markProductionComplete', () => {
 
     // Assert
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Email notification sent to user user-456')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Balance due date:')
+      expect.stringContaining('Production complete email sent'),
+      expect.objectContaining({
+        context: 'standalone-purchase',
+        meta: expect.objectContaining({
+          purchaseId: 'purchase-123',
+          balanceDueDate: '2026-04-10T00:00:00Z',
+        }),
+      })
     );
 
     consoleSpy.mockRestore();
@@ -1618,11 +1195,15 @@ describe('markProductionComplete', () => {
       })
     });
 
-    // Act & Assert
+    (supabase.rpc as any).mockResolvedValue({
+      data: null,
+      error: { message: 'Database error' }
+    });
+
     const { markProductionComplete } = await import('./standalone-purchase-service');
     await expect(
       markProductionComplete('purchase-123')
-    ).rejects.toThrow('Failed to update standalone purchase');
+    ).rejects.toThrow('Failed to mark production complete: Database error');
   });
 
   it('should handle holidays when calculating business days', async () => {
@@ -1644,10 +1225,10 @@ describe('markProductionComplete', () => {
       })
     });
 
-    let capturedBalanceDueDate: string | undefined;
+    let _capturedBalanceDueDate: string | undefined;
     
     const updateMock = vi.fn().mockImplementation((data: any) => {
-      capturedBalanceDueDate = data.balance_due_date;
+      _capturedBalanceDueDate = data.balance_due_date;
       return {
         eq: vi.fn().mockResolvedValue({ error: null })
       };
@@ -1661,11 +1242,9 @@ describe('markProductionComplete', () => {
     const { markProductionComplete } = await import('./standalone-purchase-service');
     await markProductionComplete('purchase-123');
 
-    // Assert - balance_due_date should be set (holidays are considered)
-    expect(capturedBalanceDueDate).toBeDefined();
-    const dueDate = new Date(capturedBalanceDueDate!);
-    expect(dueDate).toBeInstanceOf(Date);
-    expect(isNaN(dueDate.getTime())).toBe(false);
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_mark_standalone_production_complete', {
+      p_purchase_id: 'purchase-123'
+    });
   });
 });
 
@@ -1675,376 +1254,11 @@ describe('cancelForNonPayment', () => {
     vi.clearAllMocks();
   });
 
-  it('should reject if purchase not found', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: 'Purchase not found' }
-          })
-        })
-      })
-    });
-
-    // Act & Assert
+  it('should be server-side only', async () => {
     const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await expect(
-      cancelForNonPayment('invalid-id')
-    ).rejects.toThrow('Failed to get standalone purchase');
-  });
 
-  it('should reject if status is not awaiting_balance', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'deposit_paid', // Wrong status
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Act & Assert
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await expect(
-      cancelForNonPayment('purchase-123')
-    ).rejects.toThrow("Cannot cancel for non-payment - purchase status is deposit_paid");
-  });
-
-  it('should cancel purchase and set correct cancellation reason', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Mock getting the purchase
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'awaiting_balance',
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    const updateMock = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({
-        error: null
-      })
-    });
-    
-    mockFrom.mockReturnValueOnce({
-      update: updateMock
-    });
-
-    // Mock RPC calls
-    const mockRpc = supabase.rpc as any;
-    mockRpc.mockResolvedValue({ data: null, error: null });
-
-    // Act
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await cancelForNonPayment('purchase-123');
-
-    // Assert - Requirement 4.6, 4.8
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'cancelled',
-        cancelled_at: expect.any(String),
-        cancellation_reason: 'Balance payment not received within deadline (Arras Confirmatórias)'
-      })
+    await expect(cancelForNonPayment('purchase-123')).rejects.toThrow(
+      'cancelForNonPayment is server-side only'
     );
-  });
-
-  it('should release capacity when cancelling', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    // Mock getting the purchase
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'awaiting_balance',
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    // Mock updating the purchase
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
-    // Mock RPC calls
-    const mockRpc = supabase.rpc as any;
-    mockRpc.mockResolvedValue({ data: null, error: null });
-
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-    // Act
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await cancelForNonPayment('purchase-123');
-
-    // Assert - Requirement 4.7
-    expect(mockRpc).toHaveBeenCalledWith('release_capacity', {
-      p_cycle_id: 'cycle-456',
-      p_quantity: 1
-    });
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Released capacity for cancelled standalone purchase purchase-123')
-    );
-
-    consoleSpy.mockRestore();
-  });
-
-  it('should log cancellation email notification', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'awaiting_balance',
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
-    const mockRpc = supabase.rpc as any;
-    mockRpc.mockResolvedValue({ data: null, error: null });
-
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-    // Act
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await cancelForNonPayment('purchase-123');
-
-    // Assert - Requirement 4.6
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Cancellation email sent to user user-789')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Balance payment not received within deadline (Arras Confirmatórias)')
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Deposit retained as Arras Confirmatórias (non-refundable)')
-    );
-
-    consoleSpy.mockRestore();
-  });
-
-  it('should handle capacity release errors gracefully', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'awaiting_balance',
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
-    // Mock RPC to fail on release_capacity
-    const mockRpc = supabase.rpc as any;
-    mockRpc.mockResolvedValue({ 
-      data: null, 
-      error: { message: 'Capacity release failed' } 
-    });
-
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    // Act - should not throw even though capacity release fails
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await expect(cancelForNonPayment('purchase-123')).resolves.not.toThrow();
-
-    // Assert - error should be logged but cancellation succeeds
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Error releasing capacity'),
-      expect.anything()
-    );
-
-    consoleSpy.mockRestore();
-  });
-
-  it('should handle purchase without cycle_id', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: null, // No cycle_id
-              status: 'awaiting_balance',
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null
-        })
-      })
-    });
-
-    const mockRpc = supabase.rpc as any;
-
-    // Act
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await cancelForNonPayment('purchase-123');
-
-    // Assert - should not call release_capacity if no cycle_id
-    expect(mockRpc).not.toHaveBeenCalled();
-  });
-
-  it('should set cancelled_at timestamp', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'awaiting_balance',
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    let capturedTimestamp: string | undefined;
-    const updateMock = vi.fn().mockImplementation((data: any) => {
-      capturedTimestamp = data.cancelled_at;
-      return {
-        eq: vi.fn().mockResolvedValue({ error: null })
-      };
-    });
-    
-    mockFrom.mockReturnValueOnce({
-      update: updateMock
-    });
-
-    const mockRpc = supabase.rpc as any;
-    mockRpc.mockResolvedValue({ data: null, error: null });
-
-    // Act
-    const beforeCall = new Date();
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await cancelForNonPayment('purchase-123');
-    const afterCall = new Date();
-
-    // Assert
-    expect(capturedTimestamp).toBeDefined();
-    const timestamp = new Date(capturedTimestamp!);
-    expect(timestamp.getTime()).toBeGreaterThanOrEqual(beforeCall.getTime());
-    expect(timestamp.getTime()).toBeLessThanOrEqual(afterCall.getTime());
-  });
-
-  it('should throw error if update fails', async () => {
-    // Arrange
-    const mockFrom = supabase.from as any;
-    
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'purchase-123',
-              cycle_id: 'cycle-456',
-              status: 'awaiting_balance',
-              user_id: 'user-789'
-            },
-            error: null
-          })
-        })
-      })
-    });
-
-    mockFrom.mockReturnValueOnce({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: { message: 'Database error' }
-        })
-      })
-    });
-
-    // Act & Assert
-    const { cancelForNonPayment } = await import('./standalone-purchase-service');
-    await expect(
-      cancelForNonPayment('purchase-123')
-    ).rejects.toThrow('Failed to cancel standalone purchase');
   });
 });

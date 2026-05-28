@@ -17,6 +17,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { log } from '@/lib/logger';
 
+type RpcError = { message?: string } | null;
+
+interface SubscriptionMutationRpcClient {
+  rpc(functionName: "create_pending_subscription_for_current_user", args: {
+    p_plan_type: string;
+    p_payment_method: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+}
+
+const subscriptionMutationRpc = supabase as unknown as SubscriptionMutationRpcClient;
+
 // ============================================================================
 // TYPES (aligned with DB schema)
 // ============================================================================
@@ -171,6 +182,21 @@ export function useAvailablePlans() {
   });
 }
 
+function mapCreateSubscriptionError(message: string | undefined): string {
+  const value = message ?? "";
+
+  if (value.includes("INVALID_SUBSCRIPTION_PLAN_TYPE")) return "Plano invalido";
+  if (value.includes("INVALID_SUBSCRIPTION_PAYMENT_METHOD")) {
+    return "Forma de pagamento indisponivel";
+  }
+  if (value.includes("SUBSCRIPTION_PLAN_NOT_FOUND")) return "Plano nao encontrado";
+  if (value.includes("SUBSCRIPTION_ALREADY_EXISTS")) {
+    return "Voce ja possui uma assinatura ativa ou pendente";
+  }
+
+  return value || "Erro ao criar assinatura";
+}
+
 export function useCreateSubscription() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -185,34 +211,19 @@ export function useCreateSubscription() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error('Usuário não autenticado');
       
-      // Find plan by billing_interval
-      const { data: plan, error: planError } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('billing_interval', plan_type)
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await subscriptionMutationRpc.rpc(
+        "create_pending_subscription_for_current_user",
+        {
+          p_plan_type: plan_type,
+          p_payment_method: payment_method,
+        },
+      );
       
-      if (planError || !plan) throw new Error('Plano não encontrado');
-      
-      const { data: subscription, error: subError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: user.id,
-          plan_type,
-          plan_id: plan.id,
-          status: 'pending',
-          payment_method,
-        })
-        .select()
-        .single();
-      
-      if (subError || !subscription) {
-        throw new Error(`Erro ao criar assinatura: ${subError?.message}`);
+      if (error) {
+        throw new Error(mapCreateSubscriptionError(error.message));
       }
       
-      return { success: true, subscription };
+      return { success: true, subscription: data as DbSubscription };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
@@ -237,18 +248,19 @@ export function useCancelSubscription() {
   
   return useMutation({
     mutationFn: async (subscriptionId: string) => {
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq('id', subscriptionId);
-      
+      const { data, error } = await supabase.functions.invoke("cancel-subscription", {
+        body: { subscriptionId },
+      });
+
       if (error) throw new Error(`Erro ao cancelar assinatura: ${error.message}`);
+
+      const result = data as { error?: string } | null;
+      if (result?.error) throw new Error(result.error);
+
       return { success: true };
     },
     onSuccess: (data, subscriptionId) => {
+      void data;
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.details(subscriptionId) });
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
       toast({

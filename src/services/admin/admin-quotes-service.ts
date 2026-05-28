@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { updateQuoteStatusRpc } from "./admin-order-status-service";
 
 export type QuoteRow = {
   id: string;
@@ -12,9 +13,10 @@ export type QuoteRow = {
 export type QuoteItemRow = {
   id: string;
   quote_id: string;
-  model_id: string;
+  character_id: string | null;
+  name: string;
+  description: string | null;
   quantity: number;
-  scale: string;
 };
 
 export type ModelMini = {
@@ -23,8 +25,32 @@ export type ModelMini = {
   franchise: string | null;
 };
 
+interface AdminQuotesFilter<T> extends PromiseLike<{ data: T[] | null; error: Error | null }> {
+  order(
+    column: string,
+    options?: { ascending?: boolean }
+  ): {
+    limit(count: number): Promise<{ data: T[] | null; error: Error | null }>;
+  };
+  in(column: string, values: string[]): Promise<{ data: T[] | null; error: Error | null }>;
+}
+
+interface AdminQuotesGateway {
+  from(table: "quotes"): {
+    select(columns: string): AdminQuotesFilter<QuoteRow>;
+  };
+  from(table: "quote_items"): {
+    select(columns: string): AdminQuotesFilter<QuoteItemRow>;
+  };
+  from(table: "models"): {
+    select(columns: string): AdminQuotesFilter<ModelMini>;
+  };
+}
+
+const adminQuotesGateway = supabase as unknown as AdminQuotesGateway;
+
 export async function fetchAdminQuotes(): Promise<QuoteRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await adminQuotesGateway
     .from("quotes")
     .select("id,user_id,status,deadline,notes,created_at")
     .order("created_at", { ascending: false })
@@ -35,17 +61,17 @@ export async function fetchAdminQuotes(): Promise<QuoteRow[]> {
 
 export async function fetchAdminQuoteItems(quoteIds: string[]): Promise<QuoteItemRow[]> {
   if (quoteIds.length === 0) return [];
-  const { data, error } = await supabase
+  const { data, error } = await adminQuotesGateway
     .from("quote_items")
-    .select("id,quote_id,model_id,quantity,scale")
+    .select("id,quote_id,character_id,name,description,quantity")
     .in("quote_id", quoteIds);
   if (error) throw error;
-  return (data ?? []) as QuoteItemRow[];
+  return data ?? [];
 }
 
 export async function fetchAdminQuoteModels(modelIds: string[]): Promise<ModelMini[]> {
   if (modelIds.length === 0) return [];
-  const { data, error } = await supabase
+  const { data, error } = await adminQuotesGateway
     .from("models")
     .select("id,name,franchise")
     .in("id", modelIds);
@@ -54,7 +80,5 @@ export async function fetchAdminQuoteModels(modelIds: string[]): Promise<ModelMi
 }
 
 export async function updateQuoteStatus(quoteId: string, status: string): Promise<void> {
-  const { error } = await supabase.from("quotes").update({ status }).eq("id", quoteId);
-  if (error) throw error;
+  await updateQuoteStatusRpc(quoteId, status);
 }
-

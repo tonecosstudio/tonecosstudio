@@ -10,7 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { CycleType } from "./batchCalculator";
+import { BATCH } from "@/config/constants";
+import {
+  calculateCurrentBatch,
+  calculateCycle,
+  type BatchRules,
+  type CycleType,
+} from "./batchCalculator";
 
 export interface ContentSettings {
   // Prazos (Legado - mantido para compatibilidade)
@@ -90,40 +96,55 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
   }
 
   // Valores padrão (fallback)
+  const fallbackRules: BatchRules = { shippingBusinessDays: BATCH.SHIPPING_BUSINESS_DAYS };
+  const fallbackCurrentBatch = calculateCurrentBatch(fallbackRules);
+  const fallbackCycle1 = calculateCycle(
+    "cycle1",
+    fallbackCurrentBatch.month,
+    fallbackCurrentBatch.year,
+    fallbackRules
+  );
+  const fallbackCycle2 = calculateCycle(
+    "cycle2",
+    fallbackCurrentBatch.month,
+    fallbackCurrentBatch.year,
+    fallbackRules
+  );
+
   const settings: ContentSettings = {
     // Legado
-    productionDaysMin: 15,
-    productionDaysMax: 20,
-    shippingDays: 5,
-    salesDurationDays: 30,
-    salesOpenDay: 15,
-    currentBatchName: "Fevereiro/Março",
-    currentBatchSalesStart: new Date("2026-02-15"),
-    currentBatchSalesEnd: new Date("2026-03-15"),
-    currentBatchProductionStart: new Date("2026-03-16"),
-    currentBatchProductionEnd: new Date("2026-03-30"),
-    currentBatchShippingMonth: "Abril",
-    currentBatchShippingDeadline: 5,
+    productionDaysMin: BATCH.PRODUCTION_DAYS_MIN,
+    productionDaysMax: BATCH.PRODUCTION_DAYS_MAX,
+    shippingDays: BATCH.SHIPPING_BUSINESS_DAYS,
+    salesDurationDays: BATCH.SALES_DURATION_DAYS,
+    salesOpenDay: BATCH.SALES_OPEN_DAY,
+    currentBatchName: fallbackCurrentBatch.name,
+    currentBatchSalesStart: fallbackCurrentBatch.salesStart,
+    currentBatchSalesEnd: fallbackCurrentBatch.salesEnd,
+    currentBatchProductionStart: fallbackCurrentBatch.productionStart,
+    currentBatchProductionEnd: fallbackCurrentBatch.productionEnd,
+    currentBatchShippingMonth: fallbackCurrentBatch.shippingMonth,
+    currentBatchShippingDeadline: fallbackCurrentBatch.shippingDeadline,
 
     // Novo Modelo de Ciclos (v2.0)
-    currentCycleType: "cycle1",
-    currentCycleMonth: 2, // Março (0-indexed)
-    currentCycleYear: 2026,
+    currentCycleType: fallbackCurrentBatch.cycleType,
+    currentCycleMonth: fallbackCurrentBatch.month,
+    currentCycleYear: fallbackCurrentBatch.year,
 
-    cycle1SalesStart: new Date("2026-03-01"),
-    cycle1SalesEnd: new Date("2026-03-15"),
-    cycle1ProductionStart: new Date("2026-03-16"),
-    cycle1ProductionEnd: new Date("2026-03-31"),
-    cycle1ShippingDeadline: new Date("2026-04-07"),
+    cycle1SalesStart: fallbackCycle1.salesStart,
+    cycle1SalesEnd: fallbackCycle1.salesEnd,
+    cycle1ProductionStart: fallbackCycle1.productionStart,
+    cycle1ProductionEnd: fallbackCycle1.productionEnd,
+    cycle1ShippingDeadline: fallbackCycle1.shippingDeadlineDate,
 
-    cycle2SalesStart: new Date("2026-03-16"),
-    cycle2SalesEnd: new Date("2026-03-31"),
-    cycle2ProductionStart: new Date("2026-04-01"),
-    cycle2ProductionEnd: new Date("2026-04-30"),
-    cycle2ShippingDeadline: new Date("2026-05-07"),
+    cycle2SalesStart: fallbackCycle2.salesStart,
+    cycle2SalesEnd: fallbackCycle2.salesEnd,
+    cycle2ProductionStart: fallbackCycle2.productionStart,
+    cycle2ProductionEnd: fallbackCycle2.productionEnd,
+    cycle2ShippingDeadline: fallbackCycle2.shippingDeadlineDate,
 
-    shippingBusinessDays: 5,
-    exchangeDeadlineDays: 1,
+    shippingBusinessDays: BATCH.SHIPPING_BUSINESS_DAYS,
+    exchangeDeadlineDays: BATCH.EXCHANGE_DEADLINE_DAYS,
     exchangePolicyText: "Você pode trocar suas coleções quantas vezes quiser.",
     cancellationPolicyText: "Você pode cancelar a qualquer momento.",
     refundPolicyText: "Não há reembolso após pagamento.",
@@ -161,30 +182,42 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
         return value ? new Date(value) : defaultValue;
       };
 
-      settings.productionDaysMin = getNum("production_days_min", 15);
-      settings.productionDaysMax = getNum("production_days_max", 20);
-      settings.shippingDays = getNum("shipping_days", 5);
-      settings.salesDurationDays = getNum("sales_duration_days", 30);
-      settings.salesOpenDay = getNum("sales_open_day", 15);
+      settings.productionDaysMin = getNum("production_days_min", BATCH.PRODUCTION_DAYS_MIN);
+      settings.productionDaysMax = getNum("production_days_max", BATCH.PRODUCTION_DAYS_MAX);
+      settings.shippingDays = getNum("shipping_days", BATCH.SHIPPING_BUSINESS_DAYS);
+      settings.salesDurationDays = getNum("sales_duration_days", BATCH.SALES_DURATION_DAYS);
+      settings.salesOpenDay = getNum("sales_open_day", BATCH.SALES_OPEN_DAY);
 
-      settings.currentBatchName = get("current_batch_name", "Fevereiro/Março");
+      settings.currentBatchName = get("current_batch_name", fallbackCurrentBatch.name);
       settings.currentBatchSalesStart = getDate(
         "current_batch_sales_start",
-        new Date("2026-02-15")
+        fallbackCurrentBatch.salesStart
       );
-      settings.currentBatchSalesEnd = getDate("current_batch_sales_end", new Date("2026-03-15"));
+      settings.currentBatchSalesEnd = getDate(
+        "current_batch_sales_end",
+        fallbackCurrentBatch.salesEnd
+      );
       settings.currentBatchProductionStart = getDate(
         "current_batch_production_start",
-        new Date("2026-03-16")
+        fallbackCurrentBatch.productionStart
       );
       settings.currentBatchProductionEnd = getDate(
         "current_batch_production_end",
-        new Date("2026-03-30")
+        fallbackCurrentBatch.productionEnd
       );
-      settings.currentBatchShippingMonth = get("current_batch_shipping_month", "Abril");
-      settings.currentBatchShippingDeadline = getNum("current_batch_shipping_deadline", 5);
+      settings.currentBatchShippingMonth = get(
+        "current_batch_shipping_month",
+        fallbackCurrentBatch.shippingMonth
+      );
+      settings.currentBatchShippingDeadline = getNum(
+        "current_batch_shipping_deadline",
+        fallbackCurrentBatch.shippingDeadline
+      );
 
-      settings.exchangeDeadlineDays = getNum("exchange_deadline_days", 1);
+      settings.exchangeDeadlineDays = getNum(
+        "exchange_deadline_days",
+        BATCH.EXCHANGE_DEADLINE_DAYS
+      );
       settings.exchangePolicyText = get("exchange_policy_text", settings.exchangePolicyText);
       settings.cancellationPolicyText = get(
         "cancellation_policy_text",
@@ -208,23 +241,47 @@ export async function fetchContentSettings(): Promise<ContentSettings> {
       settings.batchBannerNote = get("batch_banner_note", settings.batchBannerNote);
 
       // Novo Modelo de Ciclos (v2.0)
-      settings.currentCycleType = get("current_cycle_type", "cycle1") as CycleType;
-      settings.currentCycleMonth = getNum("current_cycle_month", 2);
-      settings.currentCycleYear = getNum("current_cycle_year", 2026);
+      settings.currentCycleType = get(
+        "current_cycle_type",
+        fallbackCurrentBatch.cycleType
+      ) as CycleType;
+      settings.currentCycleMonth = getNum("current_cycle_month", fallbackCurrentBatch.month);
+      settings.currentCycleYear = getNum("current_cycle_year", fallbackCurrentBatch.year);
 
-      settings.cycle1SalesStart = getDate("cycle1_sales_start", new Date("2026-03-01"));
-      settings.cycle1SalesEnd = getDate("cycle1_sales_end", new Date("2026-03-15"));
-      settings.cycle1ProductionStart = getDate("cycle1_production_start", new Date("2026-03-16"));
-      settings.cycle1ProductionEnd = getDate("cycle1_production_end", new Date("2026-03-31"));
-      settings.cycle1ShippingDeadline = getDate("cycle1_shipping_deadline", new Date("2026-04-07"));
+      settings.cycle1SalesStart = getDate("cycle1_sales_start", fallbackCycle1.salesStart);
+      settings.cycle1SalesEnd = getDate("cycle1_sales_end", fallbackCycle1.salesEnd);
+      settings.cycle1ProductionStart = getDate(
+        "cycle1_production_start",
+        fallbackCycle1.productionStart
+      );
+      settings.cycle1ProductionEnd = getDate(
+        "cycle1_production_end",
+        fallbackCycle1.productionEnd
+      );
+      settings.cycle1ShippingDeadline = getDate(
+        "cycle1_shipping_deadline",
+        fallbackCycle1.shippingDeadlineDate
+      );
 
-      settings.cycle2SalesStart = getDate("cycle2_sales_start", new Date("2026-03-16"));
-      settings.cycle2SalesEnd = getDate("cycle2_sales_end", new Date("2026-03-31"));
-      settings.cycle2ProductionStart = getDate("cycle2_production_start", new Date("2026-04-01"));
-      settings.cycle2ProductionEnd = getDate("cycle2_production_end", new Date("2026-04-30"));
-      settings.cycle2ShippingDeadline = getDate("cycle2_shipping_deadline", new Date("2026-05-07"));
+      settings.cycle2SalesStart = getDate("cycle2_sales_start", fallbackCycle2.salesStart);
+      settings.cycle2SalesEnd = getDate("cycle2_sales_end", fallbackCycle2.salesEnd);
+      settings.cycle2ProductionStart = getDate(
+        "cycle2_production_start",
+        fallbackCycle2.productionStart
+      );
+      settings.cycle2ProductionEnd = getDate(
+        "cycle2_production_end",
+        fallbackCycle2.productionEnd
+      );
+      settings.cycle2ShippingDeadline = getDate(
+        "cycle2_shipping_deadline",
+        fallbackCycle2.shippingDeadlineDate
+      );
 
-      settings.shippingBusinessDays = getNum("shipping_business_days", 5);
+      settings.shippingBusinessDays = getNum(
+        "shipping_business_days",
+        BATCH.SHIPPING_BUSINESS_DAYS
+      );
     }
 
     // Atualizar cache

@@ -19,5 +19,5 @@ export async function listActiveSubscriptionPlans(): Promise<PublicSubscriptionP
     .order("display_order");
 
   if (error) throw error;
-  return (data ?? []) as PublicSubscriptionPlan[];
+  return (data ?? []) as unknown as PublicSubscriptionPlan[];
 }

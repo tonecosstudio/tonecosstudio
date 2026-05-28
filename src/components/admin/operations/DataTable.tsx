@@ -31,6 +31,25 @@ interface DataTableProps<T> {
   className?: string;
 }
 
+function compareSortableValues(aValue: unknown, bValue: unknown): number {
+  if (aValue === bValue) return 0;
+  if (aValue == null) return -1;
+  if (bValue == null) return 1;
+
+  if (typeof aValue === "number" && typeof bValue === "number") {
+    return aValue - bValue;
+  }
+
+  if (aValue instanceof Date && bValue instanceof Date) {
+    return aValue.getTime() - bValue.getTime();
+  }
+
+  return String(aValue).localeCompare(String(bValue), "pt-BR", {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
 export function DataTable<T extends Record<string, unknown>>({
   data,
   columns,
@@ -61,9 +80,7 @@ export function DataTable<T extends Record<string, unknown>>({
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
 
-        if (aValue === bValue) return 0;
-
-        const comparison = aValue > bValue ? 1 : -1;
+        const comparison = compareSortableValues(aValue, bValue);
         return sortDirection === "asc" ? comparison : -comparison;
       })
     : filteredData;

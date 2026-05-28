@@ -163,9 +163,11 @@ export function OptimizedBackgroundImage({
 
   if (isLoading || !imageSrc) {
     return (
-      <Skeleton ref={imgRef} className={cn("relative", className)}>
-        {children}
-      </Skeleton>
+      <div ref={imgRef} className={cn("relative", className)}>
+        <Skeleton className="h-full w-full">
+          {children}
+        </Skeleton>
+      </div>
     );
   }
 

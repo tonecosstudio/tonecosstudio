@@ -296,7 +296,7 @@ function ProductionHub() {
         setFilters({ ...filters, stages: ["awaiting_choice"] });
         break;
       case "blocked":
-        setFilters({ ...filters, stages: ["blocked"] });
+        setFilters({ ...filters, statuses: ["on_hold"] });
         break;
       case "overdue":
         setFilters({ ...filters, priorities: ["high", "critical"] });
@@ -433,8 +433,8 @@ function ProductionHub() {
                   selectedCount={selectedIds.size}
                   onAssign={() => setShowAssignModal(true)}
                   onUpdateStage={() => setShowStageModal(true)}
-                  onExport={handleBulkExport}
-                  onClear={handleClearSelection}
+                  onExportCSV={handleBulkExport}
+                  onClearSelection={handleClearSelection}
                 />
               </div>
             )}
@@ -485,6 +485,7 @@ function ProductionHub() {
                   <ProductionCalendarView
                     items={queueData?.data || []}
                     isLoading={isLoading}
+                    onItemClick={handleItemClick}
                   />
                 </div>
               </div>
@@ -513,22 +514,22 @@ function ProductionHub() {
 
           {/* Modals */}
           <BulkAssignModal
-            isOpen={showAssignModal}
-            onClose={() => setShowAssignModal(false)}
+            open={showAssignModal}
+            onOpenChange={setShowAssignModal}
             onConfirm={handleBulkAssign}
             selectedCount={selectedIds.size}
           />
 
           <BulkStageUpdateModal
-            isOpen={showStageModal}
-            onClose={() => setShowStageModal(false)}
+            open={showStageModal}
+            onOpenChange={setShowStageModal}
             onConfirm={handleBulkStageUpdate}
             selectedCount={selectedIds.size}
           />
 
           <BulkProgressModal
-            isOpen={showProgressModal}
-            onClose={() => setShowProgressModal(false)}
+            open={showProgressModal}
+            onOpenChange={setShowProgressModal}
             {...progressState}
           />
 

@@ -1,4 +1,4 @@
-import DOMPurify from "dompurify";
+import DOMPurify, { type Config as DOMPurifyConfig } from "dompurify";
 import type { Json } from "@/integrations/supabase/types";
 
 /**
@@ -21,7 +21,7 @@ import type { Json } from "@/integrations/supabase/types";
  * Default configuration for DOMPurify
  * Allows safe HTML tags while removing dangerous attributes and scripts
  */
-const DEFAULT_CONFIG: DOMPurify.Config = {
+const DEFAULT_CONFIG: DOMPurifyConfig = {
   ALLOWED_TAGS: [
     'p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li',
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -43,7 +43,7 @@ const DEFAULT_CONFIG: DOMPurify.Config = {
 export function sanitizeHtml(dirty: string): string {
   if (!dirty) return "";
 
-  return DOMPurify.sanitize(dirty, DEFAULT_CONFIG);
+  return String(DOMPurify.sanitize(dirty, DEFAULT_CONFIG));
 }
 
 /**
@@ -53,10 +53,10 @@ export function sanitizeHtml(dirty: string): string {
 export function sanitizeText(dirty: string): string {
   if (!dirty) return "";
 
-  return DOMPurify.sanitize(dirty, {
+  return String(DOMPurify.sanitize(dirty, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
-  });
+  }));
 }
 
 /**
@@ -65,7 +65,7 @@ export function sanitizeText(dirty: string): string {
 export function sanitizeUrl(url: string): string {
   if (!url) return "";
 
-  const cleaned = DOMPurify.sanitize(url);
+  const cleaned = String(DOMPurify.sanitize(url));
 
   // Additional check for dangerous protocols
   const dangerous = /^(javascript|data|vbscript):/i;
@@ -83,11 +83,11 @@ export function sanitizeUrl(url: string): string {
 export function sanitizeGroupMessage(message: string): string {
   if (!message) return "";
 
-  return DOMPurify.sanitize(message, {
+  return String(DOMPurify.sanitize(message, {
     ALLOWED_TAGS: ["b", "i", "em", "strong", "br"],
     ALLOWED_ATTR: [],
     ALLOW_DATA_ATTR: false,
-  });
+  }));
 }
 
 /**
@@ -167,7 +167,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(
     return obj;
   }
 
-  const sanitized: Record<string, unknown> | unknown[] = Array.isArray(obj) ? [] : {};
+  const sanitized: Record<string, unknown> = {};
 
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -203,10 +203,10 @@ export function sanitizeObject<T extends Record<string, unknown>>(
  */
 export function createSafeHtml(
   html: string,
-  config: DOMPurify.Config = DEFAULT_CONFIG
+  config: DOMPurifyConfig = DEFAULT_CONFIG
 ): { __html: string } {
   return {
-    __html: DOMPurify.sanitize(html, config)
+    __html: String(DOMPurify.sanitize(html, config))
   };
 }
 

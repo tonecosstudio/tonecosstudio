@@ -7,6 +7,24 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import { updateManualPaymentStatus as updateManualPaymentStatusRpc } from "@/services/admin/admin-order-status-service";
+import type { ManualPaymentStatus } from "@/types/admin/orders";
+
+const MANUAL_PAYMENT_STATUS_VALUES: readonly ManualPaymentStatus[] = [
+  "pending",
+  "under_review",
+  "requires_info",
+  "approved",
+  "rejected",
+];
+
+function assertManualPaymentStatus(status: string): ManualPaymentStatus {
+  if (MANUAL_PAYMENT_STATUS_VALUES.includes(status as ManualPaymentStatus)) {
+    return status as ManualPaymentStatus;
+  }
+
+  throw new Error("Status invalido para pagamento manual");
+}
 
 // Note: This is a simplified order interface for the integration service
 // For full order management, use UnifiedOrder from @/types/admin/orders
@@ -64,6 +82,86 @@ export interface ManualPayment {
   created_at: string;
 }
 
+type ManualPaymentRow = {
+  id: string;
+  reference_number: string | null;
+  reference_id?: string | null;
+  user_id: string;
+  amount: number;
+  status: string | null;
+  payment_type: string;
+  payment_method_id: string | null;
+  created_at: string;
+};
+
+type QuoteRow = {
+  id: string;
+  user_id: string;
+  status: string;
+  payment_status: string | null;
+  total_amount: number | null;
+  created_at: string;
+};
+
+type SubscriptionRow = {
+  id: string;
+  user_id: string;
+  collection_id: string | null;
+  plan_type: string | null;
+  status: string;
+  next_delivery_date?: string | null;
+  next_delivery_at?: string | null;
+  created_at: string;
+};
+
+function toIntegrationOrder(row: ManualPaymentRow): IntegrationOrder {
+  return {
+    id: row.id,
+    reference_number: row.reference_number ?? row.reference_id ?? row.id,
+    user_id: row.user_id,
+    amount: row.amount,
+    status: row.status ?? "pending",
+    payment_type: row.payment_type,
+    created_at: row.created_at,
+  };
+}
+
+function toQuote(row: QuoteRow): Quote {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    status: row.status,
+    payment_status: row.payment_status ?? "pending",
+    total_amount: row.total_amount ?? 0,
+    created_at: row.created_at,
+  };
+}
+
+function toSubscription(row: SubscriptionRow): Subscription {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    collection_id: row.collection_id ?? "",
+    plan_type: row.plan_type ?? "",
+    status: row.status,
+    next_delivery_date: row.next_delivery_date ?? row.next_delivery_at ?? "",
+    created_at: row.created_at,
+  };
+}
+
+function toManualPayment(row: ManualPaymentRow): ManualPayment {
+  return {
+    id: row.id,
+    reference_number: row.reference_number ?? row.reference_id ?? row.id,
+    user_id: row.user_id,
+    amount: row.amount,
+    status: row.status ?? "pending",
+    payment_type: row.payment_type,
+    payment_method_id: row.payment_method_id ?? "",
+    created_at: row.created_at,
+  };
+}
+
 /**
  * Get all orders for a user
  * Requirements: 7.1, 7.2
@@ -81,7 +179,7 @@ export async function getUserOrders(userId: string): Promise<IntegrationOrder[]>
     throw error;
   }
 
-  return data || [];
+  return ((data || []) as ManualPaymentRow[]).map(toIntegrationOrder);
 }
 
 /**
@@ -100,7 +198,7 @@ export async function getUserQuotes(userId: string): Promise<Quote[]> {
     throw error;
   }
 
-  return data || [];
+  return ((data || []) as QuoteRow[]).map(toQuote);
 }
 
 /**
@@ -120,7 +218,7 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
     return null;
   }
 
-  return data;
+  return data ? toSubscription(data as SubscriptionRow) : null;
 }
 
 /**
@@ -139,7 +237,7 @@ export async function getUserPayments(userId: string): Promise<ManualPayment[]> 
     throw error;
   }
 
-  return data || [];
+  return ((data || []) as ManualPaymentRow[]).map(toManualPayment);
 }
 
 export async function getOrderProductionStages(orderId: string): Promise<OrderProductionStage[]> {
@@ -156,15 +254,8 @@ export async function updateOrderStatus(
   status: string,
   _trackingCode?: string
 ): Promise<void> {
-  const updateData: { status: string } = { status };
   // Note: tracking_code is not a column on manual_payments; tracking is handled via production_queue
-
-  const { error } = await supabase.from("manual_payments").update(updateData).eq("id", orderId);
-
-  if (error) {
-    log.error("Erro ao atualizar status do pedido", { error, orderId, status });
-    throw error;
-  }
+  await updateManualPaymentStatusRpc(orderId, assertManualPaymentStatus(status));
 }
 
 /**
@@ -172,10 +263,5 @@ export async function updateOrderStatus(
  * Requirements: 19.1, 19.2
  */
 export async function updatePaymentStatus(paymentId: string, status: string): Promise<void> {
-  const { error } = await supabase.from("manual_payments").update({ status }).eq("id", paymentId);
-
-  if (error) {
-    log.error("Erro ao atualizar status do pagamento", { error, paymentId, status });
-    throw error;
-  }
+  await updateManualPaymentStatusRpc(paymentId, assertManualPaymentStatus(status));
 }

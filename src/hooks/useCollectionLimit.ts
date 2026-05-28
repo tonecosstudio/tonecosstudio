@@ -61,7 +61,7 @@ export function useCollectionLimit(userId?: string | null) {
 
       const { data, error } = await supabase.rpc("validate_collection_limit", {
         p_user_id: userId,
-        p_new_collection_id: null,
+        p_new_collection_id: undefined,
       });
 
       if (error) {

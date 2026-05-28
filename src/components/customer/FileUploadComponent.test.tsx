@@ -1,35 +1,76 @@
-/**
- * FileUploadComponent Tests
- * Requirements: 3.1-3.12, 17.6
- */
-
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
 import { FileUploadComponent } from "./FileUploadComponent";
 import { fileUploadService } from "@/lib/file-upload-service";
+import type { PaymentFile } from "@/types/manual-payment";
 
-// Mock the file upload service
-jest.mock("@/lib/file-upload-service", () => ({
+vi.mock("@/lib/file-upload-service", () => ({
   fileUploadService: {
-    upload: jest.fn(),
+    upload: vi.fn(),
   },
 }));
 
+const mockPaymentId = "test-payment-123";
+
+const uploadedFile: PaymentFile = {
+  created_at: "2024-01-01T00:00:00Z",
+  file_name: "proof.pdf",
+  file_path: "payment/proof.pdf",
+  file_size: 1024,
+  file_type: "application/pdf",
+  id: "uploaded-123",
+  payment_id: mockPaymentId,
+  thumbnail_path: null,
+  uploaded_by: "user-123",
+};
+
+function createFile(name: string, type: string, size = 1024): File {
+  return new File([new Uint8Array(size)], name, { type });
+}
+
+function getPrimaryFileInput(container: HTMLElement): HTMLInputElement {
+  const input = container.querySelector('input[type="file"][multiple]');
+
+  if (!(input instanceof HTMLInputElement)) {
+    throw new Error("Primary file input not found");
+  }
+
+  return input;
+}
+
+function mockCameraSupport(supported: boolean) {
+  Object.defineProperty(navigator, "mediaDevices", {
+    configurable: true,
+    value: supported ? { getUserMedia: vi.fn() } : undefined,
+  });
+}
+
 describe("FileUploadComponent", () => {
-  const mockPaymentId = "test-payment-123";
-  const mockOnUploadComplete = jest.fn();
-  const mockOnError = jest.fn();
+  const onUploadComplete = vi.fn();
+  const onError = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    mockCameraSupport(true);
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: vi.fn(() => "blob:preview"),
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: vi.fn(),
+    });
   });
 
-  it("renders the upload component with correct title and description", () => {
+  it("renders the upload component with title and description", () => {
     render(
       <FileUploadComponent
         paymentId={mockPaymentId}
-        onUploadComplete={mockOnUploadComplete}
-        onError={mockOnError}
+        onUploadComplete={onUploadComplete}
+        onError={onError}
       />
     );
 
@@ -41,166 +82,168 @@ describe("FileUploadComponent", () => {
   });
 
   it("displays file stats badge when no files are selected", () => {
-    render(
-      <FileUploadComponent
-        paymentId={mockPaymentId}
-        onUploadComplete={mockOnUploadComplete}
-        onError={mockOnError}
-      />
-    );
+    render(<FileUploadComponent paymentId={mockPaymentId} />);
 
     expect(screen.getByText("0 / 5 files")).toBeInTheDocument();
   });
 
-  it("shows browse files and take photo buttons", () => {
-    render(
-      <FileUploadComponent
-        paymentId={mockPaymentId}
-        onUploadComplete={mockOnUploadComplete}
-        onError={mockOnError}
-      />
-    );
+  it("shows browse files and take photo buttons when camera is supported", () => {
+    render(<FileUploadComponent paymentId={mockPaymentId} />);
 
     expect(screen.getByText("Browse Files")).toBeInTheDocument();
-    // Camera button should be visible if supported
     expect(screen.getByText("Take Photo")).toBeInTheDocument();
   });
 
   it("displays supported file types information", () => {
-    render(
-      <FileUploadComponent
-        paymentId={mockPaymentId}
-        onUploadComplete={mockOnUploadComplete}
-        onError={mockOnError}
-      />
-    );
+    render(<FileUploadComponent paymentId={mockPaymentId} />);
 
     expect(screen.getByText(/Supported: JPG, PNG, PDF/)).toBeInTheDocument();
     expect(screen.getByText(/Max 5MB each/)).toBeInTheDocument();
   });
 
   it("disables upload button when no files are selected", () => {
-    render(
-      <FileUploadComponent
-        paymentId={mockPaymentId}
-        onUploadComplete={mockOnUploadComplete}
-        onError={mockOnError}
-      />
-    );
+    render(<FileUploadComponent paymentId={mockPaymentId} />);
 
-    const uploadButton = screen.getByRole("button", { name: /Upload Files/i });
-    expect(uploadButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Upload Files/i })).toBeDisabled();
   });
 
-  it("shows clear all button when files are selected", () => {
-    // This test would require simulating file selection
-    // We'll implement it in the actual test suite
-    expect(true).toBe(true);
+  it("shows clear all button when files are selected", async () => {
+    const { container } = render(<FileUploadComponent paymentId={mockPaymentId} />);
+
+    fireEvent.change(getPrimaryFileInput(container), {
+      target: { files: [createFile("proof.pdf", "application/pdf")] },
+    });
+
+    expect(await screen.findByText("proof.pdf")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Clear All/i })).toBeInTheDocument();
   });
 
   it("handles file validation errors for oversized files", async () => {
-    // This test would require simulating file selection with large file
-    // We'll implement it in the actual test suite
-    expect(true).toBe(true);
+    const { container } = render(
+      <FileUploadComponent paymentId={mockPaymentId} maxSizeBytes={10} />
+    );
+
+    fireEvent.change(getPrimaryFileInput(container), {
+      target: { files: [createFile("large.pdf", "application/pdf", 11)] },
+    });
+
+    expect(await screen.findByText(/large\.pdf.*too large/i)).toBeInTheDocument();
   });
 
   it("handles file validation errors for invalid file types", async () => {
-    // This test would require simulating file selection with invalid file type
-    // We'll implement it in the actual test suite
-    expect(true).toBe(true);
+    const { container } = render(<FileUploadComponent paymentId={mockPaymentId} />);
+
+    fireEvent.change(getPrimaryFileInput(container), {
+      target: { files: [createFile("script.txt", "text/plain")] },
+    });
+
+    expect(await screen.findByText(/script\.txt.*invalid file type/i)).toBeInTheDocument();
+    expect(screen.getByText(/script\.txt.*unsupported file extension/i)).toBeInTheDocument();
   });
 
   it("prevents selecting more than max files", async () => {
-    // This test would require simulating multiple file selections
-    // We'll implement it in the actual test suite
-    expect(true).toBe(true);
+    const { container } = render(<FileUploadComponent paymentId={mockPaymentId} maxFiles={1} />);
+
+    fireEvent.change(getPrimaryFileInput(container), {
+      target: {
+        files: [
+          createFile("proof-1.pdf", "application/pdf"),
+          createFile("proof-2.pdf", "application/pdf"),
+        ],
+      },
+    });
+
+    expect(await screen.findByText(/Maximum of 1 files allowed/)).toBeInTheDocument();
   });
 
   it("calls onUploadComplete when files are uploaded successfully", async () => {
-    // Mock successful upload
-    const mockUploadedFile = {
-      id: "uploaded-123",
-      payment_id: mockPaymentId,
-      file_name: "test.jpg",
-      file_path: "test/path.jpg",
-      file_size: 1024,
-      file_type: "image/jpeg",
-      uploaded_by: "user-123",
-      created_at: new Date().toISOString(),
-    };
+    const user = userEvent.setup();
+    const { container } = render(
+      <FileUploadComponent
+        paymentId={mockPaymentId}
+        onUploadComplete={onUploadComplete}
+        onError={onError}
+      />
+    );
+    vi.mocked(fileUploadService.upload).mockResolvedValue(uploadedFile);
 
-    (fileUploadService.upload as jest.Mock).mockResolvedValue(mockUploadedFile);
+    fireEvent.change(getPrimaryFileInput(container), {
+      target: { files: [createFile("proof.pdf", "application/pdf")] },
+    });
+    await user.click(await screen.findByRole("button", { name: /Upload Files/i }));
 
-    // This test would require more complex setup with actual file selection
-    // We'll implement it in the actual test suite
-    expect(true).toBe(true);
+    await waitFor(() => {
+      expect(fileUploadService.upload).toHaveBeenCalledWith(
+        mockPaymentId,
+        expect.any(File),
+        expect.any(Function)
+      );
+    });
+    await waitFor(() => {
+      expect(onUploadComplete).toHaveBeenCalledWith([uploadedFile]);
+    });
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it("calls onError when upload fails", async () => {
-    const mockError = new Error("Upload failed");
-    (fileUploadService.upload as jest.Mock).mockRejectedValue(mockError);
+    const user = userEvent.setup();
+    const uploadError = new Error("Upload failed");
+    const { container } = render(
+      <FileUploadComponent
+        paymentId={mockPaymentId}
+        onUploadComplete={onUploadComplete}
+        onError={onError}
+      />
+    );
+    vi.mocked(fileUploadService.upload).mockRejectedValue(uploadError);
 
-    // This test would require more complex setup with actual file selection
-    // We'll implement it in the actual test suite
-    expect(true).toBe(true);
+    fireEvent.change(getPrimaryFileInput(container), {
+      target: { files: [createFile("proof.pdf", "application/pdf")] },
+    });
+    await user.click(await screen.findByRole("button", { name: /Upload Files/i }));
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(uploadError);
+    });
+    expect(onUploadComplete).not.toHaveBeenCalled();
   });
 
   it("displays upload progress during file upload", async () => {
-    // Mock progress callback
-    let progressCallback: (progress: number) => void = () => {};
-    (fileUploadService.upload as jest.Mock).mockImplementation((paymentId, file, onProgress) => {
-      if (onProgress) {
-        progressCallback = onProgress;
-        // Simulate progress updates
-        setTimeout(() => progressCallback(50), 100);
-        setTimeout(() => progressCallback(100), 200);
-      }
-      return Promise.resolve({});
+    const user = userEvent.setup();
+    let resolveUpload: (file: PaymentFile) => void = () => undefined;
+    const { container } = render(<FileUploadComponent paymentId={mockPaymentId} />);
+
+    vi.mocked(fileUploadService.upload).mockImplementation((_paymentId, _file, onProgress) => {
+      onProgress?.(50);
+      return new Promise((resolve) => {
+        resolveUpload = resolve;
+      });
     });
 
-    // This test would require more complex setup with actual file selection
-    // We'll implement it in the actual test suite
-    expect(true).toBe(true);
+    fireEvent.change(getPrimaryFileInput(container), {
+      target: { files: [createFile("proof.pdf", "application/pdf")] },
+    });
+    await user.click(await screen.findByRole("button", { name: /Upload Files/i }));
+
+    expect(await screen.findByText("50%")).toBeInTheDocument();
+
+    resolveUpload(uploadedFile);
   });
 
   it("disables component when disabled prop is true", () => {
-    render(
-      <FileUploadComponent
-        paymentId={mockPaymentId}
-        onUploadComplete={mockOnUploadComplete}
-        onError={mockOnError}
-        disabled={true}
-      />
-    );
+    render(<FileUploadComponent paymentId={mockPaymentId} disabled />);
 
-    const dropzone = screen.getByText("Drag & drop files here").closest("div");
+    const dropzone = screen.getByRole("button", { name: /Drag & drop files here/i });
+    expect(dropzone).toHaveAttribute("aria-disabled", "true");
     expect(dropzone).toHaveClass("cursor-not-allowed");
     expect(dropzone).toHaveClass("opacity-50");
   });
 
   it("shows camera button only when mobile camera is supported", () => {
-    // Mock navigator.mediaDevices
-    const originalMediaDevices = navigator.mediaDevices;
-    Object.defineProperty(navigator, "mediaDevices", {
-      value: undefined,
-      writable: true,
-    });
+    mockCameraSupport(false);
 
-    render(
-      <FileUploadComponent
-        paymentId={mockPaymentId}
-        onUploadComplete={mockOnUploadComplete}
-        onError={mockOnError}
-      />
-    );
+    render(<FileUploadComponent paymentId={mockPaymentId} />);
 
-    // Camera button should not be visible
     expect(screen.queryByText("Take Photo")).not.toBeInTheDocument();
-
-    // Restore original
-    Object.defineProperty(navigator, "mediaDevices", {
-      value: originalMediaDevices,
-      writable: true,
-    });
   });
 });

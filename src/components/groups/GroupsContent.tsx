@@ -10,6 +10,7 @@ import { groupService } from "@/lib/services/groupService";
 import { GroupList } from "@/components/groups/GroupList";
 import { CreateGroupModal } from "@/components/groups/CreateGroupModal";
 import { AutomaticGroupsManager } from "@/components/groups/AutomaticGroupsManager";
+import { adminGroupDetailsPath } from "@/config/routes";
 
 interface GroupsContentProps {
   showHeader?: boolean;
@@ -19,7 +20,7 @@ interface GroupsContentProps {
  * GroupsContent - Conteúdo reutilizável da página de grupos
  *
  * Pode ser usado:
- * - Na página standalone /admin/grupos (com header)
+ * - Na pagina standalone de grupos (com header)
  * - Dentro da aba de grupos na Central de Comunicação (sem header)
  */
 export function GroupsContent({ showHeader = true }: GroupsContentProps) {
@@ -38,7 +39,7 @@ export function GroupsContent({ showHeader = true }: GroupsContentProps) {
   });
 
   const handleGroupSelect = (groupId: string) => {
-    navigate(`/admin/grupos/${groupId}`);
+    navigate(adminGroupDetailsPath(groupId));
   };
 
   const handleCreateSuccess = () => {

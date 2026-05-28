@@ -54,6 +54,7 @@ import {
   useSubscriberAddress,
   useUpdateDeliveryStatus,
 } from '@/hooks/admin/useDeliveryDetailData';
+import { buildTrackingUrl } from '@/lib/tracking-links';
 
 interface DeliveryDetailModalProps {
   deliveryId: string | null;
@@ -89,6 +90,7 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
 
   // Fetch delivery details
   const { data: delivery, isLoading: isLoadingDelivery } = useDeliveryDetail(deliveryId, open);
+  const deliveryTrackingUrl = buildTrackingUrl(delivery?.tracking_code, delivery?.shipping_carrier);
 
   // Inicializar estado quando delivery carregar
   useEffect(() => {
@@ -262,17 +264,19 @@ export function DeliveryDetailModal({ deliveryId, open, onOpenChange, profileDat
                   {delivery.tracking_code ? (
                     <div className="mt-1">
                       <p className="font-mono text-xs">{delivery.tracking_code}</p>
-                      <a
-                        href={`https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${delivery.tracking_code}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1 mt-1"
-                      >
-                        Rastrear no site dos Correios
-                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
+                      {deliveryTrackingUrl && (
+                        <a
+                          href={deliveryTrackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1 mt-1"
+                        >
+                          Rastrear no site da transportadora
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      )}
                     </div>
                   ) : (
                     <p className="font-mono text-xs mt-1 text-muted-foreground">-</p>

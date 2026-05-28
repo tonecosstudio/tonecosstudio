@@ -9,6 +9,7 @@ import {
   errorToStatus,
   getServiceClient,
 } from "../_shared/supabase.ts";
+import { EmailService, escapeHtml, getEmailConfig } from "../_shared/email.ts";
 
 // Types
 interface EmailNotificationRequest {
@@ -26,139 +27,9 @@ interface DirectEmailRequest {
   fromName?: string;
 }
 
-interface EmailServiceConfig {
-  provider: "resend" | "sendgrid";
-  apiKey: string;
-  fromEmail: string;
-  fromName: string;
-  baseUrl: string;
-}
-
-// Email service abstraction
-class EmailService {
-  constructor(private config: EmailServiceConfig) {}
-
-  async sendEmail(params: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<{ id: string }> {
-    if (this.config.provider === "resend") {
-      return this.sendViaResend(params);
-    } else {
-      return this.sendViaSendGrid(params);
-    }
-  }
-
-  private async sendViaResend(params: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<{ id: string }> {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${this.config.fromName} <${this.config.fromEmail}>`,
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Resend API error: ${error}`);
-    }
-
-    const data = await response.json();
-    return { id: data.id };
-  }
-
-  private async sendViaSendGrid(params: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<{ id: string }> {
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: params.to }],
-          },
-        ],
-        from: {
-          email: this.config.fromEmail,
-          name: this.config.fromName,
-        },
-        subject: params.subject,
-        content: [
-          {
-            type: "text/html",
-            value: params.html,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`SendGrid API error: ${error}`);
-    }
-
-    const messageId = response.headers.get("x-message-id") || "unknown";
-    return { id: messageId };
-  }
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 function isDirectEmailRequest(payload: unknown): payload is DirectEmailRequest {
   const data = payload as Partial<DirectEmailRequest>;
   return !!data?.to && !!data?.subject && !!data?.html;
-}
-
-function getEmailConfig(overrides?: {
-  from?: string;
-  fromName?: string;
-}): EmailServiceConfig {
-  const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
-  const emailApiKey = Deno.env.get("EMAIL_API_KEY");
-  const emailFrom =
-    overrides?.from || Deno.env.get("EMAIL_FROM") || "suporte@ordax.com.br";
-  const emailFromName =
-    overrides?.fromName || Deno.env.get("EMAIL_FROM_NAME") || "Ordax Suporte";
-  const baseUrl =
-    Deno.env.get("BASE_URL") ||
-    Deno.env.get("SITE_URL") ||
-    "https://ordax.com.br";
-
-  if (!emailApiKey) {
-    throw new Error("EMAIL_API_KEY not configured");
-  }
-
-  return {
-    provider: emailProvider as "resend" | "sendgrid",
-    apiKey: emailApiKey,
-    fromEmail: emailFrom,
-    fromName: emailFromName,
-    baseUrl,
-  };
 }
 
 // Check if user is online (activity within last 5 minutes)
@@ -181,6 +52,33 @@ async function isUserOnline(supabase: any, userId: string): Promise<boolean> {
   }
 
   return data && data.length > 0;
+}
+
+async function recordEmailNotification(
+  supabase: any,
+  input: {
+    conversationId: string;
+    messageId: string;
+    recipientUserId: string;
+    status: "sent" | "failed" | "skipped";
+    sentAt?: string | null;
+    errorMessage?: string | null;
+    retryCount?: number;
+  },
+): Promise<void> {
+  const { error } = await supabase.rpc("record_email_notification_event", {
+    p_conversation_id: input.conversationId,
+    p_message_id: input.messageId,
+    p_recipient_user_id: input.recipientUserId,
+    p_status: input.status,
+    p_sent_at: input.sentAt ?? null,
+    p_error_message: input.errorMessage ?? null,
+    p_retry_count: input.retryCount ?? 0,
+  });
+
+  if (error) {
+    console.error("Error recording email notification event:", error);
+  }
 }
 
 // Generate email HTML template
@@ -405,12 +303,12 @@ serve(async (req) => {
       console.error("User email not found:", profileError);
 
       // Log failed notification
-      await supabase.from("email_notifications").insert({
-        conversation_id: notificationPayload.conversationId,
-        message_id: notificationPayload.messageId,
-        recipient_user_id: notificationPayload.recipientUserId,
+      await recordEmailNotification(supabase, {
+        conversationId: notificationPayload.conversationId,
+        messageId: notificationPayload.messageId,
+        recipientUserId: notificationPayload.recipientUserId,
         status: "failed",
-        error_message: "no_email",
+        errorMessage: "no_email",
       });
 
       return new Response(
@@ -497,14 +395,14 @@ serve(async (req) => {
 
     // Log notification result
     const notificationStatus = emailId ? "sent" : "failed";
-    await supabase.from("email_notifications").insert({
-      conversation_id: notificationPayload.conversationId,
-      message_id: notificationPayload.messageId,
-      recipient_user_id: notificationPayload.recipientUserId,
+    await recordEmailNotification(supabase, {
+      conversationId: notificationPayload.conversationId,
+      messageId: notificationPayload.messageId,
+      recipientUserId: notificationPayload.recipientUserId,
       status: notificationStatus,
-      sent_at: emailId ? toUTC(nowInBahia()).toISOString() : null,
-      error_message: lastError,
-      retry_count: emailId ? 0 : maxRetries,
+      sentAt: emailId ? toUTC(nowInBahia()).toISOString() : null,
+      errorMessage: lastError,
+      retryCount: emailId ? 0 : maxRetries,
     });
 
     if (!emailId) {
@@ -519,8 +417,9 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in send-email function:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ success: false, error: message }), {
-      status: errorToStatus(message),
+    const status = errorToStatus(message);
+    return new Response(JSON.stringify({ success: false, error: status >= 500 ? "Internal server error" : message }), {
+      status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

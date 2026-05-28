@@ -26,6 +26,8 @@
 
 import log from './logger';
 
+export type ImageBuffer = Uint8Array;
+
 /**
  * Image processing options
  */
@@ -98,7 +100,7 @@ const SHARP_MODULE = 'sharp';
  * const cleanImage = await removeExifData(Buffer.from(imageFile));
  * ```
  */
-export async function removeExifData(imageBuffer: Buffer): Promise<Buffer> {
+export async function removeExifData(imageBuffer: ImageBuffer): Promise<ImageBuffer> {
   try {
     const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
     log.info('Removing EXIF data from image');
@@ -142,9 +144,9 @@ export async function removeExifData(imageBuffer: Buffer): Promise<Buffer> {
  * ```
  */
 export async function processImage(
-  imageBuffer: Buffer,
+  imageBuffer: ImageBuffer,
   options: ImageProcessingOptions = {}
-): Promise<Buffer> {
+): Promise<ImageBuffer> {
   try {
     const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
     const opts = { ...DEFAULT_OPTIONS, ...options };
@@ -242,7 +244,7 @@ export async function processImage(
  * console.log(`Image: ${metadata.width}x${metadata.height} ${metadata.format}`);
  * ```
  */
-export async function getSafeMetadata(imageBuffer: Buffer): Promise<SafeImageMetadata> {
+export async function getSafeMetadata(imageBuffer: ImageBuffer): Promise<SafeImageMetadata> {
   try {
     const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
     const metadata = await sharp(imageBuffer).metadata();
@@ -274,7 +276,7 @@ export async function getSafeMetadata(imageBuffer: Buffer): Promise<SafeImageMet
  * }
  * ```
  */
-export async function validateImage(imageBuffer: Buffer): Promise<{
+export async function validateImage(imageBuffer: ImageBuffer): Promise<{
   valid: boolean;
   error?: string;
   metadata?: SafeImageMetadata;
@@ -341,9 +343,9 @@ export async function validateImage(imageBuffer: Buffer): Promise<{
  * ```
  */
 export async function createThumbnail(
-  imageBuffer: Buffer,
+  imageBuffer: ImageBuffer,
   size: number = 200
-): Promise<Buffer> {
+): Promise<ImageBuffer> {
   try {
     const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
     log.info('Creating thumbnail');
@@ -389,9 +391,9 @@ export async function createThumbnail(
  * ```
  */
 export async function convertToWebP(
-  imageBuffer: Buffer,
+  imageBuffer: ImageBuffer,
   quality: number = 85
-): Promise<Buffer> {
+): Promise<ImageBuffer> {
   return processImage(imageBuffer, {
     format: 'webp',
     quality,
@@ -415,16 +417,16 @@ export async function convertToWebP(
  * ```
  */
 export async function batchProcessImages(
-  images: Buffer[],
+  images: ImageBuffer[],
   options: ImageProcessingOptions = {}
-): Promise<Buffer[]> {
+): Promise<ImageBuffer[]> {
   log.info('Batch processing images');
 
   const results = await Promise.allSettled(
     images.map(img => processImage(img, options))
   );
 
-  const processed: Buffer[] = [];
+  const processed: ImageBuffer[] = [];
   const errors: string[] = [];
 
   results.forEach((result, index) => {

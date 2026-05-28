@@ -1,9 +1,11 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Component } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import { AlertCircle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { log } from "@/lib/logger";
 import { navigateInApp } from "@/lib/navigation";
+import { errorTracking } from "@/lib/error-tracking";
 
 interface Props {
   children: ReactNode;
@@ -51,8 +53,10 @@ export class ErrorBoundary extends Component<Props, State> {
       this.props.onError(error, errorInfo);
     }
 
-    // TODO: Log to error tracking service (Sentry, LogRocket, etc.)
-    // logErrorToService(error, errorInfo);
+    errorTracking.trackError(error, {
+      componentStack: errorInfo.componentStack,
+      source: "ErrorBoundary",
+    });
   }
 
   handleReset = () => {

@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { subscriptionKeys } from './useSubscription';
 import { coinsBalanceKeys } from '../coins/useCoinsBalance';
-import { log } from '@/lib/logger';
 import type {
   ProcessSubscriptionPaymentParams,
   ProcessPaymentResponse,
@@ -20,6 +19,61 @@ import type {
   UserId,
 } from '@/types/subscription';
 import type { CoinsAmount } from '@/types/coins';
+
+type RpcError = { message?: string } | null;
+
+interface SubscriptionPaymentRpcClient {
+  rpc(functionName: "admin_process_subscription_payment", args: {
+    p_subscription_id: string;
+    p_amount: number;
+    p_payment_method: string;
+    p_external_reference: string | null;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_add_coins_to_user", args: {
+    p_user_id: string;
+    p_amount: number;
+    p_description: string;
+    p_reference_id: string | null;
+    p_reference_type: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+}
+
+type ProcessSubscriptionPaymentRpcResult = ProcessPaymentResponse;
+
+interface SubscriptionPaymentsQueryClient {
+  from(table: "subscription_payments"): {
+    select(columns: "*"): {
+      eq(column: "subscription_id", value: string): {
+        order(
+          column: "created_at",
+          options: { ascending: boolean }
+        ): PromiseLike<{ data: SubscriptionPayment[] | null; error: RpcError }>;
+      };
+    };
+  };
+}
+
+const subscriptionPaymentRpc = supabase as unknown as SubscriptionPaymentRpcClient;
+const subscriptionPaymentsQuery = supabase as unknown as SubscriptionPaymentsQueryClient;
+
+function mapSubscriptionPaymentRpcError(message: string | undefined): string {
+  const value = message ?? "";
+
+  if (value.includes("FORBIDDEN")) return "Apenas admins podem processar pagamentos";
+  if (value.includes("SUBSCRIPTION_NOT_FOUND")) return "Assinatura nao encontrada";
+  if (value.includes("INVALID_PAYMENT_AMOUNT")) return "Valor de pagamento invalido";
+  if (value.includes("INVALID_PAYMENT_METHOD")) return "Metodo de pagamento invalido";
+  if (value.includes("INVALID_EXTERNAL_REFERENCE")) return "Referencia externa invalida";
+  if (value.includes("INVALID_SUBSCRIPTION_STATUS")) return "Status da assinatura invalido";
+  if (value.includes("SUBSCRIPTION_CREDITS_NOT_CONFIGURED")) {
+    return "Creditos da assinatura nao configurados";
+  }
+  if (value.includes("USER_NOT_FOUND")) return "Usuario nao encontrado";
+  if (value.includes("INVALID_COINS_AMOUNT")) return "Quantidade de coins invalida";
+  if (value.includes("COINS_DESCRIPTION_REQUIRED")) return "Motivo obrigatorio";
+
+  return value || "Erro ao processar pagamento";
+}
 
 // ============================================================================
 // HOOK: PROCESSAR PAGAMENTO
@@ -69,99 +123,21 @@ export function useProcessSubscriptionPayment() {
     ): Promise<ProcessPaymentResponse> => {
       const { subscription_id, amount, payment_method, external_reference } = params;
 
-      // 1. Busca assinatura
-      const { data: subscription, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('id', subscription_id)
-        .single();
+      const { data, error } = await subscriptionPaymentRpc.rpc(
+        "admin_process_subscription_payment",
+        {
+          p_subscription_id: subscription_id,
+          p_amount: amount,
+          p_payment_method: payment_method,
+          p_external_reference: external_reference ?? null,
+        },
+      );
 
-      if (subError || !subscription) {
-        throw new Error('Assinatura não encontrada');
+      if (error) {
+        throw new Error(mapSubscriptionPaymentRpcError(error.message));
       }
 
-      // 2. Registra pagamento
-      const { data: payment, error: paymentError } = await supabase
-        .from('subscription_payments')
-        .insert({
-          subscription_id,
-          user_id: subscription.user_id,
-          amount,
-          status: 'approved',
-          payment_method,
-          external_reference,
-          coins_credited: subscription.coins_per_month,
-          paid_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (paymentError || !payment) {
-        throw new Error(`Erro ao registrar pagamento: ${paymentError?.message}`);
-      }
-
-      // 3. Atualiza status da assinatura para ativa
-      const { error: updateError } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'active',
-          next_billing_date: calculateNextBillingDate(subscription.plan_type),
-        })
-        .eq('id', subscription_id);
-
-      if (updateError) {
-        throw new Error(`Erro ao atualizar assinatura: ${updateError.message}`);
-      }
-
-      // 4. Adiciona coins ao usuário
-      const { error: coinsError } = await supabase.rpc('add_coins_to_user', {
-        p_user_id: subscription.user_id,
-        p_amount: subscription.coins_per_month,
-        p_description: `Crédito de assinatura - ${subscription.plan_type}`,
-        p_reference_id: payment.id,
-        p_reference_type: 'subscription_payment',
-      });
-
-      if (coinsError) {
-        throw new Error(`Erro ao adicionar coins: ${coinsError.message}`);
-      }
-
-      // 5. Atualiza total de coins recebidos
-      const { error: totalError } = await supabase
-        .from('subscriptions')
-        .update({
-          total_coins_received: subscription.total_coins_received + subscription.coins_per_month,
-        })
-        .eq('id', subscription_id);
-
-      if (totalError) {
-        log.error('Failed to update subscription total coins received', {
-          error: totalError,
-          subscriptionId: subscription_id,
-        });
-      }
-
-      // 6. Busca novo saldo
-      const { data: newBalance, error: balanceError } = await supabase
-        .from('user_coins')
-        .select('balance')
-        .eq('user_id', subscription.user_id)
-        .single();
-
-      if (balanceError) {
-        log.error('Failed to fetch updated subscription coin balance', {
-          error: balanceError,
-          userId: subscription.user_id,
-        });
-      }
-
-      return {
-        success: true,
-        payment: payment as SubscriptionPayment,
-        coins_credited: subscription.coins_per_month,
-        new_balance: newBalance?.balance || 0,
-        message: `Pagamento aprovado! Você recebeu ${subscription.coins_per_month} coins.`,
-      };
+      return data as ProcessSubscriptionPaymentRpcResult;
     },
     onSuccess: (data) => {
       // Invalida caches
@@ -230,26 +206,13 @@ export function useAdminAddSubscriptionCoins() {
     }) => {
       const { user_id, amount, reason } = params;
 
-      // Verifica se usuário é admin
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       if (authError || !user) {
         throw new Error('Não autenticado');
       }
 
-      const { data: isAdmin, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (roleError || !isAdmin) {
-        throw new Error('Apenas admins podem adicionar coins manualmente');
-      }
-
-      // Adiciona coins
-      const { error: coinsError } = await supabase.rpc('add_coins_to_user', {
+      const { error: coinsError } = await subscriptionPaymentRpc.rpc("admin_add_coins_to_user", {
         p_user_id: user_id,
         p_amount: amount,
         p_description: `Ajuste manual: ${reason}`,
@@ -258,7 +221,7 @@ export function useAdminAddSubscriptionCoins() {
       });
 
       if (coinsError) {
-        throw new Error(`Erro ao adicionar coins: ${coinsError.message}`);
+        throw new Error(mapSubscriptionPaymentRpcError(coinsError.message));
       }
 
       return { success: true, amount };
@@ -314,7 +277,7 @@ export function useSubscriptionPayments(subscriptionId: string) {
   return useQuery({
     queryKey: ['subscription', 'payments', subscriptionId],
     queryFn: async (): Promise<SubscriptionPayment[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await subscriptionPaymentsQuery
         .from('subscription_payments')
         .select('*')
         .eq('subscription_id', subscriptionId)
@@ -324,7 +287,7 @@ export function useSubscriptionPayments(subscriptionId: string) {
         throw new Error(`Erro ao buscar pagamentos: ${error.message}`);
       }
 
-      return (data as SubscriptionPayment[]) || [];
+      return data || [];
     },
     staleTime: 60 * 1000, // 1 minuto
     gcTime: 10 * 60 * 1000, // 10 minutos
@@ -334,32 +297,6 @@ export function useSubscriptionPayments(subscriptionId: string) {
 // ============================================================================
 // UTILITÁRIOS
 // ============================================================================
-
-/**
- * Calcula próxima data de cobrança baseado no tipo de plano
- */
-function calculateNextBillingDate(planType: string): string {
-  const now = new Date();
-
-  switch (planType) {
-    case 'bimestral':
-      now.setMonth(now.getMonth() + 2);
-      break;
-    case 'trimestral':
-      now.setMonth(now.getMonth() + 3);
-      break;
-    case 'semestral':
-      now.setMonth(now.getMonth() + 6);
-      break;
-    case 'anual':
-      now.setFullYear(now.getFullYear() + 1);
-      break;
-    default:
-      now.setMonth(now.getMonth() + 1);
-  }
-
-  return now.toISOString();
-}
 
 /**
  * Formata valor em reais

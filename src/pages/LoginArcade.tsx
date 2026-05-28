@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useSanitizedForm } from "@/hooks/useSanitizedInput";
 import { useAuthSessionActions } from "@/hooks/auth/useAuthSessionActions";
@@ -9,6 +9,8 @@ import {
   ArcadeCard,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
+import { PUBLIC_ROUTES, isSafeInAppPath } from "@/config/routes";
+import { AUTH_PASSWORD_POLICY, isPasswordPolicyCompliant } from "@/config/auth";
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -29,15 +31,14 @@ export default function LoginArcade() {
   } = useAuthSessionActions();
   const [params] = useSearchParams();
   const next = useMemo(() => {
-    const raw = params.get("next") || "/";
-    // Prevent open redirect: only allow relative paths starting with /
-    if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
-    return "/";
+    const raw = params.get("next") || PUBLIC_ROUTES.home;
+    return isSafeInAppPath(raw) ? raw : PUBLIC_ROUTES.home;
   }, [params]);
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const isSignupPasswordValid = mode !== "signup" || isPasswordPolicyCompliant(password);
 
   const { formData, setValue, getSanitizedData } = useSanitizedForm<{
     name: string;
@@ -50,6 +51,15 @@ export default function LoginArcade() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isSignupPasswordValid) {
+      toast({
+        title: "Senha fraca",
+        description: AUTH_PASSWORD_POLICY.requirementsLabel,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const sanitizedData = getSanitizedData();
@@ -221,17 +231,20 @@ export default function LoginArcade() {
                     placeholder="••••••••"
                     required
                     disabled={isLoading}
-                    minLength={6}
+                    minLength={mode === "signup" ? AUTH_PASSWORD_POLICY.minimumLength : undefined}
+                    pattern={mode === "signup" ? AUTH_PASSWORD_POLICY.htmlPattern : undefined}
                     className={inputClass}
                   />
                   {mode === "signup" && (
-                    <p className="text-[hsl(0,0%,30%)] font-mono text-[9px] mt-1">Mínimo 6 caracteres</p>
+                    <p className="text-[hsl(0,0%,30%)] font-mono text-[9px] mt-1">
+                      {AUTH_PASSWORD_POLICY.requirementsLabel}
+                    </p>
                   )}
                 </div>
 
                 <button
                   type="submit"
-                  disabled={isLoading || !formData.email || !password || (mode === "signup" && password.length < 6)}
+                  disabled={isLoading || !formData.email || !password || !isSignupPasswordValid}
                   className="w-full h-12 flex items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] font-mono uppercase tracking-[0.15em] text-sm hover:brightness-110 shadow-[0_0_15px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_25px_hsl(var(--gold-accent)/0.4)] transition-all disabled:opacity-40 disabled:shadow-none"
                 >
                   {isLoading ? (
@@ -263,13 +276,13 @@ export default function LoginArcade() {
               <div className="mt-6 pt-5 border-t border-[hsl(0,0%,12%)] text-center">
                 <p className="text-[hsl(0,0%,30%)] font-mono text-[9px] tracking-wider">
                   Ao continuar, você concorda com os{" "}
-                  <a href="/termos" className="text-[hsl(var(--gold-accent)/0.7)] hover:text-[hsl(var(--gold-accent))] underline">
+                  <Link to={PUBLIC_ROUTES.terms} className="text-[hsl(var(--gold-accent)/0.7)] hover:text-[hsl(var(--gold-accent))] underline">
                     Termos
-                  </a>{" "}
+                  </Link>{" "}
                   e{" "}
-                  <a href="/privacidade" className="text-[hsl(var(--gold-accent)/0.7)] hover:text-[hsl(var(--gold-accent))] underline">
+                  <Link to={PUBLIC_ROUTES.privacy} className="text-[hsl(var(--gold-accent)/0.7)] hover:text-[hsl(var(--gold-accent))] underline">
                     Privacidade
-                  </a>
+                  </Link>
                 </p>
               </div>
             </div>

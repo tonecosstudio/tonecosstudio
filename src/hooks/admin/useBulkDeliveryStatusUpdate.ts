@@ -5,6 +5,8 @@ import {
   updateBulkDeliveryStatus,
 } from '@/services/admin/bulk-delivery-status-update-service';
 
+export type { BulkUpdateResult };
+
 export function useBulkDeliveryStatusUpdate(onSuccess?: (result: BulkUpdateResult) => void) {
   const queryClient = useQueryClient();
 

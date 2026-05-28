@@ -11,6 +11,60 @@ interface PaymentInfo {
   payment_link: string;
 }
 
+function getPaymentSettingSuffix(
+  paymentType: PaymentType,
+  subscriptionPeriod?: SubscriptionPeriod
+): string {
+  if (paymentType === "subscription") {
+    if (!subscriptionPeriod) {
+      throw new Error("Periodo de assinatura obrigatorio para pagamento de assinatura");
+    }
+
+    return `subscription_${subscriptionPeriod}`;
+  }
+
+  return paymentType;
+}
+
+function settingValueToString(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return "";
+}
+
+async function getPaymentSettings(
+  paymentType: PaymentType,
+  subscriptionPeriod?: SubscriptionPeriod
+): Promise<PaymentInfo> {
+  const suffix = getPaymentSettingSuffix(paymentType, subscriptionPeriod);
+  const pixKeySetting = `pix_key_${suffix}`;
+  const paymentLinkSetting = `payment_link_${suffix}`;
+
+  const { data, error } = await supabase
+    .from("system_settings")
+    .select("key, value")
+    .in("key", [pixKeySetting, paymentLinkSetting]);
+
+  if (error) {
+    throw error;
+  }
+
+  const settingsByKey = new Map((data ?? []).map((setting) => [setting.key, setting.value]));
+
+  return {
+    payment_type: paymentType,
+    subscription_period: paymentType === "subscription" ? subscriptionPeriod ?? null : null,
+    pix_key: settingValueToString(settingsByKey.get(pixKeySetting)),
+    payment_link: settingValueToString(settingsByKey.get(paymentLinkSetting)),
+  };
+}
+
 /**
  * Hook para buscar chaves PIX e links de pagamento baseado no tipo de transação
  */
@@ -21,14 +75,7 @@ export function usePaymentKeys(
   return useQuery({
     queryKey: ["payment-keys", paymentType, subscriptionPeriod],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_payment_info_for_type", {
-        p_payment_type: paymentType,
-        p_subscription_period: subscriptionPeriod || null,
-      });
-
-      if (error) throw error;
-
-      return data?.[0] as PaymentInfo | null;
+      return getPaymentSettings(paymentType, subscriptionPeriod);
     },
     enabled: !!paymentType,
   });
@@ -41,14 +88,8 @@ export function usePixKey(paymentType: PaymentType, subscriptionPeriod?: Subscri
   return useQuery({
     queryKey: ["pix-key", paymentType, subscriptionPeriod],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_pix_key_for_payment", {
-        p_payment_type: paymentType,
-        p_subscription_period: subscriptionPeriod || null,
-      });
-
-      if (error) throw error;
-
-      return data as string;
+      const settings = await getPaymentSettings(paymentType, subscriptionPeriod);
+      return settings.pix_key;
     },
     enabled: !!paymentType,
   });
@@ -64,14 +105,8 @@ export function usePaymentLink(
   return useQuery({
     queryKey: ["payment-link", paymentType, subscriptionPeriod],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_payment_link_for_payment", {
-        p_payment_type: paymentType,
-        p_subscription_period: subscriptionPeriod || null,
-      });
-
-      if (error) throw error;
-
-      return data as string;
+      const settings = await getPaymentSettings(paymentType, subscriptionPeriod);
+      return settings.payment_link;
     },
     enabled: !!paymentType,
   });

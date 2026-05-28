@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { compressImage } from '../image-compression';
 import imageCompression from 'browser-image-compression';
 
@@ -8,6 +8,10 @@ vi.mock('browser-image-compression', () => ({
 }));
 
 describe('Image Compression Service', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   const createMockFile = (name: string, type: string, size: number = 1024): File => {
     const blob = new Blob(['x'.repeat(size)], { type });
     return new File([blob], name, { type });
@@ -44,9 +48,9 @@ describe('Image Compression Service', () => {
 
     vi.mocked(imageCompression).mockRejectedValue(new Error('Compression failed'));
 
-    const result = await compressImage(mockFile);
-
-    expect(result).toBe(mockFile);
+    await expect(compressImage(mockFile)).rejects.toThrow(
+      'Image compression failed: Compression failed'
+    );
   });
 
   it('should handle different image types', async () => {

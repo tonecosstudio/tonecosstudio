@@ -6,7 +6,7 @@
  * in various form scenarios.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { ValidationFeedback } from "./validation-feedback";
 import { Input } from "./input";
 import { Label } from "./label";

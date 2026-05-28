@@ -11,6 +11,7 @@ import {
   useCreateCustomerSupportConversation,
   useSupportAttachmentPublicUrl,
 } from "@/hooks/customer/useCustomerSupportConversationActions";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 /**
  * Converte file_path para URL pública do Supabase Storage
@@ -33,6 +34,14 @@ interface CustomerMessageListProps {
   currentUserId: string;
   currentUserName: string;
   isClosed?: boolean; // Indica se a conversa está encerrada
+}
+
+function getSafeAttachmentUrl(url: string): string | null {
+  try {
+    return sanitizeURL(url, ["http", "https"]);
+  } catch {
+    return null;
+  }
 }
 
 export function CustomerMessageList({
@@ -262,18 +271,21 @@ function CustomerMessageBubble({
             {message.attachments.map((attachment: Attachment) => {
               const isImage = attachment.file_type?.startsWith("image/");
               const publicUrl = getSupportAttachmentPublicUrl(attachment.file_path);
+              const safePublicUrl = getSafeAttachmentUrl(publicUrl);
+
+              if (!safePublicUrl) return null;
 
               if (isImage) {
                 return (
                   <a
                     key={attachment.id}
-                    href={publicUrl}
+                    href={safePublicUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
                   >
                     <img
-                      src={publicUrl}
+                      src={safePublicUrl}
                       alt={attachment.file_name}
                       className="max-w-full max-h-64 rounded border"
                       loading="lazy"
@@ -286,7 +298,7 @@ function CustomerMessageBubble({
               return (
                 <a
                   key={attachment.id}
-                  href={publicUrl}
+                  href={safePublicUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`text-xs underline block p-2 rounded border ${

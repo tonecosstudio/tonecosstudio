@@ -2,7 +2,6 @@
  * Collection Details Page - Metal Slug Arcade Style
  *
  * Uses Page shell for consistent aesthetic with Home, Collections, Plans.
- * Route: /colecoes/:slug
  */
 
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -30,6 +29,10 @@ import {
   Lock,
   Zap,
 } from "lucide-react";
+import {
+  PUBLIC_ROUTES,
+  collectionCharacterDetailsPath,
+} from "@/config/routes";
 
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -55,7 +58,7 @@ function CharacterCard({
 
   return (
     <Link
-      to={isUpcoming ? "#" : `/colecoes/${collectionSlug}/${character.id}`}
+      to={isUpcoming ? "#" : collectionCharacterDetailsPath(collectionSlug, character.id)}
       onClick={(e) => isUpcoming && e.preventDefault()}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -155,7 +158,7 @@ function FeaturedCharacterHero({
   collectionSlug: string;
 }) {
   return (
-    <Link to={`/colecoes/${collectionSlug}/${character.id}`} className="group block">
+    <Link to={collectionCharacterDetailsPath(collectionSlug, character.id)} className="group block">
       <div className="relative h-80 md:h-[480px] overflow-hidden border-2 border-[hsl(var(--gold-accent)/0.6)] group-hover:border-[hsl(var(--gold-accent))] transition-all duration-500 group-hover:shadow-[0_0_60px_hsl(var(--gold-accent)/0.3)]">
         {/* Corner brackets */}
         <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
@@ -320,7 +323,7 @@ export default function CollectionDetailsArcade() {
               Coleção não encontrada
             </h1>
             <button
-              onClick={() => navigate("/colecoes")}
+              onClick={() => navigate(PUBLIC_ROUTES.collections)}
               className="font-mono text-xs tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))] border border-[hsl(var(--gold-accent)/0.4)] px-6 py-2 hover:bg-[hsl(var(--gold-accent)/0.1)] transition-colors"
             >
               ← Voltar para Coleções
@@ -384,7 +387,7 @@ export default function CollectionDetailsArcade() {
         <div className="relative max-w-5xl mx-auto z-10">
           {/* Back button */}
           <button
-            onClick={() => navigate("/colecoes")}
+            onClick={() => navigate(PUBLIC_ROUTES.collections)}
             className="flex items-center gap-2 mb-8 font-mono text-[10px] tracking-[0.2em] uppercase text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
           >
             <ArrowLeft className="w-3 h-3" />
@@ -554,12 +557,12 @@ export default function CollectionDetailsArcade() {
         description="Assine e tenha acesso exclusivo a todos os personagens desta coleção com preços especiais."
         primaryAction={{
           label: "Ver Planos",
-          href: "/planos",
+          href: PUBLIC_ROUTES.plans,
           icon: <Crown className="w-4 h-4" />,
         }}
         secondaryAction={{
           label: "Ver Coleções",
-          href: "/colecoes",
+          href: PUBLIC_ROUTES.collections,
         }}
       />
     </Page>

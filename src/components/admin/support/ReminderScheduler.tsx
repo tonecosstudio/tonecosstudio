@@ -1,10 +1,5 @@
 /**
- * ReminderScheduler - Modal para agendar lembretes em conversas
- *
- * Requirements: 23.5
- * Design: .kiro/specs/advanced-chat-support-system/design.md
- *
- * Permite que admins agendem lembretes para conversas com validação de data futura.
+ * ReminderScheduler - modal para agendar lembretes em conversas.
  */
 
 import { useState } from "react";
@@ -25,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -43,6 +37,18 @@ interface ReminderSchedulerProps {
   onReminderCreated?: (reminder: ConversationReminder) => void;
 }
 
+const REMINDER_TYPE_LABELS: Record<ConversationReminder["reminder_type"], string> = {
+  quote_followup: "Follow-up de Orçamento",
+  payment_pending: "Pagamento Pendente",
+  promised_date: "Data Prometida",
+};
+
+const REMINDER_TYPE_DESCRIPTIONS: Record<ConversationReminder["reminder_type"], string> = {
+  quote_followup: "Lembrar cliente sobre orçamento sem resposta",
+  payment_pending: "Lembrar cliente sobre pagamento aguardando confirmação",
+  promised_date: "Lembrar sobre prazo prometido ao cliente",
+};
+
 export function ReminderScheduler({
   conversationId,
   open,
@@ -53,29 +59,24 @@ export function ReminderScheduler({
   const [reminderType, setReminderType] =
     useState<ConversationReminder["reminder_type"]>("quote_followup");
   const [scheduledDate, setScheduledDate] = useState<Date>();
-  const [scheduledTime, setScheduledTime] = useState<string>("09:00");
-  const [customMessage, setCustomMessage] = useState<string>("");
+  const [scheduledTime, setScheduledTime] = useState("09:00");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    // Validação: data deve estar selecionada
     if (!scheduledDate) {
       toast({
         title: "Data obrigatória",
-        description: "Por favor, selecione uma data para o lembrete.",
+        description: "Selecione uma data para o lembrete.",
         variant: "destructive",
       });
       return;
     }
 
-    // Combinar data e hora
     const [hours, minutes] = scheduledTime.split(":").map(Number);
     const scheduledDateTime = new Date(scheduledDate);
     scheduledDateTime.setHours(hours, minutes, 0, 0);
 
-    // Validação: data deve ser futura
-    const now = new Date();
-    if (scheduledDateTime <= now) {
+    if (scheduledDateTime <= new Date()) {
       toast({
         title: "Data inválida",
         description: "A data do lembrete deve ser no futuro.",
@@ -91,21 +92,13 @@ export function ReminderScheduler({
 
       toast({
         title: "Lembrete agendado",
-        description: `Lembrete agendado para ${format(scheduledDateTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
+        description: `Lembrete agendado para ${format(scheduledDateTime, "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}.`,
       });
 
-      // Resetar formulário
       setReminderType("quote_followup");
       setScheduledDate(undefined);
       setScheduledTime("09:00");
-      setCustomMessage("");
-
-      // Notificar componente pai
-      if (onReminderCreated) {
-        onReminderCreated(reminder);
-      }
-
-      // Fechar modal
+      onReminderCreated?.(reminder);
       onOpenChange(false);
     } catch (error) {
       log.error("Erro ao criar lembrete", { error, conversationId, reminderType });
@@ -119,36 +112,15 @@ export function ReminderScheduler({
     }
   };
 
-  const getReminderTypeLabel = (type: ConversationReminder["reminder_type"]) => {
-    const labels = {
-      quote_followup: "Follow-up de Orçamento",
-      payment_pending: "Pagamento Pendente",
-      promised_date: "Data Prometida",
-    };
-    return labels[type];
-  };
-
-  const getReminderTypeDescription = (type: ConversationReminder["reminder_type"]) => {
-    const descriptions = {
-      quote_followup: "Lembrar cliente sobre orçamento sem resposta",
-      payment_pending: "Lembrar cliente sobre pagamento aguardando confirmação",
-      promised_date: "Lembrar sobre prazo prometido ao cliente",
-    };
-    return descriptions[type];
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Agendar Lembrete</DialogTitle>
-          <DialogDescription>
-            Configure um lembrete automático para esta conversa.
-          </DialogDescription>
+          <DialogDescription>Configure um lembrete automático para esta conversa.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Tipo de Lembrete */}
           <div className="grid gap-2">
             <Label htmlFor="reminder-type">Tipo de Lembrete</Label>
             <Select
@@ -161,35 +133,20 @@ export function ReminderScheduler({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="quote_followup">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{getReminderTypeLabel("quote_followup")}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {getReminderTypeDescription("quote_followup")}
-                    </span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="payment_pending">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{getReminderTypeLabel("payment_pending")}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {getReminderTypeDescription("payment_pending")}
-                    </span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="promised_date">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{getReminderTypeLabel("promised_date")}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {getReminderTypeDescription("promised_date")}
-                    </span>
-                  </div>
-                </SelectItem>
+                {Object.entries(REMINDER_TYPE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {REMINDER_TYPE_DESCRIPTIONS[value as ConversationReminder["reminder_type"]]}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Data */}
           <div className="grid gap-2">
             <Label>Data do Lembrete</Label>
             <Popover>
@@ -198,7 +155,7 @@ export function ReminderScheduler({
                   variant="outline"
                   className={cn(
                     "justify-start text-left font-normal",
-                    !scheduledDate && "text-muted-foreground"
+                    !scheduledDate && "text-muted-foreground",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -222,33 +179,15 @@ export function ReminderScheduler({
             </Popover>
           </div>
 
-          {/* Hora */}
           <div className="grid gap-2">
             <Label htmlFor="reminder-time">Hora do Lembrete</Label>
             <input
               id="reminder-time"
               type="time"
               value={scheduledTime}
-              onChange={(e) => setScheduledTime(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              onChange={(event) => setScheduledTime(event.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
-          </div>
-
-          {/* Mensagem Opcional */}
-          <div className="grid gap-2">
-            <Label htmlFor="custom-message">Mensagem Personalizada (Opcional)</Label>
-            <Textarea
-              id="custom-message"
-              placeholder="Adicione uma mensagem personalizada ao lembrete (em desenvolvimento)"
-              value={customMessage}
-              onChange={(e) => setCustomMessage(e.target.value)}
-              rows={3}
-              disabled
-              className="resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              Nota: Mensagens personalizadas serão implementadas em versão futura.
-            </p>
           </div>
         </div>
 

@@ -20,20 +20,33 @@ import DOMPurify from 'dompurify';
  */
 const MAX_SEARCH_LENGTH = 100;
 
+const DANGEROUS_PROTOCOL_PATTERN = /\b(?:javascript|vbscript|data)\s*:/gi;
+const SQL_COMMENT_PATTERN = /--|\/\*|\*\//g;
+const SQL_TOKEN_PATTERN = /\b(?:select|insert|update|delete|drop|alter|create|truncate|union|from|where|table|or|and|sleep|benchmark|exec|execute)\b/gi;
+const SQL_TAUTOLOGY_PATTERN = /\b(?:\d+\s*=\s*\d+|true\s*=\s*true|false\s*=\s*false)\b/gi;
+const SEARCH_CONTROL_CHARS_PATTERN = /['"`;]/g;
+
+function stripDangerousSearchTokens(input: string): string {
+  return input
+    .replace(DANGEROUS_PROTOCOL_PATTERN, '')
+    .replace(SQL_COMMENT_PATTERN, '')
+    .replace(SEARCH_CONTROL_CHARS_PATTERN, '')
+    .replace(SQL_TOKEN_PATTERN, '')
+    .replace(SQL_TAUTOLOGY_PATTERN, '');
+}
+
 // ============================================================================
 // Funções Principais
 // ============================================================================
 
 /**
- * Sanitiza input de busca removendo tags HTML/scripts
+ * Sanitiza input de busca removendo HTML, scripts e tokens perigosos
  *
  * Esta função:
  * 1. Remove tags HTML/script usando DOMPurify (proteção XSS)
- * 2. Remove espaços em branco extras
- * 3. Limita o comprimento a um máximo razoável
- *
- * NOTA: SQL Injection é prevenido pelo Supabase RLS e queries parametrizadas.
- * Não é necessário filtrar palavras SQL como SELECT, DROP, etc.
+ * 2. Remove protocolos e tokens de controle perigosos para campos de busca
+ * 3. Remove espaços em branco extras
+ * 4. Limita o comprimento a um máximo razoável
  *
  * @param input - String de entrada a ser sanitizada
  * @returns String sanitizada e segura
@@ -56,6 +69,8 @@ export function sanitizeSearchInput(input: string): string {
     ALLOWED_ATTR: [], // Não permitir nenhum atributo
     KEEP_CONTENT: true, // Manter o conteúdo de texto
   });
+
+  sanitized = stripDangerousSearchTokens(sanitized);
 
   // 2. Remover espaços em branco extras
   sanitized = sanitized.trim().replace(/\s+/g, ' ');
@@ -202,6 +217,12 @@ export interface SanitizeOptions {
    * @default true
    */
   normalizeWhitespace?: boolean;
+
+  /**
+   * Se deve remover tokens perigosos de busca
+   * @default true
+   */
+  removeSQLPatterns?: boolean;
 }
 
 /**
@@ -227,6 +248,7 @@ export function sanitizeWithOptions(
     maxLength = MAX_SEARCH_LENGTH,
     removeHTML = true,
     normalizeWhitespace = true,
+    removeSQLPatterns = true,
   } = options;
 
   if (!input || typeof input !== 'string') {
@@ -242,6 +264,10 @@ export function sanitizeWithOptions(
       ALLOWED_ATTR: [],
       KEEP_CONTENT: true,
     });
+  }
+
+  if (removeSQLPatterns) {
+    sanitized = stripDangerousSearchTokens(sanitized);
   }
 
   // Normalizar espaços em branco se solicitado

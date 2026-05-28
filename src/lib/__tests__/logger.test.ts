@@ -5,12 +5,14 @@ describe('Logger Service', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
   let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
+  let consoleDebugSpy: ReturnType<typeof vi.spyOn>;
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
@@ -57,7 +59,9 @@ describe('Logger Service', () => {
     it('should log debug messages in development', () => {
       log.debug('Test debug message');
       // Debug logs are environment-dependent
-      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(consoleDebugSpy).toHaveBeenCalled();
+      expect(consoleInfoSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -79,7 +83,9 @@ describe('Logger Service', () => {
 
     it('logDebug should work for backward compatibility', () => {
       logDebug('Legacy debug', { data: 'test' }, 'TestContext');
-      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(consoleDebugSpy).toHaveBeenCalled();
+      expect(consoleInfoSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).not.toHaveBeenCalled();
     });
   });
 });

@@ -9,17 +9,18 @@ import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/lib/roles";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
+import { ADMIN_ROUTES, AUTH_ROUTES, PUBLIC_ROUTES } from "@/config/routes";
 
 const navLinks = [
-  { to: "/", label: "INÍCIO" },
-  { to: "/catalogo", label: "CATÁLOGO" },
-  { to: "/colecoes", label: "COLEÇÕES" },
-  { to: "/planos", label: "PLANOS" },
+  { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
+  { to: PUBLIC_ROUTES.catalog, label: "CATÁLOGO" },
+  { to: PUBLIC_ROUTES.collections, label: "COLEÇÕES" },
+  { to: PUBLIC_ROUTES.plans, label: "PLANOS" },
 ];
 
 const authNavLinks = [
-  { to: "/catalogo-personagens", label: "PERSONAGENS" },
-  { to: "/perfil", label: "CONTA" },
+  { to: PUBLIC_ROUTES.catalog, label: "PERSONAGENS" },
+  { to: AUTH_ROUTES.profile, label: "CONTA" },
 ];
 
 export function ArcadeNav() {
@@ -45,7 +46,7 @@ export function ArcadeNav() {
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 h-14">
         {/* Logo */}
         <Link
-          to="/"
+          to={PUBLIC_ROUTES.home}
           className="font-black text-xl tracking-[0.3em] text-[hsl(var(--gold-accent))] shrink-0"
           style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.3)" }}
         >
@@ -65,7 +66,7 @@ export function ArcadeNav() {
             </Link>
           ))}
           {isAdmin && (
-            <Link to="/admin" className="text-[10px] tracking-[0.2em] uppercase font-mono text-red-500 hover:text-red-400 transition-colors">
+            <Link to={ADMIN_ROUTES.home} className="text-[10px] tracking-[0.2em] uppercase font-mono text-red-500 hover:text-red-400 transition-colors">
               ADMIN
             </Link>
           )}
@@ -75,7 +76,7 @@ export function ArcadeNav() {
         <div className="flex items-center gap-3">
           {user && (
             <button
-              onClick={() => navigate("/notificacoes")}
+              onClick={() => navigate(AUTH_ROUTES.notifications)}
               className="relative text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
             >
               <Bell className="w-4 h-4" />
@@ -84,7 +85,7 @@ export function ArcadeNav() {
           <CoinCounter balance={userBalance} isLoading={balanceLoading} />
           {!user && (
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate(PUBLIC_ROUTES.login)}
               className="text-[10px] tracking-[0.2em] uppercase font-mono border border-[hsl(var(--gold-accent)/0.4)] px-3 py-1.5 text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] transition-colors"
             >
               ENTRAR
@@ -125,16 +126,16 @@ export function ArcadeNav() {
           ))}
           {user && (
             <Link
-              to="/notificacoes"
+              to={AUTH_ROUTES.notifications}
               onClick={() => setMobileOpen(false)}
-              className={`block py-2 ${linkClass("/notificacoes")}`}
+              className={`block py-2 ${linkClass(AUTH_ROUTES.notifications)}`}
             >
               🔔 NOTIFICAÇÕES
             </Link>
           )}
           {isAdmin && (
             <Link
-              to="/admin"
+              to={ADMIN_ROUTES.home}
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-[10px] tracking-[0.2em] uppercase font-mono text-red-500"
             >

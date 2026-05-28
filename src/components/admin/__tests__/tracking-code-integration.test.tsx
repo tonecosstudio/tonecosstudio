@@ -12,6 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
+import {
+  buildTrackingUrl,
+  CORREIOS_TRACKING_BASE_URL,
+} from '@/lib/tracking-links';
 
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -62,9 +66,9 @@ describe('Tracking Code Management Integration', () => {
 
   it('should generate correct tracking link URL', () => {
     const trackingCode = 'BR123456789BR';
-    const expectedUrl = `https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${trackingCode}`;
+    const expectedUrl = buildTrackingUrl(trackingCode);
     
-    expect(expectedUrl).toBe('https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=BR123456789BR');
+    expect(expectedUrl).toBe(`${CORREIOS_TRACKING_BASE_URL}?objeto=BR123456789BR`);
   });
 
   it('should convert tracking code to uppercase', () => {
@@ -133,7 +137,7 @@ describe('Tracking Code Management Integration', () => {
 
   it('should include tracking link in notification message', () => {
     const trackingCode = 'BR123456789BR';
-    const trackingUrl = `https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${trackingCode}`;
+    const trackingUrl = buildTrackingUrl(trackingCode);
     
     const notificationMessage = `Código de rastreamento disponível!\n\nCódigo: ${trackingCode}\n\nRastreie seu pedido em: ${trackingUrl}`;
     

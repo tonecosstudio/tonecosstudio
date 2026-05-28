@@ -1,8 +1,5 @@
 /* Fontes carregadas via <link> no index.html para melhor performance */
 
-/* Character Roster V2 Styles */
-@import './styles/character-roster-v2.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

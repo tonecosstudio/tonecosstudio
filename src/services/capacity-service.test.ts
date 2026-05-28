@@ -15,6 +15,7 @@ import {
   checkSubscriptionCapacity
 } from './capacity-service';
 import { supabase } from '@/integrations/supabase/client';
+import log from '@/lib/logger';
 
 // Mock the supabase client
 vi.mock('@/integrations/supabase/client', () => ({
@@ -23,6 +24,55 @@ vi.mock('@/integrations/supabase/client', () => ({
     from: vi.fn()
   }
 }));
+
+vi.mock('@/lib/logger', () => {
+  const logger = {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  };
+
+  return {
+    default: logger,
+    log: logger,
+  };
+});
+
+type SupabaseQueryResult<T = unknown> = {
+  data: T | null;
+  error: { message: string } | null;
+};
+
+function createSupabaseQuery<T>(result: SupabaseQueryResult<T>) {
+  const query: Record<string, unknown> = {};
+  const resolve = vi.fn().mockResolvedValue(result);
+
+  query.select = vi.fn(() => query);
+  query.eq = vi.fn(() => query);
+  query.in = vi.fn(() => query);
+  query.order = vi.fn(() => query);
+  query.limit = vi.fn(() => query);
+  query.single = resolve;
+  query.maybeSingle = resolve;
+
+  return query;
+}
+
+function mockCycleQueries(results: Array<SupabaseQueryResult>) {
+  let index = 0;
+
+  (supabase.from as any).mockImplementation((table: string) => {
+    if (table !== 'cycles') {
+      throw new Error(`Unexpected table query: ${table}`);
+    }
+
+    const result = results[Math.min(index, results.length - 1)] ?? { data: null, error: null };
+    index += 1;
+
+    return createSupabaseQuery(result);
+  });
+}
 
 describe('Capacity Service', () => {
   beforeEach(() => {
@@ -87,9 +137,11 @@ describe('Capacity Service', () => {
         p_cycle_id: 'cycle-123',
         p_quantity: 3
       });
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Reserved 3 capacity')
-      );
+      expect(log.info).toHaveBeenCalledWith('Capacity reserved', {
+        quantity: 3,
+        cycleId: 'cycle-123',
+        referenceId: 'subscription-456',
+      });
 
       consoleSpy.mockRestore();
     });
@@ -135,9 +187,11 @@ describe('Capacity Service', () => {
         p_cycle_id: 'cycle-123',
         p_quantity: 2
       });
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Released 2 capacity')
-      );
+      expect(log.info).toHaveBeenCalledWith('Capacity released', {
+        quantity: 2,
+        cycleId: 'cycle-123',
+        referenceId: 'subscription-456',
+      });
 
       consoleSpy.mockRestore();
     });
@@ -156,15 +210,15 @@ describe('Capacity Service', () => {
   });
 
   describe('getCapacityUsage', () => {
-    it('should return capacity usage with capacity_max', async () => {
+    it('should return capacity usage with canonical capacity fields', async () => {
       // Mock database query
       const mockFrom = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
               data: {
-                capacity_max: 100,
-                capacity_current: 75
+                capacity: 100,
+                used_capacity: 75
               },
               error: null
             })
@@ -184,16 +238,15 @@ describe('Capacity Service', () => {
       });
     });
 
-    it('should fall back to capacity_max when capacity_limit is null', async () => {
+    it('should use canonical capacity when legacy limit fields are absent', async () => {
       // Mock database query
       const mockFrom = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
               data: {
-                capacity_max: 150,
-                capacity_current: 50,
-                capacity_limit: null
+                capacity: 150,
+                used_capacity: 50
               },
               error: null
             })
@@ -213,16 +266,15 @@ describe('Capacity Service', () => {
       });
     });
 
-    it('should handle zero capacity_current', async () => {
+    it('should handle zero used capacity', async () => {
       // Mock database query
       const mockFrom = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
               data: {
-                capacity_max: 100,
-                capacity_current: 0,
-                capacity_limit: 100
+                capacity: 100,
+                used_capacity: 0
               },
               error: null
             })
@@ -249,9 +301,8 @@ describe('Capacity Service', () => {
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
               data: {
-                capacity_max: 100,
-                capacity_current: 100,
-                capacity_limit: 100
+                capacity: 100,
+                used_capacity: 100
               },
               error: null
             })
@@ -337,7 +388,7 @@ describe('Property-Based Tests', () => {
             currentUsage: fc.integer({ min: 0, max: 200 }),
             requestedQuantity: fc.integer({ min: 1, max: 10 })
           }),
-          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
+          async ({ maxCapacity, currentUsage, requestedQuantity }) => {
             // Setup: Mock the database to return our test scenario
             const cycleId = 'test-cycle-' + Math.random();
             const hasCapacity = (currentUsage + requestedQuantity) <= maxCapacity;
@@ -379,7 +430,7 @@ describe('Property-Based Tests', () => {
             // Only test cases where capacity would be exceeded
             (currentUsage + requestedQuantity) > maxCapacity
           ),
-          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
+          async ({ requestedQuantity }) => {
             const cycleId = 'test-cycle-' + Math.random();
             
             // Mock checkAvailability to return false (capacity exceeded)
@@ -412,7 +463,7 @@ describe('Property-Based Tests', () => {
           }).filter(({ maxCapacity, currentUsage, requestedQuantity }) => 
             (currentUsage + requestedQuantity) > maxCapacity
           ),
-          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
+          async ({ requestedQuantity }) => {
             const cycleId = 'test-cycle-' + Math.random();
             const referenceId = 'ref-' + Math.random();
             
@@ -446,7 +497,7 @@ describe('Property-Based Tests', () => {
             // Only test cases where capacity is available
             (currentUsage + requestedQuantity) <= maxCapacity
           ),
-          async ({ maxCapacity: _maxCapacity, currentUsage: _currentUsage, requestedQuantity }) => {
+          async ({ requestedQuantity }) => {
             const cycleId = 'test-cycle-' + Math.random();
             
             // Mock checkAvailability to return true
@@ -484,64 +535,47 @@ describe('Property-Based Tests', () => {
             // Check if all deliveries can be accommodated
             const canAccommodate = (currentUsage + deliveryCount) <= maxCapacity;
             
-            // Mock get_or_create_current_cycle
-            (supabase.rpc as any).mockResolvedValueOnce({
-              data: {
-                cycle_number: 1,
-                month: 3,
-                year: 2026
-              },
-              error: null
-            });
-            
-            // Mock cycles query
             if (canAccommodate) {
-              // All cycles have capacity
-              (supabase.from as any).mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      eq: vi.fn().mockReturnValue({
-                        maybeSingle: vi.fn().mockResolvedValue({
-                          data: null, // No existing cycle (will be created with capacity)
-                          error: null
-                        })
-                      })
-                    })
-                  })
-                })
-              });
+              mockCycleQueries([
+                {
+                  data: {
+                    cycle_number: 1,
+                    month: 3,
+                    year: 2026
+                  },
+                  error: null
+                },
+                { data: null, error: null }
+              ]);
             } else {
-              // First cycle has no capacity
-              (supabase.from as any).mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      eq: vi.fn().mockReturnValue({
-                        maybeSingle: vi.fn().mockResolvedValue({
-                          data: {
-                            id: 'cycle-full',
-                            capacity_current: maxCapacity,
-                            capacity_max: maxCapacity
-                          },
-                          error: null
-                        })
-                      })
-                    })
-                  })
-                })
-              });
-              
-              // Mock check_capacity_available to return false
+              mockCycleQueries([
+                {
+                  data: {
+                    cycle_number: 1,
+                    month: 3,
+                    year: 2026
+                  },
+                  error: null
+                },
+                {
+                  data: {
+                    id: 'cycle-full',
+                    used_capacity: maxCapacity,
+                    capacity: maxCapacity
+                  },
+                  error: null
+                }
+              ]);
+
               (supabase.rpc as any).mockResolvedValueOnce({
                 data: false,
                 error: null
               });
             }
-            
+
             // Act: Check subscription capacity
             const result = await checkSubscriptionCapacity(deliveryCount);
-            
+
             // Assert: Result matches expected availability
             if (canAccommodate) {
               expect(result.available).toBe(true);
@@ -643,8 +677,8 @@ describe('Property-Based Tests', () => {
                 eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
                     data: {
-                      capacity_max: maxCapacity,
-                      capacity_current: expectedCapacityCurrent
+                      capacity: maxCapacity,
+                      used_capacity: expectedCapacityCurrent
                     },
                     error: null
                   })
@@ -688,8 +722,8 @@ describe('Property-Based Tests', () => {
                 eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
                     data: {
-                      capacity_max: maxCapacity,
-                      capacity_current: 0
+                      capacity: maxCapacity,
+                      used_capacity: 0
                     },
                     error: null
                   })
@@ -726,8 +760,8 @@ describe('Property-Based Tests', () => {
                 eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
                     data: {
-                      capacity_max: maxCapacity,
-                      capacity_current: maxCapacity
+                      capacity: maxCapacity,
+                      used_capacity: maxCapacity
                     },
                     error: null
                   })
@@ -805,8 +839,8 @@ describe('Property-Based Tests', () => {
                 eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
                     data: {
-                      capacity_max: maxCapacity,
-                      capacity_current: currentCapacity
+                      capacity: maxCapacity,
+                      used_capacity: currentCapacity
                     },
                     error: null
                   })
@@ -862,8 +896,8 @@ describe('Property-Based Tests', () => {
                 eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
                     data: {
-                      capacity_max: maxCapacity,
-                      capacity_current: totalItems
+                      capacity: maxCapacity,
+                      used_capacity: totalItems
                     },
                     error: null
                   })
@@ -892,31 +926,17 @@ describe('Property-Based Tests', () => {
 
 describe('checkSubscriptionCapacity', () => {
   it('should return available true when all cycles have capacity', async () => {
-    // Mock get_or_create_current_cycle
-    (supabase.rpc as any).mockResolvedValueOnce({
-      data: {
-        cycle_number: 1,
-        month: 3,
-        year: 2026
+    mockCycleQueries([
+      {
+        data: {
+          cycle_number: 1,
+          month: 3,
+          year: 2026
+        },
+        error: null
       },
-      error: null
-    });
-
-    // Mock cycles query - no existing cycles found (will be created with capacity)
-    (supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: null,
-                error: null
-              })
-            })
-          })
-        })
-      })
-    });
+      { data: null, error: null }
+    ]);
 
     const result = await checkSubscriptionCapacity(3);
 
@@ -926,36 +946,24 @@ describe('checkSubscriptionCapacity', () => {
   });
 
   it('should return available false when a cycle lacks capacity', async () => {
-    // Mock get_or_create_current_cycle - Cycle 1 of March 2026
-    (supabase.rpc as any).mockResolvedValueOnce({
-      data: {
-        cycle_number: 1,
-        month: 3,
-        year: 2026
+    mockCycleQueries([
+      {
+        data: {
+          cycle_number: 1,
+          month: 3,
+          year: 2026
+        },
+        error: null
       },
-      error: null
-    });
-
-    // The first delivery will be in Cycle 2 of March 2026
-    // Mock first cycle query (Cycle 2 of March) - no capacity
-    (supabase.from as any).mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: {
-                  id: 'cycle-2-march',
-                  capacity_current: 100,
-                  capacity_max: 100
-                },
-                error: null
-              })
-            })
-          })
-        })
-      })
-    });
+      {
+        data: {
+          id: 'cycle-2-march',
+          used_capacity: 100,
+          capacity: 100
+        },
+        error: null
+      }
+    ]);
 
     // Mock check_capacity_available for Cycle 2 of March - no capacity
     (supabase.rpc as any).mockResolvedValueOnce({
@@ -975,35 +983,24 @@ describe('checkSubscriptionCapacity', () => {
   });
 
   it('should calculate correct estimated availability date', async () => {
-    // Mock get_or_create_current_cycle - Cycle 1 of March 2026
-    (supabase.rpc as any).mockResolvedValueOnce({
-      data: {
-        cycle_number: 1,
-        month: 3,
-        year: 2026
+    mockCycleQueries([
+      {
+        data: {
+          cycle_number: 1,
+          month: 3,
+          year: 2026
+        },
+        error: null
       },
-      error: null
-    });
-
-    // Mock cycle query - Cycle 2 of March is full
-    (supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: {
-                  id: 'cycle-2',
-                  capacity_current: 100,
-                  capacity_max: 100
-                },
-                error: null
-              })
-            })
-          })
-        })
-      })
-    });
+      {
+        data: {
+          id: 'cycle-2',
+          used_capacity: 100,
+          capacity: 100
+        },
+        error: null
+      }
+    ]);
 
     // Mock check_capacity_available - no capacity
     (supabase.rpc as any).mockResolvedValueOnce({
@@ -1025,36 +1022,25 @@ describe('checkSubscriptionCapacity', () => {
 
   it('should check capacity for all delivery cycles', async () => {
     const rpcSpy = vi.spyOn(supabase, 'rpc');
-    
-    // Mock get_or_create_current_cycle
-    rpcSpy.mockResolvedValueOnce({
-      data: {
-        cycle_number: 1,
-        month: 3,
-        year: 2026
-      },
-      error: null
-    } as any);
 
-    // Mock cycles query - return cycles with capacity
-    (supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: {
-                  id: 'cycle-test',
-                  capacity_current: 50,
-                  capacity_max: 100
-                },
-                error: null
-              })
-            })
-          })
-        })
-      })
-    });
+    mockCycleQueries([
+      {
+        data: {
+          cycle_number: 1,
+          month: 3,
+          year: 2026
+        },
+        error: null
+      },
+      {
+        data: {
+          id: 'cycle-test',
+          used_capacity: 50,
+          capacity: 100
+        },
+        error: null
+      }
+    ]);
 
     // Mock check_capacity_available - all have capacity
     rpcSpy.mockResolvedValue({
@@ -1064,41 +1050,28 @@ describe('checkSubscriptionCapacity', () => {
 
     await checkSubscriptionCapacity(6); // Semestral - 6 deliveries
 
-    // Should check capacity for 6 cycles
-    // 1 call for get_or_create_current_cycle + 6 calls for check_capacity_available
-    expect(rpcSpy).toHaveBeenCalledTimes(7);
+    expect(rpcSpy).toHaveBeenCalledTimes(6);
   });
 
   it('should handle year rollover correctly', async () => {
-    // Mock get_or_create_current_cycle - Cycle 2 of December 2026
-    (supabase.rpc as any).mockResolvedValueOnce({
-      data: {
-        cycle_number: 2,
-        month: 12,
-        year: 2026
+    mockCycleQueries([
+      {
+        data: {
+          cycle_number: 2,
+          month: 12,
+          year: 2026
+        },
+        error: null
       },
-      error: null
-    });
-
-    // Mock cycle query for January 2027 - no capacity
-    (supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: {
-                  id: 'cycle-jan-2027',
-                  capacity_current: 100,
-                  capacity_max: 100
-                },
-                error: null
-              })
-            })
-          })
-        })
-      })
-    });
+      {
+        data: {
+          id: 'cycle-jan-2027',
+          used_capacity: 100,
+          capacity: 100
+        },
+        error: null
+      }
+    ]);
 
     // Mock check_capacity_available - no capacity
     (supabase.rpc as any).mockResolvedValueOnce({

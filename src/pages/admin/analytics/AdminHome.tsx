@@ -14,6 +14,7 @@ import { SubscriptionMetrics } from "@/components/admin/analytics/SubscriptionMe
 import { usePricingSettings } from "@/hooks/usePricingSettings";
 import { useContentSettings } from "@/hooks/useContentSettings";
 import { useDashboardStats } from "@/hooks/admin/useDashboardStats";
+import { ADMIN_ROUTES } from "@/config/routes";
 import {
   Package,
   Users,
@@ -64,6 +65,23 @@ export default function AdminHome() {
     { name: "Concluídos", value: stats?.quotes.completed || 0, color: "#10b981" },
   ];
 
+  const exportData = stats
+    ? [
+        {
+          models: stats.models,
+          users_total: stats.users.total,
+          orders_total: stats.orders.total,
+          orders_revenue: stats.orders.revenue,
+          quotes_total: stats.quotes.total,
+          quotes_revenue: stats.quotes.totalRevenue,
+          subscriptions_total: stats.subscriptions.total,
+          queue_total: stats.queue,
+          support_total: stats.support,
+          collections_total: stats.collections,
+        },
+      ]
+    : [];
+
   return (
     <AdminLayout>
       <div className="space-y-8">
@@ -86,7 +104,7 @@ export default function AdminHome() {
           <div className="flex items-center gap-2">
             <PeriodFilter value={dateRange} onChange={setDateRange} />
             <ExportButton
-              data={stats ? [stats] : []}
+              data={exportData}
               filename={`dashboard-${new Date().toISOString().split("T")[0]}`}
               allowColumnSelection={true}
             />
@@ -390,7 +408,7 @@ export default function AdminHome() {
             </CardHeader>
             <CardContent className="space-y-3">
               {stats?.quotes.pending && stats.quotes.pending > 0 && (
-                <div className="flex items-center justify-between p-3 rounded-lg border border-[hsl(var(--gold-accent)/0.15)] cursor-pointer hover:bg-[hsl(var(--gold-accent)/0.05)] transition-colors" onClick={() => navigate("/admin/pedidos")}>
+                <div className="flex items-center justify-between p-3 rounded-lg border border-[hsl(var(--gold-accent)/0.15)] cursor-pointer hover:bg-[hsl(var(--gold-accent)/0.05)] transition-colors" onClick={() => navigate(ADMIN_ROUTES.orders)}>
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-[hsl(var(--gold-accent)/0.1)] flex items-center justify-center">
                       <FileText className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
@@ -405,7 +423,7 @@ export default function AdminHome() {
               )}
 
               {stats?.support && stats.support > 0 && (
-                <div className="flex items-center justify-between p-3 rounded-lg border border-red-500/20 cursor-pointer hover:bg-red-500/5 transition-colors" onClick={() => navigate("/admin/comunicacao?tab=support")}>
+                <div className="flex items-center justify-between p-3 rounded-lg border border-red-500/20 cursor-pointer hover:bg-red-500/5 transition-colors" onClick={() => navigate(`${ADMIN_ROUTES.communication}?tab=support`)}>
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
                       <HeadphonesIcon className="h-5 w-5 text-red-500" />
@@ -437,12 +455,12 @@ export default function AdminHome() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/admin/pedidos")}><ShoppingCart className="h-4 w-4 mr-2" />Pedidos</Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/admin/catalogo")}><Layers className="h-4 w-4 mr-2" />Catálogo</Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/admin/producao")}><Package className="h-4 w-4 mr-2" />Produção</Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/admin/creditos")}><Ticket className="h-4 w-4 mr-2" />Créditos</Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/admin/analytics")}><TrendingUp className="h-4 w-4 mr-2" />Analytics</Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/admin/pagamentos?tab=calculator")}><DollarSign className="h-4 w-4 mr-2" />Calculadora MP</Button>
+              <Button className="w-full justify-start" variant="outline" onClick={() => navigate(ADMIN_ROUTES.orders)}><ShoppingCart className="h-4 w-4 mr-2" />Pedidos</Button>
+              <Button className="w-full justify-start" variant="outline" onClick={() => navigate(ADMIN_ROUTES.catalog)}><Layers className="h-4 w-4 mr-2" />Catálogo</Button>
+              <Button className="w-full justify-start" variant="outline" onClick={() => navigate(ADMIN_ROUTES.production)}><Package className="h-4 w-4 mr-2" />Produção</Button>
+              <Button className="w-full justify-start" variant="outline" onClick={() => navigate(ADMIN_ROUTES.credits)}><Ticket className="h-4 w-4 mr-2" />Créditos</Button>
+              <Button className="w-full justify-start" variant="outline" onClick={() => navigate(ADMIN_ROUTES.analytics)}><TrendingUp className="h-4 w-4 mr-2" />Analytics</Button>
+              <Button className="w-full justify-start" variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.payments}?tab=calculator`)}><DollarSign className="h-4 w-4 mr-2" />Calculadora MP</Button>
             </CardContent>
           </Card>
         </div>

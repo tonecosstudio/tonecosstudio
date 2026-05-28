@@ -9,7 +9,7 @@ export function useSubscriptionCreditTransactions(enabled: boolean) {
   });
 }
 
-export function useAutomaticSubscriptionOrder(subscriptionId: number) {
+export function useAutomaticSubscriptionOrder(subscriptionId: string) {
   const ordersQuery = useQuery({
     queryKey: ["subscription-credit", "orders", subscriptionId],
     queryFn: () => subscriptionCreditAPI.getUserOrders(),

@@ -147,6 +147,14 @@ type CatalogCharacterDbRow = Omit<
   price_categories?: CatalogCharacterPriceCategory | null;
 };
 
+type ArcadeCollectionDbRow = Omit<ArcadeCollection, "character_count" | "image_url"> & {
+  cover_image_url: string | null;
+};
+
+type CharacterSelectCollectionDbRow = Omit<CharacterSelectCollection, "image_url"> & {
+  cover_image_url: string | null;
+};
+
 export async function listShowcaseCollections(): Promise<ShowcaseCollection[]> {
   const { data, error } = await supabase
     .from("collections")
@@ -161,14 +169,14 @@ export async function listShowcaseCollections(): Promise<ShowcaseCollection[]> {
 export async function listArcadeCollectionsWithCounts(): Promise<ArcadeCollection[]> {
   const { data, error } = await supabase
     .from("collections")
-    .select("id, name, slug, description, image_url, is_active")
+    .select("id, name, slug, description, cover_image_url, is_active")
     .eq("is_active", true)
-    .order("display_order", { ascending: true });
+    .order("created_at", { ascending: true });
 
   if (error) throw error;
 
   return Promise.all(
-    ((data ?? []) as Omit<ArcadeCollection, "character_count">[]).map(async (collection) => {
+    ((data ?? []) as ArcadeCollectionDbRow[]).map(async (collection) => {
       const { count, error: countError } = await supabase
         .from("collection_characters")
         .select("*", { count: "exact", head: true })
@@ -176,7 +184,15 @@ export async function listArcadeCollectionsWithCounts(): Promise<ArcadeCollectio
         .eq("is_catalog", false);
 
       if (countError) throw countError;
-      return { ...collection, character_count: count ?? 0 };
+      return {
+        id: collection.id,
+        name: collection.name,
+        slug: collection.slug,
+        description: collection.description,
+        image_url: collection.cover_image_url,
+        is_active: collection.is_active,
+        character_count: count ?? 0,
+      };
     }),
   );
 }
@@ -250,15 +266,23 @@ export async function listCollectionsWithCharacters(): Promise<CharacterSelectCo
     .from("collections")
     .select(
       `
-        id, name, slug, description, image_url, is_active,
+        id, name, slug, description, cover_image_url, is_active,
         collection_characters (id, name, description, image_url, release_order, status)
       `,
     )
     .eq("is_active", true)
-    .order("display_order", { ascending: true });
+    .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return (data ?? []) as CharacterSelectCollection[];
+  return ((data ?? []) as CharacterSelectCollectionDbRow[]).map((collection) => ({
+    id: collection.id,
+    name: collection.name,
+    slug: collection.slug,
+    description: collection.description,
+    image_url: collection.cover_image_url,
+    is_active: collection.is_active,
+    collection_characters: collection.collection_characters,
+  }));
 }
 
 export async function getCharacterDetailsById(

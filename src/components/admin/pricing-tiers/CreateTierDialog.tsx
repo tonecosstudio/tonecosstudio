@@ -244,8 +244,8 @@ export function CreateTierDialog({ open, onOpenChange }: CreateTierDialogProps) 
 
           <TabsContent value="preview">
             <PriceCalculatorPreview
-              tierPrice={form.watch("price_full")}
-              pixDiscountPercentage={form.watch("pix_discount_percentage")}
+              tierPrice={form.watch("price_full") ?? 0}
+              pixDiscountPercentage={form.watch("pix_discount_percentage") ?? 0}
               depositAmount={form.watch("deposit_amount")}
             />
           </TabsContent>

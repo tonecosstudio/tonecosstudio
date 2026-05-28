@@ -6,6 +6,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { logError } from '@/lib/logger';
+import { assertCurrentUserId } from '@/services/auth/current-user';
 
 export interface NotificationPreferences {
   id: string;
@@ -26,15 +27,41 @@ export type EmailType =
   | 'shipping'
   | 'payment';
 
+type EmailPreferenceUpdate = Partial<
+  Omit<NotificationPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+>;
+
+interface NotificationPreferencesRpcClient {
+  rpc(
+    fn: 'upsert_email_notification_preferences',
+    args: {
+      p_user_id: string;
+      p_preferences: EmailPreferenceUpdate | null;
+    }
+  ): Promise<{ data: NotificationPreferences | null; error: { message: string } | null }>;
+}
+
+const notificationPreferencesRpc = supabase as unknown as NotificationPreferencesRpcClient;
+
+interface NotificationPreferencesQuery extends PromiseLike<{
+  data: NotificationPreferences | null;
+  error: { message: string } | null;
+}> {
+  eq(column: 'user_id', value: string): NotificationPreferencesQuery;
+  single(): Promise<{ data: NotificationPreferences | null; error: { message: string } | null }>;
+}
+
+interface NotificationPreferencesGateway {
+  from(table: 'notification_preferences'): {
+    select(columns: '*'): NotificationPreferencesQuery;
+  };
+}
+
+const notificationPreferencesGateway = supabase as unknown as NotificationPreferencesGateway;
+
 class NotificationPreferencesService {
-  /**
-   * Get notification preferences for a user
-   * 
-   * @param userId - User ID
-   * @returns User's notification preferences
-   */
-  async getPreferences(userId: string): Promise<NotificationPreferences | null> {
-    const { data, error } = await supabase
+  private async getPreferencesForUser(userId: string): Promise<NotificationPreferences | null> {
+    const { data, error } = await notificationPreferencesGateway
       .from('notification_preferences')
       .select('*')
       .eq('user_id', userId)
@@ -48,23 +75,54 @@ class NotificationPreferencesService {
     return data as NotificationPreferences;
   }
 
+  private async createDefaultPreferencesForUser(userId: string): Promise<NotificationPreferences | null> {
+    const { data, error } = await notificationPreferencesRpc.rpc(
+      'upsert_email_notification_preferences',
+      {
+        p_user_id: userId,
+        p_preferences: null,
+      }
+    );
+
+    if (error) {
+      logError('Error creating notification preferences', error, 'notification-preferences');
+      return null;
+    }
+
+    return data as NotificationPreferences;
+  }
+
+  /**
+   * Get notification preferences for a user
+   *
+   * @param userId - User ID
+   * @returns User's notification preferences
+   */
+  async getPreferences(userId: string): Promise<NotificationPreferences | null> {
+    await assertCurrentUserId(userId);
+    return this.getPreferencesForUser(userId);
+  }
+
   /**
    * Update notification preferences for a user
-   * 
+   *
    * @param userId - User ID
    * @param preferences - Preferences to update
    * @returns Updated preferences
    */
   async updatePreferences(
     userId: string,
-    preferences: Partial<Omit<NotificationPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+    preferences: EmailPreferenceUpdate
   ): Promise<NotificationPreferences | null> {
-    const { data, error } = await supabase
-      .from('notification_preferences')
-      .update(preferences)
-      .eq('user_id', userId)
-      .select()
-      .single();
+    await assertCurrentUserId(userId);
+
+    const { data, error } = await notificationPreferencesRpc.rpc(
+      'upsert_email_notification_preferences',
+      {
+        p_user_id: userId,
+        p_preferences: preferences,
+      }
+    );
 
     if (error) {
       logError('Error updating notification preferences', error, 'notification-preferences');
@@ -76,45 +134,28 @@ class NotificationPreferencesService {
 
   /**
    * Create default preferences for a user
-   * 
+   *
    * @param userId - User ID
    * @returns Created preferences
    */
   async createDefaultPreferences(userId: string): Promise<NotificationPreferences | null> {
-    const { data, error } = await supabase
-      .from('notification_preferences')
-      .insert({
-        user_id: userId,
-        welcome_emails: true,
-        reminder_emails: true,
-        revelation_emails: true,
-        shipping_emails: true,
-        payment_emails: true
-      })
-      .select()
-      .single();
-
-    if (error) {
-      logError('Error creating notification preferences', error, 'notification-preferences');
-      return null;
-    }
-
-    return data as NotificationPreferences;
+    await assertCurrentUserId(userId);
+    return this.createDefaultPreferencesForUser(userId);
   }
 
   /**
    * Check if user wants to receive a specific email type
-   * 
+   *
    * @param userId - User ID
    * @param emailType - Type of email
    * @returns True if user wants to receive this email type
    */
   async shouldSendEmail(userId: string, emailType: EmailType): Promise<boolean> {
-    const preferences = await this.getPreferences(userId);
+    const preferences = await this.getPreferencesForUser(userId);
 
     if (!preferences) {
       // If no preferences found, create default (all enabled)
-      await this.createDefaultPreferences(userId);
+      await this.createDefaultPreferencesForUser(userId);
       return true;
     }
 
@@ -133,7 +174,7 @@ class NotificationPreferencesService {
 
   /**
    * Enable all email notifications for a user
-   * 
+   *
    * @param userId - User ID
    * @returns Updated preferences
    */

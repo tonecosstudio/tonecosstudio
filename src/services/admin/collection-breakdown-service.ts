@@ -13,14 +13,34 @@ interface CollectionRelation {
 }
 
 interface DeliveryRow {
-  collection_id: string;
+  collection_id: string | null;
   collections: CollectionRelation | null;
 }
+
+interface CollectionBreakdownQuery extends PromiseLike<{
+  data: DeliveryRow[] | null;
+  error: { message: string } | null;
+}> {
+  eq(column: "cycle_id", value: string): CollectionBreakdownQuery;
+  not(
+    column: "collection_id" | "status",
+    operator: "is" | "eq",
+    value: string | null
+  ): CollectionBreakdownQuery;
+}
+
+interface CollectionBreakdownGateway {
+  from(table: "subscription_deliveries" | "standalone_purchases"): {
+    select(columns: string): CollectionBreakdownQuery;
+  };
+}
+
+const collectionBreakdownGateway = supabase as unknown as CollectionBreakdownGateway;
 
 export async function fetchCollectionBreakdown(
   cycleId: string
 ): Promise<CollectionBreakdownData[]> {
-  const { data: deliveries, error: deliveriesError } = await supabase
+  const { data: deliveries, error: deliveriesError } = await collectionBreakdownGateway
     .from("subscription_deliveries")
     .select(
       `
@@ -35,7 +55,7 @@ export async function fetchCollectionBreakdown(
     .not("collection_id", "is", null);
   if (deliveriesError) throw deliveriesError;
 
-  const { data: purchases, error: purchasesError } = await supabase
+  const { data: purchases, error: purchasesError } = await collectionBreakdownGateway
     .from("standalone_purchases")
     .select(
       `
@@ -47,13 +67,16 @@ export async function fetchCollectionBreakdown(
     `
     )
     .eq("cycle_id", cycleId)
+    .not("collection_id", "is", null)
     .not("status", "eq", "cancelled");
   if (purchasesError) throw purchasesError;
 
   const collectionMap = new Map<string, CollectionBreakdownData>();
 
-  ((deliveries as DeliveryRow[] | null) || []).forEach((delivery) => {
+  (deliveries || []).forEach((delivery) => {
     const collectionId = delivery.collection_id;
+    if (!collectionId) return;
+
     const collectionName = delivery.collections?.name || "Desconhecida";
     if (!collectionMap.has(collectionId)) {
       collectionMap.set(collectionId, {
@@ -69,8 +92,10 @@ export async function fetchCollectionBreakdown(
     item.total++;
   });
 
-  ((purchases as DeliveryRow[] | null) || []).forEach((purchase) => {
+  (purchases || []).forEach((purchase) => {
     const collectionId = purchase.collection_id;
+    if (!collectionId) return;
+
     const collectionName = purchase.collections?.name || "Desconhecida";
     if (!collectionMap.has(collectionId)) {
       collectionMap.set(collectionId, {
@@ -88,4 +113,3 @@ export async function fetchCollectionBreakdown(
 
   return Array.from(collectionMap.values()).sort((a, b) => b.total - a.total);
 }
-

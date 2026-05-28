@@ -14,7 +14,7 @@
  * Task: 13.1 Criar componente PaymentDetailsView
  */
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -59,11 +59,23 @@ import {
 } from "@/lib/payment-dashboard-utils";
 import { PaymentActionButtons } from "./PaymentActionButtons";
 import { getPaymentStatusIcon } from "./payment-status-icons";
+import { ADMIN_ROUTES } from "@/config/routes";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 interface PaymentDetailsViewProps {
   paymentId: string;
   onBack?: () => void;
   onStatusChange?: () => void;
+}
+
+function getSafeHttpUrl(url?: string | null): string | null {
+  if (!url) return null;
+
+  try {
+    return sanitizeURL(url, ["http", "https"]);
+  } catch {
+    return null;
+  }
 }
 
 export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: PaymentDetailsViewProps) {
@@ -94,10 +106,17 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
         for (const file of payment.files) {
           try {
             const url = await fileUploadService.getSignedUrl(file.file_path, 3600); // 1 hour expiration
+            const safeUrl = getSafeHttpUrl(url);
+
+            if (!safeUrl) {
+              log.warn("Blocked unsafe payment file URL", { fileId: file.id, filePath: file.file_path });
+              continue;
+            }
+
             if (file.file_type.startsWith("image/")) {
-              newImageUrls[file.id] = url;
+              newImageUrls[file.id] = safeUrl;
             } else if (file.file_type === "application/pdf") {
-              newPdfUrls[file.id] = url;
+              newPdfUrls[file.id] = safeUrl;
             }
           } catch (error) {
             log.error("Failed to load payment file URL", {
@@ -150,7 +169,11 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
       } else if (file.file_type === "application/pdf" && pdfUrls[file.id]) {
         url = pdfUrls[file.id];
       } else {
-        url = await fileUploadService.getSignedUrl(file.file_path, 3600);
+        url = getSafeHttpUrl(await fileUploadService.getSignedUrl(file.file_path, 3600)) ?? "";
+      }
+
+      if (!url) {
+        throw new Error("Unsafe file URL");
       }
 
       const a = document.createElement("a");
@@ -260,6 +283,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
   const statusIcon = getPaymentStatusIcon(payment.status, "h-4 w-4");
   const imageFiles = payment.files.filter((file) => file.file_type.startsWith("image/"));
   const pdfFiles = payment.files.filter((file) => file.file_type === "application/pdf");
+  const safePaymentMethodLink = getSafeHttpUrl(payment.payment_method?.payment_link);
   const sortedAuditLogs = [...payment.audit_logs].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
@@ -418,10 +442,10 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                   <div className="text-sm bg-muted p-3 rounded-md whitespace-pre-wrap">
                     {payment.payment_method.instructions}
                   </div>
-                  {payment.payment_method.payment_link && (
+                  {safePaymentMethodLink && (
                     <Button variant="outline" size="sm" asChild>
                       <a
-                        href={payment.payment_method.payment_link}
+                        href={safePaymentMethodLink}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -785,7 +809,7 @@ export function PaymentDetailsView({ paymentId, onBack, onStatusChange }: Paymen
                 </div>
                 <Button variant="outline" className="w-full" asChild>
                   <a
-                    href={`/admin/support/conversations/${payment.conversation.id}`}
+                    href={`${ADMIN_ROUTES.communication}?tab=support&conversation=${encodeURIComponent(payment.conversation.id)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

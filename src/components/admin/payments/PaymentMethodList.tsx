@@ -96,6 +96,7 @@ function SortableRow({ method, onToggleActive, onSetDefault, onEdit, onDelete }:
           variant="ghost"
           size="icon"
           className="cursor-grab active:cursor-grabbing"
+          aria-label={`Reordenar ${method.name}`}
           {...attributes}
           {...listeners}
         >
@@ -141,6 +142,7 @@ function SortableRow({ method, onToggleActive, onSetDefault, onEdit, onDelete }:
               variant="outline"
               size="sm"
               onClick={() => onSetDefault(method.id)}
+              aria-label={`Definir ${method.name} como padrao`}
               title="Definir como padrao"
             >
               <Star className="h-4 w-4" />
@@ -148,7 +150,7 @@ function SortableRow({ method, onToggleActive, onSetDefault, onEdit, onDelete }:
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" aria-label={`Abrir acoes de ${method.name}`}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { StandalonePurchaseStatus } from "@/components/StandalonePurchaseStatus";
+import type { StandalonePurchaseStatusValue } from "@/components/StandalonePurchaseStatus";
 import {
   Package,
   User,
@@ -35,11 +36,13 @@ import { toBahiaTime } from "@/lib/timezone";
 import { useStandalonePurchaseActions } from "@/hooks/admin/useStandalonePurchaseActions";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminPaymentsAuth } from "@/hooks/admin/useAdminPaymentsAuth";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
+import { openSafeExternalUrl } from "@/lib/security/safe-open";
 
 interface StandalonePurchase {
   id: string;
   user_id: string;
-  status: string;
+  status: StandalonePurchaseStatusValue;
   created_at: string;
   production_complete_at?: string | null;
   tracking_code?: string | null;
@@ -58,6 +61,20 @@ interface StandalonePurchase {
 
 interface StandalonePurchaseDetailProps {
   purchase: StandalonePurchase;
+}
+
+function getSafeVoucherUrl(url?: string | null): string | null {
+  if (!url) return null;
+
+  try {
+    return sanitizeURL(url, ["http", "https"]);
+  } catch {
+    return null;
+  }
+}
+
+function isImageVoucherUrl(url: string): boolean {
+  return /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i.test(url);
 }
 
 /**
@@ -87,6 +104,18 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
   const [selectedImage, setSelectedImage] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const openSelectedImage = () => {
+    try {
+      openSafeExternalUrl(selectedImage);
+    } catch {
+      toast({
+        title: "URL invalida",
+        description: "Nao foi possivel abrir uma URL segura para este comprovante.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Format dates in Bahia timezone
   const formatDate = (date: Date | string | null) => {
@@ -243,6 +272,8 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
   // Check if actions are available based on status
   const canMarkComplete = purchase.status === 'deposit_paid' && !purchase.production_complete_at;
   const canCancel = ['deposit_paid', 'awaiting_balance'].includes(purchase.status);
+  const safeDepositVoucherUrl = getSafeVoucherUrl(purchase.payment_voucher_deposit_url);
+  const safeBalanceVoucherUrl = getSafeVoucherUrl(purchase.payment_voucher_balance_url);
 
   return (
     <div className="space-y-6">
@@ -302,7 +333,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
             {purchase.collection?.image_url && (
               <img
                 src={purchase.collection.image_url}
-                alt={purchase.collection.name}
+                alt={purchase.collection.name ?? "Coleção"}
                 className="w-24 h-24 object-cover rounded-md"
               />
             )}
@@ -408,19 +439,19 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
               {/* Deposit Voucher */}
               <div className="border rounded-lg p-4 space-y-3">
                 <Label className="text-sm font-medium">Comprovante de Depósito</Label>
-                {purchase.payment_voucher_deposit_url ? (
+                {safeDepositVoucherUrl ? (
                   <div className="space-y-3">
                     <div className="relative group">
-                      {purchase.payment_voucher_deposit_url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                      {isImageVoucherUrl(safeDepositVoucherUrl) ? (
                         <div className="relative">
                           <img
-                            src={purchase.payment_voucher_deposit_url}
+                            src={safeDepositVoucherUrl}
                             alt="Comprovante de Depósito"
                             className="w-full h-48 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => handleViewImage(purchase.payment_voucher_deposit_url)}
+                            onClick={() => handleViewImage(safeDepositVoucherUrl)}
                           />
                           <button
-                            onClick={() => handleViewImage(purchase.payment_voucher_deposit_url)}
+                            onClick={() => handleViewImage(safeDepositVoucherUrl)}
                             className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
                           >
                             <ZoomIn className="h-4 w-4" />
@@ -428,7 +459,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
                         </div>
                       ) : (
                         <a
-                          href={purchase.payment_voucher_deposit_url}
+                          href={safeDepositVoucherUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors"
@@ -440,7 +471,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
                     </div>
 
                     <a
-                      href={purchase.payment_voucher_deposit_url}
+                      href={safeDepositVoucherUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
@@ -483,19 +514,19 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
               {/* Balance Voucher */}
               <div className="border rounded-lg p-4 space-y-3">
                 <Label className="text-sm font-medium">Comprovante de Saldo</Label>
-                {purchase.payment_voucher_balance_url ? (
+                {safeBalanceVoucherUrl ? (
                   <div className="space-y-3">
                     <div className="relative group">
-                      {purchase.payment_voucher_balance_url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                      {isImageVoucherUrl(safeBalanceVoucherUrl) ? (
                         <div className="relative">
                           <img
-                            src={purchase.payment_voucher_balance_url}
+                            src={safeBalanceVoucherUrl}
                             alt="Comprovante de Saldo"
                             className="w-full h-48 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => handleViewImage(purchase.payment_voucher_balance_url)}
+                            onClick={() => handleViewImage(safeBalanceVoucherUrl)}
                           />
                           <button
-                            onClick={() => handleViewImage(purchase.payment_voucher_balance_url)}
+                            onClick={() => handleViewImage(safeBalanceVoucherUrl)}
                             className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
                           >
                             <ZoomIn className="h-4 w-4" />
@@ -503,7 +534,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
                         </div>
                       ) : (
                         <a
-                          href={purchase.payment_voucher_balance_url}
+                          href={safeBalanceVoucherUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors"
@@ -515,7 +546,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
                     </div>
 
                     <a
-                      href={purchase.payment_voucher_balance_url}
+                      href={safeBalanceVoucherUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
@@ -758,9 +789,7 @@ export function StandalonePurchaseDetail({ purchase }: StandalonePurchaseDetailP
             >
               Fechar
             </Button>
-            <Button
-              onClick={() => window.open(selectedImage, '_blank')}
-            >
+            <Button onClick={openSelectedImage}>
               <ExternalLink className="h-4 w-4 mr-2" />
               Abrir em Nova Aba
             </Button>

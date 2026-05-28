@@ -27,9 +27,21 @@ import { EditPricingForm } from "@/components/admin/payments/EditPricingForm";
 import { ContextualPricingManager } from "@/components/admin/contextual-pricing";
 import { EditStandalonePricingForm } from "@/components/admin/payments/EditStandalonePricingForm";
 import { useAdminCoinsPricingConfig, useAdminCoinsStats } from "@/hooks/admin/useAdminCoinsSystem";
+import type { AdminCoinsStats } from "@/services/admin/admin-coins-system-service";
+
+const EMPTY_ADMIN_COINS_STATS: AdminCoinsStats = {
+  totalBalance: 0,
+  totalEarned: 0,
+  totalSpent: 0,
+  totalUsers: 0,
+  transactions: [],
+  packages: [],
+  totalPurchases: 0,
+};
 
 export default function AdminCoinsSystem() {
-  const { data: stats } = useAdminCoinsStats();
+  const { data: statsData } = useAdminCoinsStats();
+  const stats = statsData ?? EMPTY_ADMIN_COINS_STATS;
   const { data: pricingConfig } = useAdminCoinsPricingConfig();
 
   // Calcular preços reais baseado na configuração do banco

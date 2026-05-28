@@ -44,7 +44,6 @@ describe("Photo Metadata Service", () => {
 
   describe("createPhotoMetadata", () => {
     it("should create photo metadata with customer visibility", async () => {
-      const mockUser = { user: { id: "user-123" } };
       const mockMetadata = {
         id: "meta-1",
         photo_url: "https://example.com/photo.jpg",
@@ -56,23 +55,7 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: mockUser,
-        error: null,
-      } as any);
-
-      const mockInsert = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: mockMetadata,
-            error: null,
-          }),
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        insert: mockInsert,
-      } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
 
       const result = await createPhotoMetadata({
         photoUrl: "https://example.com/photo.jpg",
@@ -84,18 +67,16 @@ describe("Photo Metadata Service", () => {
 
       expect(result.customerVisible).toBe(true);
       expect(result.caption).toBe("Final product");
-      expect(mockInsert).toHaveBeenCalledWith({
-        photo_url: "https://example.com/photo.jpg",
-        production_stage_id: "stage-1",
-        customer_visible: true,
-        caption: "Final product",
-        uploaded_by: "user-123",
-        uploaded_by_name: "Admin User",
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_create_photo_metadata", {
+        p_photo_url: "https://example.com/photo.jpg",
+        p_production_stage_id: "stage-1",
+        p_customer_visible: true,
+        p_caption: "Final product",
+        p_uploaded_by_name: "Admin User",
       });
     });
 
     it("should create photo metadata without customer visibility (admin only)", async () => {
-      const mockUser = { user: { id: "user-123" } };
       const mockMetadata = {
         id: "meta-2",
         photo_url: "https://example.com/wip.jpg",
@@ -105,23 +86,7 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: mockUser,
-        error: null,
-      } as any);
-
-      const mockInsert = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: mockMetadata,
-            error: null,
-          }),
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        insert: mockInsert,
-      } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
 
       const result = await createPhotoMetadata({
         photoUrl: "https://example.com/wip.jpg",
@@ -133,24 +98,9 @@ describe("Photo Metadata Service", () => {
     });
 
     it("should throw error if creation fails", async () => {
-      const mockUser = { user: { id: "user-123" } };
-
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: mockUser,
-        error: null,
-      } as any);
-
-      const mockInsert = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: "Database error" },
-          }),
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        insert: mockInsert,
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: null,
+        error: { message: "Database error" },
       } as any);
 
       await expect(
@@ -177,29 +127,16 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockMetadata,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        update: mockUpdate,
-      } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
 
       const result = await updatePhotoMetadata("https://example.com/photo.jpg", {
         customerVisible: true,
       });
 
       expect(result.customerVisible).toBe(true);
-      expect(mockUpdate).toHaveBeenCalledWith({
-        customer_visible: true,
-        caption: undefined,
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_photo_metadata", {
+        p_photo_url: "https://example.com/photo.jpg",
+        p_updates: { customer_visible: true },
       });
     });
 
@@ -213,20 +150,7 @@ describe("Photo Metadata Service", () => {
         uploaded_at: "2024-01-15T10:00:00Z",
       };
 
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockMetadata,
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        update: mockUpdate,
-      } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockMetadata, error: null } as any);
 
       const result = await updatePhotoMetadata("https://example.com/photo.jpg", {
         caption: "Updated caption",
@@ -325,30 +249,19 @@ describe("Photo Metadata Service", () => {
 
   describe("deletePhotoMetadata", () => {
     it("should delete photo metadata", async () => {
-      const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: null,
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        delete: mockDelete,
-      } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as any);
 
       await deletePhotoMetadata("https://example.com/photo.jpg");
 
-      expect(mockDelete).toHaveBeenCalled();
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_delete_photo_metadata", {
+        p_photo_url: "https://example.com/photo.jpg",
+      });
     });
 
     it("should throw error if deletion fails", async () => {
-      const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          error: { message: "Delete error" },
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        delete: mockDelete,
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: null,
+        error: { message: "Delete error" },
       } as any);
 
       await expect(
@@ -363,7 +276,6 @@ describe("Photo Metadata Service", () => {
 
   describe("bulkCreatePhotoMetadata", () => {
     it("should create multiple photo metadata records", async () => {
-      const mockUser = { user: { id: "user-123" } };
       const mockPhotos = [
         {
           id: "meta-1",
@@ -383,21 +295,7 @@ describe("Photo Metadata Service", () => {
         },
       ];
 
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: mockUser,
-        error: null,
-      } as any);
-
-      const mockInsert = vi.fn().mockReturnValue({
-        select: vi.fn().mockResolvedValue({
-          data: mockPhotos,
-          error: null,
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        insert: mockInsert,
-      } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: mockPhotos, error: null } as any);
 
       const result = await bulkCreatePhotoMetadata(
         "stage-1",
@@ -411,6 +309,14 @@ describe("Photo Metadata Service", () => {
       expect(result).toHaveLength(2);
       expect(result[0].customerVisible).toBe(true);
       expect(result[1].customerVisible).toBe(false);
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_bulk_create_photo_metadata", {
+        p_production_stage_id: "stage-1",
+        p_photos: [
+          { url: "https://example.com/photo1.jpg", customerVisible: true },
+          { url: "https://example.com/photo2.jpg", customerVisible: false },
+        ],
+        p_uploaded_by_name: "Admin User",
+      });
     });
   });
 
@@ -427,24 +333,18 @@ describe("Photo Metadata Service", () => {
         error: null,
       } as any);
 
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { role: "admin" },
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        select: mockSelect,
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: true,
+        error: null,
       } as any);
 
       const result = await isUserAdmin();
 
       expect(result).toBe(true);
+      expect(supabase.rpc).toHaveBeenCalledWith("has_role", {
+        _user_id: "user-123",
+        _role: "admin",
+      });
     });
 
     it("should return false for non-admin users", async () => {
@@ -455,19 +355,9 @@ describe("Photo Metadata Service", () => {
         error: null,
       } as any);
 
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: "Not found" },
-            }),
-          }),
-        }),
-      });
-
-      vi.mocked(supabase.from).mockReturnValue({
-        select: mockSelect,
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: false,
+        error: null,
       } as any);
 
       const result = await isUserAdmin();

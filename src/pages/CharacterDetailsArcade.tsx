@@ -2,7 +2,6 @@
  * Character Details Page - Metal Slug Arcade Style (v2)
  *
  * Página completa de detalhes do personagem com estética arcade
- * Routes: /colecoes/:slug/:characterId | /personagem/:characterId
  */
 
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -37,6 +36,11 @@ import {
   Swords,
   Heart,
 } from "lucide-react";
+import {
+  PUBLIC_ROUTES,
+  collectionCharacterDetailsPath,
+  collectionDetailsPath,
+} from "@/config/routes";
 
 // ─── Types ───────────────────────────────────────────────────
 // ─── Stat Bar Component ──────────────────────────────────────
@@ -87,7 +91,7 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
           alt={`${name} - ${activeIndex + 1}`}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           loading="eager"
-          fetchpriority="high"
+          fetchPriority="high"
         />
 
         {/* Scanline */}
@@ -155,7 +159,7 @@ function RelatedCharacterCard({ char, collectionSlug }: { char: RelatedCharacter
 
   return (
     <Link
-      to={`/colecoes/${collectionSlug}/${char.id}`}
+      to={collectionCharacterDetailsPath(collectionSlug, char.id)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="group block"
@@ -227,8 +231,7 @@ export default function CharacterDetailsArcade() {
   // ─── Loading ─────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <Page>
-        <SEOHead title="Carregando..." />
+      <Page title="Carregando..." description="Carregando detalhes do personagem">
         <div className="container max-w-6xl mx-auto px-4 py-12">
           <Skeleton className="h-10 w-48 mb-8" />
           <div className="grid md:grid-cols-2 gap-10">
@@ -248,8 +251,7 @@ export default function CharacterDetailsArcade() {
   // ─── Not Found ───────────────────────────────────────────────
   if (!character) {
     return (
-      <Page>
-        <SEOHead title="Personagem não encontrado" />
+      <Page title="Personagem não encontrado" description="O personagem solicitado não foi encontrado">
         <div className="flex items-center justify-center py-32">
           <div className="text-center space-y-6">
             <div className="text-6xl mb-4">💀</div>
@@ -261,7 +263,7 @@ export default function CharacterDetailsArcade() {
               Este personagem pode ter sido removido ou o link está incorreto.
             </p>
             <Button
-              onClick={() => navigate(slug ? `/colecoes/${slug}` : "/colecoes")}
+              onClick={() => navigate(slug ? collectionDetailsPath(slug) : PUBLIC_ROUTES.collections)}
               className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--background))] font-mono uppercase tracking-wider hover:bg-[hsl(var(--gold-accent)/0.9)]"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -275,12 +277,10 @@ export default function CharacterDetailsArcade() {
 
   // ─── Main Render ─────────────────────────────────────────────
   return (
-    <Page>
-      <SEOHead
-        title={`${character.name} | ${collectionName}`}
-        description={character.description || `Detalhes do personagem ${character.name} da coleção ${collectionName}`}
-      />
-
+    <Page
+      title={`${character.name} | ${collectionName}`}
+      description={character.description || `Detalhes do personagem ${character.name} da coleção ${collectionName}`}
+    >
       <FloatingParticles />
 
       {/* Hero Banner */}
@@ -297,11 +297,11 @@ export default function CharacterDetailsArcade() {
         <div className="container max-w-6xl mx-auto px-4 pt-6 pb-4 relative z-10">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-[hsl(var(--muted-foreground))] mb-4">
-            <Link to="/colecoes" className="hover:text-[hsl(var(--gold-accent))] transition-colors">
+            <Link to={PUBLIC_ROUTES.collections} className="hover:text-[hsl(var(--gold-accent))] transition-colors">
               Coleções
             </Link>
             <span className="text-[hsl(0,0%,25%)]">/</span>
-            <Link to={`/colecoes/${collectionSlug}`} className="hover:text-[hsl(var(--gold-accent))] transition-colors">
+            <Link to={collectionDetailsPath(collectionSlug)} className="hover:text-[hsl(var(--gold-accent))] transition-colors">
               {collectionName}
             </Link>
             <span className="text-[hsl(0,0%,25%)]">/</span>
@@ -312,7 +312,7 @@ export default function CharacterDetailsArcade() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/colecoes/${collectionSlug}`)}
+            onClick={() => navigate(collectionDetailsPath(collectionSlug))}
             className="font-mono uppercase tracking-wider text-[10px] hover:text-[hsl(var(--gold-accent))] border border-[hsl(0,0%,15%)] hover:border-[hsl(var(--gold-accent)/0.5)] h-8 px-3"
           >
             <ArrowLeft className="w-3 h-3 mr-1.5" />
@@ -343,7 +343,7 @@ export default function CharacterDetailsArcade() {
                 {character.name}
               </h1>
               <Link
-                to={`/colecoes/${collectionSlug}`}
+                to={collectionDetailsPath(collectionSlug)}
                 className="inline-flex items-center gap-1.5 mt-2 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--gold-accent))] transition-colors font-mono uppercase tracking-wider"
               >
                 <Crown className="w-3 h-3" />
@@ -486,7 +486,7 @@ export default function CharacterDetailsArcade() {
         {/* Related Characters */}
         {relatedChars && relatedChars.length > 0 && (
           <section className="mt-16 md:mt-24">
-            <ArcadeSectionTitle label="Da mesma coleção" title="Outros Personagens" />
+            <ArcadeSectionTitle>Outros Personagens</ArcadeSectionTitle>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
               {relatedChars.map((char) => (
@@ -500,7 +500,7 @@ export default function CharacterDetailsArcade() {
 
             <div className="text-center mt-8">
               <Link
-                to={`/colecoes/${collectionSlug}`}
+                to={collectionDetailsPath(collectionSlug)}
                 className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:text-[hsl(var(--gold-accent)/0.8)] transition-colors border border-[hsl(var(--gold-accent)/0.3)] hover:border-[hsl(var(--gold-accent))] px-6 py-3"
               >
                 Ver toda a coleção

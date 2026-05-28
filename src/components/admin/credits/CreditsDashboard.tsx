@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Coins, RefreshCw, Wallet, TrendingUp, Users, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCreditsDashboardMetrics } from "@/hooks/admin/useCreditsDashboardMetrics";
+import { ADMIN_ROUTES } from "@/config/routes";
 
 interface MetricCardProps {
   title: string;
@@ -91,19 +92,19 @@ export function CreditsDashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => navigate("/admin/creditos?tab=coins")}>
+            <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=coins`)}>
               <Coins className="mr-2 h-4 w-4" />
               Gerenciar Coins
             </Button>
-            <Button variant="outline" onClick={() => navigate("/admin/creditos?tab=cycles")}>
+            <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=cycles`)}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Ver Ciclos
             </Button>
-            <Button variant="outline" onClick={() => navigate("/admin/creditos?tab=plans")}>
+            <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.credits}?tab=plans`)}>
               <Wallet className="mr-2 h-4 w-4" />
               Configurar Planos
             </Button>
-            <Button variant="outline" onClick={() => navigate("/admin/pedidos?type=subscription")}>
+            <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.orders}?type=subscription`)}>
               <Users className="mr-2 h-4 w-4" />
               Ver Pedidos
             </Button>

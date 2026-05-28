@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 
 export interface WishlistModel {
   id: string;
@@ -25,8 +26,44 @@ export interface UpdateWishlistItemInput {
   notify: boolean;
 }
 
+interface WishlistRpcClient {
+  rpc(
+    fn: "delete_wishlist_item",
+    args: { p_item_id: string }
+  ): Promise<{ error: { message?: string } | null }>;
+  rpc(
+    fn: "update_wishlist_item",
+    args: {
+      p_item_id: string;
+      p_notes: string;
+      p_priority: number;
+      p_notify_when_available: boolean;
+    }
+  ): Promise<{ error: { message?: string } | null }>;
+}
+
+const wishlistRpc = supabase as unknown as WishlistRpcClient;
+
+interface WishlistQuery extends PromiseLike<{
+  data: WishlistItem[] | null;
+  error: { message: string } | null;
+}> {
+  eq(column: "user_id", value: string): WishlistQuery;
+  order(column: "priority" | "added_at", options: { ascending: boolean }): WishlistQuery;
+}
+
+interface WishlistTableClient {
+  from(table: "wishlist"): {
+    select(columns: string): WishlistQuery;
+  };
+}
+
+const wishlistTable = supabase as unknown as WishlistTableClient;
+
 export async function listWishlistItems(userId: string): Promise<WishlistItem[]> {
-  const { data, error } = await supabase
+  await assertCurrentUserId(userId);
+
+  const { data, error } = await wishlistTable
     .from("wishlist")
     .select(
       "id, notes, priority, notify_when_available, added_at, models (id, name, image_path, image_bucket, franchise, category)"
@@ -37,11 +74,13 @@ export async function listWishlistItems(userId: string): Promise<WishlistItem[]>
 
   if (error) throw error;
 
-  return (data || []) as WishlistItem[];
+  return data || [];
 }
 
 export async function removeWishlistItem(id: string): Promise<void> {
-  const { error } = await supabase.from("wishlist").delete().eq("id", id);
+  const { error } = await wishlistRpc.rpc("delete_wishlist_item", {
+    p_item_id: id,
+  });
   if (error) throw error;
 }
 
@@ -51,10 +90,12 @@ export async function updateWishlistItem({
   priority,
   notify,
 }: UpdateWishlistItemInput): Promise<void> {
-  const { error } = await supabase
-    .from("wishlist")
-    .update({ notes, priority, notify_when_available: notify })
-    .eq("id", id);
+  const { error } = await wishlistRpc.rpc("update_wishlist_item", {
+    p_item_id: id,
+    p_notes: notes,
+    p_priority: priority,
+    p_notify_when_available: notify,
+  });
 
   if (error) throw error;
 }

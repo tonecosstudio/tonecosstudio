@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchAdminQuoteItems,
-  fetchAdminQuoteModels,
   fetchAdminQuotes,
   updateQuoteStatus,
 } from "@/services/admin/admin-quotes-service";
@@ -23,11 +22,10 @@ export function useAdminQuotesData() {
     queryFn: async () => fetchAdminQuoteItems((quotesQuery.data ?? []).map((q) => q.id)),
   });
 
-  const modelsQuery = useQuery({
-    queryKey: ["admin-quote-models", itemsQuery.data?.map((i) => i.model_id) ?? []],
-    enabled: (itemsQuery.data ?? []).length > 0,
-    queryFn: async () =>
-      fetchAdminQuoteModels(Array.from(new Set((itemsQuery.data ?? []).map((i) => i.model_id)))),
+  const modelsQuery = useQuery<ModelMini[]>({
+    queryKey: ["admin-quote-models"],
+    enabled: false,
+    queryFn: async () => [],
   });
 
   const updateStatusMutation = useMutation({

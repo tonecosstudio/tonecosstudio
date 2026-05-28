@@ -71,13 +71,9 @@ describe('Automatic Maintenance Service', () => {
         error: null
       };
 
-      // Mock update query
-      const mockUpdate = {
-        error: null
-      };
-
       // Mock audit trail RPC
       const mockRpc = {
+        data: null,
         error: null
       };
 
@@ -87,9 +83,6 @@ describe('Automatic Maintenance Service', () => {
       const mockSelect = vi.fn().mockReturnValue({
         eq: mockEq,
         single: mockSingle
-      });
-      const mockUpdateFn = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue(mockUpdate)
       });
 
       // Configure mock responses based on call order
@@ -102,11 +95,10 @@ describe('Automatic Maintenance Service', () => {
         return Promise.resolve({ data: null, error: null });
       });
 
-      (supabase.from as any).mockImplementation((_table: string) => {
+      (supabase.from as any).mockImplementation((table: string) => {
         if (table === 'subscription_deliveries') {
           return {
             select: mockSelect,
-            update: mockUpdateFn
           };
         }
         if (table === 'subscriptions') {
@@ -132,23 +124,11 @@ describe('Automatic Maintenance Service', () => {
         2026
       );
 
-      // Verify delivery was updated with auto_maintained flag
-      expect(mockUpdateFn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          collection_id: previousCollectionId,
-          auto_maintained: true
-        })
-      );
-
-      // Verify audit trail was created
-      expect(auditTrailService.recordCollectionChange).toHaveBeenCalledWith({
-        deliveryId,
-        userId,
-        previousCollectionId: null,
-        newCollectionId: previousCollectionId,
-        changeReason: 'automatic_maintenance',
-        changedByAdmin: false,
+      expect(supabase.rpc).toHaveBeenCalledWith('apply_automatic_delivery_maintenance', {
+        p_delivery_id: deliveryId,
+        p_subscription_id: subscriptionId,
       });
+      expect(auditTrailService.recordCollectionChange).not.toHaveBeenCalled();
     });
 
     it('should not apply maintenance when collection is not active in current month', async () => {
@@ -363,6 +343,53 @@ describe('Automatic Maintenance Service', () => {
         applyAutomaticMaintenance(deliveryId, subscriptionId)
       ).rejects.toThrow('Failed to get current delivery');
     });
+
+    it('should reject invalid expected delivery dates before applying maintenance', async () => {
+      const deliveryId = 'delivery-123';
+      const subscriptionId = 'sub-123';
+
+      const mockCurrentDelivery = {
+        data: {
+          expected_delivery_date: 'invalid-date',
+          delivery_number: 2
+        },
+        error: null
+      };
+
+      const mockPreviousDelivery = {
+        data: {
+          collection_id: 'collection-456',
+          id: 'delivery-previous'
+        },
+        error: null
+      };
+
+      const mockEq = vi.fn().mockReturnThis();
+      const mockSingle = vi.fn();
+      const mockSelect = vi.fn().mockReturnValue({
+        eq: mockEq,
+        single: mockSingle
+      });
+
+      let callCount = 0;
+      mockSingle.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return Promise.resolve(mockCurrentDelivery);
+        if (callCount === 2) return Promise.resolve(mockPreviousDelivery);
+        return Promise.resolve({ data: null, error: null });
+      });
+
+      (supabase.from as any).mockImplementation(() => ({
+        select: mockSelect
+      }));
+
+      await expect(
+        applyAutomaticMaintenance(deliveryId, subscriptionId)
+      ).rejects.toThrow('Invalid expected delivery date: invalid-date');
+
+      expect(collectionService.isCollectionActive).not.toHaveBeenCalled();
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
   });
 
   /**
@@ -401,7 +428,8 @@ describe('Automatic Maintenance Service', () => {
                 collectionId: fc.uuid(),
                 expectedDeliveryDate: fc.date({
                   min: new Date('2026-01-01'),
-                  max: new Date('2027-12-31')
+                  max: new Date('2027-12-31'),
+                  noInvalidDate: true
                 })
               }),
               { minLength: 2, maxLength: 6 } // Need at least 2 deliveries for maintenance
@@ -443,20 +471,12 @@ describe('Automatic Maintenance Service', () => {
               error: null
             };
 
-            // Mock update query
-            const mockUpdate = {
-              error: null
-            };
-
             // Setup mock chain
             const mockEq = vi.fn().mockReturnThis();
             const mockSingle = vi.fn();
             const mockSelect = vi.fn().mockReturnValue({
               eq: mockEq,
               single: mockSingle
-            });
-            const mockUpdateFn = vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue(mockUpdate)
             });
 
             // Configure mock responses based on call order
@@ -473,7 +493,6 @@ describe('Automatic Maintenance Service', () => {
               if (table === 'subscription_deliveries') {
                 return {
                   select: mockSelect,
-                  update: mockUpdateFn
                 };
               }
               if (table === 'subscriptions') {
@@ -487,48 +506,18 @@ describe('Automatic Maintenance Service', () => {
             // Mock isCollectionActive to return true (collection is active)
             vi.mocked(collectionService.isCollectionActive).mockResolvedValue(true);
 
-            // Mock recordCollectionChange to succeed
-            vi.mocked(auditTrailService.recordCollectionChange).mockResolvedValue({
-              id: fc.sample(fc.uuid(), 1)[0],
-              delivery_id: currentDelivery.id,
-              user_id: testData.userId,
-              previous_collection_id: null,
-              new_collection_id: previousDelivery.collectionId,
-              change_reason: 'automatic_maintenance',
-              changed_by_admin: false,
-              admin_user_id: null,
-              ip_address: null,
-              user_agent: null,
-              created_at: new Date().toISOString()
-            } as any);
+            (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
 
             // Execute automatic maintenance
             await applyAutomaticMaintenance(currentDelivery.id, testData.subscriptionId);
 
             // PROPERTY VERIFICATION:
-            // 1. Verify previous collection_id was copied to current delivery
-            expect(mockUpdateFn).toHaveBeenCalledWith(
-              expect.objectContaining({
-                collection_id: previousDelivery.collectionId
-              })
-            );
-
-            // 2. Verify auto_maintained flag was set to true
-            expect(mockUpdateFn).toHaveBeenCalledWith(
-              expect.objectContaining({
-                auto_maintained: true
-              })
-            );
-
-            // 3. Verify audit trail record was created
-            expect(auditTrailService.recordCollectionChange).toHaveBeenCalledWith({
-              deliveryId: currentDelivery.id,
-              userId: testData.userId,
-              previousCollectionId: null,
-              newCollectionId: previousDelivery.collectionId,
-              changeReason: 'automatic_maintenance',
-              changedByAdmin: false
+            // 1. Verify centralized RPC owns the copy, flag update, and audit trail.
+            expect(supabase.rpc).toHaveBeenCalledWith('apply_automatic_delivery_maintenance', {
+              p_delivery_id: currentDelivery.id,
+              p_subscription_id: testData.subscriptionId,
             });
+            expect(auditTrailService.recordCollectionChange).not.toHaveBeenCalled();
           }
         ),
         {

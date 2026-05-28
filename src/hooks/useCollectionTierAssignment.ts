@@ -8,6 +8,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  assignCollectionToTierRpc,
+  bulkAssignCollectionsToTierRpc,
+  unassignCollectionFromTierRpc,
+} from "@/services/admin/admin-config-mutations-service";
 import type {
   AssignTierInput,
   BulkAssignTierInput,
@@ -31,10 +36,6 @@ export const collectionTierKeys = {
   detail: (collectionId: string) => [...collectionTierKeys.details(), collectionId] as const,
   byTier: (tierId: string) => [...collectionTierKeys.all, "tier", tierId] as const,
 };
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Erro desconhecido";
-}
 
 // =====================================================
 // QUERIES
@@ -79,21 +80,10 @@ export function useCollectionTierAssignment(collectionId: string | null | undefi
     mutationFn: async (input: { tierId: string }) => {
       if (!collectionId) throw new Error("Collection ID required");
 
-      // Delete existing assignment
-      await supabase
-        .from("collection_tier_assignments")
-        .delete()
-        .eq("collection_id", collectionId);
-
-      // Insert new assignment
-      const { error } = await supabase
-        .from("collection_tier_assignments")
-        .insert({
-          collection_id: collectionId,
-          tier_id: input.tierId,
-        });
-
-      if (error) throw new Error(`Erro ao atribuir nível: ${error.message}`);
+      await assignCollectionToTierRpc({
+        collectionId,
+        tierId: input.tierId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: collectionTierKeys.all });
@@ -112,12 +102,7 @@ export function useCollectionTierAssignment(collectionId: string | null | undefi
     mutationFn: async () => {
       if (!collectionId) throw new Error("Collection ID required");
 
-      const { error } = await supabase
-        .from("collection_tier_assignments")
-        .delete()
-        .eq("collection_id", collectionId);
-
-      if (error) throw new Error(`Erro ao remover nível: ${error.message}`);
+      await unassignCollectionFromTierRpc(collectionId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: collectionTierKeys.all });
@@ -182,21 +167,11 @@ export function useAssignCollectionToTier() {
     mutationFn: async (input: AssignTierInput) => {
       const validated = assignTierSchema.parse(input);
 
-      // Delete existing assignment
-      await supabase
-        .from("collection_tier_assignments")
-        .delete()
-        .eq("collection_id", validated.collection_id);
+      await assignCollectionToTierRpc({
+        collectionId: validated.collection_id,
+        tierId: validated.tier_id,
+      });
 
-      // Insert new assignment
-      const { error } = await supabase
-        .from("collection_tier_assignments")
-        .insert({
-          collection_id: validated.collection_id,
-          tier_id: validated.tier_id,
-        });
-
-      if (error) throw new Error(`Erro ao atribuir nível: ${error.message}`);
       return validated.collection_id;
     },
     onSuccess: (collectionId) => {
@@ -226,12 +201,7 @@ export function useUnassignCollectionFromTier() {
 
   return useMutation({
     mutationFn: async (collectionId: string) => {
-      const { error } = await supabase
-        .from("collection_tier_assignments")
-        .delete()
-        .eq("collection_id", collectionId);
-
-      if (error) throw new Error(`Erro ao remover nível: ${error.message}`);
+      await unassignCollectionFromTierRpc(collectionId);
       return collectionId;
     },
     onSuccess: (collectionId) => {
@@ -263,36 +233,10 @@ export function useBulkAssignTier() {
     mutationFn: async (input: BulkAssignTierInput) => {
       const validated = bulkAssignTierSchema.parse(input);
 
-      const results: { success: string[]; failed: Array<{ id: string; error: string }> } = {
-        success: [],
-        failed: [],
-      };
-
-      for (const collectionId of validated.collection_ids) {
-        try {
-          await supabase
-            .from("collection_tier_assignments")
-            .delete()
-            .eq("collection_id", collectionId);
-
-          const { error } = await supabase
-            .from("collection_tier_assignments")
-            .insert({
-              collection_id: collectionId,
-              tier_id: validated.tier_id,
-            });
-
-          if (error) {
-            results.failed.push({ id: collectionId, error: error.message });
-          } else {
-            results.success.push(collectionId);
-          }
-        } catch (error: unknown) {
-          results.failed.push({ id: collectionId, error: getErrorMessage(error) });
-        }
-      }
-
-      return results as BulkAssignTierResponse;
+      return bulkAssignCollectionsToTierRpc<BulkAssignTierResponse>({
+        tierId: validated.tier_id,
+        collectionIds: validated.collection_ids,
+      });
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: collectionTierKeys.all });

@@ -100,7 +100,7 @@ serve(async (req) => {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error fetching subscriptions:", msg);
     const status = msg === "Unauthorized" ? 401 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

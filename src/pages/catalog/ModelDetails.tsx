@@ -16,6 +16,8 @@ import {
   Crown,
   Tag,
   Layers,
+  Coins,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +25,31 @@ import { likeModel, unlikeModel } from "@/lib/model-likes";
 import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
 import { buildModelTitle } from "@/pages/catalog/catalogUtils";
 import { useModelDetails } from "@/hooks/catalog/useModelDetails";
+import { PUBLIC_ROUTES } from "@/config/routes";
+import { formatCurrency } from "@/lib/utils";
+
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  anime: "Anime",
+  manga: "Manga",
+  movie: "Filme",
+  series: "Serie",
+  game: "Game",
+  comic: "HQ",
+  tokusatsu: "Tokusatsu",
+  original: "Original",
+  other: "Outro",
+};
+
+const VARIANT_TYPE_LABELS: Record<string, string> = {
+  default: "Padrao",
+  form: "Forma",
+  costume: "Roupa",
+  pose: "Pose",
+  scale: "Escala",
+  edition: "Edicao",
+  variant: "Versao",
+  other: "Outro",
+};
 
 // ─── Types ───────────────────────────────────────────────────
 export default function ModelDetails() {
@@ -46,7 +73,7 @@ export default function ModelDetails() {
         title: "Entre para favoritar",
         description: "Faça login para salvar seus modelos preferidos.",
       });
-      navigate("/login");
+      navigate(PUBLIC_ROUTES.login);
       return;
     }
     try {
@@ -63,7 +90,16 @@ export default function ModelDetails() {
   };
 
   // ─── Derived ────────────────────────────────────────────────
-  const title = model ? buildModelTitle(model.name, model.franchise) : "Modelo";
+  const displayName = model?.character_name || model?.name || "Modelo";
+  const sourceTitle = model?.source_title || model?.franchise || null;
+  const variantName = model?.variant_name || null;
+  const mediaLabel = model?.source_type ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type : null;
+  const variantLabel = model?.variant_type ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type : null;
+  const title = model
+    ? variantName
+      ? `${displayName} - ${variantName}`
+      : buildModelTitle(model.name, sourceTitle)
+    : "Modelo";
   const seoDescription = model
     ? `Veja detalhes do modelo ${title}. Estatueta artesanal da Tonecos Studios.`
     : "Veja detalhes do modelo. Estatueta artesanal da Tonecos Studios.";
@@ -71,10 +107,27 @@ export default function ModelDetails() {
   const imageUrl = model?.imageUrl ?? null;
 
   const infoLine = model
-    ? [model.franchise, model.category, model.subcategory].filter(Boolean).join(" • ")
+    ? [sourceTitle, mediaLabel, model.category, model.subcategory].filter(Boolean).join(" • ")
     : "";
 
   const tags = (model?.tags ?? []).map((t) => String(t).trim()).filter(Boolean);
+  const taxonomyRows = [
+    { label: "Personagem", value: model?.character_name },
+    { label: "Versao", value: variantName },
+    { label: "Tipo", value: variantLabel && variantLabel !== "Padrao" ? variantLabel : null },
+    { label: "Origem", value: sourceTitle },
+    { label: "Midia", value: mediaLabel },
+  ].filter((row) => row.value);
+  const fixedCashPrice =
+    model?.price_mode === "fixed" &&
+    typeof model.price_standalone_override === "number" &&
+    model.price_standalone_override > 0
+      ? model.price_standalone_override
+      : null;
+  const hasFixedCoinPrice =
+    model?.price_mode === "fixed" &&
+    typeof model.price_coins_override === "number" &&
+    model.price_coins_override > 0;
 
   // ─── Loading ────────────────────────────────────────────────
   if (isLoading) {
@@ -108,7 +161,7 @@ export default function ModelDetails() {
               Modelo não encontrado
             </h1>
             <Button
-              onClick={() => navigate("/catalogo")}
+              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
               className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm"
             >
               Voltar ao Catálogo
@@ -138,7 +191,7 @@ export default function ModelDetails() {
           {/* Back Button */}
           <Button
             variant="ghost"
-            onClick={() => navigate("/catalogo")}
+            onClick={() => navigate(PUBLIC_ROUTES.catalog)}
             className="mb-6 font-mono uppercase tracking-wider text-xs hover:text-[hsl(var(--gold-accent))]"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -162,7 +215,7 @@ export default function ModelDetails() {
                       alt={model.name}
                       className="h-full w-full object-contain p-4"
                       loading="eager"
-                      fetchpriority="high"
+                      fetchPriority="high"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[hsl(var(--background))]">
@@ -225,7 +278,7 @@ export default function ModelDetails() {
                 </div>
 
                 <h1 className="text-3xl md:text-5xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] mb-2 font-mono drop-shadow-[0_0_10px_hsl(var(--gold-accent))]">
-                  {model.name}
+                  {title}
                 </h1>
 
                 {infoLine && (
@@ -241,6 +294,21 @@ export default function ModelDetails() {
                   <p className="text-[hsl(var(--muted-foreground))] text-sm leading-relaxed">
                     {model.description}
                   </p>
+                </div>
+              )}
+
+              {taxonomyRows.length > 0 && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {taxonomyRows.map((row) => (
+                    <div key={row.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3">
+                      <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                        {row.label}
+                      </p>
+                      <p className="truncate text-sm font-semibold" title={String(row.value)}>
+                        {row.value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -270,6 +338,37 @@ export default function ModelDetails() {
                 <h3 className="text-sm font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-3">
                   Produção Artesanal
                 </h3>
+                <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                  {hasFixedCoinPrice && (
+                    <div className="border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(var(--gold-accent)/0.08)] p-3">
+                      <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                        <Coins className="h-3 w-3" />
+                        Coins
+                      </p>
+                      <p className="text-2xl font-bold text-[hsl(var(--gold-accent))]">
+                        {model.price_coins_override}
+                      </p>
+                    </div>
+                  )}
+                  {fixedCashPrice !== null ? (
+                    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--background)/0.6)] p-3">
+                      <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                        Avulso
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {formatCurrency(fixedCashPrice / 100)}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--background)/0.6)] p-3 sm:col-span-2">
+                      <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                        <MessageCircle className="h-3 w-3" />
+                        Preco
+                      </p>
+                      <p className="text-xl font-bold">Sob consulta</p>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4 leading-relaxed">
                   Peça feita sob encomenda, com pintura artística à mão. Disponível para compra
                   avulsa ou através das coleções com assinatura.
@@ -281,7 +380,7 @@ export default function ModelDetails() {
                     className="w-full bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm"
                     asChild
                   >
-                    <Link to="/colecoes-arcade">
+                    <Link to={PUBLIC_ROUTES.collectionsArcade}>
                       <Crown className="w-5 h-5 mr-2" />
                       Ver Coleções
                     </Link>
@@ -292,7 +391,7 @@ export default function ModelDetails() {
                     className="w-full border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-wider text-sm"
                     asChild
                   >
-                    <Link to="/planos">Ver Planos de Assinatura</Link>
+                    <Link to={PUBLIC_ROUTES.plans}>Ver Planos de Assinatura</Link>
                   </Button>
                 </div>
               </div>
@@ -328,7 +427,7 @@ export default function ModelDetails() {
                 className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm whitespace-nowrap"
                 asChild
               >
-                <Link to="/planos">Ver Planos</Link>
+                <Link to={PUBLIC_ROUTES.plans}>Ver Planos</Link>
               </Button>
             </div>
           </div>

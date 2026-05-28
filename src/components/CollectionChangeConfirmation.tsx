@@ -78,7 +78,7 @@ export function CollectionChangeConfirmation({
                 {previousCollection?.image_url && (
                   <img
                     src={previousCollection.image_url}
-                    alt={previousCollection.name}
+                    alt={previousCollection.name ?? "Coleção atual"}
                     className="w-full h-32 object-cover rounded"
                   />
                 )}
@@ -101,7 +101,7 @@ export function CollectionChangeConfirmation({
                 {newCollection?.image_url && (
                   <img
                     src={newCollection.image_url}
-                    alt={newCollection.name}
+                    alt={newCollection.name ?? "Nova coleção"}
                     className="w-full h-32 object-cover rounded"
                   />
                 )}

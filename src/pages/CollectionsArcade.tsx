@@ -28,6 +28,11 @@ import {
   Coins,
   Gift,
 } from "lucide-react";
+import {
+  PUBLIC_ROUTES,
+  characterDetailsPath,
+  collectionDetailsPath,
+} from "@/config/routes";
 
 // ─── Types ───────────────────────────────────────────────────
 type Collection = ArcadeCollection;
@@ -39,7 +44,7 @@ function CollectionCard({ collection, index }: { collection: Collection; index: 
 
   return (
     <Link
-      to={`/colecoes/${collection.slug}`}
+      to={collectionDetailsPath(collection.slug)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className="group block"
@@ -229,7 +234,7 @@ function CatalogCharacterCard({ character, index }: { character: CatalogCharacte
 
   return (
     <Link
-      to={`/personagem/${character.id}`}
+      to={characterDetailsPath(character.id)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className="group block"
@@ -423,7 +428,7 @@ function SubscriptionCTA() {
                 size="lg"
                 className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:brightness-110 font-mono uppercase tracking-wider text-sm rounded-sm px-8"
               >
-                <Link to="/planos">
+                <Link to={PUBLIC_ROUTES.plans}>
                   <Crown className="w-4 h-4 mr-2" />
                   Ver Planos
                 </Link>
@@ -434,7 +439,7 @@ function SubscriptionCTA() {
                 variant="outline"
                 className="font-mono uppercase tracking-wider text-sm rounded-sm border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] px-8"
               >
-                <Link to="/personagens">
+                <Link to={PUBLIC_ROUTES.catalog}>
                   <Shield className="w-4 h-4 mr-2" />
                   Ver Personagens
                 </Link>
@@ -528,7 +533,7 @@ export default function CollectionsArcade() {
                   size="sm"
                   className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:brightness-110 font-mono uppercase tracking-wider text-xs rounded-sm"
                 >
-                  <Link to="/personagens">
+                  <Link to={PUBLIC_ROUTES.catalog}>
                     <Shield className="w-4 h-4 mr-2" />
                     Ver Personagens
                   </Link>
@@ -539,7 +544,7 @@ export default function CollectionsArcade() {
                   variant="outline"
                   className="font-mono uppercase tracking-wider text-xs rounded-sm border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)]"
                 >
-                  <Link to="/planos">
+                  <Link to={PUBLIC_ROUTES.plans}>
                     <Coins className="w-4 h-4 mr-2" />
                     Ver Planos
                   </Link>
@@ -681,7 +686,7 @@ export default function CollectionsArcade() {
                 variant="ghost"
                 className="font-mono text-xs uppercase tracking-wider rounded-sm"
               >
-                <Link to="/personagens">
+                <Link to={PUBLIC_ROUTES.catalog}>
                   <Zap className="w-3 h-3 mr-2" />
                   Personagens
                 </Link>

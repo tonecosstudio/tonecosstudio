@@ -21,6 +21,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import type { ReactElement } from "react";
 
 export type ChartType = "line" | "bar" | "pie" | "area";
 export type ChartDataPoint = Record<string, string | number | null | undefined>;
@@ -69,7 +70,7 @@ interface ChartRendererProps {
 }
 
 export default function ChartRenderer({ type, data, config, height = 300 }: ChartRendererProps) {
-  const renderChart = () => {
+  const renderChart = (): ReactElement => {
     switch (type) {
       case "line": {
         const lineConfig = config as LineChartConfig;
@@ -159,7 +160,7 @@ export default function ChartRenderer({ type, data, config, height = 300 }: Char
       }
 
       default:
-        return null;
+        return <LineChart data={data} />;
     }
   };
 

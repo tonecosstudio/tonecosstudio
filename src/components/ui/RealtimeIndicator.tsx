@@ -6,7 +6,7 @@
  * Requirements: 16.8 (Mostrar indicador visual quando atualizações recebidas)
  */
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Wifi, WifiOff, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";

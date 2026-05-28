@@ -10,16 +10,41 @@
 import { supabase } from "@/integrations/supabase/client";
 import { emailService } from "./email-service";
 import { logInfo, logError } from "@/lib/logger";
+import {
+  checkCapacityAlertRpc,
+  configureCapacityAlertRpc,
+  resetCapacityAlertRpc,
+} from "./customer-account-mutations-service";
 
-type CapacityAlertRpcName = "check_capacity_alert" | "reset_capacity_alert";
-type CapacityAlertRpcClient = {
-  rpc: (
-    fn: CapacityAlertRpcName,
-    args: { p_cycle_id: string }
-  ) => Promise<{ data: boolean | null; error: { message: string } | null }>;
-};
+interface CycleAlertConfigRow {
+  alert_threshold: number | null;
+  alert_email: string | null;
+  alert_sms: string | null;
+}
 
-const capacityAlertRpc = supabase as unknown as CapacityAlertRpcClient;
+interface CycleAlertStatusRow extends CycleAlertConfigRow {
+  alert_triggered: boolean | null;
+  alert_triggered_at: string | null;
+  capacity: number | null;
+  used_capacity: number | null;
+}
+
+interface CycleAlertSingleQuery<T> {
+  eq(column: "id", value: string): {
+    single(): Promise<{ data: T | null; error: { message: string } | null }>;
+  };
+}
+
+interface CycleAlertGateway {
+  from(table: "cycles"): {
+    select(columns: "alert_threshold, alert_email, alert_sms"): CycleAlertSingleQuery<CycleAlertConfigRow>;
+    select(
+      columns: "alert_triggered, alert_triggered_at, alert_threshold, used_capacity, capacity"
+    ): CycleAlertSingleQuery<CycleAlertStatusRow>;
+  };
+}
+
+const cycleAlertGateway = supabase as unknown as CycleAlertGateway;
 
 /**
  * Alert configuration for a cycle
@@ -58,8 +83,8 @@ export interface AlertStatus {
  * @example
  * await configureAlert(cycleId, {
  *   threshold: 80,
- *   email: 'admin@ordax.com',
- *   sms: '+5571999999999'
+ *   email: 'admin@example.com',
+ *   sms: null
  * });
  * 
  * Requirements: 16.5
@@ -73,18 +98,16 @@ export async function configureAlert(
     throw new Error('Alert threshold must be between 1 and 100');
   }
 
-  const { error } = await supabase
-    .from('cycles')
-    .update({
-      alert_threshold: config.threshold,
-      alert_email: config.email,
-      alert_sms: config.sms
-    })
-    .eq('id', cycleId);
-
-  if (error) {
-    throw new Error(`Failed to configure alert: ${error.message}`);
+  if (config.sms) {
+    throw new Error('SMS capacity alerts require a configured server-side SMS provider');
   }
+
+  await configureCapacityAlertRpc({
+    cycleId,
+    threshold: config.threshold,
+    email: config.email,
+    sms: config.sms,
+  });
 
   logInfo(`Configured alert for cycle ${cycleId}`, { 
     threshold: config.threshold, 
@@ -103,7 +126,7 @@ export async function configureAlert(
  * Requirements: 16.5
  */
 export async function getAlertConfig(cycleId: string): Promise<AlertConfig> {
-  const { data: cycle, error } = await supabase
+  const { data: cycle, error } = await cycleAlertGateway
     .from('cycles')
     .select('alert_threshold, alert_email, alert_sms')
     .eq('id', cycleId)
@@ -134,9 +157,9 @@ export async function getAlertConfig(cycleId: string): Promise<AlertConfig> {
  * Requirements: 16.5
  */
 export async function getAlertStatus(cycleId: string): Promise<AlertStatus> {
-  const { data: cycle, error } = await supabase
+  const { data: cycle, error } = await cycleAlertGateway
     .from('cycles')
-    .select('alert_triggered, alert_triggered_at, alert_threshold, capacity_current, capacity_max')
+    .select('alert_triggered, alert_triggered_at, alert_threshold, used_capacity, capacity')
     .eq('id', cycleId)
     .single();
 
@@ -148,8 +171,8 @@ export async function getAlertStatus(cycleId: string): Promise<AlertStatus> {
     throw new Error(`Cycle not found: ${cycleId}`);
   }
 
-  const max = cycle.capacity_max ?? 100;
-  const current = cycle.capacity_current ?? 0;
+  const max = cycle.capacity ?? 100;
+  const current = cycle.used_capacity ?? 0;
   const currentPercentage = max > 0 ? Math.round((current / max) * 100) : 0;
 
   return {
@@ -174,15 +197,7 @@ export async function getAlertStatus(cycleId: string): Promise<AlertStatus> {
  * Requirements: 16.5
  */
 export async function checkAndTriggerAlert(cycleId: string): Promise<boolean> {
-  const { data, error } = await capacityAlertRpc.rpc('check_capacity_alert', {
-    p_cycle_id: cycleId
-  });
-
-  if (error) {
-    throw new Error(`Failed to check capacity alert: ${error.message}`);
-  }
-
-  return data === true;
+  return checkCapacityAlertRpc(cycleId);
 }
 
 /**
@@ -195,13 +210,7 @@ export async function checkAndTriggerAlert(cycleId: string): Promise<boolean> {
  * Requirements: 16.5
  */
 export async function resetAlert(cycleId: string): Promise<void> {
-  const { error } = await capacityAlertRpc.rpc('reset_capacity_alert', {
-    p_cycle_id: cycleId
-  });
-
-  if (error) {
-    throw new Error(`Failed to reset alert: ${error.message}`);
-  }
+  await resetCapacityAlertRpc(cycleId);
 
   logInfo(`Reset alert for cycle ${cycleId}`, undefined, 'capacity-alert');
 }
@@ -332,17 +341,11 @@ export async function sendCapacityAlert(
     }
   }
 
-  // Send SMS if configured
   if (config.sms) {
-    try {
-      logInfo('SMS alert configured but not implemented', { sms: config.sms }, 'capacity-alert');
-      // TODO: Integrate with SMS service (Twilio, AWS SNS, etc)
-      // await sendSMS({
-      //   to: config.sms,
-      //   message: message
-      // });
-    } catch (error) {
-      logError('Failed to send SMS alert', error, 'capacity-alert');
-    }
+    logError(
+      'SMS capacity alert skipped because no server-side SMS provider is configured',
+      undefined,
+      'capacity-alert'
+    );
   }
 }

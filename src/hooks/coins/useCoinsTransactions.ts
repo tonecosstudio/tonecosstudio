@@ -9,9 +9,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
+import { CoinsTransactionType } from '@/types/coins';
 import type {
   CoinsTransaction,
-  CoinsTransactionType,
   UserId,
   TransactionId,
   CoinsTransactionsResponse,
@@ -79,6 +80,45 @@ const CACHE_CONFIG = {
   CACHE_TIME: 5 * 60 * 1000,
 };
 
+type CoinTransactionRow = {
+  id: string;
+  user_id: string;
+  amount: number;
+  transaction_type: string;
+  description: string | null;
+  reference_id: string | null;
+  reference_type: string | null;
+  created_at: string;
+};
+
+const COINS_TRANSACTION_TYPES = new Set<string>(Object.values(CoinsTransactionType));
+
+function toCoinsTransaction(row: CoinTransactionRow): CoinsTransaction {
+  if (!COINS_TRANSACTION_TYPES.has(row.transaction_type)) {
+    throw new Error(`Tipo de transação de coins inválido: ${row.transaction_type}`);
+  }
+
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    amount: row.amount,
+    type: row.transaction_type as CoinsTransactionType,
+    description: row.description ?? "",
+    reference_id: row.reference_id,
+    reference_type: row.reference_type,
+    created_at: row.created_at,
+  };
+}
+
+async function resolveCurrentUserId(userId?: UserId | null): Promise<UserId> {
+  if (!userId) {
+    return requireAuthenticatedUserId();
+  }
+
+  await assertCurrentUserId(userId);
+  return userId;
+}
+
 // ============================================================================
 // HOOK PRINCIPAL
 // ============================================================================
@@ -135,18 +175,7 @@ export function useCoinsTransactions(options: UseTransactionsOptions = {}) {
       orderDirection,
     }),
     queryFn: async (): Promise<CoinsTransactionsResponse> => {
-      // Se userId não foi fornecido, busca usuário logado
-      let targetUserId = userId;
-      
-      if (!targetUserId) {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          throw new Error('Usuário não autenticado');
-        }
-        
-        targetUserId = user.id;
-      }
+      const targetUserId = await resolveCurrentUserId(userId);
 
       // Construir query
       let query = supabase
@@ -187,7 +216,7 @@ export function useCoinsTransactions(options: UseTransactionsOptions = {}) {
       const hasNext = page < totalPages;
 
       return {
-        transactions: (data || []) as CoinsTransaction[],
+        transactions: ((data || []) as CoinTransactionRow[]).map(toCoinsTransaction),
         total,
         page,
         per_page: perPage,
@@ -272,10 +301,13 @@ export function useTransaction(transactionId: TransactionId) {
   return useQuery({
     queryKey: coinsTransactionsKeys.detail(transactionId),
     queryFn: async (): Promise<CoinsTransaction> => {
+      const userId = await requireAuthenticatedUserId();
+
       const { data, error } = await supabase
         .from('coin_transactions')
         .select('*')
         .eq('id', transactionId)
+        .eq('user_id', userId)
         .single();
 
       if (error) {
@@ -286,7 +318,7 @@ export function useTransaction(transactionId: TransactionId) {
         throw new Error('Transação não encontrada');
       }
 
-      return data as CoinsTransaction;
+      return toCoinsTransaction(data as CoinTransactionRow);
     },
     enabled: !!transactionId,
     staleTime: CACHE_CONFIG.STALE_TIME,
@@ -345,18 +377,7 @@ export function useTransactionStats(
   return useQuery({
     queryKey: ['coins', 'transactions', 'stats', userId, startDate, endDate],
     queryFn: async (): Promise<TransactionStats> => {
-      // Se userId não foi fornecido, busca usuário logado
-      let targetUserId = userId;
-      
-      if (!targetUserId) {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          throw new Error('Usuário não autenticado');
-        }
-        
-        targetUserId = user.id;
-      }
+      const targetUserId = await resolveCurrentUserId(userId);
 
       // Buscar todas transações do período
       let query = supabase
@@ -380,7 +401,7 @@ export function useTransactionStats(
         throw new Error(`Erro ao calcular estatísticas: ${error.message}`);
       }
 
-      const transactions = (data || []) as CoinsTransaction[];
+      const transactions = ((data || []) as CoinTransactionRow[]).map(toCoinsTransaction);
 
       // Calcular estatísticas
       let totalReceived = 0;
@@ -444,18 +465,7 @@ export function useRecentTransactions(
   return useQuery({
     queryKey: ['coins', 'transactions', 'recent', userId, limit],
     queryFn: async (): Promise<CoinsTransaction[]> => {
-      // Se userId não foi fornecido, busca usuário logado
-      let targetUserId = userId;
-      
-      if (!targetUserId) {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          throw new Error('Usuário não autenticado');
-        }
-        
-        targetUserId = user.id;
-      }
+      const targetUserId = await resolveCurrentUserId(userId);
 
       const { data, error } = await supabase
         .from('coin_transactions')
@@ -468,7 +478,7 @@ export function useRecentTransactions(
         throw new Error(`Erro ao buscar transações recentes: ${error.message}`);
       }
 
-      return (data || []) as CoinsTransaction[];
+      return ((data || []) as CoinTransactionRow[]).map(toCoinsTransaction);
     },
     enabled: true,
     staleTime: CACHE_CONFIG.STALE_TIME,

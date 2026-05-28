@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCharacterChoice, type CharacterChoiceEntity } from "@/hooks/customer/useCharacterChoice";
+import { useCharacterChoice } from "@/hooks/customer/useCharacterChoice";
 import { CharacterSelectionModal } from "./CharacterSelectionModal";
 import { ChoiceChangeModal } from "./ChoiceChangeModal";
 import { formatDistanceToNow } from "date-fns";
@@ -101,9 +101,8 @@ export function CharacterChoiceStatus({
           onOpenChange={setShowSelectionModal}
           orderId={orderId}
           collectionId={collectionId}
-          collectionName={collectionName}
           deadline={null}
-          onCharacterSelected={handleCharacterSelected}
+          onSuccess={handleCharacterSelected}
         />
       </>
     );
@@ -348,9 +347,8 @@ export function CharacterChoiceStatus({
         onOpenChange={setShowSelectionModal}
         orderId={orderId}
         collectionId={collectionId}
-        collectionName={collectionName}
         deadline={choice.deadline}
-        onCharacterSelected={handleCharacterSelected}
+        onSuccess={handleCharacterSelected}
       />
 
       {choice && (
@@ -360,9 +358,13 @@ export function CharacterChoiceStatus({
           choiceId={choice.id}
           orderId={orderId}
           collectionId={collectionId}
-          collectionName={collectionName}
-          currentChoice={choice as CharacterChoiceEntity}
-          onChoiceChanged={handleChoiceChanged}
+          currentCharacterId={choice.characterId ?? ""}
+          currentCharacterName={choice.characterName ?? "Personagem não selecionado"}
+          currentCharacterImageUrl={choice.characterImageUrl}
+          deadline={choice.deadline}
+          changesCount={choice.changeCount}
+          isApproved={choice.status === "approved"}
+          onSuccess={handleChoiceChanged}
         />
       )}
     </>

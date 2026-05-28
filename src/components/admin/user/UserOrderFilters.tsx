@@ -1,6 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { ORDER_TYPE_OPTIONS, getOrderStatusOptionsForType } from "@/config/admin-order-status";
 
 interface UserOrderFiltersProps {
   typeFilter: string;
@@ -36,11 +37,11 @@ export function UserOrderFilters({
           <SelectValue placeholder="Tipo" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todos os Tipos</SelectItem>
-          <SelectItem value="subscription_delivery">Assinatura</SelectItem>
-          <SelectItem value="standalone_purchase">Compra Avulsa</SelectItem>
-          <SelectItem value="manual_payment">Pagamento Manual</SelectItem>
-          <SelectItem value="quote">Orçamento</SelectItem>
+          {ORDER_TYPE_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
@@ -50,16 +51,11 @@ export function UserOrderFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos os Status</SelectItem>
-          <SelectItem value="pending">Pendente</SelectItem>
-          <SelectItem value="processing">Processando</SelectItem>
-          <SelectItem value="confirmed">Confirmado</SelectItem>
-          <SelectItem value="in_production">Em Produção</SelectItem>
-          <SelectItem value="shipped">Enviado</SelectItem>
-          <SelectItem value="delivered">Entregue</SelectItem>
-          <SelectItem value="completed">Completo</SelectItem>
-          <SelectItem value="cancelled">Cancelado</SelectItem>
-          <SelectItem value="approved">Aprovado</SelectItem>
-          <SelectItem value="rejected">Rejeitado</SelectItem>
+          {getOrderStatusOptionsForType("all").map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

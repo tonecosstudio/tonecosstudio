@@ -16,11 +16,9 @@ describe("notification-service", () => {
     user_id: "user-123",
     reference_number: "PAY-001",
   };
-  const insertUserNotification = vi.fn().mockResolvedValue({ error: null });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    insertUserNotification.mockResolvedValue({ error: null });
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === "manual_payments") {
@@ -28,12 +26,6 @@ describe("notification-service", () => {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({ data: paymentContext, error: null }),
-        } as never;
-      }
-
-      if (table === "user_notifications") {
-        return {
-          insert: insertUserNotification,
         } as never;
       }
 
@@ -59,11 +51,18 @@ describe("notification-service", () => {
   it("creates user notification when payment is approved", async () => {
     await getNotificationService().sendPaymentApproved("payment-123");
 
-    expect(insertUserNotification).toHaveBeenCalledWith({
-      user_id: "user-123",
-      type: "payment_approved",
-      title: "Pagamento aprovado",
-      message: "Seu pagamento PAY-001 foi aprovado.",
+    expect(supabase.rpc).toHaveBeenCalledWith("create_user_notification", {
+      p_user_id: "user-123",
+      p_type: "payment_approved",
+      p_title: "Pagamento aprovado",
+      p_message: "Seu pagamento PAY-001 foi aprovado.",
+      p_priority: "medium",
+      p_related_id: "payment-123",
+      p_related_type: "payment",
+      p_metadata: {
+        payment_id: "payment-123",
+        reference_number: "PAY-001",
+      },
     });
   });
 });

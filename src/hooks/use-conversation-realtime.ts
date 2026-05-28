@@ -2,9 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
-import type { RealtimeConnectionState, ReconnectionConfig } from "./use-payment-realtime";
+import type { RealtimeConnectionState } from "./use-payment-realtime";
+import {
+  DEFAULT_REALTIME_EVENTS,
+  getRealtimeEventsFromKey,
+  getRealtimeEventsKey,
+  getRealtimeRetryDelay,
+  REALTIME_INSERT_EVENTS,
+  REALTIME_UPDATE_EVENTS,
+  useLatestRef,
+  useRealtimeReconnectionConfig,
+} from "./realtime-helpers";
+import type { ReconnectionConfig, RealtimePostgresEvent } from "./realtime-helpers";
 
-type RealtimePostgresEvent = "INSERT" | "UPDATE" | "DELETE" | "*";
 type ConversationChangeEvent = "INSERT" | "UPDATE" | "DELETE";
 
 export interface SupportMessage {
@@ -34,7 +44,7 @@ export interface UseConversationRealtimeOptions {
   conversationId?: string;
   userId?: string;
   paymentId?: string;
-  events?: RealtimePostgresEvent[];
+  events?: readonly RealtimePostgresEvent[];
   subscribeToMessages?: boolean;
   subscribeToConversations?: boolean;
   reconnectionConfig?: Partial<ReconnectionConfig>;
@@ -46,17 +56,6 @@ export interface UseConversationRealtimeOptions {
   ) => void;
   onConnected?: () => void;
   onDisconnected?: (error?: Error) => void;
-}
-
-const DEFAULT_RECONNECTION_CONFIG: ReconnectionConfig = {
-  maxRetries: 10,
-  baseDelayMs: 1000,
-  backoffFactor: 2,
-  maxDelayMs: 30000,
-};
-
-function normalizeEvents(events: RealtimePostgresEvent[]): RealtimePostgresEvent[] {
-  return events.includes("*") ? ["*"] : events;
 }
 
 function buildMessageFilter(conversationId?: string): string | undefined {
@@ -82,7 +81,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     conversationId,
     userId,
     paymentId,
-    events = ["INSERT", "UPDATE", "DELETE"],
+    events = DEFAULT_REALTIME_EVENTS,
     subscribeToMessages = true,
     subscribeToConversations = false,
     reconnectionConfig: userReconnectionConfig,
@@ -94,10 +93,15 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
   } = options;
 
   const channelsRef = useRef<RealtimeChannel[]>([]);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
   const isMountedRef = useRef(true);
   const connectRef = useRef<() => void>(() => {});
+  const onNewMessageRef = useLatestRef(onNewMessage);
+  const onMessageUpdateRef = useLatestRef(onMessageUpdate);
+  const onConversationUpdateRef = useLatestRef(onConversationUpdate);
+  const onConnectedRef = useLatestRef(onConnected);
+  const onDisconnectedRef = useLatestRef(onDisconnected);
 
   const [connectionState, setConnectionState] = useState<RealtimeConnectionState>({
     isConnected: false,
@@ -108,21 +112,13 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     lastDisconnectedAt: null,
   });
 
-  const reconnectionConfig = useMemo(
-    () => ({
-      ...DEFAULT_RECONNECTION_CONFIG,
-      ...userReconnectionConfig,
-    }),
-    [userReconnectionConfig]
-  );
-
-  const calculateRetryDelay = useCallback(
-    (attempt: number): number => {
-      const delay =
-        reconnectionConfig.baseDelayMs * Math.pow(reconnectionConfig.backoffFactor, attempt);
-      return Math.min(delay, reconnectionConfig.maxDelayMs);
-    },
-    [reconnectionConfig]
+  const reconnectionConfig = useRealtimeReconnectionConfig(userReconnectionConfig);
+  const eventsKey = getRealtimeEventsKey(events);
+  const normalizedEvents = useMemo(() => getRealtimeEventsFromKey(eventsKey), [eventsKey]);
+  const messageFilter = useMemo(() => buildMessageFilter(conversationId), [conversationId]);
+  const conversationFilter = useMemo(
+    () => buildConversationFilter(conversationId, userId, paymentId),
+    [conversationId, userId, paymentId]
   );
 
   const scheduleReconnect = useCallback(() => {
@@ -133,8 +129,9 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
       retryTimeoutRef.current = null;
     }
 
-    retryCountRef.current += 1;
-    const delay = calculateRetryDelay(retryCountRef.current);
+    const nextRetryCount = retryCountRef.current + 1;
+    const delay = getRealtimeRetryDelay(reconnectionConfig, nextRetryCount - 1);
+    retryCountRef.current = nextRetryCount;
 
     setConnectionState((prev) => ({
       ...prev,
@@ -145,7 +142,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     retryTimeoutRef.current = setTimeout(() => {
       connectRef.current();
     }, delay);
-  }, [calculateRetryDelay]);
+  }, [reconnectionConfig]);
 
   const disconnect = useCallback(() => {
     channelsRef.current.forEach((channel) => {
@@ -158,12 +155,14 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
       retryTimeoutRef.current = null;
     }
 
-    setConnectionState((prev) => ({
-      ...prev,
-      isConnected: false,
-      isReconnecting: false,
-      lastDisconnectedAt: new Date(),
-    }));
+    if (isMountedRef.current) {
+      setConnectionState((prev) => ({
+        ...prev,
+        isConnected: false,
+        isReconnecting: false,
+        lastDisconnectedAt: new Date(),
+      }));
+    }
   }, []);
 
   const connect = useCallback(() => {
@@ -197,7 +196,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
           lastConnectedAt: new Date(),
           error: null,
         }));
-        onConnected?.();
+        onConnectedRef.current?.();
       };
 
       const handleChannelError = (channelName: string, error: Error) => {
@@ -213,7 +212,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
           error,
         }));
 
-        onDisconnected?.(error);
+        onDisconnectedRef.current?.(error);
 
         if (retryCountRef.current < reconnectionConfig.maxRetries) {
           scheduleReconnect();
@@ -225,14 +224,14 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
         const channelName = `conversation-messages-${conversationId || "all"}-${Date.now()}`;
         let channel = supabase.channel(channelName);
 
-        normalizeEvents(events).forEach((event) => {
+        normalizedEvents.forEach((event) => {
           channel = channel.on(
             "postgres_changes",
             {
               event,
               schema: "public",
               table: "support_messages",
-              filter: buildMessageFilter(conversationId),
+              filter: messageFilter,
             },
             (payload) => {
               if (!isMountedRef.current) return;
@@ -241,8 +240,8 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
               const message = payload.new as SupportMessage;
               const oldMessage = payload.old as SupportMessage | null;
 
-              if (eventType === "INSERT") onNewMessage?.(message);
-              if (eventType === "UPDATE") onMessageUpdate?.(message, oldMessage);
+              if (eventType === "INSERT") onNewMessageRef.current?.(message);
+              if (eventType === "UPDATE") onMessageUpdateRef.current?.(message, oldMessage);
             }
           );
         });
@@ -266,22 +265,22 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
         const channelName = `conversation-conversations-${conversationId || "all"}-${Date.now()}`;
         let channel = supabase.channel(channelName);
 
-        normalizeEvents(events).forEach((event) => {
+        normalizedEvents.forEach((event) => {
           channel = channel.on(
             "postgres_changes",
             {
               event,
               schema: "public",
               table: "support_conversations",
-              filter: buildConversationFilter(conversationId, userId, paymentId),
+              filter: conversationFilter,
             },
             (payload) => {
-              if (!isMountedRef.current || !onConversationUpdate) return;
+              if (!isMountedRef.current || !onConversationUpdateRef.current) return;
 
               const eventType = payload.eventType as ConversationChangeEvent;
               if (eventType !== "UPDATE") return;
 
-              onConversationUpdate(
+              onConversationUpdateRef.current(
                 payload.new as SupportConversation,
                 payload.old as SupportConversation | null
               );
@@ -311,7 +310,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
           lastConnectedAt: new Date(),
           error: null,
         }));
-        onConnected?.();
+        onConnectedRef.current?.();
       }
 
       channelsRef.current = channels;
@@ -325,7 +324,7 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
         lastDisconnectedAt: new Date(),
       }));
 
-      onDisconnected?.(error as Error);
+      onDisconnectedRef.current?.(error as Error);
 
       if (retryCountRef.current < reconnectionConfig.maxRetries) {
         scheduleReconnect();
@@ -333,16 +332,16 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     }
   }, [
     conversationId,
-    userId,
-    paymentId,
-    events,
+    normalizedEvents,
+    messageFilter,
+    conversationFilter,
     subscribeToMessages,
     subscribeToConversations,
-    onNewMessage,
-    onMessageUpdate,
-    onConversationUpdate,
-    onConnected,
-    onDisconnected,
+    onNewMessageRef,
+    onMessageUpdateRef,
+    onConversationUpdateRef,
+    onConnectedRef,
+    onDisconnectedRef,
     reconnectionConfig.maxRetries,
     scheduleReconnect,
   ]);
@@ -367,20 +366,6 @@ export function useConversationRealtime(options: UseConversationRealtimeOptions 
     };
   }, [connect, disconnect]);
 
-  useEffect(() => {
-    if (isMountedRef.current && channelsRef.current.length > 0) {
-      reconnect();
-    }
-  }, [
-    conversationId,
-    userId,
-    paymentId,
-    events,
-    subscribeToMessages,
-    subscribeToConversations,
-    reconnect,
-  ]);
-
   return {
     ...connectionState,
     disconnect,
@@ -394,7 +379,7 @@ export function useConversationMessagesRealtime(
 ) {
   const { isConnected, isReconnecting, error, ...rest } = useConversationRealtime({
     conversationId,
-    events: ["INSERT"],
+    events: REALTIME_INSERT_EVENTS,
     subscribeToMessages: true,
     subscribeToConversations: false,
     onNewMessage,
@@ -418,7 +403,7 @@ export function useMessageReadRealtime(
 ) {
   const { isConnected, isReconnecting, error, ...rest } = useConversationRealtime({
     conversationId,
-    events: ["UPDATE"],
+    events: REALTIME_UPDATE_EVENTS,
     subscribeToMessages: true,
     subscribeToConversations: false,
     onMessageUpdate: (message, oldMessage) => {
@@ -431,6 +416,29 @@ export function useMessageReadRealtime(
         onMessageRead(message, wasReadByCustomer, wasReadByAdmin);
       }
     },
+  });
+
+  return {
+    isConnected,
+    isReconnecting,
+    error,
+    ...rest,
+  };
+}
+
+export function usePaymentConversationRealtime(
+  paymentId: string,
+  onConversationUpdate?: (
+    conversation: SupportConversation,
+    oldConversation: SupportConversation | null
+  ) => void
+) {
+  const { isConnected, isReconnecting, error, ...rest } = useConversationRealtime({
+    paymentId,
+    events: REALTIME_UPDATE_EVENTS,
+    subscribeToMessages: false,
+    subscribeToConversations: true,
+    onConversationUpdate,
   });
 
   return {

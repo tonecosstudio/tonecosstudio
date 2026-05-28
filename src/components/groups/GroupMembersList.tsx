@@ -44,8 +44,8 @@ export function GroupMembersList({ groupId, onAddMember }: GroupMembersListProps
     },
   });
 
-  const handleRemove = (memberId: string, userId: string) => {
-    setRemovingId(memberId);
+  const handleRemove = (userId: string) => {
+    setRemovingId(userId);
     removeMutation.mutate({ userId });
   };
 
@@ -89,7 +89,8 @@ export function GroupMembersList({ groupId, onAddMember }: GroupMembersListProps
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleRemove(member.user_id, member.user_id)}
+                aria-label={`Remover ${member.user_name || member.user_email || member.user_id}`}
+                onClick={() => handleRemove(member.user_id)}
                 disabled={removingId === member.user_id}
               >
                 <Trash2 className="w-4 h-4 text-destructive" />

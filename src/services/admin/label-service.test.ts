@@ -82,7 +82,7 @@ describe('Label Service', () => {
       const order: UnifiedOrder = {
         id: 'test-id',
         type: 'subscription_delivery',
-        status: 'confirmed',
+        status: 'in_production',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         customer: { id: 'user-1', name: 'Test User', email: 'test@example.com' },
@@ -100,7 +100,7 @@ describe('Label Service', () => {
       const order: UnifiedOrder = {
         id: 'test-id',
         type: 'subscription_delivery',
-        status: 'confirmed',
+        status: 'in_production',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         customer: { id: 'user-1', name: 'Test User', email: 'test@example.com' },
@@ -255,8 +255,8 @@ describe('Label Service', () => {
 
       // Verificar que window.open foi chamado para cada etiqueta
       expect(windowOpenSpy).toHaveBeenCalledTimes(2);
-      expect(windowOpenSpy).toHaveBeenCalledWith('http://label1.pdf', '_blank');
-      expect(windowOpenSpy).toHaveBeenCalledWith('http://label2.pdf', '_blank');
+      expect(windowOpenSpy).toHaveBeenCalledWith('http://label1.pdf/', '_blank', 'noopener,noreferrer');
+      expect(windowOpenSpy).toHaveBeenCalledWith('http://label2.pdf/', '_blank', 'noopener,noreferrer');
     });
 
     it('deve respeitar o limite máximo de abas', () => {
@@ -274,6 +274,23 @@ describe('Label Service', () => {
 
       // Verificar que apenas 5 abas foram abertas
       expect(windowOpenSpy).toHaveBeenCalledTimes(5);
+    });
+
+    it('deve bloquear URLs de etiqueta inseguras', () => {
+      const labels = [
+        { orderId: '1', labelUrl: 'javascript:alert(1)', trackingCode: 'BR1', generatedAt: new Date().toISOString() },
+        { orderId: '2', labelUrl: 'https://labels.example/label.pdf', trackingCode: 'BR2', generatedAt: new Date().toISOString() }
+      ];
+
+      openLabelsInTabs(labels);
+      vi.runAllTimers();
+
+      expect(windowOpenSpy).toHaveBeenCalledTimes(1);
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        'https://labels.example/label.pdf',
+        '_blank',
+        'noopener,noreferrer'
+      );
     });
   });
 });

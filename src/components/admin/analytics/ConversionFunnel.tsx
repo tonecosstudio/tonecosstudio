@@ -23,13 +23,13 @@ interface ConversionFunnelProps {
 export function ConversionFunnel({ data, className }: ConversionFunnelProps) {
   const stages: FunnelStage[] = [
     {
-      name: "Visitantes",
+      name: "Usuários",
       value: data.visitors,
       icon: Users,
       color: "bg-blue-500",
     },
     {
-      name: "Leads",
+      name: "Solicitantes",
       value: data.leads,
       icon: ShoppingCart,
       color: "bg-purple-500",
@@ -50,7 +50,7 @@ export function ConversionFunnel({ data, className }: ConversionFunnelProps) {
 
   // Calcular percentuais
   const calculatePercentage = (current: number, previous: number) => {
-    if (previous === 0) return 0;
+    if (previous === 0) return "0.0";
     return ((current / previous) * 100).toFixed(1);
   };
 
@@ -61,6 +61,7 @@ export function ConversionFunnel({ data, className }: ConversionFunnelProps) {
 
   // Taxa de conversão geral
   const overallConversionRate = calculatePercentage(data.conversions, data.visitors);
+  const quotesPerRequester = data.leads > 0 ? (data.quotes / data.leads).toFixed(1) : "0.0";
 
   return (
     <Card className={className}>
@@ -76,7 +77,7 @@ export function ConversionFunnel({ data, className }: ConversionFunnelProps) {
           {stages.map((stage, index) => {
             const Icon = stage.icon;
             const conversionRate = calculateConversionRate(index);
-            const progressValue = (stage.value / stages[0].value) * 100;
+            const progressValue = stages[0].value > 0 ? (stage.value / stages[0].value) * 100 : 0;
 
             return (
               <div key={stage.name}>
@@ -115,9 +116,9 @@ export function ConversionFunnel({ data, className }: ConversionFunnelProps) {
           <p className="text-sm font-medium mb-2">💡 Insights</p>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li>
-              • {calculatePercentage(data.leads, data.visitors)}% dos visitantes se tornam leads
+              • {calculatePercentage(data.leads, data.visitors)}% dos usuários solicitaram orçamento
             </li>
-            <li>• {calculatePercentage(data.quotes, data.leads)}% dos leads solicitam orçamento</li>
+            <li>• {quotesPerRequester} orçamento(s) por solicitante</li>
             <li>
               • {calculatePercentage(data.conversions, data.quotes)}% dos orçamentos convertem
             </li>

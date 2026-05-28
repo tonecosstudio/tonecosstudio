@@ -8,15 +8,53 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+import { normalizeAddressBR, type DeliveryAddress as ProfileDeliveryAddress } from '@/lib/profile';
 import { shippingService, type Address } from '@/services/shipping-service';
+import { updateStandaloneTrackingCode } from '@/services/standalone-purchase-service';
+import { updateDeliveryStatus } from './delivery-detail-service';
 import { validateDeliveryAddress } from './orders-validator';
 import log from '@/lib/logger';
+import { openSafeExternalUrl } from '@/lib/security/safe-open';
 import type { 
   UnifiedOrder, 
   LabelGenerationResult,
   BulkLabelGenerationResult,
   DeliveryAddress 
 } from '@/types/admin/orders';
+
+type ProfileShippingAddressRow = {
+  delivery_address: Json | null;
+  full_name: string | null;
+  phone: string | null;
+};
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function toDeliveryAddress(value: Json | null): DeliveryAddress | null {
+  if (!isPlainRecord(value)) {
+    return null;
+  }
+
+  const normalized = normalizeAddressBR(value as unknown as ProfileDeliveryAddress);
+
+  if (!normalized) {
+    return null;
+  }
+
+  return {
+    street: normalized.rua ?? '',
+    number: normalized.numero ?? '',
+    complement: normalized.complemento,
+    neighborhood: normalized.bairro ?? '',
+    city: normalized.cidade ?? '',
+    state: normalized.uf ?? '',
+    zipCode: normalized.cep ?? '',
+    country: 'Brasil',
+  };
+}
 
 /**
  * Erro de geração de etiqueta
@@ -61,7 +99,7 @@ function convertToShippingAddress(
     street: deliveryAddress.street,
     number: deliveryAddress.number,
     complement: deliveryAddress.complement,
-    neighborhood: deliveryAddress.neighborhood || 'Centro', // Default se não fornecido
+    neighborhood: deliveryAddress.neighborhood,
     city: deliveryAddress.city,
     state: deliveryAddress.state,
     zipCode: deliveryAddress.zipCode,
@@ -77,7 +115,7 @@ async function getOrderDeliveryAddress(order: UnifiedOrder): Promise<DeliveryAdd
     // Buscar o perfil do usuário para obter o endereço
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('address, full_name, phone')
+      .select('delivery_address, full_name, phone')
       .eq('id', order.customer.id)
       .single();
 
@@ -86,32 +124,9 @@ async function getOrderDeliveryAddress(order: UnifiedOrder): Promise<DeliveryAdd
       return null;
     }
 
-    // O endereço está armazenado como texto no perfil
-    // Precisamos parsear ou assumir que está em formato JSON
-    if (!profile.address) {
-      return null;
-    }
-
-    // Tentar parsear o endereço se estiver em formato JSON
-    try {
-      const addressData = typeof profile.address === 'string' 
-        ? JSON.parse(profile.address) 
-        : profile.address;
-
-      return {
-        street: addressData.street || addressData.rua || '',
-        number: addressData.number || addressData.numero || '',
-        complement: addressData.complement || addressData.complemento,
-        neighborhood: addressData.neighborhood || addressData.bairro || 'Centro',
-        city: addressData.city || addressData.cidade || '',
-        state: addressData.state || addressData.estado || '',
-        zipCode: addressData.zipCode || addressData.cep || '',
-        country: addressData.country || addressData.pais || 'Brasil'
-      };
-    } catch (parseError) {
-      log.error('Erro ao parsear endereço', { parseError, address: profile.address });
-      return null;
-    }
+    return toDeliveryAddress(
+      (profile as unknown as ProfileShippingAddressRow).delivery_address
+    );
   } catch (error) {
     log.error('Erro ao buscar endereço de entrega', { error, orderId: order.id });
     return null;
@@ -268,33 +283,14 @@ async function updateOrderTrackingCode(
 ): Promise<void> {
   try {
     if (order.type === 'subscription_delivery') {
-      // Atualizar entrega de assinatura
-      const { error } = await supabase
-        .from('subscription_deliveries')
-        .update({
-          tracking_code: trackingCode,
-          status: 'shipped', // Atualizar status para enviado
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', order.id);
-
-      if (error) {
-        throw new Error(`Erro ao atualizar entrega: ${error.message}`);
-      }
+      await updateDeliveryStatus({
+        deliveryId: order.id,
+        newStatus: 'shipped',
+        trackingCode,
+        notes: 'Etiqueta de envio gerada pelo painel admin',
+      });
     } else if (order.type === 'standalone_purchase') {
-      // Atualizar compra avulsa
-      const { error } = await supabase
-        .from('standalone_purchases' as unknown as 'subscription_deliveries')
-        .update({
-          tracking_code: trackingCode,
-          status: 'shipped', // Atualizar status para enviado
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', order.id);
-
-      if (error) {
-        throw new Error(`Erro ao atualizar compra: ${error.message}`);
-      }
+      await updateStandaloneTrackingCode(order.id, trackingCode, { markShipped: true });
     }
   } catch (error) {
     log.error('Erro ao atualizar código de rastreamento', { error, orderId: order.id, trackingCode });
@@ -312,6 +308,17 @@ async function updateOrderTrackingCode(
 export function canGenerateLabel(order: UnifiedOrder): boolean {
   // Pagamentos manuais e orçamentos não têm geração de etiquetas
   if (order.type === 'manual_payment' || order.type === 'quote') {
+    return false;
+  }
+
+  if (
+    order.type === 'standalone_purchase' &&
+    !['balance_paid', 'in_production'].includes(order.status)
+  ) {
+    return false;
+  }
+
+  if (order.type === 'subscription_delivery' && order.status !== 'in_production') {
     return false;
   }
   
@@ -395,7 +402,11 @@ export function isAddressError(error: unknown): boolean {
  */
 export function getMissingAddressFields(error: unknown): string[] {
   if (error instanceof LabelGenerationError && error.details?.missingFields) {
-    return error.details.missingFields;
+    return Array.isArray(error.details.missingFields)
+      ? error.details.missingFields.filter(
+          (field): field is string => typeof field === 'string'
+        )
+      : [];
   }
   return [];
 }
@@ -418,7 +429,7 @@ export function getMissingAddressFields(error: unknown): string[] {
  * 
  * // Abrir todas as etiquetas geradas
  * result.successful.forEach(label => {
- *   window.open(label.labelUrl, '_blank');
+ *   openLabelsInTabs([label]);
  * });
  * 
  * // Exibir pedidos com falha
@@ -515,7 +526,13 @@ export function openLabelsInTabs(
   labelsToOpen.forEach((label, index) => {
     // Adicionar pequeno delay entre aberturas para evitar bloqueio do navegador
     setTimeout(() => {
-      window.open(label.labelUrl, '_blank');
+      try {
+        openSafeExternalUrl(label.labelUrl);
+      } catch {
+        log.warn('Blocked unsafe label URL', {
+          orderId: label.orderId,
+        });
+      }
     }, index * 100);
   });
 

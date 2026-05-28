@@ -1,4 +1,5 @@
 import { adminPaymentsGateway } from "@/services/admin/admin-payments-gateway";
+import { updateAdminPaymentSetting } from "@/services/admin/admin-config-mutations-service";
 
 export interface PaymentKey {
   key: string;
@@ -18,10 +19,5 @@ export async function fetchAdminPaymentKeys(): Promise<PaymentKey[]> {
 }
 
 export async function updateAdminPaymentKey(input: { key: string; value: string }): Promise<void> {
-  const { error } = await adminPaymentsGateway
-    .from("system_settings")
-    .update({ value: input.value, updated_at: new Date().toISOString() })
-    .eq("key", input.key);
-
-  if (error) throw error;
+  await updateAdminPaymentSetting(input);
 }

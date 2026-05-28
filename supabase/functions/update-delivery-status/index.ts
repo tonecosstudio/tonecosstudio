@@ -1,36 +1,13 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { EmailService, getEmailConfig, textToHtml } from "../_shared/email.ts";
 import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
-import { nowInBahia, toUTC } from "../_shared/timezone.ts";
-
-/**
- * Edge Function: update-delivery-status
- * 
- * Atualiza o status de uma entrega com validação de transições,
- * registro de ações do admin e envio de notificações ao assinante.
- * 
- * Estados válidos de entrega:
- * - scheduled (Agendado)
- * - pending_choice (Aguardando Escolha)
- * - confirmed (Confirmado)
- * - in_production (Em Produção)
- * - shipped (Enviado)
- * - delivered (Entregue)
- * 
- * Máquina de estados:
- * scheduled → pending_choice → confirmed → in_production → shipped → delivered
- * 
- * Requirements: 15.3, 33.6
- * Task: 21.4
- */
-
-type DeliveryStatus = 
-  | 'scheduled'
-  | 'pending_choice'
-  | 'confirmed'
-  | 'in_production'
-  | 'shipped'
-  | 'delivered';
+import {
+  isDeliveryStatus,
+  type DeliveryStatus,
+  VALID_DELIVERY_STATUSES,
+} from "../_shared/delivery-status.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 interface UpdateDeliveryStatusRequest {
   deliveryId: string;
@@ -39,99 +16,99 @@ interface UpdateDeliveryStatusRequest {
   notes?: string;
 }
 
-interface AdminActionLog {
-  delivery_id: string;
-  admin_user_id: string;
-  action_type: string;
-  previous_status: string;
-  new_status: string;
-  notes: string | null;
-  created_at: string;
+const CORREIOS_TRACKING_BASE_URL =
+  "https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm";
+
+const UPDATE_DELIVERY_STATUS_SCHEMA: Schema = {
+  deliveryId: { type: "uuid", required: true },
+  newStatus: { type: "string", required: true, maxLength: 20, trim: true },
+  trackingCode: { type: "string", maxLength: 32, trim: true, rejectHtml: true },
+  notes: { type: "string", maxLength: 1000, trim: true, rejectHtml: true },
+};
+
+interface DeliveryStatusRpcResult {
+  delivery?: Record<string, unknown>;
+  newStatus?: string;
+  previousStatus?: string;
+  trackingCodeAdded?: boolean;
+  trackingCodeChanged?: boolean;
 }
 
-/**
- * Valida formato do código de rastreamento brasileiro
- * Formato: 2 letras + 9 números + 2 letras (ex: BR123456789BR)
- */
+function buildCorreiosTrackingUrl(trackingCode: string): string {
+  const url = new URL(CORREIOS_TRACKING_BASE_URL);
+  url.searchParams.set("objeto", trackingCode);
+  return url.toString();
+}
+
+function isCorreiosTrackingCode(code: string): boolean {
+  return /^[A-Z]{2}\d{9}[A-Z]{2}$/.test(code);
+}
+
 function validateTrackingCode(code: string): boolean {
-  if (!code) return true; // Código vazio é válido (opcional)
-  const trackingRegex = /^[A-Z]{2}\d{9}[A-Z]{2}$/;
-  return trackingRegex.test(code);
+  if (!code) return true;
+  return /^[A-Z0-9][A-Z0-9 -]{5,31}$/.test(code);
 }
 
-/**
- * Valida se a transição de status é permitida
- */
-function isValidStatusTransition(currentStatus: string, newStatus: string): boolean {
-  const validTransitions: Record<string, string[]> = {
-    'scheduled': ['pending_choice'],
-    'pending_choice': ['confirmed'],
-    'confirmed': ['in_production'],
-    'in_production': ['shipped'],
-    'shipped': ['delivered'],
-    'delivered': [], // Estado final
-  };
-
-  // Permitir que admin possa voltar um status (para correções)
-  const reverseTransitions: Record<string, string[]> = {
-    'pending_choice': ['scheduled'],
-    'confirmed': ['pending_choice'],
-    'in_production': ['confirmed'],
-    'shipped': ['in_production'],
-    'delivered': ['shipped'],
-  };
-
-  const allowedForward = validTransitions[currentStatus] || [];
-  const allowedBackward = reverseTransitions[currentStatus] || [];
-  
-  return allowedForward.includes(newStatus) || allowedBackward.includes(newStatus);
+function firstRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
 }
 
-/**
- * Registra a ação do admin em uma tabela de logs
- */
-async function logAdminAction(
-  service: any,
-  deliveryId: string,
-  adminUserId: string,
-  previousStatus: string,
-  newStatus: string,
-  notes: string | null
-): Promise<void> {
-  // Criar tabela de logs se não existir (será criada via migration)
-  const logEntry: Partial<AdminActionLog> = {
-    delivery_id: deliveryId,
-    admin_user_id: adminUserId,
-    action_type: 'status_update',
-    previous_status: previousStatus,
-    new_status: newStatus,
-    notes: notes,
-    created_at: toUTC(nowInBahia()).toISOString(),
-  };
-
-  const { error } = await service
-    .from('admin_action_logs')
-    .insert(logEntry);
+async function shouldSendShippingEmail(service: any, userId: string): Promise<boolean> {
+  const { data, error } = await service
+    .from("notification_preferences")
+    .select("shipping_emails")
+    .eq("user_id", userId)
+    .maybeSingle();
 
   if (error) {
-    console.error('Erro ao registrar ação do admin:', error);
-    // Não falhar a operação se o log falhar
+    console.error("Erro ao buscar preferencias de email:", error);
+    return true;
+  }
+
+  return data?.shipping_emails ?? true;
+}
+
+async function createUserNotification(
+  service: any,
+  userId: string,
+  deliveryId: string,
+  title: string,
+  message: string,
+): Promise<void> {
+  const { error } = await service.rpc("admin_insert_user_notification", {
+    p_user_id: userId,
+    p_type: "delivery_status_update",
+    p_title: title,
+    p_message: message,
+    p_related_id: deliveryId,
+    p_related_type: "subscription_delivery",
+    p_priority: "medium",
+  });
+
+  if (error) {
+    console.error("Erro ao criar notificacao de entrega para usuario:", error);
   }
 }
 
-/**
- * Envia notificação ao assinante sobre mudança de status ou adição de código de rastreamento
- */
+async function sendNotificationEmail(to: string, subject: string, message: string): Promise<void> {
+  const emailService = new EmailService(getEmailConfig({ fromName: "ORDAX Entregas" }));
+  await emailService.sendEmail({
+    to,
+    subject,
+    html: `<p>${textToHtml(message)}</p>`,
+  });
+}
+
 async function notifySubscriber(
   service: any,
   deliveryId: string,
   newStatus: string,
   trackingCode?: string,
-  trackingCodeAdded?: boolean
+  trackingCodeAdded?: boolean,
 ): Promise<void> {
-  // Buscar informações da entrega e do assinante
   const { data: delivery, error: deliveryError } = await service
-    .from('subscription_deliveries')
+    .from("subscription_deliveries")
     .select(`
       id,
       delivery_number,
@@ -146,137 +123,128 @@ async function notifySubscriber(
         name
       )
     `)
-    .eq('id', deliveryId)
+    .eq("id", deliveryId)
     .single();
 
   if (deliveryError || !delivery) {
-    console.error('Erro ao buscar entrega para notificação:', deliveryError);
+    console.error("Erro ao buscar entrega para notificacao:", deliveryError);
     return;
   }
 
-  // Preparar mensagem baseada no status ou adição de tracking
-  let subject = '';
-  let message = '';
-  
-  // Se código de rastreamento foi adicionado, enviar notificação específica
+  const subscription = firstRelation(delivery.subscriptions);
+  const profile = firstRelation(subscription?.profiles);
+  const collection = firstRelation(delivery.collections);
+  const userId = subscription?.user_id;
+  const customerEmail = profile?.email;
+  const customerName = profile?.full_name || "Cliente";
+  const collectionName = collection?.name || "sua colecao";
+
+  if (!userId) {
+    console.error("Usuario da entrega nao encontrado para notificacao");
+    return;
+  }
+
+  let subject = "";
+  let message = "";
+
   if (trackingCodeAdded && trackingCode) {
-    subject = 'Código de rastreamento disponível!';
-    message = `Olá ${delivery.subscriptions.profiles.full_name},\n\nO código de rastreamento da sua entrega #${delivery.delivery_number} (${delivery.collections.name}) está disponível!\n\nCódigo: ${trackingCode}\n\nRastreie seu pedido em: https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${trackingCode}`;
+    const trackingUrl = isCorreiosTrackingCode(trackingCode) ? buildCorreiosTrackingUrl(trackingCode) : "";
+    subject = "Codigo de rastreamento disponivel";
+    message = `Ola ${customerName},\n\nO codigo de rastreamento da sua entrega #${delivery.delivery_number} (${collectionName}) esta disponivel.\n\nCodigo: ${trackingCode}${trackingUrl ? `\n\nRastreie seu pedido em: ${trackingUrl}` : ""}`;
   } else {
-    // Mensagens baseadas no status
     switch (newStatus) {
-      case 'confirmed':
-        subject = 'Sua escolha foi confirmada!';
-        message = `Olá ${delivery.subscriptions.profiles.full_name},\n\nSua escolha da coleção "${delivery.collections.name}" para a entrega #${delivery.delivery_number} foi confirmada e entrará em produção em breve.`;
+      case "confirmed":
+        subject = "Sua escolha foi confirmada";
+        message = `Ola ${customerName},\n\nSua escolha da colecao "${collectionName}" para a entrega #${delivery.delivery_number} foi confirmada e entrara em producao em breve.`;
         break;
-      case 'in_production':
-        subject = 'Sua peça entrou em produção!';
-        message = `Olá ${delivery.subscriptions.profiles.full_name},\n\nSua peça da coleção "${delivery.collections.name}" (entrega #${delivery.delivery_number}) entrou em produção!`;
+      case "in_production":
+        subject = "Sua peca entrou em producao";
+        message = `Ola ${customerName},\n\nSua peca da colecao "${collectionName}" (entrega #${delivery.delivery_number}) entrou em producao.`;
         break;
-      case 'shipped':
-        subject = 'Sua peça foi enviada!';
-        message = `Olá ${delivery.subscriptions.profiles.full_name},\n\nSua peça da coleção "${delivery.collections.name}" (entrega #${delivery.delivery_number}) foi enviada!${trackingCode ? `\n\nCódigo de rastreamento: ${trackingCode}\n\nRastreie seu pedido em: https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${trackingCode}` : ''}`;
+      case "shipped": {
+        const trackingUrl =
+          trackingCode && isCorreiosTrackingCode(trackingCode) ? buildCorreiosTrackingUrl(trackingCode) : "";
+        subject = "Sua peca foi enviada";
+        message = `Ola ${customerName},\n\nSua peca da colecao "${collectionName}" (entrega #${delivery.delivery_number}) foi enviada.${trackingCode ? `\n\nCodigo de rastreamento: ${trackingCode}${trackingUrl ? `\n\nRastreie seu pedido em: ${trackingUrl}` : ""}` : ""}`;
         break;
-      case 'delivered':
-        subject = 'Sua peça foi entregue!';
-        message = `Olá ${delivery.subscriptions.profiles.full_name},\n\nSua peça da coleção "${delivery.collections.name}" (entrega #${delivery.delivery_number}) foi entregue! Esperamos que você goste!`;
+      }
+      case "delivered":
+        subject = "Sua peca foi entregue";
+        message = `Ola ${customerName},\n\nSua peca da colecao "${collectionName}" (entrega #${delivery.delivery_number}) foi entregue.`;
+        break;
+      case "revealed":
+        subject = "Sua peca foi revelada";
+        message = `Ola ${customerName},\n\nSua peca da colecao "${collectionName}" (entrega #${delivery.delivery_number}) foi revelada.`;
+        break;
+      case "cancelled":
+        subject = "Entrega cancelada";
+        message = `Ola ${customerName},\n\nA entrega #${delivery.delivery_number} da colecao "${collectionName}" foi cancelada.`;
         break;
       default:
-        // Não enviar notificação para outros status
         return;
     }
   }
 
-  // Enviar email (placeholder - será implementado na Fase 6)
-  console.log(`[NOTIFICAÇÃO] Para: ${delivery.subscriptions.profiles.email}`);
-  console.log(`[NOTIFICAÇÃO] Assunto: ${subject}`);
-  console.log(`[NOTIFICAÇÃO] Mensagem: ${message}`);
-  
-  // TODO: Integrar com serviço de email quando implementado
-  // await sendEmail(delivery.subscriptions.profiles.email, subject, message);
+  await createUserNotification(service, userId, deliveryId, subject, message);
+
+  if (!customerEmail) {
+    console.error("Email do cliente nao encontrado para notificacao de entrega");
+    return;
+  }
+
+  if (!(await shouldSendShippingEmail(service, userId))) {
+    return;
+  }
+
+  try {
+    await sendNotificationEmail(customerEmail, subject, message);
+  } catch (error) {
+    console.error("Erro ao enviar email de notificacao de entrega:", error);
+  }
 }
 
-/**
- * Atualiza o status de uma entrega
- */
 async function updateDeliveryStatus(
   service: any,
   deliveryId: string,
   newStatus: DeliveryStatus,
   adminUserId: string,
   trackingCode?: string,
-  notes?: string
-): Promise<any> {
-  // Buscar entrega atual
-  const { data: delivery, error: deliveryError } = await service
-    .from('subscription_deliveries')
-    .select('id, status, tracking_code, subscription_id')
-    .eq('id', deliveryId)
-    .single();
+  notes?: string,
+): Promise<DeliveryStatusRpcResult> {
+  const { data, error } = await service.rpc("admin_update_subscription_delivery_status", {
+    p_delivery_id: deliveryId,
+    p_status: newStatus,
+    p_tracking_code: trackingCode ?? null,
+    p_notes: notes ?? null,
+    p_action_type: "status_update",
+    p_allow_same_status: Boolean(trackingCode),
+    p_admin_user_id: adminUserId,
+  });
 
-  if (deliveryError || !delivery) {
-    throw new Error('Entrega não encontrada');
+  if (error) {
+    const message = error.message || "Erro ao atualizar status";
+    if (message.includes("DELIVERY_NOT_FOUND")) throw new Error("Entrega nao encontrada");
+    if (message.includes("INVALID_STATUS_TRANSITION")) throw new Error("Transicao de status invalida");
+    if (message.includes("INVALID_TRACKING_CODE")) throw new Error("Formato de codigo de rastreamento invalido");
+    if (message.includes("INVALID_NOTES")) throw new Error("Notas invalidas");
+    throw new Error("Erro ao atualizar status");
   }
 
-  const currentStatus = delivery.status;
-  const previousTrackingCode = delivery.tracking_code;
+  const result = (data || {}) as DeliveryStatusRpcResult;
+  const delivery = result.delivery || {};
+  const resolvedStatus = typeof result.newStatus === "string" ? result.newStatus : newStatus;
+  const resolvedTrackingCode =
+    typeof delivery.tracking_code === "string" ? delivery.tracking_code : trackingCode;
 
-  // Validar transição de status
-  if (!isValidStatusTransition(currentStatus, newStatus)) {
-    throw new Error(
-      `Transição de status inválida: ${currentStatus} → ${newStatus}. ` +
-      `Transições válidas seguem a máquina de estados: ` +
-      `scheduled → pending_choice → confirmed → in_production → shipped → delivered`
-    );
-  }
-
-  // Preparar dados de atualização
-  const updateData: any = {
-    status: newStatus,
-    updated_at: toUTC(nowInBahia()).toISOString(),
-  };
-
-  // Adicionar código de rastreamento se fornecido
-  if (trackingCode) {
-    updateData.tracking_code = trackingCode;
-  }
-
-  // Adicionar timestamps específicos baseado no status
-  if (newStatus === 'shipped') {
-    updateData.shipped_at = toUTC(nowInBahia()).toISOString();
-  } else if (newStatus === 'delivered') {
-    updateData.actual_delivery_date = toUTC(nowInBahia()).toISOString();
-  }
-
-  // Atualizar entrega
-  const { data: updatedDelivery, error: updateError } = await service
-    .from('subscription_deliveries')
-    .update(updateData)
-    .eq('id', deliveryId)
-    .select()
-    .single();
-
-  if (updateError) {
-    throw new Error(`Erro ao atualizar status: ${updateError.message}`);
-  }
-
-  // Registrar ação do admin
-  await logAdminAction(
+  await notifySubscriber(
     service,
     deliveryId,
-    adminUserId,
-    currentStatus,
-    newStatus,
-    notes || null
+    resolvedStatus,
+    resolvedTrackingCode,
+    Boolean(result.trackingCodeAdded),
   );
 
-  // Detectar se código de rastreamento foi adicionado
-  const trackingCodeAdded = !previousTrackingCode && trackingCode;
-
-  // Enviar notificação ao assinante
-  await notifySubscriber(service, deliveryId, newStatus, trackingCode, !!trackingCodeAdded);
-
-  return updatedDelivery;
+  return result;
 }
 
 serve(async (req: Request) => {
@@ -284,88 +252,56 @@ serve(async (req: Request) => {
   if (opt) return opt;
 
   try {
-    // Verificar se é admin e obter user ID
     const adminUser = await assertAdmin(req);
-    const adminUserId = adminUser.userId;
-
     const service = getServiceClient();
-    const body = (await req.json().catch(() => ({}))) as UpdateDeliveryStatusRequest;
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, UPDATE_DELIVERY_STATUS_SCHEMA);
+    if ("error" in validation) return validation.error;
 
-    const { deliveryId, newStatus, trackingCode, notes } = body;
+    const { deliveryId, newStatus, trackingCode: rawTrackingCode, notes } =
+      validation.data as unknown as UpdateDeliveryStatusRequest;
+    const trackingCode = rawTrackingCode?.toUpperCase();
 
-    // Validar entrada
-    if (!deliveryId || !newStatus) {
-      return new Response(
-        JSON.stringify({ error: "deliveryId e newStatus são obrigatórios" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+    if (!isDeliveryStatus(newStatus)) {
+      return json({ error: `Status invalido. Status validos: ${VALID_DELIVERY_STATUSES.join(", ")}` }, 400);
     }
 
-    // Validar status
-    const validStatuses: DeliveryStatus[] = [
-      'scheduled',
-      'pending_choice',
-      'confirmed',
-      'in_production',
-      'shipped',
-      'delivered'
-    ];
-
-    if (!validStatuses.includes(newStatus)) {
-      return new Response(
-        JSON.stringify({ 
-          error: `Status inválido. Status válidos: ${validStatuses.join(', ')}` 
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Validar código de rastreamento se fornecido
     if (trackingCode && !validateTrackingCode(trackingCode)) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Formato de código de rastreamento inválido. Use o formato: 2 letras + 9 números + 2 letras (ex: BR123456789BR)' 
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+      return json(
+        { error: "Formato de codigo de rastreamento invalido" },
+        400,
       );
     }
 
-    // Atualizar status
-    const updatedDelivery = await updateDeliveryStatus(
+    const result = await updateDeliveryStatus(
       service,
       deliveryId,
       newStatus,
-      adminUserId,
+      adminUser.userId,
       trackingCode,
-      notes
+      notes,
     );
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Status da entrega atualizado para: ${newStatus}`,
-        delivery: updatedDelivery,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return json({
+      success: true,
+      message: `Status da entrega atualizado para: ${newStatus}`,
+      delivery: result.delivery ?? null,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error in update-delivery-status:", msg);
-    const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const status =
+      msg === "Unauthorized" ? 401 :
+      msg.startsWith("Forbidden") ? 403 :
+      msg.includes("obrigatorio") || msg.includes("inval") || msg.includes("cannot") ? 400 :
+      500;
+    return json({ error: status >= 500 ? "Internal server error" : msg }, status);
   }
 });
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

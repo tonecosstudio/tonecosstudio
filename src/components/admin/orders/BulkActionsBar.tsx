@@ -11,9 +11,9 @@ import { cn } from '@/lib/utils';
 
 interface BulkActionsBarProps {
   selectedCount: number;
-  onUpdateStatus: () => void;
-  onGenerateLabels: () => void;
-  onExportCSV: () => void;
+  onUpdateStatus?: () => void;
+  onGenerateLabels?: () => void;
+  onExportCSV?: () => void;
   onClearSelection: () => void;
   isExporting?: boolean;
   className?: string;
@@ -53,36 +53,32 @@ export function BulkActionsBar({
 
           {/* Botões de ação */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onUpdateStatus}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Atualizar Status
-            </Button>
+            {onUpdateStatus && (
+              <Button variant="outline" size="sm" onClick={onUpdateStatus} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Atualizar Status
+              </Button>
+            )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onGenerateLabels}
-              className="gap-2"
-            >
-              <Tag className="h-4 w-4" />
-              Gerar Etiquetas
-            </Button>
+            {onGenerateLabels && (
+              <Button variant="outline" size="sm" onClick={onGenerateLabels} className="gap-2">
+                <Tag className="h-4 w-4" />
+                Gerar Etiquetas
+              </Button>
+            )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportCSV}
-              disabled={isExporting}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              {isExporting ? 'Exportando...' : 'Exportar CSV'}
-            </Button>
+            {onExportCSV && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExportCSV}
+                disabled={isExporting}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting ? 'Exportando...' : 'Exportar CSV'}
+              </Button>
+            )}
 
             {/* Botão de cancelar seleção */}
             <Button

@@ -30,7 +30,12 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
-import { useBulkDeliveryStatusUpdate } from '@/hooks/admin/useBulkDeliveryStatusUpdate';
+import {
+  type BulkUpdateResult,
+  useBulkDeliveryStatusUpdate,
+} from '@/hooks/admin/useBulkDeliveryStatusUpdate';
+import { getOrderStatusOptionsForType } from '@/config/admin-order-status';
+import type { SubscriptionDeliveryStatus } from '@/types/admin/orders';
 
 interface BulkUpdateModalProps {
   open: boolean;
@@ -39,26 +44,7 @@ interface BulkUpdateModalProps {
   onSuccess?: () => void;
 }
 
-interface BulkUpdateResult {
-  success: boolean;
-  message: string;
-  successCount: number;
-  failureCount: number;
-  results: Array<{
-    deliveryId: string;
-    success: boolean;
-    error?: string;
-  }>;
-}
-
-const statusOptions = [
-  { value: 'scheduled', label: 'Agendado' },
-  { value: 'pending_choice', label: 'Aguardando Escolha' },
-  { value: 'confirmed', label: 'Confirmado' },
-  { value: 'in_production', label: 'Em Producao' },
-  { value: 'shipped', label: 'Enviado' },
-  { value: 'delivered', label: 'Entregue' },
-];
+const statusOptions = getOrderStatusOptionsForType('subscription_delivery');
 
 export function BulkUpdateModal({
   open,
@@ -66,7 +52,7 @@ export function BulkUpdateModal({
   selectedDeliveryIds,
   onSuccess,
 }: BulkUpdateModalProps) {
-  const [newStatus, setNewStatus] = useState('');
+  const [newStatus, setNewStatus] = useState<SubscriptionDeliveryStatus | ''>('');
   const [notesRaw, setNotesRaw, notesSanitized] = useSanitizedInput('', 'html');
   const [result, setResult] = useState<BulkUpdateResult | null>(null);
   const { toast } = useToast();
@@ -113,7 +99,7 @@ export function BulkUpdateModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Atualizacao em Massa</DialogTitle>
+          <DialogTitle>Atualização em Massa</DialogTitle>
           <DialogDescription>
             Atualizar o status de {selectedDeliveryIds.length} entrega(s) selecionada(s)
           </DialogDescription>
@@ -123,7 +109,7 @@ export function BulkUpdateModal({
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="status">Novo Status</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
+              <Select value={newStatus} onValueChange={(value) => setNewStatus(value as SubscriptionDeliveryStatus)}>
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Selecione o novo status" />
                 </SelectTrigger>
@@ -141,7 +127,7 @@ export function BulkUpdateModal({
               <Label htmlFor="notes">Notas (opcional)</Label>
               <Textarea
                 id="notes"
-                placeholder="Adicione observacoes sobre esta atualizacao..."
+                placeholder="Adicione observações sobre esta atualização..."
                 value={notesRaw}
                 onChange={(e) => setNotesRaw(e.target.value)}
                 rows={3}

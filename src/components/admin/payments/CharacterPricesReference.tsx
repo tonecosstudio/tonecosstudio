@@ -1,10 +1,10 @@
 /**
  * Componente: Referência de Preços de Personagens
  *
- * Exibe os preços atuais definidos em /admin/coins
- * Usado na página /admin/plans como referência
+ * Exibe os preços atuais definidos no hub de créditos.
+ * Usado na configuração de planos como referência.
  *
- * SSOT: /admin/coins (somente leitura aqui)
+ * SSOT: hub de créditos, aba de coins (somente leitura aqui).
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useCharacterPricesReference } from "@/hooks/useCharacterPricesReference";
 import { useNavigate } from "react-router-dom";
+import { adminCreditsTabPath } from "@/config/routes";
 
 export function CharacterPricesReference() {
   const { data: prices, isLoading } = useCharacterPricesReference();
@@ -44,7 +45,7 @@ export function CharacterPricesReference() {
       <Alert variant="destructive">
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Erro ao carregar preços de referência. Verifique a configuração em /admin/coins.
+          Erro ao carregar preços de referência. Verifique a configuração no hub de créditos.
         </AlertDescription>
       </Alert>
     );
@@ -118,14 +119,14 @@ export function CharacterPricesReference() {
                 </Badge>
               </CardTitle>
               <CardDescription className="text-base mt-1">
-                Preços atuais definidos em /admin/coins (somente leitura)
+                Preços atuais definidos no hub de créditos (somente leitura)
               </CardDescription>
             </div>
           </div>
           <Button
             variant="outline"
             size="lg"
-            onClick={() => navigate("/admin/coins")}
+            onClick={() => navigate(adminCreditsTabPath("coins"))}
             className="shadow-md"
           >
             <ExternalLink className="h-4 w-4 mr-2" />

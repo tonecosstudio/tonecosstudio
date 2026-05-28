@@ -44,11 +44,11 @@ export function CharacterPriceMultiplierConfig({
   userId,
 }: CharacterPriceMultiplierConfigProps) {
   const { data: multiplierData, isLoading: loadingMultiplier } = useCharacterMultiplier(characterId);
-  const { isLoading: loadingCharacterPrice } = useCharacterPrice(characterId, userId);
-  const { data: collectionPrice, isLoading: loadingCollectionPrice } = useCollectionPrice(
-    multiplierData?.collection_id,
-    userId
-  );
+  const { isLoading: loadingCharacterPrice } = useCharacterPrice({ characterId, userId });
+  const { data: collectionPrice, isLoading: loadingCollectionPrice } = useCollectionPrice({
+    collectionId: multiplierData?.collection_id ?? "",
+    userId,
+  });
   const updateMutation = useUpdateCharacterMultiplier();
   const { toast } = useToast();
 

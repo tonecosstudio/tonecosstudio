@@ -28,9 +28,23 @@ import { timezoneService } from '@/lib/services/timezoneService';
 import { useNavigate } from 'react-router-dom';
 import { useHistoricalCycles } from '@/hooks/admin/useHistoricalCycles';
 import type { HistoricalCycle as Cycle } from '@/hooks/admin/useHistoricalCycles';
+import { adminCyclesPath } from '@/config/routes';
 
 type SortField = 'date' | 'capacity' | 'status';
 type SortOrder = 'asc' | 'desc';
+
+function toNonNegativeNumber(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function getCapacityMetrics(cycle: Cycle) {
+  const capacity = toNonNegativeNumber(cycle.capacity ?? cycle.capacity_max);
+  const usedCapacity = toNonNegativeNumber(cycle.used_capacity ?? cycle.capacity_current);
+  const percentage = capacity > 0 ? Math.round((usedCapacity / capacity) * 100) : 0;
+
+  return { capacity, usedCapacity, percentage };
+}
 
 export function HistoricalCycles() {
   const navigate = useNavigate();
@@ -60,12 +74,10 @@ export function HistoricalCycles() {
         comparison = a.year - b.year || a.month - b.month || a.cycle_number - b.cycle_number;
         break;
       case 'capacity':
-        const aPercentage = (a.capacity_current / a.capacity_max) * 100;
-        const bPercentage = (b.capacity_current / b.capacity_max) * 100;
-        comparison = aPercentage - bPercentage;
+        comparison = getCapacityMetrics(a).percentage - getCapacityMetrics(b).percentage;
         break;
       case 'status':
-        const statusOrder = { open: 0, production: 1, shipping: 2, completed: 3 };
+        const statusOrder = { sales: 0, open: 0, active: 0, production: 1, shipping: 2, completed: 3 };
         comparison = statusOrder[a.status] - statusOrder[b.status];
         break;
     }
@@ -76,6 +88,8 @@ export function HistoricalCycles() {
   // Status badge styling
   const getStatusBadge = (status: Cycle['status']) => {
     const variants = {
+      sales: { className: 'bg-green-100 text-green-800 border-green-300', label: 'Aberto' },
+      active: { className: 'bg-green-100 text-green-800 border-green-300', label: 'Aberto' },
       open: { className: 'bg-green-100 text-green-800 border-green-300', label: 'Aberto' },
       production: { className: 'bg-blue-100 text-blue-800 border-blue-300', label: 'Produção' },
       shipping: { className: 'bg-yellow-100 text-yellow-800 border-yellow-300', label: 'Envio' },
@@ -88,11 +102,6 @@ export function HistoricalCycles() {
         {config.label}
       </Badge>
     );
-  };
-
-  // Capacity percentage
-  const getCapacityPercentage = (current: number, max: number) => {
-    return Math.round((current / max) * 100);
   };
 
   // Capacity color
@@ -115,9 +124,10 @@ export function HistoricalCycles() {
   // Calculate statistics
   const stats = sortedCycles.reduce(
     (acc, cycle) => {
+      const { capacity, usedCapacity } = getCapacityMetrics(cycle);
       acc.totalCycles++;
-      acc.totalCapacity += cycle.capacity_current;
-      acc.totalMaxCapacity += cycle.capacity_max;
+      acc.totalCapacity += usedCapacity;
+      acc.totalMaxCapacity += capacity;
       if (cycle.status === 'completed') acc.completedCycles++;
       return acc;
     },
@@ -293,7 +303,11 @@ export function HistoricalCycles() {
                 </TableHeader>
                 <TableBody>
                   {sortedCycles.map((cycle) => {
-                    const capacityPercentage = getCapacityPercentage(cycle.capacity_current, cycle.capacity_max);
+                    const {
+                      capacity,
+                      usedCapacity,
+                      percentage: capacityPercentage,
+                    } = getCapacityMetrics(cycle);
 
                     return (
                       <TableRow key={cycle.id} className="hover:bg-muted/50">
@@ -314,7 +328,7 @@ export function HistoricalCycles() {
                         <TableCell>
                           <div className="space-y-1">
                             <div className={`font-medium ${getCapacityColor(capacityPercentage)}`}>
-                              {cycle.capacity_current} / {cycle.capacity_max}
+                              {usedCapacity} / {capacity}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {capacityPercentage}% utilizado
@@ -330,7 +344,7 @@ export function HistoricalCycles() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/admin/cycle-dashboard?month=${cycle.month}&year=${cycle.year}`)}
+                            onClick={() => navigate(adminCyclesPath({ month: cycle.month, year: cycle.year }))}
                           >
                             Ver Detalhes
                           </Button>

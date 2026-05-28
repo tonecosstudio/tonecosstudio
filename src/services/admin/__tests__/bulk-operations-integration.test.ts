@@ -19,6 +19,7 @@ import { fetchProductionQueue } from "../production-service";
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: { id: "admin-123" } } }),
     },
@@ -36,6 +37,12 @@ vi.mock("../../notifications/production-notification-service", () => ({
 describe("Bulk Operations Integration Test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+    (supabase.rpc as any).mockResolvedValue({
+      data: { id: "updated-production-item" },
+      error: null,
+    });
   });
 
   it("should handle bulk assignment of multiple items to a team member", async () => {
@@ -138,15 +145,19 @@ describe("Bulk Operations Integration Test", () => {
     expect(result.failed).toBe(0);
     expect(result.errors).toHaveLength(0);
     
-    // Verify supabase.from was called correct number of times
-    // 1 for profiles + 3 for production_queue updates = 4 calls
-    expect(supabase.from).toHaveBeenCalledTimes(4);
+    expect(supabase.from).toHaveBeenCalledTimes(1);
+    expect(supabase.rpc).toHaveBeenCalledTimes(3);
     
     // Verify profiles was queried for user info
     expect(supabase.from).toHaveBeenCalledWith("profiles");
     
-    // Verify production_queue was updated for each item
-    expect(supabase.from).toHaveBeenCalledWith("production_queue");
+    itemIds.forEach((itemId) => {
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_assign_production", {
+        p_queue_id: itemId,
+        p_user_id: teamMemberId,
+        p_reason: `Atribuicao em massa para ${teamMemberName}`,
+      });
+    });
   });
 
   it("should handle partial failures in bulk assignment", async () => {
@@ -155,6 +166,11 @@ describe("Bulk Operations Integration Test", () => {
     const teamMemberId = "team-789";
     
     // Mock user fetch (successful)
+    (supabase.rpc as any)
+      .mockResolvedValueOnce({ data: { id: itemIds[0] }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "Database constraint violation" } })
+      .mockResolvedValueOnce({ data: { id: itemIds[2] }, error: null });
+
     const mockUserQuery = {
       eq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ 
@@ -252,7 +268,7 @@ describe("Bulk Operations Integration Test", () => {
       in: vi.fn().mockReturnThis(),
     };
 
-    mockFetchQuery.select.mockResolvedValue({
+    mockFetchQuery.in.mockResolvedValue({
       data: mockItems,
       error: null,
     });
@@ -336,14 +352,12 @@ describe("Bulk Operations Integration Test", () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
+      range: vi.fn().mockReturnValue({
+        data: mockFilteredItems,
+        error: null,
+        count: mockFilteredItems.length,
+      }),
     };
-
-    mockQueueQuery.select.mockResolvedValue({
-      data: mockFilteredItems,
-      error: null,
-      count: mockFilteredItems.length,
-    });
 
     // Mock .in() method for collection filter
     mockQueueQuery.in.mockImplementation((column: string, values: string[]) => {
@@ -367,23 +381,13 @@ describe("Bulk Operations Integration Test", () => {
     (supabase.from as any).mockImplementation((table: string) => {
       callCount++;
       
-      if (table === "profiles" && callCount === 1) {
+      if (table === "profiles") {
         return { select: vi.fn().mockReturnValue(mockUserQuery) };
       }
       
       if (table === "production_queue") {
-        if (callCount === 2) {
-          // First call: fetchProductionQueue with filter
+        if (callCount === 1) {
           return mockQueueQuery;
-        }
-        if (callCount >= 3) {
-          // Subsequent calls: bulk assignment updates
-          const mockQuery = {
-            eq: vi.fn().mockReturnThis(),
-            update: vi.fn().mockReturnThis(),
-          };
-          mockQuery.eq.mockResolvedValue({ error: null });
-          return mockQuery;
         }
       }
       
@@ -419,7 +423,6 @@ describe("Bulk Operations Integration Test", () => {
     // Test scenario where multiple bulk operations happen concurrently
     const itemIds = ["prod-queue-001", "prod-queue-002"];
     const teamMember1Id = "team-789";
-    const _teamMember2Id = "team-456";
     const newStage = "production";
     
     // Mock user fetches
@@ -427,14 +430,6 @@ describe("Bulk Operations Integration Test", () => {
       eq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ 
         data: { full_name: "Team Member 1", email: "team1@example.com" }, 
-        error: null 
-      }),
-    };
-
-    const mockUserQuery2 = {
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ 
-        data: { full_name: "Team Member 2", email: "team2@example.com" }, 
         error: null 
       }),
     };
@@ -458,67 +453,42 @@ describe("Bulk Operations Integration Test", () => {
     // Track which operations completed
     const completedOperations: string[] = [];
     
-    // Configure complex mock for concurrent operations
-    let callCount = 0;
     (supabase.from as any).mockImplementation((table: string) => {
-      callCount++;
-      
       if (table === "profiles") {
-        if (callCount === 1) {
-          return { select: vi.fn().mockReturnValue(mockUserQuery1) };
-        }
-        if (callCount === 4) {
-          return { select: vi.fn().mockReturnValue(mockUserQuery2) };
-        }
+        return { select: vi.fn().mockReturnValue(mockUserQuery1) };
       }
-      
+
       if (table === "production_queue") {
-        // First bulk operation: assignment to team member 1
-        if (callCount === 2 || callCount === 3) {
-          const mockQuery = {
-            eq: vi.fn().mockReturnThis(),
-            update: vi.fn().mockReturnThis(),
-          };
-          mockQuery.eq.mockImplementation(() => {
-            completedOperations.push(`assignment-${callCount}`);
-            return Promise.resolve({ error: null });
-          });
-          return mockQuery;
-        }
-        
-        // Second bulk operation: stage update (needs fetch first)
-        if (callCount === 5) {
-          const mockQuery = {
-            select: vi.fn().mockReturnThis(),
-            in: vi.fn().mockReturnThis(),
-          };
-          mockQuery.select.mockResolvedValue({
-            data: mockItems,
-            error: null,
-          });
-          return mockQuery;
-        }
-        
-        // Stage updates
-        if (callCount === 6 || callCount === 7) {
-          const mockQuery = {
-            eq: vi.fn().mockReturnThis(),
-            update: vi.fn().mockReturnThis(),
-          };
-          mockQuery.eq.mockImplementation(() => {
-            completedOperations.push(`stage-update-${callCount}`);
-            return Promise.resolve({ error: null });
-          });
-          return mockQuery;
-        }
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: mockItems,
+              error: null,
+            }),
+          }),
+        };
       }
-      
-      return { 
+
+      return {
         select: vi.fn().mockReturnThis(),
-        update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockReturnThis(),
       };
+    });
+
+    (supabase.rpc as any).mockImplementation((name: string, args: Record<string, string>) => {
+      if (name === "admin_assign_production") {
+        completedOperations.push(`assignment-${args.p_queue_id}`);
+      }
+
+      if (name === "admin_update_production_stage") {
+        completedOperations.push(`stage-update-${args.p_queue_id}`);
+      }
+
+      return Promise.resolve({
+        data: { id: args.p_queue_id },
+        error: null,
+      });
     });
 
     // Execute concurrent bulk operations (simulated)
@@ -534,11 +504,13 @@ describe("Bulk Operations Integration Test", () => {
     expect(assignmentResult.successful).toBe(2);
     expect(stageUpdateResult.successful).toBe(2);
     
-    // Verify operations completed in reasonable order
-    // (assignments should complete before stage updates start fetching)
-    expect(completedOperations).toContain("assignment-2");
-    expect(completedOperations).toContain("assignment-3");
-    expect(completedOperations).toContain("stage-update-6");
-    expect(completedOperations).toContain("stage-update-7");
+    expect(completedOperations).toEqual(
+      expect.arrayContaining([
+        "assignment-prod-queue-001",
+        "assignment-prod-queue-002",
+        "stage-update-prod-queue-001",
+        "stage-update-prod-queue-002",
+      ])
+    );
   });
 });

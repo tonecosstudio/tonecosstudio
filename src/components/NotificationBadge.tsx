@@ -8,7 +8,6 @@
  * e atualiza em tempo real usando Supabase Realtime.
  */
 
-import React from "react";
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";

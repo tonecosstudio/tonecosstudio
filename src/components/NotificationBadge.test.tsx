@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NotificationBadge, SimpleNotificationBadge } from "./NotificationBadge";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { NOTIFICATION_ROUTES } from "@/config/routes";
 
 const mockNavigate = vi.fn();
 const { mockUseFormattedNotificationCount } = vi.hoisted(() => ({
@@ -208,7 +209,7 @@ describe("NotificationBadge", () => {
       expect(handleClick).toHaveBeenCalledTimes(1);
     });
 
-    it("deve navegar para /admin/payments quando admin e clicado sem onClick", () => {
+    it("deve navegar para a rota de pagamentos admin quando admin e clicado sem onClick", () => {
       mockUseFormattedNotificationCount.mockReturnValue({
         total: 3,
         formattedTotal: "3",
@@ -227,10 +228,10 @@ describe("NotificationBadge", () => {
       const button = screen.getByRole("button");
       fireEvent.click(button);
 
-      expect(mockNavigate).toHaveBeenCalledWith("/admin/payments");
+      expect(mockNavigate).toHaveBeenCalledWith(NOTIFICATION_ROUTES.adminPayments);
     });
 
-    it("deve navegar para /my-payments quando cliente e clicado sem onClick", () => {
+    it("deve navegar para a rota de pagamentos do cliente quando cliente e clicado sem onClick", () => {
       mockUseFormattedNotificationCount.mockReturnValue({
         total: 1,
         formattedTotal: "1",
@@ -249,7 +250,7 @@ describe("NotificationBadge", () => {
       const button = screen.getByRole("button");
       fireEvent.click(button);
 
-      expect(mockNavigate).toHaveBeenCalledWith("/my-payments");
+      expect(mockNavigate).toHaveBeenCalledWith(NOTIFICATION_ROUTES.myPayments);
     });
   });
 

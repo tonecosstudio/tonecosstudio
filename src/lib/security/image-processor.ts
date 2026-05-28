@@ -10,7 +10,7 @@
  * Uses sharp library for image processing
  */
 
-import { ValidationError, ErrorCategory, errorTracking } from '@/lib/error-tracking';
+import { ErrorSeverity, ValidationError, errorTracking } from '@/lib/error-tracking';
 import { validateFileUpload, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from './input-sanitizer';
 
 /**
@@ -37,6 +37,26 @@ const DEFAULT_OPTIONS: Required<ImageProcessingOptions> = {
 
 const SHARP_MODULE = 'sharp';
 
+interface SharpPipeline {
+  rotate(): SharpPipeline;
+  resize(options: {
+    width: number;
+    height: number;
+    fit: 'inside';
+    withoutEnlargement: boolean;
+  }): SharpPipeline;
+  jpeg(options: { quality: number }): SharpPipeline;
+  png(options: { quality: number }): SharpPipeline;
+  webp(options: { quality: number }): SharpPipeline;
+  toBuffer(): Promise<Uint8Array>;
+}
+
+type SharpFactory = (input: Uint8Array) => SharpPipeline;
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
 /**
  * Validate image file before processing
  *
@@ -60,7 +80,7 @@ export async function detectPotentialMalware(file: File): Promise<boolean> {
   try {
     // Check 1: File size anomalies
     if (file.size === 0) {
-      errorTracking.log('Empty file detected', 'warning', { filename: file.name });
+      errorTracking.log('Empty file detected', ErrorSeverity.WARNING, { filename: file.name });
       return true;
     }
 
@@ -84,7 +104,7 @@ export async function detectPotentialMalware(file: File): Promise<boolean> {
     if (!hasValidHeader) {
       errorTracking.log(
         'Invalid image header detected',
-        'warning',
+        ErrorSeverity.WARNING,
         { filename: file.name, header: Array.from(bytes.slice(0, 4)) }
       );
       return true;
@@ -107,7 +127,7 @@ export async function detectPotentialMalware(file: File): Promise<boolean> {
     if (suspiciousPatterns.some(pattern => pattern.test(file.name))) {
       errorTracking.log(
         'Suspicious filename pattern detected',
-        'warning',
+        ErrorSeverity.WARNING,
         { filename: file.name }
       );
       return true;
@@ -118,7 +138,6 @@ export async function detectPotentialMalware(file: File): Promise<boolean> {
     errorTracking.trackError(
       new ValidationError(
         'Error during malware detection',
-        ErrorCategory.VALIDATION,
         { error, filename: file.name }
       )
     );
@@ -149,7 +168,6 @@ export async function processImage(
   if (!validation.valid) {
     throw new ValidationError(
       validation.error || 'Invalid image file',
-      ErrorCategory.VALIDATION,
       { filename: file.name },
       validation.error
     );
@@ -160,34 +178,26 @@ export async function processImage(
   if (isSuspicious) {
     throw new ValidationError(
       'Potentially malicious file detected',
-      ErrorCategory.VALIDATION,
       { filename: file.name },
       'Arquivo suspeito detectado. Por favor, use uma imagem válida.'
     );
   }
 
   try {
-    // For browser-side processing, use browser-image-compression
-    // This is a placeholder - actual implementation depends on environment
-
-    // In browser environment:
     if (typeof window !== 'undefined') {
       return await procesImageInBrowser(file, opts);
     }
 
-    // In Node.js environment (Edge Functions):
     return await processImageInNode(file, opts);
   } catch (error) {
     errorTracking.trackError(
       new ValidationError(
         'Failed to process image',
-        ErrorCategory.VALIDATION,
         { error, filename: file.name }
       )
     );
     throw new ValidationError(
       'Failed to process image',
-      ErrorCategory.VALIDATION,
       { error },
       'Erro ao processar imagem. Tente novamente.'
     );
@@ -242,21 +252,15 @@ async function processImageInNode(
 ): Promise<Blob> {
   // This would be used in Supabase Edge Functions
   // Dynamic import sharp
-  const sharp = (await import(/* @vite-ignore */ SHARP_MODULE)).default;
+  const sharp = (await import(/* @vite-ignore */ SHARP_MODULE) as { default: SharpFactory }).default;
 
   const buffer = await file.arrayBuffer();
 
-  let pipeline = sharp(Buffer.from(buffer));
+  let pipeline = sharp(new Uint8Array(buffer));
 
-  // Remove metadata (including EXIF)
+  // Sharp strips metadata by default. rotate() applies EXIF orientation before it is dropped.
   if (options.removeMetadata) {
-    pipeline = pipeline.rotate(); // Auto-rotate based on EXIF
-    pipeline = pipeline.withMetadata({
-      exif: {},
-      icc: undefined,
-      iptc: undefined,
-      xmp: undefined
-    });
+    pipeline = pipeline.rotate();
   }
 
   // Resize if needed
@@ -281,7 +285,7 @@ async function processImageInNode(
   }
 
   const processed = await pipeline.toBuffer();
-  return new Blob([processed], { type: `image/${options.format}` });
+  return new Blob([toArrayBuffer(processed)], { type: `image/${options.format}` });
 }
 
 /**

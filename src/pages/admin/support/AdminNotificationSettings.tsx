@@ -19,6 +19,7 @@ import {
   useUpdateAdminNotificationSettings,
   type AdminNotificationSettings,
 } from "@/hooks/admin/useAdminNotificationManagement";
+import { ADMIN_ROUTES } from "@/config/routes";
 
 export default function AdminNotificationSettings() {
   const { toast } = useToast();
@@ -26,6 +27,7 @@ export default function AdminNotificationSettings() {
   const { data: settings, isLoading } = useAdminNotificationSettings();
   const updateSettingsMutation = useUpdateAdminNotificationSettings();
   const testNotificationMutation = useSendAdminNotificationTest();
+  const soundVolumePercent = Math.round((settings?.sound_volume ?? 0.5) * 100);
 
   const update = (updates: Partial<AdminNotificationSettings>) => {
     updateSettingsMutation.mutate(updates, {
@@ -80,7 +82,7 @@ export default function AdminNotificationSettings() {
             Gerencie como você recebe notificações do sistema
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/admin/comunicacao?tab=history")}>
+        <Button variant="outline" onClick={() => navigate(`${ADMIN_ROUTES.communication}?tab=history`)}>
           <History className="mr-2 h-4 w-4" />
           Ver Histórico
         </Button>
@@ -186,14 +188,14 @@ export default function AdminNotificationSettings() {
           />
           {settings?.sound_enabled && (
             <div className="space-y-2">
-              <Label htmlFor="sound_volume">Volume: {settings?.sound_volume ?? 50}%</Label>
+              <Label htmlFor="sound_volume">Volume: {soundVolumePercent}%</Label>
               <Slider
                 id="sound_volume"
                 min={0}
                 max={100}
                 step={10}
-                value={[settings?.sound_volume ?? 50]}
-                onValueChange={([value]) => update({ sound_volume: value })}
+                value={[soundVolumePercent]}
+                onValueChange={([value]) => update({ sound_volume: value / 100 })}
               />
             </div>
           )}

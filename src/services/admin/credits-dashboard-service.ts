@@ -54,8 +54,11 @@ export async function fetchCreditsDashboardMetrics(): Promise<CreditsDashboardMe
   let totalCredits = 0;
   let totalDebits = 0;
   (coinsResult.data || []).forEach((tx) => {
-    if (tx.transaction_type === "credit") totalCredits += tx.amount;
-    else totalDebits += tx.amount;
+    if (tx.amount >= 0) {
+      totalCredits += tx.amount;
+    } else {
+      totalDebits += Math.abs(tx.amount);
+    }
   });
 
   return {

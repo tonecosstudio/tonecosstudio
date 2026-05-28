@@ -18,30 +18,13 @@ import { Clock, User, Package } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useProductionHistory } from "@/hooks/admin/useProductionHistory";
+import { getProductionStageLabel } from "@/config/production-stages";
 
 interface ProductionHistoryModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   productionQueueId: string;
 }
-
-const stageLabels: Record<string, string> = {
-  awaiting_payment: "Aguardando Pagamento",
-  payment_confirmed: "Pagamento Confirmado",
-  awaiting_choice: "Aguardando Escolha",
-  model_preparation: "Preparacao do Modelo",
-  printing: "Em Impressao 3D",
-  post_processing: "Limpeza e Preparacao",
-  painting: "Pintura Artesanal",
-  quality_check: "Controle de Qualidade",
-  packaging: "Embalagem",
-  ready_to_ship: "Pronto para Envio",
-  shipped: "Enviado",
-  delivered: "Entregue",
-  blocked: "Bloqueado",
-  design: "Design",
-  production: "Producao",
-};
 
 export function ProductionHistoryModal({
   isOpen,
@@ -53,7 +36,7 @@ export function ProductionHistoryModal({
   const formatAction = (action: string, oldValue: string | null, newValue: string | null) => {
     switch (action) {
       case "stage_change":
-        return `Estagio alterado de "${stageLabels[oldValue || ""] || oldValue}" para "${stageLabels[newValue || ""] || newValue}"`;
+        return `Estagio alterado de "${oldValue ? getProductionStageLabel(oldValue) : oldValue}" para "${newValue ? getProductionStageLabel(newValue) : newValue}"`;
       case "assignment":
         return `Atribuido para ${newValue || "ninguem"}`;
       case "blocked":

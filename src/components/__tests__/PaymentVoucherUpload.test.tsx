@@ -28,6 +28,10 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
+vi.mock('@/services/auth/current-user', () => ({
+  assertCurrentUserId: vi.fn().mockResolvedValue('user123'),
+}));
+
 // Mock URL.createObjectURL and revokeObjectURL
 global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
 global.URL.revokeObjectURL = vi.fn();
@@ -208,7 +212,7 @@ describe('PaymentVoucherUpload', () => {
 
       await waitFor(() => {
         expect(mockOnUploadError).toHaveBeenCalledWith(
-          expect.stringContaining('Formato inválido')
+          expect.stringContaining('Tipo de arquivo')
         );
       });
     });

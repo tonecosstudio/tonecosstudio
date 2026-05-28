@@ -1,242 +1,260 @@
-/**
- * Capacity Alert Service Tests
- * 
- * Tests for capacity alert configuration and triggering functionality.
- * 
- * Requirements: 16.5
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { supabase } from "@/integrations/supabase/client";
 import {
+  checkAndTriggerAlert,
   configureAlert,
   getAlertConfig,
   getAlertStatus,
-  checkAndTriggerAlert,
-  resetAlert
-} from '../capacity-alert-service';
-import { supabase } from '@/integrations/supabase/client';
+  resetAlert,
+} from "../capacity-alert-service";
 
-// Mock Supabase client
-vi.mock('@/integrations/supabase/client', () => ({
+vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
-    rpc: vi.fn()
-  }
+    rpc: vi.fn(),
+  },
 }));
 
-describe('Capacity Alert Service', () => {
-  const mockCycleId = 'test-cycle-id';
+const MOCK_CYCLE_ID = "test-cycle-id";
 
+type QueryError = {
+  message: string;
+};
+
+function mockRpcResult<T>(data: T | null, error: QueryError | null = null): void {
+  (supabase.rpc as Mock).mockResolvedValue({ data, error });
+}
+
+function mockCycleQuery<T>(data: T | null, error: QueryError | null = null) {
+  const single = vi.fn().mockResolvedValue({ data, error });
+  const eq = vi.fn().mockReturnValue({ single });
+  const select = vi.fn().mockReturnValue({ eq });
+
+  (supabase.from as Mock).mockReturnValue({ select });
+
+  return { eq, select, single };
+}
+
+describe("Capacity Alert Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('configureAlert', () => {
-    it('should configure alert with valid threshold', async () => {
-      const mockUpdate = vi.fn().mockResolvedValue({ error: null });
-      const mockEq = vi.fn().mockReturnValue({ error: null });
-      
-      vi.mocked(supabase.from).mockReturnValue({
-        update: mockUpdate.mockReturnValue({
-          eq: mockEq
-        })
-      } as any);
-
-      await configureAlert(mockCycleId, {
+  describe("configureAlert", () => {
+    it("configures alert through the canonical RPC", async () => {
+      mockRpcResult({
         threshold: 80,
-        email: 'admin@ordax.com',
-        sms: '+5571999999999'
+        email: "admin@ordax.com",
+        sms: null,
       });
 
-      expect(mockUpdate).toHaveBeenCalledWith({
-        alert_threshold: 80,
-        alert_email: 'admin@ordax.com',
-        alert_sms: '+5571999999999'
+      await configureAlert(MOCK_CYCLE_ID, {
+        threshold: 80,
+        email: "admin@ordax.com",
+        sms: null,
       });
-      expect(mockEq).toHaveBeenCalledWith('id', mockCycleId);
+
+      expect(supabase.rpc).toHaveBeenCalledWith("configure_capacity_alert", {
+        p_cycle_id: MOCK_CYCLE_ID,
+        p_threshold: 80,
+        p_email: "admin@ordax.com",
+        p_sms: null,
+      });
+      expect(supabase.from).not.toHaveBeenCalled();
     });
 
-    it('should reject threshold below 1', async () => {
+    it("rejects threshold below 1 before calling the RPC", async () => {
       await expect(
-        configureAlert(mockCycleId, {
+        configureAlert(MOCK_CYCLE_ID, {
           threshold: 0,
           email: null,
-          sms: null
+          sms: null,
         })
-      ).rejects.toThrow('Alert threshold must be between 1 and 100');
+      ).rejects.toThrow("Alert threshold must be between 1 and 100");
+
+      expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
-    it('should reject threshold above 100', async () => {
+    it("rejects threshold above 100 before calling the RPC", async () => {
       await expect(
-        configureAlert(mockCycleId, {
+        configureAlert(MOCK_CYCLE_ID, {
           threshold: 101,
           email: null,
-          sms: null
+          sms: null,
         })
-      ).rejects.toThrow('Alert threshold must be between 1 and 100');
+      ).rejects.toThrow("Alert threshold must be between 1 and 100");
+
+      expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
-    it('should accept null email and sms', async () => {
-      const mockUpdate = vi.fn().mockResolvedValue({ error: null });
-      const mockEq = vi.fn().mockReturnValue({ error: null });
-      
-      vi.mocked(supabase.from).mockReturnValue({
-        update: mockUpdate.mockReturnValue({
-          eq: mockEq
+    it("rejects SMS configuration until a server-side SMS provider exists", async () => {
+      await expect(
+        configureAlert(MOCK_CYCLE_ID, {
+          threshold: 75,
+          email: "admin@ordax.com",
+          sms: "+5571999999999",
         })
-      } as any);
+      ).rejects.toThrow("SMS capacity alerts require a configured server-side SMS provider");
 
-      await configureAlert(mockCycleId, {
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it("accepts null email and sms values", async () => {
+      mockRpcResult({
         threshold: 75,
         email: null,
-        sms: null
+        sms: null,
       });
 
-      expect(mockUpdate).toHaveBeenCalledWith({
-        alert_threshold: 75,
-        alert_email: null,
-        alert_sms: null
+      await configureAlert(MOCK_CYCLE_ID, {
+        threshold: 75,
+        email: null,
+        sms: null,
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith("configure_capacity_alert", {
+        p_cycle_id: MOCK_CYCLE_ID,
+        p_threshold: 75,
+        p_email: null,
+        p_sms: null,
       });
     });
   });
 
-  describe('getAlertConfig', () => {
-    it('should return alert configuration', async () => {
-      const mockCycle = {
+  describe("getAlertConfig", () => {
+    it("returns alert configuration from canonical alert columns", async () => {
+      const query = mockCycleQuery({
         alert_threshold: 85,
-        alert_email: 'test@ordax.com',
-        alert_sms: '+5571888888888'
-      };
+        alert_email: "test@ordax.com",
+        alert_sms: "+5571888888888",
+      });
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockCycle, error: null })
-          })
-        })
-      } as any);
-
-      const config = await getAlertConfig(mockCycleId);
+      const config = await getAlertConfig(MOCK_CYCLE_ID);
 
       expect(config).toEqual({
         threshold: 85,
-        email: 'test@ordax.com',
-        sms: '+5571888888888'
+        email: "test@ordax.com",
+        sms: "+5571888888888",
+      });
+      expect(query.select).toHaveBeenCalledWith("alert_threshold, alert_email, alert_sms");
+      expect(query.eq).toHaveBeenCalledWith("id", MOCK_CYCLE_ID);
+    });
+
+    it("returns default threshold when the cycle has no configured threshold", async () => {
+      mockCycleQuery({
+        alert_threshold: null,
+        alert_email: null,
+        alert_sms: null,
+      });
+
+      await expect(getAlertConfig(MOCK_CYCLE_ID)).resolves.toEqual({
+        threshold: 80,
+        email: null,
+        sms: null,
       });
     });
 
-    it('should return default threshold if not set', async () => {
-      const mockCycle = {
-        alert_threshold: null,
-        alert_email: null,
-        alert_sms: null
-      };
+    it("throws a scoped error when the cycle query fails", async () => {
+      mockCycleQuery(null, { message: "Database error" });
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockCycle, error: null })
-          })
-        })
-      } as any);
-
-      const config = await getAlertConfig(mockCycleId);
-
-      expect(config.threshold).toBe(80); // Default threshold
+      await expect(getAlertConfig(MOCK_CYCLE_ID)).rejects.toThrow(
+        "Failed to get alert config: Database error"
+      );
     });
   });
 
-  describe('getAlertStatus', () => {
-    it('should calculate current percentage correctly', async () => {
-      const mockCycle = {
+  describe("getAlertStatus", () => {
+    it("calculates current percentage from canonical capacity columns", async () => {
+      const query = mockCycleQuery({
         alert_triggered: false,
         alert_triggered_at: null,
         alert_threshold: 80,
-        capacity_current: 75,
-        capacity_max: 100
-      };
+        used_capacity: 75,
+        capacity: 100,
+      });
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockCycle, error: null })
-          })
-        })
-      } as any);
+      const status = await getAlertStatus(MOCK_CYCLE_ID);
 
-      const status = await getAlertStatus(mockCycleId);
-
-      expect(status.currentPercentage).toBe(75);
-      expect(status.threshold).toBe(80);
-      expect(status.triggered).toBe(false);
+      expect(status).toEqual({
+        triggered: false,
+        triggeredAt: null,
+        currentPercentage: 75,
+        threshold: 80,
+      });
+      expect(query.select).toHaveBeenCalledWith(
+        "alert_triggered, alert_triggered_at, alert_threshold, used_capacity, capacity"
+      );
     });
 
-    it('should handle triggered alert', async () => {
-      const triggeredAt = new Date('2026-03-15T10:00:00Z');
-      const mockCycle = {
+    it("handles triggered alerts", async () => {
+      const triggeredAt = new Date("2026-03-15T10:00:00.000Z");
+      mockCycleQuery({
         alert_triggered: true,
         alert_triggered_at: triggeredAt.toISOString(),
         alert_threshold: 80,
-        capacity_current: 85,
-        capacity_max: 100
-      };
+        used_capacity: 85,
+        capacity: 100,
+      });
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockCycle, error: null })
-          })
-        })
-      } as any);
-
-      const status = await getAlertStatus(mockCycleId);
+      const status = await getAlertStatus(MOCK_CYCLE_ID);
 
       expect(status.triggered).toBe(true);
       expect(status.triggeredAt).toEqual(triggeredAt);
       expect(status.currentPercentage).toBe(85);
     });
+
+    it("uses safe defaults for nullable capacity and alert fields", async () => {
+      mockCycleQuery({
+        alert_triggered: null,
+        alert_triggered_at: null,
+        alert_threshold: null,
+        used_capacity: null,
+        capacity: null,
+      });
+
+      await expect(getAlertStatus(MOCK_CYCLE_ID)).resolves.toEqual({
+        triggered: false,
+        triggeredAt: null,
+        currentPercentage: 0,
+        threshold: 80,
+      });
+    });
   });
 
-  describe('checkAndTriggerAlert', () => {
-    it('should return true when alert is triggered', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: true, error: null });
+  describe("checkAndTriggerAlert", () => {
+    it("returns true when the server-side alert policy triggers", async () => {
+      mockRpcResult(true);
 
-      const result = await checkAndTriggerAlert(mockCycleId);
+      const result = await checkAndTriggerAlert(MOCK_CYCLE_ID);
 
       expect(result).toBe(true);
-      expect(supabase.rpc).toHaveBeenCalledWith('check_capacity_alert', {
-        p_cycle_id: mockCycleId
+      expect(supabase.rpc).toHaveBeenCalledWith("check_capacity_alert", {
+        p_cycle_id: MOCK_CYCLE_ID,
       });
     });
 
-    it('should return false when alert is not triggered', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: false, error: null });
+    it("returns false when the server-side alert policy does not trigger", async () => {
+      mockRpcResult(false);
 
-      const result = await checkAndTriggerAlert(mockCycleId);
-
-      expect(result).toBe(false);
+      await expect(checkAndTriggerAlert(MOCK_CYCLE_ID)).resolves.toBe(false);
     });
   });
 
-  describe('resetAlert', () => {
-    it('should reset alert successfully', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ error: null });
+  describe("resetAlert", () => {
+    it("resets alert through the canonical RPC", async () => {
+      mockRpcResult(true);
 
-      await resetAlert(mockCycleId);
+      await resetAlert(MOCK_CYCLE_ID);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('reset_capacity_alert', {
-        p_cycle_id: mockCycleId
+      expect(supabase.rpc).toHaveBeenCalledWith("reset_capacity_alert", {
+        p_cycle_id: MOCK_CYCLE_ID,
       });
     });
 
-    it('should throw error on failure', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ 
-        error: { message: 'Database error' } 
-      });
+    it("throws the RPC error when reset fails", async () => {
+      mockRpcResult(null, { message: "Database error" });
 
-      await expect(resetAlert(mockCycleId)).rejects.toThrow(
-        'Failed to reset alert: Database error'
-      );
+      await expect(resetAlert(MOCK_CYCLE_ID)).rejects.toThrow("Database error");
     });
   });
 });

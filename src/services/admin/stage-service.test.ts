@@ -1,23 +1,16 @@
-/**
- * Testes Unitários: Stage Service
- *
- * Testa as funções do serviço de gestão de estágios de produção
- */
-
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
-  getStageHistory,
-  completeStage,
-  uploadStagePhoto,
   calculateEstimatedCompletion,
-  type ProductionStageRecord,
+  completeStage,
+  getStageHistory,
+  uploadStagePhoto,
 } from "./stage-service";
 import { supabase } from "@/integrations/supabase/client";
 
-// Mock do Supabase
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
     storage: {
       from: vi.fn(),
     },
@@ -25,347 +18,159 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 describe("Stage Service", () => {
+  const rawStage = {
+    id: "stage-1",
+    production_queue_id: "queue-1",
+    stage_name: "design",
+    stage_order: 2,
+    status: "completed",
+    started_at: "2026-04-01T10:00:00Z",
+    completed_at: "2026-04-03T10:00:00Z",
+    estimated_duration: 48,
+    actual_duration: 48,
+    assigned_to: "user-1",
+    assigned_to_name: "Joao Silva",
+    assigned_at: "2026-04-01T10:00:00Z",
+    notes: "Design aprovado",
+    photos: ["https://example.com/photo1.jpg"],
+    is_blocked: false,
+    block_reason: null,
+    blocked_at: null,
+    unblocked_at: null,
+    created_at: "2026-04-01T10:00:00Z",
+    updated_at: "2026-04-03T10:00:00Z",
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
   });
 
   describe("getStageHistory", () => {
-    it("deve buscar histórico de estágios ordenado por stage_order", async () => {
-      const mockStages = [
-        {
-          id: "stage-1",
-          production_queue_id: "queue-1",
-          stage_name: "awaiting_choice",
-          stage_order: 1,
-          status: "completed",
-          started_at: "2026-04-01T10:00:00Z",
-          completed_at: "2026-04-08T10:00:00Z",
-          estimated_duration: 168,
-          actual_duration: 168,
-          assigned_to: null,
-          assigned_to_name: null,
-          assigned_at: null,
-          notes: null,
-          photos: [],
-          is_blocked: false,
-          block_reason: null,
-          blocked_at: null,
-          unblocked_at: null,
-          created_at: "2026-04-01T10:00:00Z",
-          updated_at: "2026-04-08T10:00:00Z",
-        },
-        {
-          id: "stage-2",
-          production_queue_id: "queue-1",
-          stage_name: "design",
-          stage_order: 2,
-          status: "in_progress",
-          started_at: "2026-04-08T10:00:00Z",
-          completed_at: null,
-          estimated_duration: 48,
-          actual_duration: null,
-          assigned_to: "user-1",
-          assigned_to_name: "João Silva",
-          assigned_at: "2026-04-08T10:00:00Z",
-          notes: null,
-          photos: [],
-          is_blocked: false,
-          block_reason: null,
-          blocked_at: null,
-          unblocked_at: null,
-          created_at: "2026-04-01T10:00:00Z",
-          updated_at: "2026-04-08T10:00:00Z",
-        },
-      ];
-
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValue({ data: mockStages, error: null });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        eq: mockEq,
-        order: mockOrder,
-      });
-
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
+    it("deve buscar historico de estagios ordenado por stage_order", async () => {
+      const order = vi.fn().mockResolvedValue({ data: [rawStage], error: null });
+      const eq = vi.fn().mockReturnValue({ order });
+      const select = vi.fn().mockReturnValue({ eq });
+      (supabase.from as any).mockReturnValue({ select });
 
       const result = await getStageHistory("queue-1");
 
       expect(supabase.from).toHaveBeenCalledWith("production_stages");
-      expect(mockSelect).toHaveBeenCalledWith("*");
-      expect(mockEq).toHaveBeenCalledWith("production_queue_id", "queue-1");
-      expect(mockOrder).toHaveBeenCalledWith("stage_order", { ascending: true });
-      expect(result).toHaveLength(2);
-      expect(result[0].stageName).toBe("awaiting_choice");
-      expect(result[1].stageName).toBe("design");
+      expect(select).toHaveBeenCalledWith("*");
+      expect(eq).toHaveBeenCalledWith("production_queue_id", "queue-1");
+      expect(order).toHaveBeenCalledWith("stage_order", { ascending: true });
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          id: "stage-1",
+          productionQueueId: "queue-1",
+          stageName: "design",
+          status: "completed",
+        })
+      );
     });
 
-    it("deve lançar erro se busca falhar", async () => {
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValue({
+    it("deve lancar erro se busca falhar", async () => {
+      const order = vi.fn().mockResolvedValue({
         data: null,
         error: { message: "Database error" },
       });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        eq: mockEq,
-        order: mockOrder,
-      });
-
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
+      const eq = vi.fn().mockReturnValue({ order });
+      const select = vi.fn().mockReturnValue({ eq });
+      (supabase.from as any).mockReturnValue({ select });
 
       await expect(getStageHistory("queue-1")).rejects.toThrow(
-        "Erro ao buscar histórico de estágios: Database error"
+        "Erro ao buscar hist"
       );
     });
   });
 
   describe("completeStage", () => {
-    it("deve completar estágio com sucesso", async () => {
-      const mockCurrentStage = {
-        id: "stage-1",
-        status: "in_progress",
-        started_at: "2026-04-01T10:00:00Z",
-        is_blocked: false,
-      };
-
-      const mockUpdatedStage = {
-        id: "stage-1",
-        production_queue_id: "queue-1",
-        stage_name: "design",
-        stage_order: 2,
-        status: "completed",
-        started_at: "2026-04-01T10:00:00Z",
-        completed_at: "2026-04-03T10:00:00Z",
-        estimated_duration: 48,
-        actual_duration: 48,
-        assigned_to: "user-1",
-        assigned_to_name: "João Silva",
-        assigned_at: "2026-04-01T10:00:00Z",
-        notes: "Design aprovado",
-        photos: ["https://example.com/photo1.jpg"],
-        is_blocked: false,
-        block_reason: null,
-        blocked_at: null,
-        unblocked_at: null,
-        created_at: "2026-04-01T10:00:00Z",
-        updated_at: "2026-04-03T10:00:00Z",
-      };
-
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockSingle = vi.fn();
-      const mockUpdate = vi.fn().mockReturnThis();
-
-      // Mock para buscar estágio atual
-      mockSingle.mockResolvedValueOnce({ data: mockCurrentStage, error: null });
-
-      // Mock para atualizar estágio
-      mockSingle.mockResolvedValueOnce({ data: mockUpdatedStage, error: null });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        eq: mockEq,
-        single: mockSingle,
-        update: mockUpdate,
-      });
-
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ single: mockSingle });
-      mockUpdate.mockReturnValue({ eq: mockEq });
+    it("deve completar estagio com sucesso via RPC", async () => {
+      (supabase.rpc as any).mockResolvedValue({ data: rawStage, error: null });
 
       const result = await completeStage("stage-1", "Design aprovado", [
         "https://example.com/photo1.jpg",
       ]);
 
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_complete_production_stage", {
+        p_stage_id: "stage-1",
+        p_notes: "Design aprovado",
+        p_photos: ["https://example.com/photo1.jpg"],
+        p_is_override: false,
+        p_justification: null,
+      });
       expect(result.status).toBe("completed");
       expect(result.notes).toBe("Design aprovado");
       expect(result.photos).toEqual(["https://example.com/photo1.jpg"]);
     });
 
-    it("deve lançar erro se estágio já foi completado", async () => {
-      const mockCurrentStage = {
-        id: "stage-1",
-        status: "completed",
-        completed_at: "2026-04-03T10:00:00Z",
-        is_blocked: false,
-      };
+    it("deve enviar dados de override para a RPC", async () => {
+      (supabase.rpc as any).mockResolvedValue({ data: rawStage, error: null });
 
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockSingle = vi.fn().mockResolvedValue({ data: mockCurrentStage, error: null });
+      await completeStage("stage-1", undefined, undefined, true, "correcao operacional");
 
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        eq: mockEq,
-        single: mockSingle,
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_complete_production_stage", {
+        p_stage_id: "stage-1",
+        p_notes: null,
+        p_photos: [],
+        p_is_override: true,
+        p_justification: "correcao operacional",
       });
-
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ single: mockSingle });
-
-      await expect(completeStage("stage-1")).rejects.toThrow("Este estágio já foi completado");
     });
 
-    it("deve lançar erro se estágio está bloqueado", async () => {
-      const mockCurrentStage = {
-        id: "stage-1",
-        status: "in_progress",
-        is_blocked: true,
-        block_reason: "Falta de material",
-      };
-
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockSingle = vi.fn().mockResolvedValue({ data: mockCurrentStage, error: null });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        eq: mockEq,
-        single: mockSingle,
+    it("deve propagar erro da RPC de conclusao", async () => {
+      (supabase.rpc as any).mockResolvedValue({
+        data: null,
+        error: { message: "Stage is blocked" },
       });
 
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ single: mockSingle });
-
-      await expect(completeStage("stage-1")).rejects.toThrow(
-        "Não é possível completar um estágio bloqueado"
-      );
+      await expect(completeStage("stage-1")).rejects.toThrow("Stage is blocked");
     });
   });
 
   describe("uploadStagePhoto", () => {
     it("deve validar tipo de arquivo", async () => {
-      const mockFile = new File(["content"], "document.pdf", { type: "application/pdf" });
+      const file = new File(["content"], "document.pdf", { type: "application/pdf" });
 
-      await expect(uploadStagePhoto("stage-1", mockFile)).rejects.toThrow(
-        "Apenas arquivos de imagem são permitidos"
+      await expect(uploadStagePhoto("stage-1", file)).rejects.toThrow(
+        "Apenas arquivos de imagem"
       );
     });
 
-    it("deve validar tamanho do arquivo", async () => {
-      // Criar arquivo de 6MB (maior que o limite de 5MB)
-      const largeContent = new Array(6 * 1024 * 1024).fill("a").join("");
-      const mockFile = new File([largeContent], "large-image.jpg", { type: "image/jpeg" });
+    it("deve fazer upload e retornar URL publica", async () => {
+      const upload = vi.fn().mockResolvedValue({
+        data: { path: "stage-1/photo.jpg" },
+        error: null,
+      });
+      const getPublicUrl = vi.fn().mockReturnValue({
+        data: { publicUrl: "https://cdn.example.com/stage-1/photo.jpg" },
+      });
+      (supabase.storage.from as any).mockReturnValue({ upload, getPublicUrl });
 
-      await expect(uploadStagePhoto("stage-1", mockFile)).rejects.toThrow(
-        "Arquivo muito grande. Tamanho máximo: 5MB"
+      const file = new File(["image"], "photo.jpg", { type: "image/jpeg" });
+      const url = await uploadStagePhoto("stage-1", file);
+
+      expect(url).toBe("https://cdn.example.com/stage-1/photo.jpg");
+      expect(upload).toHaveBeenCalledWith(
+        expect.stringMatching(/^stage-1\/\d+-[a-f0-9]+\.jpg$/),
+        file,
+        { cacheControl: "3600", upsert: false }
       );
     });
   });
 
   describe("calculateEstimatedCompletion", () => {
-    it("deve calcular data estimada baseada em estágios pendentes", async () => {
-      const mockStages: ProductionStageRecord[] = [
-        {
-          id: "stage-1",
-          productionQueueId: "queue-1",
-          stageName: "awaiting_choice",
-          stageOrder: 1,
-          status: "completed",
-          startedAt: "2026-04-01T10:00:00Z",
-          completedAt: "2026-04-08T10:00:00Z",
-          estimatedDuration: 168,
-          actualDuration: 168,
-          assignedTo: null,
-          assignedToName: null,
-          assignedAt: null,
-          notes: null,
-          photos: [],
-          isBlocked: false,
-          blockReason: null,
-          blockedAt: null,
-          unblockedAt: null,
-          createdAt: "2026-04-01T10:00:00Z",
-          updatedAt: "2026-04-08T10:00:00Z",
-        },
-        {
-          id: "stage-2",
-          productionQueueId: "queue-1",
-          stageName: "design",
-          stageOrder: 2,
-          status: "in_progress",
-          startedAt: "2026-04-08T10:00:00Z",
-          completedAt: null,
-          estimatedDuration: 48,
-          actualDuration: null,
-          assignedTo: "user-1",
-          assignedToName: "João Silva",
-          assignedAt: "2026-04-08T10:00:00Z",
-          notes: null,
-          photos: [],
-          isBlocked: false,
-          blockReason: null,
-          blockedAt: null,
-          unblockedAt: null,
-          createdAt: "2026-04-01T10:00:00Z",
-          updatedAt: "2026-04-08T10:00:00Z",
-        },
-        {
-          id: "stage-3",
-          productionQueueId: "queue-1",
-          stageName: "production",
-          stageOrder: 3,
-          status: "pending",
-          startedAt: null,
-          completedAt: null,
-          estimatedDuration: 120,
-          actualDuration: null,
-          assignedTo: null,
-          assignedToName: null,
-          assignedAt: null,
-          notes: null,
-          photos: [],
-          isBlocked: false,
-          blockReason: null,
-          blockedAt: null,
-          unblockedAt: null,
-          createdAt: "2026-04-01T10:00:00Z",
-          updatedAt: "2026-04-01T10:00:00Z",
-        },
-      ];
-
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockStages.map((s) => ({
-          id: s.id,
-          production_queue_id: s.productionQueueId,
-          stage_name: s.stageName,
-          stage_order: s.stageOrder,
-          status: s.status,
-          started_at: s.startedAt,
-          completed_at: s.completedAt,
-          estimated_duration: s.estimatedDuration,
-          actual_duration: s.actualDuration,
-          assigned_to: s.assignedTo,
-          assigned_to_name: s.assignedToName,
-          assigned_at: s.assignedAt,
-          notes: s.notes,
-          photos: s.photos,
-          is_blocked: s.isBlocked,
-          block_reason: s.blockReason,
-          blocked_at: s.blockedAt,
-          unblocked_at: s.unblockedAt,
-          created_at: s.createdAt,
-          updated_at: s.updatedAt,
-        })),
+    it("deve calcular data estimada baseada em estagios pendentes", async () => {
+      const order = vi.fn().mockResolvedValue({
+        data: [
+          { ...rawStage, status: "completed", estimated_duration: 48 },
+          { ...rawStage, id: "stage-2", status: "pending", estimated_duration: 4 },
+        ],
         error: null,
       });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        eq: mockEq,
-        order: mockOrder,
-      });
-
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
+      const eq = vi.fn().mockReturnValue({ order });
+      const select = vi.fn().mockReturnValue({ eq });
+      (supabase.from as any).mockReturnValue({ select });
 
       const result = await calculateEstimatedCompletion("queue-1");
 

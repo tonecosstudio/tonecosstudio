@@ -3,13 +3,13 @@ import { adminPaymentsGateway } from "@/services/admin/admin-payments-gateway";
 export interface PreorderQuote {
   id: string;
   user_id: string;
-  payment_status: string;
+  payment_status: string | null;
   ready_for_final_payment?: boolean | null;
   deposit_amount?: number | null;
   remaining_amount?: number | null;
   total_amount?: number | null;
   created_at: string;
-  quote_items?: Array<{ id: string; models?: { name?: string | null } | null }> | null;
+  quote_items?: Array<{ id: string; name?: string | null }> | null;
   profiles?: { full_name?: string | null; email?: string | null };
 }
 
@@ -24,17 +24,49 @@ export interface AdminPreordersStats {
   total_revenue: number;
 }
 
+interface AdminPreorderRpcError {
+  message: string;
+}
+
+interface AdminPreorderRpcClient {
+  rpc(
+    name: "admin_release_preorder_final_payment",
+    args: { p_quote_id: string }
+  ): Promise<{ data: string | null; error: AdminPreorderRpcError | null }>;
+  rpc(
+    name: "admin_register_preorder_manual_payment",
+    args: { p_quote_id: string; p_payment_type: "deposit" | "final"; p_amount: number }
+  ): Promise<{ data: string | null; error: AdminPreorderRpcError | null }>;
+}
+
+const adminPreorderRpc = adminPaymentsGateway as unknown as AdminPreorderRpcClient;
+
+interface AdminPreordersFilter extends PromiseLike<{ data: PreorderQuote[] | null; error: Error | null }> {
+  order(
+    column: string,
+    options?: { ascending?: boolean }
+  ): Promise<{ data: PreorderQuote[] | null; error: Error | null }>;
+}
+
+interface AdminPreordersGateway {
+  from(table: "quotes"): {
+    select(columns: string): {
+      eq(column: string, value: boolean): AdminPreordersFilter;
+    };
+  };
+}
+
+const adminPreordersGateway = adminPaymentsGateway as unknown as AdminPreordersGateway;
+
 export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
-  const { data, error } = await adminPaymentsGateway
+  const { data, error } = await adminPreordersGateway
     .from("quotes")
     .select(
       `
       *,
       quote_items (
         id,
-        models (
-          name
-        )
+        name
       )
     `
     )
@@ -60,7 +92,7 @@ export async function fetchAdminPreorders(): Promise<PreorderQuote[]> {
 }
 
 export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
-  const { data: quotes } = await adminPaymentsGateway
+  const { data: quotes } = await adminPreordersGateway
     .from("quotes")
     .select("payment_status, deposit_amount, remaining_amount, total_amount, ready_for_final_payment")
     .eq("is_preorder", true);
@@ -82,13 +114,9 @@ export async function fetchAdminPreordersStats(): Promise<AdminPreordersStats> {
 }
 
 export async function releaseAdminPreorderFinalPayment(quoteId: string): Promise<void> {
-  const { error } = await adminPaymentsGateway
-    .from("quotes")
-    .update({
-      ready_for_final_payment: true,
-      final_payment_notified_at: new Date().toISOString(),
-    })
-    .eq("id", quoteId);
+  const { error } = await adminPreorderRpc.rpc("admin_release_preorder_final_payment", {
+    p_quote_id: quoteId,
+  });
 
   if (error) throw error;
 }
@@ -102,13 +130,10 @@ interface RegisterAdminPreorderManualPaymentInput {
 export async function registerAdminPreorderManualPayment(
   input: RegisterAdminPreorderManualPaymentInput
 ): Promise<void> {
-  const { error } = await adminPaymentsGateway.from("quote_payments").insert({
-    quote_id: input.quoteId,
-    payment_type: input.paymentType,
-    amount: input.amount,
-    status: "completed",
-    payment_method: "manual",
-    paid_at: new Date().toISOString(),
+  const { error } = await adminPreorderRpc.rpc("admin_register_preorder_manual_payment", {
+    p_quote_id: input.quoteId,
+    p_payment_type: input.paymentType,
+    p_amount: input.amount,
   });
 
   if (error) throw error;

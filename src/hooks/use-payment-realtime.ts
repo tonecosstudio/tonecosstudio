@@ -3,16 +3,21 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import type { ManualPayment, PaymentStatus } from "@/types/manual-payment";
+import {
+  DEFAULT_REALTIME_EVENTS,
+  getRealtimeEventsFromKey,
+  getRealtimeEventsKey,
+  getRealtimeRetryDelay,
+  REALTIME_INSERT_EVENTS,
+  REALTIME_UPDATE_EVENTS,
+  useLatestRef,
+  useRealtimeReconnectionConfig,
+} from "./realtime-helpers";
+import type { ReconnectionConfig, RealtimePostgresEvent } from "./realtime-helpers";
 
-type RealtimePostgresEvent = "INSERT" | "UPDATE" | "DELETE" | "*";
 type PaymentChangeEvent = "INSERT" | "UPDATE" | "DELETE";
 
-export interface ReconnectionConfig {
-  maxRetries: number;
-  baseDelayMs: number;
-  backoffFactor: number;
-  maxDelayMs: number;
-}
+export type { ReconnectionConfig, RealtimePostgresEvent } from "./realtime-helpers";
 
 export interface RealtimeConnectionState {
   isConnected: boolean;
@@ -27,7 +32,7 @@ export interface UsePaymentRealtimeOptions {
   paymentId?: string;
   userId?: string;
   status?: PaymentStatus | PaymentStatus[];
-  events?: RealtimePostgresEvent[];
+  events?: readonly RealtimePostgresEvent[];
   reconnectionConfig?: Partial<ReconnectionConfig>;
   onPaymentChange?: (payload: {
     event: PaymentChangeEvent;
@@ -36,17 +41,6 @@ export interface UsePaymentRealtimeOptions {
   }) => void;
   onConnected?: () => void;
   onDisconnected?: (error?: Error) => void;
-}
-
-const DEFAULT_RECONNECTION_CONFIG: ReconnectionConfig = {
-  maxRetries: 10,
-  baseDelayMs: 1000,
-  backoffFactor: 2,
-  maxDelayMs: 30000,
-};
-
-function normalizeEvents(events: RealtimePostgresEvent[]): RealtimePostgresEvent[] {
-  return events.includes("*") ? ["*"] : events;
 }
 
 function buildPaymentFilter(
@@ -71,12 +65,23 @@ function buildPaymentFilter(
   return filters.length > 0 ? filters.join(",") : undefined;
 }
 
+function getPaymentStatusKey(status?: PaymentStatus | PaymentStatus[]): string {
+  return Array.isArray(status) ? status.join("|") : status ?? "";
+}
+
+function getPaymentStatusFromKey(statusKey: string): PaymentStatus | PaymentStatus[] | undefined {
+  if (!statusKey) return undefined;
+
+  const statuses = statusKey.split("|") as PaymentStatus[];
+  return statuses.length === 1 ? statuses[0] : statuses;
+}
+
 export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
   const {
     paymentId,
     userId,
     status,
-    events = ["INSERT", "UPDATE", "DELETE"],
+    events = DEFAULT_REALTIME_EVENTS,
     reconnectionConfig: userReconnectionConfig,
     onPaymentChange,
     onConnected,
@@ -84,10 +89,13 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
   } = options;
 
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
   const isMountedRef = useRef(true);
   const connectRef = useRef<() => void>(() => {});
+  const onPaymentChangeRef = useLatestRef(onPaymentChange);
+  const onConnectedRef = useLatestRef(onConnected);
+  const onDisconnectedRef = useLatestRef(onDisconnected);
 
   const [connectionState, setConnectionState] = useState<RealtimeConnectionState>({
     isConnected: false,
@@ -98,21 +106,14 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
     lastDisconnectedAt: null,
   });
 
-  const reconnectionConfig = useMemo(
-    () => ({
-      ...DEFAULT_RECONNECTION_CONFIG,
-      ...userReconnectionConfig,
-    }),
-    [userReconnectionConfig]
-  );
-
-  const calculateRetryDelay = useCallback(
-    (attempt: number): number => {
-      const delay =
-        reconnectionConfig.baseDelayMs * Math.pow(reconnectionConfig.backoffFactor, attempt);
-      return Math.min(delay, reconnectionConfig.maxDelayMs);
-    },
-    [reconnectionConfig]
+  const reconnectionConfig = useRealtimeReconnectionConfig(userReconnectionConfig);
+  const eventsKey = getRealtimeEventsKey(events);
+  const normalizedEvents = useMemo(() => getRealtimeEventsFromKey(eventsKey), [eventsKey]);
+  const statusKey = getPaymentStatusKey(status);
+  const normalizedStatus = useMemo(() => getPaymentStatusFromKey(statusKey), [statusKey]);
+  const paymentFilter = useMemo(
+    () => buildPaymentFilter(paymentId, userId, normalizedStatus),
+    [paymentId, userId, normalizedStatus]
   );
 
   const scheduleReconnect = useCallback(() => {
@@ -123,8 +124,9 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
       retryTimeoutRef.current = null;
     }
 
-    retryCountRef.current += 1;
-    const delay = calculateRetryDelay(retryCountRef.current);
+    const nextRetryCount = retryCountRef.current + 1;
+    const delay = getRealtimeRetryDelay(reconnectionConfig, nextRetryCount - 1);
+    retryCountRef.current = nextRetryCount;
 
     setConnectionState((prev) => ({
       ...prev,
@@ -135,7 +137,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
     retryTimeoutRef.current = setTimeout(() => {
       connectRef.current();
     }, delay);
-  }, [calculateRetryDelay]);
+  }, [reconnectionConfig]);
 
   const disconnect = useCallback(() => {
     if (channelRef.current) {
@@ -148,12 +150,14 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
       retryTimeoutRef.current = null;
     }
 
-    setConnectionState((prev) => ({
-      ...prev,
-      isConnected: false,
-      isReconnecting: false,
-      lastDisconnectedAt: new Date(),
-    }));
+    if (isMountedRef.current) {
+      setConnectionState((prev) => ({
+        ...prev,
+        isConnected: false,
+        isReconnecting: false,
+        lastDisconnectedAt: new Date(),
+      }));
+    }
   }, []);
 
   const connect = useCallback(() => {
@@ -165,8 +169,6 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
     }
 
     const channelName = `payment-realtime-${paymentId || "all"}-${userId || "all"}-${Date.now()}`;
-    const filter = buildPaymentFilter(paymentId, userId, status);
-
     try {
       setConnectionState((prev) => ({
         ...prev,
@@ -175,19 +177,19 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
       }));
 
       let channel = supabase.channel(channelName);
-      normalizeEvents(events).forEach((event) => {
+      normalizedEvents.forEach((event) => {
         channel = channel.on(
           "postgres_changes",
           {
             event,
             schema: "public",
             table: "manual_payments",
-            filter,
+            filter: paymentFilter,
           },
           (payload) => {
-            if (!onPaymentChange) return;
+            if (!onPaymentChangeRef.current) return;
 
-            onPaymentChange({
+            onPaymentChangeRef.current({
               event: payload.eventType as PaymentChangeEvent,
               old: payload.old as ManualPayment | null,
               new: payload.new as ManualPayment | null,
@@ -209,7 +211,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
             lastConnectedAt: new Date(),
             error: null,
           }));
-          onConnected?.();
+          onConnectedRef.current?.();
           return;
         }
 
@@ -223,7 +225,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
             error: errorObj,
           }));
 
-          onDisconnected?.(errorObj);
+          onDisconnectedRef.current?.(errorObj);
 
           if (retryCountRef.current < reconnectionConfig.maxRetries) {
             scheduleReconnect();
@@ -242,7 +244,7 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
         lastDisconnectedAt: new Date(),
       }));
 
-      onDisconnected?.(error as Error);
+      onDisconnectedRef.current?.(error as Error);
 
       if (retryCountRef.current < reconnectionConfig.maxRetries) {
         scheduleReconnect();
@@ -251,11 +253,11 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
   }, [
     paymentId,
     userId,
-    status,
-    events,
-    onPaymentChange,
-    onConnected,
-    onDisconnected,
+    paymentFilter,
+    normalizedEvents,
+    onPaymentChangeRef,
+    onConnectedRef,
+    onDisconnectedRef,
     reconnectionConfig.maxRetries,
     scheduleReconnect,
   ]);
@@ -280,12 +282,6 @@ export function usePaymentRealtime(options: UsePaymentRealtimeOptions = {}) {
     };
   }, [connect, disconnect]);
 
-  useEffect(() => {
-    if (isMountedRef.current && channelRef.current) {
-      reconnect();
-    }
-  }, [paymentId, userId, status, events, reconnect]);
-
   return {
     ...connectionState,
     disconnect,
@@ -303,7 +299,7 @@ export function usePaymentStatusRealtime(
 ) {
   const { isConnected, isReconnecting, error, ...rest } = usePaymentRealtime({
     paymentId,
-    events: ["UPDATE"],
+    events: REALTIME_UPDATE_EVENTS,
     onPaymentChange: (payload) => {
       if (payload.event !== "UPDATE" || !payload.new || !onStatusChange) return;
 
@@ -330,7 +326,7 @@ export function useNewPaymentsRealtime(
 ) {
   const { isConnected, isReconnecting, error, ...rest } = usePaymentRealtime({
     userId,
-    events: ["INSERT"],
+    events: REALTIME_INSERT_EVENTS,
     onPaymentChange: (payload) => {
       if (payload.event === "INSERT" && payload.new && onNewPayment) {
         onNewPayment(payload.new);

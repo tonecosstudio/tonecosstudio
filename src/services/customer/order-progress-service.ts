@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
-import { STAGE_LABELS, STAGE_ORDER } from "@/services/admin/production-service";
+import { requireAuthenticatedUserId } from "@/services/auth/current-user";
+import {
+  PRODUCTION_STAGE_ORDER,
+  getProductionStageLabel,
+} from "@/config/production-stages";
 import type { ChoiceStatus, ProductionStage } from "@/types/production";
 
 export type CustomerOrderType = "subscription_delivery" | "standalone_purchase";
@@ -42,6 +46,7 @@ type ProductionQueueProgressRow = {
   id: string;
   order_id: string;
   order_type: string;
+  user_id: string;
   current_stage: string | null;
   production_status: string | null;
   choice_status: string | null;
@@ -73,13 +78,13 @@ type QueryListResult<T> = {
 };
 
 function toProductionStage(stage: string | null): ProductionStage {
-  return STAGE_ORDER.includes(stage as ProductionStage)
+  return PRODUCTION_STAGE_ORDER.includes(stage as ProductionStage)
     ? (stage as ProductionStage)
     : "awaiting_payment";
 }
 
 function toChoiceStatus(status: string | null): ChoiceStatus {
-  const allowed: ChoiceStatus[] = ["pending", "submitted", "approved", "rejected", "locked"];
+  const allowed: ChoiceStatus[] = ["pending", "submitted", "approved", "rejected", "locked", "expired"];
   return allowed.includes(status as ChoiceStatus) ? (status as ChoiceStatus) : "pending";
 }
 
@@ -135,6 +140,7 @@ async function fetchChoiceId(productionData: ProductionQueueProgressRow) {
     .select("id")
     .eq("order_id", productionData.order_id)
     .eq("order_type", productionData.order_type)
+    .eq("user_id", productionData.user_id)
     .maybeSingle()) as unknown as QuerySingleResult<{ id: string }>;
 
   if (error) throw error;
@@ -145,16 +151,16 @@ function buildStages(
   currentStage: ProductionStage,
   stagesData: ProductionStageRow[]
 ): CustomerOrderProgressStage[] {
-  const currentStageOrder = STAGE_ORDER.indexOf(currentStage);
+  const currentStageOrder = PRODUCTION_STAGE_ORDER.indexOf(currentStage);
 
-  return STAGE_ORDER.map((stage, index) => {
+  return PRODUCTION_STAGE_ORDER.map((stage, index) => {
     const stageData = stagesData.find((item) => item.stage_name === stage);
     const status =
       index < currentStageOrder ? "completed" : index === currentStageOrder ? "current" : "upcoming";
 
     return {
       name: stage,
-      displayName: STAGE_LABELS[stage],
+      displayName: getProductionStageLabel(stage),
       status,
       completedAt: stageData?.completed_at ?? null,
       order: index + 1,
@@ -170,6 +176,8 @@ export async function fetchCustomerOrderProgress(
     throw new Error("ID do pedido ou tipo nao fornecido");
   }
 
+  const userId = await requireAuthenticatedUserId();
+
   const { data: productionData, error: productionError } = (await supabase
     .from("production_queue")
     .select(
@@ -177,6 +185,7 @@ export async function fetchCustomerOrderProgress(
         id,
         order_id,
         order_type,
+        user_id,
         current_stage,
         production_status,
         choice_status,
@@ -194,6 +203,7 @@ export async function fetchCustomerOrderProgress(
     )
     .eq("order_id", orderId)
     .eq("order_type", orderType)
+    .eq("user_id", userId)
     .maybeSingle()) as unknown as QuerySingleResult<ProductionQueueProgressRow>;
 
   if (productionError) throw productionError;

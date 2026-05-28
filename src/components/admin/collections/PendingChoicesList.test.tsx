@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { PendingChoicesList } from "./PendingChoicesList";
 import { usePendingChoices } from "@/hooks/admin/usePendingChoices";
+import { adminUserDetailsPath } from "@/config/routes";
 
 vi.mock("@/hooks/admin/usePendingChoices", () => ({
   usePendingChoices: vi.fn(),
@@ -76,8 +77,7 @@ describe("PendingChoicesList", () => {
     expect(screen.getByText("Total: 1 escolha(s) pendente(s)")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ver Perfil/i })).toHaveAttribute(
       "href",
-      "/admin/subscribers/user-123"
+      adminUserDetailsPath("user-123")
     );
   });
 });
-

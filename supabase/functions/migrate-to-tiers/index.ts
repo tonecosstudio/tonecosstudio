@@ -275,7 +275,7 @@ serve(async (req) => {
 
     console.error("Error in migrate-to-tiers:", msg);
 
-    return new Response(JSON.stringify({ ok: false, error: msg }), {
+    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

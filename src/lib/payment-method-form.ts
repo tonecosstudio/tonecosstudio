@@ -1,4 +1,6 @@
 import type { PaymentMethod, PaymentMethodType } from "@/types/manual-payment";
+import type { Json } from "@/integrations/supabase/types";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
 
 export interface PaymentMethodFormState {
   name: string;
@@ -14,10 +16,10 @@ export interface PaymentMethodFormState {
 export interface PaymentMethodPayload {
   name: string;
   type: PaymentMethodType;
-  instructions?: string;
+  instructions: string;
   payment_link?: string;
   pix_key?: string;
-  account_details?: unknown;
+  account_details?: Record<string, Json>;
   is_active: boolean;
   is_default: boolean;
 }
@@ -57,12 +59,26 @@ export function getInitialPaymentMethodFormState(
   };
 }
 
-function parseAccountDetails(accountDetails: string): unknown | undefined {
+function parseAccountDetails(accountDetails: string): Record<string, Json> | undefined {
   if (!accountDetails.trim()) {
     return undefined;
   }
 
-  return JSON.parse(accountDetails);
+  const parsed = JSON.parse(accountDetails) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Account details must be a JSON object");
+  }
+
+  return parsed as Record<string, Json>;
+}
+
+function sanitizePaymentLink(paymentLink: string): string | undefined {
+  const trimmed = paymentLink.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  return sanitizeURL(trimmed, ["http", "https"]);
 }
 
 export function validatePaymentMethodForm(
@@ -107,6 +123,17 @@ export function validatePaymentMethodForm(
     }
   }
 
+  if (state.paymentLink.trim()) {
+    try {
+      sanitizePaymentLink(state.paymentLink);
+    } catch {
+      return {
+        title: "Link de pagamento invalido",
+        description: "Informe uma URL http ou https valida para o link de pagamento.",
+      };
+    }
+  }
+
   return null;
 }
 
@@ -114,8 +141,8 @@ export function buildPaymentMethodPayload(state: PaymentMethodFormState): Paymen
   return {
     name: state.name,
     type: state.type,
-    instructions: state.instructions || undefined,
-    payment_link: state.paymentLink || undefined,
+    instructions: state.instructions,
+    payment_link: sanitizePaymentLink(state.paymentLink),
     pix_key: state.pixKey || undefined,
     account_details: parseAccountDetails(state.accountDetails),
     is_active: state.isActive,

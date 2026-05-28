@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -26,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Package, Truck, CheckCircle, Clock, Edit } from "lucide-react";
+import { CheckCircle, Clock, CreditCard, Edit, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -36,6 +35,8 @@ import {
   type Order,
   type OrderProductionStage,
 } from "@/lib/services/integrationService";
+import { getOrderStatusLabel, MANUAL_PAYMENT_STATUS_OPTIONS } from "@/config/admin-order-status";
+import type { ManualPaymentStatus } from "@/types/admin/orders";
 import { log } from "@/lib/logger";
 
 interface OrdersListProps {
@@ -46,8 +47,7 @@ interface OrdersListProps {
 export function OrdersList({ orders, onRefresh }: OrdersListProps) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [newStatus, setNewStatus] = useState("");
-  const [trackingCode, setTrackingCode] = useState("");
+  const [newStatus, setNewStatus] = useState<ManualPaymentStatus | "">("");
   const [updating, setUpdating] = useState(false);
   const [productionStages, setProductionStages] = useState<OrderProductionStage[]>([]);
 
@@ -62,7 +62,7 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
 
     setUpdating(true);
     try {
-      await updateOrderStatus(selectedOrder.id, newStatus, trackingCode || undefined);
+      await updateOrderStatus(selectedOrder.id, newStatus);
       toast.success("Status do pedido atualizado com sucesso");
       setShowStatusDialog(false);
       onRefresh();
@@ -76,8 +76,11 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
 
   const openStatusDialog = async (order: Order) => {
     setSelectedOrder(order);
-    setNewStatus(order.status);
-    setTrackingCode(order.tracking_code || "");
+    setNewStatus(
+      MANUAL_PAYMENT_STATUS_OPTIONS.some((option) => option.value === order.status)
+        ? (order.status as ManualPaymentStatus)
+        : "pending"
+    );
     setShowStatusDialog(true);
 
     // Load production stages
@@ -94,13 +97,11 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
       string,
       { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
     > = {
-      pending: { label: "Aguardando Pagamento", variant: "secondary" },
-      under_review: { label: "Em Análise", variant: "outline" },
-      approved: { label: "Aprovado", variant: "default" },
-      rejected: { label: "Rejeitado", variant: "destructive" },
-      em_producao: { label: "Em Produção", variant: "default" },
-      enviado: { label: "Enviado", variant: "default" },
-      entregue: { label: "Entregue", variant: "default" },
+      pending: { label: getOrderStatusLabel("pending"), variant: "secondary" },
+      under_review: { label: getOrderStatusLabel("under_review"), variant: "outline" },
+      requires_info: { label: getOrderStatusLabel("requires_info"), variant: "outline" },
+      approved: { label: getOrderStatusLabel("approved"), variant: "default" },
+      rejected: { label: getOrderStatusLabel("rejected"), variant: "destructive" },
     };
 
     const config = statusMap[status] || { label: status, variant: "outline" as const };
@@ -111,15 +112,14 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
     switch (status) {
       case "pending":
       case "under_review":
+      case "requires_info":
         return <Clock className="h-4 w-4" />;
-      case "em_producao":
-        return <Package className="h-4 w-4" />;
-      case "enviado":
-        return <Truck className="h-4 w-4" />;
-      case "entregue":
+      case "approved":
         return <CheckCircle className="h-4 w-4" />;
+      case "rejected":
+        return <XCircle className="h-4 w-4" />;
       default:
-        return <Package className="h-4 w-4" />;
+        return <CreditCard className="h-4 w-4" />;
     }
   };
 
@@ -161,14 +161,6 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
                 {getStatusBadge(order.status)}
               </div>
 
-              {/* Tracking Code */}
-              {order.tracking_code &&
-                (order.status === "enviado" || order.status === "entregue") && (
-                  <div className="bg-muted p-2 rounded text-xs">
-                    <p className="text-muted-foreground">Código de rastreamento:</p>
-                    <p className="font-mono font-medium">{order.tracking_code}</p>
-                  </div>
-                )}
             </div>
           </Card>
         ))}
@@ -186,32 +178,22 @@ export function OrdersList({ orders, onRefresh }: OrdersListProps) {
             {/* Status Selection */}
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
+              <Select
+                value={newStatus}
+                onValueChange={(value) => setNewStatus(value as ManualPaymentStatus)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Aguardando Pagamento</SelectItem>
-                  <SelectItem value="under_review">Em Análise</SelectItem>
-                  <SelectItem value="approved">Aprovado</SelectItem>
-                  <SelectItem value="em_producao">Em Produção</SelectItem>
-                  <SelectItem value="enviado">Enviado</SelectItem>
-                  <SelectItem value="entregue">Entregue</SelectItem>
+                  {MANUAL_PAYMENT_STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Tracking Code (only for enviado/entregue) */}
-            {(newStatus === "enviado" || newStatus === "entregue") && (
-              <div className="space-y-2">
-                <Label>Código de Rastreamento</Label>
-                <Input
-                  value={trackingCode}
-                  onChange={(e) => setTrackingCode(e.target.value)}
-                  placeholder="Ex: BR123456789BR"
-                />
-              </div>
-            )}
 
             {/* Production Stages (Internal Only) */}
             {productionStages.length > 0 && (

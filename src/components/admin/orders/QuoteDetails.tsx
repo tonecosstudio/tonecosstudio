@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { OrderStatus, UnifiedOrder } from '@/types/admin/orders';
 import { useUpdateOrderStatus } from '@/hooks/admin/useOrderMutations';
 import { formatCurrency } from '@/lib/utils';
+import { getOrderStatusLabel } from '@/config/admin-order-status';
 
 interface QuoteDetailsProps {
   order: UnifiedOrder;
@@ -38,7 +39,7 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
 
       toast({
         title: '✓ Status atualizado',
-        description: `Orçamento marcado como ${getStatusLabel(newStatus)}.`,
+        description: `Orçamento marcado como ${getOrderStatusLabel(newStatus)}.`,
         variant: 'default',
       });
     } catch (error) {
@@ -48,16 +49,6 @@ export function QuoteDetails({ order }: QuoteDetailsProps) {
         variant: 'destructive',
       });
     }
-  };
-
-  const getStatusLabel = (status: string): string => {
-    const labels: Record<string, string> = {
-      'pending': 'Pendente',
-      'reviewing': 'Em Análise',
-      'answered': 'Respondido',
-      'archived': 'Arquivado'
-    };
-    return labels[status] || status;
   };
 
   return (

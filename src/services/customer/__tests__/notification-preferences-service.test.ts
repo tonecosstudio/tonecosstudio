@@ -29,6 +29,9 @@ describe('Notification Preferences Service', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+    vi.mocked(supabase.auth.getUser).mockReset();
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: mockUser as any },
       error: null,
@@ -134,25 +137,16 @@ describe('Notification Preferences Service', () => {
         }),
       };
 
-      // Mock update
-      const mockUpdateFrom = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { notification_preferences: expectedPreferences },
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockFetchFrom as any)
-        .mockReturnValueOnce(mockUpdateFrom as any);
+      vi.mocked(supabase.from).mockReturnValueOnce(mockFetchFrom as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: expectedPreferences,
+        error: null,
+      });
 
       const result = await updateNotificationPreferences(updates);
 
-      expect(mockUpdateFrom.update).toHaveBeenCalledWith({
-        notification_preferences: expectedPreferences,
+      expect(supabase.rpc).toHaveBeenCalledWith('update_customer_notification_preferences', {
+        p_preferences: expectedPreferences,
       });
       expect(result).toEqual(expectedPreferences);
     });
@@ -179,20 +173,11 @@ describe('Notification Preferences Service', () => {
         }),
       };
 
-      // Mock update with error
-      const mockUpdateFrom = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: null,
-          error: mockError,
-        }),
-      };
-
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockFetchFrom as any)
-        .mockReturnValueOnce(mockUpdateFrom as any);
+      vi.mocked(supabase.from).mockReturnValueOnce(mockFetchFrom as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: null,
+        error: mockError,
+      });
 
       await expect(updateNotificationPreferences({})).rejects.toThrow(mockError);
     });
@@ -264,25 +249,16 @@ describe('Notification Preferences Service', () => {
         }),
       };
 
-      // Mock update
-      const mockUpdateFrom = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { notification_preferences: DEFAULT_NOTIFICATION_PREFERENCES },
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockFetchFrom as any)
-        .mockReturnValueOnce(mockUpdateFrom as any);
+      vi.mocked(supabase.from).mockReturnValueOnce(mockFetchFrom as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: DEFAULT_NOTIFICATION_PREFERENCES,
+        error: null,
+      });
 
       const result = await resetNotificationPreferences();
 
-      expect(mockUpdateFrom.update).toHaveBeenCalledWith({
-        notification_preferences: DEFAULT_NOTIFICATION_PREFERENCES,
+      expect(supabase.rpc).toHaveBeenCalledWith('update_customer_notification_preferences', {
+        p_preferences: DEFAULT_NOTIFICATION_PREFERENCES,
       });
       expect(result).toEqual(DEFAULT_NOTIFICATION_PREFERENCES);
     });

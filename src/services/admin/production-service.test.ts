@@ -28,6 +28,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 describe("Production Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
   });
 
   describe("fetchProductionQueue", () => {
@@ -184,6 +185,31 @@ describe("Production Service", () => {
 
       const mockUpdatedItem = {
         ...mockCurrentItem,
+        order_id: "order-1",
+        order_type: "subscription_delivery",
+        customer_id: "user-1",
+        customer_name: "Cliente",
+        customer_email: "cliente@example.com",
+        collection_id: "col-1",
+        collection_name: "ColeÃ§Ã£o",
+        character_id: null,
+        character_name: null,
+        choice_status: "approved",
+        choice_deadline: null,
+        choice_made_at: null,
+        priority: "normal",
+        priority_score: 0,
+        scheduled_production_date: null,
+        estimated_completion_date: null,
+        assigned_to: null,
+        assigned_to_name: null,
+        assigned_at: null,
+        production_started_at: null,
+        production_completed_at: null,
+        production_notes: null,
+        customer_notes: null,
+        internal_flags: [],
+        created_at: "2024-01-01T00:00:00Z",
         current_stage: "design",
         production_status: "ready_for_production",
         updated_at: "2024-01-02T00:00:00Z",
@@ -198,22 +224,15 @@ describe("Production Service", () => {
         }),
       };
 
-      const mockUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockUpdatedItem,
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockSelectQuery as any)
-        .mockReturnValueOnce(mockUpdateQuery as any);
+      vi.mocked(supabase.from).mockReturnValueOnce(mockSelectQuery as any);
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: mockUpdatedItem, error: null });
 
       const result = await updateProductionStage("1", "design");
 
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_production_stage", {
+        p_queue_id: "1",
+        p_stage: "design",
+      });
       expect(result.currentStage).toBe("design");
       expect(result.productionStatus).toBe("ready_for_production");
     });
@@ -221,11 +240,6 @@ describe("Production Service", () => {
 
   describe("assignProduction", () => {
     it("deve atribuir produção a um usuário", async () => {
-      const mockUser = {
-        full_name: "Maria Santos",
-        email: "maria@example.com",
-      };
-
       const mockCurrentAssignment = {
         assigned_to: null,
         assigned_to_name: null,
@@ -273,40 +287,16 @@ describe("Production Service", () => {
         }),
       };
 
-      const mockUserQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockUser,
-          error: null,
-        }),
-      };
-
-      const mockUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockUpdatedItem,
-          error: null,
-        }),
-      };
-
-      const mockLogQuery = {
-        insert: vi.fn().mockResolvedValue({
-          data: {},
-          error: null,
-        }),
-      };
-
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockCurrentAssignmentQuery as any)
-        .mockReturnValueOnce(mockUserQuery as any)
-        .mockReturnValueOnce(mockUpdateQuery as any)
-        .mockReturnValueOnce(mockLogQuery as any);
+      vi.mocked(supabase.from).mockReturnValueOnce(mockCurrentAssignmentQuery as any);
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: mockUpdatedItem, error: null });
 
       const result = await assignProduction("1", "user-2");
 
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_assign_production", {
+        p_queue_id: "1",
+        p_user_id: "user-2",
+        p_reason: null,
+      });
       expect(result.assignedTo).toBe("user-2");
       expect(result.assignedToName).toBe("Maria Santos");
     });
@@ -366,49 +356,40 @@ describe("Production Service", () => {
         }),
       };
 
-      // Mock the stage update query
-      const mockStageUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: {},
-          error: null,
-        }),
-      };
-
-      // Mock the production_queue update query
-      const mockUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
+      const mockStageHistoryQuery = {
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockUpdatedItem,
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({
+          data: [],
           error: null,
         }),
       };
 
-      // Mock the estimated date update query
-      const mockEstimatedDateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          data: {},
-          error: null,
-        }),
-      };
-
-      // Setup the mock to return different queries based on call order
       vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockFetchQuery as any) // First call: fetch queue item
-        .mockReturnValueOnce(mockStageUpdateQuery as any) // Second call: update stage
-        .mockReturnValueOnce(mockUpdateQuery as any) // Third call: update queue
-        .mockReturnValueOnce(mockEstimatedDateQuery as any); // Fourth call: update estimated date
+        .mockReturnValueOnce(mockFetchQuery as any)
+        .mockReturnValueOnce(mockStageHistoryQuery as any);
+
+      vi.mocked(supabase.rpc).mockImplementation((fn: string) => {
+        if (fn === "admin_block_production") {
+          return Promise.resolve({ data: mockUpdatedItem, error: null });
+        }
+
+        if (fn === "admin_update_production_estimated_completion") {
+          return Promise.resolve({ data: "ok", error: null });
+        }
+
+        return Promise.resolve({ data: null, error: null });
+      });
 
       const result = await blockProduction("1", "Falta de material");
 
       expect(result.productionStatus).toBe("on_hold");
       expect(result.productionNotes).toBe("Falta de material");
       expect(supabase.from).toHaveBeenCalledWith("production_queue");
-      expect(supabase.from).toHaveBeenCalledWith("production_stages");
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_block_production", {
+        p_queue_id: "1",
+        p_reason: "Falta de material",
+      });
     });
   });
 
@@ -470,29 +451,16 @@ describe("Production Service", () => {
         }),
       };
 
-      const mockStageUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-      };
-
-      const mockUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockUpdatedItem,
-          error: null,
-        }),
-      };
-
       vi.mocked(supabase.from)
         .mockReturnValueOnce(mockSelectQuery as any)
-        .mockReturnValueOnce(mockStageSelectQuery as any)
-        .mockReturnValueOnce(mockStageUpdateQuery as any)
-        .mockReturnValueOnce(mockUpdateQuery as any);
+        .mockReturnValueOnce(mockStageSelectQuery as any);
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: mockUpdatedItem, error: null });
 
       const result = await unblockProduction("1");
 
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_unblock_production", {
+        p_queue_id: "1",
+      });
       expect(result.productionStatus).toBe("in_production");
     });
   });

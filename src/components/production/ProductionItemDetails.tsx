@@ -3,7 +3,8 @@ import { AlertCircle, Calendar, Clock, Package, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import type { Priority, ProductionQueueItem, ProductionStage } from "@/types/production";
+import { getProductionStageLabel } from "@/config/production-stages";
+import type { Priority, ProductionQueueItem } from "@/types/production";
 import { BlockProductionModal } from "./BlockProductionModal";
 import { EditProductionModal } from "./EditProductionModal";
 import { ProductionHistoryModal } from "./ProductionHistoryModal";
@@ -19,21 +20,6 @@ const PRIORITY_CLASSES: Record<Priority, string> = {
   high: "bg-orange-500",
   normal: "bg-blue-500",
   low: "bg-green-500",
-};
-
-const STAGE_LABELS: Record<ProductionStage, string> = {
-  awaiting_payment: "Aguardando Pagamento",
-  payment_confirmed: "Pagamento Confirmado",
-  awaiting_choice: "Aguardando Escolha",
-  model_preparation: "Preparacao do Modelo",
-  printing: "Em Impressao 3D",
-  post_processing: "Limpeza e Preparacao",
-  painting: "Pintura Artesanal",
-  quality_check: "Controle de Qualidade",
-  packaging: "Embalagem",
-  ready_to_ship: "Pronto para Envio",
-  shipped: "Enviado",
-  delivered: "Entregue",
 };
 
 export function ProductionItemDetails({ item, onUpdate }: ProductionItemDetailsProps) {
@@ -68,7 +54,7 @@ export function ProductionItemDetails({ item, onUpdate }: ProductionItemDetailsP
         <h3 className="font-semibold">Status</h3>
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">{STAGE_LABELS[item.currentStage]}</span>
+          <span className="text-sm">{getProductionStageLabel(item.currentStage)}</span>
         </div>
       </div>
 

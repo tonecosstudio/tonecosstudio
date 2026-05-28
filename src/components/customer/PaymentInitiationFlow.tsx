@@ -37,6 +37,33 @@ import type { PaymentMethod, PaymentType } from "@/types/manual-payment";
 import { listActivePaymentMethods } from "@/lib/payment-method-service";
 import { createPayment } from "@/lib/payment-service";
 import { useAuth } from "@/lib/auth";
+import { openSafeExternalUrl } from "@/lib/security/safe-open";
+import { paymentDetailsPath } from "@/config/routes";
+
+const ACCOUNT_DETAIL_LABELS: Record<string, string> = {
+  bank: "Banco",
+  agency: "Agencia",
+  account: "Conta",
+  account_type: "Tipo de conta",
+  holder: "Titular",
+  document: "Documento",
+};
+
+function formatAccountDetailLabel(key: string): string {
+  return ACCOUNT_DETAIL_LABELS[key] ?? key.replace(/_/g, " ");
+}
+
+function formatAccountDetailValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+}
 
 interface PaymentInitiationFlowProps {
   quoteId?: string;
@@ -79,7 +106,6 @@ export function PaymentInitiationFlow({
       }
 
       return createPayment({
-        user_id: user.id,
         payment_method_id: selectedMethodId,
         amount,
         currency,
@@ -98,8 +124,7 @@ export function PaymentInitiationFlow({
       if (onSuccess) {
         onSuccess(payment.id);
       } else {
-        // Navigate to payment details page
-        navigate(`/payments/${payment.id}`);
+        navigate(paymentDetailsPath(payment.id));
       }
     },
     onError: (error: Error) => {
@@ -202,7 +227,15 @@ export function PaymentInitiationFlow({
 
   // Handle open payment link
   const handleOpenPaymentLink = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
+    try {
+      openSafeExternalUrl(url);
+    } catch {
+      toast({
+        title: "Link de pagamento invalido",
+        description: "O link configurado para este metodo de pagamento nao e seguro.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (methodsLoading) {
@@ -462,11 +495,21 @@ export function PaymentInitiationFlow({
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium text-sm mb-2">Dados Bancários</h4>
-                    <div className="rounded-lg bg-gray-50 p-4">
-                      <pre className="text-sm font-mono whitespace-pre-wrap">
-                        {JSON.stringify(selectedMethod.account_details, null, 2)}
-                      </pre>
-                    </div>
+                    <dl className="rounded-lg bg-gray-50 p-4 text-sm">
+                      {Object.entries(selectedMethod.account_details).map(([key, value]) => (
+                        <div
+                          key={key}
+                          className="grid grid-cols-1 gap-1 border-b border-gray-200 py-2 last:border-b-0 sm:grid-cols-[140px_1fr]"
+                        >
+                          <dt className="font-medium text-gray-600">
+                            {formatAccountDetailLabel(key)}
+                          </dt>
+                          <dd className="break-words font-mono text-gray-900">
+                            {formatAccountDetailValue(value)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
                     <p className="mt-2 text-xs text-gray-500">
                       Utilize os dados acima para realizar a transferência bancária.
                     </p>

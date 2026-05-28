@@ -59,6 +59,7 @@ describe("useConversationRealtime", () => {
   let mockChannel: MockRealtimeChannel;
 
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
 
     mockChannel = {
@@ -101,7 +102,9 @@ describe("useConversationRealtime", () => {
       expect(mockChannel.subscribe).toHaveBeenCalled();
     });
 
-    expect(result.current.isConnected).toBe(true);
+    await waitFor(() => {
+      expect(result.current.isConnected).toBe(true);
+    });
     expect(result.current.error).toBeNull();
   });
 

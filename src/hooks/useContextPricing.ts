@@ -165,7 +165,7 @@ export function useUpdateMultiplier() {
         p_user_context: input.user_context,
         p_new_multiplier: input.new_multiplier,
         p_changed_by: user.id,
-        p_reason: input.reason || null,
+        p_reason: input.reason || undefined,
       });
 
       if (error) {
@@ -232,7 +232,7 @@ export function useUpdateChosenDiscount() {
       const { data, error } = await supabase.rpc("update_chosen_discount_with_history", {
         p_new_discount_percentage: input.new_discount_percentage,
         p_changed_by: user.id,
-        p_reason: input.reason || null,
+        p_reason: input.reason || undefined,
       });
 
       if (error) {

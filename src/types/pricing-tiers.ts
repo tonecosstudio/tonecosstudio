@@ -28,7 +28,7 @@ export interface PricingTier {
   display_order: number;
   created_at: string;
   updated_at: string;
-  created_by: string;
+  created_by: string | null;
   updated_by: string | null;
 }
 
@@ -267,9 +267,9 @@ export interface RevenueByTierReport {
 export interface ConversionByTierReport {
   tier_id: string;
   tier_name: string;
-  views: number;
+  views: number | null;
   purchases: number;
-  conversion_rate: number;
+  conversion_rate: number | null;
 }
 
 /**

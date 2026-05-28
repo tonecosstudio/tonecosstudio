@@ -5,22 +5,23 @@ function getAllowedOrigins(): string[] {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  return [
-    ...origins,
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-  ];
+  if (Deno.env.get("ALLOW_LOCAL_ORIGINS") === "true") {
+    origins.push("http://localhost:5173", "http://127.0.0.1:5173");
+  }
+
+  return origins;
 }
 
 function buildCorsHeaders(req?: Request) {
-  const origin = req?.headers.get("Origin") ?? "";
   const allowedOrigins = getAllowedOrigins();
+  const origin = req?.headers.get("Origin") ?? allowedOrigins[0] ?? "";
   const allowOrigin = allowedOrigins.includes(origin) ? origin : "";
 
   const headers: Record<string, string> = {
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type, x-bootstrap-admin-secret, x-cron-secret, x-webhook-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
     "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
+    "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
 

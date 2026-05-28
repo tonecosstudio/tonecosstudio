@@ -69,7 +69,7 @@ Estabelecer uma fundacao arquitetural solida antes de otimizacoes visuais, refin
 - `npm run lint:architecture`: passou em 2026-05-21 com exit code 0 e sem warnings apos migracao dos testes de componentes para mocks hoisted e tipos SSOT.
 - `npm run lint`: passou em 2026-05-21 com exit code 0; ainda reporta 687 warnings herdados de `any` em testes e Supabase Edge Functions.
 - `rg -n '^[^*\r\n]*console\.' src/services src/lib src/hooks --glob '!**/*.test.*' --glob '!**/*.spec.*' --glob '!**/*.md'`: passou em 2026-05-21 com ocorrencias reais apenas em `src/lib/logger.ts`.
-- Suite focada de logging/support (`label-service`, `cutoff-middleware`, `ReminderScheduler`, `stripe-service`, `sanitization-logging`): passou em 2026-05-21; 5 arquivos e 69 testes verdes.
+- Suite focada de logging/support (`label-service`, `cutoff-middleware`, `ReminderScheduler`, `sanitization-logging`): passou em 2026-05-21. A integração server-side do Stripe foi movida para Supabase Edge Functions.
 - Suite focada dos testes de componentes customer/production tocados nesta fatia (`npx vitest run ...` com 14 arquivos): passou em 2026-05-21; 182 testes verdes apos alinhamento dos testes aos boundaries atuais e mocks de hooks/services.
 
 ## Plano restante por modulo

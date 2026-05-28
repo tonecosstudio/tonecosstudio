@@ -16,7 +16,6 @@ import { useOrdersPagination } from '@/hooks/admin/orders-v2/useOrdersPagination
 import { useOrdersData } from '@/hooks/admin/orders-v2/useOrdersData';
 import { useOrdersCounts } from '@/hooks/admin/orders-v2/useOrdersCounts';
 import { useOrderSelection } from '@/hooks/admin/useOrderSelection';
-import { useOrderMutations } from '@/hooks/admin/useOrderMutations';
 import { useDebouncedValue } from '@/hooks/useDebounce';
 import { useScrollPrefetch } from '@/hooks/useScrollPrefetch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -30,6 +29,7 @@ import { BulkActionsBar } from '@/components/admin/orders/BulkActionsBar';
 import { OrderTypeFilter } from '@/components/admin/orders-v2/OrderTypeFilter';
 import { OrdersStats } from '@/components/admin/orders-v2/OrdersStats';
 import { useToast } from '@/hooks/use-toast';
+import { exportOrdersToCSV, triggerDownload } from '@/services/admin/orders-export';
 import type { UnifiedOrder } from '@/types/admin/orders';
 
 export default function OrdersPageV2() {
@@ -38,6 +38,7 @@ export default function OrdersPageV2() {
   // Estado do painel de detalhes
   const [selectedOrder, setSelectedOrder] = useState<UnifiedOrder | null>(null);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Gerenciamento de filtros
   const filterControls = useOrdersFilters();
@@ -86,9 +87,6 @@ export default function OrdersPageV2() {
   const { selectedIds, isAllSelected, selectAll, deselectAll, toggleSelection, selectionCount } =
     selection;
 
-  // Mutations
-  const _orderMutations = useOrderMutations();
-
   // Handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -114,6 +112,39 @@ export default function OrdersPageV2() {
 
   const handleClearSelection = () => {
     deselectAll();
+  };
+
+  const handleExportCSV = async () => {
+    if (selection.selectedOrders.length === 0) {
+      toast({
+        title: 'Nenhum pedido selecionado',
+        description: 'Selecione pelo menos um pedido para exportar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const { blob, filename, rowCount } = await exportOrdersToCSV(selection.selectedOrders);
+      triggerDownload(blob, filename);
+      toast({
+        title: 'CSV exportado',
+        description: `${rowCount} ${rowCount === 1 ? 'pedido exportado' : 'pedidos exportados'}.`,
+      });
+    } catch (exportError) {
+      toast({
+        title: 'Erro ao exportar CSV',
+        description:
+          exportError instanceof Error
+            ? exportError.message
+            : 'Nao foi possivel exportar os pedidos selecionados.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -214,11 +245,9 @@ export default function OrdersPageV2() {
 
                 <BulkActionsBar
                   selectedCount={selectionCount}
-                  onUpdateStatus={() => toast({ title: 'Em desenvolvimento' })}
-                  onGenerateLabels={() => toast({ title: 'Em desenvolvimento' })}
-                  onExportCSV={() => toast({ title: 'Em desenvolvimento' })}
+                  onExportCSV={handleExportCSV}
                   onClearSelection={handleClearSelection}
-                  isExporting={false}
+                  isExporting={isExporting}
                 />
 
                 <OrdersTable

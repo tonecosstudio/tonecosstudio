@@ -14,6 +14,7 @@ import { AlertCircle, Users, ExternalLink } from 'lucide-react';
 import { getCurrentCutoffDate } from '@/lib/cutoff-middleware';
 import { Link } from 'react-router-dom';
 import { usePendingChoices } from '@/hooks/admin/usePendingChoices';
+import { adminUserDetailsPath } from '@/config/routes';
 
 interface PendingChoicesListProps {
   cycleIds?: string[];
@@ -148,7 +149,7 @@ export function PendingChoicesList({ cycleIds, className }: PendingChoicesListPr
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <Link to={`/admin/subscribers/${choice.user_id}`}>
+                    <Link to={adminUserDetailsPath(choice.user_id)}>
                       <Button variant="ghost" size="sm" className="gap-2">
                         Ver Perfil
                         <ExternalLink className="h-3 w-3" />

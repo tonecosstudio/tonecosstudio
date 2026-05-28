@@ -174,7 +174,21 @@ export function CollectionSelector({
             return (
               <div
                 key={collection.id}
+                role="button"
+                tabIndex={disabled ? -1 : 0}
+                aria-pressed={isSelected}
+                aria-disabled={disabled}
                 onClick={() => !disabled && onCollectionSelect(collection.id)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  if (!disabled) {
+                    onCollectionSelect(collection.id);
+                  }
+                }}
                 className={`p-4 rounded-lg border cursor-pointer transition-all ${
                   isSelected
                     ? "border-primary bg-primary/5 shadow-sm"

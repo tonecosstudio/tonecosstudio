@@ -12,17 +12,25 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PaymentActionButtons } from "./PaymentActionButtons";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { approvePayment, rejectPayment, requestPaymentInfo } from "@/lib/payment-service";
+import { toast } from "@/hooks/use-toast";
 
 // Mock the payment service
 vi.mock("@/lib/payment-service", () => ({
   approvePayment: vi.fn(),
   rejectPayment: vi.fn(),
-  requestInfo: vi.fn(),
+  requestPaymentInfo: vi.fn(),
 }));
 
 // Mock the toast hook
 vi.mock("@/hooks/use-toast", () => ({
   toast: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { id: "admin-123" },
+  }),
 }));
 
 describe("PaymentActionButtons", () => {
@@ -91,8 +99,8 @@ describe("PaymentActionButtons", () => {
     const approveButton = screen.getByText("Aprovar");
     fireEvent.click(approveButton);
 
-    expect(screen.getByText("Confirmar Aprovação")).toBeInTheDocument();
-    expect(screen.getByText("Tem certeza que deseja aprovar este pagamento?")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Confirmar Aprova/ })).toBeInTheDocument();
+    expect(screen.getByText(/Tem certeza que deseja aprovar este pagamento/)).toBeInTheDocument();
   });
 
   it("should open reject dialog when reject button is clicked", () => {
@@ -120,8 +128,7 @@ describe("PaymentActionButtons", () => {
   });
 
   it("should call approvePayment when approve is confirmed", async () => {
-    const { approvePayment } = require("@/lib/payment-service");
-    approvePayment.mockResolvedValue(undefined);
+    vi.mocked(approvePayment).mockResolvedValue(undefined);
 
     renderComponent();
 
@@ -130,17 +137,16 @@ describe("PaymentActionButtons", () => {
     fireEvent.click(approveButton);
 
     // Confirm approval
-    const confirmButton = screen.getByText("Confirmar Aprovação");
+    const confirmButton = screen.getByRole("button", { name: /Confirmar Aprova/ });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(approvePayment).toHaveBeenCalledWith("payment-123");
+      expect(approvePayment).toHaveBeenCalledWith("payment-123", "admin-123");
     });
   });
 
   it("should call rejectPayment when reject is confirmed with reason", async () => {
-    const { rejectPayment } = require("@/lib/payment-service");
-    rejectPayment.mockResolvedValue(undefined);
+    vi.mocked(rejectPayment).mockResolvedValue(undefined);
 
     renderComponent();
 
@@ -157,13 +163,16 @@ describe("PaymentActionButtons", () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(rejectPayment).toHaveBeenCalledWith("payment-123", "Comprovante ilegível");
+      expect(rejectPayment).toHaveBeenCalledWith(
+        "payment-123",
+        "admin-123",
+        "Comprovante ilegível"
+      );
     });
   });
 
-  it("should call requestInfo when request info is confirmed with message", async () => {
-    const { requestInfo } = require("@/lib/payment-service");
-    requestInfo.mockResolvedValue(undefined);
+  it("should call requestPaymentInfo when request info is confirmed with message", async () => {
+    vi.mocked(requestPaymentInfo).mockResolvedValue(undefined);
 
     renderComponent();
 
@@ -182,16 +191,16 @@ describe("PaymentActionButtons", () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(requestInfo).toHaveBeenCalledWith(
+      expect(requestPaymentInfo).toHaveBeenCalledWith(
         "payment-123",
+        "admin-123",
         "Por favor, envie um comprovante mais legível"
       );
     });
   });
 
   it("should show loading state during approve mutation", async () => {
-    const { approvePayment } = require("@/lib/payment-service");
-    approvePayment.mockImplementation(() => new Promise(() => {})); // Never resolves
+    vi.mocked(approvePayment).mockImplementation(() => new Promise(() => {})); // Never resolves
 
     renderComponent();
 
@@ -200,16 +209,16 @@ describe("PaymentActionButtons", () => {
     fireEvent.click(approveButton);
 
     // Confirm approval
-    const confirmButton = screen.getByText("Confirmar Aprovação");
+    const confirmButton = screen.getByRole("button", { name: /Confirmar Aprova/ });
     fireEvent.click(confirmButton);
 
-    // Should show loading state
-    expect(screen.getByText("Aprovando...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Aprovando...")).toBeInTheDocument();
+    });
   });
 
   it("should show loading state during reject mutation", async () => {
-    const { rejectPayment } = require("@/lib/payment-service");
-    rejectPayment.mockImplementation(() => new Promise(() => {})); // Never resolves
+    vi.mocked(rejectPayment).mockImplementation(() => new Promise(() => {})); // Never resolves
 
     renderComponent();
 
@@ -225,13 +234,13 @@ describe("PaymentActionButtons", () => {
     const confirmButton = screen.getByText("Confirmar Rejeição");
     fireEvent.click(confirmButton);
 
-    // Should show loading state
-    expect(screen.getByText("Rejeitando...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Rejeitando...")).toBeInTheDocument();
+    });
   });
 
   it("should show loading state during request info mutation", async () => {
-    const { requestInfo } = require("@/lib/payment-service");
-    requestInfo.mockImplementation(() => new Promise(() => {})); // Never resolves
+    vi.mocked(requestPaymentInfo).mockImplementation(() => new Promise(() => {})); // Never resolves
 
     renderComponent();
 
@@ -249,13 +258,13 @@ describe("PaymentActionButtons", () => {
     const confirmButton = screen.getByText("Enviar Solicitação");
     fireEvent.click(confirmButton);
 
-    // Should show loading state
-    expect(screen.getByText("Enviando...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Enviando...")).toBeInTheDocument();
+    });
   });
 
   it("should call onActionComplete when action succeeds", async () => {
-    const { approvePayment } = require("@/lib/payment-service");
-    approvePayment.mockResolvedValue(undefined);
+    vi.mocked(approvePayment).mockResolvedValue(undefined);
     const mockOnActionComplete = vi.fn();
 
     renderComponent({ onActionComplete: mockOnActionComplete });
@@ -265,7 +274,7 @@ describe("PaymentActionButtons", () => {
     fireEvent.click(approveButton);
 
     // Confirm approval
-    const confirmButton = screen.getByText("Confirmar Aprovação");
+    const confirmButton = screen.getByRole("button", { name: /Confirmar Aprova/ });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -274,10 +283,8 @@ describe("PaymentActionButtons", () => {
   });
 
   it("should show error toast when approve fails", async () => {
-    const { approvePayment } = require("@/lib/payment-service");
-    const { toast } = require("@/hooks/use-toast");
     const errorMessage = "Network error";
-    approvePayment.mockRejectedValue(new Error(errorMessage));
+    vi.mocked(approvePayment).mockRejectedValue(new Error(errorMessage));
 
     renderComponent();
 
@@ -286,7 +293,7 @@ describe("PaymentActionButtons", () => {
     fireEvent.click(approveButton);
 
     // Confirm approval
-    const confirmButton = screen.getByText("Confirmar Aprovação");
+    const confirmButton = screen.getByRole("button", { name: /Confirmar Aprova/ });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -300,46 +307,30 @@ describe("PaymentActionButtons", () => {
     });
   });
 
-  it("should require rejection reason before confirming rejection", () => {
-    const { toast } = require("@/hooks/use-toast");
-
+  it("should block rejection confirmation until a reason is provided", () => {
     renderComponent();
 
-    // Open reject dialog
     const rejectButton = screen.getByText("Rejeitar");
     fireEvent.click(rejectButton);
 
-    // Try to confirm without reason
-    const confirmButton = screen.getByText("Confirmar Rejeição");
-    fireEvent.click(confirmButton);
-
-    expect(toast).toHaveBeenCalledWith(
+    expect(screen.getByText("Confirmar Rejeição")).toBeDisabled();
+    expect(toast).not.toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Motivo obrigatório",
-        description: "Por favor, informe o motivo da rejeição.",
-        variant: "destructive",
       })
     );
   });
 
-  it("should require message before confirming request info", () => {
-    const { toast } = require("@/hooks/use-toast");
-
+  it("should block request info confirmation until a message is provided", () => {
     renderComponent();
 
-    // Open request info dialog
     const requestInfoButton = screen.getByText("Solicitar Info");
     fireEvent.click(requestInfoButton);
 
-    // Try to confirm without message
-    const confirmButton = screen.getByText("Enviar Solicitação");
-    fireEvent.click(confirmButton);
-
-    expect(toast).toHaveBeenCalledWith(
+    expect(screen.getByText("Enviar Solicitação")).toBeDisabled();
+    expect(toast).not.toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Mensagem obrigatória",
-        description: "Por favor, informe a mensagem para o cliente.",
-        variant: "destructive",
       })
     );
   });

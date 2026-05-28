@@ -11,7 +11,7 @@
  * - Integration with React Query
  */
 
-import { errorTracking, DatabaseError, ErrorCategory } from '@/lib/error-tracking';
+import { errorTracking, DatabaseError } from '@/lib/error-tracking';
 
 type PaginationQueryError = {
   message: string;
@@ -150,7 +150,6 @@ export async function paginateQuery<T>(
     if (countError) {
       throw new DatabaseError(
         `Failed to get count: ${countError.message}`,
-        ErrorCategory.DATABASE,
         { error: countError }
       );
     }
@@ -165,7 +164,6 @@ export async function paginateQuery<T>(
     if (dataError) {
       throw new DatabaseError(
         `Failed to fetch data: ${dataError.message}`,
-        ErrorCategory.DATABASE,
         { error: dataError }
       );
     }
@@ -218,7 +216,6 @@ export async function paginateWithCursor<T extends CursorRow>(
     if (error) {
       throw new DatabaseError(
         `Failed to fetch data: ${error.message}`,
-        ErrorCategory.DATABASE,
         { error }
       );
     }

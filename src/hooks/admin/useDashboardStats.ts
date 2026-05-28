@@ -43,6 +43,7 @@ export interface DashboardStats {
   };
   quotes: {
     total: number;
+    uniqueUsers: number;
     pending: number;
     approved: number;
     completed: number;
@@ -117,12 +118,12 @@ export function useDashboardStats(dateRange: DateRange) {
 
       const funnelData = {
         visitors: counts.usersTotal,
-        leads: Math.floor(counts.usersTotal * 0.4),
+        leads: currentOrders.quotes.uniqueUsers,
         quotes: currentOrders.quotes.total,
         conversions: currentOrders.quotes.completed,
       };
 
-      const subscriptionMetrics = await fetchSubscriptionMetrics(counts.subscriptions);
+      const subscriptionMetrics = await fetchSubscriptionMetrics(dateRange, previous);
 
       return {
         models: counts.models,
@@ -147,7 +148,7 @@ export function useDashboardStats(dateRange: DateRange) {
         preorders: currentOrders.preorders,
         subscriptions: {
           total: counts.subscriptions,
-          current: counts.subscriptions,
+          current: counts.currentSubscriptions,
           previous: previousCounts.previousSubscriptionsCount,
         },
         queue: counts.queue,

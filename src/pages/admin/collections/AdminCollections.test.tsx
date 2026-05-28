@@ -35,6 +35,28 @@ vi.mock('@/components/SEOHead', () => ({
   default: () => null,
 }));
 
+vi.mock('@/hooks/admin/useAdminCollectionsData', () => ({
+  useAdminCollectionsData: () => ({
+    collections: [],
+    characters: [],
+    selectedCollectionData: null,
+    collectionsQuery: { isLoading: false, error: null },
+    charactersQuery: { isLoading: false, error: null },
+  }),
+}));
+
+vi.mock('@/hooks/admin/useAdminCollectionsOperations', () => ({
+  useAdminCollectionsOperations: () => ({}),
+}));
+
+vi.mock('@/components/admin/collections/CollectionForm', () => ({
+  CollectionForm: ({ onOpenChange }: { onOpenChange: (open: boolean) => void }) => (
+    <button type="button" onClick={() => onOpenChange(true)}>
+      Nova Coleção
+    </button>
+  ),
+}));
+
 describe('AdminCollections - Rotation Configuration', () => {
   let queryClient: QueryClient;
 
@@ -48,21 +70,7 @@ describe('AdminCollections - Rotation Configuration', () => {
     vi.clearAllMocks();
   });
 
-  it('should display rotation type options when creating a collection', async () => {
-    // Mock collections query
-    const mockFrom = vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
-      }),
-    });
-    const { supabase } = await import('@/integrations/supabase/client');
-    (
-      supabase as unknown as { from: { mockImplementation: (fn: typeof mockFrom) => void } }
-    ).from.mockImplementation(mockFrom);
-
+  it('should render the collection dashboard empty state', async () => {
     const AdminCollections = (await import('./AdminCollections')).default;
 
     render(

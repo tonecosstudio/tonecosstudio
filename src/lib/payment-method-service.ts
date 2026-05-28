@@ -40,6 +40,45 @@ type PaymentMethodUpdateData = Partial<
   >
 >;
 
+type RpcError = { message?: string } | null;
+type PaymentMethodPayload = Record<string, unknown>;
+
+interface PaymentMethodRpcClient {
+  rpc(functionName: "admin_create_payment_method", args: {
+    p_data: PaymentMethodPayload;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_update_payment_method", args: {
+    p_method_id: string;
+    p_data: PaymentMethodPayload;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_set_default_payment_method", args: {
+    p_method_id: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_toggle_payment_method_active", args: {
+    p_method_id: string;
+    p_is_active: boolean;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_delete_payment_method", args: {
+    p_method_id: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+}
+
+const paymentMethodRpc = supabase as unknown as PaymentMethodRpcClient;
+
+function mapPaymentMethodError(message: string | undefined, fallback: string): string {
+  const value = message ?? "";
+  if (value.includes("PAYMENT_METHOD_NOT_FOUND")) return "Payment method not found";
+  if (value.includes("INVALID_PAYMENT_METHOD_NAME")) return "Payment method name is invalid";
+  if (value.includes("INVALID_PAYMENT_METHOD_TYPE")) return "Payment method type is invalid";
+  if (value.includes("INVALID_PAYMENT_METHOD_INSTRUCTIONS")) {
+    return "Payment instructions are invalid";
+  }
+  if (value.includes("INVALID_PAYMENT_METHOD_LINK")) return "Payment link must be HTTPS";
+  if (value.includes("INVALID_PAYMENT_METHOD_PIX_KEY")) return "PIX key is invalid";
+  if (value.includes("INVALID_PAYMENT_METHOD_ORDER")) return "Display order is invalid";
+  return `${fallback}: ${value || "Unknown error"}`;
+}
+
 /**
  * List all active payment methods
  * Results are cached for 5 minutes
@@ -131,14 +170,12 @@ export async function createPaymentMethod(input: PaymentMethodInput): Promise<Pa
     display_order: input.display_order || 0,
   };
 
-  const { data, error } = await supabase
-    .from("admin_payment_methods")
-    .insert(insertData)
-    .select("*")
-    .single();
+  const { data, error } = await paymentMethodRpc.rpc("admin_create_payment_method", {
+    p_data: insertData,
+  });
 
   if (error) {
-    throw new Error(`Failed to create payment method: ${error.message}`);
+    throw new Error(mapPaymentMethodError(error.message, "Failed to create payment method"));
   }
 
   // Clear cache
@@ -205,15 +242,13 @@ export async function updatePaymentMethod(
     updateData.display_order = input.display_order;
   }
 
-  const { data, error } = await supabase
-    .from("admin_payment_methods")
-    .update(updateData)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await paymentMethodRpc.rpc("admin_update_payment_method", {
+    p_method_id: id,
+    p_data: updateData as PaymentMethodPayload,
+  });
 
   if (error) {
-    throw new Error(`Failed to update payment method: ${error.message}`);
+    throw new Error(mapPaymentMethodError(error.message, "Failed to update payment method"));
   }
 
   // Clear cache
@@ -230,13 +265,12 @@ export async function updatePaymentMethod(
  * @throws Error if database update fails
  */
 export async function setDefaultPaymentMethod(id: string): Promise<void> {
-  const { error } = await supabase
-    .from("admin_payment_methods")
-    .update({ is_default: true })
-    .eq("id", id);
+  const { error } = await paymentMethodRpc.rpc("admin_set_default_payment_method", {
+    p_method_id: id,
+  });
 
   if (error) {
-    throw new Error(`Failed to set default payment method: ${error.message}`);
+    throw new Error(mapPaymentMethodError(error.message, "Failed to set default payment method"));
   }
 
   // Clear cache
@@ -251,13 +285,15 @@ export async function setDefaultPaymentMethod(id: string): Promise<void> {
  * @throws Error if database update fails
  */
 export async function togglePaymentMethodActive(id: string, isActive: boolean): Promise<void> {
-  const { error } = await supabase
-    .from("admin_payment_methods")
-    .update({ is_active: isActive })
-    .eq("id", id);
+  const { error } = await paymentMethodRpc.rpc("admin_toggle_payment_method_active", {
+    p_method_id: id,
+    p_is_active: isActive,
+  });
 
   if (error) {
-    throw new Error(`Failed to toggle payment method active status: ${error.message}`);
+    throw new Error(
+      mapPaymentMethodError(error.message, "Failed to toggle payment method active status")
+    );
   }
 
   // Clear cache
@@ -271,13 +307,12 @@ export async function togglePaymentMethodActive(id: string, isActive: boolean): 
  * @throws Error if database delete fails
  */
 export async function deletePaymentMethod(id: string): Promise<void> {
-  const { error } = await supabase
-    .from("admin_payment_methods")
-    .delete()
-    .eq("id", id);
+  const { error } = await paymentMethodRpc.rpc("admin_delete_payment_method", {
+    p_method_id: id,
+  });
 
   if (error) {
-    throw new Error(`Failed to delete payment method: ${error.message}`);
+    throw new Error(mapPaymentMethodError(error.message, "Failed to delete payment method"));
   }
 
   clearPaymentMethodCache();

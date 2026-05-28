@@ -50,11 +50,18 @@ import { ProductionInfoSection } from "./ProductionInfoSection";
 import type { UnifiedOrder, OrderStatus } from "@/types/admin/orders";
 import { formatCurrency } from "@/lib/utils";
 import {
+  buildSafeMailtoHref,
+  openSafeExternalUrl,
+  openSafeInAppPath,
+} from "@/lib/security/safe-open";
+import { buildTrackingUrl } from "@/lib/tracking-links";
+import {
   useOrderMutations,
   getStatusLabel,
   getValidNextStatuses,
 } from "@/hooks/admin/useOrderMutations";
 import { useOrderDetailActions } from "@/hooks/admin/useOrderDetailActions";
+import { adminUserDetailsPath } from "@/config/routes";
 
 interface OrderDetailPanelProps {
   order: UnifiedOrder | null;
@@ -88,6 +95,9 @@ export function OrderDetailPanel({
 
   // Obter status válidos para transição
   const validNextStatuses = order ? getValidNextStatuses(order.status, order.type) : [];
+  const customerEmailHref = order?.customer.email
+    ? buildSafeMailtoHref(order.customer.email)
+    : null;
 
   // Handler para mudança de status
   const handleStatusChange = (newStatus: OrderStatus) => {
@@ -165,6 +175,12 @@ export function OrderDetailPanel({
     }
   };
 
+  const handleOpenCustomerAddress = () => {
+    if (!order) return;
+
+    openSafeInAppPath(`${adminUserDetailsPath(order.customer.id)}?tab=address`);
+  };
+
   // Handler para cancelar mudança crítica
   const handleCancelCriticalChange = () => {
     setPendingStatus(null);
@@ -198,8 +214,15 @@ export function OrderDetailPanel({
         variant: "default",
       });
 
-      // Abrir PDF da etiqueta em nova aba
-      window.open(result.labelUrl, "_blank", "noopener,noreferrer");
+      try {
+        openSafeExternalUrl(result.labelUrl);
+      } catch {
+        toast({
+          title: "URL de etiqueta invalida",
+          description: "A etiqueta foi gerada, mas o link retornado nao e seguro.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       const errorMessage = getLabelErrorMessage(error);
 
@@ -214,14 +237,7 @@ export function OrderDetailPanel({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                // TODO: Implementar modal de edição de endereço
-                toast({
-                  title: "Edição de endereço",
-                  description:
-                    "Funcionalidade em desenvolvimento. Por favor, edite o endereço no cadastro do cliente.",
-                });
-              }}
+              onClick={handleOpenCustomerAddress}
             >
               Corrigir Endereço
             </Button>
@@ -432,12 +448,16 @@ export function OrderDetailPanel({
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Email</span>
-                  <a
-                    href={`mailto:${order.customer.email}`}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {order.customer.email}
-                  </a>
+                  {customerEmailHref ? (
+                    <a
+                      href={customerEmailHref}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {order.customer.email}
+                    </a>
+                  ) : (
+                    <span className="text-sm">{order.customer.email}</span>
+                  )}
                 </div>
               </div>
             </section>
@@ -511,8 +531,19 @@ export function OrderDetailPanel({
                           size="sm"
                           className="w-full"
                           onClick={() => {
-                            const trackingUrl = `https://rastreamento.correios.com.br/app/index.php?codigo=${order.trackingCode}`;
-                            window.open(trackingUrl, "_blank", "noopener,noreferrer");
+                            try {
+                              const trackingUrl = buildTrackingUrl(order.trackingCode);
+                              if (!trackingUrl) {
+                                throw new Error("Invalid tracking code");
+                              }
+                              openSafeExternalUrl(trackingUrl);
+                            } catch {
+                              toast({
+                                title: "URL de rastreio invalida",
+                                description: "Nao foi possivel abrir o link de rastreio com seguranca.",
+                                variant: "destructive",
+                              });
+                            }
                           }}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
@@ -592,9 +623,11 @@ export function OrderDetailPanel({
             <Separator />
 
             {/* Histórico de Status */}
-            <section>
-              <OrderStatusHistory orderId={order.id} orderType={order.type} />
-            </section>
+            {order.type !== "quote" && (
+              <section>
+                <OrderStatusHistory orderId={order.id} orderType={order.type} />
+              </section>
+            )}
           </div>
         )}
 

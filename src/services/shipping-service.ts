@@ -2,7 +2,8 @@
  * Shipping Service
  *
  * Provides shipping carrier integration for label generation and tracking.
- * Currently implements a mock/stub that can be easily replaced with real API integration.
+ * Development and test builds use a local simulator. Production builds fail
+ * closed until a real carrier API adapter is configured.
  *
  * Supported Carriers:
  * - Correios (Brazilian national postal service) - Default
@@ -11,8 +12,6 @@
  * Environment Variables Required:
  * - VITE_SHIPPING_CARRIER: 'correios' | 'private' (default: 'correios')
  * - VITE_SHIPPING_API_URL: Base URL for the carrier API (optional)
- * - VITE_SHIPPING_CONTRACT_CODE: Contract code for Correios (optional)
- * - VITE_SHIPPING_ADMIN_CODE: Admin code for Correios (optional)
  * - VITE_SHIPPING_SERVICE_CODE: Service code (e.g., '04014' for SEDEX) (default: '04014')
  *
  * @example
@@ -38,6 +37,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { logDebug, logError } from '@/lib/logger';
+
+function secureNumericCode(length: number): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => String(byte % 10)).join('');
+}
 
 /**
  * Address information for shipping
@@ -107,8 +112,6 @@ export interface BatchLabelResult {
 interface ShippingConfig {
   carrier: 'correios' | 'private';
   apiUrl: string;
-  contractCode?: string;
-  adminCode?: string;
   serviceCode: string;
   maxRetries: number;
   retryDelay: number;
@@ -124,6 +127,19 @@ interface DeliveryQueryResult {
   data: DeliveryInfo | null;
   error: { message: string } | null;
 }
+
+interface ShippingRpcError {
+  message: string;
+}
+
+interface ShippingRpcClient {
+  rpc(
+    name: 'admin_mark_subscription_delivery_delivered_from_tracking',
+    args: { p_delivery_id: string; p_delivered_at: string }
+  ): Promise<{ data: unknown; error: ShippingRpcError | null }>;
+}
+
+const shippingRpc = supabase as unknown as ShippingRpcClient;
 
 /**
  * Custom error for shipping operations
@@ -156,8 +172,6 @@ export class ShippingService {
   private loadConfig(): ShippingConfig {
     const carrier = (import.meta.env.VITE_SHIPPING_CARRIER || 'correios') as ShippingConfig['carrier'];
     const apiUrl = import.meta.env.VITE_SHIPPING_API_URL || 'https://api.correios.com.br';
-    const contractCode = import.meta.env.VITE_SHIPPING_CONTRACT_CODE || '';
-    const adminCode = import.meta.env.VITE_SHIPPING_ADMIN_CODE || '';
     const serviceCode = import.meta.env.VITE_SHIPPING_SERVICE_CODE || '04014'; // SEDEX
     const maxRetries = parseInt(import.meta.env.VITE_SHIPPING_MAX_RETRIES || '3', 10);
     const retryDelay = parseInt(import.meta.env.VITE_SHIPPING_RETRY_DELAY || '2000', 10);
@@ -165,12 +179,24 @@ export class ShippingService {
     return {
       carrier,
       apiUrl,
-      contractCode,
-      adminCode,
       serviceCode,
       maxRetries,
       retryDelay,
     };
+  }
+
+  private isProductionBuild(): boolean {
+    return import.meta.env.PROD === true || String(import.meta.env.PROD) === 'true';
+  }
+
+  private assertSimulatorAllowed(operation: string): void {
+    if (this.isProductionBuild()) {
+      throw new ShippingServiceError(
+        `${operation} requires a configured shipping carrier integration. Development simulator is disabled in production.`,
+        'SHIPPING_INTEGRATION_REQUIRED',
+        false
+      );
+    }
   }
 
   /**
@@ -208,9 +234,6 @@ export class ShippingService {
       } else {
         labelResult = await this.generatePrivateCarrierLabel(deliveryId, address, cost);
       }
-
-      // Store tracking code in delivery record
-      await this.updateDeliveryTracking(deliveryId, labelResult.trackingCode);
 
       return labelResult;
     } catch (error) {
@@ -293,14 +316,17 @@ export class ShippingService {
 
           // Update delivery status if delivered
           if (status.delivered) {
-            await supabase
-              .from('subscription_deliveries')
-              .update({
-                status: 'delivered',
-                actual_delivery_date: status.deliveredAt?.toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', delivery.id);
+            const { error: updateError } = await shippingRpc.rpc(
+              'admin_mark_subscription_delivery_delivered_from_tracking',
+              {
+                p_delivery_id: delivery.id,
+                p_delivered_at: (status.deliveredAt ?? new Date()).toISOString(),
+              }
+            );
+
+            if (updateError) {
+              throw new Error(`Failed to mark delivery as delivered: ${updateError.message}`);
+            }
 
             updatedCount++;
           }
@@ -338,8 +364,9 @@ export class ShippingService {
         );
       }
 
-      // Mock implementation - calculate based on state
-      // In production, this would call the carrier API
+      this.assertSimulatorAllowed('Shipping cost calculation');
+
+      // Development simulator - calculate based on state until a carrier adapter is configured.
       const basePrice = 15.00;
       const weightPrice = weight * 5.00;
 
@@ -473,35 +500,14 @@ export class ShippingService {
     return data;
   }
 
-  /**
-   * Update delivery record with tracking code
-   */
-  private async updateDeliveryTracking(deliveryId: string, trackingCode: string): Promise<void> {
-    const { error } = await supabase
-      .from('subscription_deliveries')
-      .update({
-        tracking_code: trackingCode,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', deliveryId);
-
-    if (error) {
-      throw new Error(`Failed to update delivery tracking: ${error.message}`);
-    }
-  }
-
   // ============================================================================
-  // Correios Integration (Mock Implementation)
+  // Correios Integration (Development Simulator)
   // ============================================================================
 
   /**
-   * Generate Correios shipping label (MOCK IMPLEMENTATION)
-   *
-   * In production, this would:
-   * 1. Call Correios API to create shipment
-   * 2. Get tracking code from response
-   * 3. Download label PDF
-   * 4. Store label in Supabase Storage
+   * Generate a Correios shipping label in development/test only.
+   * Production must use a real carrier adapter and must not issue simulated
+   * tracking codes.
    *
    * @private
    */
@@ -510,19 +516,15 @@ export class ShippingService {
     address: Address,
     cost: number
   ): Promise<LabelResult> {
-    // Mock implementation - generates fake tracking code
-    // In production, replace with actual Correios API call
+    this.assertSimulatorAllowed('Correios label generation');
 
     logDebug('Generating Correios label for delivery', { deliveryId, address, cost }, 'shipping');
-    if (!import.meta.env.PROD) {
-      logDebug('Mock Correios label generation', { deliveryId }, 'shipping');
-    }
+    logDebug('Development Correios label simulator', { deliveryId }, 'shipping');
 
-    // Generate mock tracking code (Correios format: BR123456789BR)
-    const trackingCode = `BR${Math.random().toString().slice(2, 11)}BR`;
+    // Generate simulated tracking code (Correios format: BR123456789BR)
+    const trackingCode = `BR${secureNumericCode(9)}BR`;
 
-    // Mock label URL (in production, this would be the actual PDF URL)
-    const labelUrl = `https://mock-correios.com/labels/${trackingCode}.pdf`;
+    const labelUrl = `https://simulator.local/correios/labels/${trackingCode}.pdf`;
 
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -535,20 +537,18 @@ export class ShippingService {
   }
 
   /**
-   * Get Correios tracking status (MOCK IMPLEMENTATION)
-   *
-   * In production, this would call Correios tracking API
+   * Get Correios tracking status in development/test only.
    *
    * @private
    */
   private async getCorreiosTracking(trackingCode: string): Promise<TrackingStatus> {
-    // Mock implementation
+    this.assertSimulatorAllowed('Correios tracking query');
     logDebug('Getting Correios tracking', { trackingCode }, 'shipping');
 
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Return mock tracking data
+    // Return simulated tracking data
     return {
       trackingCode,
       status: 'in_transit',
@@ -573,11 +573,11 @@ export class ShippingService {
   }
 
   // ============================================================================
-  // Private Carrier Integration (Mock Implementation)
+  // Private Carrier Integration (Development Simulator)
   // ============================================================================
 
   /**
-   * Generate private carrier shipping label (MOCK IMPLEMENTATION)
+   * Generate private carrier shipping label in development/test only.
    *
    * @private
    */
@@ -586,14 +586,12 @@ export class ShippingService {
     address: Address,
     cost: number
   ): Promise<LabelResult> {
-    // Mock implementation for private carriers
-    logDebug('Generating private carrier label', { deliveryId }, 'shipping');
-    if (!import.meta.env.PROD) {
-      logDebug('Mock private carrier label generation', { deliveryId }, 'shipping');
-    }
+    this.assertSimulatorAllowed('Private carrier label generation');
+    logDebug('Generating private carrier label', { deliveryId, destinationState: address.state }, 'shipping');
+    logDebug('Development private carrier label simulator', { deliveryId }, 'shipping');
 
-    const trackingCode = `PC${Math.random().toString().slice(2, 11)}`;
-    const labelUrl = `https://mock-carrier.com/labels/${trackingCode}.pdf`;
+    const trackingCode = `PC${secureNumericCode(9)}`;
+    const labelUrl = `https://simulator.local/private-carrier/labels/${trackingCode}.pdf`;
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -605,11 +603,12 @@ export class ShippingService {
   }
 
   /**
-   * Get private carrier tracking status (MOCK IMPLEMENTATION)
+   * Get private carrier tracking status in development/test only.
    *
    * @private
    */
   private async getPrivateCarrierTracking(trackingCode: string): Promise<TrackingStatus> {
+    this.assertSimulatorAllowed('Private carrier tracking query');
     logDebug('Getting private carrier tracking', { trackingCode }, 'shipping');
 
     await new Promise(resolve => setTimeout(resolve, 300));

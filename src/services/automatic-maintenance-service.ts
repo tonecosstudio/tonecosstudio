@@ -12,9 +12,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isCollectionActive } from "./collection-service";
 import { nowInBahia } from "@/lib/timezone";
-import { recordCollectionChange } from "./audit-trail-service";
 import { emailService } from "./email-service";
 import { logInfo, logError } from "@/lib/logger";
+import { applyAutomaticDeliveryMaintenanceRpc } from "./delivery-cycle-mutations-service";
 
 interface QueryResult<T> {
   data: T;
@@ -31,10 +31,18 @@ interface PreviousDeliveryRow {
   collection_id: string | null;
 }
 
-interface DeliveryMaintenanceUpdate {
-  collection_id: string;
-  auto_maintained: boolean;
-  updated_at: string;
+function resolveExpectedDeliveryDate(expectedDeliveryDate: string | null): Date {
+  if (!expectedDeliveryDate) {
+    return nowInBahia();
+  }
+
+  const parsedDate = new Date(expectedDeliveryDate);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw new Error(`Invalid expected delivery date: ${expectedDeliveryDate}`);
+  }
+
+  return parsedDate;
 }
 
 /**
@@ -101,9 +109,7 @@ export async function applyAutomaticMaintenance(
   }
 
   // Determine the month and year for the current delivery
-  const expectedDate = currentDelivery.expected_delivery_date 
-    ? new Date(currentDelivery.expected_delivery_date)
-    : nowInBahia();
+  const expectedDate = resolveExpectedDeliveryDate(currentDelivery.expected_delivery_date);
   
   const month = expectedDate.getMonth() + 1; // JavaScript months are 0-indexed
   const year = expectedDate.getFullYear();
@@ -116,47 +122,7 @@ export async function applyAutomaticMaintenance(
   );
 
   if (collectionIsActive) {
-    // Collection is active - copy it to current delivery
-    const deliveryUpdate: DeliveryMaintenanceUpdate = {
-      collection_id: previousDelivery.collection_id,
-      auto_maintained: true,
-      updated_at: new Date().toISOString()
-    };
-
-    const { error: updateError } = await supabase
-      .from('subscription_deliveries')
-      .update(deliveryUpdate)
-      .eq('id', deliveryId);
-
-    if (updateError) {
-      throw new Error(`Failed to update delivery with automatic maintenance: ${updateError.message}`);
-    }
-
-    // Get the user_id for the audit trail
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('id', subscriptionId)
-      .single();
-
-    if (subscriptionError || !subscription) {
-      throw new Error(`Failed to get subscription user: ${subscriptionError?.message || 'Subscription not found'}`);
-    }
-
-    // Create audit trail record using the audit trail service
-    try {
-      await recordCollectionChange({
-        deliveryId,
-        userId: subscription.user_id,
-        previousCollectionId: null, // No previous choice for this delivery
-        newCollectionId: previousDelivery.collection_id,
-        changeReason: 'automatic_maintenance',
-        changedByAdmin: false,
-      });
-    } catch (auditError) {
-      // Log the error but don't fail the operation
-      logError('Failed to create audit trail record', auditError, 'automatic-maintenance');
-    }
+    await applyAutomaticDeliveryMaintenanceRpc(deliveryId, subscriptionId);
 
     logInfo(`Automatic maintenance applied: copied collection ${previousDelivery.collection_id} to delivery ${deliveryId}`, 
       { deliveryId, collectionId: previousDelivery.collection_id, subscriptionId }, 

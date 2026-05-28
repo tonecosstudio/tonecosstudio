@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import { userHasAdminAccess } from "@/services/auth/current-user";
 
 async function resolveUserId(userId?: string): Promise<string | null> {
   if (userId) {
@@ -17,17 +18,7 @@ export async function isAdmin(userId?: string): Promise<boolean> {
       return false;
     }
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", uid)
-      .single();
-
-    if (error || !profile) {
-      return false;
-    }
-
-    return profile.role === "admin";
+    return userHasAdminAccess(uid);
   } catch (error) {
     log.error("Erro ao verificar permissão administrativa", { error, userId });
     return false;

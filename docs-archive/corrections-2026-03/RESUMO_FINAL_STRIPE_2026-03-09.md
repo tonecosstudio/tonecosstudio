@@ -279,9 +279,9 @@ Test Files  1 passed (1)
 cp .env.stripe.example .env.local
 
 # Editar e adicionar suas chaves
-VITE_STRIPE_SECRET_KEY=sk_test_...
+STRIPE_SECRET_KEY=SUA_CHAVE_SECRETA_STRIPE
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
-VITE_STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_WEBHOOK_SECRET=SEU_WEBHOOK_SECRET_STRIPE
 ```
 
 ### 2. Executar Migrations

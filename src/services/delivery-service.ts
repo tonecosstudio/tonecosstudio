@@ -8,18 +8,17 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import log from "@/lib/logger";
-import { applyAutomaticMaintenance } from "./automatic-maintenance-service";
-import { recordCollectionChange } from "./audit-trail-service";
+import { assertCurrentUserId } from "./auth/current-user";
+import {
+  activateDeliveryWithAutoMaintenanceRpc,
+  changeCollectionChoiceForCurrentUserRpc,
+} from "./delivery-cycle-mutations-service";
 
 interface DeliveryRpcError {
   message: string;
 }
 
 interface DeliveryRpcClient {
-  rpc(
-    name: 'activate_delivery_with_auto_maintenance',
-    args: { p_delivery_id: string }
-  ): Promise<{ data: unknown; error: DeliveryRpcError | null }>;
   rpc(name: 'is_before_cutoff'): Promise<{ data: boolean | null; error: DeliveryRpcError | null }>;
 }
 
@@ -46,13 +45,7 @@ const deliveryRpc = supabase as unknown as DeliveryRpcClient;
  * Requirements: 6.2, 10.4
  */
 export async function activateDelivery(deliveryId: string): Promise<void> {
-  const { error } = await deliveryRpc.rpc('activate_delivery_with_auto_maintenance', {
-    p_delivery_id: deliveryId
-  });
-
-  if (error) {
-    throw new Error(`Failed to activate delivery: ${error.message}`);
-  }
+  await activateDeliveryWithAutoMaintenanceRpc(deliveryId);
 }
 
 /**
@@ -71,55 +64,9 @@ export async function activateDelivery(deliveryId: string): Promise<void> {
  */
 export async function activateDeliveryWithService(
   deliveryId: string,
-  subscriptionId: string
+  _subscriptionId: string
 ): Promise<void> {
-  // Get the delivery
-  const { data: delivery, error: deliveryError } = await supabase
-    .from('subscription_deliveries')
-    .select('status, delivery_number')
-    .eq('id', deliveryId)
-    .single();
-
-  if (deliveryError || !delivery) {
-    throw new Error(`Failed to get delivery: ${deliveryError?.message || 'Delivery not found'}`);
-  }
-
-  // Only activate if status is 'scheduled'
-  if (delivery.status !== 'scheduled') {
-    log.info('Delivery not in scheduled status, skipping activation', {
-      deliveryId,
-      currentStatus: delivery.status
-    });
-    return;
-  }
-
-  // Update delivery status to pending_choice
-  const { error: updateError } = await supabase
-    .from('subscription_deliveries')
-    .update({
-      status: 'pending_choice',
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', deliveryId);
-
-  if (updateError) {
-    throw new Error(`Failed to update delivery status: ${updateError.message}`);
-  }
-
-  // Skip automatic maintenance if this is the first delivery
-  if (delivery.delivery_number === 1) {
-    log.info('First delivery, skipping automatic maintenance', { deliveryId });
-    return;
-  }
-
-  // Apply automatic maintenance
-  try {
-    await applyAutomaticMaintenance(deliveryId, subscriptionId);
-  } catch (error) {
-    // Log error but don't fail the activation
-    log.error('Failed to apply automatic maintenance', { deliveryId, error });
-    // The delivery is still in pending_choice status, subscriber can make manual selection
-  }
+  await activateDelivery(deliveryId);
 }
 
 /**
@@ -242,53 +189,19 @@ export async function changeCollectionChoice(
   ipAddress?: string,
   userAgent?: string
 ): Promise<void> {
+  await assertCurrentUserId(userId);
+
   // Check if changes are allowed
   const allowed = await canChangeCollection(deliveryId);
   if (!allowed) {
     throw new Error('CUTOFF_PASSED: Changes blocked - production has started');
   }
 
-  // Get current delivery information
-  const { data: delivery, error: deliveryError } = await supabase
-    .from('subscription_deliveries')
-    .select('collection_id, auto_maintained')
-    .eq('id', deliveryId)
-    .single();
-
-  if (deliveryError || !delivery) {
-    throw new Error(`Failed to get delivery: ${deliveryError?.message || 'Delivery not found'}`);
-  }
-
-  const previousCollectionId = delivery.collection_id;
-
-  // Update delivery with new collection
-  const { error: updateError } = await supabase
-    .from('subscription_deliveries')
-    .update({
-      collection_id: newCollectionId,
-      auto_maintained: false, // Reset auto_maintained flag when manually changed
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', deliveryId);
-
-  if (updateError) {
-    throw new Error(`Failed to update delivery: ${updateError.message}`);
-  }
-
-  // Create audit trail record using the audit trail service
-  try {
-    await recordCollectionChange({
-      deliveryId,
-      userId,
-      previousCollectionId,
-      newCollectionId,
-      changeReason: 'manual',
-      changedByAdmin: false,
-      ipAddress,
-      userAgent,
-    });
-  } catch (auditError) {
-    // Log error but don't fail the operation
-    log.error('Failed to create audit trail record', { error: auditError });
-  }
+  await changeCollectionChoiceForCurrentUserRpc(
+    deliveryId,
+    newCollectionId,
+    userId,
+    ipAddress,
+    userAgent
+  );
 }

@@ -11,6 +11,11 @@ import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects
 import { useAuth } from "@/lib/auth";
 import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
 import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
+import {
+  PUBLIC_ROUTES,
+  catalogModelDetailsPath,
+  collectionDetailsPath,
+} from "@/config/routes";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -158,7 +163,7 @@ function FeaturedCollectionCard({
 
   return (
     <ArcadeCard className="cursor-pointer" hover>
-      <div onClick={() => navigate(`/colecoes/${slug}`)} className="relative overflow-hidden">
+      <div onClick={() => navigate(collectionDetailsPath(slug))} className="relative overflow-hidden">
         {/* Image */}
         <div className="h-48 bg-[hsl(0,0%,8%)] overflow-hidden">
           {coverUrl ? (
@@ -285,7 +290,7 @@ export default function LandingPage() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <button
-              onClick={() => navigate("/colecoes")}
+              onClick={() => navigate(PUBLIC_ROUTES.collections)}
               className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
             >
               <Crosshair className="w-5 h-5 group-hover:animate-spin" style={{ animationDuration: "3s" }} />
@@ -294,7 +299,7 @@ export default function LandingPage() {
             </button>
 
             <button
-              onClick={() => navigate("/catalogo")}
+              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
               className="inline-flex items-center gap-3 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 transition-all"
             >
               <Eye className="w-5 h-5" />
@@ -337,15 +342,15 @@ export default function LandingPage() {
                   key={c.id}
                   name={c.name}
                   description={c.description}
-                  totalCharacters={c.total_characters}
-                  coverUrl={c.cover_image_url}
-                  slug={c.slug}
+                  totalCharacters={c.total_characters ?? 0}
+                  coverUrl={c.cover_image_url ?? null}
+                  slug={c.slug ?? c.id}
                 />
               ))}
             </div>
             <div className="text-center mt-8">
               <button
-                onClick={() => navigate("/colecoes")}
+                onClick={() => navigate(PUBLIC_ROUTES.collections)}
                 className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
               >
                 VER TODAS AS COLEÇÕES
@@ -367,7 +372,7 @@ export default function LandingPage() {
                 return (
                   <div
                     key={m.id}
-                    onClick={() => navigate(`/catalogo/${m.id}`)}
+                    onClick={() => navigate(catalogModelDetailsPath(m.id))}
                     className="group cursor-pointer"
                   >
                     <ArcadeCard>
@@ -401,7 +406,7 @@ export default function LandingPage() {
             </div>
             <div className="text-center mt-8">
               <button
-                onClick={() => navigate("/catalogo")}
+                onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                 className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
               >
                 VER CATÁLOGO COMPLETO
@@ -453,10 +458,10 @@ export default function LandingPage() {
         description="Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total."
         primaryAction={{
           label: "INSERT COIN",
-          href: user ? "/colecoes" : "/login",
+          href: user ? PUBLIC_ROUTES.collections : PUBLIC_ROUTES.login,
           icon: <Zap className="w-5 h-5" />,
         }}
-        secondaryAction={{ label: "VER PLANOS", href: "/planos" }}
+        secondaryAction={{ label: "VER PLANOS", href: PUBLIC_ROUTES.plans }}
       />
 
       {/* ═══ FOOTER ═══ */}
@@ -479,10 +484,10 @@ export default function LandingPage() {
 
           <nav className="flex items-center gap-6">
             {[
-              { label: "Sobre", href: "/sobre" },
-              { label: "Contato", href: "/contato" },
-              { label: "Termos", href: "/termos" },
-              { label: "Privacidade", href: "/privacidade" },
+              { label: "Sobre", href: PUBLIC_ROUTES.about },
+              { label: "Contato", href: PUBLIC_ROUTES.contact },
+              { label: "Termos", href: PUBLIC_ROUTES.terms },
+              { label: "Privacidade", href: PUBLIC_ROUTES.privacy },
             ].map((link) => (
               <button
                 key={link.href}

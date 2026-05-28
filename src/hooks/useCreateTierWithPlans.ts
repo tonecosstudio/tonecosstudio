@@ -17,6 +17,28 @@ import { createTierWithPlansSchema } from "@/lib/validations/pricing-restructure
 import { purchaseModesKeys } from "./usePurchaseModes";
 import { tierWithPlansKeys } from "./useTierWithPlans";
 
+type PricingTierRpcError = {
+  message: string;
+};
+
+interface CreateTierWithPlansRpcClient {
+  rpc(
+    name: "create_tier_with_plans",
+    args: {
+      p_name: string;
+      p_description: string | null;
+      p_price_full: number;
+      p_deposit_amount: number;
+      p_pix_discount_percentage?: number;
+      p_is_default?: boolean;
+      p_display_order?: number;
+      p_created_by: string;
+    }
+  ): Promise<{ data: CreateTierWithPlansResult | null; error: PricingTierRpcError | null }>;
+}
+
+const createTierWithPlansRpc = supabase as unknown as CreateTierWithPlansRpcClient;
+
 // =====================================================
 // MUTATIONS
 // =====================================================
@@ -42,7 +64,7 @@ export function useCreateTierWithPlans() {
       if (!user) throw new Error("Usuário não autenticado");
 
       // Chamar função do banco de dados
-      const { data, error } = await supabase.rpc("create_tier_with_plans", {
+      const { data, error } = await createTierWithPlansRpc.rpc("create_tier_with_plans", {
         p_name: validated.name,
         p_description: validated.description || null,
         p_price_full: validated.price_full,
@@ -57,7 +79,11 @@ export function useCreateTierWithPlans() {
         throw new Error(`Erro ao criar nível com planos: ${error.message}`);
       }
 
-      return data as CreateTierWithPlansResult;
+      if (!data) {
+        throw new Error("Nenhum resultado retornado");
+      }
+
+      return data;
     },
     onSuccess: (result) => {
       // Invalidar queries relacionadas

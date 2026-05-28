@@ -105,7 +105,7 @@ The component supports the following carriers with specific tracking URLs:
 
 1. **Correios** (correios)
    - Logo: 🇧🇷
-   - URL: `https://rastreamento.correios.com.br/app/index.php?codigo={code}`
+   - URL: `https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto={code}`
 
 2. **Jadlog** (jadlog)
    - Logo: 📦
@@ -113,7 +113,7 @@ The component supports the following carriers with specific tracking URLs:
 
 3. **Sedex** (sedex)
    - Logo: 🇧🇷
-   - URL: `https://rastreamento.correios.com.br/app/index.php?codigo={code}`
+   - URL: `https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto={code}`
 
 4. **Default** (any other carrier)
    - Logo: 🚚

@@ -51,23 +51,23 @@ export async function assertAdmin(req: Request) {
   const { claims } = await getClaims(req);
   const userId = String(claims.sub);
 
-  // Use service client to bypass RLS when checking user_roles
+  // Use service client to bypass RLS when checking the canonical role source.
   const service = getServiceClient();
 
-  const { data: roles, error } = await service
-    .from("user_roles")
+  const { data: profile, error } = await service
+    .from("profiles")
     .select("role")
-    .eq("user_id", userId)
-    .eq("role", "admin")
+    .eq("id", userId)
+    .in("role", ["admin", "super_admin"])
     .maybeSingle();
 
   if (error) throw new Error(`Role check failed: ${error.message}`);
-  if (!roles) {
+  if (!profile) {
     logPermissionDenied(req, new URL(req.url).pathname, userId, "admin role required");
     throw new Error("Forbidden: admin only");
   }
 
-  return { userId };
+  return { userId, role: profile.role };
 }
 
 /**

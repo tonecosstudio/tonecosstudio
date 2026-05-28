@@ -13,6 +13,7 @@ import {
 } from "@/hooks/useCoinPackages";
 import { Coins, Sparkles, TrendingUp, Zap, Check, AlertTriangle, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 export default function CoinsPurchaseArcade() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export default function CoinsPurchaseArcade() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handlePurchase = async (pkg: CoinPackage) => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate(PUBLIC_ROUTES.login); return; }
     if (!acceptedTerms) { toast({ title: "Aceite os termos", variant: "destructive" }); return; }
     setIsProcessing(true);
     setSelectedPkg(pkg.id);
@@ -72,7 +73,14 @@ export default function CoinsPurchaseArcade() {
             <Checkbox id="terms" checked={acceptedTerms} onCheckedChange={(c: boolean) => setAcceptedTerms(c)} />
             <label htmlFor="terms" className="font-mono text-[10px] text-[hsl(0,0%,50%)] leading-relaxed cursor-pointer">
               Li e concordo com os{" "}
-              <Link to="/termos" className="text-[hsl(var(--gold-accent))] underline" target="_blank">Termos de Uso</Link>
+              <Link
+                to={PUBLIC_ROUTES.terms}
+                className="text-[hsl(var(--gold-accent))] underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Termos de Uso
+              </Link>
             </label>
           </div>
         )}

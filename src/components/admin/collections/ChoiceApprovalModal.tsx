@@ -56,12 +56,12 @@ export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprov
   const queryClient = useQueryClient();
 
   // Fetch character stock level
-  const { data: characterStock } = useCharacterStock(choice?.characterId, open);
+  const { data: characterStock } = useCharacterStock(choice?.characterId ?? undefined, open);
 
   // Fetch alternative characters from the same collection
   const { data: alternativeCharacters } = useAlternativeCharacters({
-    collectionId: choice?.collectionId,
-    characterId: choice?.characterId,
+    collectionId: choice?.collectionId ?? undefined,
+    characterId: choice?.characterId ?? undefined,
     enabled: open && showAlternatives,
   });
 
@@ -133,8 +133,9 @@ export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprov
     rejectMutation.mutate({ choiceId: choice.id, reason: rejectionReason });
   };
 
-  const isOutOfStock = characterStock !== null && characterStock <= 0;
-  const isLowStock = characterStock !== null && characterStock > 0 && characterStock <= 5;
+  const availableStock = typeof characterStock === "number" ? characterStock : null;
+  const isOutOfStock = availableStock !== null && availableStock <= 0;
+  const isLowStock = availableStock !== null && availableStock > 0 && availableStock <= 5;
 
   if (!choice) return null;
 
@@ -206,7 +207,7 @@ export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprov
                         {/* Stock Level */}
                         <div className="space-y-1">
                           <div className="text-sm text-gray-600">Estoque disponível:</div>
-                          {characterStock !== null ? (
+                          {availableStock !== null ? (
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant={
@@ -217,7 +218,7 @@ export function ChoiceApprovalModal({ choice, open, onOpenChange }: ChoiceApprov
                                     : "default"
                                 }
                               >
-                                {characterStock} unidades
+                                {availableStock} unidades
                               </Badge>
                               {isOutOfStock && (
                                 <span className="text-sm text-red-600 font-medium">

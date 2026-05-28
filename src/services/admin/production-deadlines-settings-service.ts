@@ -1,4 +1,6 @@
 import { adminProductionGateway as supabase } from "@/services/admin/admin-production-gateway";
+import { updateAdminProductionSetting } from "@/services/admin/admin-config-mutations-service";
+import { parseSystemSettingString } from "@/lib/system-settings-values";
 
 const DEADLINE_KEYS = [
   "production_days_min",
@@ -28,7 +30,7 @@ export async function fetchProductionDeadlinesSettings(): Promise<ProductionDead
   const settingsMap: ProductionDeadlineSettingsMap = {};
   (data || []).forEach((item) => {
     settingsMap[item.key] = {
-      value: item.value,
+      value: parseSystemSettingString(item.key, item.value),
       description: item.description,
     };
   });
@@ -41,11 +43,6 @@ export async function updateProductionDeadlineSetting(input: {
   value: string;
 }): Promise<{ key: string; value: string }> {
   const { key, value } = input;
-  const { error } = await supabase
-    .from("system_settings")
-    .update({ value, updated_at: new Date().toISOString() })
-    .eq("key", key);
-
-  if (error) throw error;
+  await updateAdminProductionSetting({ key, value });
   return { key, value };
 }

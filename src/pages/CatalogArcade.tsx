@@ -17,6 +17,7 @@ import {
   Heart,
   ArrowRight,
   Crosshair,
+  Coins,
 } from "lucide-react";
 
 import type { ModelRow } from "@/pages/catalog/catalogTypes";
@@ -32,26 +33,63 @@ import {
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
+import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
+import { formatCurrency } from "@/lib/utils";
+
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  anime: "Anime",
+  manga: "Manga",
+  movie: "Filme",
+  series: "Serie",
+  game: "Game",
+  comic: "HQ",
+  tokusatsu: "Tokusatsu",
+  original: "Original",
+  other: "Outro",
+};
+
+const VARIANT_TYPE_LABELS: Record<string, string> = {
+  default: "Padrao",
+  form: "Forma",
+  costume: "Roupa",
+  pose: "Pose",
+  scale: "Escala",
+  edition: "Edicao",
+  variant: "Versao",
+  other: "Outro",
+};
 
 // ─── MAIN ────────────────────────────────────────────────────────────
 
 export default function CatalogArcade() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
+  const [character, setCharacter] = useState("");
   const [franchise, setFranchise] = useState("");
   const [category, setCategory] = useState("");
+  const [sourceType, setSourceType] = useState("");
+  const [variantType, setVariantType] = useState("");
   const [tagsCSV, setTagsCSV] = useState("");
   const [sort, setSort] = useState<CatalogSort>("recent");
   const [showFilters, setShowFilters] = useState(false);
 
   const needle = useMemo(() => q.trim(), [q]);
 
-  useEffect(() => { setPage(0); }, [needle, franchise, category, tagsCSV, sort]);
+  useEffect(() => { setPage(0); }, [needle, character, franchise, category, sourceType, variantType, tagsCSV, sort]);
 
-  const modelsQuery = useCatalogModels(needle, page, { franchise, category, tagsCSV, sort });
+  const modelsQuery = useCatalogModels(needle, page, {
+    character,
+    franchise,
+    category,
+    sourceType,
+    variantType,
+    tagsCSV,
+    sort,
+  });
   const rows = modelsQuery.data?.rows ?? [];
   const hasNext = modelsQuery.data?.hasNext ?? false;
 
@@ -84,6 +122,9 @@ export default function CatalogArcade() {
   };
 
   const categories = ["animes", "filmes", "series", "jogos", "quadrinhos", "outros"];
+  const sourceTypes = Object.entries(SOURCE_TYPE_LABELS);
+  const variantTypes = Object.entries(VARIANT_TYPE_LABELS);
+  const activeFilterCount = [character, franchise, category, sourceType, variantType, tagsCSV].filter(Boolean).length;
 
   return (
     <Page
@@ -106,7 +147,7 @@ export default function CatalogArcade() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar modelo..."
+              placeholder="Buscar personagem, versao ou franquia..."
               className="w-full h-12 pl-11 pr-10 bg-[hsl(0,0%,7%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-sm tracking-wider placeholder:text-[hsl(0,0%,30%)] focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none transition-colors"
             />
             {q && (
@@ -118,6 +159,8 @@ export default function CatalogArcade() {
 
           <button
             onClick={() => setShowFilters(!showFilters)}
+            aria-label={showFilters ? "Fechar filtros" : "Abrir filtros"}
+            aria-pressed={showFilters}
             className={`h-12 px-4 border font-mono text-xs tracking-wider uppercase transition-all flex items-center gap-2 ${
               showFilters
                 ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.1)]"
@@ -131,13 +174,22 @@ export default function CatalogArcade() {
 
         {/* Filters panel */}
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 p-4 border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] animate-fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 p-4 border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] animate-fade-in">
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Franquia</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Personagem</label>
+              <input
+                value={character}
+                onChange={(e) => setCharacter(e.target.value)}
+                placeholder="Ex: Goku"
+                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Obra</label>
               <input
                 value={franchise}
                 onChange={(e) => setFranchise(e.target.value)}
-                placeholder="Ex: Naruto"
+                placeholder="Ex: Dragon Ball"
                 className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               />
             </div>
@@ -150,6 +202,28 @@ export default function CatalogArcade() {
               >
                 <option value="">Todas</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Midia</label>
+              <select
+                value={sourceType}
+                onChange={(e) => setSourceType(e.target.value)}
+                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+              >
+                <option value="">Todas</option>
+                {sourceTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Tipo</label>
+              <select
+                value={variantType}
+                onChange={(e) => setVariantType(e.target.value)}
+                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+              >
+                <option value="">Todos</option>
+                {variantTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </div>
             <div>
@@ -173,10 +247,17 @@ export default function CatalogArcade() {
               </select>
             </div>
 
-            {(franchise || category || tagsCSV) && (
+            {activeFilterCount > 0 && (
               <button
-                onClick={() => { setFranchise(""); setCategory(""); setTagsCSV(""); }}
-                className="col-span-2 md:col-span-4 text-[hsl(var(--gold-accent)/0.6)] hover:text-[hsl(var(--gold-accent))] font-mono text-[10px] tracking-widest uppercase transition-colors"
+                onClick={() => {
+                  setCharacter("");
+                  setFranchise("");
+                  setCategory("");
+                  setSourceType("");
+                  setVariantType("");
+                  setTagsCSV("");
+                }}
+                className="col-span-2 md:col-span-3 lg:col-span-6 text-[hsl(var(--gold-accent)/0.6)] hover:text-[hsl(var(--gold-accent))] font-mono text-[10px] tracking-widest uppercase transition-colors"
               >
                 ✕ Limpar Filtros
               </button>
@@ -186,7 +267,14 @@ export default function CatalogArcade() {
 
         {/* Status bar */}
         <div className="flex items-center justify-between mb-6 font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">
-          <span>{needle ? `Resultados: "${needle}"` : "Todos os modelos"} • Página {page + 1}</span>
+          <span>{needle ? `Resultados: "${needle}"` : "Catalogo geral"} • Pagina {page + 1}{activeFilterCount ? ` • ${activeFilterCount} filtros` : ""}</span>
+          <button
+            type="button"
+            onClick={() => navigate(PUBLIC_ROUTES.collections)}
+            className="hidden sm:inline text-[hsl(var(--gold-accent)/0.65)] hover:text-[hsl(var(--gold-accent))] uppercase"
+          >
+            Colecoes ativas
+          </button>
         </div>
       </section>
 
@@ -282,8 +370,8 @@ export default function CatalogArcade() {
         badge="Colecionáveis Sob Encomenda"
         title="EXPLORE AS COLEÇÕES"
         description="Veja as coleções disponíveis e escolha seus personagens favoritos."
-        primaryAction={{ label: "VER COLEÇÕES", href: "/colecoes", icon: <ArrowRight className="w-4 h-4" /> }}
-        secondaryAction={{ label: "VER PLANOS", href: "/planos" }}
+        primaryAction={{ label: "VER COLEÇÕES", href: PUBLIC_ROUTES.collections, icon: <ArrowRight className="w-4 h-4" /> }}
+        secondaryAction={{ label: "VER PLANOS", href: PUBLIC_ROUTES.plans }}
       />
     </Page>
   );
@@ -298,7 +386,22 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
 }) {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
-  const imageUrl = model.imageUrl;
+  const imageUrl = model.thumbnailUrl ?? model.imageUrl;
+  const characterName = model.character_name || model.name;
+  const sourceName = model.source_title || model.franchise;
+  const versionName = model.variant_name;
+  const mediaLabel = model.source_type ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type : null;
+  const variantLabel = model.variant_type ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type : null;
+  const fixedCashPrice =
+    model.price_mode === "fixed" &&
+    typeof model.price_standalone_override === "number" &&
+    model.price_standalone_override > 0
+      ? model.price_standalone_override
+      : null;
+  const hasFixedCoinPrice =
+    model.price_mode === "fixed" &&
+    typeof model.price_coins_override === "number" &&
+    model.price_coins_override > 0;
 
   return (
     <ArcadeCard>
@@ -336,9 +439,9 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
           </button>
 
           {/* Category badge */}
-          {model.category && (
+          {(mediaLabel || model.category) && (
             <div className="absolute top-2 left-2 z-10 font-mono text-[8px] text-[hsl(var(--gold-accent))] bg-[hsl(0,0%,5%)]/90 px-2 py-0.5 tracking-widest uppercase border border-[hsl(var(--gold-accent)/0.3)]">
-              {model.category}
+              {mediaLabel || model.category}
             </div>
           )}
 
@@ -352,17 +455,41 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
             className="text-sm font-black tracking-wider mb-0.5 line-clamp-1 group-hover:text-[hsl(var(--gold-accent))] transition-colors"
             style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
           >
-            {model.name}
+            {characterName}
           </h3>
-          {model.franchise && (
+          {(versionName || sourceName) && (
             <p className="font-mono text-[9px] text-[hsl(0,0%,40%)] tracking-wider line-clamp-1 mb-2">
-              {model.franchise}
+              {[versionName, sourceName].filter(Boolean).join(" | ")}
             </p>
           )}
 
+          {variantLabel && variantLabel !== "Padrao" && (
+            <div className="mb-2 w-fit border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,55%)]">
+              {variantLabel}
+            </div>
+          )}
+
+          <div className="mb-3 flex min-h-6 flex-wrap items-center gap-1.5">
+            {hasFixedCoinPrice && (
+              <span className="inline-flex items-center gap-1 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.08)] px-1.5 py-0.5 font-mono text-[8px] font-bold text-[hsl(var(--gold-accent))]">
+                <Coins className="h-3 w-3" />
+                {model.price_coins_override}
+              </span>
+            )}
+            {fixedCashPrice !== null ? (
+              <span className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] font-bold text-[hsl(0,0%,85%)]">
+                {formatCurrency(fixedCashPrice / 100)}
+              </span>
+            ) : (
+              <span className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,48%)]">
+                Sob consulta
+              </span>
+            )}
+          </div>
+
           {/* CTA */}
           <button
-            onClick={() => navigate(`/catalogo/${encodeURIComponent(model.id)}`)}
+            onClick={() => navigate(catalogModelDetailsPath(model.id))}
             className="mt-auto flex items-center justify-center gap-1.5 w-full py-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono text-[9px] tracking-[0.15em] uppercase transition-all"
           >
             VER DETALHES <ArrowRight className="w-3 h-3" />

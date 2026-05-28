@@ -13,6 +13,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
+  bulkUpdateCharacterPriceMultipliersRpc,
+  updateCharacterPriceMultiplierRpc,
+} from "@/services/admin/admin-config-mutations-service";
+import {
   isValidMultiplier,
   CACHE_CONFIG,
 } from "@/types/contextual-pricing";
@@ -50,6 +54,26 @@ interface CharacterWithCollectionRow {
     name: string;
   } | null;
 }
+
+type QueryError = { message: string } | null;
+
+interface CharacterMultiplierSupabaseClient {
+  from(table: "characters"): {
+    select(columns: string): {
+      eq(column: "id", value: string): {
+        single(): PromiseLike<{ data: CharacterWithCollectionRow | null; error: QueryError }>;
+      };
+      not(column: "price_multiplier", operator: "is", value: null): {
+        order(column: "price_multiplier", options: { ascending: boolean }): PromiseLike<{
+          data: CharacterWithCollectionRow[] | null;
+          error: QueryError;
+        }>;
+      };
+    };
+  };
+}
+
+const characterMultiplierSupabase = supabase as unknown as CharacterMultiplierSupabaseClient;
 
 // =====================================================
 // CONSTANTS
@@ -109,7 +133,7 @@ export function useCharacterMultiplier(characterId: string | null | undefined) {
     queryFn: async () => {
       if (!characterId) return null;
 
-      const { data, error } = await supabase
+      const { data, error } = await characterMultiplierSupabase
         .from("characters")
         .select(`
           id,
@@ -127,7 +151,11 @@ export function useCharacterMultiplier(characterId: string | null | undefined) {
         throw new Error(`Erro ao buscar multiplicador: ${error.message}`);
       }
 
-      const character = data as CharacterWithCollectionRow;
+      if (!data) {
+        return null;
+      }
+
+      const character = data;
 
       return {
         character_id: character.id,
@@ -151,7 +179,7 @@ export function useCharactersWithMultipliers() {
   return useQuery({
     queryKey: characterMultiplierKeys.lists(),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await characterMultiplierSupabase
         .from("characters")
         .select(`
           id,
@@ -169,7 +197,7 @@ export function useCharactersWithMultipliers() {
         throw new Error(`Erro ao buscar personagens: ${error.message}`);
       }
 
-      return ((data || []) as CharacterWithCollectionRow[]).map((item) => ({
+      return (data || []).map((item) => ({
         character_id: item.id,
         character_name: item.name,
         price_multiplier: item.price_multiplier,
@@ -199,21 +227,12 @@ export function useUpdateCharacterMultiplier() {
         throw new Error("Multiplicador deve ser maior que 0");
       }
 
-      // Atualizar no banco de dados
-      const { data, error } = await supabase
-        .from("characters")
-        .update({ price_multiplier: input.new_multiplier })
-        .eq("id", input.character_id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`Erro ao atualizar multiplicador: ${error.message}`);
-      }
-
-      return data;
+      return updateCharacterPriceMultiplierRpc({
+        characterId: input.character_id,
+        newMultiplier: input.new_multiplier,
+      });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidar queries relacionadas (RN010 - Cache Strategy)
       queryClient.invalidateQueries({ 
         queryKey: characterMultiplierKeys.detail(variables.character_id) 
@@ -262,18 +281,10 @@ export function useBatchUpdateCharacterMultipliers() {
         throw new Error("Multiplicador deve ser maior que 0");
       }
 
-      // Atualizar em lote
-      const { data, error } = await supabase
-        .from("characters")
-        .update({ price_multiplier: input.new_multiplier })
-        .in("id", input.character_ids)
-        .select();
-
-      if (error) {
-        throw new Error(`Erro ao atualizar multiplicadores: ${error.message}`);
-      }
-
-      return data;
+      return bulkUpdateCharacterPriceMultipliersRpc({
+        characterIds: input.character_ids,
+        newMultiplier: input.new_multiplier,
+      });
     },
     onSuccess: (data, variables) => {
       // Invalidar queries relacionadas
@@ -292,7 +303,7 @@ export function useBatchUpdateCharacterMultipliers() {
 
       toast({
         title: "Multiplicadores atualizados",
-        description: `${data.length} personagens atualizados para ${multiplierText}`,
+        description: `${data.updated} personagens atualizados para ${multiplierText}`,
       });
     },
     onError: (error: Error) => {

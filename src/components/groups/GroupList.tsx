@@ -55,7 +55,13 @@ export function GroupList({ groups, isLoading, onSelectGroup, onRefresh }: Group
   const [groupToDelete, setGroupToDelete] = useState<GroupWithMetrics | null>(null);
 
   const deleteMutation = useMutation({
-    mutationFn: (groupId: string) => groupService.deleteGroup(groupId, user!.id),
+    mutationFn: (groupId: string) => {
+      if (!user?.id) {
+        throw new Error("Usuario autenticado obrigatorio para deletar grupo");
+      }
+
+      return groupService.deleteGroup(groupId, user.id);
+    },
     onSuccess: () => {
       toast.success("Grupo deletado com sucesso");
       queryClient.invalidateQueries({ queryKey: ["admin-groups"] });
@@ -95,7 +101,13 @@ export function GroupList({ groups, isLoading, onSelectGroup, onRefresh }: Group
   // Loading state
   if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Carregando grupos"
+        className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+      >
+        <span className="sr-only">Carregando grupos</span>
         {[1, 2, 3].map((i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader className="pb-3">
@@ -154,7 +166,12 @@ export function GroupList({ groups, isLoading, onSelectGroup, onRefresh }: Group
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={`Abrir acoes do grupo ${group.name}`}
+                    >
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -209,8 +226,9 @@ export function GroupList({ groups, isLoading, onSelectGroup, onRefresh }: Group
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Grupo</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
                 Tem certeza que deseja deletar o grupo <strong>{groupToDelete?.name}</strong>?
               </p>
               <p className="text-sm">Esta ação irá:</p>
@@ -221,7 +239,8 @@ export function GroupList({ groups, isLoading, onSelectGroup, onRefresh }: Group
               </ul>
               <p className="text-sm font-medium mt-3">
                 Os dados não serão permanentemente deletados.
-              </p>
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

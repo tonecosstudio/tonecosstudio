@@ -53,14 +53,14 @@ export function logSecurityEvent(event: SecurityEvent, req?: Request): void {
   (async () => {
     try {
       const service = getServiceClient();
-      await service.from("security_events").insert({
-        event_type: event.event_type,
-        severity: event.severity ?? "info",
-        source: event.source,
-        user_id: event.user_id ?? null,
-        ip_address: event.ip_address ?? extractIP(req) ?? null,
-        endpoint: event.endpoint ?? null,
-        details: event.details ?? {},
+      await service.rpc("record_security_event", {
+        p_event_type: event.event_type,
+        p_severity: event.severity ?? "info",
+        p_source: event.source,
+        p_user_id: event.user_id ?? null,
+        p_ip_address: event.ip_address ?? extractIP(req) ?? null,
+        p_endpoint: event.endpoint ?? null,
+        p_details: event.details ?? {},
       });
     } catch (err) {
       // Never let logging break the request

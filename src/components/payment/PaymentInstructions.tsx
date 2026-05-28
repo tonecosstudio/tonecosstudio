@@ -5,6 +5,7 @@ import { usePaymentKeys, PaymentType, SubscriptionPeriod } from "@/hooks/usePaym
 import { Copy, ExternalLink, QrCode, CreditCard, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { openSafeExternalUrl } from "@/lib/security/safe-open";
 
 interface PaymentInstructionsProps {
   paymentType: PaymentType;
@@ -26,6 +27,18 @@ export function PaymentInstructions({
       title: "Copiado!",
       description: `${label} copiado para a área de transferência.`,
     });
+  };
+
+  const openPaymentLink = (url: string) => {
+    try {
+      openSafeExternalUrl(url);
+    } catch {
+      toast({
+        title: "Link de pagamento invalido",
+        description: "O link configurado para pagamento nao e seguro.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getPaymentTypeLabel = () => {
@@ -127,7 +140,7 @@ export function PaymentInstructions({
             <Button
               className="w-full"
               size="lg"
-              onClick={() => window.open(paymentInfo.payment_link, "_blank")}
+              onClick={() => openPaymentLink(paymentInfo.payment_link)}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Pagar com Cartão

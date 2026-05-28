@@ -1,8 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import {
+  transitionStandalonePurchaseStatus,
+  updateStandaloneTrackingCode,
+} from "@/services/standalone-purchase-service";
+import { updateDeliveryStatus } from "@/services/admin/delivery-detail-service";
+import {
+  updateManualPaymentStatus,
+  updateQuoteTrackingCode,
+  updateQuoteStatusRpc,
+  updateSubscriptionDeliveryDates,
+} from "@/services/admin/admin-order-status-service";
 import { ORDERS_QUERY_KEY } from "./useOrdersQuery";
 import type { BulkActionResult, OrderStatus, UnifiedOrder } from "@/types/admin/orders";
+import { getOrderStatusLabel } from "@/config/admin-order-status";
+import {
+  getValidTransitions as getValidOrderTransitions,
+  isFinalStatus as isOrderFinalStatus,
+  validateStatusTransition as validateOrderStatusTransition,
+} from "@/services/admin/orders-validator";
 
 type OrderType = UnifiedOrder["type"];
 
@@ -38,72 +54,6 @@ interface UpdateDeliveryDateParams {
   actualDate?: string;
 }
 
-interface DeliveryDateUpdate {
-  updated_at: string;
-  actual_delivery_date?: string;
-}
-
-type StatusTransitionMap = Partial<Record<OrderStatus, OrderStatus[]>>;
-
-const SUBSCRIPTION_TRANSITIONS: StatusTransitionMap = {
-  scheduled: ["pending_choice", "cancelled"],
-  pending_choice: ["confirmed", "cancelled"],
-  confirmed: ["in_production", "cancelled"],
-  in_production: ["shipped", "cancelled"],
-  shipped: ["delivered"],
-  delivered: ["revealed"],
-  revealed: [],
-  cancelled: [],
-};
-
-const PURCHASE_TRANSITIONS: StatusTransitionMap = {
-  awaiting_deposit: ["deposit_paid", "cancelled"],
-  deposit_paid: ["awaiting_balance", "cancelled"],
-  awaiting_balance: ["balance_paid", "cancelled"],
-  balance_paid: ["completed"],
-  completed: [],
-  cancelled: [],
-};
-
-const MANUAL_PAYMENT_TRANSITIONS: StatusTransitionMap = {
-  pending: ["under_review", "rejected"],
-  under_review: ["requires_info", "approved", "rejected"],
-  requires_info: ["under_review", "rejected"],
-  approved: [],
-  rejected: [],
-};
-
-const QUOTE_TRANSITIONS: StatusTransitionMap = {
-  pending: ["reviewing", "archived"],
-  reviewing: ["answered", "archived"],
-  answered: ["archived"],
-  archived: [],
-};
-
-const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
-  scheduled: "Agendada",
-  pending_choice: "Aguardando Escolha",
-  confirmed: "Confirmada",
-  in_production: "Em Producao",
-  shipped: "Enviada",
-  delivered: "Entregue",
-  revealed: "Revelada",
-  awaiting_deposit: "Aguardando Deposito",
-  deposit_paid: "Deposito Pago",
-  awaiting_balance: "Aguardando Saldo",
-  balance_paid: "Saldo Pago",
-  completed: "Completa",
-  pending: "Pendente",
-  under_review: "Em Analise",
-  requires_info: "Requer Informacoes",
-  approved: "Aprovado",
-  rejected: "Rejeitado",
-  reviewing: "Em Analise",
-  answered: "Respondido",
-  archived: "Arquivado",
-  cancelled: "Cancelada",
-};
-
 const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
   scheduled: "blue",
   pending_choice: "yellow",
@@ -128,65 +78,34 @@ const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
   cancelled: "red",
 };
 
-function createUpdatedAtPatch() {
-  return { updated_at: new Date().toISOString() };
-}
-
-function getTransitionMap(orderType: OrderType): StatusTransitionMap {
-  if (orderType === "subscription_delivery") return SUBSCRIPTION_TRANSITIONS;
-  if (orderType === "standalone_purchase") return PURCHASE_TRANSITIONS;
-  if (orderType === "manual_payment") return MANUAL_PAYMENT_TRANSITIONS;
-  return QUOTE_TRANSITIONS;
-}
-
 async function updateOrderStatusRecord(
   orderId: string,
   orderType: OrderType,
-  newStatus: OrderStatus
+  newStatus: OrderStatus,
+  notes?: string
 ) {
-  const update = { status: newStatus, ...createUpdatedAtPatch() };
-
   if (orderType === "subscription_delivery") {
-    const { data, error } = await supabase
-      .from("subscription_deliveries")
-      .update(update)
-      .eq("id", orderId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const result = await updateDeliveryStatus({
+      deliveryId: orderId,
+      newStatus,
+    });
+    return result.delivery ?? { id: orderId, status: newStatus };
   }
 
   if (orderType === "standalone_purchase") {
-    const { data, error } = await supabase
-      .from("standalone_purchases")
-      .update(update)
-      .eq("id", orderId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    await transitionStandalonePurchaseStatus(orderId, newStatus);
+    return { id: orderId, status: newStatus };
   }
 
   if (orderType === "manual_payment") {
-    const { data, error } = await supabase
-      .from("manual_payments")
-      .update(update)
-      .eq("id", orderId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const rejectionReason =
+      newStatus === "rejected" ? notes?.trim() || "Rejeitado pelo painel admin" : null;
+    await updateManualPaymentStatus(orderId, newStatus, rejectionReason);
+    return { id: orderId, status: newStatus };
   }
 
-  const { data, error } = await supabase
-    .from("quotes")
-    .update(update)
-    .eq("id", orderId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  await updateQuoteStatusRpc(orderId, newStatus);
+  return { id: orderId, status: newStatus };
 }
 
 async function updateOrderTrackingCodeRecord({
@@ -194,39 +113,24 @@ async function updateOrderTrackingCodeRecord({
   orderType,
   trackingCode,
 }: UpdateTrackingCodeParams) {
-  const update = { tracking_code: trackingCode, ...createUpdatedAtPatch() };
-
   if (orderType === "subscription_delivery") {
-    const { data, error } = await supabase
-      .from("subscription_deliveries")
-      .update(update)
-      .eq("id", orderId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const result = await updateDeliveryStatus({
+      deliveryId: orderId,
+      newStatus: "shipped",
+      trackingCode,
+      notes: "Codigo de rastreamento atualizado pelo painel admin",
+    });
+    return result.delivery ?? { id: orderId, tracking_code: trackingCode };
   }
 
   if (orderType === "standalone_purchase") {
-    const { data, error } = await supabase
-      .from("standalone_purchases")
-      .update(update)
-      .eq("id", orderId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    await updateStandaloneTrackingCode(orderId, trackingCode);
+    return { id: orderId, tracking_code: trackingCode };
   }
 
   if (orderType === "quote") {
-    const { data, error } = await supabase
-      .from("quotes")
-      .update(update)
-      .eq("id", orderId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    await updateQuoteTrackingCode(orderId, trackingCode);
+    return { id: orderId, tracking_code: trackingCode };
   }
 
   throw new Error("Manual payments do not support tracking codes");
@@ -241,18 +145,9 @@ async function updateOrderDeliveryDateRecord({
     throw new Error("Delivery dates can only be updated on subscription deliveries");
   }
 
-  const updates: DeliveryDateUpdate = createUpdatedAtPatch();
-  if (actualDate !== undefined) updates.actual_delivery_date = actualDate;
-
-  const { data, error } = await supabase
-    .from("subscription_deliveries")
-    .update(updates)
-    .eq("id", orderId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const actualDeliveryDate = actualDate ?? null;
+  await updateSubscriptionDeliveryDates(orderId, actualDeliveryDate);
+  return { id: orderId, actual_delivery_date: actualDeliveryDate };
 }
 
 export function useOrderMutations() {
@@ -260,7 +155,7 @@ export function useOrderMutations() {
 
   const updateStatus = useMutation({
     mutationFn: async (params: UpdateOrderStatusParams) =>
-      updateOrderStatusRecord(params.orderId, params.orderType, params.newStatus),
+      updateOrderStatusRecord(params.orderId, params.orderType, params.newStatus, params.notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY] });
     },
@@ -362,12 +257,12 @@ export function validateStatusTransition(
   newStatus: OrderStatus,
   orderType: OrderType
 ): { valid: boolean; error?: string } {
-  const validNextStatuses = getTransitionMap(orderType)[currentStatus] || [];
+  const validationError = validateOrderStatusTransition(currentStatus, newStatus, orderType);
 
-  if (!validNextStatuses.includes(newStatus)) {
+  if (validationError) {
     return {
       valid: false,
-      error: `Transition from "${currentStatus}" to "${newStatus}" is not allowed`,
+      error: validationError.message,
     };
   }
 
@@ -378,17 +273,15 @@ export function getValidNextStatuses(
   currentStatus: OrderStatus,
   orderType: OrderType
 ): OrderStatus[] {
-  return getTransitionMap(orderType)[currentStatus] || [];
+  return getValidOrderTransitions(currentStatus, orderType);
 }
 
-export function isFinalStatus(status: OrderStatus): boolean {
-  return ["revealed", "completed", "cancelled", "approved", "rejected", "answered", "archived"].includes(
-    status
-  );
+export function isFinalStatus(status: OrderStatus, orderType?: OrderType): boolean {
+  return isOrderFinalStatus(status, orderType);
 }
 
 export function getStatusLabel(status: OrderStatus): string {
-  return STATUS_LABELS[status] || status;
+  return getOrderStatusLabel(status);
 }
 
 export function getStatusColor(status: OrderStatus): string {

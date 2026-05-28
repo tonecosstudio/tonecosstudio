@@ -72,6 +72,32 @@ function getMutationErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+type SubscriptionCreditRpcError = { message: string } | null;
+
+interface SubscriptionCreditRpcClient {
+  rpc(
+    fn: "get_user_subscription_credit_summary",
+    args: { p_user_id: string }
+  ): Promise<{ data: UserSubscriptionCreditSummary | null; error: SubscriptionCreditRpcError }>;
+  rpc(
+    fn: "validate_subscription_credit_balance",
+    args: { p_user_id: string; p_required_credits: number }
+  ): Promise<{ data: CreditValidationResult | null; error: SubscriptionCreditRpcError }>;
+  rpc(
+    fn: "use_subscription_credits_for_purchase",
+    args: { p_user_id: string; p_character_id: string; p_required_credits: number }
+  ): Promise<{ data: { success: boolean; message: string; credits_remaining: number } | null; error: SubscriptionCreditRpcError }>;
+  rpc(
+    fn: "add_subscription_credits_to_user",
+    args: { p_subscription_id: string; p_payment_amount: number; p_payment_method: string }
+  ): Promise<{
+    data: { success: boolean; message: string; credits_added: number; user_id: string } | null;
+    error: SubscriptionCreditRpcError;
+  }>;
+}
+
+const subscriptionCreditRpc = supabase as unknown as SubscriptionCreditRpcClient;
+
 // =====================================================
 // QUERY KEYS
 // =====================================================
@@ -108,7 +134,7 @@ export function useSubscriptionCreditPlans() {
 
       if (error) throw error;
 
-      return (data || []) as SubscriptionCreditPlan[];
+      return (data || []) as unknown as SubscriptionCreditPlan[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
@@ -138,14 +164,15 @@ export function useUserSubscriptionCreditSummary(userId?: string) {
         } as UserSubscriptionCreditSummary;
       }
 
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await subscriptionCreditRpc.rpc(
         "get_user_subscription_credit_summary",
         { p_user_id: targetUserId }
       );
 
       if (error) throw error;
 
-      return data as UserSubscriptionCreditSummary;
+      if (!data) throw new Error("Resumo de créditos não retornado");
+      return data;
     },
     enabled: !!targetUserId,
     staleTime: 30 * 1000, // 30 segundos
@@ -177,7 +204,7 @@ export function useValidateSubscriptionCredits(
         } as CreditValidationResult;
       }
 
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await subscriptionCreditRpc.rpc(
         "validate_subscription_credit_balance",
         {
           p_user_id: targetUserId,
@@ -187,7 +214,8 @@ export function useValidateSubscriptionCredits(
 
       if (error) throw error;
 
-      return data as CreditValidationResult;
+      if (!data) throw new Error("Validação de créditos não retornada");
+      return data;
     },
     enabled: !!targetUserId && requiredCredits !== undefined,
     staleTime: 10 * 1000, // 10 segundos (validação muda com compras)
@@ -217,7 +245,7 @@ export function useSubscriptionCreditsForPurchase() {
         throw new Error("User not authenticated");
       }
 
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await subscriptionCreditRpc.rpc(
         "use_subscription_credits_for_purchase",
         {
           p_user_id: user.id,
@@ -228,7 +256,8 @@ export function useSubscriptionCreditsForPurchase() {
 
       if (error) throw error;
 
-      return data as { success: boolean; message: string; credits_remaining: number };
+      if (!data) throw new Error("Compra com créditos não retornou dados");
+      return data;
     },
     onSuccess: (data) => {
       // Invalidar caches relevantes
@@ -283,7 +312,7 @@ export function useProcessSubscriptionPayment() {
       paymentAmount: number;
       paymentMethod: string;
     }) => {
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await subscriptionCreditRpc.rpc(
         "add_subscription_credits_to_user",
         {
           p_subscription_id: params.subscriptionId,
@@ -294,12 +323,8 @@ export function useProcessSubscriptionPayment() {
 
       if (error) throw error;
 
-      return data as {
-        success: boolean;
-        message: string;
-        credits_added: number;
-        user_id: string;
-      };
+      if (!data) throw new Error("Processamento de assinatura não retornou dados");
+      return data;
     },
     onSuccess: (data) => {
       // Invalidar caches relevantes

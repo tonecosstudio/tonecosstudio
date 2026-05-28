@@ -58,8 +58,30 @@ vi.mock("@/lib/roles", () => ({
 
 type SupabaseFromResult = ReturnType<typeof supabase.from>;
 
-function mockFromResult(value: unknown): SupabaseFromResult {
-  return value as SupabaseFromResult;
+type SupabaseQueryResult = {
+  data: unknown;
+  error: unknown;
+};
+
+function createSupabaseQuery(result: SupabaseQueryResult): SupabaseFromResult {
+  const query: Record<string, unknown> = {};
+  const resolve = () => Promise.resolve(result);
+
+  query.select = vi.fn(() => query);
+  query.eq = vi.fn(() => query);
+  query.in = vi.fn(() => query);
+  query.single = vi.fn(resolve);
+  query.maybeSingle = vi.fn(resolve);
+  query.then = (onFulfilled: unknown, onRejected: unknown) =>
+    resolve().then(onFulfilled as Parameters<Promise<SupabaseQueryResult>["then"]>[0], onRejected as Parameters<Promise<SupabaseQueryResult>["then"]>[1]);
+
+  return query as SupabaseFromResult;
+}
+
+function mockSupabaseTables(resultsByTable: Record<string, SupabaseQueryResult>) {
+  vi.mocked(supabase.from).mockImplementation((table: string) =>
+    createSupabaseQuery(resultsByTable[table] ?? { data: [], error: null })
+  );
 }
 
 // Criar QueryClient para testes
@@ -84,6 +106,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 describe("useNotificationCount", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useIsAdmin).mockReturnValue({
+      data: false,
+      isLoading: false,
+    });
+    mockSupabaseTables({});
     
     // Mock padrão para usuário não autenticado
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
@@ -120,20 +147,14 @@ describe("useNotificationCount", () => {
         error: null,
       });
 
-      // Mock para pagamentos requires_info
-      const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue(mockFromResult({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: vi.fn(() => Promise.resolve({
-                data: [{ id: "payment-1", status: "requires_info" }],
-                error: null,
-              })),
-            })),
-          })),
-        })),
-      }));
+      mockSupabaseTables({
+        manual_payments: {
+          data: [{ id: "payment-1", status: "requires_info" }],
+          error: null,
+        },
+        support_messages: { data: [], error: null },
+        support_conversations: { data: [], error: null },
+      });
     });
 
     it("deve calcular contagem para cliente com pagamentos requires_info", async () => {
@@ -149,21 +170,20 @@ describe("useNotificationCount", () => {
     });
 
     it("deve calcular contagem para cliente com mensagens não lidas", async () => {
-      // Mock para mensagens não lidas
-      const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue(mockFromResult({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({
-              data: [
-                { id: "msg-1", read_by_customer: false, conversation_id: "conv-1" },
-                { id: "msg-2", read_by_customer: false, conversation_id: "conv-2" },
-              ],
-              error: null,
-            })),
-          })),
-        })),
-      }));
+      mockSupabaseTables({
+        manual_payments: { data: [], error: null },
+        support_messages: {
+          data: [
+            { id: "msg-1", read_by_customer: false, conversation_id: "conv-1" },
+            { id: "msg-2", read_by_customer: false, conversation_id: "conv-2" },
+          ],
+          error: null,
+        },
+        support_conversations: {
+          data: [{ id: "conv-1" }],
+          error: null,
+        },
+      });
 
       const { result } = renderHook(() => useNotificationCount(), { wrapper });
 
@@ -188,22 +208,17 @@ describe("useNotificationCount", () => {
         isLoading: false,
       });
 
-      // Mock para pagamentos pendentes e em análise
-      const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue(mockFromResult({
-        select: vi.fn(() => ({
-          in: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({
-              data: [
-                { id: "payment-1", status: "pending" },
-                { id: "payment-2", status: "pending" },
-                { id: "payment-3", status: "under_review" },
-              ],
-              error: null,
-            })),
-          })),
-        })),
-      }));
+      mockSupabaseTables({
+        manual_payments: {
+          data: [
+            { id: "payment-1", status: "pending" },
+            { id: "payment-2", status: "pending" },
+            { id: "payment-3", status: "under_review" },
+          ],
+          error: null,
+        },
+        support_messages: { data: [], error: null },
+      });
     });
 
     it("deve calcular contagem para admin com pagamentos pendentes", async () => {
@@ -218,22 +233,17 @@ describe("useNotificationCount", () => {
     });
 
     it("deve calcular contagem para admin com mensagens não lidas", async () => {
-      // Mock para mensagens não lidas por admin
-      const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue(mockFromResult({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({
-              data: [
-                { id: "msg-1", read_by_admin: false },
-                { id: "msg-2", read_by_admin: false },
-                { id: "msg-3", read_by_admin: false },
-              ],
-              error: null,
-            })),
-          })),
-        })),
-      }));
+      mockSupabaseTables({
+        manual_payments: { data: [], error: null },
+        support_messages: {
+          data: [
+            { id: "msg-1", read_by_admin: false },
+            { id: "msg-2", read_by_admin: false },
+            { id: "msg-3", read_by_admin: false },
+          ],
+          error: null,
+        },
+      });
 
       const { result } = renderHook(() => useNotificationCount(), { wrapper });
 
@@ -252,20 +262,17 @@ describe("useNotificationCount", () => {
         error: null,
       });
 
-      // Mock para erro
-      const mockFrom = vi.mocked(supabase.from);
-      mockFrom.mockReturnValue(mockFromResult({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: vi.fn(() => Promise.resolve({
-                data: null,
-                error: new Error("Erro de banco de dados"),
-              })),
-            })),
-          })),
-        })),
-      }));
+      vi.mocked(useIsAdmin).mockReturnValue({
+        data: true,
+        isLoading: false,
+      });
+      mockSupabaseTables({
+        manual_payments: { data: [], error: null },
+        support_messages: {
+          data: null,
+          error: new Error("Erro de banco de dados"),
+        },
+      });
 
       const { result } = renderHook(() => useNotificationCount(), { wrapper });
 
@@ -292,21 +299,16 @@ describe("useFormattedNotificationCount", () => {
       isLoading: false,
     });
 
-    // Mock para retornar muitos pagamentos
-    const mockFrom = vi.mocked(supabase.from);
-    mockFrom.mockReturnValue(mockFromResult({
-      select: vi.fn(() => ({
-        in: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({
-            data: Array.from({ length: 150 }, (_, i) => ({ 
-              id: `payment-${i}`, 
-              status: i < 100 ? "pending" : "under_review" 
-            })),
-            error: null,
-          })),
+    mockSupabaseTables({
+      manual_payments: {
+        data: Array.from({ length: 150 }, (_, i) => ({
+          id: `payment-${i}`,
+          status: i < 100 ? "pending" : "under_review",
         })),
-      })),
-    }));
+        error: null,
+      },
+      support_messages: { data: [], error: null },
+    });
 
     const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 
@@ -332,23 +334,17 @@ describe("useFormattedNotificationCount", () => {
       isLoading: false,
     });
 
-    // Mock para retornar poucos pagamentos
-    const mockFrom = vi.mocked(supabase.from);
-    mockFrom.mockReturnValue(mockFromResult({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({
-              data: [
-                { id: "payment-1", status: "requires_info" },
-                { id: "payment-2", status: "requires_info" },
-              ],
-              error: null,
-            })),
-          })),
-        })),
-      })),
-    }));
+    mockSupabaseTables({
+      manual_payments: {
+        data: [
+          { id: "payment-1", status: "requires_info" },
+          { id: "payment-2", status: "requires_info" },
+        ],
+        error: null,
+      },
+      support_messages: { data: [], error: null },
+      support_conversations: { data: [], error: null },
+    });
 
     const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 
@@ -372,20 +368,11 @@ describe("useFormattedNotificationCount", () => {
       isLoading: false,
     });
 
-    // Mock para retornar nenhum pagamento
-    const mockFrom = vi.mocked(supabase.from);
-    mockFrom.mockReturnValue(mockFromResult({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({
-              data: [],
-              error: null,
-            })),
-          })),
-        })),
-      })),
-    }));
+    mockSupabaseTables({
+      manual_payments: { data: [], error: null },
+      support_messages: { data: [], error: null },
+      support_conversations: { data: [], error: null },
+    });
 
     const { result } = renderHook(() => useFormattedNotificationCount(), { wrapper });
 

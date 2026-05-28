@@ -1,32 +1,37 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import type React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import AuditTrail from "./AuditTrail";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuditRecord } from "@/services/audit-trail-service";
 import * as auditTrailService from "@/services/audit-trail-service";
+import AuditTrail from "./AuditTrail";
 
-// Mock the audit trail service
 vi.mock("@/services/audit-trail-service");
 
-// Mock the AdminLayout component
 vi.mock("@/components/admin/shared/AdminLayout", () => ({
   AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-// Mock SEOHead component
 vi.mock("@/components/SEOHead", () => ({
   default: () => null,
 }));
 
-// Mock timezone utilities
 vi.mock("@/lib/timezone", () => ({
   toBahiaTime: (date: Date) => date,
 }));
 
-const createWrapper = () => {
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+  }),
+}));
+
+function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
+        gcTime: 0,
         retry: false,
       },
     },
@@ -37,95 +42,93 @@ const createWrapper = () => {
       <BrowserRouter>{children}</BrowserRouter>
     </QueryClientProvider>
   );
-};
+}
+
+function auditRecord(overrides: Partial<AuditRecord> = {}): AuditRecord {
+  return {
+    id: "history-1",
+    order_id: "12345678-90ab-cdef-1234-567890abcdef",
+    order_type: "subscription_delivery",
+    old_status: "pending",
+    new_status: "confirmed",
+    changed_by: "admin-1",
+    changed_by_name: "Admin User",
+    notes: "Pagamento confirmado manualmente",
+    created_at: "2026-02-27T10:00:00Z",
+    ...overrides,
+  };
+}
 
 describe("AuditTrail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("renders the audit trail page with header", async () => {
-    vi.mocked(auditTrailService.getAllCollectionChanges).mockResolvedValue({
+    vi.mocked(auditTrailService.getAuditTrailRecords).mockResolvedValue({
       data: [],
       count: 0,
     });
+    vi.mocked(auditTrailService.searchAuditTrailByResponsible).mockResolvedValue([]);
+  });
 
+  it("renderiza o cabecalho da trilha de auditoria de status de pedidos", () => {
     render(<AuditTrail />, { wrapper: createWrapper() });
 
-    expect(screen.getByText("Trilha de Auditoria")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Trilha de Auditoria" })).toBeInTheDocument();
     expect(
-      screen.getByText("Histórico completo de todas as mudanças de coleção realizadas por assinantes")
+      screen.getByText("Histórico completo de todas as mudanças de status dos pedidos")
     ).toBeInTheDocument();
   });
 
-  it("displays filters section", async () => {
-    vi.mocked(auditTrailService.getAllCollectionChanges).mockResolvedValue({
-      data: [],
-      count: 0,
-    });
-
+  it("exibe filtros do dominio atual de auditoria", () => {
     render(<AuditTrail />, { wrapper: createWrapper() });
 
     expect(screen.getByText("Filtros")).toBeInTheDocument();
-    expect(screen.getByLabelText("Buscar Assinante")).toBeInTheDocument();
-    expect(screen.getByLabelText("Motivo da Mudança")).toBeInTheDocument();
+    expect(screen.getByLabelText("Buscar por Responsável")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tipo de Pedido")).toBeInTheDocument();
     expect(screen.getByLabelText("Data Inicial")).toBeInTheDocument();
     expect(screen.getByLabelText("Data Final")).toBeInTheDocument();
   });
 
-  it("displays audit records when data is available", async () => {
-    const mockData = [
-      {
-        id: "1",
-        delivery_id: "del-1",
-        user_id: "user-1",
-        previous_collection_id: "col-1",
-        new_collection_id: "col-2",
-        change_reason: "manual" as const,
-        changed_by_admin: false,
-        admin_user_id: null,
-        ip_address: "192.168.1.1",
-        user_agent: "Mozilla/5.0",
-        created_at: "2026-02-27T10:00:00Z",
-        user: {
-          id: "user-1",
-          email: "test@example.com",
-          full_name: "Test User",
-        },
-        previous_collection: {
-          id: "col-1",
-          name: "Collection A",
-        },
-        new_collection: {
-          id: "col-2",
-          name: "Collection B",
-        },
-      },
-    ];
-
-    vi.mocked(auditTrailService.getAllCollectionChanges).mockResolvedValue({
-      data: mockData,
+  it("exibe registros de auditoria quando ha dados", async () => {
+    vi.mocked(auditTrailService.getAuditTrailRecords).mockResolvedValue({
+      data: [
+        auditRecord({
+          order_type: "standalone_purchase",
+          old_status: "awaiting_payment",
+          new_status: "paid",
+          changed_by_name: "Financeiro",
+          notes: "Comprovante validado",
+        }),
+      ],
       count: 1,
     });
 
     render(<AuditTrail />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("Test User")).toBeInTheDocument();
-      expect(screen.getByText("test@example.com")).toBeInTheDocument();
-      expect(screen.getByText("Collection A")).toBeInTheDocument();
-      expect(screen.getByText("Collection B")).toBeInTheDocument();
-      expect(screen.getByText("Manual")).toBeInTheDocument();
-      expect(screen.getByText("192.168.1.1")).toBeInTheDocument();
+      expect(screen.getByText("Compra Avulsa")).toBeInTheDocument();
+      expect(screen.getByText("12345678...")).toBeInTheDocument();
+      expect(screen.getByText("awaiting_payment")).toBeInTheDocument();
+      expect(screen.getByText("paid")).toBeInTheDocument();
+      expect(screen.getByText("Financeiro")).toBeInTheDocument();
+      expect(screen.getByText("Comprovante validado")).toBeInTheDocument();
     });
   });
 
-  it("displays empty state when no records found", async () => {
-    vi.mocked(auditTrailService.getAllCollectionChanges).mockResolvedValue({
-      data: [],
-      count: 0,
+  it("exibe status inicial quando nao existe status anterior", async () => {
+    vi.mocked(auditTrailService.getAuditTrailRecords).mockResolvedValue({
+      data: [auditRecord({ old_status: null, new_status: "created" })],
+      count: 1,
     });
 
+    render(<AuditTrail />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Inicial:")).toBeInTheDocument();
+      expect(screen.getByText("created")).toBeInTheDocument();
+    });
+  });
+
+  it("exibe estado vazio quando nenhum registro e encontrado", async () => {
     render(<AuditTrail />, { wrapper: createWrapper() });
 
     await waitFor(() => {
@@ -133,132 +136,43 @@ describe("AuditTrail", () => {
     });
   });
 
-  it("displays different badge types for change reasons", async () => {
-    const mockData = [
-      {
-        id: "1",
-        delivery_id: "del-1",
-        user_id: "user-1",
-        previous_collection_id: null,
-        new_collection_id: "col-1",
-        change_reason: "automatic_maintenance" as const,
-        changed_by_admin: false,
-        admin_user_id: null,
-        ip_address: null,
-        user_agent: null,
-        created_at: "2026-02-27T10:00:00Z",
-        user: {
-          id: "user-1",
-          email: "test@example.com",
-          full_name: "Test User",
-        },
-        new_collection: {
-          id: "col-1",
-          name: "Collection A",
-        },
-      },
-    ];
+  it("exibe paginacao quando existem multiplas paginas", async () => {
+    const data = Array.from({ length: 50 }, (_, index) =>
+      auditRecord({
+        id: `history-${index}`,
+        order_id: `order-${index.toString().padStart(4, "0")}-abcdef`,
+      })
+    );
 
-    vi.mocked(auditTrailService.getAllCollectionChanges).mockResolvedValue({
-      data: mockData,
-      count: 1,
+    vi.mocked(auditTrailService.getAuditTrailRecords).mockResolvedValue({
+      data,
+      count: 100,
     });
 
     render(<AuditTrail />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("Auto-Manutenção")).toBeInTheDocument();
-      expect(screen.getByText("Primeira escolha")).toBeInTheDocument();
+      expect(screen.getAllByText(/Página 1 de 2/)).toHaveLength(2);
+      expect(screen.getByRole("button", { name: /Anterior/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Próxima/ })).toBeInTheDocument();
+      expect(screen.getByText("Mostrando 1 a 50 de 100")).toBeInTheDocument();
     });
   });
 
-  it("displays pagination controls when there are multiple pages", async () => {
-    const mockData = Array.from({ length: 50 }, (_, i) => ({
-      id: `${i}`,
-      delivery_id: `del-${i}`,
-      user_id: `user-${i}`,
-      previous_collection_id: `col-${i}`,
-      new_collection_id: `col-${i + 1}`,
-      change_reason: "manual" as const,
-      changed_by_admin: false,
-      admin_user_id: null,
-      ip_address: "192.168.1.1",
-      user_agent: "Mozilla/5.0",
-      created_at: "2026-02-27T10:00:00Z",
-      user: {
-        id: `user-${i}`,
-        email: `test${i}@example.com`,
-        full_name: `Test User ${i}`,
-      },
-      previous_collection: {
-        id: `col-${i}`,
-        name: `Collection ${i}`,
-      },
-      new_collection: {
-        id: `col-${i + 1}`,
-        name: `Collection ${i + 1}`,
-      },
-    }));
-
-    vi.mocked(auditTrailService.getAllCollectionChanges).mockResolvedValue({
-      data: mockData,
-      count: 100, // Total count is 100, so we have 2 pages
+  it("usa o nome do responsavel quando disponivel e Sistema quando ausente", async () => {
+    vi.mocked(auditTrailService.getAuditTrailRecords).mockResolvedValue({
+      data: [
+        auditRecord({ id: "history-admin", changed_by_name: "Admin User" }),
+        auditRecord({ id: "history-system", changed_by_name: null }),
+      ],
+      count: 2,
     });
 
     render(<AuditTrail />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText(/Página 1 de 2/)).toBeInTheDocument();
-      expect(screen.getByText("Anterior")).toBeInTheDocument();
-      expect(screen.getByText("Próxima")).toBeInTheDocument();
-    });
-  });
-
-  it("shows admin override information when changed by admin", async () => {
-    const mockData = [
-      {
-        id: "1",
-        delivery_id: "del-1",
-        user_id: "user-1",
-        previous_collection_id: "col-1",
-        new_collection_id: "col-2",
-        change_reason: "admin_override" as const,
-        changed_by_admin: true,
-        admin_user_id: "admin-1",
-        ip_address: "192.168.1.1",
-        user_agent: "Mozilla/5.0",
-        created_at: "2026-02-27T10:00:00Z",
-        user: {
-          id: "user-1",
-          email: "test@example.com",
-          full_name: "Test User",
-        },
-        previous_collection: {
-          id: "col-1",
-          name: "Collection A",
-        },
-        new_collection: {
-          id: "col-2",
-          name: "Collection B",
-        },
-        admin_user: {
-          id: "admin-1",
-          email: "admin@example.com",
-          full_name: "Admin User",
-        },
-      },
-    ];
-
-    vi.mocked(auditTrailService.getAllCollectionChanges).mockResolvedValue({
-      data: mockData,
-      count: 1,
-    });
-
-    render(<AuditTrail />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText("Admin")).toBeInTheDocument();
-      expect(screen.getByText("por Admin User")).toBeInTheDocument();
+      expect(screen.getByText("Admin User")).toBeInTheDocument();
+      expect(screen.getByText("Sistema")).toBeInTheDocument();
     });
   });
 });

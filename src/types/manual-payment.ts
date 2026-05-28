@@ -15,6 +15,10 @@ import type { Json } from "@/integrations/supabase/types";
  */
 export type PaymentMethodType =
   | "pix"
+  | "credit_card"
+  | "debit_card"
+  | "boleto"
+  | "payment_link"
   | "pagseguro"
   | "picpay"
   | "paypal"

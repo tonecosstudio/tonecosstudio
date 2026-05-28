@@ -21,6 +21,49 @@ import { migrateToTiersSchema } from "@/lib/validations/pricing-tiers";
 import { pricingTiersKeys } from "./usePricingTiers";
 import { collectionTierKeys } from "./useCollectionTierAssignment";
 
+type MigrationAuditProfile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
+type MigrationAuditWithProfile = MigrationAudit & {
+  profiles: MigrationAuditProfile | null;
+};
+
+type MigrationAuditQueryError = {
+  message: string;
+};
+
+interface MigrationAuditSelectQuery {
+  order(
+    column: "started_at",
+    options: { ascending: boolean }
+  ): {
+    limit(count: number): PromiseLike<{
+      data: MigrationAuditWithProfile[] | null;
+      error: MigrationAuditQueryError | null;
+    }>;
+  };
+  eq(
+    column: "id",
+    value: string
+  ): {
+    single(): PromiseLike<{
+      data: MigrationAuditWithProfile | null;
+      error: MigrationAuditQueryError | null;
+    }>;
+  };
+}
+
+interface MigrationAuditTableClient {
+  from(table: "migration_audit"): {
+    select(columns: string): MigrationAuditSelectQuery;
+  };
+}
+
+const migrationAuditSupabase = supabase as unknown as MigrationAuditTableClient;
+
 // =====================================================
 // QUERY KEYS
 // =====================================================
@@ -44,7 +87,7 @@ export function useMigrationAudits() {
   return useQuery({
     queryKey: migrationKeys.audits(),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await migrationAuditSupabase
         .from("migration_audit")
         .select(`
           *,
@@ -61,13 +104,7 @@ export function useMigrationAudits() {
         throw new Error(`Erro ao buscar histórico de migrações: ${error.message}`);
       }
 
-      return data as (MigrationAudit & {
-        profiles: {
-          id: string;
-          full_name: string;
-          email: string;
-        };
-      })[];
+      return data ?? [];
     },
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
@@ -83,7 +120,7 @@ export function useMigrationAudit(auditId: string | null | undefined) {
     queryFn: async () => {
       if (!auditId) return null;
 
-      const { data, error } = await supabase
+      const { data, error } = await migrationAuditSupabase
         .from("migration_audit")
         .select(`
           *,
@@ -100,13 +137,7 @@ export function useMigrationAudit(auditId: string | null | undefined) {
         throw new Error(`Erro ao buscar auditoria: ${error.message}`);
       }
 
-      return data as MigrationAudit & {
-        profiles: {
-          id: string;
-          full_name: string;
-          email: string;
-        };
-      };
+      return data;
     },
     enabled: !!auditId,
     staleTime: 5 * 60 * 1000, // 5 minutos

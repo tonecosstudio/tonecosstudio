@@ -15,6 +15,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { logInfo, logError, logDebug } from '@/lib/logger';
+import { getProductionStageLabel } from '@/config/production-stages';
+import { getProductionPriorityFromScore, type Priority } from '@/types/production';
 import { emailService } from '../email-service';
 
 // ============================================================================
@@ -26,7 +28,9 @@ type NotificationType =
   | 'choice_approval'
   | 'choice_rejection'
   | 'stage_update'
-  | 'delay_notification';
+  | 'delay_notification'
+  | 'production_assignment'
+  | 'production_reassignment';
 
 type NotificationData = Record<string, Json>;
 
@@ -71,6 +75,32 @@ type DelayNotificationData = {
   reason: string;
   newEstimatedDate: string | null;
 } & NotificationData;
+
+type AssignmentNotificationData = {
+  userName: string;
+  customerName: string;
+  collectionName: string;
+  characterName: string;
+  currentStage: string;
+  priority: string;
+  scheduledDate: string | null;
+  estimatedCompletion: string | null;
+  isReassignment: boolean;
+  productionQueueId: string;
+  assignedUserId: string;
+} & NotificationData;
+
+type NotificationPreferenceType = 'stage_update' | 'item_shipped';
+type RpcError = { message: string } | null;
+
+interface NotificationPreferenceRpcClient {
+  rpc(functionName: 'should_send_notification', args: {
+    user_id: string;
+    notification_type: NotificationPreferenceType;
+  }): PromiseLike<{ data: boolean | null; error: RpcError }>;
+}
+
+const notificationPreferenceRpc = supabase as unknown as NotificationPreferenceRpcClient;
 
 interface NotificationProfile {
   email: string;
@@ -227,6 +257,9 @@ class NotificationQueue {
         return generateStageUpdateHTML(data as StageUpdateNotificationData);
       case 'delay_notification':
         return generateDelayNotificationHTML(data as DelayNotificationData);
+      case 'production_assignment':
+      case 'production_reassignment':
+        return generateAssignmentNotificationHTML(data as AssignmentNotificationData);
       default:
         throw new Error(`Unknown notification type: ${type}`);
     }
@@ -253,6 +286,10 @@ class NotificationQueue {
           : `📋 Atualização de Produção: ${data.stageName} - ORDAX`;
       case 'delay_notification':
         return '⏰ Atualização de Prazo - ORDAX';
+      case 'production_assignment':
+        return `Novo Item de ProduÃ§Ã£o AtribuÃ­do - ${data.collectionName}`;
+      case 'production_reassignment':
+        return `Item de ProduÃ§Ã£o ReatribuÃ­do - ${data.collectionName}`;
       default:
         return 'Notificação - ORDAX';
     }
@@ -804,6 +841,18 @@ function generateDelayNotificationHTML(params: {
   `.trim();
 }
 
+type ProductionAssignmentPriority = Priority;
+
+function normalizeAssignmentPriority(priority: unknown, priorityScore?: unknown): ProductionAssignmentPriority {
+  return getProductionPriorityFromScore(priority, priorityScore);
+}
+
+function queuePriorityFromAssignmentPriority(
+  priority: ProductionAssignmentPriority,
+): NotificationQueueItem['priority'] {
+  return priority === 'critical' || priority === 'high' ? 'high' : 'normal';
+}
+
 /**
  * Generate assignment notification email HTML
  */
@@ -818,15 +867,6 @@ function generateAssignmentNotificationHTML(params: {
   estimatedCompletion: string | null;
   isReassignment: boolean;
 }): string {
-  const stageNames: Record<string, string> = {
-    awaiting_choice: 'Aguardando Escolha',
-    design: 'Design',
-    production: 'Produção',
-    quality_check: 'Controle de Qualidade',
-    packaging: 'Embalagem',
-    shipped: 'Enviado',
-  };
-
   const priorityNames: Record<string, string> = {
     critical: 'Crítica',
     high: 'Alta',
@@ -834,7 +874,7 @@ function generateAssignmentNotificationHTML(params: {
     low: 'Baixa',
   };
 
-  const stageName = stageNames[params.currentStage] || params.currentStage;
+  const stageName = getProductionStageLabel(params.currentStage);
   const priorityName = priorityNames[params.priority] || params.priority;
 
   const title = params.isReassignment ? 'Item Reatribuído' : 'Novo Item Atribuído';
@@ -1040,6 +1080,10 @@ class ProductionNotificationService {
 
       if (!collection?.name) {
         throw new Error('Collection not found');
+      }
+
+      if (!choice.deadline) {
+        throw new Error('Choice deadline not found');
       }
 
       // Calculate days remaining
@@ -1249,8 +1293,12 @@ class ProductionNotificationService {
         throw new Error('Collection not found');
       }
 
+      if (!queueItem.customer_id) {
+        throw new Error('Customer ID not found');
+      }
+
       // Check if user has opted in for stage updates (non-critical notification)
-      const { data: shouldSend } = await supabase.rpc('should_send_notification', {
+      const { data: shouldSend } = await notificationPreferenceRpc.rpc('should_send_notification', {
         user_id: queueItem.customer_id,
         notification_type: 'stage_update',
       });
@@ -1260,17 +1308,7 @@ class ProductionNotificationService {
         return;
       }
 
-      // Map stage to display name
-      const stageNames: Record<string, string> = {
-        'awaiting_choice': 'Aguardando Escolha',
-        'design': 'Design',
-        'production': 'Produção',
-        'quality_check': 'Controle de Qualidade',
-        'packaging': 'Embalagem',
-        'shipped': 'Enviado',
-      };
-
-      const stageName = stageNames[stage] || stage;
+      const stageName = getProductionStageLabel(stage);
 
       // Format estimated completion date
       const estimatedCompletion = queueItem.estimated_completion_date
@@ -1283,7 +1321,7 @@ class ProductionNotificationService {
 
       // Shipped notifications have their own preference setting.
       if (stage === 'shipped') {
-        const { data: shouldSendShipped } = await supabase.rpc('should_send_notification', {
+        const { data: shouldSendShipped } = await notificationPreferenceRpc.rpc('should_send_notification', {
           user_id: queueItem.customer_id,
           notification_type: 'item_shipped',
         });
@@ -1416,6 +1454,7 @@ class ProductionNotificationService {
           character_name,
           current_stage,
           priority,
+          priority_score,
           scheduled_production_date,
           estimated_completion_date
         `)
@@ -1437,34 +1476,36 @@ class ProductionNotificationService {
         throw new Error(`User profile not found: ${profileError?.message}`);
       }
 
-      const userName = profile.full_name || profile.email || 'Membro da equipe';
+      if (!profile.email) {
+        throw new Error('Assigned user email not found');
+      }
 
-      // Generate email HTML
-      const emailHTML = generateAssignmentNotificationHTML({
-        userName,
-        customerName: productionItem.customer_name,
-        collectionName: productionItem.collection_name,
-        characterName: productionItem.character_name || 'A definir',
-        currentStage: productionItem.current_stage,
-        priority: productionItem.priority,
-        scheduledDate: productionItem.scheduled_production_date,
-        estimatedCompletion: productionItem.estimated_completion_date,
-        isReassignment,
-      });
+      const userName = profile.full_name || profile.email || 'Membro da equipe';
+      const assignmentPriority = normalizeAssignmentPriority(
+        productionItem.priority,
+        productionItem.priority_score,
+      );
 
       // Queue notification
       notificationQueue.add({
         type: isReassignment ? 'production_reassignment' : 'production_assignment',
-        to: profile.email,
-        subject: isReassignment 
-          ? `Item de Produção Reatribuído - ${productionItem.collection_name}`
-          : `Novo Item de Produção Atribuído - ${productionItem.collection_name}`,
-        html: emailHTML,
+        recipientEmail: profile.email,
+        recipientName: profile.full_name,
         data: {
           productionQueueId,
           assignedUserId,
+          userName,
+          customerName: productionItem.customer_name || 'Cliente',
+          collectionName: productionItem.collection_name || 'Colecao',
+          characterName: productionItem.character_name || 'A definir',
+          currentStage: productionItem.current_stage || 'pending',
+          priority: assignmentPriority,
+          scheduledDate: productionItem.scheduled_production_date,
+          estimatedCompletion: productionItem.estimated_completion_date,
           isReassignment,
         },
+        priority: queuePriorityFromAssignmentPriority(assignmentPriority),
+        scheduledFor: new Date(),
       });
 
       logInfo('Assignment notification queued', { email: profile.email }, 'notifications');

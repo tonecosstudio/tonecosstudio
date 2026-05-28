@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { assertCurrentUserId, requireAuthenticatedUserId } from "@/services/auth/current-user";
 
 type SubscriptionRow = Tables<"subscriptions">;
 type DeliveryRow = Tables<"subscription_deliveries">;
@@ -26,7 +27,7 @@ export type SubscriberSubscription = Pick<
 
 export type SubscriberDelivery = Pick<
   DeliveryRow,
-  "id" | "status" | "delivery_number" | "delivery_order" | "tracking_code"
+  "id" | "status" | "delivery_number" | "delivery_order" | "tracking_code" | "shipping_carrier"
 > & {
   collections: Pick<SubscriberCollectionSummary, "id" | "name"> | null;
   collection_characters: {
@@ -55,6 +56,8 @@ function firstRelation<T>(value: T | T[] | null): T | null {
 }
 
 export async function listActiveSubscriberSubscriptions(userId: string): Promise<SubscriberSubscription[]> {
+  await assertCurrentUserId(userId);
+
   const { data, error } = await supabase
     .from("subscriptions")
     .select(`
@@ -80,7 +83,7 @@ export async function listActiveSubscriberSubscriptions(userId: string): Promise
     throw error;
   }
 
-  return ((data ?? []) as SubscriptionQueryRow[]).map((subscription) => ({
+  return ((data ?? []) as unknown as SubscriptionQueryRow[]).map((subscription) => ({
     ...subscription,
     collections: firstRelation(subscription.collections),
   }));
@@ -88,6 +91,24 @@ export async function listActiveSubscriberSubscriptions(userId: string): Promise
 
 export async function listSubscriberDeliveries(subscriptionIds: string[]): Promise<SubscriberDelivery[]> {
   if (subscriptionIds.length === 0) {
+    return [];
+  }
+
+  const userId = await requireAuthenticatedUserId();
+
+  const { data: ownedSubscriptions, error: ownedSubscriptionsError } = await supabase
+    .from("subscriptions")
+    .select("id")
+    .eq("user_id", userId)
+    .in("id", subscriptionIds);
+
+  if (ownedSubscriptionsError) {
+    throw ownedSubscriptionsError;
+  }
+
+  const ownedSubscriptionIds = (ownedSubscriptions ?? []).map((subscription) => subscription.id);
+
+  if (ownedSubscriptionIds.length === 0) {
     return [];
   }
 
@@ -99,6 +120,7 @@ export async function listSubscriberDeliveries(subscriptionIds: string[]): Promi
       delivery_number,
       delivery_order,
       tracking_code,
+      shipping_carrier,
       collection_characters (
         name,
         description
@@ -108,14 +130,14 @@ export async function listSubscriberDeliveries(subscriptionIds: string[]): Promi
         name
       )
     `)
-    .in("subscription_id", subscriptionIds)
+    .in("subscription_id", ownedSubscriptionIds)
     .order("delivery_order", { ascending: true });
 
   if (error) {
     throw error;
   }
 
-  return ((data ?? []) as DeliveryQueryRow[]).map((delivery) => ({
+  return ((data ?? []) as unknown as DeliveryQueryRow[]).map((delivery) => ({
     ...delivery,
     collections: firstRelation(delivery.collections),
     collection_characters: firstRelation(delivery.collection_characters),

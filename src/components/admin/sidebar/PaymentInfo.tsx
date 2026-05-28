@@ -30,6 +30,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { updatePaymentStatus, type ManualPayment } from "@/lib/services/integrationService";
+import { getOrderStatusLabel, MANUAL_PAYMENT_STATUS_OPTIONS } from "@/config/admin-order-status";
+import type { ManualPaymentStatus } from "@/types/admin/orders";
 import { type LucideIcon } from "lucide-react";
 import { log } from "@/lib/logger";
 
@@ -41,7 +43,7 @@ interface PaymentInfoProps {
 export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
   const [selectedPayment, setSelectedPayment] = useState<ManualPayment | null>(null);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [newStatus, setNewStatus] = useState("");
+  const [newStatus, setNewStatus] = useState<ManualPaymentStatus | "">("");
   const [updating, setUpdating] = useState(false);
 
   // Filter only manual payments (not linked to quotes)
@@ -76,7 +78,11 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
 
   const openStatusDialog = (payment: ManualPayment) => {
     setSelectedPayment(payment);
-    setNewStatus(payment.status);
+    setNewStatus(
+      MANUAL_PAYMENT_STATUS_OPTIONS.some((option) => option.value === payment.status)
+        ? (payment.status as ManualPaymentStatus)
+        : "pending"
+    );
     setShowStatusDialog(true);
   };
 
@@ -85,11 +91,15 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
       string,
       { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: LucideIcon }
     > = {
-      pending: { label: "Pendente", variant: "secondary", icon: Clock },
-      under_review: { label: "Em Análise", variant: "outline", icon: Clock },
-      requires_info: { label: "Requer Info", variant: "outline", icon: Clock },
-      approved: { label: "Aprovado", variant: "default", icon: CheckCircle },
-      rejected: { label: "Rejeitado", variant: "destructive", icon: XCircle },
+      pending: { label: getOrderStatusLabel("pending"), variant: "secondary", icon: Clock },
+      under_review: { label: getOrderStatusLabel("under_review"), variant: "outline", icon: Clock },
+      requires_info: {
+        label: getOrderStatusLabel("requires_info"),
+        variant: "outline",
+        icon: Clock,
+      },
+      approved: { label: getOrderStatusLabel("approved"), variant: "default", icon: CheckCircle },
+      rejected: { label: getOrderStatusLabel("rejected"), variant: "destructive", icon: XCircle },
     };
 
     const config = statusMap[status] || { label: status, variant: "outline" as const, icon: Clock };
@@ -177,16 +187,19 @@ export function PaymentInfo({ payments, onRefresh }: PaymentInfoProps) {
             {/* Status Selection */}
             <div className="space-y-2">
               <Label>Novo Status</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
+              <Select
+                value={newStatus}
+                onValueChange={(value) => setNewStatus(value as ManualPaymentStatus)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="under_review">Em Análise</SelectItem>
-                  <SelectItem value="requires_info">Requer Informações</SelectItem>
-                  <SelectItem value="approved">Aprovado</SelectItem>
-                  <SelectItem value="rejected">Rejeitado</SelectItem>
+                  {MANUAL_PAYMENT_STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

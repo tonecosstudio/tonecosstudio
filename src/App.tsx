@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useSentry } from "@/hooks/use-sentry";
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -11,6 +11,13 @@ import { MainLayout } from "@/components/layouts/MainLayout";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
 import { ChatButton } from "@/components/customer/ChatButton";
+import {
+  ADMIN_REDIRECTS,
+  ADMIN_ROUTES,
+  AUTH_ROUTES,
+  PUBLIC_ROUTES,
+  adminPaymentDetailsPath,
+} from "@/config/routes";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────────────
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -22,7 +29,6 @@ const CollectionsShowcase = lazy(() => import("./pages/CollectionsShowcase"));
 const CollectionsArcade = lazy(() => import("./pages/CollectionsArcade"));
 const CharacterDetails = lazy(() => import("./pages/CharacterDetailsArcade"));
 const CharacterSelect = lazy(() => import("./pages/CharacterSelect"));
-const CharacterSelectMK = lazy(() => import("./pages/CharacterSelectMK"));
 const CollectionDetailsArcade = lazy(() => import("./pages/CollectionDetailsArcade"));
 const BuyCharacter = lazy(() => import("./pages/BuyCharacter"));
 const TermsArcade = lazy(() => import("./pages/TermsArcade"));
@@ -47,7 +53,6 @@ const GroupsArcade = lazy(() => import("./pages/GroupsArcade"));
 const MemberGroupDetailsPage = lazy(() => import("./pages/MemberGroupDetailsPage"));
 const SubscriberDashboardArcade = lazy(() => import("./pages/SubscriberDashboardArcade"));
 const CoinsPurchaseArcade = lazy(() => import("./pages/CoinsPurchaseArcade"));
-const CharacterRosterV2 = lazy(() => import("./pages/CharacterRosterV2"));
 
 // Admin pages
 const AdminHome = lazy(() => import("./pages/admin/analytics/AdminHome"));
@@ -77,6 +82,17 @@ function PageLoader() {
 
 const queryClient = new QueryClient();
 
+function LegacyAdminPaymentRedirect() {
+  const { paymentId } = useParams<{ paymentId?: string }>();
+
+  return (
+    <Navigate
+      to={paymentId ? adminPaymentDetailsPath(paymentId) : `${ADMIN_ROUTES.payments}?tab=payments`}
+      replace
+    />
+  );
+}
+
 function AppContent() {
   useSentry();
   useAuthProfileSync();
@@ -95,106 +111,69 @@ function AppContent() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
             {/* Public */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/migrar-pedido" element={<MigratePedido />} />
-            <Route path="/catalogo" element={<CatalogArcade />} />
-            <Route path="/catalogo/:id" element={<ModelDetails />} />
-            <Route path="/sobre" element={<AboutArcade />} />
-            <Route path="/planos" element={<PlansArcade />} />
-            <Route path="/colecoes" element={<CollectionsShowcase />} />
-            <Route path="/colecoes-arcade" element={<CollectionsArcade />} />
-            <Route path="/colecoes/:slug/:characterId" element={<CharacterDetails />} />
-            <Route path="/personagem/:characterId" element={<CharacterDetails />} />
-            <Route path="/selecionar-personagem" element={<CharacterSelect />} />
-            <Route path="/selecao" element={<CharacterSelectMK />} />
-            <Route path="/colecoes/:slug" element={<CollectionDetailsArcade />} />
-            <Route path="/colecoes/:slug/comprar" element={<BuyCharacter />} />
-            <Route path="/roster-v2" element={<CharacterRosterV2 />} />
-            <Route path="/termos" element={<TermsArcade />} />
-            <Route path="/privacidade" element={<PrivacyArcade />} />
-            <Route path="/contato" element={<ContactArcade />} />
-            <Route path="/login" element={<LoginArcade />} />
-            <Route path="/collector/:username" element={<PublicProfileArcade />} />
-            <Route path="/pre-lancamento" element={<PreLaunchArcade />} />
+            <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
+            <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
+            <Route path={PUBLIC_ROUTES.migrateOrder} element={<RequireAuth><MigratePedido /></RequireAuth>} />
+            <Route path={PUBLIC_ROUTES.catalog} element={<CatalogArcade />} />
+            <Route path={PUBLIC_ROUTES.catalogDetails} element={<ModelDetails />} />
+            <Route path={PUBLIC_ROUTES.about} element={<AboutArcade />} />
+            <Route path={PUBLIC_ROUTES.plans} element={<PlansArcade />} />
+            <Route path={PUBLIC_ROUTES.collections} element={<CollectionsShowcase />} />
+            <Route path={PUBLIC_ROUTES.collectionsArcade} element={<CollectionsArcade />} />
+            <Route path={PUBLIC_ROUTES.collectionCharacterDetails} element={<CharacterDetails />} />
+            <Route path={PUBLIC_ROUTES.characterDetails} element={<CharacterDetails />} />
+            <Route path={PUBLIC_ROUTES.characterSelect} element={<CharacterSelect />} />
+            <Route path={PUBLIC_ROUTES.collectionDetails} element={<CollectionDetailsArcade />} />
+            <Route path={PUBLIC_ROUTES.buyCharacter} element={<BuyCharacter />} />
+            <Route path={PUBLIC_ROUTES.terms} element={<TermsArcade />} />
+            <Route path={PUBLIC_ROUTES.privacy} element={<PrivacyArcade />} />
+            <Route path={PUBLIC_ROUTES.contact} element={<ContactArcade />} />
+            <Route path={PUBLIC_ROUTES.login} element={<LoginArcade />} />
+            <Route path={PUBLIC_ROUTES.publicProfile} element={<PublicProfileArcade />} />
+            <Route path={PUBLIC_ROUTES.preLaunch} element={<PreLaunchArcade />} />
 
             {/* Auth-required */}
-            <Route path="/perfil" element={<RequireAuth><ProfileArcade /></RequireAuth>} />
-            <Route path="/suporte" element={<Navigate to="/perfil?section=support" replace />} />
-            <Route path="/pagamentos" element={<RequireAuth><MyPaymentsArcade /></RequireAuth>} />
-            <Route path="/pagamentos/:paymentId" element={<RequireAuth><PaymentDetails /></RequireAuth>} />
-            <Route path="/colecoes/:slug/assinar" element={<RequireAuth><SubscribeCollection /></RequireAuth>} />
-            <Route path="/wishlist" element={<RequireAuth><WishlistArcade /></RequireAuth>} />
-            <Route path="/dashboard" element={<RequireAuth><DashboardArcade /></RequireAuth>} />
-            <Route path="/notificacoes" element={<RequireAuth><NotificationsArcade /></RequireAuth>} />
-            <Route path="/pedido/:orderType/:orderId/progresso" element={<RequireAuth><CustomerOrderProgressPage /></RequireAuth>} />
-            <Route path="/grupos" element={<RequireAuth><GroupsArcade /></RequireAuth>} />
-            <Route path="/grupos/:groupId" element={<RequireAuth><MemberGroupDetailsPage /></RequireAuth>} />
-            <Route path="/painel-assinante" element={<RequireAuth><SubscriberDashboardArcade /></RequireAuth>} />
-            <Route path="/coins/purchase" element={<RequireAuth><CoinsPurchaseArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.profile} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.support} element={<Navigate to={`${AUTH_ROUTES.profile}?section=support`} replace />} />
+            <Route path={AUTH_ROUTES.payments} element={<RequireAuth><MyPaymentsArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.paymentDetails} element={<RequireAuth><PaymentDetails /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.subscribeCollection} element={<RequireAuth><SubscribeCollection /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.wishlist} element={<RequireAuth><WishlistArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.dashboard} element={<RequireAuth><DashboardArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.notifications} element={<RequireAuth><NotificationsArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.orderProgress} element={<RequireAuth><CustomerOrderProgressPage /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.groups} element={<RequireAuth><GroupsArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.groupDetails} element={<RequireAuth><MemberGroupDetailsPage /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.subscriberDashboard} element={<RequireAuth><SubscriberDashboardArcade /></RequireAuth>} />
+            <Route path={AUTH_ROUTES.coinsPurchase} element={<RequireAuth><CoinsPurchaseArcade /></RequireAuth>} />
 
             {/* Redirects de compatibilidade */}
-            <Route path="/assinaturas" element={<Navigate to="/painel-assinante" replace />} />
-            <Route path="/planos-assinatura" element={<Navigate to="/planos" replace />} />
+            <Route path="/assinaturas" element={<Navigate to={AUTH_ROUTES.subscriberDashboard} replace />} />
+            <Route path="/planos-assinatura" element={<Navigate to={PUBLIC_ROUTES.plans} replace />} />
 
             {/* Admin */}
-            <Route path="/admin" element={<RequireAdmin><AdminHome /></RequireAdmin>} />
-            <Route path="/admin/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
-            <Route path="/admin/users/:userId" element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
-            <Route path="/admin/catalogo" element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
-            <Route path="/admin/financeiro-hub" element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
-            <Route path="/admin/pedidos" element={<RequireAdmin><OrdersPage /></RequireAdmin>} />
-            <Route path="/admin/producao" element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
-            <Route path="/admin/creditos" element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
-            <Route path="/admin/auditoria" element={<RequireAdmin><AuditTrail /></RequireAdmin>} />
-            <Route path="/admin/embalagem" element={<RequireAdmin><AdminPackaging /></RequireAdmin>} />
-            <Route path="/admin/analytics" element={<RequireAdmin><AdminAnalytics /></RequireAdmin>} />
-            <Route path="/admin/configuracoes" element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
-            <Route path="/admin/pagamentos" element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
-            <Route path="/admin/comunicacao" element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
-            <Route path="/admin/grupos/:groupId" element={<RequireAdmin><AdminGroupDetailsPage /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.users} element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.userDetails} element={<RequireAdmin><AdminUserDetails /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.catalog} element={<RequireAdmin><AdminCollectionsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.financialHub} element={<RequireAdmin><AdminFinancialHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.orders} element={<RequireAdmin><OrdersPage /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.production} element={<RequireAdmin><ProductionHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.credits} element={<RequireAdmin><AdminCreditsHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.audit} element={<RequireAdmin><AuditTrail /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.packaging} element={<RequireAdmin><AdminPackaging /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.analytics} element={<RequireAdmin><AdminAnalytics /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.settings} element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.payments} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.paymentDetails} element={<RequireAdmin><AdminPaymentHub /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.communication} element={<RequireAdmin><AdminCommunication /></RequireAdmin>} />
+            <Route path={ADMIN_ROUTES.groupDetails} element={<RequireAdmin><AdminGroupDetailsPage /></RequireAdmin>} />
 
             {/* Admin redirects */}
-            <Route path="/admin/colecoes" element={<Navigate to="/admin/catalogo?tab=collections" replace />} />
-            <Route path="/admin/financeiro" element={<Navigate to="/admin/financeiro-hub?tab=collections" replace />} />
-            <Route path="/admin/pre-vendas" element={<Navigate to="/admin/catalogo?tab=preorders" replace />} />
-            <Route path="/admin/gerenciar-colecoes" element={<Navigate to="/admin/catalogo?tab=collections" replace />} />
-            <Route path="/admin/precos" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/niveis-preco" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/precos-planos" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/precos-gerenciar" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/pricing" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/fila-producao" element={<Navigate to="/admin/producao?tab=production&view=list" replace />} />
-            <Route path="/admin/escolhas-personagens" element={<Navigate to="/admin/producao?tab=choices" replace />} />
-            <Route path="/admin/creditos/planos" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/planos" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/planos-configuracao" element={<Navigate to="/admin/creditos?tab=plans" replace />} />
-            <Route path="/admin/creditos/dashboard" element={<Navigate to="/admin/creditos" replace />} />
-            <Route path="/admin/creditos/analytics" element={<Navigate to="/admin/creditos?tab=analytics" replace />} />
-            <Route path="/admin/creditos/personagens" element={<Navigate to="/admin/catalogo?tab=credit-characters" replace />} />
-            <Route path="/admin/coins" element={<Navigate to="/admin/creditos?tab=coins" replace />} />
-            <Route path="/admin/ciclos" element={<Navigate to="/admin/creditos?tab=cycles" replace />} />
-            <Route path="/admin/assinaturas" element={<Navigate to="/admin/pedidos?type=subscription" replace />} />
-            <Route path="/admin/assinaturas-gerenciar" element={<Navigate to="/admin/pedidos?type=subscription" replace />} />
-            <Route path="/admin/entregas" element={<Navigate to="/admin/pedidos?type=subscription" replace />} />
-            <Route path="/admin/compras-avulsas" element={<Navigate to="/admin/pedidos?type=standalone" replace />} />
-            <Route path="/admin/creditos/assinaturas" element={<Navigate to="/admin/pedidos?type=subscription" replace />} />
-            <Route path="/admin/feriados" element={<Navigate to="/admin/configuracoes?tab=holidays" replace />} />
-            <Route path="/admin/chaves-pagamento" element={<Navigate to="/admin/pagamentos?tab=keys" replace />} />
-            <Route path="/admin/notificacoes" element={<Navigate to="/admin/comunicacao?tab=notifications" replace />} />
-            <Route path="/admin/notificacoes/historico" element={<Navigate to="/admin/comunicacao?tab=history" replace />} />
-            <Route path="/admin/configuracoes-sistema" element={<Navigate to="/admin/configuracoes?tab=general" replace />} />
-            <Route path="/admin/configuracoes-conteudo" element={<Navigate to="/admin/configuracoes?tab=content" replace />} />
-            <Route path="/admin/limite-producao" element={<Navigate to="/admin/configuracoes?tab=production" replace />} />
-            <Route path="/admin/conformidade-legal" element={<Navigate to="/admin/configuracoes?tab=legal" replace />} />
-            <Route path="/admin/calculadora" element={<Navigate to="/admin/pagamentos?tab=calculator" replace />} />
-            <Route path="/admin/payments" element={<Navigate to="/admin/pagamentos?tab=payments" replace />} />
-            <Route path="/admin/payments/:paymentId" element={<Navigate to="/admin/pagamentos?tab=payments" replace />} />
-            <Route path="/admin/metodos-pagamento" element={<Navigate to="/admin/pagamentos?tab=methods" replace />} />
-            <Route path="/admin/suporte" element={<Navigate to="/admin/comunicacao?tab=support" replace />} />
-            <Route path="/admin/grupos" element={<Navigate to="/admin/comunicacao?tab=groups" replace />} />
-            <Route path="/admin/respostas-rapidas" element={<Navigate to="/admin/comunicacao?tab=quick-replies" replace />} />
-            <Route path="/admin/templates-comunicacao" element={<Navigate to="/admin/comunicacao?tab=templates" replace />} />
+            <Route path="/admin/payments/:paymentId" element={<RequireAdmin><LegacyAdminPaymentRedirect /></RequireAdmin>} />
+            {ADMIN_REDIRECTS.map(({ from, to }) => (
+              <Route key={from} path={from} element={<RequireAdmin><Navigate to={to} replace /></RequireAdmin>} />
+            ))}
 
             {/* 404 */}
             <Route path="*" element={<NotFoundArcade />} />

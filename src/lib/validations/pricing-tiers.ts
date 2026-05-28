@@ -326,3 +326,11 @@ export async function validateTierNameUnique(
 export function calculatePixPrice(priceFull: number, pixDiscountPercentage: number): number {
   return Math.round(priceFull * (1 - pixDiscountPercentage / 100) * 100) / 100;
 }
+
+export function inferPixDiscountPercentage(priceFull: number, pricePix: number): number {
+  if (!Number.isFinite(priceFull) || priceFull <= 0 || !Number.isFinite(pricePix)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.round((1 - pricePix / priceFull) * 10000) / 100);
+}

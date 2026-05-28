@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import type { ModelRow } from "../catalogTypes";
 import { buildModelTitle, compactTags } from "../catalogUtils";
 import { Link } from "react-router-dom";
+import { catalogModelDetailsPath } from "@/config/routes";
 
 export function ModelCard(props: {
   model: ModelRow;
@@ -15,13 +16,14 @@ export function ModelCard(props: {
 }) {
   const { model: m, imageUrl, variant, isLiked, onToggleLike } = props;
   const title = buildModelTitle(m.name, m.franchise);
+  const detailsPath = catalogModelDetailsPath(m.id);
 
   if (variant === "forYou") {
     return (
       <Card className="group h-full overflow-hidden border border-border bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium">
         <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
           <Link
-            to={`/catalogo/${encodeURIComponent(m.id)}`}
+            to={detailsPath}
             aria-label={`Abrir detalhes de ${title}`}
           >
             <img
@@ -46,7 +48,7 @@ export function ModelCard(props: {
           </button>
         </div>
         <CardContent className="flex h-full min-w-0 flex-col p-5">
-          <Link to={`/catalogo/${encodeURIComponent(m.id)}`} className="min-w-0" title={title}>
+          <Link to={detailsPath} className="min-w-0" title={title}>
             <p className="min-w-0 truncate text-base font-semibold leading-tight">{title}</p>
           </Link>
           <div className="mt-auto pt-4">
@@ -54,7 +56,7 @@ export function ModelCard(props: {
               className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
               asChild
             >
-              <Link to={`/catalogo/${encodeURIComponent(m.id)}`}>Ver Detalhes</Link>
+              <Link to={detailsPath}>Ver Detalhes</Link>
             </Button>
           </div>
         </CardContent>
@@ -69,7 +71,7 @@ export function ModelCard(props: {
     <Card className="group flex flex-col overflow-hidden border border-border bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium">
       <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
         <Link
-          to={`/catalogo/${encodeURIComponent(m.id)}`}
+          to={detailsPath}
           aria-label={`Abrir detalhes de ${title}`}
         >
           <img
@@ -101,7 +103,7 @@ export function ModelCard(props: {
 
       <CardContent className="flex flex-col flex-1 p-6">
         <div className="min-w-0 space-y-2">
-          <Link to={`/catalogo/${encodeURIComponent(m.id)}`} className="min-w-0" title={title}>
+          <Link to={detailsPath} className="min-w-0" title={title}>
             <p className="min-w-0 truncate text-lg font-semibold leading-tight">{title}</p>
           </Link>
           <p className="min-w-0 truncate text-sm text-muted-foreground" title={line || "—"}>
@@ -124,7 +126,7 @@ export function ModelCard(props: {
             className="h-11 w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
             asChild
           >
-            <Link to={`/catalogo/${encodeURIComponent(m.id)}`}>Ver Detalhes</Link>
+            <Link to={detailsPath}>Ver Detalhes</Link>
           </Button>
         </div>
       </CardContent>

@@ -8,9 +8,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PaymentDashboard } from "./PaymentDashboard";
+import { getPaymentStats, listPendingPayments } from "@/lib/admin-payment-service";
+import { listAllPaymentMethods } from "@/lib/payment-method-service";
 
 // Mock the services
 vi.mock("@/lib/admin-payment-service", () => ({
@@ -20,6 +22,19 @@ vi.mock("@/lib/admin-payment-service", () => ({
 
 vi.mock("@/lib/payment-method-service", () => ({
   listAllPaymentMethods: vi.fn(),
+}));
+
+vi.mock("@/hooks/usePaymentRealtimeDashboard", () => ({
+  useAdminDashboardRealtime: () => ({
+    isConnected: true,
+    isReconnecting: false,
+    hasNewUpdates: false,
+    newUpdateCount: 0,
+    resetUpdateCount: vi.fn(),
+    hasError: false,
+    error: null,
+    refreshData: vi.fn(),
+  }),
 }));
 
 const mockPayments = [
@@ -81,12 +96,9 @@ describe("PaymentDashboard", () => {
     vi.clearAllMocks();
 
     // Setup default mock implementations
-    const { listPendingPayments, getPaymentStats } = require("@/lib/admin-payment-service");
-    const { listAllPaymentMethods } = require("@/lib/payment-method-service");
-
-    listPendingPayments.mockResolvedValue(mockPayments);
-    getPaymentStats.mockResolvedValue(mockStats);
-    listAllPaymentMethods.mockResolvedValue(mockPaymentMethods);
+    vi.mocked(listPendingPayments).mockResolvedValue(mockPayments);
+    vi.mocked(getPaymentStats).mockResolvedValue(mockStats);
+    vi.mocked(listAllPaymentMethods).mockResolvedValue(mockPaymentMethods);
   });
 
   const renderPaymentDashboard = () => {
@@ -95,6 +107,10 @@ describe("PaymentDashboard", () => {
         <PaymentDashboard />
       </QueryClientProvider>
     );
+  };
+
+  const expectTextPresent = (text: string) => {
+    expect(screen.getAllByText(text).length).toBeGreaterThan(0);
   };
 
   it("should render the dashboard with title and stats", async () => {
@@ -108,16 +124,16 @@ describe("PaymentDashboard", () => {
 
     // Wait for stats to load
     await waitFor(() => {
-      expect(screen.getByText("5")).toBeInTheDocument(); // pending_count
-      expect(screen.getByText("3")).toBeInTheDocument(); // under_review_count
-      expect(screen.getByText("2")).toBeInTheDocument(); // requires_info_count
+      expectTextPresent("5"); // pending_count
+      expectTextPresent("3"); // under_review_count
+      expectTextPresent("2"); // requires_info_count
     });
 
     // Check stat cards
-    expect(screen.getByText("Pendentes")).toBeInTheDocument();
-    expect(screen.getByText("Em Revisão")).toBeInTheDocument();
-    expect(screen.getByText("Precisa de Info")).toBeInTheDocument();
-    expect(screen.getByText("Valor Total")).toBeInTheDocument();
+    expectTextPresent("Pendentes");
+    expectTextPresent("Em Revisão");
+    expectTextPresent("Precisa de Info");
+    expectTextPresent("Valor Total");
   });
 
   it("should render payment table with data", async () => {
@@ -125,41 +141,52 @@ describe("PaymentDashboard", () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText("PAY-20240101-0001")).toBeInTheDocument();
-      expect(screen.getByText("PAY-20240101-0002")).toBeInTheDocument();
+      expectTextPresent("PAY-20240101-0001");
+      expectTextPresent("PAY-20240101-0002");
     });
 
     // Check table headers
-    expect(screen.getByText("Referência")).toBeInTheDocument();
-    expect(screen.getByText("Cliente")).toBeInTheDocument();
-    expect(screen.getByText("Valor")).toBeInTheDocument();
-    expect(screen.getByText("Método")).toBeInTheDocument();
-    expect(screen.getByText("Status")).toBeInTheDocument();
-    expect(screen.getByText("Data")).toBeInTheDocument();
-    expect(screen.getByText("Ações")).toBeInTheDocument();
+    expectTextPresent("Referência");
+    expectTextPresent("Cliente");
+    expectTextPresent("Valor");
+    expectTextPresent("Método");
+    expectTextPresent("Status");
+    expectTextPresent("Data");
+    expectTextPresent("Ações");
 
     // Check payment data
-    expect(screen.getByText("João Silva")).toBeInTheDocument();
-    expect(screen.getByText("Maria Santos")).toBeInTheDocument();
-    expect(screen.getByText("PIX")).toBeInTheDocument();
-    expect(screen.getByText("Cartão")).toBeInTheDocument();
-    expect(screen.getByText("Pendente")).toBeInTheDocument();
-    expect(screen.getByText("Em Revisão")).toBeInTheDocument();
+    expectTextPresent("João Silva");
+    expectTextPresent("Maria Santos");
+    expectTextPresent("PIX");
+    expectTextPresent("Cartão");
+    expectTextPresent("Pendente");
+    expectTextPresent("Em Revisão");
   });
 
-  it("should show loading state", () => {
-    const { listPendingPayments } = require("@/lib/admin-payment-service");
-    listPendingPayments.mockImplementation(() => new Promise(() => {})); // Never resolves
+  it("should show loading state", async () => {
+    let resolvePayments!: (payments: typeof mockPayments) => void;
+    vi.mocked(listPendingPayments).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePayments = resolve;
+        })
+    );
 
-    renderPaymentDashboard();
+    const { container } = renderPaymentDashboard();
 
     // Should show loading skeletons
-    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+
+    await act(async () => {
+      resolvePayments(mockPayments);
+    });
+    await waitFor(() => {
+      expectTextPresent("PAY-20240101-0001");
+    });
   });
 
   it("should show error state", async () => {
-    const { listPendingPayments } = require("@/lib/admin-payment-service");
-    listPendingPayments.mockRejectedValue(new Error("Network error"));
+    vi.mocked(listPendingPayments).mockRejectedValue(new Error("Network error"));
 
     renderPaymentDashboard();
 
@@ -174,8 +201,7 @@ describe("PaymentDashboard", () => {
   });
 
   it("should handle empty state", async () => {
-    const { listPendingPayments } = require("@/lib/admin-payment-service");
-    listPendingPayments.mockResolvedValue([]);
+    vi.mocked(listPendingPayments).mockResolvedValue([]);
 
     renderPaymentDashboard();
 
@@ -198,11 +224,13 @@ describe("PaymentDashboard", () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText("PAY-20240101-0001")).toBeInTheDocument();
+      expectTextPresent("PAY-20240101-0001");
     });
 
     // Find and click view button
-    const viewButtons = screen.getAllByRole("button", { name: /ver/i });
+    const viewButtons = screen.getAllByRole("button", {
+      name: /ver pagamento PAY-20240101-0001/i,
+    });
     fireEvent.click(viewButtons[0]);
 
     expect(handleViewPayment).toHaveBeenCalledWith("1");
@@ -213,7 +241,7 @@ describe("PaymentDashboard", () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText("PAY-20240101-0001")).toBeInTheDocument();
+      expectTextPresent("PAY-20240101-0001");
     });
 
     // Find search input
@@ -225,7 +253,6 @@ describe("PaymentDashboard", () => {
 
     // Wait for debounce
     await waitFor(() => {
-      const { listPendingPayments } = require("@/lib/admin-payment-service");
       expect(listPendingPayments).toHaveBeenCalledWith(expect.objectContaining({ search: "João" }));
     });
   });
@@ -235,11 +262,11 @@ describe("PaymentDashboard", () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText("PAY-20240101-0001")).toBeInTheDocument();
+      expectTextPresent("PAY-20240101-0001");
     });
 
     // Find clear filters button
-    const clearButton = screen.getByText("Limpar Filtros");
+    const clearButton = screen.getAllByText("Limpar Filtros")[0];
     expect(clearButton).toBeInTheDocument();
 
     // Click clear button
@@ -247,7 +274,6 @@ describe("PaymentDashboard", () => {
 
     // The component should refetch with empty filters
     await waitFor(() => {
-      const { listPendingPayments } = require("@/lib/admin-payment-service");
       expect(listPendingPayments).toHaveBeenCalledWith({});
     });
   });

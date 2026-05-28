@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCustomerProfile } from "@/hooks/admin/useCustomerProfile";
+import { buildSafeMailtoHref } from "@/lib/security/safe-open";
 
 interface CustomerInfoProps {
   userId: string;
@@ -27,6 +28,7 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
   const memberSince = profile.created_at
     ? format(new Date(profile.created_at), "MMMM 'de' yyyy", { locale: ptBR })
     : "Data desconhecida";
+  const emailHref = profile.email ? buildSafeMailtoHref(profile.email) : null;
 
   return (
     <div className="space-y-4">
@@ -46,9 +48,13 @@ export function CustomerInfo({ userId }: CustomerInfoProps) {
         {profile.email && (
           <div className="flex items-center gap-2 text-sm">
             <Mail className="h-4 w-4 text-muted-foreground" />
-            <a href={`mailto:${profile.email}`} className="hover:underline">
-              {profile.email}
-            </a>
+            {emailHref ? (
+              <a href={emailHref} className="hover:underline">
+                {profile.email}
+              </a>
+            ) : (
+              <span>{profile.email}</span>
+            )}
           </div>
         )}
         {profile.phone && (

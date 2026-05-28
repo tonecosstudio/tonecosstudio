@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { userHasAdminAccess } from "@/services/auth/current-user";
 
 // ============================================================================
 // Types
@@ -38,6 +39,64 @@ interface StagePhotoMetadataRow {
   uploaded_at: string | null;
 }
 
+interface PhotoMetadataRow extends StagePhotoMetadataRow {
+  id: string;
+  production_stage_id: string;
+  uploaded_by: string | null;
+}
+
+interface PhotoMetadataRpcError {
+  message: string;
+}
+
+interface PhotoMetadataRpcClient {
+  rpc(
+    name: "admin_create_photo_metadata",
+    args: {
+      p_photo_url: string;
+      p_production_stage_id: string;
+      p_customer_visible: boolean;
+      p_caption: string | null;
+      p_uploaded_by_name: string | null;
+    }
+  ): Promise<{ data: PhotoMetadataRow | null; error: PhotoMetadataRpcError | null }>;
+  rpc(
+    name: "admin_update_photo_metadata",
+    args: { p_photo_url: string; p_updates: Record<string, string | boolean | null> }
+  ): Promise<{ data: PhotoMetadataRow | null; error: PhotoMetadataRpcError | null }>;
+  rpc(
+    name: "admin_delete_photo_metadata",
+    args: { p_photo_url: string }
+  ): Promise<{ data: null; error: PhotoMetadataRpcError | null }>;
+  rpc(
+    name: "admin_bulk_create_photo_metadata",
+    args: {
+      p_production_stage_id: string;
+      p_photos: Array<{ url: string; customerVisible: boolean; caption?: string }>;
+      p_uploaded_by_name: string | null;
+    }
+  ): Promise<{ data: PhotoMetadataRow[] | null; error: PhotoMetadataRpcError | null }>;
+  rpc(
+    name: "get_stage_photos_with_metadata",
+    args: { p_stage_id: string }
+  ): Promise<{ data: StagePhotoMetadataRow[] | null; error: PhotoMetadataRpcError | null }>;
+}
+
+const photoMetadataRpc = supabase as unknown as PhotoMetadataRpcClient;
+
+function mapPhotoMetadata(item: PhotoMetadataRow): PhotoMetadata {
+  return {
+    id: item.id,
+    photoUrl: item.photo_url,
+    productionStageId: item.production_stage_id,
+    customerVisible: item.customer_visible,
+    caption: item.caption ?? undefined,
+    uploadedBy: item.uploaded_by ?? undefined,
+    uploadedByName: item.uploaded_by_name ?? undefined,
+    uploadedAt: item.uploaded_at ?? undefined,
+  };
+}
+
 // ============================================================================
 // Service Functions
 // ============================================================================
@@ -48,35 +107,19 @@ interface StagePhotoMetadataRow {
 export async function createPhotoMetadata(
   metadata: Omit<PhotoMetadata, "id" | "uploadedAt">
 ): Promise<PhotoMetadata> {
-  const { data: user } = await supabase.auth.getUser();
+  const { data, error } = await photoMetadataRpc.rpc("admin_create_photo_metadata", {
+    p_photo_url: metadata.photoUrl,
+    p_production_stage_id: metadata.productionStageId,
+    p_customer_visible: metadata.customerVisible,
+    p_caption: metadata.caption ?? null,
+    p_uploaded_by_name: metadata.uploadedByName ?? null,
+  });
 
-  const { data, error } = await supabase
-    .from("production_photo_metadata")
-    .insert({
-      photo_url: metadata.photoUrl,
-      production_stage_id: metadata.productionStageId,
-      customer_visible: metadata.customerVisible,
-      caption: metadata.caption,
-      uploaded_by: user?.user?.id,
-      uploaded_by_name: metadata.uploadedByName,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to create photo metadata: ${error.message}`);
+  if (error || !data) {
+    throw new Error(`Failed to create photo metadata: ${error?.message || "Empty response"}`);
   }
 
-  return {
-    id: data.id,
-    photoUrl: data.photo_url,
-    productionStageId: data.production_stage_id,
-    customerVisible: data.customer_visible,
-    caption: data.caption,
-    uploadedBy: data.uploaded_by,
-    uploadedByName: data.uploaded_by_name,
-    uploadedAt: data.uploaded_at,
-  };
+  return mapPhotoMetadata(data);
 }
 
 /**
@@ -86,30 +129,24 @@ export async function updatePhotoMetadata(
   photoUrl: string,
   updates: Partial<Pick<PhotoMetadata, "customerVisible" | "caption">>
 ): Promise<PhotoMetadata> {
-  const { data, error } = await supabase
-    .from("production_photo_metadata")
-    .update({
-      customer_visible: updates.customerVisible,
-      caption: updates.caption,
-    })
-    .eq("photo_url", photoUrl)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to update photo metadata: ${error.message}`);
+  const updatePayload: Record<string, string | boolean | null> = {};
+  if ("customerVisible" in updates) {
+    updatePayload.customer_visible = updates.customerVisible ?? null;
+  }
+  if ("caption" in updates) {
+    updatePayload.caption = updates.caption ?? null;
   }
 
-  return {
-    id: data.id,
-    photoUrl: data.photo_url,
-    productionStageId: data.production_stage_id,
-    customerVisible: data.customer_visible,
-    caption: data.caption,
-    uploadedBy: data.uploaded_by,
-    uploadedByName: data.uploaded_by_name,
-    uploadedAt: data.uploaded_at,
-  };
+  const { data, error } = await photoMetadataRpc.rpc("admin_update_photo_metadata", {
+    p_photo_url: photoUrl,
+    p_updates: updatePayload,
+  });
+
+  if (error || !data) {
+    throw new Error(`Failed to update photo metadata: ${error?.message || "Empty response"}`);
+  }
+
+  return mapPhotoMetadata(data);
 }
 
 /**
@@ -119,7 +156,7 @@ export async function updatePhotoMetadata(
 export async function getStagePhotosWithMetadata(
   stageId: string
 ): Promise<PhotoWithMetadata[]> {
-  const { data, error } = await supabase.rpc("get_stage_photos_with_metadata", {
+  const { data, error } = await photoMetadataRpc.rpc("get_stage_photos_with_metadata", {
     p_stage_id: stageId,
   });
 
@@ -127,14 +164,14 @@ export async function getStagePhotosWithMetadata(
     throw new Error(`Failed to get photos with metadata: ${error.message}`);
   }
 
-  const photos = (data ?? []) as StagePhotoMetadataRow[];
+  const photos = data ?? [];
 
   return photos.map((item) => ({
     url: item.photo_url,
     customerVisible: item.customer_visible,
-    caption: item.caption,
-    uploadedByName: item.uploaded_by_name,
-    uploadedAt: item.uploaded_at,
+    caption: item.caption ?? undefined,
+    uploadedByName: item.uploaded_by_name ?? undefined,
+    uploadedAt: item.uploaded_at ?? undefined,
   }));
 }
 
@@ -142,10 +179,9 @@ export async function getStagePhotosWithMetadata(
  * Delete photo metadata
  */
 export async function deletePhotoMetadata(photoUrl: string): Promise<void> {
-  const { error } = await supabase
-    .from("production_photo_metadata")
-    .delete()
-    .eq("photo_url", photoUrl);
+  const { error } = await photoMetadataRpc.rpc("admin_delete_photo_metadata", {
+    p_photo_url: photoUrl,
+  });
 
   if (error) {
     throw new Error(`Failed to delete photo metadata: ${error.message}`);
@@ -164,36 +200,17 @@ export async function bulkCreatePhotoMetadata(
   }>,
   uploaderName?: string
 ): Promise<PhotoMetadata[]> {
-  const { data: user } = await supabase.auth.getUser();
-
-  const records = photos.map((photo) => ({
-    photo_url: photo.url,
-    production_stage_id: stageId,
-    customer_visible: photo.customerVisible,
-    caption: photo.caption,
-    uploaded_by: user?.user?.id,
-    uploaded_by_name: uploaderName,
-  }));
-
-  const { data, error } = await supabase
-    .from("production_photo_metadata")
-    .insert(records)
-    .select();
+  const { data, error } = await photoMetadataRpc.rpc("admin_bulk_create_photo_metadata", {
+    p_production_stage_id: stageId,
+    p_photos: photos,
+    p_uploaded_by_name: uploaderName ?? null,
+  });
 
   if (error) {
     throw new Error(`Failed to bulk create photo metadata: ${error.message}`);
   }
 
-  return (data || []).map((item) => ({
-    id: item.id,
-    photoUrl: item.photo_url,
-    productionStageId: item.production_stage_id,
-    customerVisible: item.customer_visible,
-    caption: item.caption,
-    uploadedBy: item.uploaded_by,
-    uploadedByName: item.uploaded_by_name,
-    uploadedAt: item.uploaded_at,
-  }));
+  return (data || []).map(mapPhotoMetadata);
 }
 
 /**
@@ -203,13 +220,5 @@ export async function isUserAdmin(): Promise<boolean> {
   const { data: user } = await supabase.auth.getUser();
   if (!user?.user?.id) return false;
 
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.user.id)
-    .eq("role", "admin")
-    .single();
-
-  if (error) return false;
-  return !!data;
+  return userHasAdminAccess(user.user.id);
 }

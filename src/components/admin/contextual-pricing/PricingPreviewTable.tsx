@@ -44,7 +44,7 @@ export function PricingPreviewTable() {
 
   const calculateChosenPrice = (basePrice: number) => {
     if (!chosenContext) return basePrice;
-    const discount = chosenContext.chosen_collection_discount_percentage;
+    const discount = chosenContext.chosen_collection_discount_percentage ?? 0;
     return Math.round(basePrice - (basePrice * discount / 100));
   };
 

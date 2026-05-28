@@ -5,10 +5,25 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { log } from "@/lib/logger";
 import { messageService } from "@/lib/services/messageService";
-import type { Attachment, Message } from "@/types/support";
+import type { Attachment, Message, SenderType } from "@/types/support";
 
-type SupportMessageRow = Database["public"]["Tables"]["support_messages"]["Row"];
 type SupportAttachmentRow = Database["public"]["Tables"]["support_attachments"]["Row"];
+
+type SupportMessageRealtimeRow = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  sender_type: SenderType;
+  message: string;
+  is_internal: boolean | null;
+  read_by_admin: boolean | null;
+  read_by_customer: boolean | null;
+  created_at: string;
+  updated_at: string;
+  edited_at?: string | null;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+};
 
 interface UseMessagesOptions {
   conversationId: string | null;
@@ -24,13 +39,21 @@ interface OptimisticAttachment {
   error?: string;
 }
 
-function isSupportMessageRow(value: unknown): value is SupportMessageRow {
+function isSupportMessageRow(value: unknown): value is SupportMessageRealtimeRow {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const candidate = value as Partial<SupportMessageRow>;
-  return typeof candidate.id === "string" && typeof candidate.conversation_id === "string";
+  const candidate = value as Partial<SupportMessageRealtimeRow>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.conversation_id === "string" &&
+    typeof candidate.sender_id === "string" &&
+    typeof candidate.message === "string" &&
+    (candidate.sender_type === "admin" ||
+      candidate.sender_type === "customer" ||
+      candidate.sender_type === "system")
+  );
 }
 
 function isSupportAttachmentRow(value: unknown): value is SupportAttachmentRow {
@@ -56,14 +79,23 @@ function toAttachment(row: SupportAttachmentRow): Attachment {
   };
 }
 
-function toMessage(row: SupportMessageRow, attachments: SupportAttachmentRow[]): Message {
+function toMessage(row: SupportMessageRealtimeRow, attachments: SupportAttachmentRow[]): Message {
   return {
-    ...row,
+    id: row.id,
+    conversation_id: row.conversation_id,
+    sender_id: row.sender_id,
+    sender_type: row.sender_type,
+    message: row.message,
     sender_name: row.sender_type === "admin" ? "Admin" : "Cliente",
     attachments: attachments.map(toAttachment),
     is_internal: row.is_internal ?? false,
     read_by_admin: row.read_by_admin ?? false,
     read_by_customer: row.read_by_customer ?? false,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    edited_at: row.edited_at ?? undefined,
+    deleted_at: row.deleted_at ?? undefined,
+    deleted_by: row.deleted_by ?? undefined,
   };
 }
 
@@ -355,7 +387,7 @@ export function useMessages({ conversationId, autoScroll = true }: UseMessagesOp
   }, [conversationId, messages.length, markAsRead]);
 
   const addOptimisticAttachment = useCallback((messageId: string, file: File): string => {
-    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const tempId = `temp-${Date.now()}-${crypto.randomUUID()}`;
     const attachment: OptimisticAttachment = {
       id: tempId,
       file,

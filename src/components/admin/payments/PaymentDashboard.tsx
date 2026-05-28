@@ -8,7 +8,7 @@
  * Task: 23.2 Integrar atualizações em tempo real nos componentes
  */
 
-import React, { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,16 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [showRealtimeIndicator] = useState(true);
+
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("status") as PaymentStatus | null;
+    if (!status || !PAYMENT_STATUS_OPTIONS.includes(status)) return;
+
+    setFilters((prev) => {
+      if (prev.status?.length === 1 && prev.status[0] === status) return prev;
+      return { ...prev, status: [status] };
+    });
+  }, []);
 
   // Hook para atualizações em tempo real
   const {
@@ -707,6 +717,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Ver pagamento ${payment.reference_number}`}
                               onClick={() => onViewPayment?.(payment.id)}
                             >
                               <Eye className="h-4 w-4" />
@@ -869,6 +880,7 @@ export function PaymentDashboard({ onViewPayment }: PaymentDashboardProps) {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                aria-label={`Ver pagamento ${payment.reference_number}`}
                                 onClick={() => onViewPayment?.(payment.id)}
                               >
                                 <Eye className="h-4 w-4" />
@@ -983,9 +995,7 @@ function MobileFilters({
                   }
                 }}
               >
-                {status === "pending" && "Pendente"}
-                {status === "under_review" && "Em Revisão"}
-                {status === "requires_info" && "Precisa de Info"}
+                {getPaymentStatusConfig(status).label}
               </Button>
             );
           })}

@@ -46,6 +46,7 @@ const STATUS_LABELS: Record<ChoiceStatusEntity, string> = {
   approved: "Aprovado",
   rejected: "Rejeitado",
   locked: "Bloqueado",
+  expired: "Expirado",
 };
 
 // ============================================================================
@@ -164,6 +165,7 @@ export const CharacterChoiceCard: React.FC<CharacterChoiceCardProps> = ({
   const isApproved = choiceStatus === "approved";
   const isRejected = choiceStatus === "rejected";
   const isLocked = choiceStatus === "locked";
+  const isExpired = choiceStatus === "expired";
   
   // Check if deadline has passed
   const deadlineDate = choiceDeadline ? new Date(choiceDeadline) : null;
@@ -209,6 +211,13 @@ export const CharacterChoiceCard: React.FC<CharacterChoiceCardProps> = ({
           <Badge variant="secondary">
             <CheckCircle2 className="h-3 w-3 mr-1" />
             {STATUS_LABELS.locked}
+          </Badge>
+        );
+      case "expired":
+        return (
+          <Badge variant="destructive">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            {STATUS_LABELS.expired}
           </Badge>
         );
       default:
@@ -391,6 +400,17 @@ export const CharacterChoiceCard: React.FC<CharacterChoiceCardProps> = ({
               />
             )}
           </>
+        )}
+
+        {/* Expired Status - Choice window is closed */}
+        {isExpired && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Prazo Expirado</AlertTitle>
+            <AlertDescription>
+              O prazo para escolher o personagem expirou. Entre em contato com o suporte.
+            </AlertDescription>
+          </Alert>
         )}
       </CardContent>
 

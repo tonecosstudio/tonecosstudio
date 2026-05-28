@@ -7,7 +7,7 @@
  * Task: 13.2 Criar componente PaymentActionButtons
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,

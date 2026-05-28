@@ -111,9 +111,9 @@ Copie `.env.stripe.example` para `.env.local` e preencha:
 
 ```bash
 # Stripe API Keys
-VITE_STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+STRIPE_SECRET_KEY=SUA_CHAVE_SECRETA_STRIPE
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
-VITE_STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+STRIPE_WEBHOOK_SECRET=SEU_WEBHOOK_SECRET_STRIPE
 
 # Configuração
 VITE_STRIPE_CURRENCY=brl
@@ -124,7 +124,7 @@ VITE_STRIPE_API_VERSION=2023-10-16
 ### 2. Obter Chaves do Stripe
 
 1. Acesse: https://dashboard.stripe.com/apikeys
-2. Copie a chave secreta (sk_test_...)
+2. Copie a chave secreta (SUA_CHAVE_SECRETA_STRIPE)
 3. Copie a chave publicável (pk_test_...)
 
 ### 3. Configurar Webhook
@@ -142,7 +142,7 @@ VITE_STRIPE_API_VERSION=2023-10-16
    - `charge.refunded`
    - `invoice.payment_succeeded`
    - `invoice.payment_failed`
-5. Copie o webhook secret (whsec_...)
+5. Copie o webhook secret (SEU_WEBHOOK_SECRET_STRIPE)
 
 ### 4. Executar Migrations
 
@@ -441,10 +441,10 @@ stripe trigger payment_intent.succeeded
 **Solução**: Certifique-se de que o webhook está configurado corretamente no Stripe Dashboard.
 
 ### Erro: "Webhook verification failed"
-**Solução**: Verifique se o `VITE_STRIPE_WEBHOOK_SECRET` está correto no `.env.local`.
+**Solução**: Verifique se o `STRIPE_WEBHOOK_SECRET` está correto no `.env.local`.
 
 ### Erro: "Stripe keys not configured"
-**Solução**: Adicione `VITE_STRIPE_SECRET_KEY` e `VITE_STRIPE_PUBLISHABLE_KEY` no `.env.local`.
+**Solução**: Adicione `STRIPE_SECRET_KEY` e `VITE_STRIPE_PUBLISHABLE_KEY` no `.env.local`.
 
 ### Pagamento não aparece no banco
 **Solução**: Verifique os logs do webhook e certifique-se de que o evento foi processado.

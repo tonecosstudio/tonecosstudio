@@ -19,6 +19,13 @@ import {
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
 import { requireSharedSecret } from "../_shared/secrets.ts";
+import {
+  EmailService,
+  escapeHtml,
+  getEmailConfig,
+  sanitizeEmailSubject,
+} from "../_shared/email.ts";
+import { getPublicBaseUrl } from "../_shared/public-url.ts";
 
 interface Collection {
   id: string;
@@ -45,30 +52,20 @@ async function sendRevelationEmail(params: {
   characterName: string | null;
   characterImageUrl: string | null;
 }): Promise<void> {
-  const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
-  const emailApiKey = Deno.env.get("EMAIL_API_KEY");
-  const emailFrom = Deno.env.get("EMAIL_FROM") || "noreply@ordax.com.br";
-  const emailFromName = Deno.env.get("EMAIL_FROM_NAME") || "ORDAX";
+  const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
+  const emailService = new EmailService(getEmailConfig({ baseUrl }));
 
-  if (!emailApiKey) {
-    console.warn("EMAIL_API_KEY not configured, skipping revelation email");
-    return;
-  }
-
-  const subject = `🎉 Revelação de Personagem: ${params.collectionName}`;
+  const subject = sanitizeEmailSubject(`Revelacao de Personagem: ${params.collectionName}`);
   const htmlContent = generateRevelationEmailHTML({
     subscriberName: params.subscriberName || "Colecionador",
     collectionName: params.collectionName,
     characterName: params.characterName || "Personagem Misterioso",
     characterImageUrl: params.characterImageUrl,
+    baseUrl,
   });
 
   try {
-    await sendEmail({
-      provider: emailProvider as "resend" | "sendgrid",
-      apiKey: emailApiKey,
-      from: emailFrom,
-      fromName: emailFromName,
+    await emailService.sendEmail({
       to: params.to,
       subject,
       html: htmlContent,
@@ -81,6 +78,17 @@ async function sendRevelationEmail(params: {
   }
 }
 
+function getSafeHttpsUrl(value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Generates HTML content for the character revelation email
  */
@@ -89,13 +97,18 @@ function generateRevelationEmailHTML(params: {
   collectionName: string;
   characterName: string;
   characterImageUrl: string | null;
+  baseUrl: string;
 }): string {
-  const characterImageSection = params.characterImageUrl
+  const subscriberName = escapeHtml(params.subscriberName);
+  const collectionName = escapeHtml(params.collectionName);
+  const characterName = escapeHtml(params.characterName);
+  const characterImageUrl = getSafeHttpsUrl(params.characterImageUrl);
+  const characterImageSection = characterImageUrl
     ? `
       <div style="text-align: center; margin: 32px 0;">
         <img
-          src="${params.characterImageUrl}"
-          alt="${params.characterName}"
+          src="${escapeHtml(characterImageUrl)}"
+          alt="${characterName}"
           style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
         />
       </div>
@@ -201,16 +214,16 @@ function generateRevelationEmailHTML(params: {
       <p>O mistério foi desvendado</p>
     </div>
     <div class="content">
-      <p class="greeting">Olá, ${params.subscriberName}!</p>
+      <p class="greeting">Olá, ${subscriberName}!</p>
 
       <p>
         O momento que você esperava chegou! O personagem da coleção
-        <strong>${params.collectionName}</strong> foi revelado:
+        <strong>${collectionName}</strong> foi revelado:
       </p>
 
       <div class="reveal-box">
         <h2>Apresentamos:</h2>
-        <div class="character-name">${params.characterName}</div>
+        <div class="character-name">${characterName}</div>
       </div>
 
       ${characterImageSection}
@@ -222,7 +235,7 @@ function generateRevelationEmailHTML(params: {
       </p>
 
       <div style="text-align: center;">
-        <a href="${Deno.env.get("FRONTEND_URL") || "https://ordax.com.br"}/minhas-assinaturas" class="cta-button">
+        <a href="${params.baseUrl}/minhas-assinaturas" class="cta-button">
           Ver Minhas Entregas
         </a>
       </div>
@@ -240,71 +253,6 @@ function generateRevelationEmailHTML(params: {
 </body>
 </html>
   `.trim();
-}
-
-/**
- * Sends an email using the configured email provider
- */
-async function sendEmail(params: {
-  provider: "resend" | "sendgrid";
-  apiKey: string;
-  from: string;
-  fromName: string;
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<void> {
-  if (params.provider === "resend") {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${params.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${params.fromName} <${params.from}>`,
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Resend API error: ${error}`);
-    }
-  } else {
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${params.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: params.to }],
-          },
-        ],
-        from: {
-          email: params.from,
-          name: params.fromName,
-        },
-        subject: params.subject,
-        content: [
-          {
-            type: "text/html",
-            value: params.html,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`SendGrid API error: ${error}`);
-    }
-  }
 }
 
 Deno.serve(async (req) => {

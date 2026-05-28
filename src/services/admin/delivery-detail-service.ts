@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+import { normalizeAddressBR, type AddressBR, type DeliveryAddress } from '@/lib/profile';
 
 export interface DeliveryDetail {
   id: string;
@@ -10,6 +12,7 @@ export interface DeliveryDetail {
   expected_delivery_date: string | null;
   actual_delivery_date: string | null;
   tracking_code: string | null;
+  shipping_carrier: string | null;
   auto_maintained: boolean;
   bonus_piece_id: string | null;
   created_at: string;
@@ -23,7 +26,7 @@ export interface DeliveryDetail {
     payment_method: string;
     collections: {
       name: string;
-      price: number;
+      price: number | null;
     };
   } | null;
   cycles: {
@@ -33,7 +36,7 @@ export interface DeliveryDetail {
   } | null;
   collections: {
     name: string;
-    price: number;
+    price: number | null;
   } | null;
   bonus_pieces: {
     id: string;
@@ -67,11 +70,51 @@ interface OrderStatusHistoryRow {
   new_status: string;
 }
 
+interface CollectionPricingRow {
+  price_full: number;
+}
+
+interface ProfileAddressRow {
+  delivery_address: Json | null;
+}
+
 export interface UpdateDeliveryStatusInput {
   deliveryId: string;
   newStatus: string;
   trackingCode?: string;
   notes?: string;
+}
+
+async function fetchDeliveryCollectionPrice(collectionId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('get_collection_pricing', {
+    p_collection_id: collectionId,
+  });
+
+  if (error) throw error;
+
+  const [pricing] = (data ?? []) as CollectionPricingRow[];
+  if (!pricing) {
+    throw new Error(`Pricing not found for collection ${collectionId}`);
+  }
+
+  return pricing.price_full;
+}
+
+function isPlainRecord(value: Json | null): value is Record<string, Json> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function formatAddress(address: AddressBR | null): string | null {
+  if (!address) return null;
+
+  const streetLine = [address.rua, address.numero].filter(Boolean).join(', ');
+  const neighborhoodLine = address.bairro;
+  const cityLine = [address.cidade, address.uf].filter(Boolean).join(' - ');
+  const zipLine = address.cep ? `CEP: ${address.cep}` : null;
+
+  return [streetLine, address.complemento, neighborhoodLine, cityLine, zipLine]
+    .filter(Boolean)
+    .join('\n') || null;
 }
 
 export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryDetail | null> {
@@ -87,6 +130,7 @@ export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryD
       expected_delivery_date,
       actual_delivery_date,
       tracking_code,
+      shipping_carrier,
       auto_maintained,
       bonus_piece_id,
       created_at,
@@ -99,8 +143,7 @@ export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryD
         total_paid,
         payment_method,
         collections (
-          name,
-          price
+          name
         )
       ),
       cycles (
@@ -109,8 +152,7 @@ export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryD
         year
       ),
       collections (
-        name,
-        price
+        name
       ),
       bonus_pieces (
         id,
@@ -123,18 +165,39 @@ export async function fetchDeliveryDetail(deliveryId: string): Promise<DeliveryD
     .single();
 
   if (error) throw error;
-  return data as unknown as DeliveryDetail;
+
+  const delivery = data as unknown as DeliveryDetail;
+  const collectionId = delivery.collection_id ?? delivery.subscriptions?.collection_id ?? null;
+  const collectionPrice = collectionId ? await fetchDeliveryCollectionPrice(collectionId) : null;
+
+  if (delivery.collections) {
+    delivery.collections.price = collectionPrice;
+  }
+
+  if (delivery.subscriptions?.collections) {
+    delivery.subscriptions.collections.price = collectionPrice;
+  }
+
+  return delivery;
 }
 
 export async function fetchSubscriberAddress(userId: string): Promise<{ address: string | null } | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('address')
+    .select('delivery_address')
     .eq('id', userId)
     .single();
 
   if (error) throw error;
-  return data;
+
+  const profile = data as ProfileAddressRow | null;
+  const deliveryAddress = isPlainRecord(profile?.delivery_address ?? null)
+    ? (profile?.delivery_address as DeliveryAddress)
+    : null;
+
+  return {
+    address: formatAddress(normalizeAddressBR(deliveryAddress)),
+  };
 }
 
 export async function fetchDeliveryChangeHistory(deliveryId: string): Promise<CollectionChangeHistory[]> {

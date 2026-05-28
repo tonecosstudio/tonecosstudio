@@ -10,59 +10,62 @@ interface ProfileIdRow {
   id: string;
 }
 
+type RpcError = { message?: string } | null;
+
+interface MembershipRpcClient {
+  rpc(functionName: "admin_add_chat_group_member", args: {
+    p_group_id: string;
+    p_user_id: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_remove_chat_group_member", args: {
+    p_group_id: string;
+    p_user_id: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "sync_automatic_group_members", args: {
+    p_group_id: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+}
+
+const membershipRpc = supabase as unknown as MembershipRpcClient;
+
+function mapMembershipError(message: string | undefined, fallback: string): string {
+  const value = message ?? "";
+  if (value.includes("GROUP_NOT_FOUND")) return "Grupo nao encontrado";
+  if (value.includes("GROUP_USER_NOT_FOUND")) return "Usuario nao encontrado";
+  if (value.includes("GROUP_MEMBER_EXISTS")) return "Usuario ja e membro deste grupo";
+  if (value.includes("GROUP_MANUAL_MEMBERS_ONLY")) {
+    return "Apenas grupos manuais permitem alteracao manual de membros";
+  }
+  return fallback;
+}
+
 /**
  * MembershipService - Service for managing group memberships.
  */
 export class MembershipService {
   async addMember(groupId: string, userId: string): Promise<GroupMember> {
-    const { data: user, error: userError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("id", userId)
-      .single();
-
-    if (userError || !user) {
-      throw new Error("Usuário não encontrado");
-    }
-
-    const { data: existingMember } = await supabase
-      .from("chat_group_members")
-      .select("id")
-      .eq("group_id", groupId)
-      .eq("user_id", userId)
-      .single();
-
-    if (existingMember) {
-      throw new Error("Usuário já é membro deste grupo");
-    }
-
-    const { data, error } = await supabase
-      .from("chat_group_members")
-      .insert({
-        group_id: groupId,
-        user_id: userId,
-      })
-      .select()
-      .single();
+    const { data, error } = await membershipRpc.rpc("admin_add_chat_group_member", {
+      p_group_id: groupId,
+      p_user_id: userId,
+    });
 
     if (error) {
       log.error("Erro ao adicionar membro ao grupo", { error, groupId, userId });
-      throw new Error("Erro ao adicionar membro ao grupo");
+      throw new Error(mapMembershipError(error.message, "Erro ao adicionar membro ao grupo"));
     }
 
     return data as GroupMember;
   }
 
   async removeMember(groupId: string, userId: string): Promise<void> {
-    const { error } = await supabase
-      .from("chat_group_members")
-      .delete()
-      .eq("group_id", groupId)
-      .eq("user_id", userId);
+    const { error } = await membershipRpc.rpc("admin_remove_chat_group_member", {
+      p_group_id: groupId,
+      p_user_id: userId,
+    });
 
     if (error) {
       log.error("Erro ao remover membro do grupo", { error, groupId, userId });
-      throw new Error("Erro ao remover membro do grupo");
+      throw new Error(mapMembershipError(error.message, "Erro ao remover membro do grupo"));
     }
   }
 
@@ -152,67 +155,19 @@ export class MembershipService {
   }
 
   async syncGroupMembership(groupId: string): Promise<{ added: number; removed: number }> {
-    const { data: group, error: groupError } = await supabase
-      .from("chat_groups")
-      .select("type, membership_criteria")
-      .eq("id", groupId)
-      .is("deleted_at", null)
-      .single();
+    const { data, error } = await membershipRpc.rpc("sync_automatic_group_members", {
+      p_group_id: groupId,
+    });
 
-    if (groupError || !group) {
-      throw new Error("Grupo não encontrado");
+    if (error) {
+      log.error("Erro ao sincronizar membros do grupo", { error, groupId });
+      throw new Error(mapMembershipError(error.message, "Erro ao sincronizar membros do grupo"));
     }
 
-    if (group.type === "manual") {
-      return { added: 0, removed: 0 };
-    }
-
-    const { data: currentMembers } = await supabase
-      .from("chat_group_members")
-      .select("user_id")
-      .eq("group_id", groupId);
-
-    const currentMemberIds = ((currentMembers || []) as UserIdRow[]).map(
-      (member) => member.user_id
-    );
-    const expectedMemberIds = await this.getUsersMatchingCriteria(group.membership_criteria);
-
-    const toAdd = expectedMemberIds.filter((id) => !currentMemberIds.includes(id));
-    const toRemove = currentMemberIds.filter((id) => !expectedMemberIds.includes(id));
-
-    if (toAdd.length > 0) {
-      const { error: addError } = await supabase
-        .from("chat_group_members")
-        .insert(toAdd.map((memberId) => ({ group_id: groupId, user_id: memberId })));
-
-      if (addError) {
-        log.error("Erro ao adicionar membros na sincronização", {
-          error: addError,
-          groupId,
-          count: toAdd.length,
-        });
-      }
-    }
-
-    if (toRemove.length > 0) {
-      const { error: removeError } = await supabase
-        .from("chat_group_members")
-        .delete()
-        .eq("group_id", groupId)
-        .in("user_id", toRemove);
-
-      if (removeError) {
-        log.error("Erro ao remover membros na sincronização", {
-          error: removeError,
-          groupId,
-          count: toRemove.length,
-        });
-      }
-    }
-
+    const result = (data ?? {}) as { added?: number; removed?: number };
     return {
-      added: toAdd.length,
-      removed: toRemove.length,
+      added: Number(result.added ?? 0),
+      removed: Number(result.removed ?? 0),
     };
   }
 
@@ -276,9 +231,9 @@ export class MembershipService {
     }
 
     const { data, error } = await supabase
-      .from("orders")
+      .from("manual_payments")
       .select("user_id")
-      .eq("status", "completed");
+      .eq("status", "approved");
 
     if (error) {
       log.error("Erro ao buscar compradores anteriores", { error });
@@ -294,7 +249,7 @@ export class MembershipService {
     dateFrom?: string;
     dateTo?: string;
   }): Promise<string[]> {
-    let query = supabase.from("orders").select("user_id");
+    let query = supabase.from("manual_payments").select("user_id, status, created_at");
 
     if (criteria.status && criteria.status.length > 0) {
       query = query.in("status", criteria.status);

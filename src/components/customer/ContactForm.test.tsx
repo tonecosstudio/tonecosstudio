@@ -6,12 +6,21 @@ import { ContactForm } from "./ContactForm";
 import { supabase } from "@/integrations/supabase/client";
 import { conversationService } from "@/lib/services/conversationService";
 import { messageService } from "@/lib/services/messageService";
+import { profileSectionPath } from "@/config/routes";
 
 // Mock dependencies
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+      onAuthStateChange: vi.fn(() => ({
+        data: {
+          subscription: {
+            unsubscribe: vi.fn(),
+          },
+        },
+      })),
     },
   },
 }));
@@ -37,9 +46,22 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
+const mockAuthSession = (user: { id: string; email?: string } | null) => {
+  vi.mocked(supabase.auth.getUser).mockResolvedValue({
+    data: { user },
+    error: null,
+  } as any);
+
+  vi.mocked(supabase.auth.getSession).mockResolvedValue({
+    data: { session: user ? { user } : null },
+    error: null,
+  } as any);
+};
+
 describe("ContactForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthSession(null);
   });
 
   const renderContactForm = () => {
@@ -94,11 +116,7 @@ describe("ContactForm", () => {
   it("should show error when user is not authenticated", async () => {
     const user = userEvent.setup();
 
-    // Mock unauthenticated user
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: null },
-      error: null,
-    });
+    mockAuthSession(null);
 
     renderContactForm();
 
@@ -114,7 +132,7 @@ describe("ContactForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/para entrar em contato, por favor faça login/i)).toBeInTheDocument();
+      expect(screen.getByText(/para entrar em contato, por favor faca login/i)).toBeInTheDocument();
     });
   });
 
@@ -124,11 +142,7 @@ describe("ContactForm", () => {
     const mockUser = { id: "user-123", email: "john@example.com" };
     const mockConversation = { id: "conv-123", user_id: mockUser.id };
 
-    // Mock authenticated user
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: mockUser },
-      error: null,
-    });
+    mockAuthSession(mockUser);
 
     vi.mocked(conversationService.createConversation).mockResolvedValue(mockConversation as any);
     vi.mocked(messageService.sendMessage).mockResolvedValue({} as any);
@@ -165,7 +179,7 @@ describe("ContactForm", () => {
     });
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith("/perfil?section=support");
+      expect(mockNavigate).toHaveBeenCalledWith(profileSectionPath("support"));
     });
   });
 
@@ -175,10 +189,7 @@ describe("ContactForm", () => {
     const mockUser = { id: "user-123", email: "john@example.com" };
     const mockConversation = { id: "conv-123", user_id: mockUser.id };
 
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: mockUser },
-      error: null,
-    });
+    mockAuthSession(mockUser);
 
     vi.mocked(conversationService.createConversation).mockResolvedValue(mockConversation as any);
     vi.mocked(messageService.sendMessage).mockResolvedValue({} as any);
@@ -210,10 +221,7 @@ describe("ContactForm", () => {
 
     const mockUser = { id: "user-123", email: "john@example.com" };
 
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: mockUser },
-      error: null,
-    });
+    mockAuthSession(mockUser);
 
     vi.mocked(conversationService.createConversation).mockRejectedValue(new Error("Network error"));
 
@@ -240,14 +248,11 @@ describe("ContactForm", () => {
 
     const mockUser = { id: "user-123", email: "john@example.com" };
 
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({
-      data: { user: mockUser },
-      error: null,
-    });
+    mockAuthSession(mockUser);
 
     // Make the submission slow
     vi.mocked(conversationService.createConversation).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({} as any), 2000))
+      () => new Promise(() => undefined)
     );
 
     renderContactForm();

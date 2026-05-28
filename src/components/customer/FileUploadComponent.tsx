@@ -71,8 +71,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
   const dropAreaRef = useRef<HTMLDivElement>(null);
 
   // Check if mobile camera is supported
-  const isMobileCameraSupported =
-    "mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices;
+  const isMobileCameraSupported = typeof navigator.mediaDevices?.getUserMedia === "function";
 
   // Validate a single file
   const validateFile = useCallback((file: File): string[] => {
@@ -302,13 +301,9 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
 
     setIsUploading(false);
 
-    // Call onUploadComplete if all files were uploaded successfully
-    const successfulUploads = files.filter((f) => f.status === "complete");
-    if (successfulUploads.length > 0 && onUploadComplete) {
-      const completedFiles = successfulUploads
-        .map((f) => f.uploadedFile)
-        .filter((f): f is PaymentFile => f !== undefined);
-      onUploadComplete(completedFiles);
+    // Call onUploadComplete when every pending file from this batch was uploaded successfully.
+    if (uploadedFiles.length > 0 && uploadedFiles.length === pendingFiles.length) {
+      onUploadComplete?.(uploadedFiles);
     }
   };
 
@@ -391,9 +386,22 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
         {/* Drag and Drop Area */}
         <div
           ref={dropAreaRef}
+          role="button"
+          aria-disabled={disabled || isUploading || files.length >= maxFiles}
+          tabIndex={disabled || isUploading || files.length >= maxFiles ? -1 : 0}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") {
+              return;
+            }
+
+            event.preventDefault();
+            if (!disabled && !isUploading && files.length < maxFiles) {
+              fileInputRef.current?.click();
+            }
+          }}
           className={cn(
             "border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors",
             isDragOver

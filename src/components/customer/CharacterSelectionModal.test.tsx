@@ -19,9 +19,11 @@ import type { CharacterEntity as Character } from "@/hooks/customer/useChoiceAct
 
 const mockUseAvailableCharacters = vi.fn();
 const mockSubmitMutate = vi.fn();
+const mockSubmitCharacterChoiceAction = vi.fn();
 
 vi.mock("@/hooks/customer/useChoiceActions", () => ({
   useAvailableCharacters: (...args: unknown[]) => mockUseAvailableCharacters(...args),
+  submitCharacterChoiceAction: (...args: unknown[]) => mockSubmitCharacterChoiceAction(...args),
   useSubmitCharacterChoice: () => ({
     isPending: false,
     mutate: mockSubmitMutate,
@@ -342,7 +344,7 @@ describe("CharacterSelectionModal", () => {
   describe("Character Submission", () => {
     it("should submit character choice successfully", async () => {
       mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      mockSubmitMutate.mockImplementation((_characterId: string, options?: { onSuccess?: () => void }) => { options?.onSuccess?.(); });
+      mockSubmitCharacterChoiceAction.mockResolvedValue(undefined);
 
       const user = userEvent.setup();
 
@@ -369,7 +371,7 @@ describe("CharacterSelectionModal", () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockSubmitMutate).toHaveBeenCalled();
+        expect(mockSubmitCharacterChoiceAction).toHaveBeenCalledWith("order-123", "char-1");
         expect(defaultProps.onSuccess).toHaveBeenCalled();
         expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
       });
@@ -377,7 +379,7 @@ describe("CharacterSelectionModal", () => {
 
     it("should handle submission error", async () => {
       mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      mockSubmitMutate.mockImplementation((_characterId: string, options?: { onError?: (error: Error) => void }) => { options?.onError?.(new Error("Erro ao enviar escolha")); });
+      mockSubmitCharacterChoiceAction.mockRejectedValue(new Error("Erro ao enviar escolha"));
 
       const user = userEvent.setup();
 
@@ -401,7 +403,7 @@ describe("CharacterSelectionModal", () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockSubmitMutate).toHaveBeenCalled();
+        expect(mockSubmitCharacterChoiceAction).toHaveBeenCalledWith("order-123", "char-1");
         // Modal should remain open on error
         expect(defaultProps.onOpenChange).not.toHaveBeenCalledWith(false);
       });
@@ -409,7 +411,7 @@ describe("CharacterSelectionModal", () => {
 
     it("should disable buttons during submission", async () => {
       mockUseAvailableCharacters.mockReturnValue({ data: mockCharacters, isLoading: false, error: null });
-      mockSubmitMutate.mockImplementation(() => undefined);
+      mockSubmitCharacterChoiceAction.mockImplementation(() => new Promise(() => {}));
 
       const user = userEvent.setup();
 

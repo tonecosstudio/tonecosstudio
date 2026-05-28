@@ -12,6 +12,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PaymentMethodForm } from "./PaymentMethodForm";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { createPaymentMethod, updatePaymentMethod } from "@/lib/payment-method-service";
+import { toast } from "@/hooks/use-toast";
 
 // Mock the payment method service
 vi.mock("@/lib/payment-method-service", () => ({
@@ -52,14 +54,19 @@ describe("PaymentMethodForm", () => {
     );
   };
 
+  const selectPaymentType = (label: string) => {
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getByRole("option", { name: label }));
+  };
+
   it("should render create form when no method is provided", () => {
     renderComponent();
 
-    expect(screen.getByText("Novo Método de Pagamento")).toBeInTheDocument();
+    expect(screen.getByText("Novo Metodo de Pagamento")).toBeInTheDocument();
     expect(
-      screen.getByText("Configure um novo método de pagamento para os clientes.")
+      screen.getByText("Configure um novo metodo de pagamento para os clientes.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Criar Método")).toBeInTheDocument();
+    expect(screen.getByText("Criar Metodo")).toBeInTheDocument();
   });
 
   it("should render edit form when method is provided", () => {
@@ -80,9 +87,9 @@ describe("PaymentMethodForm", () => {
 
     renderComponent({ method: mockMethod });
 
-    expect(screen.getByText("Editar Método de Pagamento")).toBeInTheDocument();
+    expect(screen.getByText("Editar Metodo de Pagamento")).toBeInTheDocument();
     expect(screen.getByText("Editando: PIX")).toBeInTheDocument();
-    expect(screen.getByText("Salvar Alterações")).toBeInTheDocument();
+    expect(screen.getByText("Salvar Alteracoes")).toBeInTheDocument();
   });
 
   it("should pre-fill form fields when editing", () => {
@@ -106,7 +113,7 @@ describe("PaymentMethodForm", () => {
     const nameInput = screen.getByLabelText("Nome *") as HTMLInputElement;
     const pixKeyInput = screen.getByLabelText("Chave PIX *") as HTMLInputElement;
     const instructionsTextarea = screen.getByLabelText(
-      "Instruções de Pagamento"
+      "Instrucoes de Pagamento"
     ) as HTMLTextAreaElement;
 
     expect(nameInput.value).toBe("PIX");
@@ -115,17 +122,16 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should show validation error when submitting without name", async () => {
-    const { toast } = require("@/hooks/use-toast");
     renderComponent();
 
-    const submitButton = screen.getByText("Criar Método");
+    const submitButton = screen.getByText("Criar Metodo");
     fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: "Nome obrigatório",
-          description: "Por favor, informe o nome do método de pagamento.",
+          title: "Nome obrigatorio",
+          description: "Por favor, informe o nome do metodo de pagamento.",
           variant: "destructive",
         })
       );
@@ -133,29 +139,23 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should show validation error for PIX without key", async () => {
-    const { toast } = require("@/hooks/use-toast");
     renderComponent();
 
     // Fill name
     const nameInput = screen.getByLabelText("Nome *");
     fireEvent.change(nameInput, { target: { value: "PIX" } });
 
-    // Select PIX type
-    const typeSelect = screen.getByText("Selecione o tipo");
-    fireEvent.click(typeSelect);
-
-    const pixOption = screen.getByText("PIX");
-    fireEvent.click(pixOption);
+    selectPaymentType("PIX");
 
     // Submit without PIX key
-    const submitButton = screen.getByText("Criar Método");
+    const submitButton = screen.getByText("Criar Metodo");
     fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: "Chave PIX obrigatória",
-          description: "Para métodos PIX, a chave PIX é obrigatória.",
+          title: "Chave PIX obrigatoria",
+          description: "Para metodos PIX, a chave PIX e obrigatoria.",
           variant: "destructive",
         })
       );
@@ -163,29 +163,23 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should show validation error for bank transfer without account details", async () => {
-    const { toast } = require("@/hooks/use-toast");
     renderComponent();
 
     // Fill name
     const nameInput = screen.getByLabelText("Nome *");
-    fireEvent.change(nameInput, { target: { value: "Transferência Bancária" } });
+    fireEvent.change(nameInput, { target: { value: "Transferencia Bancaria" } });
 
-    // Select bank transfer type
-    const typeSelect = screen.getByText("Selecione o tipo");
-    fireEvent.click(typeSelect);
-
-    const bankTransferOption = screen.getByText("Transferência Bancária");
-    fireEvent.click(bankTransferOption);
+    selectPaymentType("Transferencia Bancaria");
 
     // Submit without account details
-    const submitButton = screen.getByText("Criar Método");
+    const submitButton = screen.getByText("Criar Metodo");
     fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: "Dados bancários obrigatórios",
-          description: "Para transferência bancária, os dados bancários são obrigatórios.",
+          title: "Dados bancarios obrigatorios",
+          description: "Para transferencia bancaria, os dados bancarios sao obrigatorios.",
           variant: "destructive",
         })
       );
@@ -193,33 +187,27 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should show validation error for invalid JSON in account details", async () => {
-    const { toast } = require("@/hooks/use-toast");
     renderComponent();
 
     // Fill name
     const nameInput = screen.getByLabelText("Nome *");
-    fireEvent.change(nameInput, { target: { value: "Transferência Bancária" } });
+    fireEvent.change(nameInput, { target: { value: "Transferencia Bancaria" } });
 
-    // Select bank transfer type
-    const typeSelect = screen.getByText("Selecione o tipo");
-    fireEvent.click(typeSelect);
-
-    const bankTransferOption = screen.getByText("Transferência Bancária");
-    fireEvent.click(bankTransferOption);
+    selectPaymentType("Transferencia Bancaria");
 
     // Enter invalid JSON
-    const accountDetailsTextarea = screen.getByLabelText("Dados Bancários *");
+    const accountDetailsTextarea = screen.getByLabelText("Dados Bancarios *");
     fireEvent.change(accountDetailsTextarea, { target: { value: "invalid json" } });
 
     // Submit
-    const submitButton = screen.getByText("Criar Método");
+    const submitButton = screen.getByText("Criar Metodo");
     fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: "Dados bancários inválidos",
-          description: "Os dados bancários devem estar em formato JSON válido.",
+          title: "Dados bancarios invalidos",
+          description: "Os dados bancarios devem estar em formato JSON valido.",
           variant: "destructive",
         })
       );
@@ -227,8 +215,7 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should call createPaymentMethod when creating new method", async () => {
-    const { createPaymentMethod } = require("@/lib/payment-method-service");
-    createPaymentMethod.mockResolvedValue(undefined);
+    vi.mocked(createPaymentMethod).mockResolvedValue(undefined);
 
     renderComponent();
 
@@ -236,23 +223,18 @@ describe("PaymentMethodForm", () => {
     const nameInput = screen.getByLabelText("Nome *");
     fireEvent.change(nameInput, { target: { value: "PIX" } });
 
-    // Select PIX type
-    const typeSelect = screen.getByText("Selecione o tipo");
-    fireEvent.click(typeSelect);
-
-    const pixOption = screen.getByText("PIX");
-    fireEvent.click(pixOption);
+    selectPaymentType("PIX");
 
     // Fill PIX key
     const pixKeyInput = screen.getByLabelText("Chave PIX *");
     fireEvent.change(pixKeyInput, { target: { value: "123.456.789-00" } });
 
     // Fill instructions
-    const instructionsTextarea = screen.getByLabelText("Instruções de Pagamento");
+    const instructionsTextarea = screen.getByLabelText("Instrucoes de Pagamento");
     fireEvent.change(instructionsTextarea, { target: { value: "Faça o PIX para a chave abaixo" } });
 
     // Submit
-    const submitButton = screen.getByText("Criar Método");
+    const submitButton = screen.getByText("Criar Metodo");
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -270,8 +252,7 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should call updatePaymentMethod when editing method", async () => {
-    const { updatePaymentMethod } = require("@/lib/payment-method-service");
-    updatePaymentMethod.mockResolvedValue(undefined);
+    vi.mocked(updatePaymentMethod).mockResolvedValue(undefined);
 
     const mockMethod = {
       id: "method-123",
@@ -295,7 +276,7 @@ describe("PaymentMethodForm", () => {
     fireEvent.change(nameInput, { target: { value: "PIX Atualizado" } });
 
     // Submit
-    const submitButton = screen.getByText("Salvar Alterações");
+    const submitButton = screen.getByText("Salvar Alteracoes");
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -313,8 +294,7 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should show loading state during mutation", async () => {
-    const { createPaymentMethod } = require("@/lib/payment-method-service");
-    createPaymentMethod.mockImplementation(() => new Promise(() => {})); // Never resolves
+    vi.mocked(createPaymentMethod).mockImplementation(() => new Promise(() => {})); // Never resolves
 
     renderComponent();
 
@@ -322,23 +302,20 @@ describe("PaymentMethodForm", () => {
     const nameInput = screen.getByLabelText("Nome *");
     fireEvent.change(nameInput, { target: { value: "PIX" } });
 
-    // Select PIX type
-    const typeSelect = screen.getByText("Selecione o tipo");
-    fireEvent.click(typeSelect);
-
-    const pixOption = screen.getByText("PIX");
-    fireEvent.click(pixOption);
+    selectPaymentType("PIX");
 
     // Fill PIX key
     const pixKeyInput = screen.getByLabelText("Chave PIX *");
     fireEvent.change(pixKeyInput, { target: { value: "123.456.789-00" } });
 
     // Submit
-    const submitButton = screen.getByText("Criar Método");
+    const submitButton = screen.getByText("Criar Metodo");
     fireEvent.click(submitButton);
 
     // Should show loading state
-    expect(screen.getByText("Criar Método")).toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByText("Criar Metodo")).toBeDisabled();
+    });
   });
 
   it("should call onOpenChange when cancel button is clicked", () => {
@@ -352,8 +329,7 @@ describe("PaymentMethodForm", () => {
   });
 
   it("should call onSuccess when mutation succeeds", async () => {
-    const { createPaymentMethod } = require("@/lib/payment-method-service");
-    createPaymentMethod.mockResolvedValue(undefined);
+    vi.mocked(createPaymentMethod).mockResolvedValue(undefined);
     const mockOnSuccess = vi.fn();
 
     renderComponent({ onSuccess: mockOnSuccess });
@@ -362,19 +338,14 @@ describe("PaymentMethodForm", () => {
     const nameInput = screen.getByLabelText("Nome *");
     fireEvent.change(nameInput, { target: { value: "PIX" } });
 
-    // Select PIX type
-    const typeSelect = screen.getByText("Selecione o tipo");
-    fireEvent.click(typeSelect);
-
-    const pixOption = screen.getByText("PIX");
-    fireEvent.click(pixOption);
+    selectPaymentType("PIX");
 
     // Fill PIX key
     const pixKeyInput = screen.getByLabelText("Chave PIX *");
     fireEvent.change(pixKeyInput, { target: { value: "123.456.789-00" } });
 
     // Submit
-    const submitButton = screen.getByText("Criar Método");
+    const submitButton = screen.getByText("Criar Metodo");
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -385,33 +356,24 @@ describe("PaymentMethodForm", () => {
   it("should show type-specific fields based on selected type", () => {
     renderComponent();
 
-    // Initially should not show PIX or bank transfer fields
+    // Initially "Outro" uses payment link and should not show PIX or bank transfer fields
     expect(screen.queryByLabelText("Chave PIX *")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Dados Bancários *")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Link de Pagamento")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Dados Bancarios *")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Link de Pagamento")).toBeInTheDocument();
 
-    // Select PIX type
-    const typeSelect = screen.getByText("Selecione o tipo");
-    fireEvent.click(typeSelect);
-
-    const pixOption = screen.getByText("PIX");
-    fireEvent.click(pixOption);
+    selectPaymentType("PIX");
 
     // Should show PIX fields
     expect(screen.getByLabelText("Chave PIX *")).toBeInTheDocument();
 
     // Select bank transfer type
-    fireEvent.click(typeSelect);
-    const bankTransferOption = screen.getByText("Transferência Bancária");
-    fireEvent.click(bankTransferOption);
+    selectPaymentType("Transferencia Bancaria");
 
     // Should show bank transfer fields
-    expect(screen.getByLabelText("Dados Bancários *")).toBeInTheDocument();
+    expect(screen.getByLabelText("Dados Bancarios *")).toBeInTheDocument();
 
     // Select credit card type
-    fireEvent.click(typeSelect);
-    const creditCardOption = screen.getByText("Cartão de Crédito");
-    fireEvent.click(creditCardOption);
+    selectPaymentType("Cartao de Credito");
 
     // Should show payment link field
     expect(screen.getByLabelText("Link de Pagamento")).toBeInTheDocument();

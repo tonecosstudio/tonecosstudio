@@ -42,6 +42,8 @@ function write(level: LogLevel, message: string, meta?: Record<string, unknown>)
     console.error(prefix, payload);
   } else if (level === 'warn') {
     console.warn(prefix, payload);
+  } else if (level === 'debug' && !isProduction) {
+    console.debug(prefix, payload);
   } else if (!isProduction) {
     console.info(prefix, payload);
   }

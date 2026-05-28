@@ -15,17 +15,21 @@ import {
   getStandalonePurchaseCollectionBySlug,
 } from "@/lib/standalone-purchase-service";
 import { log } from "@/lib/logger";
+import { PUBLIC_ROUTES, subscribeCollectionPath } from "@/config/routes";
+import { PRICING } from "@/config/constants";
 
 export default function BuyCharacter() {
   const { slug } = useParams<{ slug: string }>();
+  const collectionSlug = slug ?? "";
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: settings } = useSystemSettings();
 
   const { data: collection, isLoading } = useQuery({
-    queryKey: ["collection", slug],
-    queryFn: () => getStandalonePurchaseCollectionBySlug(slug),
+    queryKey: ["collection", collectionSlug],
+    queryFn: () => getStandalonePurchaseCollectionBySlug(collectionSlug),
+    enabled: collectionSlug.length > 0,
   });
 
   // Buscar preços dinâmicos
@@ -53,7 +57,7 @@ export default function BuyCharacter() {
             A coleção que você procura não existe ou foi removida.
           </p>
           <Button asChild>
-            <Link to="/colecoes">Ver todas as coleções</Link>
+            <Link to={PUBLIC_ROUTES.collections}>Ver todas as coleções</Link>
           </Button>
         </div>
       </Page>
@@ -66,9 +70,9 @@ export default function BuyCharacter() {
   const currentMonthCharacter = characters.find((c) => c.status === "revealed");
 
   // Valores de preço (com fallback para valores padrão)
-  const priceFull = pricing?.price_full || settings?.default_price_full || 500;
-  const pricePix = pricing?.price_pix || settings?.default_price_pix || 475;
-  const depositAmount = pricing?.deposit_amount || settings?.default_deposit_amount || 100;
+  const priceFull = pricing?.price_full || settings?.default_price_full || PRICING.DEFAULT_PRICE_FULL;
+  const pricePix = pricing?.price_pix || settings?.default_price_pix || PRICING.DEFAULT_PRICE_PIX;
+  const depositAmount = pricing?.deposit_amount || settings?.default_deposit_amount || PRICING.DEFAULT_DEPOSIT_AMOUNT;
   const remainingPix = pricing?.remaining_pix || pricePix - depositAmount;
   const remainingFull = pricing?.remaining_full || priceFull - depositAmount;
   return (
@@ -115,7 +119,7 @@ export default function BuyCharacter() {
                 Não há personagem do mês disponível para compra avulsa no momento.
               </p>
               <Button asChild>
-                <Link to={`/colecoes/${slug}/assinar`}>Ver Planos de Assinatura</Link>
+                <Link to={subscribeCollectionPath(collectionSlug)}>Ver Planos de Assinatura</Link>
               </Button>
             </CardContent>
           </Card>
@@ -283,7 +287,7 @@ export default function BuyCharacter() {
                             alt={currentMonthCharacter.name}
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             loading="eager"
-                            fetchpriority="high"
+                            fetchPriority="high"
                           />
                         </div>
                       )}
@@ -302,7 +306,7 @@ export default function BuyCharacter() {
                           size="lg"
                           onClick={async () => {
                             if (!user) {
-                              navigate("/login");
+                              navigate(PUBLIC_ROUTES.login);
                               return;
                             }
 
@@ -364,7 +368,7 @@ export default function BuyCharacter() {
                       Quer receber personagens todos os meses?
                     </p>
                     <Button asChild variant="ghost" size="sm" className="w-full text-xs h-8">
-                      <Link to={`/colecoes/${slug}/assinar`}>
+                      <Link to={subscribeCollectionPath(collectionSlug)}>
                         Conheça os Planos de Assinatura →
                       </Link>
                     </Button>

@@ -9,6 +9,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 import { PriceInCoins } from "@/types/contextual-pricing";
 
 // =====================================================
@@ -21,7 +22,7 @@ export type TransactionType =
   | "refund"                // Reembolso
   | "bonus"                 // Bônus/presente
   | "subscription_credit"   // Crédito de assinatura mensal
-  | "admin_adjustment";     // Ajuste manual do admin
+  | "adjustment";           // Ajuste manual do admin
 
 export interface CoinTransaction {
   id: string;
@@ -63,6 +64,8 @@ export function useCoinTransactions(userId?: string | null, limit: number = 50) 
       if (!userId) {
         return [];
       }
+
+      await assertCurrentUserId(userId);
 
       const { data, error } = await supabase
         .from("coin_transactions")
@@ -127,7 +130,7 @@ export function formatTransactionType(type: TransactionType): string {
     refund: "Reembolso",
     bonus: "Bônus",
     subscription_credit: "Crédito de Assinatura",
-    admin_adjustment: "Ajuste Manual",
+    adjustment: "Ajuste Manual",
   };
 
   return labels[type] || type;

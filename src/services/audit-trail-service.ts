@@ -8,6 +8,39 @@
 import { supabase } from "@/integrations/supabase/client";
 import log from "@/lib/logger";
 
+interface AuditRpcError {
+  message: string;
+}
+
+interface AuditRpcClient {
+  rpc(
+    name: "record_collection_choice_change",
+    args: {
+      p_delivery_id: string;
+      p_user_id: string;
+      p_previous_collection_id: string | null;
+      p_new_collection_id: string;
+      p_change_reason: string;
+      p_changed_by_admin: boolean;
+      p_admin_user_id: string | null;
+      p_ip_address: string | null;
+      p_user_agent: string | null;
+    }
+  ): Promise<{ data: unknown; error: AuditRpcError | null }>;
+  rpc(
+    name: "admin_record_order_status_history",
+    args: {
+      p_order_id: string;
+      p_order_type: string;
+      p_old_status: string | null;
+      p_new_status: string;
+      p_notes?: string | null;
+    }
+  ): Promise<{ data: string | null; error: AuditRpcError | null }>;
+}
+
+const auditRpc = supabase as unknown as AuditRpcClient;
+
 /**
  * Status History record from order_status_history table
  */
@@ -23,11 +56,39 @@ export interface AuditRecord {
   created_at: string;
 }
 
+export type CollectionChangeReason = 'manual' | 'automatic_maintenance' | 'admin_override';
+
+export interface CollectionChoiceHistory {
+  id: string;
+  delivery_id: string;
+  user_id: string;
+  previous_collection_id: string | null;
+  new_collection_id: string;
+  change_reason: CollectionChangeReason;
+  changed_by_admin: boolean;
+  admin_user_id: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface RecordCollectionChangeParams {
+  deliveryId: string;
+  userId: string;
+  previousCollectionId: string | null;
+  newCollectionId: string;
+  changeReason: CollectionChangeReason;
+  changedByAdmin?: boolean;
+  adminUserId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
 /**
  * Get all status changes for admin review (audit trail)
  */
-export async function getAllCollectionChanges(filters?: {
-  changeReason?: string;
+export async function getAuditTrailRecords(filters?: {
+  orderType?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -37,8 +98,8 @@ export async function getAllCollectionChanges(filters?: {
     .from('order_status_history')
     .select('*', { count: 'exact' });
 
-  if (filters?.changeReason && filters.changeReason !== 'all') {
-    query = query.eq('order_type', filters.changeReason);
+  if (filters?.orderType && filters.orderType !== 'all') {
+    query = query.eq('order_type', filters.orderType);
   }
 
   if (filters?.startDate) {
@@ -69,10 +130,51 @@ export async function getAllCollectionChanges(filters?: {
   };
 }
 
+interface CollectionChoiceHistoryQuery extends PromiseLike<{
+  data: CollectionChoiceHistory[] | null;
+  error: { message: string } | null;
+}> {
+  eq(column: "delivery_id", value: string): CollectionChoiceHistoryQuery;
+  order(column: "created_at", options?: { ascending?: boolean }): CollectionChoiceHistoryQuery;
+}
+
+interface CollectionChoiceHistoryGateway {
+  from(table: "collection_choice_history"): {
+    select(columns: "*"): CollectionChoiceHistoryQuery;
+  };
+}
+
+const collectionChoiceHistoryGateway = supabase as unknown as CollectionChoiceHistoryGateway;
+
+/**
+ * Record a collection-choice change in the dedicated audit table.
+ */
+export async function recordCollectionChange(
+  params: RecordCollectionChangeParams
+): Promise<CollectionChoiceHistory> {
+  const { data, error } = await auditRpc.rpc('record_collection_choice_change', {
+    p_delivery_id: params.deliveryId,
+    p_user_id: params.userId,
+    p_previous_collection_id: params.previousCollectionId,
+    p_new_collection_id: params.newCollectionId,
+    p_change_reason: params.changeReason,
+    p_changed_by_admin: params.changedByAdmin ?? false,
+    p_admin_user_id: params.adminUserId ?? null,
+    p_ip_address: params.ipAddress ?? null,
+    p_user_agent: params.userAgent ?? null,
+  });
+
+  if (error) {
+    throw new Error(`Failed to record collection change: ${error.message}`);
+  }
+
+  return data as CollectionChoiceHistory;
+}
+
 /**
  * Search status changes by changed_by_name
  */
-export async function searchCollectionChangesBySubscriber(
+export async function searchAuditTrailByResponsible(
   searchTerm: string,
   limit: number = 50
 ): Promise<AuditRecord[]> {
@@ -103,32 +205,48 @@ export async function recordStatusChange(params: {
   changedByName?: string | null;
   notes?: string | null;
 }): Promise<AuditRecord | null> {
-  const { data, error } = await supabase
-    .from('order_status_history')
-    .insert({
-      order_id: params.orderId,
-      order_type: params.orderType,
-      old_status: params.oldStatus,
-      new_status: params.newStatus,
-      changed_by: params.changedBy || null,
-      changed_by_name: params.changedByName || null,
-      notes: params.notes || null,
-    })
-    .select()
-    .single();
+  const { data: historyId, error } = await auditRpc.rpc('admin_record_order_status_history', {
+    p_order_id: params.orderId,
+    p_order_type: params.orderType,
+    p_old_status: params.oldStatus,
+    p_new_status: params.newStatus,
+    p_notes: params.notes || null,
+  });
 
   if (error) {
     log.error('Failed to record status change', { error: error.message });
     return null;
   }
 
+  if (!historyId) {
+    return null;
+  }
+
+  const { data, error: fetchError } = await supabase
+    .from('order_status_history')
+    .select('*')
+    .eq('id', historyId)
+    .single();
+
+  if (fetchError) {
+    log.error('Failed to fetch recorded status change', { error: fetchError.message });
+    return null;
+  }
+
   return data as AuditRecord;
 }
 
-// Legacy exports for backward compatibility
-export type CollectionChoiceHistory = AuditRecord;
-export type RecordCollectionChangeParams = Parameters<typeof recordStatusChange>[0];
 export const getDeliveryChangeHistory = async (deliveryId: string) => {
-  const { data } = await getAllCollectionChanges({ limit: 100 });
-  return data.filter(r => r.order_id === deliveryId);
+  const { data, error } = await collectionChoiceHistoryGateway
+    .from('collection_choice_history')
+    .select('*')
+    .eq('delivery_id', deliveryId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    log.error('Failed to get delivery change history', { error: error.message, deliveryId });
+    return [];
+  }
+
+  return data || [];
 };

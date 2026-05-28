@@ -55,9 +55,9 @@ export function useUpdateTierAndRecalculate() {
       // Chamar função do banco de dados
       const { data, error } = await supabase.rpc("update_tier_and_recalculate_plans", {
         p_tier_id: validated.tier_id,
-        p_price_full: validated.price_full || null,
-        p_deposit_amount: validated.deposit_amount || null,
-        p_pix_discount_percentage: validated.pix_discount_percentage || null,
+        p_price_full: validated.price_full ?? undefined,
+        p_deposit_amount: validated.deposit_amount ?? undefined,
+        p_pix_discount_percentage: validated.pix_discount_percentage ?? undefined,
         p_updated_by: user.id,
       });
 
@@ -65,7 +65,7 @@ export function useUpdateTierAndRecalculate() {
         throw new Error(`Erro ao atualizar nível: ${error.message}`);
       }
 
-      return data as UpdateTierAndRecalculateResult;
+      return data as unknown as UpdateTierAndRecalculateResult;
     },
     onSuccess: (result, variables) => {
       // Invalidar queries relacionadas

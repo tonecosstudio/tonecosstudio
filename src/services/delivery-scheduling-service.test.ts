@@ -12,6 +12,44 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 
+type PlanType = 'trimestral' | 'semestral';
+
+function getDeliveryCount(planType: PlanType): number {
+  return planType === 'trimestral' ? 3 : 6;
+}
+
+function getNextMonth(month: number, year: number): { month: number; year: number } {
+  if (month === 12) {
+    return { month: 1, year: year + 1 };
+  }
+
+  return { month: month + 1, year };
+}
+
+function buildMonthlySchedule(
+  startMonth: number,
+  startYear: number,
+  deliveryCount: number
+): Array<{ deliveryNumber: number; month: number; year: number }> {
+  const deliveries = [];
+  let currentMonth = startMonth;
+  let currentYear = startYear;
+
+  for (let i = 0; i < deliveryCount; i++) {
+    deliveries.push({
+      deliveryNumber: i + 1,
+      month: currentMonth,
+      year: currentYear,
+    });
+
+    const next = getNextMonth(currentMonth, currentYear);
+    currentMonth = next.month;
+    currentYear = next.year;
+  }
+
+  return deliveries;
+}
+
 // Test the delivery schedule calculation logic directly
 describe('Delivery Scheduling Logic (Monthly Cycles)', () => {
   describe('Input validation', () => {
@@ -200,36 +238,13 @@ describe('Property-Based Tests (Monthly Cycles)', () => {
           fc.constantFrom('trimestral' as const, 'semestral' as const),
           (entryCycle, _planType) => {
             // Calculate expected delivery count
-            const expectedCount = planType === 'trimestral' ? 3 : 6;
-            
-            // Calculate first delivery month (always next month)
-            let firstMonth = entryCycle.month + 1;
-            let firstYear = entryCycle.year;
-            
-            if (firstMonth > 12) {
-              firstMonth = 1;
-              firstYear += 1;
-            }
-            
-            // Generate delivery schedule
-            const deliveries = [];
-            let currentMonth = firstMonth;
-            let currentYear = firstYear;
-            
-            for (let i = 0; i < expectedCount; i++) {
-              deliveries.push({
-                deliveryNumber: i + 1,
-                month: currentMonth,
-                year: currentYear,
-              });
-              
-              // Move to next month
-              currentMonth += 1;
-              if (currentMonth > 12) {
-                currentMonth = 1;
-                currentYear += 1;
-              }
-            }
+            const expectedCount = getDeliveryCount(_planType);
+            const firstDelivery = getNextMonth(entryCycle.month, entryCycle.year);
+            const deliveries = buildMonthlySchedule(
+              firstDelivery.month,
+              firstDelivery.year,
+              expectedCount
+            );
             
             // Verify correct number of deliveries
             expect(deliveries).toHaveLength(expectedCount);
@@ -239,18 +254,11 @@ describe('Property-Based Tests (Monthly Cycles)', () => {
               const prev = deliveries[i - 1];
               const curr = deliveries[i];
               
-              // Calculate expected next month/year
-              let expectedMonth = prev.month + 1;
-              let expectedYear = prev.year;
-              
-              if (expectedMonth > 12) {
-                expectedMonth = 1;
-                expectedYear += 1;
-              }
+              const expected = getNextMonth(prev.month, prev.year);
               
               // Verify current delivery is in expected month/year
-              expect(curr.month).toBe(expectedMonth);
-              expect(curr.year).toBe(expectedYear);
+              expect(curr.month).toBe(expected.month);
+              expect(curr.year).toBe(expected.year);
             }
             
             // Verify delivery numbers are sequential
@@ -275,42 +283,15 @@ describe('Property-Based Tests (Monthly Cycles)', () => {
           }),
           fc.constantFrom('trimestral' as const, 'semestral' as const),
           (entryCycle, _planType) => {
-            const expectedCount = planType === 'trimestral' ? 3 : 6;
+            const expectedCount = getDeliveryCount(_planType);
+            const firstDelivery = getNextMonth(entryCycle.month, entryCycle.year);
+            const deliveries = buildMonthlySchedule(
+              firstDelivery.month,
+              firstDelivery.year,
+              expectedCount
+            );
             
-            // Calculate first delivery month
-            let firstMonth = entryCycle.month + 1;
-            let firstYear = entryCycle.year;
-            
-            if (firstMonth > 12) {
-              firstMonth = 1;
-              firstYear += 1;
-            }
-            
-            // Generate deliveries
-            const deliveries = [];
-            let currentMonth = firstMonth;
-            let currentYear = firstYear;
-            
-            for (let i = 0; i < expectedCount; i++) {
-              deliveries.push({
-                month: currentMonth,
-                year: currentYear,
-              });
-              
-              currentMonth += 1;
-              if (currentMonth > 12) {
-                currentMonth = 1;
-                currentYear += 1;
-              }
-            }
-            
-            // Verify at least one delivery crosses year boundary
-            const years = [...new Set(deliveries.map(d => d.year))];
-            
-            // If entry is Oct-Dec, we should have deliveries in next year
-            if (entryCycle.month >= 10) {
-              expect(years.length).toBeGreaterThan(1);
-            }
+            expect(deliveries.some((delivery) => delivery.year > entryCycle.year)).toBe(true);
             
             // Verify months are valid (1-12)
             deliveries.forEach(delivery => {
@@ -335,23 +316,17 @@ describe('Property-Based Tests (Monthly Cycles)', () => {
           fc.constantFrom('trimestral' as const, 'semestral' as const),
           (entryCycle, _planType) => {
             // Calculate first delivery month
-            let firstMonth = entryCycle.month + 1;
-            let firstYear = entryCycle.year;
-            
-            if (firstMonth > 12) {
-              firstMonth = 1;
-              firstYear += 1;
-            }
+            const firstDelivery = getNextMonth(entryCycle.month, entryCycle.year);
             
             // Verify first delivery is exactly one month after entry
             if (entryCycle.month === 12) {
               // December -> January next year
-              expect(firstMonth).toBe(1);
-              expect(firstYear).toBe(entryCycle.year + 1);
+              expect(firstDelivery.month).toBe(1);
+              expect(firstDelivery.year).toBe(entryCycle.year + 1);
             } else {
               // Any other month -> next month same year
-              expect(firstMonth).toBe(entryCycle.month + 1);
-              expect(firstYear).toBe(entryCycle.year);
+              expect(firstDelivery.month).toBe(entryCycle.month + 1);
+              expect(firstDelivery.year).toBe(entryCycle.year);
             }
           }
         ),

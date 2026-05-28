@@ -19,6 +19,7 @@ export function usePaymentVoucherStorage({
     uploadPaymentVoucher({ file, userId, pathPrefix });
 
   return {
+    allowedPaymentVoucherTypes: ALLOWED_PAYMENT_VOUCHER_TYPES,
     validatePaymentVoucherFile,
     uploadPaymentVoucherToStorage,
   };

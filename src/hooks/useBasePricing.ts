@@ -26,7 +26,7 @@ export interface CollectionBasePrice {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  sort_order?: number;
+  sort_order?: number | null;
 }
 
 export interface UpdateBasePriceInput {
@@ -56,6 +56,20 @@ interface CollectionBasePricingRow {
   updated_at: string;
   collection_types: CollectionTypeJoin;
 }
+
+interface BasePricingRpcClient {
+  rpc(
+    fn: "update_base_price_with_history",
+    args: {
+      p_collection_type_id: string;
+      p_new_base_price_coins: number;
+      p_changed_by: string;
+      p_reason: string | null;
+    }
+  ): Promise<{ data: UpdateBasePriceResponse[] | null; error: { message: string } | null }>;
+}
+
+const basePricingRpc = supabase as unknown as BasePricingRpcClient;
 
 // =====================================================
 // QUERY KEYS
@@ -101,7 +115,7 @@ export function useBasePricing() {
       }
 
       // Transformar dados para formato mais amigável
-      const transformed = ((data || []) as CollectionBasePricingRow[]).map((item) => ({
+      const transformed: CollectionBasePrice[] = ((data || []) as unknown as CollectionBasePricingRow[]).map((item) => ({
         collection_type_id: item.collection_type_id,
         collection_type_name: item.collection_types.name,
         collection_type_display_name: item.collection_types.display_name,
@@ -113,9 +127,9 @@ export function useBasePricing() {
       }));
 
       // Ordenar por sort_order no cliente
-      return transformed.sort((a: CollectionBasePrice, b: CollectionBasePrice) => 
+      return transformed.sort((a, b) =>
         (a.sort_order || 0) - (b.sort_order || 0)
-      ) as CollectionBasePrice[];
+      );
     },
     staleTime: CACHE_CONFIG.STALE_TIME, // 5 minutos (RN010)
   });
@@ -191,7 +205,7 @@ export function useUpdateBasePrice() {
       if (!user) throw new Error("Usuário não autenticado");
 
       // Chamar função do banco de dados
-      const { data, error } = await supabase.rpc("update_base_price_with_history", {
+      const { data, error } = await basePricingRpc.rpc("update_base_price_with_history", {
         p_collection_type_id: input.collection_type_id,
         p_new_base_price_coins: input.new_base_price_coins,
         p_changed_by: user.id,

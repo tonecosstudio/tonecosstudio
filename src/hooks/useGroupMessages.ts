@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import { messageService } from "@/lib/services/messageService";
+import { userHasAdminAccess } from "@/services/auth/current-user";
 import type { EnrichedGroupMessage } from "@/types/groups";
 
 interface UseGroupMessagesOptions {
@@ -193,13 +194,7 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) throw new Error("Usuário não autenticado");
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.role !== "admin") {
+        if (!(await userHasAdminAccess(user.id))) {
           throw new Error("Apenas administradores podem enviar mensagens");
         }
 
@@ -207,6 +202,7 @@ export function useGroupMessages({ groupId, autoScroll = true }: UseGroupMessage
           groupId,
           user.id,
           message,
+          undefined,
           attachmentFiles
         );
 

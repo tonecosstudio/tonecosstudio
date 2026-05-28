@@ -74,3 +74,21 @@ export function useDisableSubscriptionRenewal(
     },
   });
 }
+
+export function useReactivateSubscriptionRenewal(
+  subscriptionId: string,
+  callbacks: MutationCallbacks<NoRenewalResponse> = {}
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => subscriptionCreditAPI.reactivateRenewal(subscriptionId),
+    onSuccess: (data) => {
+      invalidateSubscriptionCreditQueries(queryClient);
+      callbacks.onSuccess?.(data);
+    },
+    onError: (error: unknown) => {
+      callbacks.onError?.(toError(error));
+    },
+  });
+}

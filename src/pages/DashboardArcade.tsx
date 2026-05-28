@@ -16,6 +16,7 @@ import {
   Crosshair,
   Swords,
 } from "lucide-react";
+import { AUTH_ROUTES, PUBLIC_ROUTES, profileSectionPath } from "@/config/routes";
 
 export default function DashboardArcade() {
   const { user } = useAuth();
@@ -112,7 +113,7 @@ export default function DashboardArcade() {
                       </div>
                     ))}
                     <Link
-                      to="/perfil?section=orders"
+                      to={profileSectionPath("orders")}
                       className="block text-center py-2 border border-[hsl(var(--gold-accent)/0.2)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono text-[10px] uppercase tracking-wider transition-colors"
                     >
                       Ver Todos →
@@ -123,7 +124,7 @@ export default function DashboardArcade() {
                     <Crosshair className="w-10 h-10 mx-auto mb-3 text-[hsl(0,0%,20%)]" />
                     <p className="text-[hsl(0,0%,30%)] font-mono text-[10px] tracking-wider">NENHUMA MISSÃO</p>
                     <Link
-                      to="/catalogo"
+                      to={PUBLIC_ROUTES.catalog}
                       className="inline-block mt-3 text-[hsl(var(--gold-accent))] font-mono text-[9px] underline tracking-wider"
                     >
                       INICIAR PRIMEIRA MISSÃO
@@ -170,10 +171,10 @@ export default function DashboardArcade() {
           <ArcadeSectionTitle>Ações Rápidas</ArcadeSectionTitle>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Catálogo", href: "/catalogo", icon: <Crosshair className="w-5 h-5" /> },
-              { label: "Wishlist", href: "/wishlist", icon: <Heart className="w-5 h-5" /> },
-              { label: "Coleções", href: "/colecoes", icon: <Star className="w-5 h-5" /> },
-              { label: "Perfil", href: "/perfil", icon: <Trophy className="w-5 h-5" /> },
+              { label: "Catálogo", href: PUBLIC_ROUTES.catalog, icon: <Crosshair className="w-5 h-5" /> },
+              { label: "Wishlist", href: AUTH_ROUTES.wishlist, icon: <Heart className="w-5 h-5" /> },
+              { label: "Coleções", href: PUBLIC_ROUTES.collections, icon: <Star className="w-5 h-5" /> },
+              { label: "Perfil", href: AUTH_ROUTES.profile, icon: <Trophy className="w-5 h-5" /> },
             ].map((link) => (
               <Link key={link.href} to={link.href}>
                 <ArcadeCard>

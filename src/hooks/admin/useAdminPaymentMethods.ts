@@ -11,12 +11,14 @@ import {
   updatePaymentMethod,
 } from "@/lib/payment-method-service";
 
+const EMPTY_PAYMENT_METHODS: PaymentMethod[] = [];
+
 export function useAdminPaymentMethods() {
   const queryClient = useQueryClient();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
 
   const {
-    data: paymentMethods = [],
+    data: paymentMethods = EMPTY_PAYMENT_METHODS,
     isLoading,
     error,
   } = useQuery({

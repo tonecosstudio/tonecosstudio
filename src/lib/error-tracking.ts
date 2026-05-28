@@ -40,11 +40,18 @@ interface SentryCaptureContext {
   contexts?: Record<string, unknown>;
 }
 
+interface SentryLike {
+  captureException(error: Error, context?: SentryCaptureContext): void;
+  captureMessage(message: string, context?: SentryCaptureContext): void;
+  setUser(user: SentryUser | null): void;
+  addBreadcrumb(breadcrumb: SentryBreadcrumb): void;
+}
+
 /**
  * Get Sentry instance if available
  * Returns null if Sentry is not installed
  */
-function getSentry() {
+function getSentry(): SentryLike | null {
   // Sentry is optional and not installed - always return null
   return null;
 }
@@ -89,9 +96,16 @@ export class AppError extends Error {
     super(message);
     this.name = this.constructor.name;
     
-    // Maintains proper stack trace for where error was thrown
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
+    // Maintains proper stack trace for where error was thrown in runtimes that expose it.
+    const captureStackTrace = (Error as ErrorConstructor & {
+      captureStackTrace?: (
+        targetObject: object,
+        constructorOpt?: new (...args: never[]) => Error
+      ) => void;
+    }).captureStackTrace;
+
+    if (captureStackTrace) {
+      captureStackTrace(this, this.constructor as new (...args: never[]) => Error);
     }
   }
 
@@ -306,7 +320,7 @@ class ErrorTrackingService {
   /**
    * Get emoji for log level
    */
-  private getEmojiForLevel(level: ErrorSeverity): string {
+  getEmojiForLevel(level: ErrorSeverity): string {
     switch (level) {
       case ErrorSeverity.DEBUG:
         return '🐛';

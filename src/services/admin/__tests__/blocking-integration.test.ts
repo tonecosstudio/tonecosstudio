@@ -1,168 +1,131 @@
-/**
- * Integration test for blocking production logic
- * 
- * Verifies that all sub-tasks of 4.3.2 are properly implemented:
- * 1. Update production_stages.is_blocked = true
- * 2. Update production_queue.production_status = 'on_hold'
- * 3. Recalculate estimated completion date
- * 4. Send notification to customer with explanation
- * 5. Add to urgent alerts
- */
-
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { blockProduction } from "../production-service";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { supabase } from "@/integrations/supabase/client";
+import { blockProduction } from "../production-service";
 
-// Mock Supabase client
+const serviceMocks = vi.hoisted(() => ({
+  calculateEstimatedCompletion: vi.fn(),
+  sendDelayNotification: vi.fn(),
+}));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
-// Mock stage service
 vi.mock("../stage-service", () => ({
-  calculateEstimatedCompletion: vi.fn().mockResolvedValue(new Date("2024-02-01")),
+  calculateEstimatedCompletion: serviceMocks.calculateEstimatedCompletion,
 }));
 
-// Mock notification service
-vi.mock("../../notifications/production-notification-service", () => ({
+vi.mock("@/services/notifications/production-notification-service", () => ({
   ProductionNotificationService: vi.fn().mockImplementation(() => ({
-    sendDelayNotification: vi.fn().mockResolvedValue(undefined),
+    sendDelayNotification: serviceMocks.sendDelayNotification,
   })),
+  productionNotificationService: {
+    sendDelayNotification: serviceMocks.sendDelayNotification,
+  },
 }));
+
+const QUEUE_ID = "test-id";
+const BLOCK_REASON = "Material shortage";
+const ESTIMATED_COMPLETION = new Date("2024-02-01T00:00:00.000Z");
+
+const queueItem = {
+  id: QUEUE_ID,
+  current_stage: "production",
+  customer_id: "customer-123",
+  customer_email: "customer@example.com",
+  collection_name: "Test Collection",
+  order_id: "order-123",
+  order_type: "subscription_delivery",
+};
+
+const blockedQueueItem = {
+  ...queueItem,
+  production_status: "on_hold",
+  production_notes: BLOCK_REASON,
+  updated_at: "2024-01-15T00:00:00.000Z",
+};
+
+function mockQueueLookup(): void {
+  const query = {
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({ data: queueItem, error: null }),
+  };
+
+  (supabase.from as Mock).mockReturnValue({
+    select: vi.fn().mockReturnValue(query),
+  });
+}
+
+function mockProductionRpc(options: { failEstimatedCompletion?: boolean } = {}): void {
+  (supabase.rpc as Mock).mockImplementation(
+    (name: string, args: Record<string, unknown>) => {
+      switch (name) {
+        case "admin_block_production":
+          expect(args).toEqual({
+            p_queue_id: QUEUE_ID,
+            p_reason: BLOCK_REASON,
+          });
+          return Promise.resolve({ data: blockedQueueItem, error: null });
+
+        case "admin_update_production_estimated_completion":
+          expect(args).toEqual({
+            p_queue_id: QUEUE_ID,
+            p_estimated_completion: ESTIMATED_COMPLETION.toISOString(),
+          });
+          return Promise.resolve({
+            data: null,
+            error: options.failEstimatedCompletion
+              ? { message: "Database error" }
+              : null,
+          });
+
+        default:
+          throw new Error(`Unexpected production RPC: ${name}`);
+      }
+    }
+  );
+}
 
 describe("Blocking Production Integration Test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    serviceMocks.calculateEstimatedCompletion.mockResolvedValue(ESTIMATED_COMPLETION);
+    serviceMocks.sendDelayNotification.mockResolvedValue(undefined);
+    mockQueueLookup();
+    mockProductionRpc();
   });
 
-  it("should complete all blocking sub-tasks successfully", async () => {
-    // Mock data
-    const mockQueueItem = {
-      id: "test-id",
-      current_stage: "production",
-      customer_id: "customer-123",
-      customer_email: "customer@example.com",
-      collection_name: "Test Collection",
-      order_id: "order-123",
-      order_type: "subscription_delivery",
-    };
+  it("blocks production through server-side RPCs and sends the delay notification", async () => {
+    const result = await blockProduction(QUEUE_ID, BLOCK_REASON);
 
-    const mockUpdatedItem = {
-      ...mockQueueItem,
-      production_status: "on_hold",
-      production_notes: "Material shortage",
-      updated_at: new Date().toISOString(),
-    };
-
-    // Setup mock chain for fetching queue item
-    const mockFetchQuery = {
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: mockQueueItem, error: null }),
-    };
-
-    // Setup mock chain for updating production_stages
-    const mockStageUpdateQuery = {
-      eq: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-    };
-    mockStageUpdateQuery.eq.mockReturnValueOnce(mockStageUpdateQuery);
-    mockStageUpdateQuery.eq.mockResolvedValueOnce({ error: null });
-
-    // Setup mock chain for updating production_queue
-    const mockQueueUpdateQuery = {
-      eq: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: mockUpdatedItem, error: null }),
-    };
-
-    // Setup mock chain for updating estimated date
-    const mockEstimatedDateQuery = {
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    };
-
-    // Configure supabase.from mock to return appropriate chains
-    (supabase.from as any)
-      .mockReturnValueOnce({ select: vi.fn().mockReturnValue(mockFetchQuery) }) // First call: fetch queue item
-      .mockReturnValueOnce({ update: vi.fn().mockReturnValue(mockStageUpdateQuery) }) // Second call: update stage
-      .mockReturnValueOnce({ update: vi.fn().mockReturnValue(mockQueueUpdateQuery) }) // Third call: update queue
-      .mockReturnValueOnce({ update: vi.fn().mockReturnValue(mockEstimatedDateQuery) }); // Fourth call: update estimated date
-
-    // Execute blocking
-    const result = await blockProduction("test-id", "Material shortage");
-
-    // Verify all sub-tasks were executed
-    
-    // Sub-task 1: Update production_stages.is_blocked = true
-    expect(supabase.from).toHaveBeenCalledWith("production_stages");
-    
-    // Sub-task 2: Update production_queue.production_status = 'on_hold'
-    expect(result.productionStatus).toBe("on_hold");
     expect(supabase.from).toHaveBeenCalledWith("production_queue");
-    
-    // Sub-task 3: Recalculate estimated completion date
-    // This is verified by the mock being called in stage-service
-    
-    // Sub-task 4: Send notification to customer
-    // This is verified by the mock being called in production-notification-service
-    
-    // Sub-task 5: Add to urgent alerts
-    // This happens automatically when production_status = 'on_hold'
-    // The get_production_metrics() function counts these items
-    expect(result.productionStatus).toBe("on_hold"); // This ensures it will be counted in urgent alerts
+    expect(supabase.rpc).toHaveBeenCalledWith("admin_block_production", {
+      p_queue_id: QUEUE_ID,
+      p_reason: BLOCK_REASON,
+    });
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "admin_update_production_estimated_completion",
+      {
+        p_queue_id: QUEUE_ID,
+        p_estimated_completion: ESTIMATED_COMPLETION.toISOString(),
+      }
+    );
+    expect(serviceMocks.calculateEstimatedCompletion).toHaveBeenCalledWith(QUEUE_ID);
+    expect(serviceMocks.sendDelayNotification).toHaveBeenCalledWith(QUEUE_ID, BLOCK_REASON);
+    expect(result.productionStatus).toBe("on_hold");
   });
 
-  it("should handle errors gracefully without failing the blocking operation", async () => {
-    const mockQueueItem = {
-      id: "test-id",
-      current_stage: "production",
-      customer_id: "customer-123",
-      customer_email: "customer@example.com",
-      collection_name: "Test Collection",
-      order_id: "order-123",
-      order_type: "subscription_delivery",
-    };
+  it("keeps the block successful when non-critical follow-up work fails", async () => {
+    mockProductionRpc({ failEstimatedCompletion: true });
+    serviceMocks.sendDelayNotification.mockRejectedValueOnce(new Error("Email provider error"));
 
-    const mockUpdatedItem = {
-      ...mockQueueItem,
-      production_status: "on_hold",
-      production_notes: "Material shortage",
-      updated_at: new Date().toISOString(),
-    };
+    const result = await blockProduction(QUEUE_ID, BLOCK_REASON);
 
-    const mockFetchQuery = {
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: mockQueueItem, error: null }),
-    };
-
-    const mockStageUpdateQuery = {
-      eq: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-    };
-    mockStageUpdateQuery.eq.mockReturnValueOnce(mockStageUpdateQuery);
-    mockStageUpdateQuery.eq.mockResolvedValueOnce({ error: null });
-
-    const mockQueueUpdateQuery = {
-      eq: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: mockUpdatedItem, error: null }),
-    };
-
-    // Mock estimated date update to fail
-    const mockEstimatedDateQuery = {
-      eq: vi.fn().mockRejectedValue(new Error("Database error")),
-    };
-
-    (supabase.from as any)
-      .mockReturnValueOnce({ select: vi.fn().mockReturnValue(mockFetchQuery) })
-      .mockReturnValueOnce({ update: vi.fn().mockReturnValue(mockStageUpdateQuery) })
-      .mockReturnValueOnce({ update: vi.fn().mockReturnValue(mockQueueUpdateQuery) })
-      .mockReturnValueOnce({ update: vi.fn().mockReturnValue(mockEstimatedDateQuery) });
-
-    // Should not throw even if date calculation fails
-    const result = await blockProduction("test-id", "Material shortage");
-    
     expect(result.productionStatus).toBe("on_hold");
+    expect(serviceMocks.calculateEstimatedCompletion).toHaveBeenCalledWith(QUEUE_ID);
+    expect(serviceMocks.sendDelayNotification).toHaveBeenCalledWith(QUEUE_ID, BLOCK_REASON);
   });
 });

@@ -3,7 +3,7 @@
  * 
  * Permite filtrar pedidos por tipo, status e intervalo de datas
  * 
- * IMPORTANTE: Tipagem completa habilitada para garantir segurança de tipos.
+ * IMPORTANTE: Tipagem completa habilitada para garantir seguranÃ§a de tipos.
  */
 
 import { useState, useEffect } from 'react';
@@ -24,6 +24,7 @@ import { useOrderStatusCounts } from '@/hooks/admin/useOrderStatusCounts';
 import { validateDateRange } from '@/hooks/admin/useOrderFilters';
 import { PlanTypeFilter } from './PlanTypeFilter';
 import type { OrderFilters as OrderFiltersType, OrderStatus } from '@/types/admin/orders';
+import { ORDER_TYPE_OPTIONS, getOrderStatusOptionsForType } from '@/config/admin-order-status';
 
 interface OrderFiltersProps {
   filters: OrderFiltersType;
@@ -34,64 +35,6 @@ interface OrderFiltersProps {
   onReset: () => void;
   activeFilterCount: number;
 }
-
-/**
- * Labels para tipos de pedido
- */
-const TYPE_LABELS: Record<OrderFiltersType['type'], string> = {
-  all: 'Todos os Pedidos',
-  subscription_delivery: 'Entregas de Assinatura',
-  standalone_purchase: 'Compras Avulsas',
-  manual_payment: 'Pagamentos Manuais',
-  quote: 'Orçamentos'
-};
-
-/**
- * Status disponíveis para entregas de assinatura
- */
-const SUBSCRIPTION_STATUSES: Array<{ value: OrderStatus; label: string }> = [
-  { value: 'scheduled', label: 'Agendada' },
-  { value: 'pending_choice', label: 'Aguardando Escolha' },
-  { value: 'confirmed', label: 'Confirmada' },
-  { value: 'in_production', label: 'Em Produção' },
-  { value: 'shipped', label: 'Enviada' },
-  { value: 'delivered', label: 'Entregue' },
-  { value: 'revealed', label: 'Revelada' },
-  { value: 'cancelled', label: 'Cancelada' }
-];
-
-/**
- * Status disponíveis para compras avulsas
- */
-const STANDALONE_STATUSES: Array<{ value: OrderStatus; label: string }> = [
-  { value: 'awaiting_deposit', label: 'Aguardando Depósito' },
-  { value: 'deposit_paid', label: 'Depósito Pago' },
-  { value: 'awaiting_balance', label: 'Aguardando Saldo' },
-  { value: 'balance_paid', label: 'Saldo Pago' },
-  { value: 'completed', label: 'Completa' },
-  { value: 'cancelled', label: 'Cancelada' }
-];
-
-/**
- * Status disponíveis para pagamentos manuais
- */
-const MANUAL_PAYMENT_STATUSES: Array<{ value: OrderStatus; label: string }> = [
-  { value: 'pending', label: 'Pendente' },
-  { value: 'under_review', label: 'Em Análise' },
-  { value: 'requires_info', label: 'Requer Informações' },
-  { value: 'approved', label: 'Aprovado' },
-  { value: 'rejected', label: 'Rejeitado' }
-];
-
-/**
- * Status disponíveis para orçamentos
- */
-const QUOTE_STATUSES: Array<{ value: OrderStatus; label: string }> = [
-  { value: 'pending', label: 'Pendente' },
-  { value: 'reviewing', label: 'Em Análise' },
-  { value: 'answered', label: 'Respondido' },
-  { value: 'archived', label: 'Arquivado' }
-];
 
 export function OrderFilters({
   filters,
@@ -105,7 +48,7 @@ export function OrderFilters({
   // Buscar contadores de status
   const { counts, isLoading: isLoadingCounts } = useOrderStatusCounts(filters.type);
 
-  // Estado de validação de datas
+  // Estado de validaÃ§Ã£o de datas
   const [dateError, setDateError] = useState<string | null>(null);
 
   // Validar datas quando mudarem
@@ -114,27 +57,15 @@ export function OrderFilters({
     setDateError(validation.valid ? null : validation.error || null);
   }, [filters.dateFrom, filters.dateTo]);
 
-  // Determinar quais status mostrar baseado no tipo selecionado
-  const availableStatuses = 
-    filters.type === 'subscription_delivery' ? SUBSCRIPTION_STATUSES :
-    filters.type === 'standalone_purchase' ? STANDALONE_STATUSES :
-    filters.type === 'manual_payment' ? MANUAL_PAYMENT_STATUSES :
-    filters.type === 'quote' ? QUOTE_STATUSES :
-    // Quando type === 'all', criar lista única removendo duplicatas
-    // O status 'pending' existe em manual_payment e quote, então mantemos apenas uma instância
-    Array.from(
-      new Map(
-        [...SUBSCRIPTION_STATUSES, ...STANDALONE_STATUSES, ...MANUAL_PAYMENT_STATUSES, ...QUOTE_STATUSES].map(status => [status.value, status])
-      ).values()
-    );
+  const availableStatuses = getOrderStatusOptionsForType(filters.type);
 
-  // Handler para mudança de data inicial
+  // Handler para mudanÃ§a de data inicial
   const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value || null;
     onDateRangeChange(value, filters.dateTo);
   };
 
-  // Handler para mudança de data final
+  // Handler para mudanÃ§a de data final
   const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value || null;
     onDateRangeChange(filters.dateFrom, value);
@@ -179,19 +110,11 @@ export function OrderFilters({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{TYPE_LABELS.all}</SelectItem>
-              <SelectItem value="subscription_delivery">
-                {TYPE_LABELS.subscription_delivery}
-              </SelectItem>
-              <SelectItem value="standalone_purchase">
-                {TYPE_LABELS.standalone_purchase}
-              </SelectItem>
-              <SelectItem value="manual_payment">
-                {TYPE_LABELS.manual_payment}
-              </SelectItem>
-              <SelectItem value="quote">
-                {TYPE_LABELS.quote}
-              </SelectItem>
+              {ORDER_TYPE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -223,7 +146,7 @@ export function OrderFilters({
         </div>
       </div>
 
-      {/* Mensagem de erro de validação de datas */}
+      {/* Mensagem de erro de validaÃ§Ã£o de datas */}
       {dateError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

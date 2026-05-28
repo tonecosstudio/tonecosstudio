@@ -1,4 +1,8 @@
-import { usePricingTiers } from "@/hooks/usePricingTiers";
+import {
+  useDeactivatePricingTier,
+  usePricingTiers,
+  usePropagateTierPricing,
+} from "@/hooks/usePricingTiers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +37,8 @@ interface PricingTiersListProps {
  */
 export function PricingTiersList({ onEdit, onViewPlans }: PricingTiersListProps) {
   const { data: tiers, isLoading } = usePricingTiers();
-  const { deactivateTier, propagatePrices } = usePricingTiers();
+  const deactivateTier = useDeactivatePricingTier();
+  const propagatePrices = usePropagateTierPricing();
 
   const handleDeactivate = async (tierId: string, tierName: string) => {
     try {

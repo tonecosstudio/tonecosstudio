@@ -110,24 +110,27 @@ GOOGLE_CLIENT_SECRET="seu-client-secret-aqui"
 1. Vá em **Developers** > **Webhooks**
 2. Clique em **+ Add endpoint**
 3. Configure:
-   - **Endpoint URL:** `https://seu-dominio.com/api/webhooks/stripe`
+   - **Endpoint URL:** `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`
    - **Events to send:**
      - `payment_intent.succeeded`
      - `payment_intent.payment_failed`
-     - `checkout.session.completed`
+    - `payment_intent.canceled`
      - `customer.subscription.created`
      - `customer.subscription.updated`
-     - `customer.subscription.deleted`
+    - `customer.subscription.deleted`
+    - `charge.refunded`
+    - `invoice.payment_succeeded`
+    - `invoice.payment_failed`
 4. Clique em **Add endpoint**
-5. **Copie** o Signing secret (começa com `whsec_`)
+5. **Copie** o Signing secret do endpoint.
 
 ### 2.4. Adicionar ao .env.local
 
 ```bash
 # Stripe
 VITE_STRIPE_PUBLISHABLE_KEY="pk_test_seu-publishable-key-aqui"
-STRIPE_SECRET_KEY="sk_test_seu-secret-key-aqui"
-STRIPE_WEBHOOK_SECRET="whsec_seu-webhook-secret-aqui"
+STRIPE_SECRET_KEY=""
+STRIPE_WEBHOOK_SECRET=""
 ```
 
 ---
@@ -164,8 +167,8 @@ Seu arquivo `.env.local` deve ter:
 ```bash
 # Supabase Configuration
 VITE_SUPABASE_URL="https://pdytjhtjlxvbbeuxgnms.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="sua-key-aqui"
-SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key-aqui"
+VITE_SUPABASE_PUBLISHABLE_KEY=""
+SUPABASE_SERVICE_ROLE_KEY=""
 
 # Google OAuth
 GOOGLE_CLIENT_ID="seu-client-id.apps.googleusercontent.com"
@@ -173,8 +176,8 @@ GOOGLE_CLIENT_SECRET="seu-client-secret"
 
 # Stripe
 VITE_STRIPE_PUBLISHABLE_KEY="pk_test_..."
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
+STRIPE_SECRET_KEY=""
+STRIPE_WEBHOOK_SECRET=""
 
 # Optional
 VITE_SENTRY_DSN=""

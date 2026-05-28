@@ -6,6 +6,7 @@ import {
   unblockProduction,
 } from "@/services/admin/production-service";
 import { calculateEstimatedCompletion } from "@/services/admin/stage-service";
+import { updateProductionStageNotesRpc } from "@/services/admin/admin-production-mutations-service";
 
 export interface BlockedProductionItem {
   id: string;
@@ -112,18 +113,11 @@ export async function unblockBlockedProductionItem({
   const notes = resolutionNotes?.trim();
 
   if (notes) {
-    const { error } = await supabase
-      .from("production_stages")
-      .update({
-        notes,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("production_queue_id", productionQueueId)
-      .eq("stage_name", blockInfo.currentStage);
-
-    if (error) {
-      throw new Error(`Erro ao registrar notas de resolucao: ${error.message}`);
-    }
+    await updateProductionStageNotesRpc({
+      queueId: productionQueueId,
+      stage: blockInfo.currentStage,
+      notes,
+    });
   }
 
   return unblockProduction(productionQueueId);

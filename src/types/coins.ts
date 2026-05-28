@@ -57,7 +57,7 @@ export enum CoinsTransactionType {
   /** Reembolso de coins */
   REFUND = 'refund',
   /** Ajuste manual pelo admin */
-  ADMIN_ADJUSTMENT = 'admin_adjustment',
+  ADMIN_ADJUSTMENT = 'adjustment',
   /** Crédito de assinatura (mensal) */
   SUBSCRIPTION_CREDIT = 'subscription_credit',
   /** Bônus promocional */

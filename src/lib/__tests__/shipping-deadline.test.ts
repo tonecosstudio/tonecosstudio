@@ -46,13 +46,10 @@ describe('Shipping Deadline Utilities', () => {
     it('should handle month starting on Monday', () => {
       // June 2026: 1st is Monday
       // Business days: Mon 1, Tue 2, Wed 3, Thu 4, Fri 5
-      // But we need to count from the 1st, so: Mon 1, Tue 2, Wed 3, Thu 4, Fri 5, Mon 8
-      // Actually the function counts 5 business days AFTER the start date
-      // So from June 1: Tue 2, Wed 3, Thu 4, Fri 5, Mon 8
-      // 5th business day should be Monday, June 8
+      // The 5th business day should be Friday, June 5
       const deadline = calculateShippingDeadline(6, 2026, []);
       
-      expect(deadline.getDate()).toBe(8);
+      expect(deadline.getDate()).toBe(5);
       expect(deadline.getMonth()).toBe(5); // June (0-indexed)
       expect(deadline.getFullYear()).toBe(2026);
     });

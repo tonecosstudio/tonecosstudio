@@ -372,6 +372,7 @@ export function NotificationsSection({
 // Seção de Assinaturas
 import { Package, ExternalLink, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 export function SubscriptionSection({ userId }: { userId: string }) {
   const subscriptionQuery = useActiveProfileSubscription(userId);
@@ -393,7 +394,7 @@ export function SubscriptionSection({ userId }: { userId: string }) {
               Assine uma coleção e receba personagens exclusivos todo mês
             </p>
             <Button asChild>
-              <Link to="/planos">Ver Planos</Link>
+              <Link to={PUBLIC_ROUTES.plans}>Ver Planos</Link>
             </Button>
           </div>
         </CardContent>
@@ -576,9 +577,11 @@ export function SupportSection({ userId }: { userId: string }) {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{conv.subject}</p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(conv.last_message_at), "dd/MM/yyyy HH:mm", {
-                          locale: ptBR,
-                        })}
+                        {conv.last_message_at
+                          ? format(new Date(conv.last_message_at), "dd/MM/yyyy HH:mm", {
+                              locale: ptBR,
+                            })
+                          : "Sem mensagens"}
                       </p>
                     </div>
                     {getStatusBadge(conv.status)}

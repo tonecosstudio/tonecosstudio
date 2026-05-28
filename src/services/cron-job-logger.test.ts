@@ -1,219 +1,116 @@
-/**
- * Unit tests for cron job logging infrastructure
- * Task 12.1: Set up pg_cron extension
- * Requirements: 10.1, 34.1
- */
+import { describe, expect, it } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 
-import { describe, it, expect, afterAll } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
+type MigrationMatch = {
+  fileName: string;
+  sql: string;
+  normalizedSql: string;
+};
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+function normalizeSql(sql: string): string {
+  return sql.toLowerCase().replace(/\s+/g, " ").trim();
+}
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+function loadCronJobLoggingMigration(): MigrationMatch {
+  const migrationsDir = path.resolve(process.cwd(), "supabase", "migrations");
+  const matches = readdirSync(migrationsDir)
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .map((fileName) => {
+      const sql = readFileSync(path.join(migrationsDir, fileName), "utf8");
+      return {
+        fileName,
+        sql,
+        normalizedSql: normalizeSql(sql),
+      };
+    })
+    .filter(({ normalizedSql }) =>
+      normalizedSql.includes("create table if not exists public.cron_job_logs")
+    );
 
-describe('Cron Job Logging Infrastructure', () => {
-  describe('Database Setup', () => {
-    it('should have pg_cron extension enabled', async () => {
-      const { data, error } = await supabase
-        .rpc('pg_extension_exists', { extension_name: 'pg_cron' })
-        .single();
+  expect(matches, "cron job logging must have one schema owner migration").toHaveLength(1);
 
-      // If the function doesn't exist, check directly
-      if (error) {
-        const { data: extensions } = await supabase
-          .from('pg_extension')
-          .select('extname')
-          .eq('extname', 'pg_cron')
-          .single();
+  return matches[0];
+}
 
-        expect(extensions).toBeTruthy();
-      } else {
-        expect(data).toBe(true);
-      }
-    });
+describe("Cron Job Logging Infrastructure", () => {
+  const migration = loadCronJobLoggingMigration();
 
-    it('should have cron_job_logs table', async () => {
-      const { data, error } = await supabase
-        .from('cron_job_logs')
-        .select('id')
-        .limit(0);
-
-      expect(error).toBeNull();
-      expect(data).toBeDefined();
-    });
-
-    it('should have required columns in cron_job_logs', async () => {
-      const { data, error } = await supabase
-        .from('cron_job_logs')
-        .select('id, job_name, started_at, completed_at, status, error_message, execution_details, created_at')
-        .limit(0);
-
-      expect(error).toBeNull();
-      expect(data).toBeDefined();
-    });
+  it("declares pg_cron and the canonical cron_job_logs table", () => {
+    expect(migration.normalizedSql).toContain(
+      "create extension if not exists pg_cron with schema extensions"
+    );
+    expect(migration.normalizedSql).toContain("id uuid primary key default gen_random_uuid()");
+    expect(migration.normalizedSql).toContain("job_name text not null");
+    expect(migration.normalizedSql).toContain("started_at timestamptz not null default now()");
+    expect(migration.normalizedSql).toContain("completed_at timestamptz");
+    expect(migration.normalizedSql).toContain("error_message text");
+    expect(migration.normalizedSql).toContain("execution_details jsonb");
+    expect(migration.normalizedSql).toContain("created_at timestamptz not null default now()");
+    expect(migration.normalizedSql).toContain("status in ('running', 'success', 'failed')");
   });
 
-  describe('Logging Functions', () => {
-    let testLogId: string;
-
-    afterAll(async () => {
-      // Clean up test logs
-      await supabase
-        .from('cron_job_logs')
-        .delete()
-        .like('job_name', 'test-%');
-    });
-
-    it('should start a cron job log', async () => {
-      const { data, error } = await supabase
-        .rpc('start_cron_job_log', {
-          p_job_name: 'test-job-start',
-          p_execution_details: { test: true }
-        });
-
-      expect(error).toBeNull();
-      expect(data).toBeTruthy();
-      expect(typeof data).toBe('string');
-
-      testLogId = data as string;
-
-      // Verify the log was created
-      const { data: log } = await supabase
-        .from('cron_job_logs')
-        .select('*')
-        .eq('id', testLogId)
-        .single();
-
-      expect(log).toBeTruthy();
-      expect(log?.job_name).toBe('test-job-start');
-      expect(log?.status).toBe('running');
-      expect(log?.execution_details).toEqual({ test: true });
-    });
-
-    it('should complete a cron job log', async () => {
-      // Start a new log
-      const { data: logId } = await supabase
-        .rpc('start_cron_job_log', {
-          p_job_name: 'test-job-complete',
-          p_execution_details: { test: true }
-        });
-
-      expect(logId).toBeTruthy();
-
-      // Complete the log
-      const { error } = await supabase
-        .rpc('complete_cron_job_log', {
-          p_log_id: logId,
-          p_execution_details: { result: 'success' }
-        });
-
-      expect(error).toBeNull();
-
-      // Verify the log was completed
-      const { data: log } = await supabase
-        .from('cron_job_logs')
-        .select('*')
-        .eq('id', logId)
-        .single();
-
-      expect(log).toBeTruthy();
-      expect(log?.status).toBe('success');
-      expect(log?.completed_at).toBeTruthy();
-      expect(log?.execution_details).toEqual({ result: 'success' });
-    });
-
-    it('should fail a cron job log', async () => {
-      // Start a new log
-      const { data: logId } = await supabase
-        .rpc('start_cron_job_log', {
-          p_job_name: 'test-job-fail',
-          p_execution_details: { test: true }
-        });
-
-      expect(logId).toBeTruthy();
-
-      // Fail the log
-      const { error } = await supabase
-        .rpc('fail_cron_job_log', {
-          p_log_id: logId,
-          p_error_message: 'Test error message',
-          p_execution_details: { error: 'test' }
-        });
-
-      expect(error).toBeNull();
-
-      // Verify the log was failed
-      const { data: log } = await supabase
-        .from('cron_job_logs')
-        .select('*')
-        .eq('id', logId)
-        .single();
-
-      expect(log).toBeTruthy();
-      expect(log?.status).toBe('failed');
-      expect(log?.completed_at).toBeTruthy();
-      expect(log?.error_message).toBe('Test error message');
-      expect(log?.execution_details).toEqual({ error: 'test' });
-    });
+  it("keeps logs queryable through required production indexes", () => {
+    expect(migration.normalizedSql).toContain("idx_cron_job_logs_job_name");
+    expect(migration.normalizedSql).toContain("idx_cron_job_logs_started_at");
+    expect(migration.normalizedSql).toContain("idx_cron_job_logs_status");
   });
 
-  describe('Cleanup Function', () => {
-    it('should have cleanup_old_cron_logs function', async () => {
-      const { data, error } = await supabase
-        .rpc('cleanup_old_cron_logs');
-
-      // Function should exist and return a number (count of deleted rows)
-      expect(error).toBeNull();
-      expect(typeof data).toBe('number');
-    });
+  it("protects cron logs with RLS and least-privilege grants", () => {
+    expect(migration.normalizedSql).toContain(
+      "alter table public.cron_job_logs enable row level security"
+    );
+    expect(migration.normalizedSql).toContain(
+      "revoke all on public.cron_job_logs from public, anon, authenticated"
+    );
+    expect(migration.normalizedSql).toContain(
+      "grant select on public.cron_job_logs to authenticated"
+    );
+    expect(migration.normalizedSql).toContain(
+      "grant all on public.cron_job_logs to service_role"
+    );
+    expect(migration.normalizedSql).toContain("cron_job_logs_admin_select");
+    expect(migration.normalizedSql).toContain("public.has_role(auth.uid(), 'admin')");
+    expect(migration.normalizedSql).toContain("public.has_role(auth.uid(), 'super_admin')");
+    expect(migration.normalizedSql).toContain("cron_job_logs_service_role_all");
   });
 
-  describe('Indexes', () => {
-    it('should have index on job_name', async () => {
-      const { data, error } = await supabase
-        .from('pg_indexes')
-        .select('indexname')
-        .eq('tablename', 'cron_job_logs')
-        .eq('indexname', 'idx_cron_job_logs_job_name')
-        .single();
+  it("provides service-role-only RPCs for lifecycle logging", () => {
+    const requiredFunctions = [
+      "start_cron_job_log",
+      "complete_cron_job_log",
+      "fail_cron_job_log",
+      "cleanup_old_cron_logs",
+    ];
 
-      // If pg_indexes is not accessible, skip this test
-      if (error?.code === '42501') {
-        console.log('Skipping index test - insufficient permissions');
-        return;
-      }
-
-      expect(data).toBeTruthy();
-    });
+    for (const functionName of requiredFunctions) {
+      expect(migration.normalizedSql).toContain(
+        `create or replace function public.${functionName}`
+      );
+      expect(migration.normalizedSql).toContain("security definer");
+      expect(migration.normalizedSql).toContain("set search_path = public, pg_temp");
+      expect(migration.normalizedSql).toContain(
+        `grant execute on function public.${functionName}`
+      );
+      expect(migration.normalizedSql).toContain("to service_role");
+    }
   });
 
-  describe('Permissions', () => {
-    it('should allow authenticated users to read logs', async () => {
-      const { data, error } = await supabase
-        .from('cron_job_logs')
-        .select('*')
-        .limit(10);
-
-      expect(error).toBeNull();
-      expect(data).toBeDefined();
-    });
+  it("validates input and preserves the cron status state machine", () => {
+    expect(migration.normalizedSql).toContain("job_name is required");
+    expect(migration.normalizedSql).toContain("log_id is required");
+    expect(migration.normalizedSql).toContain("error_message is required");
+    expect(migration.normalizedSql).toContain("retention_days must be greater than zero");
+    expect(migration.normalizedSql).toContain("set status = 'success'");
+    expect(migration.normalizedSql).toContain("set status = 'failed'");
+    expect(migration.normalizedSql).toContain("where created_at < now() - make_interval");
   });
 
-  describe('Status Constraint', () => {
-    it('should only allow valid status values', async () => {
-      // Try to insert a log with invalid status directly
-      const { error } = await supabase
-        .from('cron_job_logs')
-        .insert({
-          job_name: 'test-invalid-status',
-          status: 'invalid_status' as any,
-          started_at: new Date().toISOString()
-        });
-
-      // Should fail due to CHECK constraint
-      expect(error).toBeTruthy();
-      expect(error?.message).toContain('violates check constraint');
-    });
+  it("documents the schema owner for maintainability", () => {
+    expect(migration.fileName).toMatch(/cron_job_logging_infrastructure\.sql$/);
+    expect(migration.normalizedSql).toContain("comment on table public.cron_job_logs");
+    expect(migration.normalizedSql).toContain(
+      "comment on function public.cleanup_old_cron_logs(integer)"
+    );
   });
 });

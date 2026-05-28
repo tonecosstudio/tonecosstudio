@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { CONTACT } from "@/config/constants";
 
 interface SEOHeadProps {
   title?: string;
@@ -21,10 +22,12 @@ export default function SEOHead({
   noindex = false,
   jsonLd,
 }: SEOHeadProps) {
-  const siteTitle = "Ordax | Tonecos Studios";
+  const siteTitle = `Ordax | ${CONTACT.COMPANY_NAME}`;
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
-  const canonicalUrl = url || (typeof window !== "undefined" ? window.location.href.split("?")[0] : "");
-  const fullImageUrl = image.startsWith("http") ? image : `${typeof window !== "undefined" ? window.location.origin : ""}${image}`;
+  const siteUrl = CONTACT.WEBSITE_URL.replace(/\/$/, "");
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : siteUrl;
+  const canonicalUrl = url || (typeof window !== "undefined" ? window.location.href.split("?")[0] : siteUrl);
+  const fullImageUrl = image.startsWith("http") ? image : `${currentOrigin}${image}`;
 
   return (
     <Helmet>

@@ -28,12 +28,7 @@ export async function fetchAdminFinancialOverview(dateRange: { from: Date; to: D
     }
   );
 
-  const totalRevenue = ordersResult.data.reduce((acc, order) => {
-    if (order.type === "quote" && order.totalAmount) return acc + order.totalAmount;
-    if (order.type === "standalone_purchase" && order.totalAmount) return acc + order.totalAmount;
-    if (order.type === "manual_payment" && order.amount) return acc + order.amount;
-    return acc;
-  }, 0);
+  const totalRevenue = ordersResult.data.reduce((acc, order) => acc + order.amount, 0);
 
   const { count: activeSubscriptions } = await adminPaymentsGateway
     .from("subscriptions")
@@ -44,12 +39,7 @@ export async function fetchAdminFinancialOverview(dateRange: { from: Date; to: D
 
   const standaloneSales = ordersResult.data.filter((order) => order.type === "standalone_purchase").length;
 
-  const ordersWithValue = ordersResult.data.filter(
-    (order) =>
-      (order.type === "quote" && order.totalAmount) ||
-      (order.type === "standalone_purchase" && order.totalAmount) ||
-      (order.type === "manual_payment" && order.amount)
-  );
+  const ordersWithValue = ordersResult.data.filter((order) => order.amount > 0);
 
   const averageTicket = ordersWithValue.length > 0 ? totalRevenue / ordersWithValue.length : 0;
   const daysDiff = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));

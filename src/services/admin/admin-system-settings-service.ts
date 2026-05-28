@@ -1,4 +1,5 @@
 import { adminProductionGateway } from "@/services/admin/admin-production-gateway";
+import { upsertAdminSystemSettings } from "@/services/admin/admin-config-mutations-service";
 
 export interface AdminSystemSetting {
   key: string;
@@ -13,25 +14,9 @@ export async function fetchAdminSystemSettings(): Promise<AdminSystemSetting[]> 
 }
 
 export async function updateAdminSystemSettings(updates: Record<string, string>) {
-  const updatePromises = Object.entries(updates).map(async ([key, value]) => {
-    const { error } = await adminProductionGateway
-      .from("system_settings")
-      .upsert(
-        {
-          key,
-          value,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "key",
-          ignoreDuplicates: false,
-        }
-      );
-    return { key, error };
-  });
-
-  const results = await Promise.all(updatePromises);
-  const errors = results.filter((result) => result.error);
+  await upsertAdminSystemSettings(updates);
+  const results = Object.keys(updates).map((key) => ({ key, error: null }));
+  const errors: Array<{ error: unknown }> = [];
   if (errors.length > 0) {
     throw new Error(`Erro ao atualizar ${errors.length} configuraÃ§Ã£o(Ãµes)`);
   }

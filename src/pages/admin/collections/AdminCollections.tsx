@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { collectionDetailsPath } from "@/config/routes";
 import { MONTHS } from "./admin-collections.constants";
 import { slugifyCollectionName } from "./admin-collections.utils";
 import { useAdminCollectionsData } from "@/hooks/admin/useAdminCollectionsData";
@@ -111,6 +112,19 @@ type EditCharacterDialogProps = {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Erro inesperado";
+}
+
+function getImageExtension(file: File): string {
+  if (file.type === "image/jpeg") return "jpg";
+  if (file.type === "image/png") return "png";
+  if (file.type === "image/webp") return "webp";
+
+  throw new Error("Formato de imagem invalido");
+}
+
+function buildModelImagePath(folder: "collections" | "characters", baseName: string, file: File) {
+  const safeBaseName = slugifyCollectionName(baseName) || "image";
+  return `${folder}/${safeBaseName}-${Date.now()}.${getImageExtension(file)}`;
 }
 
 export default function AdminCollectionsV2() {
@@ -765,7 +779,7 @@ function CalendarView({ characters }: CalendarViewProps) {
 // Dialog: Criar Coleção (continua no próximo arquivo devido ao tamanho)
 
 // Dialog: Criar Coleção
-function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateCollectionDialogProps) {
+export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateCollectionDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const adminCollectionsService = useAdminCollectionsOperations();
@@ -792,14 +806,17 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateColle
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      const collectionSlug = slugifyCollectionName(slug || name);
+      if (!collectionSlug) {
+        throw new Error("Informe um nome ou slug valido para a colecao");
+      }
+
       setIsUploading(true);
       let imageUrl = null;
 
       // Upload da imagem se houver
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${slug || name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.${fileExt}`;
-        const filePath = `collections/${fileName}`;
+        const filePath = buildModelImagePath("collections", collectionSlug, imageFile);
 
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
@@ -808,7 +825,7 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateColle
       // Criar coleção
       await adminCollectionsService.createCollection({
         name,
-        slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
+        slug: collectionSlug,
         description,
         cover_image_url: imageUrl,
         tier_id: null,
@@ -922,7 +939,7 @@ function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateColle
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              URL: /colecoes/{slug || name.toLowerCase().replace(/\s+/g, "-") || "slug"}
+              URL: {collectionDetailsPath(slugifyCollectionName(slug || name) || "slug")}
             </p>
           </div>
 
@@ -1023,6 +1040,11 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      const collectionSlug = slugifyCollectionName(slug || name);
+      if (!collectionSlug) {
+        throw new Error("Informe um nome ou slug valido para a colecao");
+      }
+
       // Validate minimum fixed collections if changing from fixed to rotating
       if (collection.rotation_type === "fixed" && rotationType !== 'fixed') {
         const count = await adminCollectionsService.countActiveFixedCollections();
@@ -1038,16 +1060,14 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
 
       // Upload da nova imagem se houver
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${slug}-${Date.now()}.${fileExt}`;
-        const filePath = `collections/${fileName}`;
+        const filePath = buildModelImagePath("collections", collectionSlug, imageFile);
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
 
       await adminCollectionsService.updateCollectionById(collection.id, {
         name,
-        slug,
+        slug: collectionSlug,
         description,
         image_url: imageUrl,
         rotation_type: rotationType,
@@ -1232,9 +1252,7 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
 
       // Upload da imagem se houver
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `char-${collectionId}-${releaseOrder}-${Date.now()}.${fileExt}`;
-        const filePath = `characters/${fileName}`;
+        const filePath = buildModelImagePath("characters", `char-${collectionId}-${releaseOrder}`, imageFile);
 
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
@@ -1460,9 +1478,7 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
 
       // Upload da nova imagem se houver
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `char-${character.collection_id}-${releaseOrder}-${Date.now()}.${fileExt}`;
-        const filePath = `characters/${fileName}`;
+        const filePath = buildModelImagePath("characters", `char-${character.collection_id}-${releaseOrder}`, imageFile);
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
@@ -1624,5 +1640,4 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
 }
 
 
-const _unusedCreateCollectionDialog = CreateCollectionDialog;
 

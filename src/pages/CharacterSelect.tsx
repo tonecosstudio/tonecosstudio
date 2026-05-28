@@ -28,6 +28,7 @@ import {
   Zap,
   Star,
 } from "lucide-react";
+import { PUBLIC_ROUTES, collectionDetailsPath } from "@/config/routes";
 
 // ─── Types ───────────────────────────────────────────────────
 type Character = CharacterSelectCharacter;
@@ -323,7 +324,7 @@ function CollectionSection({ collection }: { collection: Collection }) {
                     size="sm"
                     className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:brightness-110 font-mono uppercase tracking-wider text-xs rounded-sm"
                   >
-                    <Link to={`/colecoes/${collection.slug}`}>
+                    <Link to={collectionDetailsPath(collection.slug)}>
                       Ver Coleção
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
@@ -464,7 +465,7 @@ export default function CharacterSelect() {
               variant="outline"
               className="font-mono text-xs uppercase tracking-wider rounded-sm border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)]"
             >
-              <Link to="/colecoes">
+              <Link to={PUBLIC_ROUTES.collections}>
                 Ver Todas Coleções
                 <ArrowRight className="w-3 h-3 ml-2" />
               </Link>

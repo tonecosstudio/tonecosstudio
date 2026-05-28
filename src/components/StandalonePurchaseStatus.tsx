@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { toBahiaTime } from "@/lib/timezone";
 
-type StandalonePurchaseStatusValue =
+export type StandalonePurchaseStatusValue =
   | "deposit_paid"
   | "awaiting_balance"
   | "balance_paid"

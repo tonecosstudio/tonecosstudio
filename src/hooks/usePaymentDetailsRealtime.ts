@@ -36,7 +36,7 @@ function mergePaymentDetailsCache(
     return oldData;
   }
 
-  return { ...oldData, status: newStatus, ...payment };
+  return { ...oldData, ...payment, status: newStatus };
 }
 
 export function usePaymentDetailsRealtime(options: UsePaymentDetailsRealtimeOptions) {

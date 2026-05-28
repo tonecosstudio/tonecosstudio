@@ -291,8 +291,6 @@ serve(async (req) => {
       }
 
       case "conversion_by_tier": {
-        // This would require tracking page views, which may not be implemented yet
-        // For now, return a placeholder structure
         const { data, error } = await service
           .from("pricing_tiers")
           .select(
@@ -307,13 +305,90 @@ serve(async (req) => {
           throw new Error(`Failed to fetch tiers: ${error.message}`);
         }
 
-        reportData = data.map((tier: any) => ({
-          tier_id: tier.id,
-          tier_name: tier.name,
-          views: 0, // Would need analytics integration
-          purchases: 0, // Would need to count purchases
-          conversion_rate: 0,
-        }));
+        reportData = await Promise.all(
+          data.map(async (tier: any) => {
+            const { data: assignments, error: assignmentsError } = await service
+              .from("collection_tier_assignments")
+              .select("collection_id")
+              .eq("tier_id", tier.id);
+
+            if (assignmentsError) {
+              throw new Error(
+                `Failed to fetch tier assignments: ${assignmentsError.message}`,
+              );
+            }
+
+            const collectionIds =
+              assignments?.map((assignment: any) => assignment.collection_id) || [];
+
+            if (collectionIds.length === 0) {
+              return {
+                tier_id: tier.id,
+                tier_name: tier.name,
+                views: null,
+                purchases: 0,
+                conversion_rate: null,
+              };
+            }
+
+            let subscriptionsQuery = service
+              .from("subscriptions")
+              .select("id", { count: "exact", head: true })
+              .in("collection_id", collectionIds)
+              .neq("status", "cancelled");
+
+            let standaloneQuery = service
+              .from("standalone_purchases")
+              .select("id", { count: "exact", head: true })
+              .in("collection_id", collectionIds)
+              .neq("status", "cancelled");
+
+            if (startDate) {
+              subscriptionsQuery = subscriptionsQuery.gte(
+                "created_at",
+                startDate.toISOString(),
+              );
+              standaloneQuery = standaloneQuery.gte(
+                "created_at",
+                startDate.toISOString(),
+              );
+            }
+            if (endDate) {
+              subscriptionsQuery = subscriptionsQuery.lte(
+                "created_at",
+                endDate.toISOString(),
+              );
+              standaloneQuery = standaloneQuery.lte(
+                "created_at",
+                endDate.toISOString(),
+              );
+            }
+
+            const [
+              { count: subscriptionPurchases, error: subscriptionError },
+              { count: standalonePurchases, error: standaloneError },
+            ] = await Promise.all([subscriptionsQuery, standaloneQuery]);
+
+            if (subscriptionError) {
+              throw new Error(
+                `Failed to count subscription purchases: ${subscriptionError.message}`,
+              );
+            }
+            if (standaloneError) {
+              throw new Error(
+                `Failed to count standalone purchases: ${standaloneError.message}`,
+              );
+            }
+
+            return {
+              tier_id: tier.id,
+              tier_name: tier.name,
+              views: null,
+              purchases: (subscriptionPurchases ?? 0) + (standalonePurchases ?? 0),
+              conversion_rate: null,
+            };
+          }),
+        );
 
         break;
       }
@@ -342,7 +417,7 @@ serve(async (req) => {
 
     console.error("Error generating pricing report:", msg);
 
-    return new Response(JSON.stringify({ ok: false, error: msg }), {
+    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

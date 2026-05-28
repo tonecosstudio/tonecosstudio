@@ -70,6 +70,13 @@ const STATUS_CONFIG = {
     bgColor: "bg-purple-100",
     variant: "outline" as const,
   },
+  expired: {
+    icon: AlertCircle,
+    label: "Expirado",
+    color: "text-orange-600",
+    bgColor: "bg-orange-100",
+    variant: "destructive" as const,
+  },
 };
 
 export function ChoiceHistoryPanel({ orderId }: ChoiceHistoryPanelProps) {

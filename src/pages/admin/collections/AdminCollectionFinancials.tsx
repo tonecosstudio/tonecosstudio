@@ -152,7 +152,7 @@ export default function AdminCollectionFinancials() {
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">Lucro Bruto:</span>
                         <span
-                          className={`font-bold ${collection.profit_pix_gross > 0 ? "text-green-600" : "text-red-600"}`}
+                          className={`font-bold ${(collection.profit_pix_gross ?? 0) > 0 ? "text-green-600" : "text-red-600"}`}
                         >
                           R$ {collection.profit_pix_gross?.toFixed(2)}
                         </span>
@@ -161,9 +161,9 @@ export default function AdminCollectionFinancials() {
                         <span className="text-xs text-muted-foreground">Margem:</span>
                         <span
                           className={`font-bold ${
-                            collection.margin_pix_gross > 50
+                            (collection.margin_pix_gross ?? 0) > 50
                               ? "text-green-600"
-                              : collection.margin_pix_gross > 30
+                              : (collection.margin_pix_gross ?? 0) > 30
                                 ? "text-yellow-600"
                                 : "text-red-600"
                           }`}

@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { getClaims, getServiceClient } from "../_shared/supabase.ts";
-import { nowInBahia, addDays, toUTC } from "../_shared/timezone.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import {
   checkContentLength,
@@ -15,12 +14,14 @@ const CREATE_SUB_SCHEMA: Schema = {
   collectionIds: {
     type: "array",
     required: true,
+    minItems: 1,
     maxItems: 20,
+    uniqueItems: true,
     itemType: "uuid",
   },
-  planType: { type: "string", required: true, maxLength: 20 },
-  paymentMethod: { type: "string", required: true, maxLength: 20 },
-  paymentId: { type: "string", maxLength: 100 },
+  planType: { type: "string", required: true, maxLength: 20, trim: true },
+  paymentMethod: { type: "string", required: true, maxLength: 20, trim: true },
+  paymentId: { type: "string", maxLength: 100, trim: true, rejectHtml: true },
 };
 
 interface CreateSubscriptionRequest {
@@ -30,50 +31,43 @@ interface CreateSubscriptionRequest {
   paymentId?: string;
 }
 
-function getRequiredCollections(
-  planType: PlanType,
-  totalCollections: number,
-): number {
-  switch (planType) {
-    case "trimestral":
-      return 2;
-    case "semestral":
-      return 3;
-    case "anual":
-      return totalCollections;
-    default:
-      return 1;
+function mapCreateSubscriptionError(message: string): { status: number; error: string } {
+  if (message.includes("INVALID_PLAN_TYPE")) {
+    return { status: 400, error: "planType invalido. Use: trimestral, semestral ou anual" };
   }
-}
-
-function getDeliveriesTotal(planType: PlanType): number {
-  switch (planType) {
-    case "trimestral":
-      return 3;
-    case "semestral":
-      return 7;
-    case "anual":
-      return 12;
-    default:
-      return 3;
+  if (message.includes("INVALID_PAYMENT_METHOD")) {
+    return { status: 400, error: "paymentMethod invalido. Use: pix, credit_card ou boleto" };
   }
-}
-
-function calculateTotalPrice(
-  planType: PlanType,
-  priceBimonthly: number,
-  priceYearly: number,
-): number {
-  switch (planType) {
-    case "trimestral":
-      return priceBimonthly * 1.5;
-    case "semestral":
-      return priceBimonthly * 3;
-    case "anual":
-      return priceYearly;
-    default:
-      return priceBimonthly * 1.5;
+  if (message.includes("INVALID_COLLECTION_COUNT")) {
+    const required = message.split("INVALID_COLLECTION_COUNT:")[1]?.trim() || "o numero correto de";
+    return { status: 400, error: `Plano selecionado requer exatamente ${required} colecoes` };
   }
+  if (message.includes("COLLECTION_NOT_FOUND")) {
+    return { status: 404, error: "Colecao nao encontrada" };
+  }
+  if (message.includes("COLLECTIONS_INACTIVE_OR_NOT_FOUND")) {
+    return { status: 400, error: "Uma ou mais colecoes nao foram encontradas ou estao inativas" };
+  }
+  if (message.includes("ACTIVE_SUBSCRIPTION_EXISTS")) {
+    return { status: 400, error: "Voce ja tem uma assinatura ativa" };
+  }
+  if (message.includes("INSUFFICIENT_CHARACTERS")) {
+    return { status: 400, error: "Colecao nao tem personagens suficientes" };
+  }
+  if (message.includes("PRICING_NOT_CONFIGURED")) {
+    return { status: 500, error: "Internal server error" };
+  }
+  if (
+    message.includes("USER_ID_REQUIRED") ||
+    message.includes("COLLECTION_IDS_REQUIRED") ||
+    message.includes("DUPLICATE_COLLECTION_IDS")
+  ) {
+    return { status: 400, error: "Dados obrigatorios invalidos" };
+  }
+  if (message.includes("FORBIDDEN")) {
+    return { status: 403, error: "Forbidden" };
+  }
+  return { status: 500, error: "Internal server error" };
 }
 
 serve(async (req) => {
@@ -90,7 +84,6 @@ serve(async (req) => {
       });
     }
 
-    // Rate limit: purchase operations
     const rateLimited = await checkRateLimit(
       req,
       "create-subscription",
@@ -99,220 +92,39 @@ serve(async (req) => {
     );
     if (rateLimited) return rateLimited;
 
-    // Payload size guard (standard: 64 KB)
     const tooLarge = checkContentLength(req, PAYLOAD_LIMITS.STANDARD);
     if (tooLarge) return tooLarge;
 
-    const service = getServiceClient();
     const rawBody = await req.json().catch(() => ({}));
     const validation = validateOrReject(rawBody, CREATE_SUB_SCHEMA);
     if ("error" in validation) return validation.error;
 
-    const body = validation.data as unknown as CreateSubscriptionRequest;
-    const { collectionIds, planType, paymentMethod, paymentId } = body;
+    const { collectionIds, planType, paymentMethod, paymentId } =
+      validation.data as unknown as CreateSubscriptionRequest;
 
-    // Validate planType enum
-    if (!["trimestral", "semestral", "anual"].includes(planType)) {
-      return new Response(
-        JSON.stringify({
-          error: "planType inválido. Use: trimestral, semestral ou anual",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
+    const service = getServiceClient();
+    const { data, error } = await service.rpc("create_subscription_atomic", {
+      p_user_id: userId,
+      p_collection_ids: collectionIds,
+      p_plan_type: planType,
+      p_payment_method: paymentMethod,
+      p_payment_id: paymentId ?? null,
+    });
 
-    // Validate paymentMethod enum
-    if (!["pix", "credit_card", "boleto"].includes(paymentMethod)) {
-      return new Response(
-        JSON.stringify({
-          error: "paymentMethod inválido. Use: pix, credit_card ou boleto",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Buscar total de coleções ativas para validar plano anual
-    const { count: totalCollections } = await service
-      .from("collections")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true);
-
-    // Validar número de coleções por plano
-    const requiredCollections = getRequiredCollections(
-      planType,
-      totalCollections || 0,
-    );
-    if (collectionIds.length !== requiredCollections) {
-      return new Response(
-        JSON.stringify({
-          error: `Plano ${planType} requer exatamente ${requiredCollections} ${requiredCollections === 1 ? "coleção" : "coleções"}`,
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Buscar primeira coleção (será a inicial)
-    const firstCollectionId = collectionIds[0];
-    const { data: collection, error: collectionError } = await service
-      .from("collections")
-      .select("id, name, price_bimonthly, price_yearly")
-      .eq("id", firstCollectionId)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (collectionError) throw collectionError;
-    if (!collection) {
-      return new Response(JSON.stringify({ error: "Coleção não encontrada" }), {
-        status: 404,
+    if (error) {
+      const mapped = mapCreateSubscriptionError(error.message || "");
+      return new Response(JSON.stringify({ error: mapped.error }), {
+        status: mapped.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Verificar se todas as coleções existem e estão ativas
-    const { data: allCollections, error: allCollectionsError } = await service
-      .from("collections")
-      .select("id, name")
-      .in("id", collectionIds)
-      .eq("is_active", true);
-
-    if (allCollectionsError) throw allCollectionsError;
-    if (!allCollections || allCollections.length !== collectionIds.length) {
-      return new Response(
-        JSON.stringify({
-          error: "Uma ou mais coleções não foram encontradas ou estão inativas",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Verifica se usuário já tem assinatura ativa
-    const { data: existingSubscription } = await service
-      .from("subscriptions")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (existingSubscription) {
-      return new Response(
-        JSON.stringify({ error: "Você já tem uma assinatura ativa" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    const deliveriesTotal = getDeliveriesTotal(planType);
-    const totalPaid = calculateTotalPrice(
-      planType,
-      Number(collection.price_bimonthly),
-      Number(collection.price_yearly),
-    );
-
-    // Cria assinatura
-    const { data: subscription, error: subscriptionError } = await service
-      .from("subscriptions")
-      .insert({
-        user_id: userId,
-        collection_id: firstCollectionId, // Primeira coleção como inicial
-        plan_type: planType,
-        status: "active",
-        total_paid: totalPaid,
-        payment_method: paymentMethod,
-        payment_id: paymentId || null,
-        deliveries_total: deliveriesTotal,
-        next_delivery_at: toUTC(addDays(nowInBahia(), 30)).toISOString(), // +30 dias em horário da Bahia
-      })
-      .select()
-      .single();
-
-    if (subscriptionError) throw subscriptionError;
-
-    // Criar registros em subscription_collections para cada coleção
-    const subscriptionCollections = collectionIds.map((collectionId) => ({
-      subscription_id: subscription.id,
-      collection_id: collectionId,
-    }));
-
-    const { error: subscriptionCollectionsError } = await service
-      .from("subscription_collections")
-      .insert(subscriptionCollections);
-
-    if (subscriptionCollectionsError) {
-      // Rollback: deleta assinatura se falhar
-      await service.from("subscriptions").delete().eq("id", subscription.id);
-      throw subscriptionCollectionsError;
-    }
-
-    // Busca personagens da coleção inicial em ordem
-    const { data: characters, error: charactersError } = await service
-      .from("collection_characters")
-      .select("id, name, release_order")
-      .eq("collection_id", firstCollectionId)
-      .order("release_order", { ascending: true })
-      .limit(deliveriesTotal);
-
-    if (charactersError) throw charactersError;
-
-    if (!characters || characters.length < deliveriesTotal) {
-      // Rollback: deleta assinatura se não tem personagens suficientes
-      await service.from("subscriptions").delete().eq("id", subscription.id);
-      return new Response(
-        JSON.stringify({ error: "Coleção não tem personagens suficientes" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Cria entregas programadas
-    const deliveries = characters.map((char, index) => ({
-      subscription_id: subscription.id,
-      character_id: char.id,
-      delivery_order: index + 1,
-      status: "scheduled" as const,
-      reveal_date:
-        index === 0
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Primeira revelação em 30 dias
-          : null,
-    }));
-
-    const { error: deliveriesError } = await service
-      .from("subscription_deliveries")
-      .insert(deliveries);
-
-    if (deliveriesError) {
-      // Rollback: deleta assinatura se falhar ao criar entregas
-      await service.from("subscriptions").delete().eq("id", subscription.id);
-      throw deliveriesError;
-    }
+    const result = data && typeof data === "object" ? data as { subscription?: unknown } : {};
 
     return new Response(
       JSON.stringify({
         success: true,
-        subscription: {
-          id: subscription.id,
-          collection_name: collection.name,
-          collections_count: collectionIds.length,
-          plan_type: planType,
-          deliveries_total: deliveriesTotal,
-          total_paid: totalPaid,
-          next_delivery_at: subscription.next_delivery_at,
-        },
+        subscription: result.subscription ?? null,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -323,7 +135,7 @@ serve(async (req) => {
     console.error("Error creating subscription:", msg);
     const status =
       msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

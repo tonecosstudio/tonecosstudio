@@ -6,13 +6,29 @@
  */
 
 import React from "react";
+import { BATCH } from "@/config/constants";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateNthBusinessDayOfMonth } from "@/lib/business-days";
 import { log } from "@/lib/logger";
+import { getHolidayDates } from "@/services/holiday-service";
 
 // Cache dos prazos (atualizado a cada 5 minutos)
 let deadlinesCache: SystemDeadlines | null = null;
 let lastFetchTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+function parseSettingInteger(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
 
 export interface SystemDeadlines {
   // Prazos principais (em dias)
@@ -64,7 +80,7 @@ export async function getSystemDeadlines(): Promise<SystemDeadlines> {
   // Converter para objeto
   const settings = data.reduce(
     (acc, item) => {
-      acc[item.key] = parseInt(item.value);
+      acc[item.key] = parseSettingInteger(item.value);
       return acc;
     },
     {} as Record<string, number>
@@ -72,13 +88,13 @@ export async function getSystemDeadlines(): Promise<SystemDeadlines> {
 
   // Criar objeto de prazos
   deadlinesCache = {
-    productionDaysMin: settings.production_days_min || 30,
-    productionDaysMax: settings.production_days_max || 30,
-    shippingBusinessDays: settings.shipping_business_days || 15,
-    salesDurationDays: settings.sales_duration_days || 30,
-    deliveryIntervalDays: settings.delivery_interval_days || 90,
-    characterChoiceDays: settings.character_choice_days || 7,
-    balancePaymentDays: settings.balance_payment_days || 5,
+    productionDaysMin: settings.production_days_min || BATCH.PRODUCTION_DAYS_MIN,
+    productionDaysMax: settings.production_days_max || BATCH.PRODUCTION_DAYS_MAX,
+    shippingBusinessDays: settings.shipping_business_days || BATCH.SHIPPING_BUSINESS_DAYS,
+    salesDurationDays: settings.sales_duration_days || BATCH.SALES_DURATION_DAYS,
+    deliveryIntervalDays: settings.delivery_interval_days || BATCH.DELIVERY_INTERVAL_DAYS,
+    characterChoiceDays: settings.character_choice_days || BATCH.CHARACTER_CHOICE_DAYS,
+    balancePaymentDays: settings.balance_payment_days || BATCH.BALANCE_PAYMENT_DAYS,
     fetchedAt: new Date(),
   };
 
@@ -91,13 +107,13 @@ export async function getSystemDeadlines(): Promise<SystemDeadlines> {
  */
 function getDefaultDeadlines(): SystemDeadlines {
   return {
-    productionDaysMin: 30,
-    productionDaysMax: 30,
-    shippingBusinessDays: 15,
-    salesDurationDays: 30,
-    deliveryIntervalDays: 90,
-    characterChoiceDays: 7,
-    balancePaymentDays: 5,
+    productionDaysMin: BATCH.PRODUCTION_DAYS_MIN,
+    productionDaysMax: BATCH.PRODUCTION_DAYS_MAX,
+    shippingBusinessDays: BATCH.SHIPPING_BUSINESS_DAYS,
+    salesDurationDays: BATCH.SALES_DURATION_DAYS,
+    deliveryIntervalDays: BATCH.DELIVERY_INTERVAL_DAYS,
+    characterChoiceDays: BATCH.CHARACTER_CHOICE_DAYS,
+    balancePaymentDays: BATCH.BALANCE_PAYMENT_DAYS,
     fetchedAt: new Date(),
   };
 }
@@ -106,7 +122,7 @@ function getDefaultDeadlines(): SystemDeadlines {
  * Calcula as datas de um ciclo completo baseado na data de início das vendas
  */
 export async function calculateDeliveryDates(salesStartDate: Date) {
-  await getSystemDeadlines();
+  const deadlines = await getSystemDeadlines();
 
   // Mês 1: Vendas (mês completo)
   const salesStart = new Date(salesStartDate);
@@ -124,9 +140,20 @@ export async function calculateDeliveryDates(salesStartDate: Date) {
   productionEnd.setMonth(productionEnd.getMonth() + 1);
   productionEnd.setDate(0); // Último dia do mês
 
-  // Mês 3: Envio (dia 15 ao último dia)
-  const shippingStart = new Date(productionEnd);
-  shippingStart.setDate(productionEnd.getDate() + 15); // Dia 15 do mês seguinte
+  // Mes 3: Envio a partir do dia util configurado
+  const shippingMonthDate = new Date(productionEnd);
+  shippingMonthDate.setMonth(shippingMonthDate.getMonth() + 1);
+  shippingMonthDate.setDate(1);
+
+  const shippingMonth = shippingMonthDate.getMonth() + 1;
+  const shippingYear = shippingMonthDate.getFullYear();
+  const holidays = await getHolidayDates(shippingYear);
+  const shippingStart = calculateNthBusinessDayOfMonth(
+    shippingMonth,
+    shippingYear,
+    deadlines.shippingBusinessDays,
+    holidays
+  );
 
   const shippingEnd = new Date(shippingStart);
   shippingEnd.setMonth(shippingEnd.getMonth() + 1);
@@ -159,7 +186,7 @@ export function formatDeadline(days: number, unit: "dias" | "dias úteis" = "dia
 export async function getDeliveryFlowDescription(): Promise<string> {
   const deadlines = await getSystemDeadlines();
 
-  return `Produção: ~${deadlines.productionDaysMin} dias • Envio: segunda quinzena do mês • Entrega: ${deadlines.deliveryIntervalDays} dias (3 meses)`;
+  return `Producao: ~${deadlines.productionDaysMin} dias • Envio: ate o ${deadlines.shippingBusinessDays}o dia util do mes • Entrega: ${deadlines.deliveryIntervalDays} dias`;
 }
 
 /**

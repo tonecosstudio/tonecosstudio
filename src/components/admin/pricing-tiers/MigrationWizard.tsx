@@ -30,17 +30,17 @@ export function MigrationWizard({ open, onOpenChange }: MigrationWizardProps) {
     result,
     isAnalyzing,
     isExecuting,
-    analyze,
-    execute,
+    startAnalysis,
+    executeMigration,
     reset,
   } = useMigrationWizard();
 
   const handleAnalyze = async () => {
-    await analyze();
+    await startAnalysis();
   };
 
   const handleExecute = async () => {
-    await execute();
+    await executeMigration();
   };
 
   const handleClose = () => {
@@ -52,6 +52,7 @@ export function MigrationWizard({ open, onOpenChange }: MigrationWizardProps) {
     (sum, plan) => sum + plan.collection_count,
     0
   );
+  const migrationResult = result && !result.dryRun ? result : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -204,7 +205,7 @@ export function MigrationWizard({ open, onOpenChange }: MigrationWizardProps) {
         )}
 
         {/* Step 3: Result */}
-        {(currentStep === "executing" || currentStep === "completed") && result && (
+        {(currentStep === "executing" || currentStep === "completed") && migrationResult && (
           <div className="space-y-4">
             <Alert className="border-green-500 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
@@ -218,7 +219,7 @@ export function MigrationWizard({ open, onOpenChange }: MigrationWizardProps) {
                 <CardHeader className="pb-3">
                   <CardDescription>Níveis Criados</CardDescription>
                   <CardTitle className="text-3xl">
-                    {result.tiersCreated}
+                    {migrationResult.tiersCreated}
                   </CardTitle>
                 </CardHeader>
               </Card>
@@ -227,13 +228,13 @@ export function MigrationWizard({ open, onOpenChange }: MigrationWizardProps) {
                 <CardHeader className="pb-3">
                   <CardDescription>Coleções Atribuídas</CardDescription>
                   <CardTitle className="text-3xl">
-                    {result.collectionsAssigned}
+                    {migrationResult.collectionsAssigned}
                   </CardTitle>
                 </CardHeader>
               </Card>
             </div>
 
-            {result.errors && result.errors.length > 0 && (
+            {migrationResult.errors.length > 0 && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -241,7 +242,7 @@ export function MigrationWizard({ open, onOpenChange }: MigrationWizardProps) {
                     Alguns erros ocorreram:
                   </div>
                   <ul className="list-disc list-inside text-sm space-y-1">
-                    {result.errors.map((error, index) => (
+                    {migrationResult.errors.map((error: string, index: number) => (
                       <li key={index}>{error}</li>
                     ))}
                   </ul>

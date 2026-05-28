@@ -31,7 +31,6 @@ export function OrderRow({
 }: OrderRowProps) {
   // Determinar o ID correto para buscar informações de produção
   let productionOrderId = order.id;
-  const productionOrderType = order.type;
 
   // Para assinaturas, usar o ID da próxima entrega (ou última)
   if (order.type === 'subscription_delivery' && order.subscriptionDelivery?.allDeliveries) {
@@ -44,10 +43,13 @@ export function OrderRow({
   }
 
   // Buscar informações de produção apenas para pedidos elegíveis
-  const shouldFetchProduction = order.type === 'subscription_delivery' || order.type === 'standalone_purchase';
+  const productionOrderType =
+    order.type === 'subscription_delivery' || order.type === 'standalone_purchase'
+      ? order.type
+      : null;
   const { data: productionInfo } = useProductionInfo(
-    shouldFetchProduction ? productionOrderId : null,
-    shouldFetchProduction ? productionOrderType : null
+    productionOrderType ? productionOrderId : null,
+    productionOrderType
   );
 
   return (
@@ -93,7 +95,7 @@ export function OrderRow({
 
       {/* Status de Produção */}
       <TableCell>
-        {shouldFetchProduction && productionInfo ? (
+        {productionOrderType && productionInfo ? (
           <ProductionStatusBadge stage={productionInfo.currentStage} />
         ) : (
           <span className="text-xs text-muted-foreground">N/A</span>

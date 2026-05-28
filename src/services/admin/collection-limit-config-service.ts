@@ -1,13 +1,10 @@
-import { supabase } from "@/integrations/supabase/client";
+import { updateSubscriptionPlanCollectionLimitRpc } from "@/services/admin/admin-config-mutations-service";
 
 export async function updateSubscriptionPlanCollectionLimit(planId: string, newLimit: number) {
-  const { data, error } = await supabase
-    .from("subscription_plans")
-    .update({ collections_count: newLimit })
-    .eq("id", planId)
-    .select()
-    .single();
-
-  if (error) throw new Error(`Erro ao atualizar limite: ${error.message}`);
-  return data;
+  try {
+    return await updateSubscriptionPlanCollectionLimitRpc(planId, newLimit);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro inesperado";
+    throw new Error(`Erro ao atualizar limite: ${message}`);
+  }
 }

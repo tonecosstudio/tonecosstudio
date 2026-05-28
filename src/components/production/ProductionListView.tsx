@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import type { ProductionQueueItem } from '@/types/production';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getProductionStageLabel } from '@/config/production-stages';
 
 type SortColumn = 'customer' | 'collection' | 'character' | 'stage' | 'priority' | 'deadline' | 'assignedTo';
 type SortDirection = 'asc' | 'desc';
@@ -238,15 +239,6 @@ function ProductionListRow({ item, isSelected, onSelect, onClick }: ProductionLi
     low: 'bg-gray-500 text-white'
   };
 
-  const stageLabels: Record<string, string> = {
-    awaiting_choice: 'Aguardando Escolha',
-    design: 'Design',
-    production: 'Produção',
-    quality_check: 'Controle de Qualidade',
-    packaging: 'Embalagem',
-    shipped: 'Enviado'
-  };
-
   const formatDeadline = (deadline: string | null) => {
     if (!deadline) return '-';
     try {
@@ -277,7 +269,7 @@ function ProductionListRow({ item, isSelected, onSelect, onClick }: ProductionLi
       <TableCell>{item.collectionName}</TableCell>
       <TableCell>{item.characterName || '-'}</TableCell>
       <TableCell>
-        <Badge variant="outline">{stageLabels[item.currentStage] || item.currentStage}</Badge>
+        <Badge variant="outline">{getProductionStageLabel(item.currentStage)}</Badge>
       </TableCell>
       <TableCell>
         <Badge className={priorityColors[item.priority]}>

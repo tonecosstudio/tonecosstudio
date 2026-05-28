@@ -6,10 +6,19 @@ import { nowInBahia, isBeforeCutoff } from "../_shared/timezone.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { checkContentLength, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
 import { validateOrReject, type Schema } from "../_shared/validation.ts";
+import { escapeHtml, sanitizeEmailSubject } from "../_shared/email.ts";
 
 const PAUSE_SCHEMA: Schema = {
   subscriptionId: { type: "uuid", required: true },
 };
+
+function getSupportEmail(): string {
+  const email = Deno.env.get("SUPPORT_EMAIL") || Deno.env.get("EMAIL_FROM");
+  if (!email) {
+    throw new Error("SUPPORT_EMAIL or EMAIL_FROM must be configured");
+  }
+  return email;
+}
 
 interface PauseSubscriptionResponse {
   success: boolean;
@@ -25,6 +34,30 @@ interface PauseSubscriptionResponse {
     expected_delivery_date: string | null;
     status: string;
   }>;
+}
+
+interface PauseRpcResult {
+  pauseCount?: number;
+  pausesRemaining?: number;
+  deliverySchedule?: PauseSubscriptionResponse["delivery_schedule"];
+}
+
+function toPauseRpcResult(value: unknown): PauseRpcResult {
+  return value && typeof value === "object" ? value as PauseRpcResult : {};
+}
+
+function pauseErrorToStatus(message: string): number {
+  if (message === "SUBSCRIPTION_NOT_FOUND") return 404;
+  if (message === "FORBIDDEN") return 403;
+  if (
+    message === "CUTOFF_PASSED" ||
+    message === "SUBSCRIPTION_NOT_ACTIVE" ||
+    message === "PAUSE_LIMIT_EXCEEDED" ||
+    message === "NO_UPCOMING_DELIVERY"
+  ) {
+    return 400;
+  }
+  return 500;
 }
 
 serve(async (req: Request) => {
@@ -56,51 +89,13 @@ serve(async (req: Request) => {
 
     const { subscriptionId } = validation.data as { subscriptionId: string };
 
-    // Fetch subscription details
-    const { data: subscription, error: subscriptionError } = await service
-      .from("subscriptions")
-      .select("id, user_id, status, pause_count")
-      .eq("id", subscriptionId)
-      .maybeSingle();
-
-    if (subscriptionError) throw subscriptionError;
-
-    if (!subscription) {
-      return new Response(JSON.stringify({ error: "Assinatura não encontrada" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Verify user owns the subscription
-    if (subscription.user_id !== userId) {
-      return new Response(
-        JSON.stringify({ error: "Você não tem permissão para pausar esta assinatura" }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Verify subscription is active
-    if (subscription.status !== "active") {
-      return new Response(
-        JSON.stringify({ error: "Apenas assinaturas ativas podem ser pausadas" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Requirement 23.1: Validate current time is before cutoff
+    // Requirement 23.1: Validate current time is before cutoff before invoking the transaction.
     const currentTime = nowInBahia();
     if (!isBeforeCutoff(currentTime)) {
       return new Response(
         JSON.stringify({
           error: "CUTOFF_PASSED",
-          message: "Não é possível pausar após o prazo limite (dia 15 às 23:59:59)",
+          message: "Nao e possivel pausar apos o prazo limite (dia 15 as 23:59:59)",
         }),
         {
           status: 400,
@@ -109,142 +104,37 @@ serve(async (req: Request) => {
       );
     }
 
-    // Requirement 23.6: Verify pause_count < 2
-    const pauseCount = subscription.pause_count ?? 0;
-    if (pauseCount >= 2) {
+    const { data: pauseData, error: pauseError } = await service.rpc(
+      "pause_subscription_atomic",
+      {
+        p_subscription_id: subscriptionId,
+        p_user_id: userId,
+        p_now: currentTime.toISOString(),
+      },
+    );
+
+    if (pauseError) {
+      const status = pauseErrorToStatus(pauseError.message);
       return new Response(
         JSON.stringify({
-          error: "PAUSE_LIMIT_EXCEEDED",
-          message: "Máximo de 2 pausas permitidas por assinatura",
+          error: pauseError.message,
+          message: pauseError.message,
         }),
         {
-          status: 400,
+          status,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
     }
 
-    // Get next delivery (first delivery with status 'scheduled' or 'pending_choice')
-    const { data: nextDelivery, error: deliveryError } = await service
-      .from("subscription_deliveries")
-      .select("id, delivery_number, cycle_id, status")
-      .eq("subscription_id", subscriptionId)
-      .in("status", ["scheduled", "pending_choice"])
-      .order("delivery_number", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (deliveryError) throw deliveryError;
-
-    if (!nextDelivery) {
-      return new Response(
-        JSON.stringify({
-          error: "NO_UPCOMING_DELIVERY",
-          message: "Nenhuma entrega futura encontrada para pausar",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Requirement 23.4: Release capacity for paused delivery
-    // CRITICAL: Must succeed before proceeding with pause
-    if (nextDelivery.cycle_id) {
-      const { error: releaseError } = await service
-        .rpc("release_capacity", {
-          p_cycle_id: nextDelivery.cycle_id,
-          p_quantity: 1,
-        });
-
-      if (releaseError) {
-        console.error(`Failed to release capacity for paused delivery:`, releaseError);
-        return new Response(
-          JSON.stringify({
-            error: "CAPACITY_RELEASE_FAILED",
-            message: "Falha ao liberar capacidade. Por favor, tente novamente ou contate o suporte.",
-            details: releaseError.message,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-      
-      console.log(`Released capacity for delivery ${nextDelivery.id} in cycle ${nextDelivery.cycle_id}`);
-    }
-
-    // Requirement 23.3: Shift all subsequent deliveries by one month
-    const { data: subsequentDeliveries, error: subsequentError } = await service
-      .from("subscription_deliveries")
-      .select("id, expected_delivery_date, cycle_id")
-      .eq("subscription_id", subscriptionId)
-      .gt("delivery_number", nextDelivery.delivery_number)
-      .order("delivery_number", { ascending: true });
-
-    if (subsequentError) throw subsequentError;
-
-    // Shift each subsequent delivery by one month
-    if (subsequentDeliveries && subsequentDeliveries.length > 0) {
-      for (const delivery of subsequentDeliveries) {
-        if (delivery.expected_delivery_date) {
-          const currentDate = new Date(delivery.expected_delivery_date);
-          // Add one month
-          const newDate = new Date(currentDate);
-          newDate.setMonth(newDate.getMonth() + 1);
-
-          const { error: shiftError } = await service
-            .from("subscription_deliveries")
-            .update({
-              expected_delivery_date: newDate.toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", delivery.id);
-
-          if (shiftError) {
-            console.error(`Failed to shift delivery ${delivery.id}:`, shiftError);
-            // Continue with other deliveries
-          } else {
-            console.log(`Shifted delivery ${delivery.id} by one month`);
-          }
-        }
-      }
-    }
-
-    // Requirement 23.2: Mark next delivery as paused (delete it)
-    const { error: deleteDeliveryError } = await service
-      .from("subscription_deliveries")
-      .delete()
-      .eq("id", nextDelivery.id);
-
-    if (deleteDeliveryError) throw deleteDeliveryError;
-
-    console.log(`Deleted paused delivery ${nextDelivery.id}`);
-
-    // Requirement 23.6: Increment pause_count
-    const { error: incrementError } = await service
-      .from("subscriptions")
-      .update({
-        pause_count: pauseCount + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", subscriptionId);
-
-    if (incrementError) throw incrementError;
-
-    console.log(`Incremented pause count for subscription ${subscriptionId} to ${pauseCount + 1}`);
-
-    // Fetch updated delivery schedule
-    const { data: updatedDeliveries, error: updatedDeliveriesError } = await service
-      .from("subscription_deliveries")
-      .select("id, delivery_number, expected_delivery_date, status")
-      .eq("subscription_id", subscriptionId)
-      .order("delivery_number", { ascending: true });
-
-    if (updatedDeliveriesError) throw updatedDeliveriesError;
-
+    const pauseResult = toPauseRpcResult(pauseData);
+    const pauseCount = typeof pauseResult.pauseCount === "number" ? pauseResult.pauseCount : 0;
+    const pausesRemaining = typeof pauseResult.pausesRemaining === "number"
+      ? pauseResult.pausesRemaining
+      : Math.max(2 - pauseCount, 0);
+    const updatedDeliveries = Array.isArray(pauseResult.deliverySchedule)
+      ? pauseResult.deliverySchedule
+      : [];
     // Fetch user email for confirmation email
     const { data: user, error: userError } = await service
       .from("profiles")
@@ -262,7 +152,7 @@ serve(async (req: Request) => {
         await sendPauseConfirmationEmail(
           user.email,
           user.full_name || "Cliente",
-          pauseCount + 1,
+          pauseCount,
           updatedDeliveries || []
         );
         console.log(`Pause confirmation email sent to ${user.email}`);
@@ -277,8 +167,8 @@ serve(async (req: Request) => {
       message: "Assinatura pausada com sucesso",
       subscription: {
         id: subscriptionId,
-        pause_count: pauseCount + 1,
-        pauses_remaining: 2 - (pauseCount + 1),
+        pause_count: pauseCount,
+        pauses_remaining: pausesRemaining,
       },
       delivery_schedule: updatedDeliveries || [],
     };
@@ -290,7 +180,7 @@ serve(async (req: Request) => {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error pausing subscription:", msg);
     const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -311,6 +201,10 @@ async function sendPauseConfirmationEmail(
   }>
 ): Promise<void> {
   const pausesRemaining = 2 - pauseCount;
+  const supportEmail = getSupportEmail();
+  const safeUserName = escapeHtml(userName);
+  const safeSupportEmail = escapeHtml(supportEmail);
+  const supportMailto = `mailto:${encodeURIComponent(supportEmail)}`;
 
   // Format delivery schedule for email
   const deliveryScheduleHtml = deliveries
@@ -321,7 +215,7 @@ async function sendPauseConfirmationEmail(
             year: "numeric",
           })
         : "A definir";
-      return `<li>Entrega ${delivery.delivery_number}: ${date}</li>`;
+      return `<li>Entrega ${delivery.delivery_number}: ${escapeHtml(date)}</li>`;
     })
     .join("");
 
@@ -336,7 +230,7 @@ async function sendPauseConfirmationEmail(
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
     <h1 style="color: #2c3e50; margin-top: 0;">✅ Assinatura Pausada</h1>
-    <p>Olá, <strong>${userName}</strong>!</p>
+    <p>Olá, <strong>${safeUserName}</strong>!</p>
     <p>Sua solicitação de pausa foi processada com sucesso.</p>
   </div>
 
@@ -369,8 +263,8 @@ async function sendPauseConfirmationEmail(
   <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
     <p style="color: #666; font-size: 14px;">
       Dúvidas? Entre em contato conosco em 
-      <a href="mailto:${Deno.env.get("SUPPORT_EMAIL") || "suporte@ordax.com.br"}" style="color: #3498db;">
-        ${Deno.env.get("SUPPORT_EMAIL") || "suporte@ordax.com.br"}
+      <a href="${supportMailto}" style="color: #3498db;">
+        ${safeSupportEmail}
       </a>
     </p>
     <p style="color: #999; font-size: 12px; margin-top: 20px;">
@@ -397,7 +291,7 @@ async function sendPauseConfirmationEmail(
     },
     body: JSON.stringify({
       to: email,
-      subject: "✅ Sua assinatura ORDAX foi pausada",
+      subject: sanitizeEmailSubject("Sua assinatura ORDAX foi pausada"),
       html,
       emailType: "pause_confirmation",
       metadata: {

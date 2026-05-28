@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { useGroupMessages } from "./useGroupMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { messageService } from "@/lib/services/messageService";
@@ -11,9 +11,16 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: {
       getUser: vi.fn(),
     },
-    channel: vi.fn(),
+    channel: vi.fn(() => {
+      const channel = {
+        on: vi.fn(() => channel),
+        subscribe: vi.fn(() => channel),
+      };
+      return channel;
+    }),
     removeChannel: vi.fn(),
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
@@ -68,12 +75,6 @@ describe("useGroupMessages", () => {
     },
   ];
 
-  type SupabaseFromResult = ReturnType<typeof supabase.from>;
-
-  function mockFromResult(value: unknown): SupabaseFromResult {
-    return value as SupabaseFromResult;
-  }
-
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -82,6 +83,10 @@ describe("useGroupMessages", () => {
       data: { user: mockUser as User },
       error: null,
     });
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: true,
+      error: null,
+    } as Awaited<ReturnType<typeof supabase.rpc>>);
 
     // Mock message service
     vi.mocked(messageService.listGroupMessages).mockResolvedValue({
@@ -199,7 +204,9 @@ describe("useGroupMessages", () => {
     vi.clearAllMocks();
 
     // Call refresh
-    result.current.refresh();
+    await act(async () => {
+      await result.current.refresh();
+    });
 
     await waitFor(() => {
       expect(messageService.listGroupMessages).toHaveBeenCalledWith("group-1", mockUser.id, {
@@ -210,19 +217,10 @@ describe("useGroupMessages", () => {
   });
 
   it("should validate admin role before sending message", async () => {
-    // Mock non-admin user
-    const mockFrom = vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { role: "customer" },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    vi.mocked(supabase.from).mockImplementation(mockFromResult(mockFrom));
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: false,
+      error: null,
+    } as Awaited<ReturnType<typeof supabase.rpc>>);
 
     const { result } = renderHook(() => useGroupMessages({ groupId: "group-1" }));
 

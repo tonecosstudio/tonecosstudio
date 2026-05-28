@@ -17,6 +17,10 @@ import {
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
 import { requireSharedSecret } from "../_shared/secrets.ts";
+import {
+  calculateNthBusinessDayOfMonth,
+  getHolidayDatesForMonth,
+} from "../_shared/business-days.ts";
 
 interface Cycle {
   id: string;
@@ -30,8 +34,8 @@ interface Cycle {
   shipping_date: string;
   status: "open" | "production" | "shipping" | "completed";
   status_changed_at: string | null;
-  capacity_max: number;
-  capacity_current: number;
+  capacity: number | null;
+  used_capacity: number | null;
 }
 
 /**
@@ -77,10 +81,10 @@ async function createCycleIfNeeded(
     productionStart = new Date(year, month - 1, 16, 0, 0, 0);
     productionEnd = new Date(year, month - 1, 28, 23, 59, 59); // Approximate end of month
 
-    // Shipping date is 5th business day of next month
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
-    shippingDate = new Date(nextYear, nextMonth - 1, 5);
+    const holidayDates = await getHolidayDatesForMonth(supabase, nextYear, nextMonth);
+    shippingDate = calculateNthBusinessDayOfMonth(nextYear, nextMonth, 5, holidayDates);
   } else {
     // Cycle 2: days 16-end of month
     openStart = new Date(year, month - 1, 16, 0, 0, 0);
@@ -95,10 +99,19 @@ async function createCycleIfNeeded(
     productionStart = new Date(nextYear, nextMonth - 1, 1, 0, 0, 0);
     productionEnd = new Date(nextYear, nextMonth - 1, 14, 23, 59, 59);
 
-    // Shipping date is 5th business day of second next month
     const secondNextMonth = nextMonth === 12 ? 1 : nextMonth + 1;
     const secondNextYear = nextMonth === 12 ? nextYear + 1 : nextYear;
-    shippingDate = new Date(secondNextYear, secondNextMonth - 1, 5);
+    const holidayDates = await getHolidayDatesForMonth(
+      supabase,
+      secondNextYear,
+      secondNextMonth,
+    );
+    shippingDate = calculateNthBusinessDayOfMonth(
+      secondNextYear,
+      secondNextMonth,
+      5,
+      holidayDates,
+    );
   }
 
   // Create the cycle
@@ -108,14 +121,25 @@ async function createCycleIfNeeded(
       cycle_number: cycleNumber,
       month,
       year,
+      name: `${year}-${String(month).padStart(2, "0")}-cycle-${cycleNumber}`,
       open_start: openStart.toISOString(),
       open_end: openEnd.toISOString(),
       production_start: productionStart.toISOString(),
       production_end: productionEnd.toISOString(),
+      sales_start_date: openStart.toISOString().split("T")[0],
+      sales_end_date: openEnd.toISOString().split("T")[0],
+      production_start_date: productionStart.toISOString().split("T")[0],
+      production_end_date: productionEnd.toISOString().split("T")[0],
       shipping_date: shippingDate.toISOString().split("T")[0], // Date only
+      shipping_start_date: shippingDate.toISOString().split("T")[0],
+      shipping_end_date: shippingDate.toISOString().split("T")[0],
       status: "open",
+      capacity: 100,
+      used_capacity: 0,
       capacity_max: 100,
       capacity_current: 0,
+      capacity_limit: 100,
+      reserved_capacity: 0,
     })
     .select()
     .single();

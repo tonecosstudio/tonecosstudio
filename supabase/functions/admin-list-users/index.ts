@@ -1,4 +1,4 @@
-import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import {
   assertAdmin,
   errorToStatus,
@@ -8,8 +8,16 @@ import {
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
+    if (req.method !== "GET" && req.method !== "POST") {
+      return new Response(JSON.stringify({ ok: false, error: "method not allowed" }), {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     await assertAdmin(req);
     const service = getServiceClient();
 
@@ -20,30 +28,19 @@ Deno.serve(async (req) => {
     const userIds = authUsers.users.map((u) => u.id);
     const { data: profiles, error: profilesError } = await service
       .from("profiles")
-      .select("id, full_name, phone, whatsapp, cpf, profile_completion")
+      .select("id, full_name, phone, whatsapp, cpf, profile_completion, role")
       .in("id", userIds);
 
     if (profilesError) {
       console.error("Erro ao buscar profiles:", profilesError.message);
     }
 
-    const { data: roles, error: rolesError } = await service
-      .from("user_roles")
-      .select("user_id, role")
-      .in("user_id", userIds);
-
-    if (rolesError) {
-      console.error("Erro ao buscar roles:", rolesError.message);
-    }
-
     const profilesMap = new Map();
     (profiles || []).forEach((profile) => profilesMap.set(profile.id, profile));
 
     const rolesMap = new Map();
-    (roles || []).forEach((roleRow) => {
-      const userRoles = rolesMap.get(roleRow.user_id) || [];
-      userRoles.push(roleRow.role);
-      rolesMap.set(roleRow.user_id, userRoles);
+    (profiles || []).forEach((profile) => {
+      rolesMap.set(profile.id, profile.role ? [profile.role] : []);
     });
 
     const users = authUsers.users.map((user) => ({
@@ -65,9 +62,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro desconhecido";
+    const status = errorToStatus(message);
     console.error("Erro ao listar usuarios:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: errorToStatus(message),
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : message }), {
+      status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

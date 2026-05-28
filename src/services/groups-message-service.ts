@@ -3,6 +3,27 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type GroupMessageTemplate = Tables<"message_templates">;
 
+interface GroupMessageRpcError {
+  message: string;
+}
+
+interface GroupMessageRpcClient {
+  rpc(
+    name: "admin_schedule_group_message",
+    args: { p_group_id: string; p_message: string; p_scheduled_at: string }
+  ): Promise<{ data: unknown; error: GroupMessageRpcError | null }>;
+  rpc(
+    name: "admin_save_group_message_template",
+    args: { p_template_id: string | null; p_name: string; p_content: string }
+  ): Promise<{ data: GroupMessageTemplate | null; error: GroupMessageRpcError | null }>;
+  rpc(
+    name: "admin_delete_group_message_template",
+    args: { p_template_id: string }
+  ): Promise<{ data: string | null; error: GroupMessageRpcError | null }>;
+}
+
+const groupMessageRpc = supabase as unknown as GroupMessageRpcClient;
+
 interface ScheduleGroupMessageInput {
   groupId: string;
   message: string;
@@ -18,12 +39,10 @@ interface SaveGroupMessageTemplateInput {
 }
 
 export async function scheduleGroupMessage(input: ScheduleGroupMessageInput): Promise<void> {
-  const { error } = await supabase.from("scheduled_messages").insert({
-    group_id: input.groupId,
-    message: input.message,
-    scheduled_at: input.scheduledAt.toISOString(),
-    created_by: input.createdBy,
-    status: "pending",
+  const { error } = await groupMessageRpc.rpc("admin_schedule_group_message", {
+    p_group_id: input.groupId,
+    p_message: input.message,
+    p_scheduled_at: input.scheduledAt.toISOString(),
   });
 
   if (error) {
@@ -47,23 +66,10 @@ export async function listGroupMessageTemplates(): Promise<GroupMessageTemplate[
 export async function saveGroupMessageTemplate(
   input: SaveGroupMessageTemplateInput
 ): Promise<void> {
-  if (input.id) {
-    const { error } = await supabase
-      .from("message_templates")
-      .update({ name: input.name, content: input.content })
-      .eq("id", input.id);
-
-    if (error) {
-      throw error;
-    }
-
-    return;
-  }
-
-  const { error } = await supabase.from("message_templates").insert({
-    name: input.name,
-    content: input.content,
-    created_by: input.createdBy,
+  const { error } = await groupMessageRpc.rpc("admin_save_group_message_template", {
+    p_template_id: input.id ?? null,
+    p_name: input.name,
+    p_content: input.content,
   });
 
   if (error) {
@@ -72,7 +78,9 @@ export async function saveGroupMessageTemplate(
 }
 
 export async function deleteGroupMessageTemplate(id: string): Promise<void> {
-  const { error } = await supabase.from("message_templates").delete().eq("id", id);
+  const { error } = await groupMessageRpc.rpc("admin_delete_group_message_template", {
+    p_template_id: id,
+  });
 
   if (error) {
     throw error;

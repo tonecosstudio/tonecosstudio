@@ -6,6 +6,11 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { getProductionStageLabel, isForwardProductionStageTransition } from '@/config/production-stages';
+import {
+  assignProductionRpc,
+  updateProductionStageRpc,
+} from "@/services/admin/admin-production-mutations-service";
 import type { ProductionStage } from './production-service';
 
 export interface BulkOperationResult {
@@ -43,22 +48,12 @@ export async function bulkAssignProduction(
   // Process each item
   for (const itemId of itemIds) {
     try {
-      const { error } = await supabase
-        .from('production_queue')
-        .update({
-          assigned_to: userId,
-          assigned_to_name: userName,
-          assigned_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', itemId);
-
-      if (error) {
-        result.failed++;
-        result.errors.push(`Item ${itemId}: ${error.message}`);
-      } else {
-        result.successful++;
-      }
+      await assignProductionRpc({
+        queueId: itemId,
+        userId,
+        reason: `Atribuicao em massa para ${userName}`,
+      });
+      result.successful++;
     } catch (error) {
       result.failed++;
       result.errors.push(`Item ${itemId}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -113,25 +108,8 @@ export async function bulkUpdateStage(
         continue;
       }
 
-      // Determine new production status based on stage
-      const newStatus = determineProductionStatus(newStage);
-
-      // Update item
-      const { error } = await supabase
-        .from('production_queue')
-        .update({
-          current_stage: newStage,
-          production_status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', item.id);
-
-      if (error) {
-        result.failed++;
-        result.errors.push(`${item.customer_name}: ${error.message}`);
-      } else {
-        result.successful++;
-      }
+      await updateProductionStageRpc(item.id, newStage);
+      result.successful++;
     } catch (error) {
       result.failed++;
       result.errors.push(
@@ -149,54 +127,14 @@ export async function bulkUpdateStage(
  * Stages must be completed in order:
  * awaiting_choice → design → production → quality_check → packaging → shipped
  */
-function validateStageTransition(currentStage: string, newStage: string): boolean {
-  const stageOrder: Record<string, number> = {
-    awaiting_choice: 0,
-    design: 1,
-    production: 2,
-    quality_check: 3,
-    packaging: 4,
-    shipped: 5,
-  };
-
-  const currentOrder = stageOrder[currentStage] ?? -1;
-  const newOrder = stageOrder[newStage] ?? -1;
-
-  // Can only move forward one stage at a time, or stay in same stage
-  return newOrder >= 0 && newOrder <= currentOrder + 1;
-}
-
-/**
- * Determines production status based on stage
- */
-function determineProductionStatus(stage: ProductionStage): string {
-  switch (stage) {
-    case 'awaiting_choice':
-      return 'awaiting_choice';
-    case 'design':
-      return 'ready_for_production';
-    case 'production':
-    case 'quality_check':
-    case 'packaging':
-      return 'in_production';
-    case 'shipped':
-      return 'completed';
-    default:
-      return 'ready_for_production';
-  }
+function validateStageTransition(currentStage: string | null, newStage: string): boolean {
+  return isForwardProductionStageTransition(currentStage, newStage);
 }
 
 /**
  * Translates stage to Portuguese for error messages
  */
-function translateStage(stage: string): string {
-  const translations: Record<string, string> = {
-    awaiting_choice: 'Aguardando Escolha',
-    design: 'Design',
-    production: 'Produção',
-    quality_check: 'Controle de Qualidade',
-    packaging: 'Embalagem',
-    shipped: 'Enviado',
-  };
-  return translations[stage] || stage;
+function translateStage(stage: string | null): string {
+  if (!stage) return "Sem etapa";
+  return getProductionStageLabel(stage);
 }

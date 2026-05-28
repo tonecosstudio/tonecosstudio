@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
 
 export interface EmailLog {
   id: string;
@@ -33,6 +34,26 @@ export interface EmailLogFilters {
   timeRange: string;
 }
 
+interface EmailLogsQuery<T> extends PromiseLike<{
+  data: T[] | null;
+  error: { message: string } | null;
+}> {
+  eq(column: "email_type" | "status", value: string): EmailLogsQuery<T>;
+  gte(column: "created_at", value: string): EmailLogsQuery<T>;
+  ilike(column: "recipient_email", value: string): EmailLogsQuery<T>;
+  limit(count: number): EmailLogsQuery<T>;
+  order(column: "created_at", options?: { ascending?: boolean }): EmailLogsQuery<T>;
+}
+
+interface EmailAnalyticsGateway {
+  from(table: "email_delivery_logs"): {
+    select(columns: "status"): EmailLogsQuery<Pick<EmailLog, "status">>;
+    select(columns: "*"): EmailLogsQuery<EmailLog>;
+  };
+}
+
+const emailAnalyticsGateway = supabase as unknown as EmailAnalyticsGateway;
+
 function getStartDateIso(timeRange: string): string {
   const daysAgo = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 1;
   const startDate = new Date();
@@ -41,7 +62,7 @@ function getStartDateIso(timeRange: string): string {
 }
 
 export async function fetchEmailStats(timeRange: string): Promise<EmailStats> {
-  const { data, error } = await supabase
+  const { data, error } = await emailAnalyticsGateway
     .from("email_delivery_logs")
     .select("status")
     .gte("created_at", getStartDateIso(timeRange));
@@ -63,7 +84,7 @@ export async function fetchEmailStats(timeRange: string): Promise<EmailStats> {
 export async function fetchEmailLogs(filters: EmailLogFilters): Promise<EmailLog[]> {
   const { searchEmail, filterType, filterStatus, timeRange } = filters;
 
-  let query = supabase
+  let query = emailAnalyticsGateway
     .from("email_delivery_logs")
     .select("*")
     .gte("created_at", getStartDateIso(timeRange))
@@ -71,7 +92,7 @@ export async function fetchEmailLogs(filters: EmailLogFilters): Promise<EmailLog
     .limit(100);
 
   if (searchEmail) {
-    query = query.ilike("recipient_email", `%${searchEmail}%`);
+    query = query.ilike("recipient_email", `%${sanitizePostgrestSearchTerm(searchEmail)}%`);
   }
 
   if (filterType !== "all") {
@@ -84,6 +105,5 @@ export async function fetchEmailLogs(filters: EmailLogFilters): Promise<EmailLog
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data || []) as EmailLog[];
+  return data || [];
 }
-

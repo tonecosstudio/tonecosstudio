@@ -9,6 +9,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 import { PriceInCoins } from "@/types/contextual-pricing";
 
 // =====================================================
@@ -52,6 +53,8 @@ export function useUserCoins(userId?: string | null) {
       if (!userId) {
         return { balance: 0, user_id: "", updated_at: "" };
       }
+
+      await assertCurrentUserId(userId);
 
       const { data, error } = await supabase
         .from("user_coins")

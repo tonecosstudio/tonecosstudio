@@ -18,6 +18,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PaymentVoucherUpload } from "@/components/PaymentVoucherUpload";
 import { Page } from "@/components/layouts/Page";
+import { PUBLIC_ROUTES, paymentDetailsPath } from "@/config/routes";
+import { PRICING } from "@/config/constants";
+import { usePricingSettings } from "@/hooks/usePricingSettings";
 
 export default function SubscribeCollection() {
   const { slug } = useParams();
@@ -39,6 +42,8 @@ export default function SubscribeCollection() {
     initialCollection,
     createCheckout,
   } = useSubscribeCollectionCheckout(slug);
+  const { data: pricingSettings } = usePricingSettings();
+  const standaloneReferencePrice = pricingSettings?.defaultPriceFull ?? PRICING.DEFAULT_PRICE_FULL;
 
   // Buscar coleções ativas
 
@@ -63,7 +68,7 @@ export default function SubscribeCollection() {
   const handleSubscribe = async () => {
     try {
       if (!user) {
-        navigate("/login");
+        navigate(PUBLIC_ROUTES.login);
         throw new Error("Faça login para continuar");
       }
 
@@ -86,7 +91,7 @@ export default function SubscribeCollection() {
         title: "Assinatura criada!",
         description: "Redirecionando para pagamento...",
       });
-      navigate(`/pagamentos/${data.payment.id}`);
+      navigate(paymentDetailsPath(data.payment.id));
     } catch (error) {
       toast({
         title: "Erro ao criar assinatura",
@@ -167,8 +172,9 @@ export default function SubscribeCollection() {
                       const isPopular = plan.plan_type === "trimestral";
                       const isBestValue = plan.plan_type === "anual";
                       const pricePerPiece = (Number(plan.price_full) / plan.deliveries_total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                      const savings = 500 * plan.deliveries_total - Number(plan.price_full);
-                      const savingsPercent = Math.round((savings / (500 * plan.deliveries_total)) * 100);
+                      const referenceTotal = standaloneReferencePrice * plan.deliveries_total;
+                      const savings = Math.max(0, referenceTotal - Number(plan.price_full));
+                      const savingsPercent = referenceTotal > 0 ? Math.round((savings / referenceTotal) * 100) : 0;
 
                       return (
                         <label

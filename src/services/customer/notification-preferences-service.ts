@@ -6,23 +6,50 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import log from '@/lib/logger';
+import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
 import type { NotificationPreferences } from '@/types/notification-preferences';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/types/notification-preferences';
+
+interface CustomerNotificationPreferencesRpcClient {
+  rpc(
+    fn: 'update_customer_notification_preferences',
+    args: { p_preferences: Partial<NotificationPreferences> }
+  ): Promise<{ data: NotificationPreferences | null; error: { message: string } | null }>;
+  rpc(
+    fn: 'should_send_notification',
+    args: { user_id: string; notification_type: string }
+  ): Promise<{ data: boolean | null; error: { message: string } | null }>;
+}
+
+const customerNotificationPreferencesRpc =
+  supabase as unknown as CustomerNotificationPreferencesRpcClient;
+
+interface CustomerNotificationProfileGateway {
+  from(table: 'profiles'): {
+    select(columns: 'notification_preferences'): {
+      eq(column: 'id', value: string): {
+        single(): Promise<{
+          data: { notification_preferences: NotificationPreferences | null } | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+}
+
+const customerNotificationProfileGateway =
+  supabase as unknown as CustomerNotificationProfileGateway;
 
 /**
  * Fetch notification preferences for the current user
  */
 export async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await requireAuthenticatedUserId();
 
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const { data, error } = await supabase
+  const { data, error } = await customerNotificationProfileGateway
     .from('profiles')
     .select('notification_preferences')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
 
   if (error) {
@@ -40,11 +67,7 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
 export async function updateNotificationPreferences(
   preferences: Partial<NotificationPreferences>
 ): Promise<NotificationPreferences> {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+  await requireAuthenticatedUserId();
 
   // Fetch current preferences
   const currentPreferences = await fetchNotificationPreferences();
@@ -55,20 +78,17 @@ export async function updateNotificationPreferences(
     ...preferences,
   };
 
-  // Update in database
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ notification_preferences: updatedPreferences })
-    .eq('id', user.id)
-    .select('notification_preferences')
-    .single();
+  const { data, error } = await customerNotificationPreferencesRpc.rpc(
+    'update_customer_notification_preferences',
+    { p_preferences: updatedPreferences }
+  );
 
   if (error) {
     log.error('Failed to update notification preferences', { error });
     throw error;
   }
 
-  return data.notification_preferences as NotificationPreferences;
+  return data as NotificationPreferences;
 }
 
 /**
@@ -80,7 +100,9 @@ export async function shouldSendNotification(
   userId: string,
   notificationType: string
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc('should_send_notification', {
+  await assertCurrentUserId(userId);
+
+  const { data, error } = await customerNotificationPreferencesRpc.rpc('should_send_notification', {
     user_id: userId,
     notification_type: notificationType,
   });
@@ -91,7 +113,7 @@ export async function shouldSendNotification(
     return true;
   }
 
-  return data as boolean;
+  return data ?? true;
 }
 
 /**

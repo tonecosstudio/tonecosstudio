@@ -17,6 +17,7 @@ import {
   updateWishlistItem,
   type UpdateWishlistItemInput,
 } from "@/lib/wishlist-service";
+import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 
 export default function WishlistArcade() {
   const { user } = useAuth();
@@ -71,7 +72,7 @@ export default function WishlistArcade() {
               <p className="font-mono text-[hsl(0,0%,40%)] text-xs tracking-wider mb-1">INVENTÁRIO VAZIO</p>
               <p className="font-mono text-[hsl(0,0%,25%)] text-[9px] tracking-wider mb-6">Adicione itens pelo catálogo</p>
               <Link
-                to="/catalogo"
+                to={PUBLIC_ROUTES.catalog}
                 className="inline-flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] font-mono uppercase tracking-[0.15em] text-xs h-10 px-8 hover:brightness-110 transition-all"
               >
                 <Crosshair className="w-4 h-4" /> EXPLORAR
@@ -177,7 +178,7 @@ export default function WishlistArcade() {
                               <Edit2 className="w-3 h-3" /> EDITAR
                             </button>
                             <Link
-                              to={`/catalogo/${model?.id}`}
+                              to={model?.id ? catalogModelDetailsPath(model.id) : PUBLIC_ROUTES.catalog}
                               className="flex items-center gap-1 px-3 py-1.5 border border-[hsl(0,0%,18%)] text-[hsl(0,0%,50%)] hover:text-[hsl(var(--gold-accent))] hover:border-[hsl(var(--gold-accent)/0.3)] font-mono text-[9px] uppercase tracking-wider transition-all"
                             >
                               <Eye className="w-3 h-3" /> VER
@@ -209,7 +210,7 @@ export default function WishlistArcade() {
         badge="Explorar"
         title="ENCONTRE NOVOS ITENS"
         description="Descubra modelos incríveis no catálogo"
-        primaryAction={{ label: "CATÁLOGO", href: "/catalogo" }}
+        primaryAction={{ label: "CATÁLOGO", href: PUBLIC_ROUTES.catalog }}
       />
     </Page>
   );

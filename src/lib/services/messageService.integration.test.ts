@@ -32,6 +32,22 @@ const mockInsertedMessage = {
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
+    rpc: vi.fn((name: string, args: Record<string, unknown>) => {
+      if (name === "send_support_message") {
+        return Promise.resolve({
+          data: {
+            ...mockInsertedMessage,
+            conversation_id: args.p_conversation_id,
+            sender_type: args.p_sender_type,
+            message: args.p_message,
+            is_internal: args.p_is_internal,
+          },
+          error: null,
+        });
+      }
+
+      return Promise.resolve({ data: null, error: null });
+    }),
     functions: {
       invoke: vi.fn(() => Promise.resolve({ data: { success: true }, error: null })),
     },

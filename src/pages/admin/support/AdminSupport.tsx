@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,13 +11,19 @@ import { CustomerSidebar } from "@/components/admin/customers/CustomerSidebar";
 import { DashboardMetrics } from "@/components/admin/analytics/DashboardMetrics";
 
 export default function AdminSupport() {
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
+    searchParams.get("conversation"),
+  );
   const [viewMode, setViewMode] = useState<"grouped" | "list">("grouped");
   const [showCustomerSidebar, setShowCustomerSidebar] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("conversation", conversationId);
+    setSearchParams(nextParams, { replace: true });
   };
 
   const handleUserClick = (userId: string) => {

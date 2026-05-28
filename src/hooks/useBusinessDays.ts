@@ -13,6 +13,29 @@ export interface Holiday {
   updated_at: string;
 }
 
+type HolidayQueryRow = Partial<Holiday> & {
+  date?: string;
+};
+
+function toHoliday(row: HolidayQueryRow): Holiday {
+  const holidayDate = row.holiday_date ?? row.date;
+  if (!row.id || !holidayDate || !row.name || !row.created_at) {
+    throw new Error("Invalid holiday row returned from database");
+  }
+
+  return {
+    id: row.id,
+    holiday_date: holidayDate,
+    name: row.name,
+    description: row.description ?? null,
+    type: row.type ?? "national",
+    state_code: row.state_code ?? null,
+    is_recurring: row.is_recurring ?? false,
+    created_at: row.created_at,
+    updated_at: row.updated_at ?? row.created_at,
+  };
+}
+
 export function useHolidays(year?: number) {
   return useQuery({
     queryKey: ["holidays", year],
@@ -31,7 +54,7 @@ export function useHolidays(year?: number) {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as Holiday[];
+      return ((data ?? []) as unknown as HolidayQueryRow[]).map(toHoliday);
     },
     staleTime: 1000 * 60 * 60, // 1 hour
   });
@@ -87,7 +110,7 @@ export function useBusinessDaysInRange(startDate: Date, endDate: Date) {
           .order("holiday_date", { ascending: true });
 
         if (error) throw error;
-        return data as Holiday[];
+        return ((data ?? []) as unknown as HolidayQueryRow[]).map(toHoliday);
       },
       staleTime: 1000 * 60 * 60,
     })),

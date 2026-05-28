@@ -19,7 +19,7 @@ export interface CharacterChoice {
   userId: string;
   customerName: string;
   customerEmail: string;
-  collectionId: string;
+  collectionId: string | null;
   collectionName: string;
   characterId: string | null;
   characterName: string | null;
@@ -56,24 +56,24 @@ export interface ChoiceCollectionFilterOption {
 
 interface RawCharacterChoiceRow {
   id: string;
-  order_id: string;
-  order_type: "subscription_delivery" | "standalone_purchase";
+  order_id: string | null;
+  order_type: string | null;
   user_id: string;
   customer_name: string | null;
   customer_email: string | null;
-  collection_id: string;
+  collection_id: string | null;
   collection_name: string | null;
   character_id: string | null;
   character_name: string | null;
   character_image_url: string | null;
-  status: ChoiceStatus;
+  status: string;
   submitted_at: string | null;
   approved_at: string | null;
   approved_by: string | null;
   approved_by_name: string | null;
   rejected_at: string | null;
   rejection_reason: string | null;
-  deadline: string;
+  deadline: string | null;
   reminders_sent: number | null;
   last_reminder_at: string | null;
   previous_choice_id: string | null;
@@ -83,11 +83,98 @@ interface RawCharacterChoiceRow {
   updated_at: string;
 }
 
+interface AdminChoiceRpcError {
+  message: string;
+}
+
+interface AdminChoiceRpcClient {
+  rpc(
+    name: "admin_approve_character_choice",
+    args: { p_choice_id: string }
+  ): Promise<{ data: string | null; error: AdminChoiceRpcError | null }>;
+  rpc(
+    name: "admin_reject_character_choice",
+    args: { p_choice_id: string; p_reason: string }
+  ): Promise<{ data: string | null; error: AdminChoiceRpcError | null }>;
+  rpc(
+    name: "admin_extend_character_choice_deadline",
+    args: { p_choice_id: string; p_new_deadline: string }
+  ): Promise<{ data: string | null; error: AdminChoiceRpcError | null }>;
+}
+
+const adminChoiceRpc = supabase as unknown as AdminChoiceRpcClient;
+
+interface CharacterChoicesQuery extends PromiseLike<{
+  data: RawCharacterChoiceRow[] | null;
+  error: { message: string } | null;
+}> {
+  eq(column: "order_id", value: string): CharacterChoicesQuery;
+  gte(column: "deadline", value: string): CharacterChoicesQuery;
+  in(column: "status" | "collection_id", values: readonly string[]): CharacterChoicesQuery;
+  lte(column: "deadline", value: string): CharacterChoicesQuery;
+  order(column: "deadline" | "created_at", options?: { ascending?: boolean }): CharacterChoicesQuery;
+}
+
+interface CharacterChoicesGateway {
+  from(table: "character_choices"): {
+    select(columns: "*"): CharacterChoicesQuery;
+  };
+}
+
+const characterChoicesGateway = supabase as unknown as CharacterChoicesGateway;
+
+function isChoiceOrderType(value: string | null): value is CharacterChoice["orderType"] {
+  return value === "subscription_delivery" || value === "standalone_purchase";
+}
+
+function requireChoiceOrderId(value: string | null, choiceId: string): string {
+  if (!value) {
+    throw new Error(`Character choice ${choiceId} is missing order_id`);
+  }
+
+  return value;
+}
+
+function requireChoiceOrderType(value: string | null, choiceId: string): CharacterChoice["orderType"] {
+  if (!isChoiceOrderType(value)) {
+    throw new Error(`Character choice ${choiceId} has an invalid order_type`);
+  }
+
+  return value;
+}
+
+function isChoiceStatus(value: string): value is ChoiceStatus {
+  return (
+    value === "pending" ||
+    value === "submitted" ||
+    value === "approved" ||
+    value === "rejected" ||
+    value === "locked" ||
+    value === "expired"
+  );
+}
+
+function requireChoiceStatus(value: string, choiceId: string): ChoiceStatus {
+  if (!isChoiceStatus(value)) {
+    throw new Error(`Character choice ${choiceId} has an invalid status`);
+  }
+
+  return value;
+}
+
+function requireChoiceDeadline(value: string | null, choiceId: string): string {
+  if (!value) {
+    throw new Error(`Character choice ${choiceId} is missing deadline`);
+  }
+
+  return value;
+}
+
 function mapCharacterChoice(item: RawCharacterChoiceRow): CharacterChoice {
   return {
     id: item.id,
-    orderId: item.order_id,
-    orderType: item.order_type,
+    orderId: requireChoiceOrderId(item.order_id, item.id),
+    orderType: requireChoiceOrderType(item.order_type, item.id),
     userId: item.user_id,
     customerName: item.customer_name || "Unknown",
     customerEmail: item.customer_email || "",
@@ -96,14 +183,14 @@ function mapCharacterChoice(item: RawCharacterChoiceRow): CharacterChoice {
     characterId: item.character_id,
     characterName: item.character_name,
     characterImageUrl: item.character_image_url,
-    status: item.status,
+    status: requireChoiceStatus(item.status, item.id),
     submittedAt: item.submitted_at,
     approvedAt: item.approved_at,
     approvedBy: item.approved_by,
     approvedByName: item.approved_by_name,
     rejectedAt: item.rejected_at,
     rejectionReason: item.rejection_reason,
-    deadline: item.deadline,
+    deadline: requireChoiceDeadline(item.deadline, item.id),
     remindersSent: item.reminders_sent || 0,
     lastReminderAt: item.last_reminder_at,
     previousChoiceId: item.previous_choice_id,
@@ -127,8 +214,7 @@ function mapCharacterChoice(item: RawCharacterChoiceRow): CharacterChoice {
 export async function fetchPendingChoices(
   filters: ChoiceFilters = {}
 ): Promise<CharacterChoice[]> {
-  // Query character_choices without joins - use denormalized fields
-  let query = supabase
+  let query = characterChoicesGateway
     .from("character_choices")
     .select("*")
     .order("deadline", { ascending: true });
@@ -157,8 +243,7 @@ export async function fetchPendingChoices(
     throw new Error(`Error fetching character choices: ${error.message}`);
   }
 
-  // Transform data using denormalized fields
-  const choices: CharacterChoice[] = ((data || []) as RawCharacterChoiceRow[]).map(mapCharacterChoice);
+  const choices = (data || []).map(mapCharacterChoice);
 
   // Apply search filter (client-side for now)
   if (filters.searchQuery && filters.searchQuery.trim()) {
@@ -194,44 +279,13 @@ export async function fetchActiveChoiceCollections(): Promise<ChoiceCollectionFi
  * @returns Updated character choice
  */
 export async function approveChoice(choiceId: string): Promise<CharacterChoice> {
-  // Get current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { error } = await adminChoiceRpc.rpc("admin_approve_character_choice", {
+    p_choice_id: choiceId,
+  });
 
-  if (!user) {
-    throw new Error("User not authenticated");
+  if (error) {
+    throw new Error(`Error approving choice: ${error.message}`);
   }
-
-  // Get user profile for name
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, email")
-    .eq("id", user.id)
-    .single();
-
-  const approverName = profile?.full_name || profile?.email || "Admin";
-
-  // Update choice
-  const { data, error } = await supabase
-    .from("character_choices")
-    .update({
-      status: "approved",
-      approved_at: new Date().toISOString(),
-      approved_by: user.id,
-      approved_by_name: approverName,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", choiceId)
-    .select()
-    .single();
-
-  if (error || !data) {
-    throw new Error(`Error approving choice: ${error?.message || "Update failed"}`);
-  }
-
-  // TODO: Update production_queue.choice_status to 'approved'
-  // TODO: Send notification to customer
 
   // Fetch full choice data
   const choices = await fetchPendingChoices({});
@@ -255,25 +309,14 @@ export async function rejectChoice(
   choiceId: string,
   reason: string
 ): Promise<CharacterChoice> {
-  // Update choice
-  const { data, error } = await supabase
-    .from("character_choices")
-    .update({
-      status: "rejected",
-      rejected_at: new Date().toISOString(),
-      rejection_reason: reason,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", choiceId)
-    .select()
-    .single();
+  const { error } = await adminChoiceRpc.rpc("admin_reject_character_choice", {
+    p_choice_id: choiceId,
+    p_reason: reason,
+  });
 
-  if (error || !data) {
-    throw new Error(`Error rejecting choice: ${error?.message || "Update failed"}`);
+  if (error) {
+    throw new Error(`Error rejecting choice: ${error.message}`);
   }
-
-  // TODO: Update production_queue.choice_status to 'rejected'
-  // TODO: Send notification to customer with reason
 
   // Fetch full choice data
   const choices = await fetchPendingChoices({});
@@ -297,23 +340,14 @@ export async function extendDeadline(
   choiceId: string,
   newDeadline: string
 ): Promise<CharacterChoice> {
-  // Update choice
-  const { data, error } = await supabase
-    .from("character_choices")
-    .update({
-      deadline: newDeadline,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", choiceId)
-    .select()
-    .single();
+  const { error } = await adminChoiceRpc.rpc("admin_extend_character_choice_deadline", {
+    p_choice_id: choiceId,
+    p_new_deadline: newDeadline,
+  });
 
-  if (error || !data) {
-    throw new Error(`Error extending deadline: ${error?.message || "Update failed"}`);
+  if (error) {
+    throw new Error(`Error extending deadline: ${error.message}`);
   }
-
-  // TODO: Update production_queue.choice_deadline
-  // TODO: Send notification to customer about extension
 
   // Fetch full choice data
   const choices = await fetchPendingChoices({});
@@ -333,8 +367,7 @@ export async function extendDeadline(
  * @returns Array of character choices (history)
  */
 export async function getChoiceHistory(orderId: string): Promise<CharacterChoice[]> {
-  // Query character_choices without joins - use denormalized fields
-  const { data, error } = await supabase
+  const { data, error } = await characterChoicesGateway
     .from("character_choices")
     .select("*")
     .eq("order_id", orderId)
@@ -344,6 +377,5 @@ export async function getChoiceHistory(orderId: string): Promise<CharacterChoice
     throw new Error(`Error fetching choice history: ${error.message}`);
   }
 
-  // Transform data using denormalized fields
-  return ((data || []) as RawCharacterChoiceRow[]).map(mapCharacterChoice);
+  return (data || []).map(mapCharacterChoice);
 }

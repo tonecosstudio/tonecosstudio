@@ -13,10 +13,25 @@ vi.mock("@/hooks/use-toast", () => ({
     toast: vi.fn(),
   }),
 }));
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { id: "user-123" },
+    isLoading: false,
+  }),
+}));
 
 describe("CreateGroupModal", () => {
   const mockOnOpenChange = vi.fn();
   const mockOnSuccess = vi.fn();
+
+  const selectOption = async (
+    user: ReturnType<typeof userEvent.setup>,
+    fieldName: string,
+    optionName: string
+  ) => {
+    await user.click(screen.getByRole("combobox", { name: fieldName }));
+    await user.click(await screen.findByRole("option", { name: optionName }));
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -101,7 +116,7 @@ describe("CreateGroupModal", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Nome deve ter no máximo 100 caracteres")).toBeInTheDocument();
+      expect(screen.getByText("Nome deve ter no maximo 100 caracteres")).toBeInTheDocument();
     });
   });
 
@@ -129,10 +144,7 @@ describe("CreateGroupModal", () => {
     await user.type(nameInput, "Grupo Teste");
 
     // Selecionar tipo
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const manualOption = await screen.findByText("Manual");
-    await user.click(manualOption);
+    await selectOption(user, "Tipo de Grupo", "Manual");
 
     // Submeter
     const submitButton = screen.getByRole("button", { name: /criar grupo/i });
@@ -158,15 +170,12 @@ describe("CreateGroupModal", () => {
     );
 
     // Selecionar tipo assinantes
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const assinantesOption = await screen.findByText("Assinantes");
-    await user.click(assinantesOption);
+    await selectOption(user, "Tipo de Grupo", "Assinantes");
 
     // Verificar inputs condicionais
     await waitFor(() => {
       expect(screen.getByText("Filtros de Assinantes")).toBeInTheDocument();
-      expect(screen.getByLabelText("Coleção (Opcional)")).toBeInTheDocument();
+      expect(screen.getByLabelText("Colecao (Opcional)")).toBeInTheDocument();
       expect(screen.getByLabelText("Plano (Opcional)")).toBeInTheDocument();
     });
   });
@@ -199,10 +208,7 @@ describe("CreateGroupModal", () => {
     await user.type(nameInput, "Assinantes Premium");
 
     // Selecionar tipo
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const assinantesOption = await screen.findByText("Assinantes");
-    await user.click(assinantesOption);
+    await selectOption(user, "Tipo de Grupo", "Assinantes");
 
     // Preencher plano
     await waitFor(() => {
@@ -237,15 +243,12 @@ describe("CreateGroupModal", () => {
     );
 
     // Selecionar tipo coleção
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const colecaoOption = await screen.findByText("Coleção");
-    await user.click(colecaoOption);
+    await selectOption(user, "Tipo de Grupo", "Colecao");
 
     // Verificar inputs condicionais
     await waitFor(() => {
-      expect(screen.getByText("Seleção de Coleção")).toBeInTheDocument();
-      expect(screen.getByLabelText("Coleção *")).toBeInTheDocument();
+      expect(screen.getByText("Selecao de Colecao")).toBeInTheDocument();
+      expect(screen.getByLabelText("Colecao *")).toBeInTheDocument();
     });
   });
 
@@ -261,10 +264,7 @@ describe("CreateGroupModal", () => {
     await user.type(nameInput, "Grupo Coleção");
 
     // Selecionar tipo coleção
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const colecaoOption = await screen.findByText("Coleção");
-    await user.click(colecaoOption);
+    await selectOption(user, "Tipo de Grupo", "Colecao");
 
     // Submeter sem selecionar coleção
     const submitButton = screen.getByRole("button", { name: /criar grupo/i });
@@ -276,27 +276,24 @@ describe("CreateGroupModal", () => {
     });
   });
 
-  it("deve mostrar inputs condicionais para tipo lançamentos", async () => {
+  it("deve mostrar inputs condicionais para tipo lancamentos", async () => {
     const user = userEvent.setup();
 
     renderWithProviders(
       <CreateGroupModal open={true} onOpenChange={mockOnOpenChange} onSuccess={mockOnSuccess} />
     );
 
-    // Selecionar tipo lançamentos
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const lancamentosOption = await screen.findByText("Lançamentos");
-    await user.click(lancamentosOption);
+    // Selecionar tipo lancamentos
+    await selectOption(user, "Tipo de Grupo", "Lancamentos");
 
     // Verificar inputs condicionais
     await waitFor(() => {
-      expect(screen.getByText("Critério de Lançamento")).toBeInTheDocument();
-      expect(screen.getByLabelText("Critério *")).toBeInTheDocument();
+      expect(screen.getByText("Criterio de Lancamento")).toBeInTheDocument();
+      expect(screen.getByLabelText("Criterio *")).toBeInTheDocument();
     });
   });
 
-  it("deve criar grupo de lançamentos com critério", async () => {
+  it("deve criar grupo de lancamentos com criterio", async () => {
     const user = userEvent.setup();
 
     vi.mocked(groupService.createGroup).mockResolvedValue({
@@ -323,19 +320,13 @@ describe("CreateGroupModal", () => {
     await user.type(nameInput, "Novos Lançamentos");
 
     // Selecionar tipo
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const lancamentosOption = await screen.findByText("Lançamentos");
-    await user.click(lancamentosOption);
+    await selectOption(user, "Tipo de Grupo", "Lancamentos");
 
-    // Selecionar critério
+    // Selecionar criterio
     await waitFor(() => {
-      expect(screen.getByLabelText("Critério *")).toBeInTheDocument();
+      expect(screen.getByLabelText("Criterio *")).toBeInTheDocument();
     });
-    const criteriaSelect = screen.getByLabelText("Critério *");
-    await user.click(criteriaSelect);
-    const allUsersOption = await screen.findByText("Todos os usuários");
-    await user.click(allUsersOption);
+    await selectOption(user, "Criterio *", "Todos os usuarios");
 
     // Submeter
     const submitButton = screen.getByRole("button", { name: /criar grupo/i });
@@ -362,17 +353,14 @@ describe("CreateGroupModal", () => {
     );
 
     // Selecionar tipo pedidos
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const pedidosOption = await screen.findByText("Pedidos");
-    await user.click(pedidosOption);
+    await selectOption(user, "Tipo de Grupo", "Pedidos");
 
     // Verificar inputs condicionais
     await waitFor(() => {
       expect(screen.getByText("Filtros de Pedidos")).toBeInTheDocument();
       expect(screen.getByText("Status dos Pedidos")).toBeInTheDocument();
-      expect(screen.getByLabelText("Data Inicial (Opcional)")).toBeInTheDocument();
-      expect(screen.getByLabelText("Data Final (Opcional)")).toBeInTheDocument();
+      expect(screen.getByLabelText("Data Inicial")).toBeInTheDocument();
+      expect(screen.getByLabelText("Data Final")).toBeInTheDocument();
     });
   });
 
@@ -404,10 +392,7 @@ describe("CreateGroupModal", () => {
     await user.type(nameInput, "Pedidos Pendentes");
 
     // Selecionar tipo
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const pedidosOption = await screen.findByText("Pedidos");
-    await user.click(pedidosOption);
+    await selectOption(user, "Tipo de Grupo", "Pedidos");
 
     // Selecionar status
     await waitFor(() => {
@@ -419,7 +404,7 @@ describe("CreateGroupModal", () => {
     await user.click(processandoCheckbox);
 
     // Preencher data inicial
-    const dateFromInput = screen.getByLabelText("Data Inicial (Opcional)");
+    const dateFromInput = screen.getByLabelText("Data Inicial");
     await user.type(dateFromInput, "2024-01-01");
 
     // Submeter
@@ -469,10 +454,7 @@ describe("CreateGroupModal", () => {
     const nameInput = screen.getByLabelText("Nome do Grupo");
     await user.type(nameInput, "Grupo Teste");
 
-    const typeSelect = screen.getByLabelText("Tipo de Grupo");
-    await user.click(typeSelect);
-    const manualOption = await screen.findByText("Manual");
-    await user.click(manualOption);
+    await selectOption(user, "Tipo de Grupo", "Manual");
 
     // Submeter
     const submitButton = screen.getByRole("button", { name: /criar grupo/i });

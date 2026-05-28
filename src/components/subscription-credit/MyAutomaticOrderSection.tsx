@@ -13,7 +13,7 @@ import { ptBR } from 'date-fns/locale';
 import { useAutomaticSubscriptionOrder } from '@/hooks/subscription/useSubscriptionCreditQueries';
 
 interface MyAutomaticOrderSectionProps {
-  subscriptionId: number;
+  subscriptionId: string;
 }
 
 export function MyAutomaticOrderSection({ subscriptionId }: MyAutomaticOrderSectionProps) {

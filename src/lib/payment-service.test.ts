@@ -1,21 +1,19 @@
-/**
- * PaymentService Tests
- *
- * Tests for payment service CRUD operations and status transitions
- * Requirements: 2.5-2.10, 8.1-8.10
- */
-
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
-  createPayment,
-  updatePaymentStatus,
   approvePayment,
+  createPayment,
   rejectPayment,
   requestPaymentInfo,
+  updatePaymentStatus,
 } from "./payment-service";
+import { supabase } from "@/integrations/supabase/client";
 import type { ManualPaymentInput } from "@/types/manual-payment";
 
-// Mock Supabase client
+const approveManualPaymentWithNotification = vi.fn();
+const rejectManualPaymentWithNotification = vi.fn();
+const requestManualPaymentInfoRpc = vi.fn();
+const updateManualPaymentStatus = vi.fn();
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
@@ -26,17 +24,31 @@ vi.mock("@/integrations/supabase/client", () => ({
         })
       ),
     },
-    from: vi.fn(() => ({
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() =>
-            Promise.resolve({
-              data: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+  },
+}));
+
+vi.mock("@/services/admin/admin-order-status-service", () => ({
+  approveManualPaymentWithNotification,
+  rejectManualPaymentWithNotification,
+  requestManualPaymentInfoRpc,
+  updateManualPaymentStatus,
+}));
+
+describe("PaymentService", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(supabase.rpc).mockImplementation((functionName: string) =>
+      Promise.resolve({
+        data:
+          functionName === "create_manual_payment_for_current_user"
+            ? {
                 id: "test-payment-id",
                 reference_number: "PAY-20260216-1234",
                 user_id: "test-user-id",
                 payment_method_id: "test-method-id",
-                amount: 100.0,
+                amount: 100,
                 currency: "BRL",
                 payment_type: "one_time",
                 status: "pending",
@@ -44,140 +56,85 @@ vi.mock("@/integrations/supabase/client", () => ({
                 subscription_id: null,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-              },
-              error: null,
-            })
-          ),
-        })),
-      })),
+              }
+            : "ok",
+        error: null,
+      })
+    );
+    vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           maybeSingle: vi.fn(() =>
             Promise.resolve({
-              data: {
-                id: "test-payment-id",
-                status: "pending",
-              },
+              data: { id: "test-payment-id", status: "pending" },
               error: null,
             })
           ),
           single: vi.fn(() =>
             Promise.resolve({
-              data: {
-                id: "test-payment-id",
-                status: "pending",
-              },
+              data: { id: "test-payment-id", status: "pending" },
               error: null,
             })
           ),
         })),
       })),
       update: vi.fn(() => ({
-        eq: vi.fn(() =>
-          Promise.resolve({
-            data: null,
-            error: null,
-          })
-        ),
+        eq: vi.fn(() => Promise.resolve({ data: null, error: null })),
       })),
-    })),
-    rpc: vi.fn(() =>
-      Promise.resolve({
-        data: "PAY-20260216-1234",
-        error: null,
-      })
-    ),
-  },
-}));
+    } as any);
+  });
 
-vi.mock("./notification-service", () => ({
-  getNotificationService: () => ({
-    sendPaymentCreated: vi.fn().mockResolvedValue(undefined),
-    sendPaymentUnderReview: vi.fn().mockResolvedValue(undefined),
-    sendPaymentApproved: vi.fn().mockResolvedValue(undefined),
-    sendPaymentRejected: vi.fn().mockResolvedValue(undefined),
-    sendInfoRequested: vi.fn().mockResolvedValue(undefined),
-  }),
-}));
-
-describe("PaymentService", () => {
   describe("createPayment", () => {
     it("should create a payment with valid data", async () => {
       const input: ManualPaymentInput = {
         payment_method_id: "test-method-id",
         quote_id: "test-quote-id",
-        amount: 100.0,
+        amount: 100,
         currency: "BRL",
         payment_type: "one_time",
       };
 
       const payment = await createPayment(input);
 
-      expect(payment).toBeDefined();
       expect(payment.reference_number).toBe("PAY-20260216-1234");
       expect(payment.status).toBe("pending");
-      expect(payment.amount).toBe(100.0);
-    });
-
-    it("should reject payment without payment_method_id", async () => {
-      const input: ManualPaymentInput = {
-        payment_method_id: "",
-        quote_id: "test-quote-id",
-        amount: 100.0,
-        payment_type: "one_time",
-      };
-
-      await expect(createPayment(input)).rejects.toThrow("Payment method is required");
-    });
-
-    it("should reject payment with zero amount", async () => {
-      const input: ManualPaymentInput = {
-        payment_method_id: "test-method-id",
-        quote_id: "test-quote-id",
-        amount: 0,
-        payment_type: "one_time",
-      };
-
-      await expect(createPayment(input)).rejects.toThrow(
-        "Payment amount must be greater than zero"
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "create_manual_payment_for_current_user",
+        expect.objectContaining({
+          p_payment_method_id: "test-method-id",
+          p_quote_id: "test-quote-id",
+          p_amount: 100,
+        })
       );
     });
 
-    it("should reject payment with both quote_id and subscription_id", async () => {
-      const input: ManualPaymentInput = {
-        payment_method_id: "test-method-id",
-        quote_id: "test-quote-id",
-        subscription_id: "test-subscription-id",
-        amount: 100.0,
-        payment_type: "one_time",
-      };
+    it("should reject invalid create payment input", async () => {
+      await expect(
+        createPayment({
+          payment_method_id: "",
+          quote_id: "test-quote-id",
+          amount: 100,
+          payment_type: "one_time",
+        })
+      ).rejects.toThrow("Payment method is required");
 
-      await expect(createPayment(input)).rejects.toThrow(
-        "Payment must be linked to either a quote or subscription, but not both"
-      );
-    });
-
-    it("should reject payment with neither quote_id nor subscription_id", async () => {
-      const input: ManualPaymentInput = {
-        payment_method_id: "test-method-id",
-        amount: 100.0,
-        payment_type: "one_time",
-      };
-
-      await expect(createPayment(input)).rejects.toThrow(
-        "Payment must be linked to either a quote or subscription, but not both"
-      );
+      await expect(
+        createPayment({
+          payment_method_id: "test-method-id",
+          quote_id: "test-quote-id",
+          amount: 0,
+          payment_type: "one_time",
+        })
+      ).rejects.toThrow("Payment amount must be greater than zero");
     });
   });
 
   describe("updatePaymentStatus", () => {
     it("should allow transition from pending to under_review", async () => {
-      await expect(updatePaymentStatus("test-payment-id", "under_review")).resolves.not.toThrow();
+      await expect(updatePaymentStatus("test-payment-id", "under_review")).resolves.toBeUndefined();
     });
 
-    it("should reject invalid status transition from approved", async () => {
-      // Mock payment with approved status
-      const { supabase } = await import("@/integrations/supabase/client");
+    it("should reject final-state transitions", async () => {
       vi.mocked(supabase.from).mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -192,756 +149,41 @@ describe("PaymentService", () => {
       } as any);
 
       await expect(updatePaymentStatus("test-payment-id", "pending")).rejects.toThrow(
-        "Invalid status transition from 'approved' to 'pending'"
+        "não é permitida"
       );
-    });
-
-    it("should allow transition from rejected to under_review (re-submission)", async () => {
-      // Mock payment with rejected status
-      const { supabase } = await import("@/integrations/supabase/client");
-      vi.mocked(supabase.from).mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() =>
-              Promise.resolve({
-                data: { status: "rejected" },
-                error: null,
-              })
-            ),
-          })),
-        })),
-      } as any);
-
-      await expect(updatePaymentStatus("test-payment-id", "under_review")).resolves.not.toThrow();
     });
   });
 
-  describe("rejectPayment", () => {
-    it("should reject payment with reason", async () => {
-      await expect(
-        rejectPayment("test-payment-id", "admin-id", "Invalid proof")
-      ).resolves.not.toThrow();
+  describe("admin payment transitions", () => {
+    it("should delegate approval to the admin notification boundary", async () => {
+      await approvePayment("test-payment-id", "admin-id");
+
+      expect(approveManualPaymentWithNotification).toHaveBeenCalledWith("test-payment-id");
     });
 
-    it("should require rejection reason", async () => {
+    it("should require and delegate rejection reason", async () => {
       await expect(rejectPayment("test-payment-id", "admin-id", "")).rejects.toThrow(
         "Rejection reason is required"
       );
-    });
 
-    it("should create audit log entry on rejection", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const insertSpy = vi.fn(() => ({
-        data: null,
-        error: null,
-      }));
+      await rejectPayment("test-payment-id", "admin-id", " Invalid proof ");
 
-      // Mock all database calls for getPaymentById and rejectPayment
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: insertSpy,
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await rejectPayment("test-payment-id", "admin-id", "Invalid proof");
-
-      expect(insertSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payment_id: "test-payment-id",
-          action_type: "rejected",
-          admin_id: "admin-id",
-          old_status: "under_review",
-          new_status: "rejected",
-          notes: "Invalid proof",
-        })
+      expect(rejectManualPaymentWithNotification).toHaveBeenCalledWith(
+        "test-payment-id",
+        "Invalid proof"
       );
     });
 
-    it("should leave rejection conversation messaging to edge functions", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Mock all database calls for getPaymentById and rejectPayment
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: vi.fn(() => ({ data: null, error: null })),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await rejectPayment("test-payment-id", "admin-id", "Invalid proof");
-
-      // Conversation messages are emitted by Edge Functions, not this service.
-      expect(supabase.from).not.toHaveBeenCalledWith("support_messages");
-    });
-  });
-
-  describe("requestPaymentInfo", () => {
-    it("should request info with message", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Mock all database calls
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { status: "under_review" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: vi.fn(() => ({ data: null, error: null })),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await expect(
-        requestPaymentInfo("test-payment-id", "admin-id", "Please provide clearer image")
-      ).resolves.not.toThrow();
-    });
-
-    it("should require message", async () => {
+    it("should require and delegate info request message", async () => {
       await expect(requestPaymentInfo("test-payment-id", "admin-id", "")).rejects.toThrow(
-        "Message is required when requesting more information"
+        "Message is required"
       );
-    });
 
-    it("should create audit log entry when requesting info", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const insertSpy = vi.fn(() => ({
-        data: null,
-        error: null,
-      }));
+      await requestPaymentInfo("test-payment-id", "admin-id", " Please provide clearer image ");
 
-      // Mock all database calls
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { status: "under_review" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: insertSpy,
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await requestPaymentInfo("test-payment-id", "admin-id", "Please provide clearer image");
-
-      expect(insertSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payment_id: "test-payment-id",
-          action_type: "info_requested",
-          admin_id: "admin-id",
-          old_status: "under_review",
-          new_status: "requires_info",
-          notes: "Please provide clearer image",
-        })
-      );
-    });
-
-    it("should leave info request conversation messaging to edge functions", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Mock all database calls
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { status: "under_review" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: vi.fn(() => ({ data: null, error: null })),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await requestPaymentInfo("test-payment-id", "admin-id", "Please provide clearer image");
-
-      // Conversation messages are emitted by Edge Functions, not this service.
-      expect(supabase.from).not.toHaveBeenCalledWith("support_messages");
-    });
-  });
-
-  describe("approvePayment", () => {
-    it("should approve payment successfully", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Mock all database calls
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { status: "under_review" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: vi.fn(() => ({ data: null, error: null })),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await expect(approvePayment("test-payment-id", "admin-id")).resolves.not.toThrow();
-    });
-
-    it("should create audit log entry on approval", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const insertSpy = vi.fn(() => ({
-        data: null,
-        error: null,
-      }));
-
-      // Mock all database calls
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { status: "under_review" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: insertSpy,
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await approvePayment("test-payment-id", "admin-id");
-
-      expect(insertSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payment_id: "test-payment-id",
-          action_type: "approved",
-          admin_id: "admin-id",
-          old_status: "under_review",
-          new_status: "approved",
-          notes: "Payment approved by admin",
-        })
-      );
-    });
-
-    it("should leave approval conversation messaging to edge functions", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Mock all database calls
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === "manual_payments") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: {
-                      id: "test-payment-id",
-                      status: "under_review",
-                      user_id: "test-user-id",
-                      payment_method: {},
-                      files: [],
-                      audit_logs: [],
-                      conversation: { id: "test-conversation-id" },
-                    },
-                    error: null,
-                  })
-                ),
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { status: "under_review" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-            update: vi.fn(() => ({
-              eq: vi.fn(() =>
-                Promise.resolve({
-                  data: null,
-                  error: null,
-                })
-              ),
-            })),
-          } as any;
-        }
-        if (table === "profiles") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { full_name: "Test User", email: "test@example.com" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "support_conversations") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(() =>
-                  Promise.resolve({
-                    data: { id: "test-conversation-id" },
-                    error: null,
-                  })
-                ),
-              })),
-            })),
-          } as any;
-        }
-        if (table === "payment_audit_log") {
-          return {
-            insert: vi.fn(() => ({ data: null, error: null })),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await approvePayment("test-payment-id", "admin-id");
-
-      // Conversation messages are emitted by Edge Functions, not this service.
-      expect(supabase.from).not.toHaveBeenCalledWith("support_messages");
-    });
-
-    it("should throw error if payment not found", async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-
-      // Mock getPaymentById to return null
-      vi.mocked(supabase.from).mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            maybeSingle: vi.fn(() =>
-              Promise.resolve({
-                data: null,
-                error: null,
-              })
-            ),
-          })),
-        })),
-      } as any);
-
-      await expect(approvePayment("non-existent-id", "admin-id")).rejects.toThrow(
-        "Payment not found"
+      expect(requestManualPaymentInfoRpc).toHaveBeenCalledWith(
+        "test-payment-id",
+        "Please provide clearer image"
       );
     });
   });

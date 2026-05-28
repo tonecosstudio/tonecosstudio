@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assignCollectionsToTierRpc } from "@/services/admin/admin-config-mutations-service";
 
 export interface CollectionForTierAssignment {
   id: string;
@@ -39,21 +40,5 @@ export async function saveCollectionsForTierAssignment(input: {
   tierId: string;
   collectionIds: string[];
 }): Promise<void> {
-  const { error: unassignError } = await supabase
-    .from("collection_tier_assignments")
-    .delete()
-    .eq("tier_id", input.tierId);
-  if (unassignError) throw unassignError;
-
-  if (input.collectionIds.length === 0) return;
-
-  const assignments = input.collectionIds.map((collectionId) => ({
-    collection_id: collectionId,
-    tier_id: input.tierId,
-  }));
-
-  const { error: assignError } = await supabase
-    .from("collection_tier_assignments")
-    .insert(assignments);
-  if (assignError) throw assignError;
+  await assignCollectionsToTierRpc(input);
 }

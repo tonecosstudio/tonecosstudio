@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { HistoricalCycles } from "./HistoricalCycles";
 import { useHistoricalCycles } from "@/hooks/admin/useHistoricalCycles";
+import { adminCyclesPath } from "@/config/routes";
 
 vi.mock("@/hooks/admin/useHistoricalCycles", () => ({
   useHistoricalCycles: vi.fn(),
@@ -122,7 +123,7 @@ describe("HistoricalCycles", () => {
     const detailButtons = screen.getAllByText("Ver Detalhes");
     await user.click(detailButtons[0]);
 
-    expect(mockNavigate).toHaveBeenCalledWith("/admin/cycle-dashboard?month=5&year=2026");
+    expect(mockNavigate).toHaveBeenCalledWith(adminCyclesPath({ month: 5, year: 2026 }));
   });
 
   it("should show empty state", () => {

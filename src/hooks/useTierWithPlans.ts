@@ -8,7 +8,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { PricingTierWithPlans } from "@/types/pricing-restructure";
+import type { PricingTierWithPlans, SubscriptionPlanWithTier } from "@/types/pricing-restructure";
 
 // =====================================================
 // QUERY KEYS
@@ -18,6 +18,89 @@ export const tierWithPlansKeys = {
   all: ["tier-with-plans"] as const,
   detail: (tierId: string) => [...tierWithPlansKeys.all, tierId] as const,
 };
+
+type PricingTierViewRow = {
+  tier_id: string | null;
+  tier_name: string | null;
+  tier_description: string | null;
+  tier_price_base?: number | null;
+  tier_base_price?: number | null;
+  tier_price_pix_base?: number | null;
+  tier_deposit?: number | null;
+  tier_is_active: boolean | null;
+  tier_is_default: boolean | null;
+  tier_display_order?: number | null;
+  assigned_collections_count?: number | null;
+  active_subscriptions_count?: number | null;
+};
+
+type SubscriptionPlanQueryRow = Partial<SubscriptionPlanWithTier> & {
+  id: string;
+  tier_id: string | null;
+  name: string;
+  description: string | null;
+  price?: number | null;
+  plan_type?: string | null;
+  billing_interval?: string | null;
+  deliveries_per_cycle?: number | null;
+};
+
+function requireText(value: string | null | undefined, fieldName: string): string {
+  if (!value) {
+    throw new Error(`Invalid pricing tier row: missing ${fieldName}`);
+  }
+
+  return value;
+}
+
+function toSubscriptionPlanWithTier(row: SubscriptionPlanQueryRow): SubscriptionPlanWithTier {
+  const priceFull = row.price_full ?? row.price ?? 0;
+  const planMode = row.plan_mode ?? row.plan_type ?? row.billing_interval ?? "standalone";
+
+  return {
+    id: row.id,
+    tier_id: requireText(row.tier_id, "plan.tier_id"),
+    plan_mode: planMode as SubscriptionPlanWithTier["plan_mode"],
+    plan_type: row.plan_type ?? planMode,
+    name: row.name,
+    description: row.description,
+    price_full: priceFull,
+    price_pix: row.price_pix ?? priceFull,
+    price_multiplier: row.price_multiplier ?? 1,
+    collections_count: row.collections_count ?? 1,
+    deliveries_total: row.deliveries_total ?? row.deliveries_per_cycle ?? 1,
+    includes_bonus: row.includes_bonus ?? false,
+    can_switch: row.can_switch ?? true,
+    switch_limit: row.switch_limit ?? null,
+    switch_cutoff_days: row.switch_cutoff_days ?? 15,
+    max_installments: row.max_installments ?? 1,
+    is_active: row.is_active ?? true,
+    display_order: row.display_order ?? 0,
+    created_at: requireText(row.created_at, "plan.created_at"),
+    updated_at: requireText(row.updated_at, "plan.updated_at"),
+  };
+}
+
+function toPricingTierWithPlans(
+  tier: PricingTierViewRow,
+  plans: SubscriptionPlanWithTier[],
+): PricingTierWithPlans {
+  const tierPriceBase = tier.tier_price_base ?? tier.tier_base_price ?? 0;
+
+  return {
+    tier_id: requireText(tier.tier_id, "tier_id"),
+    tier_name: requireText(tier.tier_name, "tier_name"),
+    tier_description: tier.tier_description,
+    tier_price_base: tierPriceBase,
+    tier_price_pix_base: tier.tier_price_pix_base ?? tierPriceBase,
+    tier_deposit: tier.tier_deposit ?? 0,
+    tier_is_active: tier.tier_is_active ?? true,
+    tier_is_default: tier.tier_is_default ?? false,
+    plans,
+    assigned_collections_count: tier.assigned_collections_count ?? 0,
+    total_active_subscriptions: tier.active_subscriptions_count ?? 0,
+  };
+}
 
 // =====================================================
 // QUERIES
@@ -50,11 +133,13 @@ export function useTierWithPlans(tierId: string | null | undefined) {
         throw new Error(`Erro ao buscar nível: ${viewError.message}`);
       }
 
-      if (!viewData || viewData.length === 0) {
+      const tierRows = (viewData ?? []) as unknown as PricingTierViewRow[];
+
+      if (tierRows.length === 0) {
         return null;
       }
 
-      const tierData = viewData[0];
+      const tierData = tierRows[0];
 
       // Buscar planos do nível
       const { data: plansData, error: plansError } = await supabase
@@ -67,22 +152,10 @@ export function useTierWithPlans(tierId: string | null | undefined) {
         throw new Error(`Erro ao buscar planos: ${plansError.message}`);
       }
 
-      // Montar resultado consolidado
-      const result: PricingTierWithPlans = {
-        tier_id: tierData.tier_id,
-        tier_name: tierData.tier_name,
-        tier_description: tierData.tier_description,
-        tier_price_base: tierData.tier_price_base,
-        tier_price_pix_base: tierData.tier_price_pix_base,
-        tier_deposit: tierData.tier_deposit,
-        tier_is_active: tierData.tier_is_active,
-        tier_is_default: tierData.tier_is_default,
-        plans: plansData,
-        assigned_collections_count: tierData.assigned_collections_count || 0,
-        total_active_subscriptions: tierData.active_subscriptions_count || 0,
-      };
+      const plans = ((plansData ?? []) as unknown as SubscriptionPlanQueryRow[])
+        .map(toSubscriptionPlanWithTier);
 
-      return result;
+      return toPricingTierWithPlans(tierData, plans);
     },
     enabled: !!tierId,
     staleTime: 2 * 60 * 1000, // 2 minutos
@@ -126,18 +199,23 @@ export function useAllTiersWithPlans() {
       }
 
       // Agrupar planos por tier_id
-      const plansByTier = plansData.reduce((acc, plan) => {
+      const plans = ((plansData ?? []) as unknown as SubscriptionPlanQueryRow[])
+        .map(toSubscriptionPlanWithTier);
+
+      const plansByTier = plans.reduce((acc, plan) => {
         if (!plan.tier_id) return acc;
         if (!acc[plan.tier_id]) {
           acc[plan.tier_id] = [];
         }
         acc[plan.tier_id].push(plan);
         return acc;
-      }, {} as Record<string, typeof plansData>);
+      }, {} as Record<string, SubscriptionPlanWithTier[]>);
 
       // Agrupar dados da view por tier_id (pegar primeiro registro de cada tier)
-      const tierStatsMap = new Map<string, typeof tiersData[0]>();
-      tiersData.forEach((row) => {
+      const tierRows = (tiersData ?? []) as unknown as PricingTierViewRow[];
+      const tierStatsMap = new Map<string, PricingTierViewRow>();
+      tierRows.forEach((row) => {
+        if (!row.tier_id) return;
         if (!tierStatsMap.has(row.tier_id)) {
           tierStatsMap.set(row.tier_id, row);
         }
@@ -147,19 +225,7 @@ export function useAllTiersWithPlans() {
       const uniqueTierIds = Array.from(tierStatsMap.keys());
       const results: PricingTierWithPlans[] = uniqueTierIds.map((tierId) => {
         const tier = tierStatsMap.get(tierId)!;
-        return {
-          tier_id: tier.tier_id,
-          tier_name: tier.tier_name,
-          tier_description: tier.tier_description,
-          tier_price_base: tier.tier_price_base,
-          tier_price_pix_base: tier.tier_price_pix_base,
-          tier_deposit: tier.tier_deposit,
-          tier_is_active: tier.tier_is_active,
-          tier_is_default: tier.tier_is_default,
-          plans: plansByTier[tierId] || [],
-          assigned_collections_count: tier.assigned_collections_count || 0,
-          total_active_subscriptions: tier.active_subscriptions_count || 0,
-        };
+        return toPricingTierWithPlans(tier, plansByTier[tierId] || []);
       });
 
       return results;

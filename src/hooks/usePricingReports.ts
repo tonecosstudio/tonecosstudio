@@ -16,6 +16,7 @@ import type {
   ConversionByTierReport,
 } from "@/types/pricing-tiers";
 import { getPricingReportsSchema } from "@/lib/validations/pricing-tiers";
+import { fetchPricingTiersWithStats } from "./usePricingTiers";
 
 type PricingReportCsvData =
   | CollectionsByTierReport[]
@@ -48,16 +49,7 @@ export function useCollectionsByTierReport(dateRange?: { start: string; end: str
   return useQuery({
     queryKey: pricingReportsKeys.collectionsByTier(dateRange),
     queryFn: async () => {
-      // Buscar níveis com contagem de coleções
-      const { data, error } = await supabase
-        .from("pricing_tier_stats")
-        .select("*")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-
-      if (error) {
-        throw new Error(`Erro ao buscar relatório: ${error.message}`);
-      }
+      const data = (await fetchPricingTiersWithStats()).filter((tier) => tier.is_active);
 
       // Transformar para formato do relatório
       const report: CollectionsByTierReport[] = data.map((tier) => ({
@@ -170,15 +162,7 @@ export function usePricingReport(input: GetPricingReportsInput) {
 
       // Para relatório de coleções, usar query direta (mais rápido)
       if (validated.reportType === "collections_by_tier") {
-        const { data, error } = await supabase
-          .from("pricing_tier_stats")
-          .select("*")
-          .eq("is_active", true)
-          .order("display_order", { ascending: true });
-
-        if (error) {
-          throw new Error(`Erro ao buscar relatório: ${error.message}`);
-        }
+        const data = (await fetchPricingTiersWithStats()).filter((tier) => tier.is_active);
 
         return data.map((tier) => ({
           tier_id: tier.id,
@@ -289,9 +273,9 @@ export function exportReportToCSV(
     const headers = ["Nível", "Visualizações", "Compras", "Taxa de Conversão"];
     const rows = (data as ConversionByTierReport[]).map((item) => [
       item.tier_name,
-      item.views.toString(),
+      item.views === null ? "N/A" : item.views.toString(),
       item.purchases.toString(),
-      `${item.conversion_rate.toFixed(2)}%`,
+      item.conversion_rate === null ? "N/A" : `${item.conversion_rate.toFixed(2)}%`,
     ]);
     return [headers, ...rows].map((row) => row.join(",")).join("\n");
   }

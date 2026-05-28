@@ -2,7 +2,7 @@
  * Página de detalhes do usuário no painel admin
  * Refatorado para seguir padrão AAA e remover código legado
  */
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,26 +36,28 @@ import { formatCurrency } from "@/lib/utils";
 import { useUserDetails } from "@/hooks/admin/useUserDetails";
 import { useUserSubscription } from "@/hooks/admin/useUserSubscription";
 import { useUserOrders } from "@/hooks/admin/useUserOrders";
+import { ADMIN_ROUTES, publicProfilePath } from "@/config/routes";
+import { hasAdminAccessRole } from "@/lib/permissions/adminRoles";
+import { getOrderTypeLabel } from "@/config/admin-order-status";
+import { normalizeAddressBR, type AddressBR } from "@/lib/profile";
 
-type Address = {
-  street?: string | null;
-  number?: string | null;
-  complement?: string | null;
-  neighborhood?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zip_code?: string | null;
-};
+const USER_DETAILS_TABS = new Set([
+  "info",
+  "personal",
+  "address",
+  "subscription",
+  "collector",
+  "orders",
+  "preferences",
+]);
 
-type PaymentMethod = {
+type PaymentHistoryItem = {
   id: string;
-  card_brand?: string | null;
-  type?: string | null;
-  card_last4?: string | null;
-  is_default?: boolean;
-  card_holder_name?: string | null;
-  card_expiry_month?: number | null;
-  card_expiry_year?: number | null;
+  amount: number;
+  status: string | null;
+  payment_method: string | null;
+  payment_date: string | null;
+  created_at: string;
 };
 
 type SubscriptionCollection = {
@@ -66,9 +68,9 @@ type UserBadgeEntry = {
   id: string;
   earned_at: string;
   badge: {
-    icon: string;
+    icon: string | null;
     name: string;
-    description: string;
+    description: string | null;
     rarity: string;
   };
 };
@@ -76,9 +78,24 @@ type UserBadgeEntry = {
 export default function AdminUserDetails() {
   // Arrange: Obter ID do usuário da URL
   const { userId } = useParams<{ userId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const selectedTab = requestedTab && USER_DETAILS_TABS.has(requestedTab) ? requestedTab : "info";
+
+  const handleTabChange = (tab: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (tab === "info") {
+      nextParams.delete("tab");
+    } else {
+      nextParams.set("tab", tab);
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  };
 
   // Arrange: Hooks customizados para dados do usuário
-  const { profile, roles, badges, paymentMethods, isLoading, isError } = useUserDetails({ userId });
+  const { profile, roles, badges, paymentHistory, isLoading, isError } = useUserDetails({ userId });
   const { activeSubscription, coinsBalance, monthlySelections } = useUserSubscription({ userId });
   const { filteredOrders, stats, filters, setFilters } = useUserOrders({ userId });
 
@@ -101,7 +118,7 @@ export default function AdminUserDetails() {
         <div className="text-center py-12">
           <p className="text-muted-foreground">Usuário não encontrado</p>
           <Button asChild className="mt-4">
-            <Link to="/admin/users">
+            <Link to={ADMIN_ROUTES.users}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Link>
@@ -112,14 +129,14 @@ export default function AdminUserDetails() {
   }
 
   // Arrange: Extrair dados do endereço
-  const address = profile.address as Address;
+  const address: AddressBR | null = normalizeAddressBR(profile.delivery_address, profile.address);
 
   return (
     <AdminLayout>
       {/* Header */}
       <div className="mb-8">
         <Button variant="ghost" asChild className="mb-4">
-          <Link to="/admin/users">
+          <Link to={ADMIN_ROUTES.users}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar para Usuários
           </Link>
@@ -143,14 +160,13 @@ export default function AdminUserDetails() {
                 <Badge variant="secondary">user</Badge>
               ) : (
                 roles.map((r: { role: string }) => (
-                  <Badge key={r.role} variant={r.role === "admin" ? "default" : "secondary"}>
+                  <Badge key={r.role} variant={hasAdminAccessRole(r.role) ? "default" : "secondary"}>
                     {r.role}
                   </Badge>
                 ))
               )}
             </div>
             <UserQuickActions
-              userId={profile.id}
               userEmail={profile.email || ""}
               userName={profile.display_name || profile.full_name || profile.email || "Usuário"}
             />
@@ -215,7 +231,7 @@ export default function AdminUserDetails() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="info" className="space-y-6">
+      <Tabs value={selectedTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
           <TabsTrigger value="info">
             <User className="h-4 w-4 mr-2" />
@@ -269,7 +285,9 @@ export default function AdminUserDetails() {
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Criado em</div>
                   <div className="text-base mt-1">
-                    {new Date(profile.created_at).toLocaleString("pt-BR")}
+                    {profile.created_at
+                      ? new Date(profile.created_at).toLocaleString("pt-BR")
+                      : "N/A"}
                   </div>
                 </div>
                 <div>
@@ -318,19 +336,19 @@ export default function AdminUserDetails() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Métodos de Pagamento ({paymentMethods.length})
+                Histórico de Pagamentos ({paymentHistory.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {paymentMethods.length === 0 ? (
+              {paymentHistory.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhum método de pagamento cadastrado
+                  Nenhum pagamento registrado
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {paymentMethods.map((method: PaymentMethod) => (
+                  {paymentHistory.map((payment: PaymentHistoryItem) => (
                     <div
-                      key={method.id}
+                      key={payment.id}
                       className="flex items-center justify-between p-4 rounded-lg border"
                     >
                       <div className="flex items-center gap-4">
@@ -338,28 +356,20 @@ export default function AdminUserDetails() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">
-                              {method.card_brand?.toUpperCase() || method.type} ••••{" "}
-                              {method.card_last4}
+                              {formatCurrency(payment.amount)}
                             </span>
-                            {method.is_default && (
-                              <Badge variant="secondary" className="text-xs">
-                                Padrão
-                              </Badge>
-                            )}
+                            <Badge variant="secondary" className="text-xs">
+                              {payment.status ?? "pendente"}
+                            </Badge>
                           </div>
-                          {method.card_holder_name && (
-                            <p className="text-sm text-muted-foreground">
-                              {method.card_holder_name}
-                            </p>
-                          )}
+                          <p className="text-sm text-muted-foreground">
+                            {payment.payment_method ?? "Método não informado"}
+                          </p>
                         </div>
                       </div>
-                      {method.card_expiry_month && method.card_expiry_year && (
-                        <span className="text-sm text-muted-foreground">
-                          {String(method.card_expiry_month).padStart(2, "0")}/
-                          {method.card_expiry_year}
-                        </span>
-                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(payment.payment_date ?? payment.created_at).toLocaleDateString("pt-BR")}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -647,7 +657,7 @@ export default function AdminUserDetails() {
                 {profile.is_public && profile.username && (
                   <div>
                     <Button variant="outline" size="sm" asChild>
-                      <Link to={`/collector/${profile.username}`} target="_blank">
+                      <Link to={publicProfilePath(profile.username)} target="_blank" rel="noopener noreferrer">
                         Ver Perfil Público
                       </Link>
                     </Button>
@@ -706,7 +716,7 @@ export default function AdminUserDetails() {
                         key={userBadge.id}
                         className="flex flex-col items-center text-center p-4 rounded-lg border bg-card"
                       >
-                        <div className="text-4xl mb-2">{badge.icon}</div>
+                        <div className="text-4xl mb-2">{badge.icon ?? ""}</div>
                         <div className="font-medium text-sm">{badge.name}</div>
                         <div className="text-xs text-muted-foreground mt-1">
                           {badge.description}
@@ -803,10 +813,7 @@ export default function AdminUserDetails() {
                         <div className="flex items-center gap-2 mb-2">
                           <OrderTypeIndicator type={order.type} />
                           <span className="font-medium text-sm">
-                            {order.type === "subscription_delivery" && "Entrega de Assinatura"}
-                            {order.type === "standalone_purchase" && "Compra Avulsa"}
-                            {order.type === "manual_payment" && "Pagamento Manual"}
-                            {order.type === "quote" && "Orçamento"}
+                            {getOrderTypeLabel(order.type)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
@@ -841,7 +848,7 @@ export default function AdminUserDetails() {
                       <div className="flex items-center gap-3">
                         <OrderStatusBadge status={order.status} />
                         <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/admin/pedidos?id=${order.id}`}>
+                          <Link to={`${ADMIN_ROUTES.orders}?id=${encodeURIComponent(order.id)}`}>
                             <ExternalLink className="h-4 w-4" />
                           </Link>
                         </Button>

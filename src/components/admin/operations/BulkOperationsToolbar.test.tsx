@@ -6,13 +6,14 @@
  */
 
 import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BulkOperationsToolbar } from "./BulkOperationsToolbar";
 import type { PaymentListItem } from "@/types/manual-payment";
 
 // Mock do hook useAuth
-jest.mock("@/lib/auth", () => ({
+vi.mock("@/lib/auth", () => ({
   useAuth: () => ({
     user: { id: "admin-123" },
     isLoading: false,
@@ -20,19 +21,19 @@ jest.mock("@/lib/auth", () => ({
 }));
 
 // Mock dos serviços
-jest.mock("@/lib/admin-payment-service", () => ({
-  bulkApprovePayments: jest.fn(),
-  exportPaymentsToCSV: jest.fn(),
-  bulkSendMessage: jest.fn(),
-  startAsyncBulkApprove: jest.fn(),
-  startAsyncBulkMessage: jest.fn(),
-  startAsyncBulkExport: jest.fn(),
-  getBulkOperationStatus: jest.fn(),
+vi.mock("@/lib/admin-payment-service", () => ({
+  bulkApprovePayments: vi.fn(),
+  exportPaymentsToCSV: vi.fn(),
+  bulkSendMessage: vi.fn(),
+  startAsyncBulkApprove: vi.fn(),
+  startAsyncBulkMessage: vi.fn(),
+  startAsyncBulkExport: vi.fn(),
+  getBulkOperationStatus: vi.fn(),
 }));
 
 // Mock do toast
-jest.mock("@/hooks/use-toast", () => ({
-  toast: jest.fn(),
+vi.mock("@/hooks/use-toast", () => ({
+  toast: vi.fn(),
 }));
 
 const mockPayments: PaymentListItem[] = [
@@ -80,6 +81,7 @@ const mockPayments: PaymentListItem[] = [
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      gcTime: 0,
       retry: false,
     },
   },
@@ -91,7 +93,7 @@ const renderWithProviders = (component: React.ReactNode) => {
 
 describe("BulkOperationsToolbar", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("não renderiza quando nenhum pagamento está selecionado", () => {
@@ -129,7 +131,7 @@ describe("BulkOperationsToolbar", () => {
   });
 
   it("chama onSelectAll quando o botão de selecionar todos é clicado", () => {
-    const mockOnSelectAll = jest.fn();
+    const mockOnSelectAll = vi.fn();
 
     renderWithProviders(
       <BulkOperationsToolbar
@@ -147,7 +149,7 @@ describe("BulkOperationsToolbar", () => {
   });
 
   it("chama onClearSelection quando o botão Limpar é clicado", () => {
-    const mockOnClearSelection = jest.fn();
+    const mockOnClearSelection = vi.fn();
 
     renderWithProviders(
       <BulkOperationsToolbar

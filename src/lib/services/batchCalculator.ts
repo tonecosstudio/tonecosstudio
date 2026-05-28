@@ -14,13 +14,14 @@
  * Ciclo Março 2026:
  * - Vendas: 01/03/2026 a 31/03/2026 (30 dias)
  * - Produção: 01/04/2026 a 30/04/2026 (30 dias)
- * - Envio: 15/05/2026 a 31/05/2026 (segunda quinzena de maio)
+ * - Envio: ate o dia util configurado de maio
  * - Prazo Total: ~90 dias (3 meses)
  */
 
 import { format, endOfMonth, addMonths, differenceInDays, addDays, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BATCH } from "@/config/constants";
+import { calculateNthBusinessDayOfMonth } from "@/lib/business-days";
 
 /**
  * Tipo de ciclo
@@ -42,6 +43,7 @@ export type CycleStatus =
  */
 export interface BatchRules {
   shippingBusinessDays: number; // Prazo de envio em dias úteis (padrão: 5)
+  holidays?: Date[];
 }
 
 /**
@@ -72,7 +74,7 @@ export interface CalculatedBatch {
 
   // Prazos para o cliente
   minDeliveryDays: number; // Prazo mínimo (compra no dia 1/16)
-  maxDeliveryDays: number; // Prazo máximo (compra no dia 15/último)
+  maxDeliveryDays: number; // Prazo máximo (compra no inicio do ciclo)
   avgDeliveryDays: number; // Prazo médio
 
   // Status
@@ -83,7 +85,11 @@ export interface CalculatedBatch {
  * Calcula o 5º dia útil de um mês (considerando sábados e domingos)
  * Futuramente pode incluir feriados nacionais
  */
-function calculateBusinessDay(year: number, month: number, businessDayNumber: number): Date {
+function calculateBusinessDay(year: number, month: number, businessDayNumber: number, holidays: Date[] = []): Date {
+  if (holidays.length > 0) {
+    return calculateNthBusinessDayOfMonth(month + 1, year, businessDayNumber, holidays);
+  }
+
   let date = new Date(year, month, 1);
   let businessDaysCount = 0;
 
@@ -159,7 +165,8 @@ export function calculateCycle(
   const shippingDeadlineDate = calculateBusinessDay(
     shippingMonthDate.getFullYear(),
     shippingMonthDate.getMonth(),
-    rules.shippingBusinessDays
+    rules.shippingBusinessDays,
+    rules.holidays
   );
 
   // Prazos para o cliente

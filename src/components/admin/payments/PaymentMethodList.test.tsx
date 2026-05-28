@@ -1,344 +1,277 @@
-/**
- * Unit tests for PaymentMethodList component
- *
- * Tests the PaymentMethodList component functionality including:
- * - Display of payment methods with active/inactive indicators
- * - Toggle active/inactive buttons
- * - Set as default button
- * - Edit and delete actions
- * - Drag and drop for display_order
- *
- * Requirements: 1.1-1.10
- * Task: 11.2 Criar componente PaymentMethodList
- */
-
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { PaymentMethodList } from "./PaymentMethodList";
 import type { PaymentMethod } from "@/types/manual-payment";
 import * as paymentMethodService from "@/lib/payment-method-service";
 
-// Mock the payment method service
-jest.mock("@/lib/payment-method-service", () => ({
-  listAllPaymentMethods: jest.fn(),
-  togglePaymentMethodActive: jest.fn(),
-  setDefaultPaymentMethod: jest.fn(),
-  updatePaymentMethod: jest.fn(),
-  clearPaymentMethodCache: jest.fn(),
+vi.mock("@/lib/payment-method-service", () => ({
+  clearPaymentMethodCache: vi.fn(),
+  deletePaymentMethod: vi.fn(),
+  listAllPaymentMethods: vi.fn(),
+  setDefaultPaymentMethod: vi.fn(),
+  togglePaymentMethodActive: vi.fn(),
+  updatePaymentMethod: vi.fn(),
 }));
 
-// Mock the toast hook
-jest.mock("@/hooks/use-toast", () => ({
-  toast: jest.fn(),
+vi.mock("@/hooks/use-toast", () => ({
+  toast: vi.fn(),
 }));
 
-// Mock @dnd-kit components
-jest.mock("@dnd-kit/core", () => ({
+vi.mock("@dnd-kit/core", () => ({
   DndContext: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="dnd-context">{children}</div>
   ),
-  closestCenter: jest.fn(),
-  KeyboardSensor: jest.fn(),
-  PointerSensor: jest.fn(),
-  useSensor: jest.fn(),
-  useSensors: jest.fn(),
+  KeyboardSensor: vi.fn(),
+  PointerSensor: vi.fn(),
+  closestCenter: vi.fn(),
+  useSensor: vi.fn((sensor, options) => ({ sensor, options })),
+  useSensors: vi.fn((...sensors) => sensors),
 }));
 
-jest.mock("@dnd-kit/sortable", () => ({
+vi.mock("@dnd-kit/sortable", () => ({
   SortableContext: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="sortable-context">{children}</div>
   ),
-  sortableKeyboardCoordinates: jest.fn(),
-  verticalListSortingStrategy: jest.fn(),
+  arrayMove: vi.fn((items: unknown[], fromIndex: number, toIndex: number) => {
+    const nextItems = [...items];
+    const [movedItem] = nextItems.splice(fromIndex, 1);
+    nextItems.splice(toIndex, 0, movedItem);
+    return nextItems;
+  }),
+  sortableKeyboardCoordinates: vi.fn(),
   useSortable: () => ({
     attributes: {},
+    isDragging: false,
     listeners: {},
-    setNodeRef: jest.fn(),
+    setNodeRef: vi.fn(),
     transform: null,
     transition: null,
-    isDragging: false,
   }),
+  verticalListSortingStrategy: vi.fn(),
 }));
 
-jest.mock("@dnd-kit/utilities", () => ({
+vi.mock("@dnd-kit/utilities", () => ({
   CSS: {
     Transform: {
-      toString: jest.fn(),
+      toString: vi.fn(() => ""),
     },
   },
 }));
 
-// Create a test query client
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
+      mutations: {
+        retry: false,
+      },
       queries: {
+        gcTime: 0,
         retry: false,
       },
     },
   });
 
-// Mock payment methods data
 const mockPaymentMethods: PaymentMethod[] = [
   {
-    id: "1",
-    name: "PIX",
-    type: "pix",
-    instructions: "Faça o PIX para a chave abaixo",
-    payment_link: null,
-    pix_key: "123.456.789-00",
     account_details: null,
+    created_at: "2024-01-01T00:00:00Z",
+    display_order: 0,
+    id: "1",
+    instructions: "Faca o PIX para a chave abaixo",
     is_active: true,
     is_default: true,
-    display_order: 0,
-    created_at: "2024-01-01T00:00:00Z",
+    name: "PIX",
+    payment_link: null,
+    pix_key: "123.456.789-00",
+    type: "pix",
     updated_at: "2024-01-01T00:00:00Z",
   },
   {
-    id: "2",
-    name: "Cartão de Crédito",
-    type: "other",
-    instructions: "Pagamento via cartão de crédito",
-    payment_link: "https://pagseguro.com/pay",
-    pix_key: null,
     account_details: null,
+    created_at: "2024-01-02T00:00:00Z",
+    display_order: 1,
+    id: "2",
+    instructions: "Pagamento via cartao de credito",
     is_active: true,
     is_default: false,
-    display_order: 1,
-    created_at: "2024-01-02T00:00:00Z",
+    name: "Cartao de Credito",
+    payment_link: "https://pagseguro.example/pay",
+    pix_key: null,
+    type: "other",
     updated_at: "2024-01-02T00:00:00Z",
   },
   {
+    account_details: { account: "56789-0", agency: "1234", bank: "Banco do Brasil" },
+    created_at: "2024-01-03T00:00:00Z",
+    display_order: 2,
     id: "3",
-    name: "Boleto Bancário",
-    type: "bank_transfer",
     instructions: "Pague o boleto em qualquer banco",
-    payment_link: null,
-    pix_key: null,
-    account_details: { bank: "Banco do Brasil", agency: "1234", account: "56789-0" },
     is_active: false,
     is_default: false,
-    display_order: 2,
-    created_at: "2024-01-03T00:00:00Z",
+    name: "Boleto Bancario",
+    payment_link: null,
+    pix_key: null,
+    type: "bank_transfer",
     updated_at: "2024-01-03T00:00:00Z",
   },
 ];
 
-describe("PaymentMethodList Component", () => {
+describe("PaymentMethodList", () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = createTestQueryClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  const renderComponent = () => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <PaymentMethodList />
-      </QueryClientProvider>
-    );
-  };
-
-  test("should display loading state initially", () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to show loading
-    );
-
-    renderComponent();
-
-    expect(screen.getByText("Carregando métodos de pagamento...")).toBeInTheDocument();
+  afterEach(() => {
+    queryClient.clear();
   });
 
-  test("should display error state when fetch fails", async () => {
-    const errorMessage = "Failed to fetch payment methods";
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockRejectedValue(
-      new Error(errorMessage)
-    );
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText("Erro ao carregar métodos de pagamento")).toBeInTheDocument();
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    });
-  });
-
-  test("should display empty state when no payment methods", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue([]);
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText("Nenhum método de pagamento configurado.")).toBeInTheDocument();
-      expect(screen.getByText(/Clique em "Adicionar Método"/)).toBeInTheDocument();
-    });
-  });
-
-  test("should display payment methods table with correct data", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue(mockPaymentMethods);
-
-    renderComponent();
-
-    await waitFor(() => {
-      // Check table headers
-      expect(screen.getByText("Nome")).toBeInTheDocument();
-      expect(screen.getByText("Tipo")).toBeInTheDocument();
-      expect(screen.getByText("Status")).toBeInTheDocument();
-      expect(screen.getByText("Padrão")).toBeInTheDocument();
-      expect(screen.getByText("Ordem")).toBeInTheDocument();
-      expect(screen.getByText("Ações")).toBeInTheDocument();
-
-      // Check payment method names
-      expect(screen.getByText("PIX")).toBeInTheDocument();
-      expect(screen.getByText("Cartão de Crédito")).toBeInTheDocument();
-      expect(screen.getByText("Boleto Bancário")).toBeInTheDocument();
-
-      // Check payment method types
-      expect(screen.getByText("pix")).toBeInTheDocument();
-      expect(screen.getByText("other")).toBeInTheDocument();
-      expect(screen.getByText("bank_transfer")).toBeInTheDocument();
-
-      // Check status indicators
-      expect(screen.getAllByText("Ativo")).toHaveLength(2);
-      expect(screen.getByText("Inativo")).toBeInTheDocument();
-
-      // Check default indicators
-      expect(screen.getByText("Padrão")).toBeInTheDocument();
-      expect(screen.getAllByText("Não padrão")).toHaveLength(2);
-
-      // Check display order
-      expect(screen.getByText("0")).toBeInTheDocument();
-      expect(screen.getByText("1")).toBeInTheDocument();
-      expect(screen.getByText("2")).toBeInTheDocument();
-    });
-  });
-
-  test("should call onEdit when edit button is clicked", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue([
-      mockPaymentMethods[0],
-    ]);
-
-    const mockOnEdit = jest.fn();
-
+  const renderComponent = (props?: React.ComponentProps<typeof PaymentMethodList>) =>
     render(
       <QueryClientProvider client={queryClient}>
-        <PaymentMethodList onEdit={mockOnEdit} />
+        <PaymentMethodList {...props} />
       </QueryClientProvider>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+  test("exibe estado de carregamento inicial", async () => {
+    let resolveMethods: (methods: PaymentMethod[]) => void = () => undefined;
+    const pendingMethods = new Promise<PaymentMethod[]>((resolve) => {
+      resolveMethods = resolve;
     });
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockReturnValue(pendingMethods);
 
-    // Find and click the more options button
-    const moreButtons = screen.getAllByRole("button", { name: /more/i });
-    fireEvent.click(moreButtons[0]);
+    renderComponent();
 
-    // Find and click the edit option
-    const editOption = screen.getByText("Editar");
-    fireEvent.click(editOption);
+    expect(screen.getByText("Carregando metodos de pagamento...")).toBeInTheDocument();
 
-    expect(mockOnEdit).toHaveBeenCalledWith(mockPaymentMethods[0]);
+    resolveMethods([]);
+    await screen.findByText("Nenhum metodo de pagamento configurado.");
   });
 
-  test("should open delete dialog when delete button is clicked", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue([
-      mockPaymentMethods[0],
-    ]);
-
-    const mockOnDelete = jest.fn();
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <PaymentMethodList onDelete={mockOnDelete} />
-      </QueryClientProvider>
+  test("exibe estado de erro quando a consulta falha", async () => {
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockRejectedValue(
+      new Error("Falha ao buscar metodos")
     );
 
-    await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
-    });
+    renderComponent();
 
-    // Find and click the more options button
-    const moreButtons = screen.getAllByRole("button", { name: /more/i });
-    fireEvent.click(moreButtons[0]);
+    expect(await screen.findByText("Erro ao carregar metodos de pagamento")).toBeInTheDocument();
+    expect(screen.getByText("Falha ao buscar metodos")).toBeInTheDocument();
+  });
 
-    // Find and click the delete option
-    const deleteOption = screen.getByText("Excluir");
-    fireEvent.click(deleteOption);
+  test("exibe estado vazio quando nao ha metodos cadastrados", async () => {
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue([]);
 
-    // Check that delete dialog opens
-    expect(screen.getByText("Excluir método de pagamento")).toBeInTheDocument();
+    renderComponent();
+
+    expect(await screen.findByText("Nenhum metodo de pagamento configurado.")).toBeInTheDocument();
+    expect(screen.getByText(/Clique em "Adicionar Metodo"/)).toBeInTheDocument();
+  });
+
+  test("exibe tabela de metodos com dados e indicadores corretos", async () => {
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue(mockPaymentMethods);
+
+    renderComponent();
+
+    expect(await screen.findByText("PIX")).toBeInTheDocument();
+    expect(screen.getByText("Cartao de Credito")).toBeInTheDocument();
+    expect(screen.getByText("Boleto Bancario")).toBeInTheDocument();
+    expect(screen.getByText("bank_transfer")).toBeInTheDocument();
+    expect(screen.getAllByText("Ativo")).toHaveLength(2);
+    expect(screen.getByText("Inativo")).toBeInTheDocument();
+    expect(screen.getAllByText("Nao padrao")).toHaveLength(2);
+    expect(screen.getAllByText("Ordem")).toHaveLength(2);
+    expect(screen.getByText("Acoes")).toBeInTheDocument();
+  });
+
+  test("chama onEdit ao selecionar a acao de edicao", async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue([mockPaymentMethods[0]]);
+
+    renderComponent({ onEdit });
+
+    expect(await screen.findByText("PIX")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Abrir acoes de PIX" }));
+    await user.click(await screen.findByText("Editar"));
+
+    expect(onEdit).toHaveBeenCalledWith(mockPaymentMethods[0]);
+  });
+
+  test("abre dialogo de exclusao ao selecionar a acao de excluir", async () => {
+    const user = userEvent.setup();
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue([mockPaymentMethods[0]]);
+
+    renderComponent();
+
+    expect(await screen.findByText("PIX")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Abrir acoes de PIX" }));
+    await user.click(await screen.findByText("Excluir"));
+
+    expect(screen.getByText("Excluir metodo de pagamento")).toBeInTheDocument();
     expect(
-      screen.getByText(`Tem certeza que deseja excluir o método de pagamento "PIX"?`)
+      screen.getByText(/Tem certeza que deseja excluir o metodo de pagamento "PIX"\?/)
     ).toBeInTheDocument();
   });
 
-  test("should call togglePaymentMethodActive when switch is toggled", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue([
-      mockPaymentMethods[0],
-    ]);
-    (paymentMethodService.togglePaymentMethodActive as jest.Mock).mockResolvedValue(undefined);
+  test("alterna status ativo pelo servico canonico", async () => {
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue([mockPaymentMethods[0]]);
+    vi.mocked(paymentMethodService.togglePaymentMethodActive).mockResolvedValue(undefined);
 
     renderComponent();
 
+    expect(await screen.findByText("PIX")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("switch", { name: "Toggle PIX active status" }));
+
     await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
+      expect(paymentMethodService.togglePaymentMethodActive).toHaveBeenCalledWith("1", false);
     });
-
-    // Find the switch and toggle it
-    const switches = screen.getAllByRole("switch");
-    fireEvent.click(switches[0]);
-
-    expect(paymentMethodService.togglePaymentMethodActive).toHaveBeenCalledWith("1", false);
   });
 
-  test("should call setDefaultPaymentMethod when set default button is clicked", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue([
-      mockPaymentMethods[1],
-    ]); // Not default
-    (paymentMethodService.setDefaultPaymentMethod as jest.Mock).mockResolvedValue(undefined);
+  test("define metodo nao padrao como padrao pelo servico canonico", async () => {
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue([mockPaymentMethods[1]]);
+    vi.mocked(paymentMethodService.setDefaultPaymentMethod).mockResolvedValue(undefined);
 
     renderComponent();
 
+    expect(await screen.findByText("Cartao de Credito")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Definir Cartao de Credito como padrao" })
+    );
+
     await waitFor(() => {
-      expect(screen.getByText("Cartão de Crédito")).toBeInTheDocument();
+      expect(paymentMethodService.setDefaultPaymentMethod).toHaveBeenCalledWith("2");
     });
-
-    // Find and click the set default button (star icon)
-    const setDefaultButtons = screen.getAllByTitle("Definir como padrão");
-    fireEvent.click(setDefaultButtons[0]);
-
-    expect(paymentMethodService.setDefaultPaymentMethod).toHaveBeenCalledWith("2");
   });
 
-  test("should not show set default button for already default payment method", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue([
-      mockPaymentMethods[0],
-    ]); // Already default
+  test("nao oferece redefinicao de padrao para metodo ja padrao", async () => {
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue([mockPaymentMethods[0]]);
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText("PIX")).toBeInTheDocument();
-    });
+    expect(await screen.findByText("PIX")).toBeInTheDocument();
 
-    // Should not find set default button for already default method
-    const setDefaultButtons = screen.queryAllByTitle("Definir como padrão");
-    expect(setDefaultButtons).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Definir PIX como padrao" })).not.toBeInTheDocument();
   });
 
-  test("should display drag and drop hint text", async () => {
-    (paymentMethodService.listAllPaymentMethods as jest.Mock).mockResolvedValue(mockPaymentMethods);
+  test("exibe orientacao de reordenacao", async () => {
+    vi.mocked(paymentMethodService.listAllPaymentMethods).mockResolvedValue(mockPaymentMethods);
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText(/Arraste os itens pelo ícone/)).toBeInTheDocument();
-      expect(
-        screen.getByText(/A ordem afeta como os métodos são exibidos para os clientes/)
-      ).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Arraste os itens pelo icone/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/A ordem afeta como os metodos sao exibidos para os clientes/)
+    ).toBeInTheDocument();
   });
 });

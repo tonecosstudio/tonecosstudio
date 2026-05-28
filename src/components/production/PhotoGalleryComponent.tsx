@@ -13,7 +13,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { X, ChevronLeft, ChevronRight, Trash2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -161,7 +161,7 @@ export const PhotoGalleryComponent: React.FC<PhotoGalleryComponentProps> = ({
           setCurrentPhotoIndex((prev) => (prev >= filteredPhotos.length - 1 ? prev - 1 : prev));
         }
       }
-    } catch {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro ao Excluir",
@@ -215,7 +215,7 @@ export const PhotoGalleryComponent: React.FC<PhotoGalleryComponentProps> = ({
     );
   }
 
-  const currentPhoto = filteredPhotos[currentPhotoIndex];
+  const currentPhoto = filteredPhotos[Math.min(currentPhotoIndex, filteredPhotos.length - 1)];
 
   const gridColsClass = cn(
     `grid gap-3`,
@@ -278,6 +278,10 @@ export const PhotoGalleryComponent: React.FC<PhotoGalleryComponentProps> = ({
           className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none"
           onKeyDown={handleKeyDown}
         >
+          <DialogTitle className="sr-only">Visualizacao da foto</DialogTitle>
+          <DialogDescription className="sr-only">
+            Visualizacao ampliada da foto selecionada com acoes de navegacao, download e exclusao quando permitida.
+          </DialogDescription>
           <div className="relative w-full h-full flex items-center justify-center">
             {/* Close Button */}
             <button

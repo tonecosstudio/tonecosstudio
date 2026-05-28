@@ -5,6 +5,45 @@ import type { FileMetadata, ValidationResult } from "@/types/support";
 
 const BUCKET_NAME = "support-attachments";
 
+interface SupportAttachmentRecord {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  thumbnail_path?: string | null;
+}
+
+interface SupportAttachmentRpcError {
+  message: string;
+}
+
+interface SupportAttachmentRpcClient {
+  rpc(
+    name: "record_support_attachment_upload",
+    args: {
+      p_message_id: string;
+      p_uploaded_by: string;
+      p_file_name: string;
+      p_file_path: string;
+      p_file_size: number;
+      p_file_type: string;
+      p_thumbnail_path?: string | null;
+      p_public_url?: string | null;
+    }
+  ): Promise<{ data: SupportAttachmentRecord | null; error: SupportAttachmentRpcError | null }>;
+  rpc(
+    name: "admin_delete_support_attachment_record",
+    args: {
+      p_attachment_id: string;
+      p_file_path: string;
+      p_thumbnail_path?: string | null;
+    }
+  ): Promise<{ data: string | null; error: SupportAttachmentRpcError | null }>;
+}
+
+const supportAttachmentRpc = supabase as unknown as SupportAttachmentRpcClient;
+
 export class FileUploadService {
   /**
    * Valida um arquivo antes do upload.
@@ -49,20 +88,21 @@ export class FileUploadService {
       throw new Error("Erro ao fazer upload do arquivo");
     }
 
-    const { data: attachmentData, error: dbError } = await supabase
-      .from("support_attachments")
-      .insert({
-        message_id: messageId,
-        file_name: file.name,
-        file_path: filePath,
-        file_size: file.size,
-        file_type: file.type,
-        uploaded_by: uploadedBy,
-      })
-      .select()
-      .single();
+    const { data: attachmentData, error: dbError } = await supportAttachmentRpc.rpc(
+      "record_support_attachment_upload",
+      {
+        p_message_id: messageId,
+        p_uploaded_by: uploadedBy,
+        p_file_name: file.name,
+        p_file_path: filePath,
+        p_file_size: file.size,
+        p_file_type: file.type,
+        p_thumbnail_path: null,
+        p_public_url: null,
+      }
+    );
 
-    if (dbError) {
+    if (dbError || !attachmentData) {
       await this.deleteFile(filePath);
       log.error("Erro ao salvar metadata do anexo", {
         error: dbError,
@@ -82,7 +122,7 @@ export class FileUploadService {
       file_path: attachmentData.file_path,
       file_size: attachmentData.file_size,
       file_type: attachmentData.file_type,
-      thumbnail_path: attachmentData.thumbnail_path,
+      thumbnail_path: attachmentData.thumbnail_path ?? undefined,
       public_url: publicUrl,
     };
   }
@@ -215,10 +255,14 @@ export class FileUploadService {
       });
     }
 
-    const { error: dbError } = await supabase
-      .from("support_attachments")
-      .delete()
-      .eq("id", attachmentId);
+    const { error: dbError } = await supportAttachmentRpc.rpc(
+      "admin_delete_support_attachment_record",
+      {
+        p_attachment_id: attachmentId,
+        p_file_path: attachment.file_path,
+        p_thumbnail_path: attachment.thumbnail_path ?? null,
+      }
+    );
 
     if (dbError) {
       log.error("Erro ao deletar metadata do anexo", { error: dbError, attachmentId });

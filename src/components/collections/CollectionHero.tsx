@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 export default function CollectionHero() {
   const scrollToInfo = () => {
@@ -28,7 +29,7 @@ export default function CollectionHero() {
               asChild
               className="bg-background text-foreground hover:bg-background/90"
             >
-              <Link to="/planos">Ver Planos e Preços</Link>
+              <Link to={PUBLIC_ROUTES.plans}>Ver Planos e Preços</Link>
             </Button>
             <Button
               size="lg"

@@ -1,6 +1,7 @@
 import { PropsWithChildren, useMemo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 export default function RequireAuth({ children }: PropsWithChildren) {
   const location = useLocation();
@@ -16,6 +17,6 @@ export default function RequireAuth({ children }: PropsWithChildren) {
     return null;
   }
 
-  if (!user) return <Navigate to={`/login?next=${redirectTo}`} replace />;
+  if (!user) return <Navigate to={`${PUBLIC_ROUTES.login}?next=${redirectTo}`} replace />;
   return <>{children}</>;
 }

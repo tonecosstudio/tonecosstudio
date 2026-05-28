@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
+import { NOTIFICATION_ROUTES } from "@/config/routes";
 
 type PaymentNotificationType =
   | "payment_created"
@@ -41,7 +42,24 @@ interface AdminNotificationRpcClient {
   ): Promise<{ error: { message?: string } | null }>;
 }
 
-const adminPaymentsUrl = "/admin/pagamentos?tab=payments";
+interface UserNotificationRpcClient {
+  rpc(
+    fn: "create_user_notification",
+    args: {
+      p_user_id: string;
+      p_type: PaymentNotificationType;
+      p_title: string;
+      p_message: string;
+      p_priority?: "low" | "medium" | "high" | "urgent";
+      p_action_url?: string | null;
+      p_related_id?: string | null;
+      p_related_type?: string | null;
+      p_metadata?: Record<string, string | null>;
+    }
+  ): Promise<{ error: { message?: string } | null }>;
+}
+
+const adminPaymentsUrl = NOTIFICATION_ROUTES.adminPayments;
 
 async function getPaymentNotificationContext(
   paymentId: string
@@ -110,15 +128,25 @@ async function createUserPaymentNotification(
     return;
   }
 
-  const { error } = await supabase.from("user_notifications").insert({
-    user_id: context.userId,
-    type,
-    title,
-    message,
-  });
+  const { error } = await (supabase as unknown as UserNotificationRpcClient).rpc(
+    "create_user_notification",
+    {
+      p_user_id: context.userId,
+      p_type: type,
+      p_title: title,
+      p_message: message,
+      p_priority: "medium",
+      p_related_id: context.paymentId,
+      p_related_type: "payment",
+      p_metadata: {
+        payment_id: context.paymentId,
+        reference_number: context.referenceNumber,
+      },
+    }
+  );
 
   if (error) {
-    throw new Error(`Failed to create user payment notification: ${error.message}`);
+    throw new Error(error.message ?? "Failed to create user payment notification");
   }
 }
 

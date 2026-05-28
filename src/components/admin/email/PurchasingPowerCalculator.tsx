@@ -2,7 +2,7 @@
  * Componente: Calculadora de Poder de Compra
  *
  * Mostra o que o usuário pode comprar com os coins do plano
- * Baseado nos preços atuais de /admin/coins
+ * Baseado nos preços atuais do hub de créditos.
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

@@ -1,448 +1,417 @@
 /**
  * CollectionForm Component Tests
  *
- * Tests for the collection form component including validation,
- * form submission, and field interactions.
- *
- * Requirements: 14.1, 14.2, 14.3, 14.4, 14.5
- * Task: 20.2 Create collection form component
+ * Tests for the current tabbed collection form, including pricing tier
+ * selection, validation, submission, characters, and edit mode.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement } from "react";
 import { CollectionForm } from "./CollectionForm";
 
-interface Collection {
-  id: string;
-  name: string;
-  description: string;
-  priceMonthly?: number;
-  coverImage?: string;
-  rotation_type?: "fixed" | "odd_months" | "even_months";
-  is_active: boolean;
-}
-
-// Mock dependencies
-vi.mock("@/hooks/use-toast", () => ({
-  toast: vi.fn(),
-  useToast: () => ({ toast: vi.fn() }),
+const { mockToast, mockUseCollectionFormPricingTiers, mockUseCollectionTierAssignment } = vi.hoisted(() => ({
+  mockToast: vi.fn(),
+  mockUseCollectionFormPricingTiers: vi.fn(),
+  mockUseCollectionTierAssignment: vi.fn(),
 }));
 
-vi.mock("./ImageUpload", () => ({
-  default: ({ label, onUploadComplete }: { label: string; onUploadComplete: (url: string) => void }) => (
+vi.mock("@/hooks/use-toast", () => ({
+  toast: mockToast,
+  useToast: () => ({ toast: mockToast }),
+}));
+
+vi.mock("@/hooks/admin/useCollectionFormPricingTiers", () => ({
+  useCollectionFormPricingTiers: mockUseCollectionFormPricingTiers,
+}));
+
+vi.mock("@/hooks/useCollectionTierAssignment", () => ({
+  useCollectionTierAssignment: mockUseCollectionTierAssignment,
+}));
+
+vi.mock("../shared/ImageUpload", () => ({
+  default: ({
+    label,
+    currentImageUrl,
+    onUploadComplete,
+  }: {
+    label: string;
+    currentImageUrl?: string;
+    onUploadComplete: (url: string) => void;
+  }) => (
     <div data-testid="image-upload">
-      <label>{label}</label>
-      <button onClick={() => onUploadComplete("https://example.com/image.jpg")}>
+      <span>{label}</span>
+      {currentImageUrl && <span>{currentImageUrl}</span>}
+      <button type="button" onClick={() => onUploadComplete("https://example.com/image.jpg")}>
         Upload Image
       </button>
     </div>
   ),
 }));
 
+vi.mock("./CollectionCharactersManager", () => ({
+  CollectionCharactersManager: ({
+    characters,
+    onChange,
+    disabled,
+  }: {
+    characters: Array<{
+      id: string;
+      name: string;
+      description: string;
+      releaseMonth: number;
+      releaseYear: number;
+      imageUrl: string;
+      releaseOrder: number;
+    }>;
+    onChange: (characters: Array<{
+      id: string;
+      name: string;
+      description: string;
+      releaseMonth: number;
+      releaseYear: number;
+      imageUrl: string;
+      releaseOrder: number;
+    }>) => void;
+    disabled?: boolean;
+  }) => (
+    <div data-testid="characters-manager">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() =>
+          onChange([
+            ...characters,
+            {
+              id: "character-1",
+              name: "Superman",
+              description: "Hero character",
+              releaseMonth: 1,
+              releaseYear: 2026,
+              imageUrl: "https://example.com/superman.jpg",
+              releaseOrder: 1,
+            },
+          ])
+        }
+      >
+        Add Character
+      </button>
+      {characters.map((character) => (
+        <span key={character.id}>{character.name}</span>
+      ))}
+    </div>
+  ),
+}));
+
+vi.mock("../pricing-tiers/CollectionTierAssignment", () => ({
+  CollectionTierAssignment: () => <div data-testid="tier-assignment" />,
+}));
+
+interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  cover_image_url: string | null;
+  rotation_type: "fixed" | "odd_months" | "even_months";
+  is_active: boolean;
+  is_price_custom?: boolean;
+}
+
+const defaultTierId = "11111111-1111-4111-8111-111111111111";
+const defaultTier = {
+  id: defaultTierId,
+  name: "Plano Mensal",
+  description: "Nivel padrao",
+  price_full: 299.9,
+  deposit_amount: 50,
+  price_pix: 284.91,
+  pix_discount_percentage: 5,
+  is_default: true,
+};
+
 describe("CollectionForm", () => {
   const mockOnSubmit = vi.fn();
   const mockOnOpenChange = vi.fn();
+  let queryClient: QueryClient;
 
   beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
     vi.clearAllMocks();
+    mockUseCollectionFormPricingTiers.mockReturnValue({ data: [defaultTier] });
+    mockUseCollectionTierAssignment.mockReturnValue({ data: null, isLoading: false });
   });
 
-  describe("New Collection Mode", () => {
-    it("renders form with empty fields", () => {
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
+  const render = (ui: ReactElement) =>
+    rtlRender(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 
-      expect(screen.getByText("Nova Coleção")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Ex: Coleção Marvel")).toHaveValue("");
-      expect(screen.getByPlaceholderText("Descreva a coleção...")).toHaveValue("");
-      expect(screen.getByPlaceholderText("0.00")).toHaveValue(null);
+  const fillBasicFields = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.type(screen.getByLabelText(/nome da cole/i), "Coleção Marvel");
+    await user.type(screen.getByLabelText(/descri/i), "Coleção de personagens Marvel");
+    await user.click(screen.getByRole("button", { name: /upload image/i }));
+  };
+
+  it("renders a new collection form with empty fields", () => {
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
+
+    expect(screen.getByText("Nova Coleção")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Ex: Heróis da Marvel")).toHaveValue("");
+    expect(screen.getByPlaceholderText("Descreva a coleção...")).toHaveValue("");
+    expect(screen.getByText("Imagem da Coleção *")).toBeInTheDocument();
+  });
+
+  it("validates required basic fields", async () => {
+    const user = userEvent.setup();
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /criar coleção/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Nome é obrigatório")).toBeInTheDocument();
+      expect(screen.getByText("Descrição é obrigatória")).toBeInTheDocument();
     });
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
 
-    it("validates required fields", async () => {
-      const user = userEvent.setup();
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
+  it("requires a pricing tier before submitting", async () => {
+    const user = userEvent.setup();
+    mockUseCollectionFormPricingTiers.mockReturnValue({ data: [] });
+
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
+
+    await fillBasicFields(user);
+    await user.click(screen.getByRole("button", { name: /criar coleção/i }));
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Nível de preço obrigatório" }),
       );
-
-      const submitButton = screen.getByRole("button", { name: /Criar Coleção/ });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Preço inválido")).toBeInTheDocument();
-      });
     });
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
 
-    it("submits form with valid data", async () => {
-      const user = userEvent.setup();
-      mockOnSubmit.mockResolvedValue(undefined);
+  it("submits a new collection with valid data", async () => {
+    const user = userEvent.setup();
+    mockOnSubmit.mockResolvedValue(undefined);
 
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
+
+    await fillBasicFields(user);
+    await user.click(screen.getByRole("button", { name: /criar coleção/i }));
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Coleção Marvel",
+          description: "Coleção de personagens Marvel",
+          image_url: "https://example.com/image.jpg",
+          rotation_type: "fixed",
+          tier_id: defaultTierId,
+          is_active: true,
+          characters: [],
+        }),
       );
-
-      // Fill in required fields
-      await user.type(screen.getByLabelText(/^Nome \*/), "Coleção Marvel");
-      await user.type(screen.getByLabelText(/Descrição/), "Coleção de personagens Marvel");
-      await user.type(screen.getByLabelText(/Preço/), "299.90");
-
-      // Upload image
-      const uploadButton = screen.getAllByText("Upload Image")[0];
-      await user.click(uploadButton);
-
-      // Submit form
-      const submitButton = screen.getByRole("button", { name: /Criar Coleção/ });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith(
-          expect.objectContaining({
-            name: "Coleção Marvel",
-            description: "Coleção de personagens Marvel",
-            price: 299.90,
-            image_url: "https://example.com/image.jpg",
-            rotation_type: "fixed",
-            is_active: true,
-          })
-        );
-      }, { timeout: 10000 });
-    });
-
-    it("validates price is a number", async () => {
-      const user = userEvent.setup();
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      await user.type(screen.getByLabelText(/^Nome \*/), "Test");
-      await user.type(screen.getByLabelText(/Descrição/), "Test description");
-
-      // Type invalid price - the input type="number" will prevent non-numeric input
-      // So we need to check the validation differently
-      // Upload image first to pass that validation
-      const uploadButton = screen.getAllByText("Upload Image")[0];
-      await user.click(uploadButton);
-
-      const submitButton = screen.getByRole("button", { name: /Criar Coleção/ });
-      await user.click(submitButton);
-
-      // Should show validation error for empty/invalid price
-      await waitFor(() => {
-        expect(screen.getByText("Preço inválido")).toBeInTheDocument();
-      }, { timeout: 10000 });
     });
   });
 
-  describe("Edit Collection Mode", () => {
-    const mockCollection: Partial<Collection> = {
+  it("renders edit mode with collection data", async () => {
+    const collection: Collection = {
       id: "1",
       name: "Coleção DC",
       description: "Coleção de personagens DC",
-      priceMonthly: 249.90,
-      coverImage: "https://example.com/dc.jpg",
+      cover_image_url: "https://example.com/dc.jpg",
       rotation_type: "odd_months",
-      character_revelation_date: "2026-06-15T00:00:00Z",
-      character_name: "Batman",
-      character_image_url: "https://example.com/batman.jpg",
       is_active: true,
     };
 
-    it("renders form with collection data", () => {
-      render(
-        <CollectionForm
-          collection={mockCollection as Collection}
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
+    render(
+      <CollectionForm
+        collection={collection}
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+
+    expect(screen.getByText("Editar Coleção")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("Coleção DC")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Coleção de personagens DC")).toBeInTheDocument();
+    expect(screen.getByText("https://example.com/dc.jpg")).toBeInTheDocument();
+  });
+
+  it("updates a collection with modified data", async () => {
+    const user = userEvent.setup();
+    mockOnSubmit.mockResolvedValue(undefined);
+    const collection: Collection = {
+      id: "1",
+      name: "Coleção DC",
+      description: "Coleção de personagens DC",
+      cover_image_url: "https://example.com/dc.jpg",
+      rotation_type: "fixed",
+      is_active: true,
+    };
+
+    render(
+      <CollectionForm
+        collection={collection}
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+
+    const nameInput = await screen.findByDisplayValue("Coleção DC");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Coleção DC Atualizada");
+    await user.click(screen.getByRole("button", { name: /salvar alterações/i }));
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Coleção DC Atualizada",
+          description: "Coleção de personagens DC",
+          image_url: "https://example.com/dc.jpg",
+          tier_id: defaultTierId,
+        }),
       );
-
-      expect(screen.getByText("Editar Coleção")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("Coleção DC")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("Coleção de personagens DC")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("249.9")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("Batman")).toBeInTheDocument();
-    });
-
-    it("updates collection with modified data", async () => {
-      const user = userEvent.setup();
-      mockOnSubmit.mockResolvedValue(undefined);
-
-      render(
-        <CollectionForm
-          collection={mockCollection as Collection}
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Modify name
-      const nameInput = screen.getByDisplayValue("Coleção DC");
-      await user.clear(nameInput);
-      await user.type(nameInput, "Coleção DC Atualizada");
-
-      // Submit form
-      const submitButton = screen.getByRole("button", { name: /Salvar Alterações/ });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith(
-          expect.objectContaining({
-            name: "Coleção DC Atualizada",
-            description: "Coleção de personagens DC",
-            price: 249.90,
-          })
-        );
-      }, { timeout: 10000 });
     });
   });
 
-  describe("Rotation Type Selection", () => {
-    it("allows selecting fixed rotation", async () => {
-      const user = userEvent.setup();
-      mockOnSubmit.mockResolvedValue(undefined);
+  it("does not show the month calendar for fixed rotation", () => {
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
 
-      render(
+    expect(screen.queryByText("Jan")).not.toBeInTheDocument();
+  });
+
+  it("shows the month calendar for odd and even month rotation collections", async () => {
+    const oddCollection: Collection = {
+      id: "1",
+      name: "Coleção Teste",
+      description: "Descrição teste",
+      cover_image_url: "https://example.com/image.jpg",
+      rotation_type: "odd_months",
+      is_active: true,
+    };
+
+    const { rerender } = render(
+      <CollectionForm
+        collection={oddCollection}
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+
+    expect(await screen.findByText("Jan")).toBeInTheDocument();
+    expect(screen.getByText("Fev")).toBeInTheDocument();
+    expect(screen.getByText("Dez")).toBeInTheDocument();
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
         <CollectionForm
+          collection={{ ...oddCollection, id: "2", rotation_type: "even_months" }}
           open={true}
           onOpenChange={mockOnOpenChange}
           onSubmit={mockOnSubmit}
         />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Jan")).toBeInTheDocument();
+    expect(screen.getByText("Fev")).toBeInTheDocument();
+    expect(screen.getByText("Dez")).toBeInTheDocument();
+  });
+
+  it("submits characters from the characters tab", async () => {
+    const user = userEvent.setup();
+    mockOnSubmit.mockResolvedValue(undefined);
+
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
+
+    await fillBasicFields(user);
+    await user.click(screen.getByRole("tab", { name: /personagens/i }));
+    await user.click(screen.getByRole("button", { name: /add character/i }));
+    expect(screen.getByText("Superman")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /criar coleção/i }));
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          characters: [
+            expect.objectContaining({
+              name: "Superman",
+              imageUrl: "https://example.com/superman.jpg",
+            }),
+          ],
+        }),
       );
-
-      await user.type(screen.getByLabelText(/^Nome \*/), "Test");
-      await user.type(screen.getByLabelText(/Descrição/), "Test");
-      await user.type(screen.getByLabelText(/Preço/), "100");
-
-      // Upload image
-      const uploadButton = screen.getAllByText("Upload Image")[0];
-      await user.click(uploadButton);
-
-      // Submit with default fixed rotation
-      const submitButton = screen.getByRole("button", { name: /Criar Coleção/ });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith(
-          expect.objectContaining({
-            rotation_type: "fixed",
-          })
-        );
-      });
-    });
-
-    it("does not show calendar preview for fixed rotation", () => {
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Calendar preview should not be visible for fixed rotation
-      expect(screen.queryByText("Visualização do Calendário de Rotação")).not.toBeInTheDocument();
-    });
-
-    it("shows calendar preview when editing collection with odd months rotation", () => {
-      const mockCollection: Partial<Collection> = {
-        id: "1",
-        name: "Coleção Teste",
-        description: "Descrição teste",
-        priceMonthly: 100,
-        coverImage: "https://example.com/image.jpg",
-        rotation_type: "odd_months",
-        is_active: true,
-      };
-
-      render(
-        <CollectionForm
-          collection={mockCollection as Collection}
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Calendar preview should be visible for odd_months rotation
-      expect(screen.getByText("Visualização do Calendário de Rotação")).toBeInTheDocument();
-
-      // Check that all 12 months are displayed
-      expect(screen.getByText("Jan")).toBeInTheDocument();
-      expect(screen.getByText("Fev")).toBeInTheDocument();
-      expect(screen.getByText("Mar")).toBeInTheDocument();
-      expect(screen.getByText("Abr")).toBeInTheDocument();
-      expect(screen.getByText("Mai")).toBeInTheDocument();
-      expect(screen.getByText("Jun")).toBeInTheDocument();
-      expect(screen.getByText("Jul")).toBeInTheDocument();
-      expect(screen.getByText("Ago")).toBeInTheDocument();
-      expect(screen.getByText("Set")).toBeInTheDocument();
-      expect(screen.getByText("Out")).toBeInTheDocument();
-      expect(screen.getByText("Nov")).toBeInTheDocument();
-      expect(screen.getByText("Dez")).toBeInTheDocument();
-
-      // Check legend
-      expect(screen.getByText("Meses Ativos")).toBeInTheDocument();
-      expect(screen.getByText("Meses Inativos")).toBeInTheDocument();
-
-      // Check descriptive text for odd months
-      expect(screen.getByText(/Esta coleção estará disponível nos meses ímpares/)).toBeInTheDocument();
-    });
-
-    it("shows calendar preview when editing collection with even months rotation", () => {
-      const mockCollection: Partial<Collection> = {
-        id: "1",
-        name: "Coleção Teste",
-        description: "Descrição teste",
-        priceMonthly: 100,
-        coverImage: "https://example.com/image.jpg",
-        rotation_type: "even_months",
-        is_active: true,
-      };
-
-      render(
-        <CollectionForm
-          collection={mockCollection as Collection}
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Calendar preview should be visible for even_months rotation
-      expect(screen.getByText("Visualização do Calendário de Rotação")).toBeInTheDocument();
-
-      // Check descriptive text for even months
-      expect(screen.getByText(/Esta coleção estará disponível nos meses pares/)).toBeInTheDocument();
     });
   });
 
-  describe("Character Revelation Fields", () => {
-    it("allows setting character name and image", async () => {
-      const user = userEvent.setup();
-      mockOnSubmit.mockResolvedValue(undefined);
+  it("allows toggling active status", async () => {
+    const user = userEvent.setup();
+    mockOnSubmit.mockResolvedValue(undefined);
 
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
+
+    await fillBasicFields(user);
+    await user.click(screen.getByRole("tab", { name: /config/i }));
+    fireEvent.click(screen.getByRole("switch", { name: /ativa/i }));
+    await user.click(screen.getByRole("button", { name: /criar coleção/i }));
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          is_active: false,
+        }),
       );
-
-      await user.type(screen.getByLabelText(/^Nome \*/), "Test");
-      await user.type(screen.getByLabelText(/Descrição/), "Test");
-      await user.type(screen.getByLabelText(/Preço/), "100");
-      await user.type(screen.getByLabelText(/Nome do Personagem/), "Superman");
-
-      // Upload images
-      const uploadButtons = screen.getAllByText("Upload Image");
-      await user.click(uploadButtons[0]); // Collection image
-      await user.click(uploadButtons[1]); // Character image
-
-      const submitButton = screen.getByRole("button", { name: /Criar Coleção/ });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith(
-          expect.objectContaining({
-            character_name: "Superman",
-            character_image_url: "https://example.com/image.jpg",
-          })
-        );
-      }, { timeout: 10000 });
     });
   });
 
-  describe("Active Status Toggle", () => {
-    it("allows toggling active status", async () => {
-      const user = userEvent.setup();
-      mockOnSubmit.mockResolvedValue(undefined);
+  it("calls onOpenChange when cancel is clicked", async () => {
+    const user = userEvent.setup();
+    render(
+      <CollectionForm open={true} onOpenChange={mockOnOpenChange} onSubmit={mockOnSubmit} />,
+    );
 
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
+    await user.click(screen.getByRole("button", { name: /cancelar/i }));
 
-      await user.type(screen.getByLabelText(/^Nome \*/), "Test");
-      await user.type(screen.getByLabelText(/Descrição/), "Test");
-      await user.type(screen.getByLabelText(/Preço/), "100");
-
-      // Upload image
-      const uploadButton = screen.getAllByText("Upload Image")[0];
-      await user.click(uploadButton);
-
-      // Toggle active status
-      const activeSwitch = screen.getByRole("switch", { name: /Coleção Ativa/ });
-      await user.click(activeSwitch);
-
-      const submitButton = screen.getByRole("button", { name: /Criar Coleção/ });
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith(
-          expect.objectContaining({
-            is_active: false,
-          })
-        );
-      });
-    });
+    expect(mockOnOpenChange).toHaveBeenCalledWith(false);
   });
 
-  describe("Form Cancellation", () => {
-    it("calls onOpenChange when cancel button is clicked", async () => {
-      const user = userEvent.setup();
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-        />
-      );
+  it("disables editable controls when loading", () => {
+    render(
+      <CollectionForm
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSubmit={mockOnSubmit}
+        isLoading={true}
+      />,
+    );
 
-      const cancelButton = screen.getByRole("button", { name: /Cancelar/ });
-      await user.click(cancelButton);
-
-      expect(mockOnOpenChange).toHaveBeenCalledWith(false);
-    });
-  });
-
-  describe("Loading State", () => {
-    it("disables form fields when loading", () => {
-      render(
-        <CollectionForm
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          onSubmit={mockOnSubmit}
-          isLoading={true}
-        />
-      );
-
-      expect(screen.getByPlaceholderText("Ex: Coleção Marvel")).toBeDisabled();
-      expect(screen.getByPlaceholderText("Descreva a coleção...")).toBeDisabled();
-      expect(screen.getByPlaceholderText("0.00")).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Criar Coleção/ })).toBeDisabled();
-    });
+    expect(screen.getByPlaceholderText("Ex: Heróis da Marvel")).toBeDisabled();
+    expect(screen.getByPlaceholderText("Descreva a coleção...")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /criar coleção/i })).toBeDisabled();
   });
 });

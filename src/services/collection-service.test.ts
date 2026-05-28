@@ -25,6 +25,22 @@ vi.mock('@/integrations/supabase/client', () => ({
 
 import { supabase } from '@/integrations/supabase/client';
 
+type MockQueryResult = {
+  data: unknown;
+  error: { message: string } | null;
+};
+
+function mockActiveCollectionsQuery(result: MockQueryResult) {
+  const order = vi.fn().mockResolvedValue(result);
+  const inFilter = vi.fn().mockReturnValue({ order });
+  const eq = vi.fn().mockReturnValue({ in: inFilter });
+  const select = vi.fn().mockReturnValue({ eq });
+
+  vi.mocked(supabase.from).mockReturnValue({ select } as any);
+
+  return { select, eq, inFilter, order };
+}
+
 describe('Collection Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -37,49 +53,50 @@ describe('Collection Service', () => {
         { id: '2', name: 'Odd Month Collection', rotation_type: 'odd_months' }
       ];
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      const query = mockActiveCollectionsQuery({
         data: mockCollections,
         error: null
-      } as any);
+      });
 
       const result = await getActiveCollections(1, 2026);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('get_active_collections', {
-        p_month: 1,
-        p_year: 2026
-      });
+      expect(supabase.from).toHaveBeenCalledWith('collections');
+      expect(query.select).toHaveBeenCalledWith('*');
+      expect(query.eq).toHaveBeenCalledWith('is_active', true);
+      expect(query.inFilter).toHaveBeenCalledWith('rotation_type', ['fixed', 'odd_months']);
+      expect(query.order).toHaveBeenCalledWith('name', { ascending: true });
       expect(result).toEqual(mockCollections);
     });
 
     it('should throw error for invalid month (< 1)', async () => {
       await expect(getActiveCollections(0, 2026)).rejects.toThrow(
-        'Month must be between 1 and 12, got 0'
+        'Month must be an integer between 1 and 12, got 0'
       );
     });
 
     it('should throw error for invalid month (> 12)', async () => {
       await expect(getActiveCollections(13, 2026)).rejects.toThrow(
-        'Month must be between 1 and 12, got 13'
+        'Month must be an integer between 1 and 12, got 13'
       );
     });
 
     it('should throw error for invalid year (< 2024)', async () => {
       await expect(getActiveCollections(1, 2023)).rejects.toThrow(
-        'Year must be between 2024 and 2030, got 2023'
+        'Year must be an integer between 2024 and 2030, got 2023'
       );
     });
 
     it('should throw error for invalid year (> 2030)', async () => {
       await expect(getActiveCollections(1, 2031)).rejects.toThrow(
-        'Year must be between 2024 and 2030, got 2031'
+        'Year must be an integer between 2024 and 2030, got 2031'
       );
     });
 
     it('should throw error when database query fails', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockActiveCollectionsQuery({
         data: null,
         error: { message: 'Database error' }
-      } as any);
+      });
 
       await expect(getActiveCollections(1, 2026)).rejects.toThrow(
         'Failed to get active collections: Database error'
@@ -94,10 +111,10 @@ describe('Collection Service', () => {
         { id: 'collection-2', name: 'Another Collection' }
       ];
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockActiveCollectionsQuery({
         data: mockCollections,
         error: null
-      } as any);
+      });
 
       const result = await isCollectionActive('collection-1', 3, 2026);
 
@@ -109,10 +126,10 @@ describe('Collection Service', () => {
         { id: 'collection-1', name: 'Test Collection' }
       ];
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockActiveCollectionsQuery({
         data: mockCollections,
         error: null
-      } as any);
+      });
 
       const result = await isCollectionActive('collection-999', 3, 2026);
 
@@ -120,10 +137,10 @@ describe('Collection Service', () => {
     });
 
     it('should return false when no collections are active', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockActiveCollectionsQuery({
         data: [],
         error: null
-      } as any);
+      });
 
       const result = await isCollectionActive('collection-1', 3, 2026);
 
@@ -242,7 +259,7 @@ describe('Collection Service', () => {
       vi.mocked(supabase.from).mockImplementation(mockFrom as any);
 
       await expect(getRotationSchedule('collection-1')).rejects.toThrow(
-        'Unknown rotation type: invalid_type'
+        'Invalid rotation type: invalid_type'
       );
     });
   });
@@ -320,10 +337,10 @@ describe('Collection Service', () => {
             }
 
             // Mock the database response
-            vi.mocked(supabase.rpc).mockResolvedValue({
+            mockActiveCollectionsQuery({
               data: expectedCollections,
               error: null
-            } as any);
+            });
 
             // Call the function
             const result = await getActiveCollections(month, year);

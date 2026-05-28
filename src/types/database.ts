@@ -15,6 +15,19 @@
  * 
  * @see supabase/migrations/20260315000000_create_standalone_purchases.sql
  */
+export type StandalonePurchaseStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'awaiting_deposit'
+  | 'deposit_paid'
+  | 'awaiting_balance'
+  | 'balance_paid'
+  | 'in_production'
+  | 'shipped'
+  | 'delivered'
+  | 'completed'
+  | 'cancelled';
+
 export interface StandalonePurchase {
   /** Primary key */
   id: string;
@@ -32,16 +45,25 @@ export interface StandalonePurchase {
   character_id: string | null;
   
   /** Purchase status */
-  status: 'deposit_paid' | 'awaiting_balance' | 'balance_paid' | 'shipped' | 'delivered' | 'cancelled';
+  status: StandalonePurchaseStatus;
   
   /** Fixed R$100 deposit (non-refundable arras confirmatórias) */
-  price_deposit: number;
+  deposit_amount: number;
   
   /** Remaining amount after deposit (collection price - 100) */
-  price_balance: number;
+  balance_amount: number;
   
   /** Total collection price */
-  price_full: number;
+  total_amount: number;
+
+  /** Legacy synchronized alias for deposit_amount */
+  price_deposit?: number | null;
+
+  /** Legacy synchronized alias for balance_amount */
+  price_balance?: number | null;
+
+  /** Legacy synchronized alias for total_amount */
+  price_full?: number | null;
   
   /** Timestamp when deposit was paid */
   deposit_paid_at: Date | null;
@@ -266,10 +288,13 @@ export interface StandalonePurchaseRow {
   collection_id: string;
   cycle_id: string;
   character_id: string | null;
-  status: 'deposit_paid' | 'awaiting_balance' | 'balance_paid' | 'shipped' | 'delivered' | 'cancelled';
-  price_deposit: number;
-  price_balance: number;
-  price_full: number;
+  status: StandalonePurchaseStatus;
+  deposit_amount: number;
+  balance_amount: number;
+  total_amount: number;
+  price_deposit?: number | null;
+  price_balance?: number | null;
+  price_full?: number | null;
   deposit_paid_at: string | null;
   balance_due_date: string | null;
   balance_paid_at: string | null;
@@ -279,8 +304,16 @@ export interface StandalonePurchaseRow {
   cancelled_at: string | null;
   cancellation_reason: string | null;
   tracking_code: string | null;
-  deposit_voucher_url: string | null;
-  balance_voucher_url: string | null;
+  payment_voucher_deposit_url: string | null;
+  deposit_rejection_reason: string | null;
+  payment_voucher_balance_url: string | null;
+  balance_rejection_reason: string | null;
+
+  /** Legacy synchronized alias for payment_voucher_deposit_url */
+  deposit_voucher_url?: string | null;
+
+  /** Legacy synchronized alias for payment_voucher_balance_url */
+  balance_voucher_url?: string | null;
   expected_delivery_date: string | null;
   actual_delivery_date: string | null;
   created_at: string;
@@ -354,6 +387,8 @@ export function convertStandalonePurchaseRow(row: StandalonePurchaseRow): Standa
     actual_delivery_date: row.actual_delivery_date ? new Date(row.actual_delivery_date) : null,
     created_at: new Date(row.created_at),
     updated_at: new Date(row.updated_at),
+    deposit_voucher_url: row.deposit_voucher_url ?? row.payment_voucher_deposit_url ?? null,
+    balance_voucher_url: row.balance_voucher_url ?? row.payment_voucher_balance_url ?? null,
   };
 }
 

@@ -1,7 +1,12 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
-import { nowInBahia, toUTC } from "../_shared/timezone.ts";
+import {
+  isDeliveryStatus,
+  type DeliveryStatus,
+  VALID_DELIVERY_STATUSES,
+} from "../_shared/delivery-status.ts";
+import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 /**
  * Edge Function: bulk-update-delivery-status
@@ -13,19 +18,24 @@ import { nowInBahia, toUTC } from "../_shared/timezone.ts";
  * Task: 21.7
  */
 
-type DeliveryStatus = 
-  | 'scheduled'
-  | 'pending_choice'
-  | 'confirmed'
-  | 'in_production'
-  | 'shipped'
-  | 'delivered';
-
 interface BulkUpdateRequest {
   deliveryIds: string[];
-  newStatus: DeliveryStatus;
+  newStatus: string;
   notes?: string;
 }
+
+const BULK_UPDATE_DELIVERY_STATUS_SCHEMA: Schema = {
+  deliveryIds: {
+    type: "array",
+    required: true,
+    itemType: "uuid",
+    minItems: 1,
+    maxItems: 100,
+    uniqueItems: true,
+  },
+  newStatus: { type: "string", required: true, maxLength: 20, trim: true },
+  notes: { type: "string", maxLength: 1000, trim: true, rejectHtml: true },
+};
 
 interface BulkUpdateResult {
   success: boolean;
@@ -39,64 +49,6 @@ interface BulkUpdateResult {
 }
 
 /**
- * Valida se a transição de status é permitida
- */
-function isValidStatusTransition(currentStatus: string, newStatus: string): boolean {
-  const validTransitions: Record<string, string[]> = {
-    'scheduled': ['pending_choice'],
-    'pending_choice': ['confirmed'],
-    'confirmed': ['in_production'],
-    'in_production': ['shipped'],
-    'shipped': ['delivered'],
-    'delivered': [], // Estado final
-  };
-
-  // Permitir que admin possa voltar um status (para correções)
-  const reverseTransitions: Record<string, string[]> = {
-    'pending_choice': ['scheduled'],
-    'confirmed': ['pending_choice'],
-    'in_production': ['confirmed'],
-    'shipped': ['in_production'],
-    'delivered': ['shipped'],
-  };
-
-  const allowedForward = validTransitions[currentStatus] || [];
-  const allowedBackward = reverseTransitions[currentStatus] || [];
-  
-  return allowedForward.includes(newStatus) || allowedBackward.includes(newStatus);
-}
-
-/**
- * Registra a ação do admin em uma tabela de logs
- */
-async function logAdminAction(
-  service: any,
-  deliveryId: string,
-  adminUserId: string,
-  previousStatus: string,
-  newStatus: string,
-  notes: string | null
-): Promise<void> {
-  const logEntry = {
-    delivery_id: deliveryId,
-    admin_user_id: adminUserId,
-    action_type: 'bulk_status_update',
-    previous_status: previousStatus,
-    new_status: newStatus,
-    notes: notes,
-    created_at: toUTC(nowInBahia()).toISOString(),
-  };
-
-  const { error } = await service
-    .from('admin_action_logs')
-    .insert(logEntry);
-
-  if (error) {
-    console.error('Erro ao registrar ação do admin:', error);
-  }
-}
-
-/**
  * Atualiza o status de uma única entrega (usado internamente pelo bulk update)
  */
 async function updateSingleDelivery(
@@ -107,64 +59,29 @@ async function updateSingleDelivery(
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Buscar entrega atual
-    const { data: delivery, error: deliveryError } = await service
-      .from('subscription_deliveries')
-      .select('id, status')
-      .eq('id', deliveryId)
-      .single();
+    const { error } = await service.rpc("admin_update_subscription_delivery_status", {
+      p_delivery_id: deliveryId,
+      p_status: newStatus,
+      p_tracking_code: null,
+      p_notes: notes ?? null,
+      p_action_type: "bulk_status_update",
+      p_allow_same_status: false,
+      p_admin_user_id: adminUserId,
+    });
 
-    if (deliveryError || !delivery) {
-      return { success: false, error: 'Entrega não encontrada' };
+    if (error) {
+      const message = error.message || "Falha ao atualizar entrega";
+      console.error("Erro ao atualizar entrega:", message);
+      if (message.includes("DELIVERY_NOT_FOUND")) return { success: false, error: "Entrega nao encontrada" };
+      if (message.includes("INVALID_STATUS_TRANSITION")) return { success: false, error: "Transicao invalida" };
+      return { success: false, error: "Falha ao atualizar entrega" };
     }
-
-    const currentStatus = delivery.status;
-
-    // Validar transição de status
-    if (!isValidStatusTransition(currentStatus, newStatus)) {
-      return { 
-        success: false, 
-        error: `Transição inválida: ${currentStatus} → ${newStatus}` 
-      };
-    }
-
-    // Preparar dados de atualização
-    const updateData: any = {
-      status: newStatus,
-      updated_at: toUTC(nowInBahia()).toISOString(),
-    };
-
-    // Adicionar timestamps específicos baseado no status
-    if (newStatus === 'shipped') {
-      updateData.shipped_at = toUTC(nowInBahia()).toISOString();
-    } else if (newStatus === 'delivered') {
-      updateData.actual_delivery_date = toUTC(nowInBahia()).toISOString();
-    }
-
-    // Atualizar entrega
-    const { error: updateError } = await service
-      .from('subscription_deliveries')
-      .update(updateData)
-      .eq('id', deliveryId);
-
-    if (updateError) {
-      return { success: false, error: updateError.message };
-    }
-
-    // Registrar ação do admin
-    await logAdminAction(
-      service,
-      deliveryId,
-      adminUserId,
-      currentStatus,
-      newStatus,
-      notes || null
-    );
 
     return { success: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro desconhecido";
-    return { success: false, error: msg };
+    console.error("Erro inesperado ao atualizar entrega:", msg);
+    return { success: false, error: "Falha ao atualizar entrega" };
   }
 }
 
@@ -228,58 +145,18 @@ serve(async (req: Request) => {
     const adminUserId = adminUser.userId;
 
     const service = getServiceClient();
-    const body = (await req.json().catch(() => ({}))) as BulkUpdateRequest;
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateOrReject(rawBody, BULK_UPDATE_DELIVERY_STATUS_SCHEMA);
+    if ("error" in validation) return validation.error;
 
-    const { deliveryIds, newStatus, notes } = body;
-
-    // Validar entrada
-    if (!deliveryIds || !Array.isArray(deliveryIds) || deliveryIds.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "deliveryIds deve ser um array não vazio" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    if (!newStatus) {
-      return new Response(
-        JSON.stringify({ error: "newStatus é obrigatório" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
+    const { deliveryIds, newStatus, notes } =
+      validation.data as unknown as BulkUpdateRequest;
 
     // Validar status
-    const validStatuses: DeliveryStatus[] = [
-      'scheduled',
-      'pending_choice',
-      'confirmed',
-      'in_production',
-      'shipped',
-      'delivered'
-    ];
-
-    if (!validStatuses.includes(newStatus)) {
+    if (!isDeliveryStatus(newStatus)) {
       return new Response(
         JSON.stringify({ 
-          error: `Status inválido. Status válidos: ${validStatuses.join(', ')}` 
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Limitar número de entregas por operação (evitar timeout)
-    if (deliveryIds.length > 100) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Máximo de 100 entregas por operação. Por favor, selecione menos entregas.' 
+          error: `Status inválido. Status válidos: ${VALID_DELIVERY_STATUSES.join(', ')}`
         }),
         {
           status: 400,
@@ -313,7 +190,7 @@ serve(async (req: Request) => {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error in bulk-update-delivery-status:", msg);
     const status = msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

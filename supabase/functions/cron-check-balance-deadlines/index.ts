@@ -23,6 +23,13 @@ import {
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
 import { requireSharedSecret } from "../_shared/secrets.ts";
+import {
+  EmailService,
+  escapeHtml,
+  getEmailConfig,
+  sanitizeEmailSubject,
+} from "../_shared/email.ts";
+import { getPublicBaseUrl } from "../_shared/public-url.ts";
 
 interface StandalonePurchase {
   id: string;
@@ -44,31 +51,23 @@ async function sendUrgentBalanceReminder(params: {
   dueDate: string;
   purchaseId: string;
 }): Promise<void> {
-  const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
-  const emailApiKey = Deno.env.get("EMAIL_API_KEY");
-  const emailFrom = Deno.env.get("EMAIL_FROM") || "noreply@ordax.com.br";
-  const emailFromName = Deno.env.get("EMAIL_FROM_NAME") || "ORDAX";
+  const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
+  const emailService = new EmailService(getEmailConfig({ baseUrl }));
 
-  if (!emailApiKey) {
-    console.warn("EMAIL_API_KEY not configured, skipping reminder email");
-    return;
-  }
-
-  const subject = `⚠️ URGENTE: Pagamento do Saldo Vence Amanhã - ${params.collectionName}`;
+  const subject = sanitizeEmailSubject(
+    `URGENTE: Pagamento do Saldo Vence Amanha - ${params.collectionName}`,
+  );
   const htmlContent = generateUrgentReminderEmailHTML({
     userName: params.userName || "Colecionador",
     collectionName: params.collectionName,
     balanceAmount: params.balanceAmount,
     dueDate: params.dueDate,
     purchaseId: params.purchaseId,
+    baseUrl,
   });
 
   try {
-    await sendEmail({
-      provider: emailProvider as "resend" | "sendgrid",
-      apiKey: emailApiKey,
-      from: emailFrom,
-      fromName: emailFromName,
+    await emailService.sendEmail({
       to: params.to,
       subject,
       html: htmlContent,
@@ -90,6 +89,7 @@ function generateUrgentReminderEmailHTML(params: {
   balanceAmount: number;
   dueDate: string;
   purchaseId: string;
+  baseUrl: string;
 }): string {
   const formattedAmount = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -102,6 +102,9 @@ function generateUrgentReminderEmailHTML(params: {
     month: "2-digit",
     year: "numeric",
   });
+  const userName = escapeHtml(params.userName);
+  const collectionName = escapeHtml(params.collectionName);
+  const purchaseUrl = `${params.baseUrl}/compra-avulsa/${encodeURIComponent(params.purchaseId)}`;
 
   return `
 <!DOCTYPE html>
@@ -222,13 +225,13 @@ function generateUrgentReminderEmailHTML(params: {
       <p>Prazo vence amanhã</p>
     </div>
     <div class="content">
-      <p class="greeting">Olá, ${params.userName}!</p>
+      <p class="greeting">Olá, ${userName}!</p>
 
       <div class="urgent-box">
         <h2>⏰ Atenção: Prazo Final Amanhã</h2>
         <div class="info-row">
           <span class="info-label">Coleção:</span>
-          <span class="info-value">${params.collectionName}</span>
+          <span class="info-value">${collectionName}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Prazo Final:</span>
@@ -249,12 +252,12 @@ function generateUrgentReminderEmailHTML(params: {
       </div>
 
       <p style="margin-top: 24px;">
-        Sua peça exclusiva da coleção <strong>${params.collectionName}</strong> já está pronta
+        Sua peça exclusiva da coleção <strong>${collectionName}</strong> já está pronta
         e aguardando apenas a confirmação do pagamento do saldo para ser enviada.
       </p>
 
       <div style="text-align: center;">
-        <a href="${Deno.env.get("FRONTEND_URL") || "https://ordax.com.br"}/compra-avulsa/${params.purchaseId}" class="cta-button">
+        <a href="${purchaseUrl}" class="cta-button">
           Pagar Saldo Agora
         </a>
       </div>
@@ -287,17 +290,10 @@ async function sendCancellationNotice(params: {
   collectionName: string;
   purchaseId: string;
 }): Promise<void> {
-  const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "resend";
-  const emailApiKey = Deno.env.get("EMAIL_API_KEY");
-  const emailFrom = Deno.env.get("EMAIL_FROM") || "noreply@ordax.com.br";
-  const emailFromName = Deno.env.get("EMAIL_FROM_NAME") || "ORDAX";
+  const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
+  const emailService = new EmailService(getEmailConfig({ baseUrl }));
 
-  if (!emailApiKey) {
-    console.warn("EMAIL_API_KEY not configured, skipping cancellation email");
-    return;
-  }
-
-  const subject = `Pedido Cancelado - ${params.collectionName}`;
+  const subject = sanitizeEmailSubject(`Pedido Cancelado - ${params.collectionName}`);
   const htmlContent = generateCancellationEmailHTML({
     userName: params.userName || "Colecionador",
     collectionName: params.collectionName,
@@ -305,11 +301,7 @@ async function sendCancellationNotice(params: {
   });
 
   try {
-    await sendEmail({
-      provider: emailProvider as "resend" | "sendgrid",
-      apiKey: emailApiKey,
-      from: emailFrom,
-      fromName: emailFromName,
+    await emailService.sendEmail({
       to: params.to,
       subject,
       html: htmlContent,
@@ -330,6 +322,10 @@ function generateCancellationEmailHTML(params: {
   collectionName: string;
   purchaseId: string;
 }): string {
+  const userName = escapeHtml(params.userName);
+  const collectionName = escapeHtml(params.collectionName);
+  const purchaseId = escapeHtml(params.purchaseId);
+
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -420,10 +416,10 @@ function generateCancellationEmailHTML(params: {
       <h1>Pedido Cancelado</h1>
     </div>
     <div class="content">
-      <p class="greeting">Olá, ${params.userName},</p>
+      <p class="greeting">Olá, ${userName},</p>
 
       <p>
-        Informamos que seu pedido da coleção <strong>${params.collectionName}</strong>
+        Informamos que seu pedido da coleção <strong>${collectionName}</strong>
         foi cancelado devido ao não recebimento do pagamento do saldo dentro do prazo estabelecido.
       </p>
 
@@ -431,11 +427,11 @@ function generateCancellationEmailHTML(params: {
         <h2>Detalhes do Pedido</h2>
         <div class="info-row">
           <span class="info-label">Coleção:</span>
-          <span class="info-value">${params.collectionName}</span>
+          <span class="info-value">${collectionName}</span>
         </div>
         <div class="info-row">
           <span class="info-label">ID do Pedido:</span>
-          <span class="info-value">${params.purchaseId}</span>
+          <span class="info-value">${purchaseId}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Status:</span>
@@ -469,71 +465,6 @@ function generateCancellationEmailHTML(params: {
 </body>
 </html>
   `.trim();
-}
-
-/**
- * Sends an email using the configured email provider
- */
-async function sendEmail(params: {
-  provider: "resend" | "sendgrid";
-  apiKey: string;
-  from: string;
-  fromName: string;
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<void> {
-  if (params.provider === "resend") {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${params.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${params.fromName} <${params.from}>`,
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Resend API error: ${error}`);
-    }
-  } else {
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${params.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: params.to }],
-          },
-        ],
-        from: {
-          email: params.from,
-          name: params.fromName,
-        },
-        subject: params.subject,
-        content: [
-          {
-            type: "text/html",
-            value: params.html,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`SendGrid API error: ${error}`);
-    }
-  }
 }
 
 Deno.serve(async (req) => {

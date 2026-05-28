@@ -8,7 +8,7 @@ import { AdminProductionTimelineEditor } from "@/pages/admin/quotes/AdminProduct
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import SEOHead from "@/components/SEOHead";
 import { useAdminQuotesData } from "@/hooks/admin/useAdminQuotesData";
-import type { ModelMini, QuoteItemRow } from "@/hooks/admin/useAdminQuotesData";
+import type { QuoteItemRow } from "@/hooks/admin/useAdminQuotesData";
 
 function fmtDate(iso: string) {
   try {
@@ -26,13 +26,7 @@ function fmtDate(iso: string) {
 
 export default function AdminQuotesPage() {
   const { toast } = useToast();
-  const { quotesQuery, itemsQuery, modelsQuery, updateStatusMutation } = useAdminQuotesData();
-
-  const modelsById = useMemo(() => {
-    const m = new Map<string, ModelMini>();
-    for (const row of modelsQuery.data ?? []) m.set(row.id, row);
-    return m;
-  }, [modelsQuery.data]);
+  const { quotesQuery, itemsQuery, updateStatusMutation } = useAdminQuotesData();
 
   const itemsByQuote = useMemo(() => {
     const map = new Map<string, QuoteItemRow[]>();
@@ -131,23 +125,17 @@ export default function AdminQuotesPage() {
                         {items.length === 0 ? (
                           <p className="text-sm text-muted-foreground">(sem itens)</p>
                         ) : (
-                          items.map((it) => {
-                            const m = modelsById.get(it.model_id);
-                            const title = m
-                              ? [m.name, m.franchise].filter(Boolean).join(" ")
-                              : it.model_id;
-                            return (
-                              <div
-                                key={it.id}
-                                className="flex flex-wrap items-center justify-between gap-2 text-sm"
-                              >
-                                <span className="font-medium">{title}</span>
-                                <span className="text-muted-foreground">
-                                  {it.quantity}x • {it.scale}
-                                </span>
-                              </div>
-                            );
-                          })
+                          items.map((it) => (
+                            <div
+                              key={it.id}
+                              className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                            >
+                              <span className="font-medium">{it.name}</span>
+                              <span className="text-muted-foreground">
+                                {it.quantity}x{it.description ? ` - ${it.description}` : ""}
+                              </span>
+                            </div>
+                          ))
                         )}
                       </div>
                     </div>

@@ -15,15 +15,33 @@ import { Subscription } from '@/types/subscription-credit-system';
 import { SchedulePlanChangeDialog } from './SchedulePlanChangeDialog';
 import { CancelWithRefundDialog } from './CancelWithRefundDialog';
 import { NoRenewalDialog } from './NoRenewalDialog';
+import { useToast } from '@/hooks/use-toast';
+import { useReactivateSubscriptionRenewal } from '@/hooks/subscription/useSubscriptionCreditActions';
 
 interface MySubscriptionSectionProps {
   subscription: Subscription;
 }
 
 export function MySubscriptionSection({ subscription }: MySubscriptionSectionProps) {
+  const { toast } = useToast();
   const [showPlanChange, setShowPlanChange] = useState(false);
   const [showCancelRefund, setShowCancelRefund] = useState(false);
   const [showNoRenewal, setShowNoRenewal] = useState(false);
+  const reactivateRenewalMutation = useReactivateSubscriptionRenewal(subscription.id, {
+    onSuccess: () => {
+      toast({
+        title: "Renovação automática reativada",
+        description: "Sua assinatura voltará a renovar no próximo ciclo.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao reativar renovação",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const getPlanLabel = (planType: string) => {
     return planType === 'trimestral' ? 'Trimestral' : 'Semestral';
@@ -149,12 +167,17 @@ export function MySubscriptionSection({ subscription }: MySubscriptionSectionPro
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => {
-                    // TODO: Implement reactivate renewal
-                  }}
+                  onClick={() => reactivateRenewalMutation.mutate()}
+                  disabled={reactivateRenewalMutation.isPending}
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reativar Renovação Automática
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${
+                      reactivateRenewalMutation.isPending ? "animate-spin" : ""
+                    }`}
+                  />
+                  {reactivateRenewalMutation.isPending
+                    ? "Reativando..."
+                    : "Reativar Renovação Automática"}
                 </Button>
               )}
             </div>

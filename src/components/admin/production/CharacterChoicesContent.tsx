@@ -32,9 +32,10 @@ const STATUS_OPTIONS: Array<{
   { value: "approved", label: "Aprovado", variant: "default" },
   { value: "rejected", label: "Rejeitado", variant: "destructive" },
   { value: "locked", label: "Bloqueado", variant: "outline" },
+  { value: "expired", label: "Expirado", variant: "destructive" },
 ];
 
-type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked";
+type ChoiceStatus = "pending" | "submitted" | "approved" | "rejected" | "locked" | "expired";
 
 export function CharacterChoicesContent() {
   const [filters, setFilters] = useState<ChoiceFilters>({});
@@ -83,8 +84,8 @@ export function CharacterChoicesContent() {
   const handleDateRangeChange = (range: { from?: Date; to?: Date }) => {
     setFilters({
       ...filters,
-      dateFrom: range.from,
-      dateTo: range.to,
+      dateFrom: range.from?.toISOString(),
+      dateTo: range.to?.toISOString(),
     });
   };
 
@@ -103,6 +104,7 @@ export function CharacterChoicesContent() {
       case "approved":
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case "rejected":
+      case "expired":
         return <XCircle className="h-4 w-4 text-red-500" />;
       case "pending":
       case "submitted":
@@ -219,9 +221,11 @@ export function CharacterChoicesContent() {
             <div className="space-y-3">
               <Label>Prazo de Escolha</Label>
               <DateRangePicker
-                from={filters.dateFrom}
-                to={filters.dateTo}
-                onSelect={handleDateRangeChange}
+                value={{
+                  from: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
+                  to: filters.dateTo ? new Date(filters.dateTo) : undefined,
+                }}
+                onChange={handleDateRangeChange}
               />
             </div>
           </CardContent>

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Stripe from "npm:stripe@20.4.1";
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { checkPayloadSize, PAYLOAD_LIMITS } from "../_shared/payload-guard.ts";
+import { getPublicBaseUrl } from "../_shared/public-url.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { getClaims, getServiceClient, errorToStatus } from "../_shared/supabase.ts";
 
@@ -73,7 +74,7 @@ serve(async (req) => {
       appInfo: {
         name: "ORDAX",
         version: "1.0.0",
-        url: Deno.env.get("SITE_URL") ?? "https://ordax.com.br",
+        url: getPublicBaseUrl(["SITE_URL", "BASE_URL"]),
       },
     });
 
@@ -96,15 +97,16 @@ serve(async (req) => {
       });
       customerId = customer.id;
 
-      await service.from("stripe_customers").upsert(
-        {
-          user_id: userId,
-          stripe_customer_id: customer.id,
-          email: authUser.user.email,
-          metadata: { userId },
-        },
-        { onConflict: "user_id" },
-      );
+      const { error: customerRecordError } = await service.rpc("upsert_stripe_customer_record", {
+        p_user_id: userId,
+        p_stripe_customer_id: customer.id,
+        p_email: authUser.user.email,
+        p_metadata: { userId },
+      });
+
+      if (customerRecordError) {
+        throw new Error(`Failed to record Stripe customer: ${customerRecordError.message}`);
+      }
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -116,14 +118,18 @@ serve(async (req) => {
       automatic_payment_methods: { enabled: true },
     });
 
-    await service.from("stripe_payment_intents").insert({
-      stripe_payment_intent_id: paymentIntent.id,
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
-      status: paymentIntent.status,
-      customer_id: customerId,
-      metadata: paymentIntent.metadata,
+    const { error: paymentIntentRecordError } = await service.rpc("record_stripe_payment_intent", {
+      p_stripe_payment_intent_id: paymentIntent.id,
+      p_amount: paymentIntent.amount,
+      p_currency: paymentIntent.currency,
+      p_status: paymentIntent.status,
+      p_customer_id: customerId,
+      p_metadata: paymentIntent.metadata,
     });
+
+    if (paymentIntentRecordError) {
+      throw new Error(`Failed to record Stripe payment intent: ${paymentIntentRecordError.message}`);
+    }
 
     return new Response(
       JSON.stringify({
@@ -138,7 +144,7 @@ serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     const status = msg === "Invalid amount" || msg === "Invalid currency" ? 400 : errorToStatus(msg);
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });

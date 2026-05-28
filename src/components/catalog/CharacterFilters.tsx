@@ -94,10 +94,6 @@ export function CharacterFilters({
             Com multiplicador de preço
           </DropdownMenuCheckboxItem>
 
-          {/* TODO: Adicionar mais filtros */}
-          {/* - Por coleção */}
-          {/* - Por faixa de preço */}
-          {/* - Por raridade */}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

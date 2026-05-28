@@ -7,6 +7,8 @@ import {
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
 import { Eye, Database, Lock, Users, UserCheck, Cookie, Baby, RefreshCw, Building } from "lucide-react";
+import { PUBLIC_ROUTES } from "@/config/routes";
+import { CONTACT } from "@/config/constants";
 
 export default function PrivacyArcade() {
   const { data: settings } = useSystemSettings();
@@ -21,7 +23,7 @@ export default function PrivacyArcade() {
     { num: "07", title: "Cookies", icon: <Cookie className="w-4 h-4" />, content: "Manter sessão • Lembrar preferências • Analisar uso • Melhorar experiência. Gerencie nas configurações do navegador." },
     { num: "08", title: "Menores", icon: <Baby className="w-4 h-4" />, content: "Plataforma não destinada a menores de 18 anos. Não coletamos dados de menores intencionalmente." },
     { num: "09", title: "Alterações", icon: <RefreshCw className="w-4 h-4" />, content: "Política atualizada periodicamente. Notificamos mudanças significativas por email ou plataforma." },
-    { num: "10", title: "DPO & ANPD", icon: <Building className="w-4 h-4" />, content: `DPO: ${settings?.dpo_email || "dpo@ordax.com.br"} • ANPD: www.gov.br/anpd • Conformidade LGPD 13.709/2018` },
+    { num: "10", title: "DPO & ANPD", icon: <Building className="w-4 h-4" />, content: `DPO: ${settings?.dpo_email || CONTACT.DPO_EMAIL} • ANPD: www.gov.br/anpd • Conformidade LGPD 13.709/2018` },
   ];
 
   return (
@@ -64,7 +66,7 @@ export default function PrivacyArcade() {
           <ArcadeCard>
             <div className="p-6 text-center">
               <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] tracking-wider uppercase mb-2">Conformidade LGPD</p>
-              <p className="text-[hsl(var(--gold-accent))] font-mono text-sm">{settings?.privacy_email || "privacidade@ordax.com.br"}</p>
+              <p className="text-[hsl(var(--gold-accent))] font-mono text-sm">{settings?.privacy_email || CONTACT.PRIVACY_EMAIL}</p>
               <p className="text-[hsl(0,0%,25%)] font-mono text-[9px] mt-3">© {new Date().getFullYear()} Tonecos Studios</p>
             </div>
           </ArcadeCard>
@@ -75,8 +77,8 @@ export default function PrivacyArcade() {
         badge="Voltar"
         title="EXPLORAR CATÁLOGO"
         description="Conheça nossas peças artesanais"
-        primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo" }}
-        secondaryAction={{ label: "INÍCIO", href: "/" }}
+        primaryAction={{ label: "VER CATÁLOGO", href: PUBLIC_ROUTES.catalog }}
+        secondaryAction={{ label: "INÍCIO", href: PUBLIC_ROUTES.home }}
       />
     </Page>
   );

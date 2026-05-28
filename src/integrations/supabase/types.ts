@@ -52,9 +52,21 @@ export type Database = {
           browser_enabled: boolean
           created_at: string
           email_enabled: boolean
+          email_frequency: string
           id: string
+          low_stock_enabled: boolean
+          message_received_enabled: boolean
+          new_quote_enabled: boolean
+          new_user_enabled: boolean
+          payment_received_enabled: boolean
+          preorder_completed_enabled: boolean
+          production_ready_enabled: boolean
+          push_enabled: boolean
           sound_enabled: boolean
           sound_volume: number
+          subscription_canceled_enabled: boolean
+          support_ticket_enabled: boolean
+          system_error_enabled: boolean
           updated_at: string
           user_id: string
         }
@@ -62,9 +74,21 @@ export type Database = {
           browser_enabled?: boolean
           created_at?: string
           email_enabled?: boolean
+          email_frequency?: string
           id?: string
+          low_stock_enabled?: boolean
+          message_received_enabled?: boolean
+          new_quote_enabled?: boolean
+          new_user_enabled?: boolean
+          payment_received_enabled?: boolean
+          preorder_completed_enabled?: boolean
+          production_ready_enabled?: boolean
+          push_enabled?: boolean
           sound_enabled?: boolean
           sound_volume?: number
+          subscription_canceled_enabled?: boolean
+          support_ticket_enabled?: boolean
+          system_error_enabled?: boolean
           updated_at?: string
           user_id: string
         }
@@ -72,9 +96,21 @@ export type Database = {
           browser_enabled?: boolean
           created_at?: string
           email_enabled?: boolean
+          email_frequency?: string
           id?: string
+          low_stock_enabled?: boolean
+          message_received_enabled?: boolean
+          new_quote_enabled?: boolean
+          new_user_enabled?: boolean
+          payment_received_enabled?: boolean
+          preorder_completed_enabled?: boolean
+          production_ready_enabled?: boolean
+          push_enabled?: boolean
           sound_enabled?: boolean
           sound_volume?: number
+          subscription_canceled_enabled?: boolean
+          support_ticket_enabled?: boolean
+          system_error_enabled?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -2809,28 +2845,52 @@ export type Database = {
       }
       user_notifications: {
         Row: {
+          action_label: string | null
+          action_url: string | null
           created_at: string
+          icon: string | null
           id: string
           is_read: boolean
           message: string | null
+          metadata: Json
+          priority: string
+          read_at: string | null
+          related_id: string | null
+          related_type: string | null
           title: string
           type: string | null
           user_id: string
         }
         Insert: {
+          action_label?: string | null
+          action_url?: string | null
           created_at?: string
+          icon?: string | null
           id?: string
           is_read?: boolean
           message?: string | null
+          metadata?: Json
+          priority?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
           title: string
           type?: string | null
           user_id: string
         }
         Update: {
+          action_label?: string | null
+          action_url?: string | null
           created_at?: string
+          icon?: string | null
           id?: string
           is_read?: boolean
           message?: string | null
+          metadata?: Json
+          priority?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
           title?: string
           type?: string | null
           user_id?: string

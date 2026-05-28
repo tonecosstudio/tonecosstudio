@@ -13,10 +13,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PhotoUploadComponent } from "./PhotoUploadComponent";
 import * as imageCompression from "browser-image-compression";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock dependencies
 vi.mock("@/integrations/supabase/client", () => ({
@@ -57,6 +58,15 @@ describe("PhotoUploadComponent", () => {
   beforeEach(() => {
     mockOnPhotosChange = vi.fn();
     vi.clearAllMocks();
+    vi.mocked(imageCompression.default).mockImplementation((file) => Promise.resolve(file) as any);
+    vi.mocked(supabase.storage.from).mockReturnValue({
+      upload: vi.fn().mockResolvedValue({ error: null }),
+      getPublicUrl: vi.fn(() => ({
+        data: { publicUrl: "https://example.com/photo.jpg" },
+      })),
+    } as any);
+    global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    global.URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
@@ -194,7 +204,6 @@ describe("PhotoUploadComponent", () => {
     });
 
     it("should reject non-image files", async () => {
-      const user = userEvent.setup();
       const { toast } = await import("@/components/ui/use-toast");
 
       render(<PhotoUploadComponent onPhotosChange={mockOnPhotosChange} />);
@@ -202,7 +211,7 @@ describe("PhotoUploadComponent", () => {
       const file = createMockFile("document.pdf", 1024, "application/pdf");
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
 
-      await user.upload(input, file);
+      fireEvent.change(input, { target: { files: [file] } });
 
       await waitFor(() => {
         expect(toast).toHaveBeenCalledWith(
@@ -294,6 +303,17 @@ describe("PhotoUploadComponent", () => {
 
     it("should show uploading state", async () => {
       const user = userEvent.setup();
+      let resolveUpload!: (value: { error: null }) => void;
+      const uploadPromise = new Promise<{ error: null }>((resolve) => {
+        resolveUpload = resolve;
+      });
+
+      vi.mocked(supabase.storage.from).mockReturnValue({
+        upload: vi.fn().mockReturnValue(uploadPromise),
+        getPublicUrl: vi.fn(() => ({
+          data: { publicUrl: "https://example.com/photo.jpg" },
+        })),
+      } as any);
 
       render(<PhotoUploadComponent onPhotosChange={mockOnPhotosChange} />);
 
@@ -306,6 +326,11 @@ describe("PhotoUploadComponent", () => {
       expect(
         await screen.findByText(/Comprimindo e enviando.../i)
       ).toBeInTheDocument();
+
+      resolveUpload({ error: null });
+      await waitFor(() => {
+        expect(mockOnPhotosChange).toHaveBeenCalled();
+      });
     });
 
     it("should handle upload errors", async () => {
@@ -348,16 +373,10 @@ describe("PhotoUploadComponent", () => {
       render(<PhotoUploadComponent onPhotosChange={mockOnPhotosChange} />);
 
       const dropZone = screen.getByText(/Arraste fotos aqui ou clique para selecionar/i)
-        .closest("div");
+        .closest(".border-2");
 
       if (dropZone) {
-        // Simulate drag enter using fireEvent
-        const dragEvent = new Event("dragenter", {
-          bubbles: true,
-          cancelable: true,
-        });
-
-        dropZone.dispatchEvent(dragEvent);
+        fireEvent.dragEnter(dropZone);
 
         // Check if the class is applied (visual feedback)
         await waitFor(() => {
@@ -370,20 +389,11 @@ describe("PhotoUploadComponent", () => {
       render(<PhotoUploadComponent onPhotosChange={mockOnPhotosChange} />);
 
       const dropZone = screen.getByText(/Arraste fotos aqui ou clique para selecionar/i)
-        .closest("div");
+        .closest(".border-2");
 
       if (dropZone) {
-        const dragEnter = new Event("dragenter", {
-          bubbles: true,
-          cancelable: true,
-        });
-        dropZone.dispatchEvent(dragEnter);
-
-        const dragLeave = new Event("dragleave", {
-          bubbles: true,
-          cancelable: true,
-        });
-        dropZone.dispatchEvent(dragLeave);
+        fireEvent.dragEnter(dropZone);
+        fireEvent.dragLeave(dropZone);
 
         await waitFor(() => {
           expect(dropZone).not.toHaveClass("border-primary");

@@ -413,8 +413,8 @@ describe("ProgressNotification", () => {
       });
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[ProgressNotification] Unknown notification type:",
-        "unknown_type"
+        "[warn] Unknown progress notification type",
+        { type: "unknown_type" }
       );
       expect(mockToast).not.toHaveBeenCalled();
 

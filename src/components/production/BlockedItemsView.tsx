@@ -14,23 +14,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBlockedProductionItems } from "@/hooks/admin/useBlockedProductionItems";
-import type { Priority, ProductionStage } from "@/types/production";
+import { getProductionStageLabel } from "@/config/production-stages";
+import type { Priority } from "@/types/production";
 import { UnblockProductionModal } from "./UnblockProductionModal";
-
-const STAGE_LABELS: Record<ProductionStage, string> = {
-  awaiting_payment: "Aguardando Pagamento",
-  payment_confirmed: "Pagamento Confirmado",
-  awaiting_choice: "Aguardando Escolha",
-  model_preparation: "Preparacao do Modelo",
-  printing: "Em Impressao 3D",
-  post_processing: "Limpeza e Preparacao",
-  painting: "Pintura Artesanal",
-  quality_check: "Controle de Qualidade",
-  packaging: "Embalagem",
-  ready_to_ship: "Pronto para Envio",
-  shipped: "Enviado",
-  delivered: "Entregue",
-};
 
 const PRIORITY_CLASSES: Record<Priority, string> = {
   critical: "bg-red-500 text-white",
@@ -115,7 +101,7 @@ export function BlockedItemsView() {
                   <TableCell>{item.collectionName}</TableCell>
                   <TableCell>{item.characterName || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{STAGE_LABELS[item.currentStage]}</Badge>
+                    <Badge variant="outline">{getProductionStageLabel(item.currentStage)}</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge className={PRIORITY_CLASSES[item.priority]}>

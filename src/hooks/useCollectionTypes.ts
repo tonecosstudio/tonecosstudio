@@ -13,8 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { log } from "@/lib/logger";
 import {
+  deleteCollectionTypeRpc,
+  saveCollectionTypeRpc,
+} from "@/services/admin/admin-config-mutations-service";
+import {
   CollectionType,
-  CollectionTypeUpdate,
   QUERY_KEYS,
   CACHE_CONFIG,
   validateCollectionType,
@@ -136,23 +139,17 @@ export function useCreateCollectionType() {
       }
 
       // Criar tipo
-      const { data, error } = await supabase
-        .from("collection_types")
-        .insert({
+      const data = await saveCollectionTypeRpc<CollectionType>({
+        data: {
           name: input.name,
           display_name: input.display_name,
           description: input.description || null,
           sort_order: input.sort_order ?? 0,
           is_active: true,
-        })
-        .select()
-        .single();
+        },
+      });
 
-      if (error) {
-        throw new Error(`Erro ao criar tipo de coleção: ${error.message}`);
-      }
-
-      return data as CollectionType;
+      return data;
     },
     onSuccess: (data) => {
       // Invalidar queries relacionadas
@@ -189,26 +186,19 @@ export function useUpdateCollectionType() {
       }
 
       // Preparar dados para atualização
-      const updateData: CollectionTypeUpdate = {};
+      const updateData: Record<string, string | number | boolean | null | undefined> = {};
       if (input.name !== undefined) updateData.name = input.name;
       if (input.display_name !== undefined) updateData.display_name = input.display_name;
       if (input.description !== undefined) updateData.description = input.description;
       if (input.sort_order !== undefined) updateData.sort_order = input.sort_order;
       if (input.is_active !== undefined) updateData.is_active = input.is_active;
 
-      // Atualizar tipo
-      const { data, error } = await supabase
-        .from("collection_types")
-        .update(updateData)
-        .eq("id", input.id)
-        .select()
-        .single();
+      const data = await saveCollectionTypeRpc<CollectionType>({
+        id: input.id,
+        data: updateData,
+      });
 
-      if (error) {
-        throw new Error(`Erro ao atualizar tipo de coleção: ${error.message}`);
-      }
-
-      return data as CollectionType;
+      return data;
     },
     onSuccess: (data, variables) => {
       // Invalidar queries relacionadas
@@ -239,18 +229,12 @@ export function useToggleCollectionType() {
 
   return useMutation({
     mutationFn: async (input: { id: string; is_active: boolean }) => {
-      const { data, error } = await supabase
-        .from("collection_types")
-        .update({ is_active: input.is_active })
-        .eq("id", input.id)
-        .select()
-        .single();
+      const data = await saveCollectionTypeRpc<CollectionType>({
+        id: input.id,
+        data: { is_active: input.is_active },
+      });
 
-      if (error) {
-        throw new Error(`Erro ao alterar status: ${error.message}`);
-      }
-
-      return data as CollectionType;
+      return data;
     },
     onSuccess: (data, variables) => {
       // Invalidar queries relacionadas
@@ -284,14 +268,7 @@ export function useDeleteCollectionType() {
 
   return useMutation({
     mutationFn: async (typeId: string) => {
-      const { error } = await supabase
-        .from("collection_types")
-        .delete()
-        .eq("id", typeId);
-
-      if (error) {
-        throw new Error(`Erro ao deletar tipo de coleção: ${error.message}`);
-      }
+      await deleteCollectionTypeRpc(typeId);
 
       return typeId;
     },

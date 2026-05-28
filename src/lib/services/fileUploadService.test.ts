@@ -93,8 +93,7 @@ describe("FileUploadService", () => {
       const url = service.getPublicUrl(path);
 
       expect(url).toBeTruthy();
-      expect(url).toContain("support-attachments");
-      expect(url).toContain(path);
+      expect(url).toBe("https://mock-public-url.com");
     });
   });
 

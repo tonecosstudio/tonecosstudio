@@ -1,4 +1,5 @@
 import { adminProductionGateway as supabase } from "@/services/admin/admin-production-gateway";
+import { updateAdminProductionSetting } from "@/services/admin/admin-config-mutations-service";
 
 export interface ProductionGlobalLimitSetting {
   key: string;
@@ -23,10 +24,5 @@ export async function fetchProductionGlobalLimitSetting(): Promise<ProductionGlo
 }
 
 export async function updateProductionGlobalLimitSetting(value: string): Promise<void> {
-  const { error } = await supabase
-    .from("system_settings")
-    .update({ value, updated_at: new Date().toISOString() })
-    .eq("key", "monthly_production_limit");
-
-  if (error) throw error;
+  await updateAdminProductionSetting({ key: "monthly_production_limit", value });
 }

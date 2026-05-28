@@ -16,6 +16,15 @@ import {
 } from "@/types/contextual-pricing";
 import { log } from "@/lib/logger";
 
+interface CollectionPriceRpcClient {
+  rpc(
+    functionName: "get_collection_price",
+    args: { p_collection_id: string; p_user_id: string | null }
+  ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+}
+
+const collectionPriceRpc = supabase as unknown as CollectionPriceRpcClient;
+
 // =====================================================
 // TYPES
 // =====================================================
@@ -32,7 +41,7 @@ export interface CollectionPriceParams {
 export const collectionPriceKeys = {
   all: [QUERY_KEYS.COLLECTION_PRICE] as const,
   detail: (collectionId: string, userId?: string | null) => 
-    [...collectionPriceKeys.all, collectionId, userId || "anonymous"] as const,
+    [...collectionPriceKeys.all, collectionId, userId ?? "anonymous"] as const,
 };
 
 // =====================================================
@@ -56,9 +65,9 @@ export function useCollectionPrice(params: CollectionPriceParams) {
   return useQuery({
     queryKey: collectionPriceKeys.detail(collectionId, userId),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_collection_price", {
+      const { data, error } = await collectionPriceRpc.rpc("get_collection_price", {
         p_collection_id: collectionId,
-        p_user_id: userId || null,
+        p_user_id: userId ?? null,
       });
 
       if (error) {
@@ -80,13 +89,13 @@ export function useCollectionPrice(params: CollectionPriceParams) {
  */
 export function useCollectionPrices(collectionIds: string[], userId?: string | null) {
   return useQuery({
-    queryKey: [...collectionPriceKeys.all, "batch", collectionIds.join(","), userId || "anonymous"],
+    queryKey: [...collectionPriceKeys.all, "batch", collectionIds.join(","), userId ?? "anonymous"],
     queryFn: async () => {
       // Buscar preços em paralelo
       const pricePromises = collectionIds.map(async (collectionId) => {
-        const { data, error } = await supabase.rpc("get_collection_price", {
+        const { data, error } = await collectionPriceRpc.rpc("get_collection_price", {
           p_collection_id: collectionId,
-          p_user_id: userId || null,
+          p_user_id: userId ?? null,
         });
 
         if (error) {
@@ -118,7 +127,7 @@ export function useCollectionPrices(collectionIds: string[], userId?: string | n
  */
 export function useHasCollectionDiscount(collectionId: string, userId?: string | null) {
   return useQuery({
-    queryKey: ["collection-discount", collectionId, userId || "anonymous"],
+    queryKey: ["collection-discount", collectionId, userId ?? "anonymous"],
     queryFn: async () => {
       if (!userId) return false;
 

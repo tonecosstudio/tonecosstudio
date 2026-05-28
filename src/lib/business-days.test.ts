@@ -14,6 +14,7 @@ import {
   addBusinessDays, 
   getNextBusinessDay,
   getPreviousBusinessDay,
+  calculateNthBusinessDayOfMonth,
   calculate5thBusinessDay,
   countBusinessDays 
 } from './business-days';
@@ -219,6 +220,21 @@ describe('Business Day Utilities', () => {
       expect(result.getDate()).toBe(6); // March 6
     });
 
+    it('should count the first day when the month starts on a business day', () => {
+      const result = calculate5thBusinessDay(6, 2026, []);
+
+      // June 1, 2026 is Monday, so the 5th business day is Friday, June 5.
+      expect(result.getFullYear()).toBe(2026);
+      expect(result.getMonth()).toBe(5);
+      expect(result.getDate()).toBe(5);
+    });
+
+    it('should calculate configurable nth business day of a month', () => {
+      const result = calculateNthBusinessDayOfMonth(6, 2026, 3, []);
+
+      expect(result.getDate()).toBe(3);
+    });
+
     it('should skip holidays when calculating 5th business day', () => {
       const holidays = [new Date('2026-03-06')]; // Friday is a holiday
       const result = calculate5thBusinessDay(3, 2026, holidays);
@@ -364,11 +380,10 @@ describe('Business Day Utilities - Property-Based Tests', () => {
             const validHolidays = holidays.filter(h => h && !isNaN(h.getTime()));
             
             const result = calculateBusinessDays(startDate, numDays, validHolidays);
-            const resultStr = result.toISOString().split('T')[0];
-            const holidayStrs = validHolidays.map(h => h.toISOString().split('T')[0]);
-            
-            // Result should not match any holiday
-            expect(holidayStrs).not.toContain(resultStr);
+
+            // Use the same local business-day rule as production code. Comparing
+            // ISO UTC dates creates false positives around Bahia/local day bounds.
+            expect(isBusinessDay(result, validHolidays)).toBe(true);
           }
         ),
         { numRuns: 100 }

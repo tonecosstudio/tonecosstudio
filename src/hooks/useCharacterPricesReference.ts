@@ -7,7 +7,7 @@
  * - Validar se planos são suficientes
  * - Sugerir valores ideais
  * 
- * SSOT: /admin/coins define os preços
+ * SSOT: hub de créditos, aba de coins, define os preços.
  * Este hook apenas CONSOME (leitura)
  */
 

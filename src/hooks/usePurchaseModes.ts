@@ -15,6 +15,33 @@ import type {
   UpdatePurchaseModeMultiplierResult,
 } from "@/types/pricing-restructure";
 import { updatePurchaseModeSchema, updateMultiplierSchema } from "@/lib/validations/pricing-restructure";
+import { updatePurchaseModeRpc } from "@/services/admin/admin-config-mutations-service";
+
+type RpcError = { message: string } | null;
+
+interface PurchaseModesSupabaseClient {
+  from(table: "purchase_modes"): {
+    select(columns: string): {
+      order(column: "display_order", options: { ascending: boolean }): PromiseLike<{
+        data: PurchaseMode[] | null;
+        error: RpcError;
+      }>;
+      eq(column: "is_active", value: boolean): {
+        order(column: "display_order", options: { ascending: boolean }): PromiseLike<{
+          data: PurchaseMode[] | null;
+          error: RpcError;
+        }>;
+      };
+    };
+  };
+  rpc(functionName: "update_purchase_mode_multiplier", args: {
+    p_mode_key: string;
+    p_new_multiplier: number;
+    p_changed_by: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+}
+
+const purchaseModesSupabase = supabase as unknown as PurchaseModesSupabaseClient;
 
 // =====================================================
 // QUERY KEYS
@@ -39,7 +66,7 @@ export function usePurchaseModes() {
   return useQuery({
     queryKey: purchaseModesKeys.lists(),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await purchaseModesSupabase
         .from("purchase_modes")
         .select("*")
         .order("display_order", { ascending: true });
@@ -48,7 +75,7 @@ export function usePurchaseModes() {
         throw new Error(`Erro ao buscar modalidades: ${error.message}`);
       }
 
-      return data as PurchaseMode[];
+      return data ?? [];
     },
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
@@ -62,7 +89,7 @@ export function useActivePurchaseModes() {
   return useQuery({
     queryKey: purchaseModesKeys.active(),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await purchaseModesSupabase
         .from("purchase_modes")
         .select("*")
         .eq("is_active", true)
@@ -72,7 +99,7 @@ export function useActivePurchaseModes() {
         throw new Error(`Erro ao buscar modalidades ativas: ${error.message}`);
       }
 
-      return data as PurchaseMode[];
+      return data ?? [];
     },
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
@@ -101,15 +128,7 @@ export function useUpdatePurchaseMode() {
       // Validar input
       const validated = updatePurchaseModeSchema.parse(input);
 
-      // Atualizar no banco de dados
-      const { error } = await supabase
-        .from("purchase_modes")
-        .update(validated)
-        .eq("mode_key", modeKey);
-
-      if (error) {
-        throw new Error(`Erro ao atualizar modalidade: ${error.message}`);
-      }
+      await updatePurchaseModeRpc(modeKey, validated);
 
       return modeKey;
     },
@@ -160,7 +179,7 @@ export function useUpdatePurchaseModeMultiplier() {
       if (!user) throw new Error("Usuário não autenticado");
 
       // Chamar função do banco de dados
-      const { data, error } = await supabase.rpc("update_purchase_mode_multiplier", {
+      const { data, error } = await purchaseModesSupabase.rpc("update_purchase_mode_multiplier", {
         p_mode_key: validated.mode_key,
         p_new_multiplier: validated.new_multiplier,
         p_changed_by: user.id,
@@ -170,7 +189,7 @@ export function useUpdatePurchaseModeMultiplier() {
         throw new Error(`Erro ao atualizar multiplicador: ${error.message}`);
       }
 
-      return data as UpdatePurchaseModeMultiplierResult;
+      return data as unknown as UpdatePurchaseModeMultiplierResult;
     },
     onSuccess: (result, variables) => {
       // Invalidar queries relacionadas

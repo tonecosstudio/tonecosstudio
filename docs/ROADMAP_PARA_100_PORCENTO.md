@@ -216,8 +216,8 @@ npm run test:coverage
 
 #### Variáveis de Ambiente
 - [ ] `VITE_SUPABASE_URL` configurada
-- [ ] `VITE_SUPABASE_ANON_KEY` configurada
-- [ ] `VITE_STRIPE_PUBLIC_KEY` configurada
+- [ ] `VITE_SUPABASE_PUBLISHABLE_KEY` configurada
+- [ ] `VITE_STRIPE_PUBLISHABLE_KEY` configurada
 - [ ] `VITE_SENTRY_DSN` configurada (opcional)
 - [ ] Todas as variáveis documentadas em `.env.example`
 

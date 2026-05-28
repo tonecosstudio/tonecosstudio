@@ -22,6 +22,7 @@ import {
   useAdminSystemSettings,
   useUpdateAdminSystemSettings,
 } from "@/hooks/admin/useAdminSystemSettings";
+import { BATCH, CONTACT, NOTIFICATIONS, PLANS, PRICING, UI } from "@/config/constants";
 
 export default function AdminSystemSettings() {
   const { toast } = useToast();
@@ -29,55 +30,6 @@ export default function AdminSystemSettings() {
 
   // Buscar todas as configurações
   const { data: settings, isLoading } = useAdminSystemSettings();
-
-  // Mutation para atualizar configurações
-  /*
-    mutationFn: async (updates: Record<string, string>) => {
-      const updatePromises = Object.entries(updates).map(async ([key, value]) => {
-        // Usar UPSERT para criar ou atualizar
-        const { error } = await supabase
-          .from("system_settings")
-          .upsert(
-            {
-              key,
-              value,
-              updated_at: new Date().toISOString()
-            },
-            {
-              onConflict: 'key',
-              ignoreDuplicates: false
-            }
-          );
-
-        return { key, error };
-      });
-
-      const results = await Promise.all(updatePromises);
-      const errors = results.filter((r) => r.error);
-
-      if (errors.length > 0) {
-        throw new Error(`Erro ao atualizar ${errors.length} configuração(ões)`);
-      }
-
-      return results;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-system-settings"] });
-      queryClient.invalidateQueries({ queryKey: ["system-settings"] });
-      setEditedSettings({});
-      toast({
-        title: "Configurações atualizadas",
-        description: "As alterações foram salvas com sucesso.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao atualizar",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  */
 
   const updateMutation = useUpdateAdminSystemSettings();
 
@@ -218,7 +170,7 @@ export default function AdminSystemSettings() {
                       id="company_name"
                       value={getValue("company_name")}
                       onChange={(e) => handleChange("company_name", e.target.value)}
-                      placeholder="Tonecos Studios"
+                      placeholder={CONTACT.COMPANY_NAME}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("company_name")}
@@ -231,7 +183,7 @@ export default function AdminSystemSettings() {
                       id="company_address"
                       value={getValue("company_address")}
                       onChange={(e) => handleChange("company_address", e.target.value)}
-                      placeholder="São Paulo, Brasil"
+                      placeholder={CONTACT.COMPANY_ADDRESS}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("company_address")}
@@ -244,7 +196,7 @@ export default function AdminSystemSettings() {
                       id="company_logo_url"
                       value={getValue("company_logo_url")}
                       onChange={(e) => handleChange("company_logo_url", e.target.value)}
-                      placeholder="/logo.png"
+                      placeholder={CONTACT.COMPANY_LOGO_URL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("company_logo_url")}
@@ -257,7 +209,7 @@ export default function AdminSystemSettings() {
                       id="legal_name"
                       value={getValue("legal_name")}
                       onChange={(e) => handleChange("legal_name", e.target.value)}
-                      placeholder="Tonecos Studios LTDA"
+                      placeholder={CONTACT.LEGAL_NAME}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("legal_name")}
@@ -270,7 +222,7 @@ export default function AdminSystemSettings() {
                       id="cnpj"
                       value={getValue("cnpj")}
                       onChange={(e) => handleChange("cnpj", e.target.value)}
-                      placeholder="00.000.000/0000-00"
+                      placeholder={CONTACT.CNPJ_PLACEHOLDER}
                     />
                     <p className="text-xs text-muted-foreground mt-1">{getDescription("cnpj")}</p>
                   </div>
@@ -295,7 +247,7 @@ export default function AdminSystemSettings() {
                       type="email"
                       value={getValue("contact_email")}
                       onChange={(e) => handleChange("contact_email", e.target.value)}
-                      placeholder="contato@ordax.com.br"
+                      placeholder={CONTACT.CONTACT_EMAIL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("contact_email")}
@@ -309,7 +261,7 @@ export default function AdminSystemSettings() {
                       type="email"
                       value={getValue("support_email")}
                       onChange={(e) => handleChange("support_email", e.target.value)}
-                      placeholder="suporte@ordax.com.br"
+                      placeholder={CONTACT.SUPPORT_EMAIL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("support_email")}
@@ -323,7 +275,7 @@ export default function AdminSystemSettings() {
                       type="email"
                       value={getValue("privacy_email")}
                       onChange={(e) => handleChange("privacy_email", e.target.value)}
-                      placeholder="privacidade@ordax.com.br"
+                      placeholder={CONTACT.PRIVACY_EMAIL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("privacy_email")}
@@ -337,7 +289,7 @@ export default function AdminSystemSettings() {
                       type="email"
                       value={getValue("dpo_email")}
                       onChange={(e) => handleChange("dpo_email", e.target.value)}
-                      placeholder="dpo@ordax.com.br"
+                      placeholder={CONTACT.DPO_EMAIL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("dpo_email")}
@@ -351,7 +303,7 @@ export default function AdminSystemSettings() {
                       type="tel"
                       value={getValue("phone_primary")}
                       onChange={(e) => handleChange("phone_primary", e.target.value)}
-                      placeholder="+55 (11) 9999-9999"
+                      placeholder={CONTACT.PHONE_PLACEHOLDER}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("phone_primary")}
@@ -365,7 +317,7 @@ export default function AdminSystemSettings() {
                       type="tel"
                       value={getValue("phone_whatsapp")}
                       onChange={(e) => handleChange("phone_whatsapp", e.target.value)}
-                      placeholder="+55 (11) 9999-9999"
+                      placeholder={CONTACT.PHONE_PLACEHOLDER}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("phone_whatsapp")}
@@ -378,7 +330,7 @@ export default function AdminSystemSettings() {
                       id="business_hours"
                       value={getValue("business_hours")}
                       onChange={(e) => handleChange("business_hours", e.target.value)}
-                      placeholder="Segunda a Sexta, 9h às 18h"
+                      placeholder={CONTACT.BUSINESS_HOURS}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("business_hours")}
@@ -405,7 +357,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("website_url")}
                       onChange={(e) => handleChange("website_url", e.target.value)}
-                      placeholder="https://ordax.com.br"
+                      placeholder={CONTACT.WEBSITE_URL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("website_url")}
@@ -419,7 +371,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("facebook_url")}
                       onChange={(e) => handleChange("facebook_url", e.target.value)}
-                      placeholder="https://facebook.com/ordax"
+                      placeholder={CONTACT.FACEBOOK_URL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("facebook_url")}
@@ -433,7 +385,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("instagram_url")}
                       onChange={(e) => handleChange("instagram_url", e.target.value)}
-                      placeholder="https://instagram.com/ordax"
+                      placeholder={CONTACT.INSTAGRAM_URL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("instagram_url")}
@@ -447,7 +399,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("twitter_url")}
                       onChange={(e) => handleChange("twitter_url", e.target.value)}
-                      placeholder="https://twitter.com/ordax"
+                      placeholder={CONTACT.X_URL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("twitter_url")}
@@ -461,7 +413,7 @@ export default function AdminSystemSettings() {
                       type="url"
                       value={getValue("youtube_url")}
                       onChange={(e) => handleChange("youtube_url", e.target.value)}
-                      placeholder="https://youtube.com/@ordax"
+                      placeholder={CONTACT.YOUTUBE_URL}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("youtube_url")}
@@ -489,7 +441,7 @@ export default function AdminSystemSettings() {
                       step="0.01"
                       value={getValue("default_price_full")}
                       onChange={(e) => handleChange("default_price_full", e.target.value)}
-                      placeholder="500"
+                      placeholder={String(PRICING.DEFAULT_PRICE_FULL)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("default_price_full")}
@@ -504,7 +456,7 @@ export default function AdminSystemSettings() {
                       step="0.01"
                       value={getValue("default_price_pix")}
                       onChange={(e) => handleChange("default_price_pix", e.target.value)}
-                      placeholder="475"
+                      placeholder={String(PRICING.DEFAULT_PRICE_PIX)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("default_price_pix")}
@@ -519,7 +471,7 @@ export default function AdminSystemSettings() {
                       step="0.01"
                       value={getValue("default_deposit_amount")}
                       onChange={(e) => handleChange("default_deposit_amount", e.target.value)}
-                      placeholder="100"
+                      placeholder={String(PRICING.DEFAULT_DEPOSIT_AMOUNT)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("default_deposit_amount")}
@@ -536,7 +488,7 @@ export default function AdminSystemSettings() {
                       max="100"
                       value={getValue("pix_discount_percentage")}
                       onChange={(e) => handleChange("pix_discount_percentage", e.target.value)}
-                      placeholder="5"
+                      placeholder={String(PRICING.PIX_DISCOUNT_PERCENTAGE)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("pix_discount_percentage")}
@@ -551,7 +503,7 @@ export default function AdminSystemSettings() {
                       min="1"
                       value={getValue("max_installments_no_interest")}
                       onChange={(e) => handleChange("max_installments_no_interest", e.target.value)}
-                      placeholder="6"
+                      placeholder={String(PRICING.MAX_INSTALLMENTS_NO_INTEREST)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("max_installments_no_interest")}
@@ -568,7 +520,7 @@ export default function AdminSystemSettings() {
                       onChange={(e) =>
                         handleChange("max_installments_with_interest", e.target.value)
                       }
-                      placeholder="10"
+                      placeholder={String(PRICING.MAX_INSTALLMENTS_WITH_INTEREST)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("max_installments_with_interest")}
@@ -596,7 +548,7 @@ export default function AdminSystemSettings() {
                       min="1"
                       value={getValue("shipping_business_days")}
                       onChange={(e) => handleChange("shipping_business_days", e.target.value)}
-                      placeholder="5"
+                      placeholder={String(BATCH.SHIPPING_BUSINESS_DAYS)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("shipping_business_days")}
@@ -611,7 +563,7 @@ export default function AdminSystemSettings() {
                       min="0"
                       value={getValue("exchange_deadline_days")}
                       onChange={(e) => handleChange("exchange_deadline_days", e.target.value)}
-                      placeholder="1"
+                      placeholder={String(BATCH.EXCHANGE_DEADLINE_DAYS)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("exchange_deadline_days")}
@@ -626,7 +578,7 @@ export default function AdminSystemSettings() {
                       min="1"
                       value={getValue("days_to_next_delivery")}
                       onChange={(e) => handleChange("days_to_next_delivery", e.target.value)}
-                      placeholder="30"
+                      placeholder={String(PLANS.DAYS_TO_NEXT_DELIVERY)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("days_to_next_delivery")}
@@ -666,7 +618,7 @@ export default function AdminSystemSettings() {
                       min="5"
                       value={getValue("default_page_size")}
                       onChange={(e) => handleChange("default_page_size", e.target.value)}
-                      placeholder="20"
+                      placeholder={String(UI.DEFAULT_PAGE_SIZE)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("default_page_size")}
@@ -681,7 +633,7 @@ export default function AdminSystemSettings() {
                       min="0"
                       value={getValue("search_debounce_ms")}
                       onChange={(e) => handleChange("search_debounce_ms", e.target.value)}
-                      placeholder="300"
+                      placeholder={String(UI.SEARCH_DEBOUNCE_MS)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("search_debounce_ms")}
@@ -696,7 +648,7 @@ export default function AdminSystemSettings() {
                       min="1"
                       value={getValue("max_image_size_mb")}
                       onChange={(e) => handleChange("max_image_size_mb", e.target.value)}
-                      placeholder="5"
+                      placeholder={String(UI.MAX_IMAGE_SIZE_MB)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("max_image_size_mb")}
@@ -715,7 +667,7 @@ export default function AdminSystemSettings() {
                       onChange={(e) =>
                         handleChange("user_online_threshold_minutes", e.target.value)
                       }
-                      placeholder="5"
+                      placeholder={String(NOTIFICATIONS.USER_ONLINE_THRESHOLD_MINUTES)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getDescription("user_online_threshold_minutes")}

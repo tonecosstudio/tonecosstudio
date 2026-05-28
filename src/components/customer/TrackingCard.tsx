@@ -15,6 +15,8 @@ import { Truck, Copy, ExternalLink, Package, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/components/ui/use-toast";
+import { openSafeExternalUrl } from "@/lib/security/safe-open";
+import { buildTrackingUrl } from "@/lib/tracking-links";
 
 // ============================================================================
 // Types
@@ -27,27 +29,23 @@ export interface TrackingCardProps {
   className?: string;
 }
 
-// Carrier configuration with logos and tracking URLs
-const CARRIER_CONFIG: Record<string, { name: string; logo: string; trackingUrl: (code: string) => string }> = {
+// Carrier configuration with display metadata
+const CARRIER_CONFIG: Record<string, { name: string; logo: string }> = {
   correios: {
     name: "Correios",
     logo: "🇧🇷",
-    trackingUrl: (code) => `https://rastreamento.correios.com.br/app/index.php?codigo=${code}`,
   },
   jadlog: {
     name: "Jadlog",
     logo: "📦",
-    trackingUrl: (code) => `https://www.jadlog.com.br/tracking/${code}`,
   },
   sedex: {
     name: "Sedex",
     logo: "🇧🇷",
-    trackingUrl: (code) => `https://rastreamento.correios.com.br/app/index.php?codigo=${code}`,
   },
   default: {
     name: "Transportadora",
     logo: "🚚",
-    trackingUrl: (code) => `#${code}`,
   },
 };
 
@@ -92,8 +90,19 @@ export const TrackingCard: React.FC<TrackingCardProps> = ({
   // Open tracking link in new tab
   const handleOpenTracking = () => {
     if (trackingCode) {
-      const trackingUrl = carrierConfig.trackingUrl(trackingCode);
-      window.open(trackingUrl, "_blank", "noopener,noreferrer");
+      try {
+        const trackingUrl = buildTrackingUrl(trackingCode, trackingCarrier);
+        if (!trackingUrl) {
+          throw new Error("Invalid tracking code");
+        }
+        openSafeExternalUrl(trackingUrl);
+      } catch {
+        toast({
+          title: "Link de rastreamento indisponivel",
+          description: "Nao foi possivel abrir um link seguro para esta transportadora.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

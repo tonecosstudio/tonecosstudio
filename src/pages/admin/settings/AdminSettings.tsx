@@ -8,6 +8,7 @@ import AdminProductionLimit from "../production/AdminProductionLimit";
 import AdminDeadlinesSettings from "../production/AdminDeadlinesSettings";
 import LegalCompliance from "./LegalCompliance";
 import AdminHolidayManager from "../production/AdminHolidayManager";
+import { ADMIN_ROUTES } from "@/config/routes";
 
 /**
  * AdminSettings - Página Unificada de Configurações
@@ -130,7 +131,7 @@ export default function AdminSettings() {
                 Gerencie níveis de preço, modalidades, planos e atribuições de coleções
               </p>
             </div>
-            <Button onClick={() => navigate("/admin/catalogo?tab=pricing")}>
+            <Button onClick={() => navigate(`${ADMIN_ROUTES.catalog}?tab=pricing`)}>
               Ir para Preços
               <ExternalLink className="h-4 w-4 ml-2" />
             </Button>

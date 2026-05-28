@@ -8,10 +8,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logInfo, logError, logWarn } from "@/lib/logger";
 import { navigateInApp } from "@/lib/navigation";
+import { assertCurrentUserId } from "@/services/auth/current-user";
 
 // ============================================================================
 // Types
 // ============================================================================
+
+type AlertNotificationRpcError = {
+  message: string;
+};
+
+interface AlertNotificationRpcClient {
+  rpc(
+    name: "admin_update_notification_settings",
+    args: { p_updates: { email_enabled: boolean } }
+  ): Promise<{ data: unknown; error: AlertNotificationRpcError | null }>;
+}
+
+const alertNotificationRpc = supabase as unknown as AlertNotificationRpcClient;
 
 export interface NotificationPreferences {
   browserNotifications: boolean;
@@ -286,14 +300,12 @@ export async function sendDailyAlertDigest(): Promise<void> {
  */
 export async function subscribeToEmailDigest(userId: string, email: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from("admin_notification_preferences")
-      .upsert({
-        user_id: userId,
-        email,
-        email_digest_enabled: true,
-        updated_at: new Date().toISOString(),
-      });
+    await assertCurrentUserId(userId);
+    void email;
+
+    const { error } = await alertNotificationRpc.rpc("admin_update_notification_settings", {
+      p_updates: { email_enabled: true },
+    });
 
     if (error) {
       throw error;
@@ -309,13 +321,11 @@ export async function subscribeToEmailDigest(userId: string, email: string): Pro
  */
 export async function unsubscribeFromEmailDigest(userId: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from("admin_notification_preferences")
-      .update({
-        email_digest_enabled: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    await assertCurrentUserId(userId);
+
+    const { error } = await alertNotificationRpc.rpc("admin_update_notification_settings", {
+      p_updates: { email_enabled: false },
+    });
 
     if (error) {
       throw error;

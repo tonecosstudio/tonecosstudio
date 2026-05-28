@@ -18,6 +18,7 @@
 import { useToast } from "@/hooks/use-toast";
 import { log } from "@/lib/logger";
 import type { ProductionStage } from "@/types/production";
+import { getProductionStageLabel } from "@/config/production-stages";
 
 // ============================================================================
 // Types
@@ -34,7 +35,7 @@ export type NotificationType =
 
 export interface ProgressNotificationOptions {
   type: NotificationType;
-  stage?: ProductionStage;
+  stage?: ProductionStage | string;
   characterName?: string;
   trackingCode?: string;
   rejectionReason?: string;
@@ -45,22 +46,6 @@ export interface ProgressNotificationOptions {
 interface WebkitAudioWindow extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
-
-// Stage display names in Portuguese
-const STAGE_NAMES: Record<ProductionStage, string> = {
-  awaiting_payment: "Aguardando Pagamento",
-  payment_confirmed: "Pagamento Confirmado",
-  awaiting_choice: "Aguardando Escolha",
-  model_preparation: "Preparacao do Modelo",
-  printing: "Impressao 3D",
-  post_processing: "Pos-processamento",
-  painting: "Pintura",
-  quality_check: "Controle de Qualidade",
-  packaging: "Embalagem",
-  ready_to_ship: "Pronto para Envio",
-  shipped: "Enviado",
-  delivered: "Entregue",
-};
 
 // ============================================================================
 // Sound Notification
@@ -127,7 +112,7 @@ export function useProgressNotification() {
     switch (type) {
       case "stage_change":
         if (stage) {
-          const stageName = STAGE_NAMES[stage] || stage;
+          const stageName = getProductionStageLabel(stage);
           
           toast({
             title: "Pedido Atualizado",

@@ -8,6 +8,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderDetailPanel } from './OrderDetailPanel';
 import type { UnifiedOrder } from '@/types/admin/orders';
+import { CORREIOS_TRACKING_BASE_URL } from '@/lib/tracking-links';
 
 // Mock do window.open
 const mockWindowOpen = vi.fn();
@@ -105,7 +106,7 @@ describe('OrderDetailPanel - Tracking Link', () => {
     await user.click(trackingButton);
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      'https://rastreamento.correios.com.br/app/index.php?codigo=BR123456789BR',
+      `${CORREIOS_TRACKING_BASE_URL}?objeto=BR123456789BR`,
       '_blank',
       'noopener,noreferrer'
     );
@@ -130,7 +131,7 @@ describe('OrderDetailPanel - Tracking Link', () => {
     await user.click(trackingButton);
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      'https://rastreamento.correios.com.br/app/index.php?codigo=AA987654321BR',
+      `${CORREIOS_TRACKING_BASE_URL}?objeto=AA987654321BR`,
       '_blank',
       'noopener,noreferrer'
     );

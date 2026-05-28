@@ -2,7 +2,6 @@
  * CustomerPaymentDetails Component - Simple version
  */
 
-import React from "react";
 
 interface CustomerPaymentDetailsProps {
   paymentId: string;

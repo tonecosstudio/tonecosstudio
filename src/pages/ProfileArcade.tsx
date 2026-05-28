@@ -25,6 +25,10 @@ import {
   checkUsernameAvailability,
 } from "@/lib/collector";
 import {
+  fetchNotificationPreferences,
+  updateNotificationPreferences,
+} from "@/services/customer/notification-preferences-service";
+import {
   PaymentSection,
   NotificationsSection,
   SubscriptionSection,
@@ -36,6 +40,7 @@ type SectionId = "info" | "personal" | "collector" | "preferences" | "address" |
 
 export default function ProfileArcade() {
   const { user } = useAuth();
+  const userId = user?.id;
   const { toast } = useToast();
   const qc = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -59,6 +64,12 @@ export default function ProfileArcade() {
     queryFn: () => user?.id ? getMyCollectorProfile(user.id) : null,
   });
 
+  const notificationPreferencesQuery = useQuery({
+    queryKey: ["customer-notification-preferences", { userId: userId ?? null }],
+    enabled: Boolean(userId),
+    queryFn: fetchNotificationPreferences,
+  });
+
   // Collector profile states
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -68,6 +79,9 @@ export default function ProfileArcade() {
   // Personal data states
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [orderUpdates, setOrderUpdates] = useState(true);
+  const [marketingEmails, setMarketingEmails] = useState(true);
 
   useEffect(() => {
     if (collectorQuery.data) {
@@ -84,6 +98,17 @@ export default function ProfileArcade() {
       setPhone(profileQuery.data.phone || "");
     }
   }, [profileQuery.data]);
+
+  useEffect(() => {
+    if (notificationPreferencesQuery.data) {
+      setEmailNotifications(
+        notificationPreferencesQuery.data.item_shipped &&
+          notificationPreferencesQuery.data.item_delivered
+      );
+      setOrderUpdates(notificationPreferencesQuery.data.production_stage_updates);
+      setMarketingEmails(notificationPreferencesQuery.data.marketing_emails);
+    }
+  }, [notificationPreferencesQuery.data]);
 
   const saveProfileMutation = useMutation({
     mutationFn: async () => {
@@ -113,9 +138,9 @@ export default function ProfileArcade() {
         if (!available) throw new Error("Username já em uso");
       }
       return updateCollectorProfile(user.id, {
-        username: username.trim() || null,
-        display_name: displayName.trim() || null,
-        bio: bio.trim() || null,
+        username: username.trim() || undefined,
+        display_name: displayName.trim() || undefined,
+        bio: bio.trim() || undefined,
         is_public: isPublic,
       });
     },
@@ -128,12 +153,33 @@ export default function ProfileArcade() {
     },
   });
 
+  const saveNotificationPreferencesMutation = useMutation({
+    mutationFn: () =>
+      updateNotificationPreferences({
+        production_stage_updates: orderUpdates,
+        item_shipped: emailNotifications,
+        item_delivered: emailNotifications,
+        marketing_emails: marketingEmails,
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["customer-notification-preferences"] });
+      toast({ title: "Preferencias salvas", description: "Notificacoes atualizadas com sucesso." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+  });
+
   const profile = profileQuery.data;
   const completion = profile?.profile_completion || 0;
 
   const iconLookup: Record<string, LucideIcon> = {
     User, Star: Trophy, Bell, Settings: Heart, Grid: Settings,
     MapPin, CreditCard, ShoppingBag: Package, RefreshCw, HelpCircle: MessageSquare
+  };
+  const saveNotificationPreferencesAction = {
+    mutate: () => saveNotificationPreferencesMutation.mutate(),
+    isPending: saveNotificationPreferencesMutation.isPending,
   };
 
   return (
@@ -179,7 +225,7 @@ export default function ProfileArcade() {
                   <div key={section.id} className="mb-4">
                     <h3 className="font-mono text-[8px] text-[hsl(var(--gold-accent)/0.5)] tracking-[0.2em] uppercase mb-2 px-2">{section.title}</h3>
                     {section.subSections.map((sub) => {
-                      const Icon = iconLookup[sub.icon] || User;
+                      const Icon = sub.icon ? iconLookup[sub.icon] ?? User : User;
                       const sectionMap: Record<string, string> = {
                         info: "info", collector: "collector", notifications: "notifications",
                         preferences: "preferences", collection: "collection", address: "address",
@@ -281,28 +327,36 @@ export default function ProfileArcade() {
             {activeSection === "payment" && (
               <ArcadeCard hover={false} className="p-6">
                 <ArcadeSectionTitle>PAGAMENTO</ArcadeSectionTitle>
-                <PaymentSection />
+                {userId && <PaymentSection userId={userId} />}
               </ArcadeCard>
             )}
 
             {activeSection === "notifications" && (
               <ArcadeCard hover={false} className="p-6">
                 <ArcadeSectionTitle>NOTIFICAÇÕES</ArcadeSectionTitle>
-                <NotificationsSection />
+                <NotificationsSection
+                  emailNotifications={emailNotifications}
+                  setEmailNotifications={setEmailNotifications}
+                  orderUpdates={orderUpdates}
+                  setOrderUpdates={setOrderUpdates}
+                  marketingEmails={marketingEmails}
+                  setMarketingEmails={setMarketingEmails}
+                  saveMutation={saveNotificationPreferencesAction}
+                />
               </ArcadeCard>
             )}
 
             {activeSection === "subscriptions" && (
               <ArcadeCard hover={false} className="p-6">
                 <ArcadeSectionTitle>ASSINATURAS</ArcadeSectionTitle>
-                <SubscriptionSection />
+                {userId && <SubscriptionSection userId={userId} />}
               </ArcadeCard>
             )}
 
             {activeSection === "support" && (
               <ArcadeCard hover={false} className="p-6">
                 <ArcadeSectionTitle>SUPORTE</ArcadeSectionTitle>
-                <SupportSection />
+                {userId && <SupportSection userId={userId} />}
               </ArcadeCard>
             )}
 

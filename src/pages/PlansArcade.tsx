@@ -14,6 +14,9 @@ import {
 } from "@/components/arcade/ArcadeLayout";
 import { useState } from "react";
 import { useActiveSubscriptionPlans } from "@/hooks/subscription/useActiveSubscriptionPlans";
+import { PUBLIC_ROUTES } from "@/config/routes";
+import { PRICING } from "@/config/constants";
+import { usePricingSettings } from "@/hooks/usePricingSettings";
 
 export default function PlansArcade() {
   const navigate = useNavigate();
@@ -21,8 +24,10 @@ export default function PlansArcade() {
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
   const plansQuery = useActiveSubscriptionPlans();
+  const { data: pricingSettings } = usePricingSettings();
 
   const plans = plansQuery.data || [];
+  const standalonePrice = pricingSettings?.defaultPriceFull ?? PRICING.DEFAULT_PRICE_FULL;
 
   const getPlanMeta = (planType: string) => {
     switch (planType) {
@@ -97,7 +102,7 @@ export default function PlansArcade() {
 
                 <div className="text-center mb-6 py-4 border-y border-[hsl(0,0%,12%)]">
                   <span className="text-4xl font-black text-[hsl(0,0%,98%)]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-                    R$ 500
+                    R$ {standalonePrice.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </span>
                   <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider mt-1">por personagem</p>
                 </div>
@@ -112,7 +117,7 @@ export default function PlansArcade() {
                 </ul>
 
                 <button
-                  onClick={() => navigate("/colecoes")}
+                  onClick={() => navigate(PUBLIC_ROUTES.collections)}
                   className="w-full py-3 border border-[hsl(0,0%,20%)] text-[hsl(0,0%,60%)] hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] font-mono text-xs tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2"
                 >
                   Ver Coleções <ArrowRight className="w-3.5 h-3.5" />
@@ -129,8 +134,9 @@ export default function PlansArcade() {
             {plans.map((plan) => {
               const meta = getPlanMeta(plan.plan_type);
               const Icon = meta.icon;
-              const priceFull = Number(plan.price_full) || 500;
+              const priceFull = Number(plan.price_full) || standalonePrice;
               const deliveries = plan.deliveries_total || 1;
+              const totalCredits = plan.total_credits ?? 0;
               const perUnit = (priceFull / deliveries).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
               const isHovered = hoveredPlan === plan.id;
               const isSemestral = plan.plan_type === "semestral";
@@ -178,11 +184,11 @@ export default function PlansArcade() {
                     </div>
 
                     {/* Coins badge */}
-                    {plan.total_credits > 0 && (
+                    {totalCredits > 0 && (
                       <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">
                         <Coins className="w-4 h-4 text-[hsl(var(--gold-accent))]" />
                         <span className="font-mono text-xs tracking-wider text-[hsl(var(--gold-accent))]">
-                          {plan.total_credits.toLocaleString("pt-BR")} coins inclusos
+                          {totalCredits.toLocaleString("pt-BR")} coins inclusos
                         </span>
                       </div>
                     )}
@@ -190,7 +196,7 @@ export default function PlansArcade() {
                     <ul className="space-y-3 mb-6 flex-1">
                       {[
                         `${deliveries} peça${deliveries > 1 ? "s" : ""}${isSemestral ? " (6 + 1 bônus)" : ""}`,
-                        `${plan.total_credits > 0 ? plan.total_credits.toLocaleString("pt-BR") + " coins para o catálogo" : ""}`,
+                        `${totalCredits > 0 ? totalCredits.toLocaleString("pt-BR") + " coins para o catálogo" : ""}`,
                         "Pintadas à mão",
                         "Produção limitada",
                         "Certificado",
@@ -204,7 +210,7 @@ export default function PlansArcade() {
                     </ul>
 
                     <button
-                      onClick={() => navigate("/colecoes")}
+                      onClick={() => navigate(PUBLIC_ROUTES.collections)}
                       className="w-full py-3 font-mono text-xs tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2"
                       style={{
                         background: `${meta.color}`,
@@ -247,7 +253,7 @@ export default function PlansArcade() {
         badge="Pronto para a Missão?"
         title="COMECE AGORA"
         description="Escolha suas coleções favoritas e inicie sua jornada de colecionador."
-        primaryAction={{ label: "VER COLEÇÕES", href: "/colecoes", icon: <ArrowRight className="w-4 h-4" /> }}
+        primaryAction={{ label: "VER COLEÇÕES", href: PUBLIC_ROUTES.collections, icon: <ArrowRight className="w-4 h-4" /> }}
       />
     </Page>
   );

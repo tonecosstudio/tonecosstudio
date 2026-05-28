@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useGroupMemberProfile } from "@/hooks/groups/useGroupMemberProfile";
+import { buildSafeMailtoHref, buildSafeWhatsAppHref } from "@/lib/security/safe-open";
 
 interface MemberDetailsDrawerProps {
   userId: string | null;
@@ -19,6 +20,8 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
   const memberSince = profile?.created_at
     ? format(new Date(profile.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : "Data desconhecida";
+  const emailHref = profile?.email ? buildSafeMailtoHref(profile.email) : null;
+  const whatsAppHref = profile?.phone ? buildSafeWhatsAppHref(profile.phone) : null;
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -55,9 +58,13 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Email</p>
-                    <a href={`mailto:${profile.email}`} className="text-sm hover:underline">
-                      {profile.email}
-                    </a>
+                    {emailHref ? (
+                      <a href={emailHref} className="text-sm hover:underline">
+                        {profile.email}
+                      </a>
+                    ) : (
+                      <p className="text-sm">{profile.email}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -124,16 +131,18 @@ export function MemberDetailsDrawer({ userId, isOpen, onClose }: MemberDetailsDr
             </div>
 
             <div className="pt-4 space-y-2">
+              {emailHref && (
               <Button variant="outline" className="w-full" asChild>
-                <a href={`mailto:${profile.email}`}>
+                <a href={emailHref}>
                   <Mail className="h-4 w-4 mr-2" />
                   Enviar Email
                 </a>
               </Button>
-              {profile.phone && (
+              )}
+              {whatsAppHref && (
                 <Button variant="outline" className="w-full" asChild>
                   <a
-                    href={`https://wa.me/${profile.phone.replace(/\D/g, "")}`}
+                    href={whatsAppHref}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

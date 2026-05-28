@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  addQuoteProductionPhotoRpc,
+  ensureQuoteProductionRpc,
+  setQuoteProductionStageRpc,
+} from "@/services/production-mutations-service";
 
 type QueryError = { message?: string } | null;
 type QueryResult<T> = PromiseLike<{ data: T | null; error: QueryError }>;
@@ -47,61 +52,6 @@ export type ProductionPhotoRow = {
   created_at: string;
   created_by: string | null;
 };
-
-type QuoteProductionUpsert = {
-  quote_id: string;
-  current_stage: ProductionStageKey;
-};
-
-type QuoteProductionUpdateInsert = {
-  quote_id: string;
-  stage: ProductionStageKey;
-  note: string | null;
-};
-
-type QuoteProductionPhotoInsert = {
-  quote_id: string;
-  update_id: string;
-  url: string;
-  caption: string | null;
-};
-
-type UpsertOptions = { onConflict: string };
-
-type QuoteProductionTable = {
-  upsert(
-    value: QuoteProductionUpsert,
-    options: UpsertOptions
-  ): {
-    select(columns: string): {
-      single(): QueryResult<ProductionRow>;
-    };
-  } & QueryResult<null>;
-};
-
-type QuoteProductionUpdatesTable = {
-  insert(value: QuoteProductionUpdateInsert): {
-    select(columns: string): {
-      single(): QueryResult<{ id: string }>;
-    };
-  };
-};
-
-type QuoteProductionPhotosTable = {
-  insert(value: QuoteProductionPhotoInsert): {
-    select(columns: string): {
-      single(): QueryResult<ProductionPhotoRow>;
-    };
-  };
-};
-
-type ProductionTablesClient = {
-  from(table: "quote_production"): QuoteProductionTable;
-  from(table: "quote_production_updates"): QuoteProductionUpdatesTable;
-  from(table: "quote_production_photos"): QuoteProductionPhotosTable;
-};
-
-const productionTables = supabase as unknown as ProductionTablesClient;
 
 type QuoteProductionReadTable = {
   select(columns: string): {
@@ -192,13 +142,7 @@ export async function fetchProductionTimeline(quoteId: string): Promise<Producti
 }
 
 export async function ensureProductionForQuote(quoteId: string) {
-  const { data, error } = await productionTables
-    .from("quote_production")
-    .upsert({ quote_id: quoteId, current_stage: "queued" }, { onConflict: "quote_id" })
-    .select("id,quote_id,current_stage,started_at,updated_at")
-    .single();
-  if (error) throw error;
-  return data as ProductionRow;
+  return ensureQuoteProductionRpc(quoteId) as Promise<ProductionRow>;
 }
 
 export async function setProductionStage(
@@ -206,19 +150,11 @@ export async function setProductionStage(
   stage: ProductionStageKey,
   note?: string
 ) {
-  const { error: prodErr } = await productionTables
-    .from("quote_production")
-    .upsert({ quote_id: quoteId, current_stage: stage }, { onConflict: "quote_id" });
-  if (prodErr) throw prodErr;
-
-  const { data: upd, error: updErr } = await productionTables
-    .from("quote_production_updates")
-    .insert({ quote_id: quoteId, stage, note: (note ?? "").trim() || null })
-    .select("id")
-    .single();
-  if (updErr) throw updErr;
-
-  return upd as { id: string };
+  return setQuoteProductionStageRpc({
+    quoteId,
+    stage,
+    note: (note ?? "").trim() || undefined,
+  });
 }
 
 export async function uploadProductionPhoto(params: {
@@ -252,17 +188,10 @@ export async function uploadProductionPhoto(params: {
 
   const url = supabase.storage.from("production").getPublicUrl(key).data.publicUrl;
 
-  const { data, error } = await productionTables
-    .from("quote_production_photos")
-    .insert({
-      quote_id: quoteId,
-      update_id: updateId,
-      url,
-      caption: (caption ?? "").trim() || null,
-    })
-    .select("id,quote_id,update_id,url,caption,created_at,created_by")
-    .single();
-  if (error) throw error;
-
-  return data as ProductionPhotoRow;
+  return addQuoteProductionPhotoRpc({
+    quoteId,
+    updateId,
+    url,
+    caption: (caption ?? "").trim() || undefined,
+  }) as Promise<ProductionPhotoRow>;
 }

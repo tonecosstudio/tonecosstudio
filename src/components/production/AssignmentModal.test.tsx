@@ -3,8 +3,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
 import { AssignmentModal } from './AssignmentModal';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +20,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 describe('AssignmentModal', () => {
   const mockOnOpenChange = vi.fn();
   const mockOnConfirm = vi.fn();
+  let queryClient: QueryClient;
 
   const mockTeamMembers = [
     { id: '1', full_name: 'Alice Smith', email: 'alice@example.com' },
@@ -32,6 +35,12 @@ describe('AssignmentModal', () => {
   ];
 
   beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
     vi.clearAllMocks();
     mockOnConfirm.mockResolvedValue(undefined);
 
@@ -64,6 +73,18 @@ describe('AssignmentModal', () => {
     });
   });
 
+  const withQueryClient = (ui: ReactElement) => (
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  );
+
+  const render = (ui: ReactElement) => {
+    const result = rtlRender(withQueryClient(ui));
+    return {
+      ...result,
+      rerender: (nextUi: ReactElement) => result.rerender(withQueryClient(nextUi)),
+    };
+  };
+
   it('renders modal with title and description', async () => {
     render(
       <AssignmentModal
@@ -73,10 +94,10 @@ describe('AssignmentModal', () => {
       />
     );
 
-    expect(screen.getByText('Atribuir Item de Produção')).toBeInTheDocument();
+    expect(screen.getByText('Atribuir Item de Producao')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Selecione um membro da equipe para atribuir este item de produção.'
+        'Selecione um membro da equipe para atribuir este item de producao.'
       )
     ).toBeInTheDocument();
   });
@@ -111,9 +132,9 @@ describe('AssignmentModal', () => {
     expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
 
     // Check workload display
-    expect(screen.getByText(/alice@example\.com • 2 itens atribuídos/i)).toBeInTheDocument();
-    expect(screen.getByText(/bob@example\.com • 1 item atribuído/i)).toBeInTheDocument();
-    expect(screen.getByText(/charlie@example\.com • 0 itens atribuídos/i)).toBeInTheDocument();
+    expect(screen.getByText(/alice@example\.com\s+-\s+2 itens atribuidos/i)).toBeInTheDocument();
+    expect(screen.getByText(/bob@example\.com\s+-\s+1 item atribuido/i)).toBeInTheDocument();
+    expect(screen.getByText(/charlie@example\.com\s+-\s+0 itens atribuidos/i)).toBeInTheDocument();
   });
 
   it('filters team members by search term', async () => {
@@ -161,7 +182,7 @@ describe('AssignmentModal', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Nenhum membro encontrado com esse critério')
+        screen.getByText('Nenhum membro encontrado com esse criterio')
       ).toBeInTheDocument();
     });
   });

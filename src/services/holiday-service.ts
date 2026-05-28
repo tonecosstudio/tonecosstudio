@@ -12,6 +12,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toBahiaTime } from "@/lib/timezone";
+import { addHolidayRpc, deleteHolidayRpc } from "./holiday-mutations-service";
 
 /**
  * Holiday interface matching the database schema
@@ -42,6 +43,27 @@ interface HolidayRow {
   created_at: string | null;
   updated_at: string | null;
 }
+
+interface HolidaysQuery extends PromiseLike<{ data: HolidayRow[] | null; error: { message: string } | null }> {
+  gte(column: "holiday_date", value: string): HolidaysQuery;
+  lte(column: "holiday_date", value: string): HolidaysQuery;
+  order(column: "holiday_date", options?: { ascending?: boolean }): HolidaysQuery;
+}
+
+interface HolidayExistsQuery {
+  eq(column: "holiday_date", value: string): {
+    maybeSingle(): Promise<{ data: { id: string } | null; error: { message: string } | null }>;
+  };
+}
+
+interface HolidaysGateway {
+  from(table: "holidays"): {
+    select(columns: "*"): HolidaysQuery;
+    select(columns: "id"): HolidayExistsQuery;
+  };
+}
+
+const holidaysGateway = supabase as unknown as HolidaysGateway;
 
 /**
  * Input type for creating a new holiday (without id and timestamps)
@@ -74,7 +96,7 @@ export class HolidayService {
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
 
-    const { data, error } = await supabase
+    const { data, error } = await holidaysGateway
       .from('holidays')
       .select('*')
       .gte('holiday_date', startDate)
@@ -86,7 +108,7 @@ export class HolidayService {
     }
 
     // Convert date strings to Date objects and handle nullable fields
-    return (data || []).map((holiday: HolidayRow) => ({
+    return (data || []).map((holiday) => ({
       ...holiday,
       holiday_date: new Date(holiday.holiday_date),
       is_recurring: holiday.is_recurring ?? false,
@@ -123,25 +145,16 @@ export class HolidayService {
     // Format date as YYYY-MM-DD for database
     const dateStr = bahiaDate.toISOString().split('T')[0];
 
-    const { data, error } = await supabase
-      .from('holidays')
-      .insert({
-        holiday_date: dateStr,
-        name: holiday.name,
-        description: holiday.description,
-        type: holiday.type,
-        state_code: holiday.state_code,
-        is_recurring: holiday.is_recurring,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to add holiday: ${error.message}`);
-    }
+    const row = await addHolidayRpc<HolidayRow>({
+      holiday_date: dateStr,
+      name: holiday.name,
+      description: holiday.description,
+      type: holiday.type,
+      state_code: holiday.state_code,
+      is_recurring: holiday.is_recurring,
+    });
 
     // Convert date strings to Date objects and handle nullable fields
-    const row = data as HolidayRow;
     return {
       ...row,
       holiday_date: new Date(row.holiday_date),
@@ -167,14 +180,7 @@ export class HolidayService {
       throw new Error('Holiday id is required');
     }
 
-    const { error } = await supabase
-      .from('holidays')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw new Error(`Failed to delete holiday: ${error.message}`);
-    }
+    await deleteHolidayRpc<HolidayRow>(id);
   }
 
   /**
@@ -199,7 +205,7 @@ export class HolidayService {
     // Format date as YYYY-MM-DD for comparison
     const dateStr = bahiaDate.toISOString().split('T')[0];
 
-    const { data, error } = await supabase
+    const { data, error } = await holidaysGateway
       .from('holidays')
       .select('id')
       .eq('holiday_date', dateStr)

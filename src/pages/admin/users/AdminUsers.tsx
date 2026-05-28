@@ -48,6 +48,12 @@ import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { FORM_RATE_LIMITS } from "@/lib/security/sanitization-config";
 import { useAdminUsersData } from "@/hooks/admin/useAdminUsersData";
 import { usePromoteAdminUser, useRemoveAdminUserRole } from "@/hooks/admin/useAdminUserActions";
+import {
+  hasAdminAccessRole,
+  hasAnyAdminAccessRole,
+  type AdminAccessRole,
+} from "@/lib/permissions/adminRoles";
+import { adminUserDetailsPath } from "@/config/routes";
 
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
@@ -136,7 +142,7 @@ export default function AdminUsers() {
     } else if (activeTab === "buyers" && stats) {
       filtered = filtered.filter((u) => stats.buyerIds.has(u.id));
     } else if (activeTab === "admins") {
-      filtered = filtered.filter((u) => u.roles.includes("admin"));
+      filtered = filtered.filter((u) => hasAnyAdminAccessRole(u.roles));
     }
 
     // Filtrar por data
@@ -230,9 +236,9 @@ export default function AdminUsers() {
   };
 
   // Contar admins
-  const adminCount = (usersQuery.data ?? []).filter((u) => u.roles.includes("admin")).length;
-  const isLastAdmin = (userId: string, roles: string[]) => {
-    return roles.includes("admin") && adminCount === 1;
+  const adminCount = (usersQuery.data ?? []).filter((u) => hasAnyAdminAccessRole(u.roles)).length;
+  const isLastAdmin = (roles: string[]) => {
+    return hasAnyAdminAccessRole(roles) && adminCount === 1;
   };
 
   // Validate email format
@@ -279,11 +285,13 @@ export default function AdminUsers() {
     }
   };
 
-  const removeRole = async (userId: string, role: "admin" | "moderator" | "user") => {
+  const removeRole = async (userId: string, role: AdminAccessRole) => {
     try {
       // Contar quantos admins existem
-      if (role === "admin") {
-        const adminCount = (usersQuery.data ?? []).filter((u) => u.roles.includes("admin")).length;
+      if (hasAdminAccessRole(role)) {
+        const adminCount = (usersQuery.data ?? []).filter((u) =>
+          hasAnyAdminAccessRole(u.roles)
+        ).length;
 
         if (adminCount <= 1) {
           toast({
@@ -660,14 +668,14 @@ export default function AdminUsers() {
                                     <Badge
                                       key={role}
                                       variant={
-                                        role === "admin" && isLastAdmin(user.id, roles)
+                                        hasAdminAccessRole(role) && isLastAdmin(roles)
                                           ? "default"
                                           : "secondary"
                                       }
                                       className="text-xs"
                                     >
                                       {role}
-                                      {role === "admin" && isLastAdmin(user.id, roles) && " 🔒"}
+                                      {hasAdminAccessRole(role) && isLastAdmin(roles) && " 🔒"}
                                     </Badge>
                                   ))
                                 )}
@@ -679,29 +687,29 @@ export default function AdminUsers() {
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <Button variant="outline" size="sm" asChild>
-                                  <Link to={`/admin/users/${user.id}`}>Ver Detalhes</Link>
+                                  <Link to={adminUserDetailsPath(user.id)}>Ver Detalhes</Link>
                                 </Button>
-                                {roles.includes("admin") && (
-                                  <AlertDialog>
+                                {roles.filter(hasAdminAccessRole).map((role) => (
+                                  <AlertDialog key={role}>
                                     <AlertDialogTrigger asChild>
                                       <Button
                                         variant="outline"
                                         size="sm"
                                         className="text-xs"
-                                        disabled={isLastAdmin(user.id, roles)}
+                                        disabled={isLastAdmin(roles)}
                                         title={
-                                          isLastAdmin(user.id, roles)
+                                          isLastAdmin(roles)
                                             ? "Não é possível remover o último admin"
-                                            : "Remover permissão de admin"
+                                            : `Remover permissão de ${role}`
                                         }
                                       >
-                                        Remover Admin
+                                        Remover {role === "super_admin" ? "Super Admin" : "Admin"}
                                       </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>
-                                          Remover permissão de admin?
+                                          Remover permissão de {role}?
                                         </AlertDialogTitle>
                                         <AlertDialogDescription>
                                           O usuário <strong>{user.email}</strong> perderá acesso à
@@ -711,14 +719,14 @@ export default function AdminUsers() {
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                         <AlertDialogAction
-                                          onClick={() => removeRole(user.id, "admin")}
+                                          onClick={() => removeRole(user.id, role)}
                                         >
                                           Confirmar
                                         </AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
-                                )}
+                                ))}
                               </div>
                             </TableCell>
                           </TableRow>

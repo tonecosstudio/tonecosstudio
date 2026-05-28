@@ -8,11 +8,11 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 const supabaseUrl =
-  Deno.env.get("SUPABASE_URL") ?? "https://lprsvnwshfxhpnwrxfpy.supabase.co";
+  Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:54321";
 const supabaseKey =
   Deno.env.get("SUPABASE_ANON_KEY") ??
   Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwcnN2bndzaGZ4aHBud3J4ZnB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4Mzg1NDgsImV4cCI6MjA4NzQxNDU0OH0.NLZHitXQF76J-P05hgMwLDtXZv811UmJOCY4bsY-zLU";
+  "test-anon-key";
 
 const functionUrl = `${supabaseUrl}/functions/v1/pay-standalone-balance`;
 

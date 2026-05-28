@@ -1,19 +1,16 @@
 import { PropsWithChildren, useMemo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { ScanlineOverlay } from "@/components/arcade/ArcadeLayout";
-import { useAdminAccessActions } from "@/hooks/auth/useAdminAccessActions";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/lib/roles";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 export default function RequireAdmin({ children }: PropsWithChildren) {
   const location = useLocation();
   const { user, isLoading } = useAuth();
   const isAdminQuery = useIsAdmin(user?.id);
-  const adminActions = useAdminAccessActions({
-    onBootstrapSuccess: () => {
-      isAdminQuery.refetch();
-    },
-  });
 
   const isChecking = isLoading || (user && isAdminQuery.isLoading);
   const isAdmin = Boolean(isAdminQuery.data);
@@ -42,7 +39,7 @@ export default function RequireAdmin({ children }: PropsWithChildren) {
     );
   }
 
-  if (!user) return <Navigate to={`/login?next=${redirectTo}`} replace />;
+  if (!user) return <Navigate to={`${PUBLIC_ROUTES.login}?next=${redirectTo}`} replace />;
 
   if (isAdmin) return <>{children}</>;
 
@@ -57,24 +54,18 @@ export default function RequireAdmin({ children }: PropsWithChildren) {
           ACESSO RESTRITO
         </h1>
         <p className="text-[hsl(0,0%,50%)] text-xs font-mono tracking-wider mb-6 leading-relaxed">
-          Esta area e apenas para administradores. Se este e o primeiro login do projeto, voce pode
-          se promover a admin inicial uma unica vez.
+          Esta area e apenas para administradores. Solicite permissao a um administrador ativo do
+          sistema.
         </p>
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={adminActions.bootstrap}
-            disabled={adminActions.isBootstrapping}
-            className="text-[10px] tracking-[0.2em] uppercase font-mono border border-[hsl(var(--gold-accent)/0.4)] px-4 py-2 text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] transition-colors disabled:opacity-60"
-          >
-            TORNAR-ME ADMIN
-          </button>
-          <button
-            onClick={adminActions.signOut}
-            disabled={adminActions.isSigningOut}
-            className="text-[10px] tracking-[0.2em] uppercase font-mono border border-[hsl(0,0%,25%)] px-4 py-2 text-[hsl(0,0%,50%)] hover:bg-[hsl(0,0%,12%)] transition-colors disabled:opacity-60"
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void supabase.auth.signOut()}
+            className="text-[10px] tracking-[0.2em] uppercase font-mono border-[hsl(0,0%,25%)] text-[hsl(0,0%,50%)] hover:bg-[hsl(0,0%,12%)]"
           >
             SAIR
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,4 +1,10 @@
+import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { openSafeMailtoUrl } from "@/lib/security/safe-open";
+import {
+  buildAdminContactMailtoUrl,
+  sendAdminPasswordResetEmail,
+} from "@/services/admin/admin-user-actions-service";
 import { promoteAdminByEmail, removeUserRole } from "@/services/admin/admin-users-service";
 
 export function usePromoteAdminUser() {
@@ -23,4 +29,19 @@ export function useRemoveAdminUserRole() {
       queryClient.invalidateQueries({ queryKey: ["admin-user-roles"] });
     },
   });
+}
+
+export function useAdminUserActions() {
+  const sendPasswordReset = useCallback((email: string) => {
+    return sendAdminPasswordResetEmail({ email, origin: window.location.origin });
+  }, []);
+
+  const openContactEmail = useCallback((email: string, userName: string) => {
+    openSafeMailtoUrl(buildAdminContactMailtoUrl({ email, userName }));
+  }, []);
+
+  return {
+    openContactEmail,
+    sendPasswordReset,
+  };
 }

@@ -52,6 +52,10 @@ export function RevenueChart({
     }).format(value);
   };
 
+  const toNumericValue = (value: ValueType | undefined): number => {
+    return typeof value === "number" ? value : Number(value ?? 0);
+  };
+
   // Tooltip customizado
   const CustomTooltip = ({ active, payload }: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length) {
@@ -61,7 +65,7 @@ export function RevenueChart({
           <div className="space-y-1">
             <p className="text-sm">
               <span className="text-primary">Receita:</span>{" "}
-              <span className="font-medium">{formatCurrency(payload[0].value)}</span>
+              <span className="font-medium">{formatCurrency(toNumericValue(payload[0].value))}</span>
             </p>
             <p className="text-sm">
               <span className="text-muted-foreground">Orçamentos:</span>{" "}
@@ -70,7 +74,7 @@ export function RevenueChart({
             {showGoal && payload[2] && (
               <p className="text-sm">
                 <span className="text-amber-600">Meta:</span>{" "}
-                <span className="font-medium">{formatCurrency(payload[2].value)}</span>
+                <span className="font-medium">{formatCurrency(toNumericValue(payload[2].value))}</span>
               </p>
             )}
           </div>

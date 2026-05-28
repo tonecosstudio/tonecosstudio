@@ -23,6 +23,7 @@ import {
 } from "@/components/arcade/ArcadeLayout";
 import { Page } from "@/components/layouts/Page";
 import { useState } from "react";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 const VALUES = [
   { icon: Shield, title: "QUALIDADE", desc: "Inspeção rigorosa antes do envio. Padrões elevados em todas as etapas." },
@@ -211,7 +212,7 @@ export default function AboutArcade() {
         badge="Pronto para começar?"
         title="MISSÃO DISPONÍVEL"
         description="Explore nosso catálogo e solicite um orçamento personalizado."
-        primaryAction={{ label: "VER CATÁLOGO", href: "/catalogo", icon: <ArrowRight className="w-4 h-4" /> }}
+        primaryAction={{ label: "VER CATÁLOGO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
         secondaryAction={{ label: "FAZER ORÇAMENTO", href: "/orcamento/carrinho" }}
       />
     </Page>

@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { SubscriptionDeliveryStatus } from '@/types/admin/orders';
 
 export interface BulkUpdateResult {
   success: boolean;
@@ -14,7 +15,7 @@ export interface BulkUpdateResult {
 
 export interface BulkDeliveryStatusUpdateInput {
   deliveryIds: string[];
-  newStatus: string;
+  newStatus: SubscriptionDeliveryStatus;
   notes?: string;
 }
 

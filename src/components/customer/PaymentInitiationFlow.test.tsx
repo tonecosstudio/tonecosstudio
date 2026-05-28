@@ -119,19 +119,37 @@ describe("PaymentInitiationFlow", () => {
     return renderWithProviders(<PaymentInitiationFlow {...defaultProps} />, { queryClient });
   };
 
+  const waitForMethodButton = async (name: string) => {
+    await screen.findAllByText(name);
+    const button = screen
+      .getAllByText(name)
+      .map((element) => element.closest("button"))
+      .find(Boolean);
+
+    expect(button).toBeTruthy();
+    return button as HTMLButtonElement;
+  };
+
+  const waitForEnabledConfirmButton = async () => {
+    const confirmButton = await screen.findByRole("button", {
+      name: /Confirmar Método de Pagamento/,
+    });
+
+    await waitFor(() => {
+      expect(confirmButton).toBeEnabled();
+    });
+
+    return confirmButton;
+  };
+
   it("should render loading state initially", async () => {
     vi.mocked(paymentMethodService.listActivePaymentMethods).mockImplementation(
       () => new Promise(() => {})
     ); // Never resolves
 
-    renderComponent();
+    const { container } = renderComponent();
 
-    expect(screen.getByText("Iniciar Pagamento")).toBeInTheDocument();
-    
-    // Wait a bit to ensure loading state is rendered
-    await waitFor(() => {
-      expect(screen.getAllByRole("status").length).toBeGreaterThan(0); // Loading skeletons
-    }, { timeout: 1000 });
+    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
   });
 
   it("should render error state when fetch fails", async () => {
@@ -203,15 +221,8 @@ describe("PaymentInitiationFlow", () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      const creditCardElements = screen.getAllByText("Cartão de Crédito");
-      expect(creditCardElements.length).toBeGreaterThan(0);
-    });
-
-    // Click on credit card method
-    const creditCardElements = screen.getAllByText("Cartão de Crédito");
-    const creditCardButton = creditCardElements[0].closest("button");
-    fireEvent.click(creditCardButton!);
+    const creditCardButton = await waitForMethodButton("Cartão de Crédito");
+    fireEvent.click(creditCardButton);
 
     // Credit card should now be selected
     expect(creditCardButton).toHaveClass("border-primary");
@@ -238,15 +249,8 @@ describe("PaymentInitiationFlow", () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      const creditCardElements = screen.getAllByText("Cartão de Crédito");
-      expect(creditCardElements.length).toBeGreaterThan(0);
-    });
-
-    // Select credit card
-    const creditCardElements = screen.getAllByText("Cartão de Crédito");
-    const creditCardButton = creditCardElements[0].closest("button");
-    fireEvent.click(creditCardButton!);
+    const creditCardButton = await waitForMethodButton("Cartão de Crédito");
+    fireEvent.click(creditCardButton);
 
     // Should show payment link
     expect(screen.getByText("Link de Pagamento")).toBeInTheDocument();
@@ -254,24 +258,46 @@ describe("PaymentInitiationFlow", () => {
     expect(screen.getByText("Abrir")).toBeInTheDocument();
   });
 
+  it("should block unsafe payment links when opening external payment page", async () => {
+    const unsafeMethods = mockPaymentMethods.map((method) =>
+      method.id === "method-2" ? { ...method, payment_link: "javascript:alert(1)" } : method
+    );
+    vi.mocked(paymentMethodService.listActivePaymentMethods).mockResolvedValue(unsafeMethods);
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    try {
+      renderComponent();
+
+      const creditCardButton = await waitForMethodButton("Cartão de Crédito");
+      fireEvent.click(creditCardButton);
+      fireEvent.click(screen.getByRole("button", { name: "Abrir" }));
+
+      expect(openSpy).not.toHaveBeenCalled();
+      expect(toastHook.toast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Link de pagamento invalido",
+          variant: "destructive",
+        })
+      );
+    } finally {
+      openSpy.mockRestore();
+    }
+  });
+
   it("should show bank transfer instructions when bank transfer is selected", async () => {
     vi.mocked(paymentMethodService.listActivePaymentMethods).mockResolvedValue(mockPaymentMethods);
 
     renderComponent();
 
-    await waitFor(() => {
-      const bankTransferElements = screen.getAllByText("Transferência Bancária");
-      expect(bankTransferElements.length).toBeGreaterThan(0);
-    });
-
-    // Select bank transfer
-    const bankTransferElements = screen.getAllByText("Transferência Bancária");
-    const bankTransferButton = bankTransferElements[0].closest("button");
-    fireEvent.click(bankTransferButton!);
+    const bankTransferButton = await waitForMethodButton("Transferência Bancária");
+    fireEvent.click(bankTransferButton);
 
     // Should show bank details
-    expect(screen.getByText("Dados Bancários")).toBeInTheDocument();
-    expect(screen.getByText("Banco do Brasil")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Dados Bancários")).toBeInTheDocument();
+      expect(screen.getByText("Banco")).toBeInTheDocument();
+      expect(screen.getByText("Banco do Brasil")).toBeInTheDocument();
+    });
   });
 
   it("should call createPayment when confirm button is clicked", async () => {
@@ -280,18 +306,11 @@ describe("PaymentInitiationFlow", () => {
 
     renderComponent({ quoteId: "quote-123" });
 
-    await waitFor(() => {
-      const pixElements = screen.getAllByText("PIX");
-      expect(pixElements.length).toBeGreaterThan(0);
-    });
-
-    // Click confirm button
-    const confirmButton = screen.getByText("Confirmar Método de Pagamento");
+    const confirmButton = await waitForEnabledConfirmButton();
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(paymentService.createPayment).toHaveBeenCalledWith({
-        user_id: "user-123",
         payment_method_id: "method-1", // Default PIX method
         amount: 150.5,
         currency: "BRL",
@@ -302,35 +321,15 @@ describe("PaymentInitiationFlow", () => {
     });
   });
 
-  it("should show validation error when no method is selected", async () => {
-    vi.mocked(paymentMethodService.listActivePaymentMethods).mockResolvedValue(mockPaymentMethods);
+  it("should keep payment creation unavailable while methods are loading", async () => {
+    vi.mocked(paymentMethodService.listActivePaymentMethods).mockImplementation(
+      () => new Promise(() => {})
+    );
 
     renderComponent();
 
-    await waitFor(() => {
-      const pixElements = screen.getAllByText("PIX");
-      expect(pixElements.length).toBeGreaterThan(0);
-    });
-
-    // Manually deselect all methods (simulate clicking on already selected method)
-    const pixElements = screen.getAllByText("PIX");
-    const pixButton = pixElements[0].closest("button");
-    fireEvent.click(pixButton!); // Click to select
-    fireEvent.click(pixButton!); // Click again to deselect
-
-    // Click confirm button
-    const confirmButton = screen.getByText("Confirmar Método de Pagamento");
-    fireEvent.click(confirmButton);
-
-    await waitFor(() => {
-      expect(toastHook.toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Selecione um método",
-          description: "Por favor, selecione um método de pagamento.",
-          variant: "destructive",
-        })
-      );
-    });
+    expect(screen.queryByRole("button", { name: /Confirmar Método de Pagamento/ })).toBeNull();
+    expect(paymentService.createPayment).not.toHaveBeenCalled();
   });
 
   it("should show loading state during payment creation", async () => {
@@ -339,13 +338,7 @@ describe("PaymentInitiationFlow", () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      const pixElements = screen.getAllByText("PIX");
-      expect(pixElements.length).toBeGreaterThan(0);
-    });
-
-    // Click confirm button
-    const confirmButton = screen.getByText("Confirmar Método de Pagamento");
+    const confirmButton = await waitForEnabledConfirmButton();
     fireEvent.click(confirmButton);
 
     // Should show loading state
@@ -361,13 +354,7 @@ describe("PaymentInitiationFlow", () => {
 
     renderComponent({ onSuccess: mockOnSuccess });
 
-    await waitFor(() => {
-      const pixElements = screen.getAllByText("PIX");
-      expect(pixElements.length).toBeGreaterThan(0);
-    });
-
-    // Click confirm button
-    const confirmButton = screen.getByText("Confirmar Método de Pagamento");
+    const confirmButton = await waitForEnabledConfirmButton();
     fireEvent.click(confirmButton);
 
     await waitFor(() => {

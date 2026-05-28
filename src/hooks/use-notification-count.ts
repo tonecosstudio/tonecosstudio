@@ -140,7 +140,7 @@ async function fetchCustomerNotificationCount(customerId: string): Promise<Notif
 
   const { data: unreadMessages, error: messagesError } = await supabase
     .from("support_messages")
-    .select("id, read_by_customer, conversation_id")
+    .select("id, conversation_id")
     .eq("read_by_customer", false);
 
   if (messagesError) {
@@ -169,16 +169,21 @@ async function fetchCustomerNotificationCount(customerId: string): Promise<Notif
 
 export function useNotificationCount(): NotificationCount {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const { data: isAdminData, isLoading: isAdminLoading } = useIsAdmin(user?.id);
   const queryClient = useQueryClient();
   const [realTimeCount, setRealTimeCount] = useState<NotificationCount | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-      setUser(currentUser);
+      try {
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
+        setUser(currentUser);
+      } finally {
+        setIsAuthReady(true);
+      }
     };
 
     getUser();
@@ -187,6 +192,7 @@ export function useNotificationCount(): NotificationCount {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
+      setIsAuthReady(true);
     });
 
     return () => {
@@ -195,7 +201,7 @@ export function useNotificationCount(): NotificationCount {
   }, []);
 
   const isAdmin = isAdminData || false;
-  const isLoadingAuth = isAdminLoading || !user;
+  const isLoadingAuth = !isAuthReady || (!!user?.id && isAdminLoading);
 
   const {
     data: initialCount,

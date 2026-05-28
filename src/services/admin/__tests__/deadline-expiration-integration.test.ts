@@ -141,26 +141,25 @@ describe("Deadline Expiration Flow Integration Test", () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({
+        data: [mockExpiredItem, mockApproachingItem],
+        error: null,
+        count: 2,
+      }),
     };
-
-    mockQueueQuery.select.mockResolvedValue({
-      data: [mockExpiredItem, mockApproachingItem],
-      error: null,
-      count: 2,
-    });
 
     // Setup mock for fetching pending choices
     const mockChoicesQuery = {
       select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: mockPendingChoices,
+        error: null,
+      }),
     };
-
-    mockChoicesQuery.select.mockResolvedValue({
-      data: mockPendingChoices,
-      error: null,
-    });
 
     // Configure supabase.from mock
     (supabase.from as any)
@@ -200,17 +199,20 @@ describe("Deadline Expiration Flow Integration Test", () => {
       updated_at: new Date().toISOString(),
     };
 
-    const mockExtendQuery = {
-      eq: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
+    const mockExtendedChoicesQuery = {
       select: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: mockExtendedChoice, error: null }),
+      in: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: [mockExtendedChoice, mockPendingChoices[1]],
+        error: null,
+      }),
     };
 
-    (supabase.from as any)
-      .mockReturnValueOnce({ // For extendDeadline
-        update: vi.fn().mockReturnValue(mockExtendQuery),
-      });
+    (supabase.rpc as any).mockResolvedValueOnce({ data: "choice-001", error: null });
+    (supabase.from as any).mockReturnValueOnce(mockExtendedChoicesQuery);
 
     // Mock the actual extendDeadline function
     const extendDeadlineResult = await extendDeadline("choice-001", newDeadline.toISOString());
@@ -232,14 +234,12 @@ describe("Deadline Expiration Flow Integration Test", () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({
+        data: [mockUpdatedItem, mockApproachingItem],
+        error: null,
+        count: 2,
+      }),
     };
-
-    mockUpdatedQueueQuery.select.mockResolvedValue({
-      data: [mockUpdatedItem, mockApproachingItem],
-      error: null,
-      count: 2,
-    });
 
     (supabase.from as any)
       .mockReturnValueOnce(mockUpdatedQueueQuery);
@@ -300,14 +300,12 @@ describe("Deadline Expiration Flow Integration Test", () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({
+        data: [...mockExpiredItems].sort((a, b) => b.priority_score - a.priority_score),
+        error: null,
+        count: mockExpiredItems.length,
+      }),
     };
-
-    mockQueueQuery.select.mockResolvedValue({
-      data: mockExpiredItems,
-      error: null,
-      count: mockExpiredItems.length,
-    });
 
     (supabase.from as any).mockReturnValue(mockQueueQuery);
 

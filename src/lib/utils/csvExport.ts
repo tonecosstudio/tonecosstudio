@@ -7,6 +7,7 @@
 import type { ProductionQueueItem } from '@/services/admin/production-service';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getProductionStageLabel } from '@/config/production-stages';
 
 /**
  * Converts production queue items to CSV format and triggers download
@@ -116,15 +117,7 @@ function formatDate(date: string | null): string {
  * Translates stage to Portuguese
  */
 function translateStage(stage: string): string {
-  const translations: Record<string, string> = {
-    awaiting_choice: 'Aguardando Escolha',
-    design: 'Design',
-    production: 'Produção',
-    quality_check: 'Controle de Qualidade',
-    packaging: 'Embalagem',
-    shipped: 'Enviado',
-  };
-  return translations[stage] || stage;
+  return getProductionStageLabel(stage);
 }
 
 /**
@@ -165,6 +158,7 @@ function translateChoiceStatus(status: string): string {
     approved: 'Aprovado',
     rejected: 'Rejeitado',
     locked: 'Bloqueado',
+    expired: 'Expirado',
   };
   return translations[status] || status;
 }

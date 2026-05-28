@@ -11,6 +11,7 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
+import { getProductionStageLabel } from "@/config/production-stages";
 
 /**
  * ProductionMetricsBar Component
@@ -68,22 +69,6 @@ export function ProductionMetricsBar() {
     shipped: <Truck className="h-4 w-4" />,
   };
 
-  // Stage labels mapping
-  const stageLabels: Record<string, string> = {
-    awaiting_payment: "Aguardando Pagamento",
-    payment_confirmed: "Pagamento Confirmado",
-    awaiting_choice: "Aguardando Escolha",
-    model_preparation: "Preparação do Modelo",
-    printing: "Em Impressão 3D",
-    post_processing: "Limpeza e Preparação",
-    painting: "Pintura Artesanal",
-    quality_check: "Controle de Qualidade",
-    packaging: "Embalagem",
-    ready_to_ship: "Pronto para Envio",
-    shipped: "Enviado",
-    delivered: "Entregue",
-  };
-
   return (
     <Card className="border border-border bg-card shadow-sm">
       <CardContent className="p-6">
@@ -98,8 +83,8 @@ export function ProductionMetricsBar() {
               {Object.entries(metrics.stages).map(([stage, count]) => (
                 <div key={stage} className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {stageIcons[stage]}
-                    <span>{stageLabels[stage] || stage}</span>
+                    {stageIcons[stage] || <Package className="h-4 w-4" />}
+                    <span>{getProductionStageLabel(stage)}</span>
                   </div>
                   <Badge variant="secondary" className="border border-border">
                     {count}
@@ -120,8 +105,8 @@ export function ProductionMetricsBar() {
                 Object.entries(metrics.avgStageDurations).map(([stage, hours]) => (
                   <div key={stage} className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {stageIcons[stage]}
-                      <span>{stageLabels[stage] || stage}</span>
+                      {stageIcons[stage] || <Package className="h-4 w-4" />}
+                      <span>{getProductionStageLabel(stage)}</span>
                     </div>
                     <span className="text-sm font-medium text-foreground">
                       {hours.toFixed(1)}h

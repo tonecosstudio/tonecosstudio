@@ -110,8 +110,8 @@ export function useUserSubscription({ userId }: UseUserSubscriptionProps) {
           character_name, chosen_at, deadline,
           approved_at, rejected_at, rejection_reason,
           created_at,
-          collection_characters:character_id(id, name, image_url),
-          collections:collection_id(id, name)
+          collection_characters:collection_characters!character_choices_character_id_fkey(id, name, image_url),
+          collections:collections!character_choices_collection_id_fkey(id, name)
         `
         )
         .eq("user_id", userId)

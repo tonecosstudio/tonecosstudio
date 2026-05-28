@@ -10,12 +10,45 @@
  *   userName: 'João Silva',
  *   collectionName: 'Marvel Legends',
  *   deadline: '15/01/2024',
- *   choiceUrl: 'https://ordax.com.br/assinatura/123',
+ *   choiceUrl: 'https://example.com/assinatura/123',
  * });
  * ```
  */
 
 import { log } from "@/lib/logger";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
+import adminExpirationNoticeTemplate from "./admin-expiration-notice.html?raw";
+import reminderFinalTemplate from "./character-choice-reminder-final.html?raw";
+import reminderFirstTemplate from "./character-choice-reminder-first.html?raw";
+import reminderSecondTemplate from "./character-choice-reminder-second.html?raw";
+
+const TEMPLATE_CONTENT: Record<string, string> = {
+  "admin-expiration-notice": adminExpirationNoticeTemplate,
+  "character-choice-reminder-final": reminderFinalTemplate,
+  "character-choice-reminder-first": reminderFirstTemplate,
+  "character-choice-reminder-second": reminderSecondTemplate,
+};
+
+const URL_VARIABLES = new Set(["adminUrl", "choiceUrl"]);
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatTemplateValue(key: string, value: string | number): string {
+  const text = String(value);
+
+  if (URL_VARIABLES.has(key)) {
+    return escapeHtml(sanitizeURL(text, ["https"]));
+  }
+
+  return escapeHtml(text);
+}
 
 export type ReminderType = 'first' | 'second' | 'final';
 
@@ -71,25 +104,14 @@ export class EmailTemplateLoader {
     });
   }
 
-  /**
-   * Get template content (to be implemented based on environment)
-   * In browser: fetch from server
-   * In Node.js: read from file system
-   * In Deno: read from file system
-   */
   private getTemplateContent(templateName: string): string {
-    // This is a placeholder - actual implementation depends on environment
-    // For now, return the template names as they would be loaded
-    
-    // In a real implementation, this would:
-    // 1. Check if running in browser, Node.js, or Deno
-    // 2. Load the appropriate template file
-    // 3. Return the HTML content
-    
-    throw new Error(
-      `Template loading not implemented. Please implement getTemplateContent() for your environment.\n` +
-      `Template requested: ${templateName}.html`
-    );
+    const template = TEMPLATE_CONTENT[templateName];
+
+    if (!template) {
+      throw new Error(`Unknown email template requested: ${templateName}`);
+    }
+
+    return template;
   }
 
   /**
@@ -100,7 +122,7 @@ export class EmailTemplateLoader {
     
     for (const [key, value] of Object.entries(variables)) {
       const regex = new RegExp(`{{${key}}}`, 'g');
-      result = result.replace(regex, String(value));
+      result = result.replace(regex, formatTemplateValue(key, value));
     }
     
     // Check for unreplaced variables (useful for debugging)

@@ -8,6 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json, Tables } from "@/integrations/supabase/types";
 import { calculateEstimatedCompletion } from "./stage-service";
 import log from "@/lib/logger";
+import { PRODUCTION_STAGE_LABELS, PRODUCTION_STAGE_ORDER } from "@/config/production-stages";
+import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
+import {
+  assignProductionRpc,
+  blockProductionRpc,
+  unblockProductionRpc,
+  updateProductionEstimatedCompletionRpc,
+  updateProductionNotesRpc,
+  updateProductionScheduleRpc,
+  updateProductionStageRpc,
+} from "@/services/admin/admin-production-mutations-service";
+import { getProductionPriorityFromScore } from "@/types/production";
 import type {
   ChoiceStatus,
   Priority,
@@ -37,20 +49,7 @@ export type {
 /**
  * Labels legíveis para cada estágio de produção
  */
-export const STAGE_LABELS: Record<ProductionStage, string> = {
-  awaiting_payment: 'Aguardando Pagamento',
-  payment_confirmed: 'Pagamento Confirmado',
-  awaiting_choice: 'Aguardando Escolha',
-  model_preparation: 'Preparação do Modelo',
-  printing: 'Em Impressão 3D',
-  post_processing: 'Limpeza e Preparação',
-  painting: 'Pintura Artesanal',
-  quality_check: 'Controle de Qualidade',
-  packaging: 'Embalagem',
-  ready_to_ship: 'Pronto para Envio',
-  shipped: 'Enviado',
-  delivered: 'Entregue',
-};
+export const STAGE_LABELS: Record<ProductionStage, string> = PRODUCTION_STAGE_LABELS;
 
 /**
  * Descrições detalhadas para cada estágio
@@ -104,18 +103,7 @@ export const NOTIFICATION_STAGES: ProductionStage[] = [
  * Ordem dos estágios para validação de transições
  */
 export const STAGE_ORDER: ProductionStage[] = [
-  'awaiting_payment',
-  'payment_confirmed',
-  'awaiting_choice',
-  'model_preparation',
-  'printing',
-  'post_processing',
-  'painting',
-  'quality_check',
-  'packaging',
-  'ready_to_ship',
-  'shipped',
-  'delivered',
+  ...PRODUCTION_STAGE_ORDER,
 ];
 
 /**
@@ -168,6 +156,19 @@ export function isValidStageTransition(
 }
 
 type ProductionQueueRow = Tables<"production_queue">;
+
+function priorityFilterClause(priority: Priority): string {
+  switch (priority) {
+    case "critical":
+      return "priority_score.gte.90";
+    case "high":
+      return "and(priority_score.gte.70,priority_score.lt.90)";
+    case "normal":
+      return "and(priority_score.gt.30,priority_score.lt.70)";
+    case "low":
+      return "priority_score.lte.30";
+  }
+}
 
 export interface PaginationParams {
   page: number;
@@ -246,7 +247,7 @@ export async function fetchProductionQueue(
 
   // Aplicar filtros de prioridade
   if (filters.priorities && filters.priorities.length > 0) {
-    query = query.in("priority", filters.priorities);
+    query = query.or(filters.priorities.map(priorityFilterClause).join(","));
   }
 
   // Aplicar filtros de estágio
@@ -274,8 +275,10 @@ export async function fetchProductionQueue(
 
   // Aplicar busca por texto (nome ou email do cliente)
   if (filters.searchQuery && filters.searchQuery.trim()) {
-    const searchTerm = filters.searchQuery.trim();
-    query = query.or(`customer_name.ilike.%${searchTerm}%,customer_email.ilike.%${searchTerm}%`);
+    const searchTerm = sanitizePostgrestSearchTerm(filters.searchQuery);
+    if (searchTerm) {
+      query = query.or(`customer_name.ilike.%${searchTerm}%,customer_email.ilike.%${searchTerm}%`);
+    }
   }
 
   // Ordenar por prioridade (score) e data de criação
@@ -356,6 +359,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
       approved: 0,
       rejected: 0,
       locked: 0,
+      expired: 0,
     };
 
     let deadlineCritical = 0;
@@ -390,9 +394,7 @@ export async function fetchProductionMetrics(): Promise<ProductionMetrics> {
       }
 
       // Count by priority
-      if (item.priority && Object.prototype.hasOwnProperty.call(priorities, item.priority)) {
-        priorities[item.priority as Priority]++;
-      }
+      priorities[getProductionPriorityFromScore(item.priority, item.priority_score)]++;
 
       // Count by choice status
       if (item.choice_status && Object.prototype.hasOwnProperty.call(choices, item.choice_status)) {
@@ -501,34 +503,7 @@ export async function updateProductionStage(
     throw new Error(`Item não encontrado: ${fetchError?.message || "ID inválido"}`);
   }
 
-  // Determinar novo status baseado no estágio
-  let newStatus: ProductionStatus = currentItem.production_status;
-
-  if (newStage === "awaiting_choice" || newStage === "awaiting_payment") {
-    newStatus = "awaiting_choice";
-  } else if (newStage === "payment_confirmed" || newStage === "model_preparation") {
-    newStatus = "ready_for_production";
-  } else if (["printing", "post_processing", "painting", "quality_check", "packaging", "ready_to_ship"].includes(newStage)) {
-    newStatus = "in_production";
-  } else if (newStage === "shipped" || newStage === "delivered") {
-    newStatus = "completed";
-  }
-
-  // Atualizar item
-  const { data: updatedItem, error: updateError } = await supabase
-    .from("production_queue")
-    .update({
-      current_stage: newStage,
-      production_status: newStatus,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (updateError || !updatedItem) {
-    throw new Error(`Erro ao atualizar estágio: ${updateError?.message || "Falha na atualização"}`);
-  }
+  const updatedItem = await updateProductionStageRpc(id, newStage);
 
   return transformProductionQueueItem(updatedItem);
 }
@@ -558,62 +533,15 @@ export async function assignProduction(
 
   const isReassignment = currentItem?.assigned_to && currentItem.assigned_to !== userId;
 
-  // Fetch user information
-  const { data: user, error: userError } = await supabase
-    .from("profiles")
-    .select("full_name, email")
-    .eq("id", userId)
-    .single();
-
-  if (userError || !user) {
-    throw new Error(`Erro ao buscar usuário: ${userError?.message || "Usuário não encontrado"}`);
-  }
-
-  const userName = user.full_name || user.email || "Usuário";
-
-  // Update production queue item
-  const { data: updatedItem, error: updateError } = await supabase
-    .from("production_queue")
-    .update({
-      assigned_to: userId,
-      assigned_to_name: userName,
-      assigned_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (updateError || !updatedItem) {
-    throw new Error(`Erro ao atribuir produção: ${updateError?.message || "Falha na atualização"}`);
-  }
-
-  // Log the assignment
-  try {
-    await supabase.from("production_assignment_logs").insert({
-      production_queue_id: id,
-      assigned_to: userId,
-      assigned_to_name: userName,
-      assigned_by: (await supabase.auth.getUser()).data.user?.id,
-      is_reassignment: isReassignment,
-      previous_assignee: currentItem?.assigned_to,
-      previous_assignee_name: currentItem?.assigned_to_name,
-      reason: reason || (isReassignment ? "Reatribuição" : "Atribuição inicial"),
-      assigned_at: new Date().toISOString(),
-    });
-  } catch (logError) {
-    log.error("Erro ao registrar log de atribuição", { logError });
-    // Don't fail the assignment if logging fails
-  }
+  const updatedItem = await assignProductionRpc({ queueId: id, userId, reason });
 
   // Send notification to assigned team member
   try {
     // Import notification service dynamically to avoid circular dependencies
-    const { ProductionNotificationService } = await import("@/services/notifications/production-notification-service");
-    const notificationService = new ProductionNotificationService();
+    const { productionNotificationService } = await import("@/services/notifications/production-notification-service");
 
     // Send assignment notification
-    await notificationService.sendAssignmentNotification(id, userId, isReassignment);
+    await productionNotificationService.sendAssignmentNotification(id, userId, Boolean(isReassignment));
   } catch (notifError) {
     log.error("Erro ao enviar notificação de atribuição", { notifError });
     // Don't fail the assignment if notification fails
@@ -645,50 +573,14 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
     throw new Error(`Erro ao buscar item de produção: ${fetchError?.message || "Item não encontrado"}`);
   }
 
-  // 2. Update production_stages to mark current stage as blocked
-  const { error: stageError } = await supabase
-    .from("production_stages")
-    .update({
-      is_blocked: true,
-      block_reason: reason,
-      blocked_at: new Date().toISOString(),
-      status: "blocked",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("production_queue_id", id)
-    .eq("stage_name", queueItem.current_stage);
-
-  if (stageError) {
-    throw new Error(`Erro ao bloquear estágio: ${stageError.message}`);
-  }
-
-  // 3. Update production_queue status to on_hold
-  const { data: updatedItem, error: updateError } = await supabase
-    .from("production_queue")
-    .update({
-      production_status: "on_hold",
-      production_notes: reason,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (updateError || !updatedItem) {
-    throw new Error(`Erro ao bloquear produção: ${updateError?.message || "Falha na atualização"}`);
-  }
+  void queueItem;
+  const updatedItem = await blockProductionRpc(id, reason);
 
   // 4. Recalculate estimated completion date
   try {
     const newEstimatedDate = await calculateEstimatedCompletion(id);
 
-    // Update the estimated completion date in production_queue
-    await supabase
-      .from("production_queue")
-      .update({
-        estimated_completion_date: newEstimatedDate.toISOString(),
-      })
-      .eq("id", id);
+    await updateProductionEstimatedCompletionRpc(id, newEstimatedDate.toISOString());
   } catch (calcError) {
     log.error("Erro ao recalcular data estimada", { calcError });
     // Don't throw - blocking should still succeed even if date calculation fails
@@ -696,9 +588,8 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
 
   // 5. Send notification to customer about the delay
   try {
-    const { ProductionNotificationService } = await import("../notifications/production-notification-service");
-    const notificationService = new ProductionNotificationService();
-    await notificationService.sendDelayNotification(id, reason);
+    const { productionNotificationService } = await import("@/services/notifications/production-notification-service");
+    await productionNotificationService.sendDelayNotification(id, reason);
   } catch (notifError) {
     log.error("Erro ao enviar notificação de atraso", { notifError });
     // Don't throw - blocking should still succeed even if notification fails
@@ -721,8 +612,6 @@ export async function blockProduction(id: string, reason: string): Promise<Produ
  * @returns Item atualizado
  */
 export async function unblockProduction(id: string): Promise<ProductionQueueItem> {
-  const now = new Date().toISOString();
-
   // Buscar item atual para determinar status correto
   const { data: currentItem, error: fetchError } = await supabase
     .from("production_queue")
@@ -734,67 +623,29 @@ export async function unblockProduction(id: string): Promise<ProductionQueueItem
     throw new Error(`Item não encontrado: ${fetchError?.message || "ID inválido"}`);
   }
 
+  if (!currentItem.current_stage) {
+    throw new Error(`Item sem estágio atual: ${id}`);
+  }
+
+  const currentStageName = currentItem.current_stage;
+
   const { data: currentStage, error: stageFetchError } = await supabase
     .from("production_stages")
     .select("started_at")
     .eq("production_queue_id", id)
-    .eq("stage_name", currentItem.current_stage)
+    .eq("stage_name", currentStageName)
     .maybeSingle();
 
   if (stageFetchError) {
     throw new Error(`Erro ao buscar estágio bloqueado: ${stageFetchError.message}`);
   }
 
-  const restoredStageStatus = currentStage?.started_at ? "in_progress" : "pending";
-
-  const { error: stageUpdateError } = await supabase
-    .from("production_stages")
-    .update({
-      is_blocked: false,
-      block_reason: null,
-      unblocked_at: now,
-      status: restoredStageStatus,
-      updated_at: now,
-    })
-    .eq("production_queue_id", id)
-    .eq("stage_name", currentItem.current_stage);
-
-  if (stageUpdateError) {
-    throw new Error(`Erro ao desbloquear estágio: ${stageUpdateError.message}`);
-  }
-
-  // Determinar status baseado no estágio atual
-  let newStatus: ProductionStatus = "ready_for_production";
-
-  if (currentItem.current_stage === "awaiting_choice" || currentItem.current_stage === "awaiting_payment") {
-    newStatus = "awaiting_choice";
-  } else if (["printing", "post_processing", "painting", "quality_check", "packaging", "ready_to_ship"].includes(currentItem.current_stage)) {
-    newStatus = "in_production";
-  } else if (currentItem.current_stage === "shipped" || currentItem.current_stage === "delivered") {
-    newStatus = "completed";
-  }
-
-  // Atualizar item
-  const { data: updatedItem, error: updateError } = await supabase
-    .from("production_queue")
-    .update({
-      production_status: newStatus,
-      updated_at: now,
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (updateError || !updatedItem) {
-    throw new Error(
-      `Erro ao desbloquear produção: ${updateError?.message || "Falha na atualização"}`
-    );
-  }
+  void currentStage;
+  const updatedItem = await unblockProductionRpc(id);
 
   try {
-    const { ProductionNotificationService } = await import("../notifications/production-notification-service");
-    const notificationService = new ProductionNotificationService();
-    await notificationService.sendStageUpdate(id, currentItem.current_stage);
+    const { productionNotificationService } = await import("../notifications/production-notification-service");
+    await productionNotificationService.sendStageUpdate(id, currentStageName);
   } catch (notifError) {
     log.error("Erro ao enviar notificação de desbloqueio", { notifError });
   }
@@ -823,22 +674,7 @@ export async function updateProductionSchedule(
     throw new Error("Formato de data inválido. Use YYYY-MM-DD");
   }
 
-  // Atualizar item
-  const { data: updatedItem, error: updateError } = await supabase
-    .from("production_queue")
-    .update({
-      scheduled_production_date: newDate,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (updateError || !updatedItem) {
-    throw new Error(
-      `Erro ao atualizar data de produção: ${updateError?.message || "Falha na atualização"}`
-    );
-  }
+  const updatedItem = await updateProductionScheduleRpc(id, newDate);
 
   return transformProductionQueueItem(updatedItem);
 }
@@ -852,21 +688,7 @@ export async function updateProductionNotes(
 ): Promise<ProductionQueueItem> {
   const normalizedNotes = notes?.trim() || null;
 
-  const { data: updatedItem, error: updateError } = await supabase
-    .from("production_queue")
-    .update({
-      production_notes: normalizedNotes,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (updateError || !updatedItem) {
-    throw new Error(
-      `Erro ao atualizar notas de producao: ${updateError?.message || "Falha na atualizacao"}`
-    );
-  }
+  const updatedItem = await updateProductionNotesRpc(id, normalizedNotes);
 
   return transformProductionQueueItem(updatedItem);
 }
@@ -896,7 +718,7 @@ function transformProductionQueueItem(data: ProductionQueueRow): ProductionQueue
     choiceStatus: (data.choice_status ?? "pending") as ChoiceStatus,
     choiceDeadline: data.choice_deadline,
     choiceMadeAt: data.choice_made_at,
-    priority: (data.priority ?? "normal") as Priority,
+    priority: getProductionPriorityFromScore(data.priority, data.priority_score),
     priorityScore: data.priority_score ?? 0,
     scheduledProductionDate: data.scheduled_production_date,
     estimatedCompletionDate: data.estimated_completion_date,

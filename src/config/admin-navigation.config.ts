@@ -1,3 +1,5 @@
+import { ADMIN_ROUTES } from "./routes";
+
 /**
  * Configuração de Navegação Admin
  * 
@@ -5,7 +7,7 @@
  * Atualizado para refletir as consolidações de páginas em hubs.
  * 
  * Consolidações realizadas:
- * - Preços: 5 páginas → 1 hub (/admin/precos-gerenciar)
+ * - Preços: 5 páginas → 1 hub (/admin/creditos?tab=plans)
  * - Pagamentos: 5 páginas → 1 hub (/admin/pagamentos)
  * - Catálogo: 6 páginas → 1 hub (/admin/catalogo)
  */
@@ -34,13 +36,13 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'dashboard',
         label: 'Dashboard',
-        path: '/admin',
+        path: ADMIN_ROUTES.home,
         icon: 'LayoutDashboard',
       },
       {
         id: 'analytics',
         label: 'Analytics',
-        path: '/admin/analytics',
+        path: ADMIN_ROUTES.analytics,
         icon: 'BarChart3',
       },
     ],
@@ -52,14 +54,14 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'catalog-hub',
         label: 'Catálogo & Produtos',
-        path: '/admin/catalogo',
+        path: ADMIN_ROUTES.catalog,
         icon: 'Package',
         badge: 'Hub',
       },
       {
         id: 'packaging',
         label: 'Embalagem',
-        path: '/admin/embalagem',
+        path: ADMIN_ROUTES.packaging,
         icon: 'Box',
       },
     ],
@@ -71,14 +73,14 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'orders',
         label: 'Pedidos',
-        path: '/admin/pedidos',
+        path: ADMIN_ROUTES.orders,
         icon: 'ShoppingCart',
         badge: 'Novo',
       },
       {
         id: 'audit',
         label: 'Trilha de Auditoria',
-        path: '/admin/auditoria',
+        path: ADMIN_ROUTES.audit,
         icon: 'FileSearch',
       },
     ],
@@ -90,7 +92,7 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'credits-hub',
         label: 'Créditos',
-        path: '/admin/creditos',
+        path: ADMIN_ROUTES.credits,
         icon: 'Coins',
         badge: 'Hub',
       },
@@ -103,7 +105,7 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'production-dashboard',
         label: 'Hub de Produção',
-        path: '/admin/producao',
+        path: ADMIN_ROUTES.production,
         icon: 'Grid',
         badge: 'Hub',
       },
@@ -116,14 +118,14 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'financial-hub',
         label: 'Relatórios Financeiros',
-        path: '/admin/financeiro-hub',
+        path: ADMIN_ROUTES.financialHub,
         icon: 'DollarSign',
         badge: 'Hub',
       },
       {
         id: 'payments',
         label: 'Pagamentos',
-        path: '/admin/pagamentos',
+        path: ADMIN_ROUTES.payments,
         icon: 'CreditCard',
         badge: 'Hub',
       },
@@ -136,13 +138,13 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'users',
         label: 'Gerenciar Usuários',
-        path: '/admin/users',
+        path: ADMIN_ROUTES.users,
         icon: 'Users',
       },
       {
         id: 'communication',
         label: 'Central de Comunicação',
-        path: '/admin/comunicacao',
+        path: ADMIN_ROUTES.communication,
         icon: 'MessageSquare',
         badge: 'Hub',
       },
@@ -155,7 +157,7 @@ export const adminNavigationConfig: NavigationSection[] = [
       {
         id: 'system',
         label: 'Configurações',
-        path: '/admin/configuracoes',
+        path: ADMIN_ROUTES.settings,
         icon: 'Settings',
         badge: 'Hub',
       },

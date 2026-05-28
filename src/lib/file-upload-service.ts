@@ -16,12 +16,16 @@ import { getNotificationService } from "./notification-service";
 import { compressImage } from "./image-compression";
 import { malwareScanner } from "./malware-scanner";
 import { logError, logInfo, logWarn } from "./logger";
+import { requireAdmin } from "@/lib/permissions/groupPermissions";
+import { requireAuthenticatedUserId } from "@/services/auth/current-user";
+import {
+  ALLOWED_PAYMENT_PROOF_EXTENSIONS,
+  ALLOWED_PAYMENT_PROOF_TYPES,
+  MAX_PAYMENT_PROOF_SIZE,
+} from "@/lib/security/input-sanitizer";
 
 // Constants
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES_PER_PAYMENT = 5;
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
-const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"];
 const STORAGE_BUCKET = "payment-proofs";
 const SIGNED_URL_EXPIRY = 3600; // 1 hour in seconds
 const RATE_LIMIT_WINDOW = 3600000; // 1 hour in milliseconds
@@ -35,6 +39,43 @@ const FAIL_CLOSED_UPLOAD_SECURITY =
 
 // Rate limiting storage (in-memory, per session)
 const uploadTimestamps = new Map<string, number[]>();
+
+interface SignedUrlOptions {
+  paymentId?: string;
+  requireOwner?: boolean;
+}
+
+type RpcError = { message?: string } | null;
+
+interface PaymentFileUploadRpcResult {
+  file: PaymentFile;
+  firstFile?: boolean;
+}
+
+interface PaymentFileRpcClient {
+  rpc(functionName: "record_payment_file_upload", args: {
+    p_payment_id: string;
+    p_file_name: string;
+    p_file_path: string;
+    p_file_size: number;
+    p_file_type: string;
+    p_thumbnail_path: string | null;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "admin_delete_payment_file_record", args: {
+    p_file_id: string;
+    p_file_path: string;
+    p_thumbnail_path: string | null;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+  rpc(functionName: "log_security_incident_for_current_user", args: {
+    p_incident_type: string;
+    p_file_name: string;
+    p_payment_id: string;
+    p_threats: string[];
+    p_scanner: string;
+  }): PromiseLike<{ data: unknown; error: RpcError }>;
+}
+
+const paymentFileRpc = supabase as unknown as PaymentFileRpcClient;
 
 /**
  * Error class for file upload errors
@@ -63,18 +104,18 @@ export class FileUploadService {
     const errors: string[] = [];
 
     // Validate file size (Requirement 3.3)
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_PAYMENT_PROOF_SIZE) {
       errors.push(`File size exceeds 5MB limit. Please upload a smaller file.`);
     }
 
     // Validate file type (Requirement 3.2)
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!(ALLOWED_PAYMENT_PROOF_TYPES as readonly string[]).includes(file.type)) {
       errors.push(`File type not supported. Please upload JPG, PNG, or PDF files.`);
     }
 
     // Validate file extension
     const extension = file.name.split(".").pop()?.toLowerCase();
-    if (!extension || !ALLOWED_EXTENSIONS.includes(extension)) {
+    if (!extension || !(ALLOWED_PAYMENT_PROOF_EXTENSIONS as readonly string[]).includes(extension)) {
       errors.push(`File extension not supported. Please upload JPG, PNG, or PDF files.`);
     }
 
@@ -257,6 +298,36 @@ export class FileUploadService {
     });
   }
 
+  private validateStoragePath(filePath: string): void {
+    if (
+      !filePath ||
+      filePath.startsWith("/") ||
+      filePath.includes("..") ||
+      [...filePath].some((char) => {
+        const code = char.charCodeAt(0);
+        return code < 32 || code === 127;
+      })
+    ) {
+      throw new FileUploadError("INVALID_FILE_PATH", "Invalid file path", 400);
+    }
+  }
+
+  private async assertPaymentOwner(paymentId: string, userId: string): Promise<void> {
+    const { data: payment, error } = await supabase
+      .from("manual_payments")
+      .select("user_id")
+      .eq("id", paymentId)
+      .single();
+
+    if (error || !payment) {
+      throw new FileUploadError("PAYMENT_NOT_FOUND", "Payment not found", 404);
+    }
+
+    if (payment.user_id !== userId) {
+      throw new FileUploadError("FORBIDDEN", "Access denied for this payment", 403);
+    }
+  }
+
   private readFileArrayBuffer(file: File): Promise<ArrayBuffer> {
     if (typeof file.arrayBuffer === "function") {
       return file.arrayBuffer();
@@ -298,6 +369,8 @@ export class FileUploadService {
     if (userError || !user) {
       throw new FileUploadError("UNAUTHORIZED", "User not authenticated", 401);
     }
+
+    await this.assertPaymentOwner(paymentId, user.id);
 
     // Check rate limiting (Requirement 14.5)
     this.checkRateLimit(user.id);
@@ -429,21 +502,19 @@ export class FileUploadService {
     }
 
     // Create database record (Requirement 3.9)
-    const { data: fileRecord, error: dbError } = await supabase
-      .from("payment_files")
-      .insert({
-        payment_id: paymentId,
-        file_name: file.name, // Use original file name
-        file_path: filePath,
-        file_size: fileToUpload.size, // Use compressed file size
-        file_type: fileToUpload.type,
-        thumbnail_path: thumbnailPath,
-        uploaded_by: user.id,
-      })
-      .select()
-      .single();
+    const { data: uploadRecord, error: dbError } = await paymentFileRpc.rpc(
+      "record_payment_file_upload",
+      {
+        p_payment_id: paymentId,
+        p_file_name: file.name,
+        p_file_path: filePath,
+        p_file_size: fileToUpload.size,
+        p_file_type: fileToUpload.type,
+        p_thumbnail_path: thumbnailPath,
+      },
+    );
 
-    if (dbError || !fileRecord) {
+    if (dbError || !uploadRecord) {
       // Clean up uploaded file if database insert fails
       await supabase.storage.from(STORAGE_BUCKET).remove([filePath]);
       if (thumbnailPath) {
@@ -458,6 +529,9 @@ export class FileUploadService {
       );
     }
 
+    const uploadResult = uploadRecord as PaymentFileUploadRpcResult;
+    const fileRecord = uploadResult.file;
+
     // Report 100% progress
     if (onProgress) {
       onProgress(100);
@@ -465,12 +539,7 @@ export class FileUploadService {
 
     // Check if this is the first file uploaded and send under review notification
     try {
-      const { count } = await supabase
-        .from("payment_files")
-        .select("*", { count: "exact", head: true })
-        .eq("payment_id", paymentId);
-
-      if (count === 1) {
+      if (uploadResult.firstFile) {
         // This is the first file, payment status should now be 'under_review'
         // Send notification to admins
         const notificationService = getNotificationService();
@@ -488,7 +557,22 @@ export class FileUploadService {
    * Generate signed URL with expiration
    * Requirements: 3.10, 14.11
    */
-  async getSignedUrl(filePath: string, expiresIn: number = SIGNED_URL_EXPIRY): Promise<string> {
+  async getSignedUrl(
+    filePath: string,
+    expiresIn: number = SIGNED_URL_EXPIRY,
+    options: SignedUrlOptions = {}
+  ): Promise<string> {
+    this.validateStoragePath(filePath);
+
+    if (options.requireOwner) {
+      if (!options.paymentId) {
+        throw new FileUploadError("PAYMENT_REQUIRED", "Payment ID is required", 400);
+      }
+
+      const userId = await requireAuthenticatedUserId();
+      await this.assertPaymentOwner(options.paymentId, userId);
+    }
+
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .createSignedUrl(filePath, expiresIn);
@@ -507,6 +591,9 @@ export class FileUploadService {
    * Requirement: 3.12
    */
   async listByPayment(paymentId: string): Promise<PaymentFile[]> {
+    const userId = await requireAuthenticatedUserId();
+    await this.assertPaymentOwner(paymentId, userId);
+
     const { data, error } = await supabase
       .from("payment_files")
       .select("*")
@@ -526,6 +613,8 @@ export class FileUploadService {
    * Delete a file (admin only)
    */
   async delete(fileId: string): Promise<void> {
+    await requireAdmin();
+
     // Get file record
     const { data: file, error: fetchError } = await supabase
       .from("payment_files")
@@ -535,6 +624,11 @@ export class FileUploadService {
 
     if (fetchError || !file) {
       throw new FileUploadError("FILE_NOT_FOUND", "File not found", 404);
+    }
+
+    this.validateStoragePath(file.file_path);
+    if (file.thumbnail_path) {
+      this.validateStoragePath(file.thumbnail_path);
     }
 
     // Delete from storage
@@ -554,7 +648,11 @@ export class FileUploadService {
     }
 
     // Delete database record
-    const { error: dbError } = await supabase.from("payment_files").delete().eq("id", fileId);
+    const { error: dbError } = await paymentFileRpc.rpc("admin_delete_payment_file_record", {
+      p_file_id: fileId,
+      p_file_path: file.file_path,
+      p_thumbnail_path: file.thumbnail_path ?? null,
+    });
 
     if (dbError) {
       throw new FileUploadError("DATABASE_ERROR", "Failed to delete file record", 500, {
@@ -576,16 +674,12 @@ export class FileUploadService {
     scanner: string;
   }): Promise<void> {
     try {
-      await supabase.from('security_incidents').insert({
-        incident_type: incident.type,
-        file_name: incident.file_name,
-        user_id: incident.user_id,
-        payment_id: incident.payment_id,
-        details: {
-          threats: incident.threats,
-          scanner: incident.scanner,
-          timestamp: new Date().toISOString(),
-        },
+      await paymentFileRpc.rpc("log_security_incident_for_current_user", {
+        p_incident_type: incident.type,
+        p_file_name: incident.file_name,
+        p_payment_id: incident.payment_id,
+        p_threats: incident.threats,
+        p_scanner: incident.scanner,
       });
 
       logInfo('Security incident logged', {

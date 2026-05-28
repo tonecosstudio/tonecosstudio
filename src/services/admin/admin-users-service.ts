@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { AdminAccessRole } from "@/lib/permissions/adminRoles";
 
 export const adminUsersSupabase = supabase;
 
@@ -21,45 +22,21 @@ export type AdminUserRow = {
   roles: string[];
 };
 
+interface AdminListUsersResponse {
+  users?: AdminUserRow[];
+  error?: string;
+}
+
 export async function fetchAdminUsers(): Promise<AdminUserRow[]> {
-  const { data: profilesData, error: profilesError } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const { data, error } = await supabase.functions.invoke<AdminListUsersResponse>(
+    "admin-list-users",
+    { body: {} },
+  );
 
-  if (profilesError) throw profilesError;
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 
-  const { data: rolesData, error: rolesError } = await supabase
-    .from("user_roles")
-    .select("user_id, role");
-
-  if (rolesError) throw rolesError;
-
-  const rolesMap = new Map<string, string[]>();
-  (rolesData || []).forEach((r) => {
-    const roles = rolesMap.get(r.user_id) || [];
-    roles.push(r.role);
-    rolesMap.set(r.user_id, roles);
-  });
-
-  return (profilesData || []).map((profile) => ({
-    id: profile.id,
-    email: profile.email,
-    created_at: profile.created_at,
-    last_sign_in_at: profile.updated_at,
-    confirmed_at: null,
-    email_confirmed_at: null,
-    phone: profile.phone,
-    profile: {
-      id: profile.id,
-      full_name: profile.full_name,
-      phone: profile.phone,
-      whatsapp: profile.whatsapp,
-      cpf: profile.cpf,
-      profile_completion: profile.profile_completion,
-    },
-    roles: rolesMap.get(profile.id) || [],
-  }));
+  return data?.users ?? [];
 }
 
 export async function fetchAdminUsersStats() {
@@ -95,13 +72,12 @@ export async function promoteAdminByEmail(email: string): Promise<void> {
 
 export async function removeUserRole(input: {
   userId: string;
-  role: "admin" | "moderator" | "user";
+  role: AdminAccessRole;
 }): Promise<void> {
-  const { error } = await supabase
-    .from("user_roles")
-    .delete()
-    .eq("user_id", input.userId)
-    .eq("role", input.role);
+  const { data, error } = await supabase.functions.invoke("admin-promote", {
+    body: { userId: input.userId, role: "customer", previousRole: input.role },
+  });
 
   if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error ?? "Falha ao remover role");
 }

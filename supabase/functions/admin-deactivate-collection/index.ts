@@ -1,161 +1,73 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { isUUID } from "../_shared/validation.ts";
 
-/**
- * Admin Deactivate Collection Endpoint
- * 
- * Deactivates a collection (soft delete) by setting is_active = false.
- * Prevents deactivation if the collection has active deliveries.
- * 
- * Requirements: 14.7, 14.8
- * Task: 20.5
- * 
- * Request Body:
- * {
- *   id: string; // Collection ID to deactivate
- * }
- * 
- * Response:
- * {
- *   ok: true;
- *   collection: Collection;
- * }
- * 
- * Errors:
- * - 401: Unauthorized (no valid JWT)
- * - 403: Forbidden (not admin)
- * - 400: Bad Request (validation errors or has active deliveries)
- * - 404: Not Found (collection doesn't exist)
- * - 500: Internal Server Error
- */
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function mapDeactivateError(message: string): { status: number; error: string; activeDeliveriesCount?: number } {
+  if (message.includes("COLLECTION_NOT_FOUND")) {
+    return { status: 404, error: "Collection not found" };
+  }
+  if (message.includes("COLLECTION_ALREADY_INACTIVE")) {
+    return { status: 400, error: "Collection is already inactive" };
+  }
+  if (message.includes("COLLECTION_HAS_ACTIVE_DELIVERIES")) {
+    const count = Number(message.split(":").at(-1));
+    return {
+      status: 400,
+      error: "Cannot deactivate collection with active deliveries",
+      activeDeliveriesCount: Number.isFinite(count) ? count : undefined,
+    };
+  }
+  if (message.includes("COLLECTION_ID_REQUIRED")) {
+    return { status: 400, error: "id is required" };
+  }
+  return { status: 500, error: "Internal server error" };
+}
 
 serve(async (req) => {
-  // Handle CORS preflight
   const opt = handleOptions(req);
   if (opt) return opt;
 
   try {
-    // Validate admin authorization
     await assertAdmin(req);
     const service = getServiceClient();
-
-    // Parse and validate request body
     const body = await req.json().catch(() => ({}));
-    
-    // Validate required ID field
-    const id = String(body?.id ?? "").trim();
-    if (!id) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "id is required" }),
+    const id = typeof body?.id === "string" ? body.id.trim() : "";
+
+    if (!isUUID(id)) {
+      return json({ ok: false, error: "id must be a valid UUID" }, 400);
+    }
+
+    const { data: collection, error } = await service.rpc("admin_deactivate_collection", {
+      p_collection_id: id,
+    });
+
+    if (error) {
+      const mapped = mapDeactivateError(error.message || "");
+      return json(
         {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+          ok: false,
+          error: mapped.error,
+          ...(mapped.activeDeliveriesCount !== undefined
+            ? { activeDeliveriesCount: mapped.activeDeliveriesCount }
+            : {}),
+        },
+        mapped.status,
       );
     }
 
-    // Check if collection exists
-    const { data: existingCollection, error: fetchError } = await service
-      .from("collections")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (fetchError) {
-      throw new Error(`Failed to fetch collection: ${fetchError.message}`);
-    }
-
-    if (!existingCollection) {
-      return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: `Collection with id '${id}' not found` 
-        }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Check if collection is already inactive
-    if (!existingCollection.is_active) {
-      return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: "Collection is already inactive" 
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Check if collection has active deliveries
-    // Active deliveries are those with status: scheduled, pending_choice, confirmed, in_production, or shipped
-    const { data: activeDeliveries, error: deliveriesError } = await service
-      .from("subscription_deliveries")
-      .select("id, status")
-      .eq("collection_id", id)
-      .in("status", ["scheduled", "pending_choice", "confirmed", "in_production", "shipped"]);
-
-    if (deliveriesError) {
-      throw new Error(`Failed to check active deliveries: ${deliveriesError.message}`);
-    }
-
-    if (activeDeliveries && activeDeliveries.length > 0) {
-      return new Response(
-        JSON.stringify({ 
-          ok: false, 
-          error: `Cannot deactivate collection: ${activeDeliveries.length} active delivery(ies) found. Please wait until all deliveries are completed or cancelled.`,
-          activeDeliveriesCount: activeDeliveries.length
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Deactivate collection by setting is_active = false
-    const { data: collection, error: updateError } = await service
-      .from("collections")
-      .update({ is_active: false })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (updateError) {
-      throw new Error(`Failed to deactivate collection: ${updateError.message}`);
-    }
-
-    console.log(`Collection deactivated successfully: ${collection.id} (${collection.name})`);
-
-    return new Response(
-      JSON.stringify({ 
-        ok: true, 
-        collection 
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-
+    return json({ ok: true, collection });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     const status = msg.startsWith("Forbidden") ? 403 : msg === "Unauthorized" ? 401 : 500;
-    
     console.error("Error deactivating collection:", msg);
-    
-    return new Response(
-      JSON.stringify({ ok: false, error: msg }),
-      {
-        status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return json({ ok: false, error: status >= 500 ? "Internal server error" : msg }, status);
   }
 });

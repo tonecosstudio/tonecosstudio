@@ -7,12 +7,13 @@
  * Task: 13. Visualização de Detalhes de Pagamento Admin
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PaymentDashboard } from "@/components/admin/payments/PaymentDashboard";
 import { PaymentDetailsView } from "@/components/admin/payments/PaymentDetailsView";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { ADMIN_ROUTES, adminPaymentDetailsPath } from "@/config/routes";
 
 export default function AdminPayments() {
   const { paymentId } = useParams<{ paymentId?: string }>();
@@ -21,12 +22,12 @@ export default function AdminPayments() {
 
   // Handle viewing a payment
   const handleViewPayment = (id: string) => {
-    navigate(`/admin/payments/${id}`);
+    navigate(adminPaymentDetailsPath(id));
   };
 
   // Handle going back to dashboard
   const handleBackToDashboard = () => {
-    navigate("/admin/payments");
+    navigate(`${ADMIN_ROUTES.payments}?tab=payments`);
     setRefreshKey((prev) => prev + 1); // Refresh dashboard when returning
   };
 

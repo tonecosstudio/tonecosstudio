@@ -18,8 +18,111 @@ import type {
 } from "@/types/pricing-tiers";
 import {
   createPricingTierSchema,
+  inferPixDiscountPercentage,
   updatePricingTierSchema,
 } from "@/lib/validations/pricing-tiers";
+
+type PricingTierRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  price_full: number;
+  price_pix: number;
+  deposit_amount: number;
+  is_active: boolean;
+  is_default: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+  pix_discount_percentage?: number | null;
+  created_by?: string | null;
+  updated_by?: string | null;
+};
+
+function toPricingTier(row: PricingTierRow): PricingTier {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    price_full: row.price_full,
+    deposit_amount: row.deposit_amount,
+    pix_discount_percentage:
+      row.pix_discount_percentage ?? inferPixDiscountPercentage(row.price_full, row.price_pix),
+    price_pix: row.price_pix,
+    is_active: row.is_active,
+    is_default: row.is_default,
+    display_order: row.display_order,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    created_by: row.created_by ?? null,
+    updated_by: row.updated_by ?? null,
+  };
+}
+
+export async function fetchPricingTiersWithStats(): Promise<PricingTierWithStats[]> {
+  const { data: tiers, error: tiersError } = await supabase
+    .from("pricing_tiers")
+    .select("*")
+    .order("display_order", { ascending: true });
+
+  if (tiersError) {
+    throw new Error(`Erro ao buscar niveis de preco: ${tiersError.message}`);
+  }
+
+  const tierRows = (tiers ?? []) as unknown as PricingTierRow[];
+  if (tierRows.length === 0) {
+    return [];
+  }
+
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from("collection_tier_assignments")
+    .select("tier_id, collection_id");
+
+  if (assignmentsError) {
+    throw new Error(`Erro ao buscar atribuicoes de niveis: ${assignmentsError.message}`);
+  }
+
+  const collectionIds = [...new Set((assignments ?? []).map((assignment) => assignment.collection_id))];
+  const activeCollectionIds = new Set<string>();
+
+  if (collectionIds.length > 0) {
+    const { data: collections, error: collectionsError } = await supabase
+      .from("collections")
+      .select("id, is_active")
+      .in("id", collectionIds);
+
+    if (collectionsError) {
+      throw new Error(`Erro ao buscar colecoes dos niveis: ${collectionsError.message}`);
+    }
+
+    for (const collection of collections ?? []) {
+      if (collection.is_active) {
+        activeCollectionIds.add(collection.id);
+      }
+    }
+  }
+
+  const totalsByTier = new Map<string, { total: number; active: number }>();
+  for (const assignment of assignments ?? []) {
+    const current = totalsByTier.get(assignment.tier_id) ?? { total: 0, active: 0 };
+    current.total += 1;
+    if (activeCollectionIds.has(assignment.collection_id)) {
+      current.active += 1;
+    }
+    totalsByTier.set(assignment.tier_id, current);
+  }
+
+  return tierRows.map((row) => {
+    const tier = toPricingTier(row);
+    const counts = totalsByTier.get(tier.id) ?? { total: 0, active: 0 };
+
+    return {
+      ...tier,
+      collections_count: counts.total,
+      active_collections_count: counts.active,
+    };
+  });
+}
 
 // =====================================================
 // QUERY KEYS
@@ -46,18 +149,7 @@ export const pricingTiersKeys = {
 export function usePricingTiers() {
   return useQuery({
     queryKey: pricingTiersKeys.stats(),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pricing_tier_stats")
-        .select("*")
-        .order("display_order", { ascending: true });
-
-      if (error) {
-        throw new Error(`Erro ao buscar níveis de preço: ${error.message}`);
-      }
-
-      return data as PricingTierWithStats[];
-    },
+    queryFn: fetchPricingTiersWithStats,
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
 }
@@ -80,7 +172,7 @@ export function useActivePricingTiers() {
         throw new Error(`Erro ao buscar níveis ativos: ${error.message}`);
       }
 
-      return data as PricingTier[];
+      return ((data ?? []) as unknown as PricingTierRow[]).map(toPricingTier);
     },
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
@@ -106,7 +198,7 @@ export function usePricingTier(tierId: string | null | undefined) {
         throw new Error(`Erro ao buscar nível: ${error.message}`);
       }
 
-      return data as PricingTier;
+      return toPricingTier(data as unknown as PricingTierRow);
     },
     enabled: !!tierId,
     staleTime: 2 * 60 * 1000, // 2 minutos
@@ -132,7 +224,7 @@ export function useDefaultPricingTier() {
         throw new Error(`Erro ao buscar nível padrão: ${error.message}`);
       }
 
-      return data as PricingTier | null;
+      return data ? toPricingTier(data as unknown as PricingTierRow) : null;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -164,7 +256,7 @@ export function useCreatePricingTier() {
       // Chamar função do banco de dados
       const { data, error } = await supabase.rpc("create_pricing_tier", {
         p_name: validated.name,
-        p_description: validated.description || null,
+        p_description: validated.description || undefined,
         p_price_full: validated.price_full,
         p_deposit_amount: validated.deposit_amount,
         p_pix_discount_percentage: validated.pix_discount_percentage || 5,
@@ -225,14 +317,14 @@ export function useUpdatePricingTier() {
       // Chamar função do banco de dados
       const { error } = await supabase.rpc("update_pricing_tier", {
         p_tier_id: tierId,
-        p_name: validated.name || null,
-        p_description: validated.description || null,
-        p_price_full: validated.price_full || null,
-        p_deposit_amount: validated.deposit_amount || null,
-        p_pix_discount_percentage: validated.pix_discount_percentage || null,
-        p_is_active: validated.is_active ?? null,
-        p_is_default: validated.is_default ?? null,
-        p_display_order: validated.display_order ?? null,
+        p_name: validated.name || undefined,
+        p_description: validated.description || undefined,
+        p_price_full: validated.price_full ?? undefined,
+        p_deposit_amount: validated.deposit_amount ?? undefined,
+        p_pix_discount_percentage: validated.pix_discount_percentage ?? undefined,
+        p_is_active: validated.is_active ?? undefined,
+        p_is_default: validated.is_default ?? undefined,
+        p_display_order: validated.display_order ?? undefined,
         p_updated_by: user.id,
       });
 
@@ -281,14 +373,14 @@ export function useDeactivatePricingTier() {
       // Chamar função de atualização para desativar
       const { error } = await supabase.rpc("update_pricing_tier", {
         p_tier_id: tierId,
-        p_name: null,
-        p_description: null,
-        p_price_full: null,
-        p_deposit_amount: null,
-        p_pix_discount_percentage: null,
+        p_name: undefined,
+        p_description: undefined,
+        p_price_full: undefined,
+        p_deposit_amount: undefined,
+        p_pix_discount_percentage: undefined,
         p_is_active: false,
-        p_is_default: null,
-        p_display_order: null,
+        p_is_default: undefined,
+        p_display_order: undefined,
         p_updated_by: user.id,
       });
 

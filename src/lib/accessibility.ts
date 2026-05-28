@@ -6,7 +6,10 @@
  * Gera ID único para associar labels com inputs
  */
 export function generateId(prefix: string = "id"): string {
-  return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+  const suffix = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}`;
+  return `${prefix}-${suffix}`;
 }
 
 /**

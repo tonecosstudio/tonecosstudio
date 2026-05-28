@@ -23,8 +23,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePricingTiers } from "@/hooks/usePricingTiers";
-import { useCollectionTierAssignment } from "@/hooks/useCollectionTierAssignment";
+import { useActivePricingTiers } from "@/hooks/usePricingTiers";
+import { useBulkAssignTier } from "@/hooks/useCollectionTierAssignment";
 import { useCollectionsForBulkAssign } from "@/hooks/admin/useCollectionsForBulkAssign";
 import { AlertCircle, CheckCircle, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -52,8 +52,8 @@ export function BulkAssignDialog({ open, onOpenChange }: BulkAssignDialogProps) 
     errors: Array<{ id: string; error: string }>;
   } | null>(null);
 
-  const { data: activeTiers, isLoading: loadingTiers } = usePricingTiers({ activeOnly: true });
-  const { bulkAssign } = useCollectionTierAssignment();
+  const { data: activeTiers, isLoading: loadingTiers } = useActivePricingTiers();
+  const bulkAssign = useBulkAssignTier();
 
   // Buscar coleções
   const { data: collections, isLoading: loadingCollections } = useCollectionsForBulkAssign(open);

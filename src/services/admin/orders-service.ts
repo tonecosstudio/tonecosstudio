@@ -9,7 +9,18 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { ALL_ORDER_STATUS_OPTIONS, isOrderStatus } from "@/config/admin-order-status";
 import log from "@/lib/logger";
+import { transitionStandalonePurchaseStatus } from "@/services/standalone-purchase-service";
+import { updateDeliveryStatus } from "./delivery-detail-service";
+import {
+  approveManualPaymentWithNotification,
+  recordOrderStatusHistory,
+  rejectManualPaymentWithNotification,
+  requestManualPaymentInfoRpc,
+  updateManualPaymentStatus,
+  updateQuoteStatusRpc,
+} from "./admin-order-status-service";
 import type {
   UnifiedOrder,
   OrderFilters,
@@ -29,6 +40,10 @@ interface QueryResult<T> {
   count: number | null;
   error: QueryError | null;
 }
+
+type RawOrderStatusRow<T extends { id: string; status: OrderStatus }> = Omit<T, "status"> & {
+  status: string | null;
+};
 
 interface ProfileSummary {
   id: string;
@@ -162,40 +177,65 @@ interface QuoteRow {
   profiles?: ProfileSummary | null;
 }
 
+type QuoteItemWithQuoteId = QuoteItem & {
+  quote_id: string;
+};
+
+interface QuoteItemRow {
+  id: string;
+  quote_id: string;
+  character_id: string | null;
+  name: string;
+  description: string | null;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  image_url: string | null;
+}
+
 interface SubscriptionCollectionRow {
   subscription_id: string;
   collection_id: string;
   collections: CollectionSummary | null;
 }
 
-interface PaymentInfoRequestInsert {
-  payment_id: string;
-  requested_by_admin_id: string;
-  requested_by_admin_name: string;
-  message: string;
-  status: "pending";
+function requireOrderStatus(value: unknown, context: string): OrderStatus {
+  if (isOrderStatus(value)) {
+    return value;
+  }
+
+  throw new Error(`Status de pedido inválido em ${context}: ${String(value)}`);
 }
 
-interface UserNotificationInsert {
-  user_id: string;
-  type: "payment_info_request" | "payment_approved" | "payment_rejected";
-  title: string;
-  message: string;
-  related_id: string;
-  related_type: "manual_payment";
-  is_read: boolean;
+function normalizeOrderStatusRows<T extends { id: string; status: OrderStatus }>(
+  rows: Array<RawOrderStatusRow<T>> | null | undefined,
+  context: string
+): T[] {
+  return (rows ?? []).map((row) => ({
+    ...row,
+    status: requireOrderStatus(row.status, `${context}:${row.id}`),
+  }) as T);
 }
 
-interface AdminInsertTable<TInsert> {
-  insert(row: TInsert): Promise<{ error: QueryError | null }>;
+function normalizeQueryResult<T extends { id: string; status: OrderStatus }>(
+  result: QueryResult<RawOrderStatusRow<T>>,
+  context: string
+): QueryResult<T> {
+  return {
+    data: normalizeOrderStatusRows(result.data, context),
+    count: result.count,
+    error: result.error,
+  };
 }
 
-interface AdminTablesClient {
-  from(table: "payment_info_requests"): AdminInsertTable<PaymentInfoRequestInsert>;
-  from(table: "user_notifications"): AdminInsertTable<UserNotificationInsert>;
+function incrementStatusCount(
+  counts: Record<OrderStatus, number>,
+  value: unknown,
+  context: string
+): void {
+  const status = requireOrderStatus(value, context);
+  counts[status] += 1;
 }
-
-const adminTables = supabase as unknown as AdminTablesClient;
 
 // ============================================================================
 // Função Principal: Buscar Pedidos Unificados
@@ -277,50 +317,19 @@ export async function fetchUnifiedOrders(
   }
 
   // Buscar profiles e collections para entregas de assinatura
-  const profilesMap = new Map<string, ProfileSummary>();
-  const collectionsMap = new Map<string, CollectionSummary>();
-
-  if (deliveriesResult.data && deliveriesResult.data.length > 0) {
-    // Extrair IDs únicos de user_id e collection_id
-    const userIds = [
-      ...new Set(
-        deliveriesResult.data
-          .map((d) => d.subscriptions?.user_id)
-          .filter((id): id is string => typeof id === "string")
-      ),
-    ] as string[];
-    const collectionIds = [
-      ...new Set(
-        deliveriesResult.data
-          .map((d) => d.subscriptions?.collection_id)
-          .filter((id): id is string => typeof id === "string")
-      ),
-    ] as string[];
-
-    // Buscar profiles
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", userIds);
-
-      if (profiles) {
-        profiles.forEach((p) => profilesMap.set(p.id, p));
-      }
-    }
-
-    // Buscar collections
-    if (collectionIds.length > 0) {
-      const { data: collections } = await supabase
-        .from("collections")
-        .select("id, name, slug")
-        .in("id", collectionIds);
-
-      if (collections) {
-        collections.forEach((c) => collectionsMap.set(c.id, c));
-      }
-    }
-  }
+  const profileIds = uniqueStrings([
+    ...(deliveriesResult.data || []).map((delivery) => delivery.subscriptions?.user_id),
+    ...(purchasesResult.data || []).map((purchase) => purchase.user_id),
+    ...(paymentsResult.data || []).map((payment) => payment.user_id),
+    ...(quotesResult.data || []).map((quote) => quote.user_id),
+  ]);
+  const collectionIds = uniqueStrings(
+    (deliveriesResult.data || []).map((delivery) => delivery.subscriptions?.collection_id)
+  );
+  const [profilesMap, collectionsMap] = await Promise.all([
+    fetchProfilesMap(profileIds),
+    fetchCollectionsMap(collectionIds),
+  ]);
 
   // Buscar itens dos orçamentos
   const quoteItemsMap = new Map<string, QuoteItem[]>();
@@ -341,9 +350,9 @@ export async function fetchUnifiedOrders(
 
   const unifiedOrders: UnifiedOrder[] = [
     ...transformDeliveries(deliveriesResult.data || [], profilesMap, collectionsMap),
-    ...transformPurchases(purchasesResult.data || []),
-    ...transformManualPayments(paymentsResult.data || []),
-    ...transformQuotes(quotesResult.data || [], quoteItemsMap),
+    ...transformPurchases(purchasesResult.data || [], profilesMap),
+    ...transformManualPayments(paymentsResult.data || [], profilesMap),
+    ...transformQuotes(quotesResult.data || [], quoteItemsMap, profilesMap),
   ];
 
   // Aplicar busca usando PostgreSQL full-text search (se disponível)
@@ -398,6 +407,58 @@ export async function fetchUnifiedOrders(
     pageSize,
     totalPages: Math.ceil(filteredOrders.length / pageSize),
   };
+}
+
+function uniqueStrings(values: Array<string | null | undefined>): string[] {
+  return [...new Set(values.filter((value): value is string => typeof value === "string" && value.length > 0))];
+}
+
+async function fetchProfilesMap(userIds: string[]): Promise<Map<string, ProfileSummary>> {
+  const profilesMap = new Map<string, ProfileSummary>();
+
+  if (userIds.length === 0) {
+    return profilesMap;
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email")
+    .in("id", userIds);
+
+  if (error) {
+    log.warn("Failed to fetch order profile summaries", { error });
+    return profilesMap;
+  }
+
+  ((data as ProfileSummary[] | null) || []).forEach((profile) => {
+    profilesMap.set(profile.id, profile);
+  });
+
+  return profilesMap;
+}
+
+async function fetchCollectionsMap(collectionIds: string[]): Promise<Map<string, CollectionSummary>> {
+  const collectionsMap = new Map<string, CollectionSummary>();
+
+  if (collectionIds.length === 0) {
+    return collectionsMap;
+  }
+
+  const { data, error } = await supabase
+    .from("collections")
+    .select("id, name, slug")
+    .in("id", collectionIds);
+
+  if (error) {
+    log.warn("Failed to fetch order collection summaries", { error });
+    return collectionsMap;
+  }
+
+  ((data as CollectionSummary[] | null) || []).forEach((collection) => {
+    collectionsMap.set(collection.id, collection);
+  });
+
+  return collectionsMap;
 }
 
 // ============================================================================
@@ -459,7 +520,11 @@ async function fetchSubscriptionDeliveries(filters: OrderFilters): Promise<Query
     query = query.lte("created_at", filters.dateTo);
   }
 
-  return await query as unknown as QueryResult<DeliveryRow>;
+  const result = await query;
+  return normalizeQueryResult<DeliveryRow>(
+    result as unknown as QueryResult<RawOrderStatusRow<DeliveryRow>>,
+    "subscription_deliveries"
+  );
 }
 
 /**
@@ -523,7 +588,10 @@ async function fetchStandalonePurchases(filters: OrderFilters): Promise<QueryRes
     log.error('Error fetching standalone purchases (orders-service)', { error: result.error });
   }
 
-  return result;
+  return normalizeQueryResult<PurchaseRow>(
+    result as unknown as QueryResult<RawOrderStatusRow<PurchaseRow>>,
+    "standalone_purchases"
+  );
 }
 
 // ============================================================================
@@ -538,15 +606,17 @@ async function fetchStandalonePurchases(filters: OrderFilters): Promise<QueryRes
 export async function countOrdersByStatus(
   type: "all" | "subscription_delivery" | "standalone_purchase" | "manual_payment" | "quote"
 ): Promise<Record<OrderStatus, number>> {
-  const counts: Record<string, number> = {};
+  const counts = Object.fromEntries(
+    ALL_ORDER_STATUS_OPTIONS.map((option) => [option.value, 0])
+  ) as Record<OrderStatus, number>;
 
   // Contar entregas de assinatura
   if (type === "all" || type === "subscription_delivery") {
     const { data: deliveries } = await supabase.from("subscription_deliveries").select("status");
 
     if (deliveries) {
-      deliveries.forEach((d: { status: string }) => {
-        counts[d.status] = (counts[d.status] || 0) + 1;
+      deliveries.forEach((delivery) => {
+        incrementStatusCount(counts, delivery.status, "subscription_deliveries");
       });
     }
   }
@@ -556,8 +626,8 @@ export async function countOrdersByStatus(
     const { data: purchases } = await supabase.from("standalone_purchases").select("status");
 
     if (purchases) {
-      purchases.forEach((p: { status: string }) => {
-        counts[p.status] = (counts[p.status] || 0) + 1;
+      purchases.forEach((purchase) => {
+        incrementStatusCount(counts, purchase.status, "standalone_purchases");
       });
     }
   }
@@ -567,8 +637,8 @@ export async function countOrdersByStatus(
     const { data: payments } = await supabase.from("manual_payments").select("status");
 
     if (payments) {
-      payments.forEach((p: { status: string }) => {
-        counts[p.status] = (counts[p.status] || 0) + 1;
+      payments.forEach((payment) => {
+        incrementStatusCount(counts, payment.status, "manual_payments");
       });
     }
   }
@@ -578,13 +648,13 @@ export async function countOrdersByStatus(
     const { data: quotes } = await supabase.from("quotes").select("status");
 
     if (quotes) {
-      quotes.forEach((q: { status: string }) => {
-        counts[q.status] = (counts[q.status] || 0) + 1;
+      quotes.forEach((quote) => {
+        incrementStatusCount(counts, quote.status, "quotes");
       });
     }
   }
 
-  return counts as Record<OrderStatus, number>;
+  return counts;
 }
 
 // ============================================================================
@@ -665,8 +735,13 @@ export async function fetchOrderById(
       if (collection) collectionsMap.set(collection.id, collection);
     }
 
+    const deliveryRows = normalizeOrderStatusRows<DeliveryRow>(
+      [data] as unknown as Array<RawOrderStatusRow<DeliveryRow>>,
+      "subscription_deliveries"
+    );
+
     const { transformDeliveries } = await import("./orders-transformer");
-    const transformed = transformDeliveries([data], profilesMap, collectionsMap);
+    const transformed = transformDeliveries(deliveryRows, profilesMap, collectionsMap);
     return transformed[0] || null;
   } else {
     const { data, error } = await supabase
@@ -712,7 +787,11 @@ export async function fetchOrderById(
       .eq("id", data.user_id)
       .single();
 
-    const enrichedData = { ...data, profiles: profile || { id: data.user_id, full_name: 'Desconhecido', email: '' } };
+    const [purchaseRow] = normalizeOrderStatusRows<PurchaseRow>(
+      [data] as unknown as Array<RawOrderStatusRow<PurchaseRow>>,
+      "standalone_purchases"
+    );
+    const enrichedData = { ...purchaseRow, profiles: profile || { id: purchaseRow.user_id, full_name: 'Desconhecido', email: '' } };
 
     const { transformPurchases } = await import("./orders-transformer");
     const transformed = transformPurchases([enrichedData]);
@@ -758,6 +837,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       subscriptions!inner (
         id,
         user_id,
+        collection_id,
         plan_type,
         deliveries_completed,
         deliveries_total,
@@ -776,6 +856,11 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
   if (deliveriesError) {
     log.error("Error fetching user deliveries", { error: deliveriesError });
   }
+
+  const deliveries = normalizeOrderStatusRows<DeliveryRow>(
+    deliveriesData as unknown as Array<RawOrderStatusRow<DeliveryRow>>,
+    "subscription_deliveries"
+  );
 
   // Buscar compras avulsas do usuário
   const { data: purchasesData, error: purchasesError } = await supabase
@@ -816,8 +901,13 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     log.error("Error fetching user purchases", { error: purchasesError });
   }
 
+  let purchases = normalizeOrderStatusRows<PurchaseRow>(
+    purchasesData as unknown as Array<RawOrderStatusRow<PurchaseRow>>,
+    "standalone_purchases"
+  );
+
   // Enrich purchases with profile
-  if (purchasesData && purchasesData.length > 0) {
+  if (purchases.length > 0) {
     const { data: userProfile } = await supabase
       .from("profiles")
       .select("id, full_name, email")
@@ -825,9 +915,10 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       .single();
 
     if (userProfile) {
-      purchasesData.forEach((p: PurchaseRow) => {
-        p.profiles = userProfile;
-      });
+      purchases = purchases.map((purchase) => ({
+        ...purchase,
+        profiles: userProfile,
+      }));
     }
   }
 
@@ -857,8 +948,13 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     log.error("Error fetching user payments", { error: paymentsError });
   }
 
+  let payments = normalizeOrderStatusRows<ManualPaymentRow>(
+    paymentsData as unknown as Array<RawOrderStatusRow<ManualPaymentRow>>,
+    "manual_payments"
+  );
+
   // Fetch profile for manual payments
-  if (paymentsData && paymentsData.length > 0) {
+  if (payments.length > 0) {
     const { data: userProfile } = await supabase
       .from("profiles")
       .select("id, full_name, email")
@@ -866,9 +962,10 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
       .single();
 
     if (userProfile) {
-      paymentsData.forEach((payment: ManualPaymentRow) => {
-        payment.profiles = userProfile;
-      });
+      payments = payments.map((payment) => ({
+        ...payment,
+        profiles: userProfile,
+      }));
     }
   }
 
@@ -898,15 +995,20 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     log.error('Error fetching user quotes', { quotesError });
   }
 
+  const quotes = normalizeOrderStatusRows<QuoteRow>(
+    quotesData as unknown as Array<RawOrderStatusRow<QuoteRow>>,
+    "quotes"
+  );
+
   // Buscar profiles e collections para entregas de assinatura
   const profilesMap = new Map<string, ProfileSummary>();
   const collectionsMap = new Map<string, CollectionSummary>();
 
-  if (deliveriesData && deliveriesData.length > 0) {
+  if (deliveries.length > 0) {
     const userIds = [
       ...new Set(
-        deliveriesData
-          .map((d: DeliveryRow) => d.subscriptions?.user_id)
+        deliveries
+          .map((d) => d.subscriptions?.user_id)
           .filter((id): id is string => typeof id === "string")
       ),
     ];
@@ -923,7 +1025,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     }
 
     // Fetch collections via subscription_collections junction
-    const subIds = [...new Set(deliveriesData.map((d: DeliveryRow) => d.subscription_id).filter(Boolean))];
+    const subIds = [...new Set(deliveries.map((d) => d.subscription_id).filter(Boolean))];
     if (subIds.length > 0) {
       const { data: subCols } = await supabase
         .from("subscription_collections")
@@ -942,8 +1044,8 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
 
   // Buscar itens dos orçamentos
   const quoteItemsMap = new Map<string, QuoteItem[]>();
-  if (quotesData && quotesData.length > 0) {
-    const quoteIds = quotesData.map((q: QuoteRow) => q.id);
+  if (quotes.length > 0) {
+    const quoteIds = quotes.map((q) => q.id);
     const items = await fetchQuoteItems(quoteIds);
 
     items.forEach((item) => {
@@ -958,7 +1060,7 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
     await import("./orders-transformer");
 
   // Build profilesMap for payments/quotes too
-  if (paymentsData && paymentsData.length > 0 && !profilesMap.has(userId)) {
+  if (payments.length > 0 && !profilesMap.has(userId)) {
     const { data: userProfile } = await supabase
       .from("profiles")
       .select("id, full_name, email")
@@ -968,10 +1070,10 @@ export async function fetchOrdersByUserId(userId: string): Promise<UnifiedOrder[
   }
 
   const unifiedOrders: UnifiedOrder[] = [
-    ...transformDeliveries(deliveriesData || [], profilesMap, collectionsMap),
-    ...transformPurchases(purchasesData || []),
-    ...transformManualPayments(paymentsData || [], profilesMap),
-    ...transformQuotes(quotesData || [], quoteItemsMap, profilesMap),
+    ...transformDeliveries(deliveries, profilesMap, collectionsMap),
+    ...transformPurchases(purchases, profilesMap),
+    ...transformManualPayments(payments, profilesMap),
+    ...transformQuotes(quotes, quoteItemsMap, profilesMap),
   ];
 
   // Ordenar por data de criação (mais recente primeiro)
@@ -1098,48 +1200,37 @@ export async function bulkUpdateStatus(
         continue;
       }
 
-      // Atualizar status no banco de dados
-      const tableName =
-        order.type === "subscription_delivery" ? "subscription_deliveries" : "standalone_purchases";
-
-      const { error: updateError } = await supabase
-        .from(tableName)
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id);
-
-      if (updateError) {
-        // Erro ao atualizar - adicionar à lista de falhas
-        result.failed.push({
-          id: order.id,
-          error: `Erro ao atualizar: ${updateError.message}`,
+      if (order.type === "standalone_purchase") {
+        await transitionStandalonePurchaseStatus(order.id, newStatus);
+      } else if (order.type === "subscription_delivery") {
+        await updateDeliveryStatus({
+          deliveryId: order.id,
+          newStatus,
         });
-
-        // Notificar progresso
-        if (onProgress) {
-          onProgress(i + 1, orders.length);
-        }
-
-        continue;
+      } else if (order.type === "manual_payment") {
+        await updateManualPaymentStatus(
+          order.id,
+          newStatus,
+          newStatus === "rejected" ? "Rejeitado pelo painel admin" : null
+        );
+      } else if (order.type === "quote") {
+        await updateQuoteStatusRpc(order.id, newStatus);
+      } else {
+        throw new Error(`Tipo de pedido nao suportado: ${order.type}`);
       }
+
+        // Erro ao atualizar - adicionar à lista de falhas
 
       // Sucesso - adicionar à lista de sucessos
       result.successful.push(order.id);
 
       // Registrar mudança no histórico (opcional, não bloqueia em caso de erro)
       try {
-        const { data: authData } = await supabase.auth.getUser();
-
-        await supabase.from("order_status_history").insert({
-          order_id: order.id,
-          order_type: order.type,
-          old_status: order.status,
-          new_status: newStatus,
-          changed_by: authData.user?.id || null,
-          changed_by_name: authData.user?.email || "Admin",
-          created_at: new Date().toISOString(),
+        await recordOrderStatusHistory({
+          orderId: order.id,
+          orderType: order.type,
+          oldStatus: order.status,
+          newStatus,
         });
       } catch (historyError) {
         log.warn('Failed to register status history', { historyError });
@@ -1260,7 +1351,10 @@ async function fetchManualPayments(filters: OrderFilters): Promise<QueryResult<M
     query = query.lte("created_at", filters.dateTo);
   }
 
-  const result = await query as unknown as QueryResult<ManualPaymentQueryRow>;
+  const result = normalizeQueryResult<ManualPaymentQueryRow>(
+    await query as unknown as QueryResult<RawOrderStatusRow<ManualPaymentQueryRow>>,
+    "manual_payments"
+  );
 
   // Fetch related data separately
   if (result.data && result.data.length > 0) {
@@ -1342,7 +1436,7 @@ async function fetchManualPayments(filters: OrderFilters): Promise<QueryResult<M
     }));
   }
 
-  return result as QueryResult<ManualPaymentRow>;
+  return result;
 }
 
 // ============================================================================
@@ -1355,7 +1449,7 @@ async function fetchManualPayments(filters: OrderFilters): Promise<QueryResult<M
  * Esta query busca orçamentos com todos os dados relacionados:
  * - profiles (cliente)
  */
-async function fetchQuotes(filters: OrderFilters) {
+async function fetchQuotes(filters: OrderFilters): Promise<QueryResult<QuoteRow>> {
   let query = supabase.from("quotes").select(
     `
       id,
@@ -1382,7 +1476,11 @@ async function fetchQuotes(filters: OrderFilters) {
     query = query.lte("created_at", filters.dateTo);
   }
 
-  return await query as unknown as QueryResult<QuoteRow>;
+  const result = await query;
+  return normalizeQueryResult<QuoteRow>(
+    result as unknown as QueryResult<RawOrderStatusRow<QuoteRow>>,
+    "quotes"
+  );
 }
 
 /**
@@ -1391,20 +1489,7 @@ async function fetchQuotes(filters: OrderFilters) {
  * @param quoteIds - IDs dos orçamentos
  * @returns Array de itens com modelos relacionados
  */
-export async function fetchQuoteItems(quoteIds: string[]): Promise<
-  Array<{
-    id: string;
-    quote_id: string;
-    model_id: string;
-    quantity: number;
-    scale: string;
-    models?: {
-      id: string;
-      name: string;
-      franchise: string | null;
-    };
-  }>
-> {
+export async function fetchQuoteItems(quoteIds: string[]): Promise<QuoteItemWithQuoteId[]> {
   if (quoteIds.length === 0) return [];
 
   const { data, error } = await supabase
@@ -1413,14 +1498,13 @@ export async function fetchQuoteItems(quoteIds: string[]): Promise<
       `
       id,
       quote_id,
-      model_id,
+      character_id,
+      name,
+      description,
       quantity,
-      scale,
-      models (
-        id,
-        name,
-        franchise
-      )
+      unit_price,
+      total_price,
+      image_url
     `
     )
     .in("quote_id", quoteIds);
@@ -1429,7 +1513,17 @@ export async function fetchQuoteItems(quoteIds: string[]): Promise<
     throw new Error(`Erro ao buscar itens de orçamentos: ${error.message}`);
   }
 
-  return data || [];
+  return ((data as QuoteItemRow[] | null) || []).map((item) => ({
+    id: item.id,
+    quote_id: item.quote_id,
+    name: item.name,
+    description: item.description,
+    quantity: item.quantity,
+    unitPrice: item.unit_price,
+    totalPrice: item.total_price,
+    imageUrl: item.image_url,
+    characterId: item.character_id,
+  }));
 }
 
 // ============================================================================
@@ -1472,49 +1566,9 @@ export async function requestManualPaymentInfo(paymentId: string, message: strin
     throw new Error("Admin não autenticado");
   }
 
-  // 3. Criar registro de solicitação de informações
-  const { error: requestError } = await adminTables.from("payment_info_requests").insert({
-    payment_id: paymentId,
-    requested_by_admin_id: admin.id,
-    requested_by_admin_name: admin.email || "Admin",
-    message: message,
-    status: "pending",
-  });
-
-  if (requestError) {
-    throw new Error(`Erro ao criar solicitação: ${requestError.message}`);
-  }
-
-  // 4. Criar notificação para o usuário
-  const { error: notificationError } = await adminTables.from("user_notifications").insert({
-    user_id: payment.user_id,
-    type: "payment_info_request",
-    title: "Informações Adicionais Necessárias",
-    message: `Precisamos de mais informações sobre seu pagamento (Ref: ${payment.reference_number}). ${message}`,
-    related_id: paymentId,
-    related_type: "manual_payment",
-    is_read: false,
-  });
-
-  if (notificationError) {
-    log.error('Error creating notification', { notificationError });
-    // Não falhar a operação se a notificação não puder ser criada
-    // A solicitação já foi registrada com sucesso
-  }
-
-  // 5. Atualizar status do pagamento para 'requires_info'
-  const { error: updateError } = await supabase
-    .from("manual_payments")
-    .update({
-      status: "requires_info",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", paymentId);
-
-  if (updateError) {
-    log.error('Error updating payment status', { updateError });
-    // Não falhar a operação - a solicitação e notificação já foram criadas
-  }
+  void payment;
+  void admin;
+  await requestManualPaymentInfoRpc(paymentId, message);
 }
 
 /**
@@ -1559,36 +1613,9 @@ export async function approveManualPayment(paymentId: string): Promise<void> {
     throw new Error("Admin não autenticado");
   }
 
-  // 3. Atualizar status do pagamento
-  const { error: updateError } = await supabase
-    .from("manual_payments")
-    .update({
-      status: "approved",
-      approved_at: new Date().toISOString(),
-      approved_by: admin.id,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", paymentId);
-
-  if (updateError) {
-    throw new Error(`Erro ao aprovar pagamento: ${updateError.message}`);
-  }
-
-  // 4. Criar notificação para o usuário
-  const { error: notificationError } = await adminTables.from("user_notifications").insert({
-    user_id: payment.user_id,
-    type: "payment_approved",
-    title: "Pagamento Aprovado",
-    message: `Seu pagamento (Ref: ${payment.reference_number}) foi aprovado com sucesso!`,
-    related_id: paymentId,
-    related_type: "manual_payment",
-    is_read: false,
-  });
-
-  if (notificationError) {
-    log.error('Error creating approval notification', { notificationError });
-    // Não falhar a operação - o pagamento já foi aprovado
-  }
+  void payment;
+  void admin;
+  await approveManualPaymentWithNotification(paymentId);
 }
 
 /**
@@ -1625,33 +1652,6 @@ export async function rejectManualPayment(paymentId: string, reason: string): Pr
     throw new Error("Este pagamento já foi rejeitado");
   }
 
-  // 2. Atualizar status do pagamento
-  const { error: updateError } = await supabase
-    .from("manual_payments")
-    .update({
-      status: "rejected",
-      rejection_reason: reason,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", paymentId);
-
-  if (updateError) {
-    throw new Error(`Erro ao rejeitar pagamento: ${updateError.message}`);
-  }
-
-  // 3. Criar notificação para o usuário
-  const { error: notificationError } = await adminTables.from("user_notifications").insert({
-    user_id: payment.user_id,
-    type: "payment_rejected",
-    title: "Pagamento Rejeitado",
-    message: `Seu pagamento (Ref: ${payment.reference_number}) foi rejeitado. Motivo: ${reason}`,
-    related_id: paymentId,
-    related_type: "manual_payment",
-    is_read: false,
-  });
-
-  if (notificationError) {
-    log.error('Error creating rejection notification', { notificationError });
-    // Não falhar a operação - o pagamento já foi rejeitado
-  }
+  void payment;
+  await rejectManualPaymentWithNotification(paymentId, reason);
 }

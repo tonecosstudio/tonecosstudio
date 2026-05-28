@@ -10,12 +10,17 @@ import { supabase } from '@/integrations/supabase/client';
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
 describe('bulk-operations-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { id: 'updated-production-item' },
+      error: null,
+    });
   });
 
   describe('bulkAssignProduction', () => {
@@ -31,21 +36,19 @@ describe('bulk-operations-service', () => {
         }),
       });
 
-      // Mock successful updates
       const itemIds = ['item-1', 'item-2'];
-      itemIds.forEach(() => {
-        (supabase.from as any).mockReturnValueOnce({
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        });
-      });
 
       const result = await bulkAssignProduction(itemIds, 'user-1');
 
       expect(result.successful).toBe(2);
       expect(result.failed).toBe(0);
       expect(result.errors).toHaveLength(0);
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
+      expect(supabase.rpc).toHaveBeenCalledWith('admin_assign_production', {
+        p_queue_id: 'item-1',
+        p_user_id: 'user-1',
+        p_reason: expect.stringContaining('Atribuicao em massa para'),
+      });
     });
 
     it('handles partial failures', async () => {
@@ -60,18 +63,9 @@ describe('bulk-operations-service', () => {
         }),
       });
 
-      // Mock one success and one failure
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      });
-
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: { message: 'Update failed' } }),
-        }),
-      });
+      vi.mocked(supabase.rpc)
+        .mockResolvedValueOnce({ data: { id: 'item-1' }, error: null })
+        .mockResolvedValueOnce({ data: null, error: { message: 'Update failed' } });
 
       const result = await bulkAssignProduction(['item-1', 'item-2'], 'user-1');
 
@@ -95,19 +89,15 @@ describe('bulk-operations-service', () => {
         }),
       });
 
-      // Mock successful updates
-      mockItems.forEach(() => {
-        (supabase.from as any).mockReturnValueOnce({
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        });
-      });
-
       const result = await bulkUpdateStage(['item-1', 'item-2'], 'production');
 
       expect(result.successful).toBe(2);
       expect(result.failed).toBe(0);
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
+      expect(supabase.rpc).toHaveBeenCalledWith('admin_update_production_stage', {
+        p_queue_id: 'item-1',
+        p_stage: 'production',
+      });
     });
 
     it('rejects invalid stage transitions', async () => {
@@ -139,13 +129,6 @@ describe('bulk-operations-service', () => {
       (supabase.from as any).mockReturnValueOnce({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockResolvedValue({ data: mockItems, error: null }),
-        }),
-      });
-
-      // Mock successful update
-      (supabase.from as any).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
         }),
       });
 

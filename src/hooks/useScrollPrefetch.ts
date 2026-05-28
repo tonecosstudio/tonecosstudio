@@ -51,7 +51,7 @@ export function useScrollPrefetch({
   debounce = 200
 }: UseScrollPrefetchOptions) {
   const prefetchedRef = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!enabled) {

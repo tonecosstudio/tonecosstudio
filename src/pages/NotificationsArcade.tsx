@@ -23,10 +23,11 @@ import { Page } from "@/components/layouts/Page";
 import { Input } from "@/components/ui/input";
 import { useUserNotificationCenterData } from "@/hooks/notifications/useUserNotificationCenterData";
 import { cn } from "@/lib/utils";
+import { isSafeInAppPath } from "@/config/routes";
 import type {
   UserNotificationCenterItem,
   UserNotificationFilter,
-} from "@/hooks/notifications/useUserNotificationCenterData";
+} from "@/types/notifications";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   AlertCircle,
@@ -65,7 +66,9 @@ export default function NotificationsArcade() {
 
   const handleClick = (notification: UserNotificationCenterItem) => {
     if (!notification.is_read) markAsRead(notification.id);
-    if (notification.action_url) navigate(notification.action_url);
+    if (notification.action_url && isSafeInAppPath(notification.action_url)) {
+      navigate(notification.action_url);
+    }
   };
 
   const getIcon = (notification: UserNotificationCenterItem) => {

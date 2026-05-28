@@ -72,7 +72,11 @@ export const PaymentVoucherUpload: React.FC<PaymentVoucherUploadProps> = ({
   });
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { validatePaymentVoucherFile, uploadPaymentVoucherToStorage } = usePaymentVoucherStorage({
+  const {
+    allowedPaymentVoucherTypes,
+    validatePaymentVoucherFile,
+    uploadPaymentVoucherToStorage,
+  } = usePaymentVoucherStorage({
     userId,
     pathPrefix,
   });
@@ -286,7 +290,7 @@ export const PaymentVoucherUpload: React.FC<PaymentVoucherUploadProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept={ALLOWED_TYPES.join(',')}
+          accept={allowedPaymentVoucherTypes.join(',')}
           onChange={handleInputChange}
           disabled={disabled || state.uploading}
           className="hidden"

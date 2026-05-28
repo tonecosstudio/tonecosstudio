@@ -1,232 +1,184 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderWithProviders, screen, waitFor } from "@/test/utils/test-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ComponentProps } from "react";
 import userEvent from "@testing-library/user-event";
+
 import { GroupList } from "./GroupList";
 import { groupService } from "@/lib/services/groupService";
-import type { Group, GroupDetails } from "@/types/groups";
+import { renderWithProviders, screen, waitFor } from "@/test/utils/test-utils";
+import type { GroupWithMetrics } from "@/types/groups";
 
-// Mock dos serviços
+const authState = vi.hoisted(() => ({
+  user: { email: "admin@test.com", id: "admin-123" } as { email: string; id: string } | null,
+}));
+
 vi.mock("@/lib/services/groupService", () => ({
   groupService: {
-    listGroups: vi.fn(),
-    getGroupDetails: vi.fn(),
     deleteGroup: vi.fn(),
   },
 }));
 
-// Mock do useAuth
 vi.mock("@/lib/auth", () => ({
   useAuth: () => ({
-    user: { id: "admin-123", email: "admin@test.com" },
+    user: authState.user,
   }),
 }));
 
-// Mock do toast
 vi.mock("sonner", () => ({
   toast: {
-    success: vi.fn(),
     error: vi.fn(),
+    success: vi.fn(),
   },
 }));
 
+const mockGroups: GroupWithMetrics[] = [
+  {
+    created_at: "2024-01-01T10:00:00Z",
+    created_by: "admin-123",
+    deleted_at: null,
+    deleted_by: null,
+    id: "group-1",
+    last_message_at: "2024-01-15T14:30:00Z",
+    member_count: 150,
+    membership_criteria: null,
+    message_count: 25,
+    name: "Assinantes Ativos",
+    type: "assinantes",
+    updated_at: "2024-01-01T10:00:00Z",
+  },
+  {
+    created_at: "2024-01-02T10:00:00Z",
+    created_by: "admin-123",
+    deleted_at: null,
+    deleted_by: null,
+    id: "group-2",
+    last_message_at: null,
+    member_count: 300,
+    membership_criteria: null,
+    message_count: 10,
+    name: "Grupo Manual",
+    type: "manual",
+    updated_at: "2024-01-02T10:00:00Z",
+  },
+];
+
+function renderGroupList(
+  props: Partial<ComponentProps<typeof GroupList>> = {}
+): {
+  onRefresh: ReturnType<typeof vi.fn>;
+  onSelectGroup: ReturnType<typeof vi.fn>;
+} {
+  const onRefresh = vi.fn();
+  const onSelectGroup = vi.fn();
+
+  renderWithProviders(
+    <GroupList
+      groups={mockGroups}
+      isLoading={false}
+      onRefresh={onRefresh}
+      onSelectGroup={onSelectGroup}
+      {...props}
+    />
+  );
+
+  return { onRefresh, onSelectGroup };
+}
+
 describe("GroupList", () => {
-  const mockGroups: Group[] = [
-    {
-      id: "group-1",
-      name: "Assinantes Ativos",
-      type: "assinantes",
-      membership_criteria: { type: "assinantes", subscriptionStatus: "active" },
-      created_by: "admin-123",
-      created_at: "2024-01-01T10:00:00Z",
-      updated_at: "2024-01-01T10:00:00Z",
-      deleted_at: null,
-      deleted_by: null,
-    },
-    {
-      id: "group-2",
-      name: "Lançamentos 2024",
-      type: "lancamentos",
-      membership_criteria: { type: "lancamentos", criteria: "all_users" },
-      created_by: "admin-123",
-      created_at: "2024-01-02T10:00:00Z",
-      updated_at: "2024-01-02T10:00:00Z",
-      deleted_at: null,
-      deleted_by: null,
-    },
-  ];
-
-  const mockGroupDetails: Record<string, GroupDetails> = {
-    "group-1": {
-      ...mockGroups[0],
-      member_count: 150,
-      message_count: 25,
-      last_message_at: "2024-01-15T14:30:00Z",
-      estimated_view_rate: 75.5,
-    },
-    "group-2": {
-      ...mockGroups[1],
-      member_count: 300,
-      message_count: 10,
-      last_message_at: "2024-01-10T09:00:00Z",
-      estimated_view_rate: 60.0,
-    },
-  };
-
   beforeEach(() => {
+    authState.user = { email: "admin@test.com", id: "admin-123" };
     vi.clearAllMocks();
-    vi.mocked(groupService.listGroups).mockResolvedValue(mockGroups);
-    vi.mocked(groupService.getGroupDetails).mockImplementation((groupId: string) =>
-      Promise.resolve(mockGroupDetails[groupId])
-    );
+    vi.mocked(groupService.deleteGroup).mockResolvedValue(undefined);
   });
 
-  describe("Renderização", () => {
-    it("deve exibir loading state inicialmente", () => {
-      renderWithProviders(<GroupList />);
-      expect(screen.getByText(/carregando grupos/i)).toBeInTheDocument();
-    });
+  it("exibe estado de loading acessivel sem depender de dados carregados", () => {
+    renderGroupList({ groups: [], isLoading: true });
 
-    it("deve exibir lista de grupos após carregar", async () => {
-      renderWithProviders(<GroupList />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
-        expect(screen.getByText("Lançamentos 2024")).toBeInTheDocument();
-      });
-    });
-
-    it("deve exibir empty state quando não há grupos", async () => {
-      vi.mocked(groupService.listGroups).mockResolvedValue([]);
-
-      renderWithProviders(<GroupList />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/nenhum grupo criado/i)).toBeInTheDocument();
-      });
-    });
-
-    it("deve exibir botão de criar grupo quando callback é fornecido", async () => {
-      const onCreateGroup = vi.fn();
-      renderWithProviders(<GroupList onCreateGroup={onCreateGroup} />);
-
-      await waitFor(() => {
-        expect(screen.getAllByText(/criar grupo/i)[0]).toBeInTheDocument();
-      });
-    });
-
-    it("não deve exibir botão de criar quando callback não é fornecido", async () => {
-      renderWithProviders(<GroupList />);
-
-      await waitFor(() => {
-        expect(screen.queryByText(/criar grupo/i)).not.toBeInTheDocument();
-      });
-    });
+    expect(screen.getByRole("status", { name: "Carregando grupos" })).toBeInTheDocument();
   });
 
-  describe("Métricas dos Grupos", () => {
-    it("deve exibir contagem de membros corretamente", async () => {
-      renderWithProviders(<GroupList />);
+  it("exibe estado vazio quando nao ha grupos", () => {
+    renderGroupList({ groups: [] });
 
-      await waitFor(() => {
-        expect(screen.getByText("150")).toBeInTheDocument();
-        expect(screen.getByText("300")).toBeInTheDocument();
-      });
+    expect(screen.getByText("Nenhum grupo criado")).toBeInTheDocument();
+    expect(screen.getByText(/Crie seu primeiro grupo/)).toBeInTheDocument();
+  });
+
+  it("renderiza grupos com metricas e tipo", () => {
+    renderGroupList();
+
+    expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
+    expect(screen.getByText("Grupo Manual")).toBeInTheDocument();
+    expect(screen.getByText("Assinantes")).toBeInTheDocument();
+    expect(screen.getByText("Manual")).toBeInTheDocument();
+    expect(screen.getByText("150")).toBeInTheDocument();
+    expect(screen.getByText("300")).toBeInTheDocument();
+    expect(screen.getByText("25")).toBeInTheDocument();
+    expect(screen.getByText("10")).toBeInTheDocument();
+    expect(screen.getAllByText(/mensagem:/i)).toHaveLength(2);
+  });
+
+  it("chama callback de selecao ao clicar no card do grupo", async () => {
+    const user = userEvent.setup();
+    const { onSelectGroup } = renderGroupList();
+
+    await user.click(screen.getByText("Assinantes Ativos").closest(".cursor-pointer")!);
+
+    expect(onSelectGroup).toHaveBeenCalledWith("group-1");
+  });
+
+  it("abre confirmacao e deleta grupo com auditoria do usuario autenticado", async () => {
+    const user = userEvent.setup();
+    const { onRefresh, onSelectGroup } = renderGroupList();
+    const { toast } = await import("sonner");
+
+    await user.click(screen.getByRole("button", { name: "Abrir acoes do grupo Assinantes Ativos" }));
+    await user.click(screen.getByText("Deletar Grupo"));
+
+    expect(onSelectGroup).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Deletar Grupo" })).toBeInTheDocument();
+    expect(screen.getAllByText("Assinantes Ativos")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Deletar Grupo" }));
+
+    await waitFor(() => {
+      expect(groupService.deleteGroup).toHaveBeenCalledWith("group-1", "admin-123");
     });
+    expect(toast.success).toHaveBeenCalledWith("Grupo deletado com sucesso");
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
 
-    it("deve exibir contagem de mensagens corretamente", async () => {
-      renderWithProviders(<GroupList />);
+  it("exibe erro de exclusao retornado pelo servico", async () => {
+    const user = userEvent.setup();
+    const { toast } = await import("sonner");
+    vi.mocked(groupService.deleteGroup).mockRejectedValue(new Error("Grupo nao encontrado"));
 
-      await waitFor(() => {
-        expect(screen.getByText("25")).toBeInTheDocument();
-        expect(screen.getByText("10")).toBeInTheDocument();
-      });
-    });
+    renderGroupList();
 
-    it("deve exibir timestamp da última mensagem", async () => {
-      renderWithProviders(<GroupList />);
+    await user.click(screen.getByRole("button", { name: "Abrir acoes do grupo Assinantes Ativos" }));
+    await user.click(screen.getByText("Deletar Grupo"));
+    await user.click(screen.getByRole("button", { name: "Deletar Grupo" }));
 
-      await waitFor(() => {
-        const timestamps = screen.getAllByText(/última mensagem:/i);
-        expect(timestamps).toHaveLength(2);
-      });
-    });
-
-    it("deve exibir tipo do grupo como badge", async () => {
-      renderWithProviders(<GroupList />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Assinantes")).toBeInTheDocument();
-        expect(screen.getByText("Lançamentos")).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Grupo nao encontrado");
     });
   });
 
-  describe("Interações", () => {
-    it("deve chamar callback ao clicar em criar grupo", async () => {
-      const onCreateGroup = vi.fn();
-      const user = userEvent.setup();
+  it("bloqueia exclusao sem usuario autenticado", async () => {
+    const user = userEvent.setup();
+    const { toast } = await import("sonner");
+    authState.user = null;
 
-      renderWithProviders(<GroupList onCreateGroup={onCreateGroup} />);
+    renderGroupList();
 
-      await waitFor(() => {
-        expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
-      });
+    await user.click(screen.getByRole("button", { name: "Abrir acoes do grupo Assinantes Ativos" }));
+    await user.click(screen.getByText("Deletar Grupo"));
+    await user.click(screen.getByRole("button", { name: "Deletar Grupo" }));
 
-      const createButton = screen.getAllByText(/criar grupo/i)[0];
-      await user.click(createButton);
-
-      expect(onCreateGroup).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "Usuario autenticado obrigatorio para deletar grupo"
+      );
     });
-
-    it("deve chamar callback ao clicar em um grupo", async () => {
-      const onSelectGroup = vi.fn();
-      const user = userEvent.setup();
-
-      renderWithProviders(<GroupList onSelectGroup={onSelectGroup} />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
-      });
-
-      const groupCard = screen.getByText("Assinantes Ativos").closest(".cursor-pointer");
-      if (groupCard) {
-        await user.click(groupCard);
-      }
-
-      expect(onSelectGroup).toHaveBeenCalledWith("group-1");
-    });
-  });
-
-  describe("Error Handling", () => {
-    it("deve exibir toast de erro ao falhar ao carregar grupos", async () => {
-      const { toast } = await import("sonner");
-      vi.mocked(groupService.listGroups).mockRejectedValue(new Error("Erro de rede"));
-
-      renderWithProviders(<GroupList />);
-
-      await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Erro ao carregar grupos");
-      });
-    });
-
-    it("deve continuar funcionando se getGroupDetails falhar para um grupo", async () => {
-      vi.mocked(groupService.getGroupDetails).mockImplementation((groupId: string) => {
-        if (groupId === "group-1") {
-          return Promise.reject(new Error("Erro ao carregar detalhes"));
-        }
-        return Promise.resolve(mockGroupDetails[groupId]);
-      });
-
-      renderWithProviders(<GroupList />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Assinantes Ativos")).toBeInTheDocument();
-        expect(screen.getByText("Lançamentos 2024")).toBeInTheDocument();
-      });
-
-      // Grupo com erro deve exibir métricas zeradas
-      const groupCards = screen.getAllByText(/membros/i);
-      expect(groupCards).toHaveLength(2);
-    });
+    expect(groupService.deleteGroup).not.toHaveBeenCalled();
   });
 });

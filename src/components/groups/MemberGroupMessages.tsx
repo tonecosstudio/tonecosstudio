@@ -7,11 +7,20 @@ import { ptBR } from "date-fns/locale";
 import { useGroupMessages } from "@/hooks/useGroupMessages";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { sanitizeText } from "@/lib/utils/sanitize";
+import { sanitizeURL } from "@/lib/security/input-sanitizer";
 import { useGroupAttachmentPublicUrl } from "@/hooks/groups/useGroupAttachmentPublicUrl";
 import { GroupErrorBoundary } from "./GroupErrorBoundary";
 
 interface MemberGroupMessagesProps {
   groupId: string;
+}
+
+function getSafeAttachmentUrl(url: string): string | null {
+  try {
+    return sanitizeURL(url, ["http", "https"]);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -78,17 +87,24 @@ function MemberGroupMessagesContent({ groupId }: MemberGroupMessagesProps) {
 
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-2 space-y-1">
-                      {message.attachments.map((attachment) => (
+                      {message.attachments.map((attachment) => {
+                        const publicUrl = getGroupAttachmentPublicUrl(attachment.file_path);
+                        const safePublicUrl = getSafeAttachmentUrl(publicUrl);
+
+                        if (!safePublicUrl) return null;
+
+                        return (
                         <a
                           key={attachment.id}
-                          href={getGroupAttachmentPublicUrl(attachment.file_path)}
+                          href={safePublicUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-primary hover:underline block"
                         >
                           📎 {attachment.file_name}
                         </a>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 

@@ -11,6 +11,8 @@ import {
   type SubscriberDelivery,
   useSubscriberDashboardData,
 } from "@/hooks/subscription/useSubscriberDashboardData";
+import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/config/routes";
+import { buildTrackingUrl } from "@/lib/tracking-links";
 
 export default function SubscriberDashboardArcade() {
   const { user } = useAuth();
@@ -21,6 +23,7 @@ export default function SubscriberDashboardArcade() {
     nextDelivery: next,
     progress,
   } = useSubscriberDashboardData(user?.id);
+  const nextTrackingUrl = buildTrackingUrl(next?.tracking_code, next?.shipping_carrier);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -57,7 +60,7 @@ export default function SubscriberDashboardArcade() {
               Assine uma coleção e receba personagens exclusivos todo mês
             </p>
             <Link
-              to="/colecoes"
+              to={PUBLIC_ROUTES.collections}
               className="inline-flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,7%)] font-mono uppercase tracking-[0.15em] text-xs h-10 px-8 hover:brightness-110 transition-all"
             >
               EXPLORAR COLEÇÕES
@@ -116,13 +119,15 @@ export default function SubscriberDashboardArcade() {
                     <div className="mt-3 flex items-center gap-2">
                       <Truck className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
                       <span className="font-mono text-xs text-[hsl(0,0%,60%)]">{next.tracking_code}</span>
-                      <a
-                        href={`https://www2.correios.com.br/sistemas/rastreamento/resultado.cfm?objeto=${next.tracking_code}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="text-[hsl(var(--gold-accent))] text-xs flex items-center gap-1 hover:underline"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Rastrear
-                      </a>
+                      {nextTrackingUrl && (
+                        <a
+                          href={nextTrackingUrl}
+                          target="_blank" rel="noopener noreferrer"
+                          className="text-[hsl(var(--gold-accent))] text-xs flex items-center gap-1 hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Rastrear
+                        </a>
+                      )}
                     </div>
                   )}
                   {isBeforeCutoff && (
@@ -161,13 +166,13 @@ export default function SubscriberDashboardArcade() {
               <ArcadeCard className="p-6">
                 <h3 className="font-mono text-[10px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase mb-4">AÇÕES RÁPIDAS</h3>
                 <div className="space-y-2">
-                  <Link to="/colecoes" className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
+                  <Link to={PUBLIC_ROUTES.collections} className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
                     → EXPLORAR COLEÇÕES
                   </Link>
-                  <Link to="/pagamentos" className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
+                  <Link to={AUTH_ROUTES.payments} className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
                     → MEUS PAGAMENTOS
                   </Link>
-                  <Link to="/perfil" className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
+                  <Link to={AUTH_ROUTES.profile} className="block w-full text-left font-mono text-xs text-[hsl(0,0%,60%)] hover:text-[hsl(var(--gold-accent))] py-2 px-3 border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors tracking-wider">
                     → MINHA CONTA
                   </Link>
                 </div>

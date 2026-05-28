@@ -1,166 +1,149 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { GroupMembersList } from "./GroupMembersList";
 import { membershipService } from "@/lib/services/membershipService";
+import type { PaginatedMembers } from "@/types/groups";
 
-vi.mock("@/lib/services/membershipService");
+vi.mock("@/lib/services/membershipService", () => ({
+  membershipService: {
+    listMembers: vi.fn(),
+    removeMember: vi.fn(),
+  },
+}));
+
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: {
+      mutations: { retry: false },
+      queries: { gcTime: 0, retry: false },
+    },
   });
+
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 };
+
+const paginatedMembers = (members: PaginatedMembers["members"]): PaginatedMembers => ({
+  members,
+  pagination: {
+    limit: 50,
+    page: 1,
+    total: members.length,
+    total_pages: members.length > 0 ? 1 : 0,
+  },
+});
+
+const mockMembers: PaginatedMembers["members"] = [
+  {
+    joined_at: "2024-01-01T00:00:00Z",
+    last_viewed_at: "2024-01-02T00:00:00Z",
+    user_email: "user1@example.com",
+    user_id: "user-1",
+    user_name: "User One",
+  },
+  {
+    joined_at: "2024-01-03T00:00:00Z",
+    last_viewed_at: null,
+    user_email: "user2@example.com",
+    user_id: "user-2",
+    user_name: "User Two",
+  },
+];
 
 describe("GroupMembersList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders loading state", () => {
-    vi.mocked(membershipService.getGroupMembers).mockReturnValue(new Promise(() => {}));
+  it("renders loading state", async () => {
+    let resolveMembers: (value: PaginatedMembers) => void = () => undefined;
+    vi.mocked(membershipService.listMembers).mockReturnValue(
+      new Promise((resolve) => {
+        resolveMembers = resolve;
+      })
+    );
 
-    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+
     expect(screen.getByText(/carregando membros/i)).toBeInTheDocument();
+
+    resolveMembers(paginatedMembers([]));
+    await screen.findByText(/nenhum membro neste grupo/i);
   });
 
   it("renders empty state when no members", async () => {
-    vi.mocked(membershipService.getGroupMembers).mockResolvedValue([]);
+    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([]));
 
-    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
 
-    await waitFor(() => {
-      expect(screen.getByText(/nenhum membro neste grupo/i)).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/nenhum membro neste grupo/i)).toBeInTheDocument();
   });
 
   it("renders member list", async () => {
-    const members = [
-      {
-        id: "member-1",
-        group_id: "group-1",
-        user_id: "user-1",
-        user_email: "user1@example.com",
-        joined_at: "2024-01-01T00:00:00Z",
-        last_viewed_at: "2024-01-02T00:00:00Z",
-      },
-      {
-        id: "member-2",
-        group_id: "group-1",
-        user_id: "user-2",
-        user_email: "user2@example.com",
-        joined_at: "2024-01-03T00:00:00Z",
-        last_viewed_at: null,
-      },
-    ];
+    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers(mockMembers));
 
-    vi.mocked(membershipService.getGroupMembers).mockResolvedValue(members);
+    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
 
-    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText("user1@example.com")).toBeInTheDocument();
-      expect(screen.getByText("user2@example.com")).toBeInTheDocument();
-    });
+    expect(await screen.findByText("user1@example.com")).toBeInTheDocument();
+    expect(screen.getByText("user2@example.com")).toBeInTheDocument();
+    expect(screen.getByText("User One")).toBeInTheDocument();
+    expect(screen.getByText("User Two")).toBeInTheDocument();
   });
 
   it("shows add member button when onAddMember provided", async () => {
-    vi.mocked(membershipService.getGroupMembers).mockResolvedValue([]);
     const onAddMember = vi.fn();
+    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([]));
 
-    renderWithProviders(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
+    render(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      const button = screen.getByRole("button", { name: /adicionar membro/i });
-      expect(button).toBeInTheDocument();
-    });
+    expect(await screen.findByRole("button", { name: /adicionar membro/i })).toBeInTheDocument();
   });
 
   it("calls onAddMember when button clicked", async () => {
-    vi.mocked(membershipService.getGroupMembers).mockResolvedValue([]);
     const onAddMember = vi.fn();
     const user = userEvent.setup();
+    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([]));
 
-    renderWithProviders(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
+    render(<GroupMembersList groupId="group-1" onAddMember={onAddMember} />, {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /adicionar membro/i })).toBeInTheDocument();
-    });
+    await user.click(await screen.findByRole("button", { name: /adicionar membro/i }));
 
-    await user.click(screen.getByRole("button", { name: /adicionar membro/i }));
     expect(onAddMember).toHaveBeenCalledOnce();
   });
 
-  it("removes member when delete button clicked", async () => {
-    const members = [
-      {
-        id: "member-1",
-        group_id: "group-1",
-        user_id: "user-1",
-        user_email: "user1@example.com",
-        joined_at: "2024-01-01T00:00:00Z",
-        last_viewed_at: null,
-      },
-    ];
-
-    vi.mocked(membershipService.getGroupMembers).mockResolvedValue(members);
-    vi.mocked(membershipService.removeMember).mockResolvedValue();
+  it("removes member by group and user id", async () => {
     const user = userEvent.setup();
+    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers([mockMembers[0]]));
+    vi.mocked(membershipService.removeMember).mockResolvedValue(undefined);
 
-    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText("user1@example.com")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Remover User One" }));
 
     await waitFor(() => {
-      expect(screen.getByText("user1@example.com")).toBeInTheDocument();
+      expect(membershipService.removeMember).toHaveBeenCalledWith("group-1", "user-1");
     });
-
-    const deleteButtons = screen.getAllByRole("button");
-    const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg"));
-
-    if (deleteButton) {
-      await user.click(deleteButton);
-      await waitFor(() => {
-        expect(membershipService.removeMember).toHaveBeenCalledWith("member-1");
-      });
-    }
   });
 
   it("displays member count", async () => {
-    const members = [
-      {
-        id: "member-1",
-        group_id: "group-1",
-        user_id: "user-1",
-        user_email: "user1@example.com",
-        joined_at: "2024-01-01T00:00:00Z",
-        last_viewed_at: null,
-      },
-      {
-        id: "member-2",
-        group_id: "group-1",
-        user_id: "user-2",
-        user_email: "user2@example.com",
-        joined_at: "2024-01-02T00:00:00Z",
-        last_viewed_at: null,
-      },
-    ];
+    vi.mocked(membershipService.listMembers).mockResolvedValue(paginatedMembers(mockMembers));
 
-    vi.mocked(membershipService.getGroupMembers).mockResolvedValue(members);
+    render(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
 
-    renderWithProviders(<GroupMembersList groupId="group-1" />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText(/membros \(2\)/i)).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/membros \(2\)/i)).toBeInTheDocument();
   });
 });

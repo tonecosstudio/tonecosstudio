@@ -8,6 +8,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HolidayService, type HolidayInput } from './holiday-service';
 
+const { mockRpc } = vi.hoisted(() => ({
+  mockRpc: vi.fn(),
+}));
+
 // Mock Supabase client
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -74,6 +78,7 @@ vi.mock('@/integrations/supabase/client', () => ({
         ),
       })),
     })),
+    rpc: mockRpc,
   },
 }));
 
@@ -83,6 +88,30 @@ describe('HolidayService', () => {
   beforeEach(() => {
     service = new HolidayService();
     vi.clearAllMocks();
+    mockRpc.mockImplementation((functionName: string) => {
+      if (functionName === 'admin_add_holiday') {
+        return Promise.resolve({
+          data: {
+            id: 'test-holiday-new',
+            holiday_date: '2026-12-25',
+            name: 'Natal',
+            description: 'Christmas Day',
+            type: 'national',
+            state_code: null,
+            is_recurring: true,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+          error: null,
+        });
+      }
+
+      if (functionName === 'admin_delete_holiday') {
+        return Promise.resolve({ data: null, error: null });
+      }
+
+      return Promise.resolve({ data: null, error: null });
+    });
   });
 
   describe('getHolidays', () => {
@@ -117,6 +146,14 @@ describe('HolidayService', () => {
       expect(result.id).toBe('test-holiday-new');
       expect(result.name).toBe('Natal');
       expect(result.type).toBe('national');
+      expect(mockRpc).toHaveBeenCalledWith('admin_add_holiday', {
+        p_holiday_date: '2026-12-25',
+        p_name: 'Natal',
+        p_description: 'Christmas Day',
+        p_type: 'national',
+        p_state_code: null,
+        p_is_recurring: true,
+      });
     });
 
     it('should validate holiday input - missing name', async () => {
@@ -175,6 +212,9 @@ describe('HolidayService', () => {
   describe('deleteHoliday', () => {
     it('should delete a holiday by id', async () => {
       await expect(service.deleteHoliday('test-holiday-1')).resolves.not.toThrow();
+      expect(mockRpc).toHaveBeenCalledWith('admin_delete_holiday', {
+        p_holiday_id: 'test-holiday-1',
+      });
     });
 
     it('should throw error for invalid id', async () => {

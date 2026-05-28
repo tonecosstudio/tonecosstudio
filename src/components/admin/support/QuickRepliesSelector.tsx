@@ -185,7 +185,12 @@ export function QuickRepliesSelector({ onSelect, userId }: QuickRepliesSelectorP
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm">{reply.title}</span>
-                            {hasVariables && <Sparkles className="h-3 w-3 text-primary" title="Contem variaveis dinamicas" />}
+                            {hasVariables && (
+                              <Sparkles
+                                aria-label="Contem variaveis dinamicas"
+                                className="h-3 w-3 text-primary"
+                              />
+                            )}
                           </div>
                           <Badge variant="secondary" className="text-xs">
                             {CATEGORY_LABELS[reply.category] || reply.category}

@@ -1,22 +1,13 @@
 /**
- * Serviço de Exportação de Pedidos
- * 
- * Este serviço implementa a funcionalidade de exportação de pedidos para CSV,
- * aplicando os filtros atuais e formatando os dados adequadamente.
- * 
- * Requisitos: 9.1, 9.2
+ * Servico de Exportacao de Pedidos
+ *
+ * Exporta pedidos para CSV com dados formatados e sanitizados para planilhas.
  */
 
 import type { UnifiedOrder } from '@/types/admin/orders';
 import log from '@/lib/logger';
+import { getOrderStatusLabel, getOrderTypeLabel } from '@/config/admin-order-status';
 
-// ============================================================================
-// Constantes
-// ============================================================================
-
-/**
- * Colunas incluídas na exportação CSV
- */
 const CSV_COLUMNS = [
   'ID',
   'Tipo',
@@ -30,35 +21,6 @@ const CSV_COLUMNS = [
   'Data Real de Entrega',
   'Coleção'
 ] as const;
-
-/**
- * Mapeamento de tipos de pedido para nomes legíveis
- */
-const ORDER_TYPE_LABELS: Record<string, string> = {
-  'subscription_delivery': 'Entrega de Assinatura',
-  'standalone_purchase': 'Compra Avulsa'
-};
-
-/**
- * Mapeamento de status para nomes legíveis em português
- */
-const STATUS_LABELS: Record<string, string> = {
-  // Status de entregas de assinatura
-  'scheduled': 'Agendada',
-  'pending_choice': 'Aguardando Escolha',
-  'confirmed': 'Confirmada',
-  'in_production': 'Em Produção',
-  'shipped': 'Enviada',
-  'delivered': 'Entregue',
-  'revealed': 'Revelada',
-  'cancelled': 'Cancelada',
-  // Status de compras avulsas
-  'awaiting_deposit': 'Aguardando Depósito',
-  'deposit_paid': 'Depósito Pago',
-  'awaiting_balance': 'Aguardando Saldo',
-  'balance_paid': 'Saldo Pago',
-  'completed': 'Completa'
-};
 
 // ============================================================================
 // Função Principal: Exportar Pedidos para CSV
@@ -137,16 +99,16 @@ export async function exportOrdersToCSV(
 function formatOrderRow(order: UnifiedOrder): string {
   const values = [
     order.id,
-    ORDER_TYPE_LABELS[order.type] || order.type,
+    getOrderTypeLabel(order.type),
     order.customer.name,
     order.customer.email,
-    STATUS_LABELS[order.status] || order.status,
+    getOrderStatusLabel(order.status),
     formatDate(order.createdAt),
     formatCurrency(order.amount),
     order.trackingCode || '',
     formatDate(order.expectedDeliveryDate),
     formatDate(order.actualDeliveryDate),
-    order.collection.name
+    order.collection?.name || ''
   ];
   
   // Escapar valores e juntar com vírgula
@@ -164,8 +126,9 @@ function escapeCSVValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined) {
     return '';
   }
-  
-  const stringValue = String(value);
+
+  const rawValue = String(value);
+  const stringValue = /^[=+\-@\t\r]/.test(rawValue) ? `'${rawValue}` : rawValue;
   
   // Se contém vírgula, aspas ou quebra de linha, envolver em aspas
   if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {

@@ -9,6 +9,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { log } from '@/lib/logger';
+import {
+  addHolidayRpc,
+  deleteHolidayRpc,
+  updateHolidayRpc,
+} from '@/services/holiday-mutations-service';
 import { timezoneService } from './timezoneService';
 
 /**
@@ -34,6 +39,29 @@ export interface HolidayInput {
   type: 'national' | 'state';
   state_code?: string;
   is_recurring?: boolean;
+}
+
+type HolidayRow = {
+  id: string;
+  holiday_date?: string | null;
+  date?: string | null;
+  name: string;
+  description?: string | null;
+  type?: 'national' | 'state' | null;
+  state_code?: string | null;
+  is_recurring?: boolean | null;
+};
+
+function toHoliday(row: HolidayRow): Holiday {
+  return {
+    id: row.id,
+    holiday_date: row.holiday_date ?? row.date ?? '',
+    name: row.name,
+    description: row.description ?? undefined,
+    type: row.type ?? 'national',
+    state_code: row.state_code ?? undefined,
+    is_recurring: row.is_recurring ?? false,
+  };
 }
 
 /**
@@ -253,7 +281,7 @@ class BusinessDayService {
       return [];
     }
 
-    return data || [];
+    return ((data || []) as unknown as HolidayRow[]).map(toHoliday);
   }
 
   /**
@@ -290,15 +318,14 @@ class BusinessDayService {
    * });
    */
   async addHoliday(holiday: HolidayInput): Promise<Holiday> {
-    const { data, error } = await supabase
-      .from('holidays')
-      .insert(holiday)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Erro ao adicionar feriado: ${error.message}`);
-    }
+    const data = await addHolidayRpc<Holiday>({
+      holiday_date: holiday.holiday_date,
+      name: holiday.name,
+      description: holiday.description ?? null,
+      type: holiday.type,
+      state_code: holiday.state_code ?? null,
+      is_recurring: holiday.is_recurring ?? false,
+    });
 
     // Limpar cache do ano afetado
     const year = new Date(holiday.holiday_date).getFullYear();
@@ -315,20 +342,18 @@ class BusinessDayService {
    * @returns Feriado atualizado
    */
   async updateHoliday(id: string, holiday: Partial<HolidayInput>): Promise<Holiday> {
-    const { data, error } = await supabase
-      .from('holidays')
-      .update(holiday)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Erro ao atualizar feriado: ${error.message}`);
-    }
+    const data = await updateHolidayRpc<Holiday>(id, {
+      holiday_date: holiday.holiday_date,
+      name: holiday.name,
+      description: holiday.description ?? null,
+      type: holiday.type,
+      state_code: holiday.state_code ?? null,
+      is_recurring: holiday.is_recurring,
+    });
 
     // Limpar cache do ano afetado
-    if (holiday.holiday_date) {
-      const year = new Date(holiday.holiday_date).getFullYear();
+    if (data.holiday_date) {
+      const year = new Date(data.holiday_date).getFullYear();
       this.clearCacheForYear(year);
     }
 
@@ -341,21 +366,7 @@ class BusinessDayService {
    * @param id - ID do feriado
    */
   async deleteHoliday(id: string): Promise<void> {
-    // Buscar feriado antes de deletar para limpar cache
-    const { data: holiday } = await supabase
-      .from('holidays')
-      .select('holiday_date')
-      .eq('id', id)
-      .single();
-
-    const { error } = await supabase
-      .from('holidays')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw new Error(`Erro ao deletar feriado: ${error.message}`);
-    }
+    const holiday = await deleteHolidayRpc<Holiday>(id);
 
     // Limpar cache do ano afetado
     if (holiday) {

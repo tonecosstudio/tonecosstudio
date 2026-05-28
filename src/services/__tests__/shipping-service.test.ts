@@ -52,6 +52,9 @@ describe('ShippingService', () => {
   let validAddress: Address;
 
   beforeEach(() => {
+    vi.stubEnv('VITE_SHIPPING_CARRIER', 'correios');
+    vi.stubEnv('VITE_SHIPPING_SERVICE_CODE', '04014');
+    vi.stubEnv('PROD', false);
     shippingService = new ShippingService();
     validAddress = {
       name: 'João Silva',
@@ -276,31 +279,30 @@ describe('ShippingService', () => {
     });
   });
 
-  describe('Mock Implementation Indicators', () => {
-    it('should log mock implementation warnings', async () => {
-      const consoleSpy = vi.spyOn(console, 'log');
+  describe('Development simulator safeguards', () => {
+    it('should fail closed in production until a real carrier integration is configured', async () => {
+      vi.stubEnv('PROD', true);
+      const productionService = new ShippingService();
 
-      await shippingService.generateLabel('test-delivery-id', validAddress);
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[MOCK]'),
-        expect.anything()
-      );
-
-      consoleSpy.mockRestore();
+      await expect(
+        productionService.generateLabel('test-delivery-id', validAddress)
+      ).rejects.toMatchObject({
+        code: 'SHIPPING_INTEGRATION_REQUIRED',
+        retryable: false,
+      });
     });
 
-    it('should generate mock tracking codes in Correios format', async () => {
+    it('should generate simulator tracking codes in Correios format outside production', async () => {
       const result = await shippingService.generateLabel('test-delivery-id', validAddress);
 
       // Correios format: BR + 9 digits + BR
       expect(result.trackingCode).toMatch(/^BR\d{9}BR$/);
     });
 
-    it('should generate mock label URLs', async () => {
+    it('should generate simulator label URLs outside production', async () => {
       const result = await shippingService.generateLabel('test-delivery-id', validAddress);
 
-      expect(result.labelUrl).toContain('mock');
+      expect(result.labelUrl).toContain('simulator.local');
       expect(result.labelUrl).toContain(result.trackingCode);
       expect(result.labelUrl).toContain('.pdf');
     });

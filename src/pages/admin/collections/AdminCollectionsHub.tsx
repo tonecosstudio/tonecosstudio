@@ -5,7 +5,7 @@
  * - Coleções (produtos de assinatura)
  * - Personagens de Crédito (sistema de coins)
  *
- * Nota: Preços e Planos foram movidos para /admin/planos (SSOT)
+ * Nota: Precos e Planos usam o SSOT central de rotas.
  */
 
 import { useState, useEffect } from "react";
@@ -15,9 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Package,
   Coins,
+  ClipboardCheck,
 } from "lucide-react";
 import AdminCollections from "./AdminCollections";
 import { CreditCharactersContent } from "@/components/admin/catalog/CreditCharactersContent";
+import { CatalogCurationContent } from "@/components/admin/catalog/CatalogCurationContent";
 
 export default function AdminCollectionsHub() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,7 +28,7 @@ export default function AdminCollectionsHub() {
 
   // Sincronizar tab com URL
   useEffect(() => {
-    if (tabParam && ["collections", "credit-characters"].includes(tabParam)) {
+    if (tabParam && ["collections", "curation", "credit-characters"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -54,10 +56,14 @@ export default function AdminCollectionsHub() {
 
         {/* Tabs Unificadas */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="collections">
               <Package className="h-4 w-4 mr-2" />
               Coleções
+            </TabsTrigger>
+            <TabsTrigger value="curation">
+              <ClipboardCheck className="h-4 w-4 mr-2" />
+              Curadoria
             </TabsTrigger>
             <TabsTrigger value="credit-characters">
               <Coins className="h-4 w-4 mr-2" />
@@ -79,6 +85,10 @@ export default function AdminCollectionsHub() {
           </TabsContent>
 
           {/* Tab 2: Personagens de Crédito (Coins) */}
+          <TabsContent value="curation" className="space-y-4">
+            <CatalogCurationContent />
+          </TabsContent>
+
           <TabsContent value="credit-characters" className="space-y-4">
             <CreditCharactersContent />
           </TabsContent>

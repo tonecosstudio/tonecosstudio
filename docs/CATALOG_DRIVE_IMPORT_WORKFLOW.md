@@ -1,0 +1,91 @@
+# Catalog Drive Import Workflow
+
+Fluxo profissional para trazer imagens do Google Drive para o catalogo sem publicar lixo ou duplicatas.
+
+## Decisao de arquitetura
+
+O site le modelos do Supabase. O Google Drive e apenas origem de importacao.
+
+Arquivos importados passam por:
+
+1. Manifesto vindo do Drive.
+2. Dry run para revisar nomes e classificacao.
+3. Upload otimizado para Supabase Storage (`webp` + thumbnail).
+4. Fila `catalog_import_items`.
+5. Curadoria admin.
+6. Publicacao em `models`.
+
+## Regras de classificacao
+
+- `Colecao Tonecos/*`: candidato a colecao vendavel.
+- `Games`, `Filmes & Series`, `Animes & Desenhos`, `Tokusatsu`: categorias/origens para catalogo geral.
+- Arquivos soltos na raiz: entram como `hidden` e precisam de revisao.
+- Nomes genericos como `photo_...`, `figura1`, `desconhecido`, `image...` ficam com status `queued` e tag `needs-name-review`.
+- Nomes no padrao `Personagem - Obra.jpg` separam personagem e origem automaticamente.
+- Versoes entre parenteses viram `variant_name`, por exemplo `MUMM-RA (2)`.
+
+## Dry run
+
+Use antes de qualquer importacao real:
+
+```powershell
+$env:DRY_RUN='true'
+$env:IMPORT_LIMIT='8'
+$env:DRIVE_ITEMS_PATH='tmp/drive-folder-items.json'
+$env:IMPORT_SLUG='thundercats'
+$env:IMPORT_CONTEXT='collection'
+$env:IMPORT_SOURCE_FOLDER_ID='1chAOa3EOmMmE-fzrLyomQ9IbxMNK4QVF'
+$env:IMPORT_SOURCE_FOLDER_NAME='Thundercats'
+$env:IMPORT_SOURCE_TITLE='Thundercats'
+$env:IMPORT_MEDIA_TYPE='series'
+node tmp/import-drive-folder-to-catalog-queue.mjs
+```
+
+## Importacao real
+
+Depois das migrations aplicadas no Supabase:
+
+O script carrega `.env.local` e `.env` automaticamente para ler `VITE_SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`.
+Antes de enviar qualquer imagem, ele verifica se `catalog_import_items` existe. Se a migration ainda nao foi aplicada, a importacao para antes do upload.
+
+```powershell
+$env:DRIVE_ITEMS_PATH='tmp/drive-folder-items.json'
+$env:IMPORT_SLUG='thundercats'
+$env:IMPORT_CONTEXT='collection'
+$env:IMPORT_SOURCE_FOLDER_ID='1chAOa3EOmMmE-fzrLyomQ9IbxMNK4QVF'
+$env:IMPORT_SOURCE_FOLDER_NAME='Thundercats'
+$env:IMPORT_SOURCE_TITLE='Thundercats'
+$env:IMPORT_MEDIA_TYPE='series'
+$env:IMPORT_VISIBILITY='hidden'
+node tmp/import-drive-folder-to-catalog-queue.mjs
+```
+
+`IMPORT_VISIBILITY` deve ficar `hidden` por padrao. A decisao final de ir para catalogo geral, colecao, ambos ou oculto acontece na curadoria admin.
+
+## Bloqueio atual
+
+As migrations de catalogo profissional precisam estar no Supabase remoto antes da fila funcionar:
+
+- `20260528090000_catalog_curation_pricing.sql`
+- `20260528100000_catalog_professional_taxonomy.sql`
+- `20260528101000_catalog_import_curation_queue.sql`
+- `20260528102000_catalog_publish_import_rpc.sql`
+
+## Fallback temporario usado em 2026-05-28
+
+Como `catalog_import_items` ainda nao existe no banco remoto, foi usado um importador de staging:
+
+```powershell
+node tmp/import-identified-drive-models-staging.mjs
+```
+
+Esse fallback:
+
+- importa apenas itens ja identificados e validados visualmente;
+- compacta tudo para WebP antes de enviar ao Supabase Storage;
+- salva os arquivos em `models/catalog-staging/{categoria}/{subcategoria}`;
+- cria linhas inativas em `models` (`is_active = false`);
+- nao publica os modelos no catalogo publico;
+- gera relatorio em `tmp/catalog-identified-staging-import-report.json`.
+
+Use este caminho apenas enquanto a fila profissional nao estiver disponivel no Supabase remoto.

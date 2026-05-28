@@ -15,6 +15,7 @@ import { cycleService, Cycle } from './cycleService';
 // Mock do Supabase
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    rpc: vi.fn(),
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
@@ -60,8 +61,71 @@ describe('DeliveryService - Property-Based Tests', () => {
     capacity_current: 0,
   });
 
+  const createMockDeliveriesFromRpc = (
+    subscriptionId: string,
+    planType: PlanType,
+    entryCycleId: string
+  ) => {
+    const [, cycleNumberRaw, monthRaw, yearRaw] = entryCycleId.split('-');
+    const deliveryCount = planType === 'trimestral' ? 3 : 6;
+    const deliveries = [];
+    let currentCycle = Number(cycleNumberRaw) as 1 | 2;
+    let currentMonth = Number(monthRaw);
+    let currentYear = Number(yearRaw);
+
+    for (let i = 1; i <= deliveryCount; i++) {
+      if (currentCycle === 1) {
+        currentCycle = 2;
+      } else {
+        currentCycle = 1;
+        currentMonth += 1;
+        if (currentMonth > 12) {
+          currentMonth = 1;
+          currentYear += 1;
+        }
+      }
+
+      const cycle = createMockCycle(currentCycle, currentMonth, currentYear);
+      deliveries.push({
+        id: `delivery-${i}`,
+        subscription_id: subscriptionId,
+        cycle_id: cycle.id,
+        delivery_number: i,
+        status: 'scheduled',
+        scheduled_date: cycle.shipping_date,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        character_id: null,
+        status_changed_at: null,
+        shipped_at: null,
+        delivered_at: null,
+        tracking_code: null,
+      });
+    }
+
+    return deliveries;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(mockSupabase.rpc).mockImplementation((_name, args) => {
+      const rpcArgs = args as {
+        p_subscription_id: string;
+        p_plan_type: PlanType;
+        p_entry_cycle_id: string;
+      };
+
+      return Promise.resolve({
+        data: {
+          deliveries: createMockDeliveriesFromRpc(
+            rpcArgs.p_subscription_id,
+            rpcArgs.p_plan_type,
+            rpcArgs.p_entry_cycle_id
+          ),
+        },
+        error: null,
+      });
+    });
   });
 
   describe('Property 20: Trimestral Consecutive Deliveries', () => {

@@ -14,6 +14,7 @@ import {
   getDaysUntilSalesEnd,
 } from "@/lib/services/batchCalculator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 interface BatchInfoBannerProps {
   showButton?: boolean;
@@ -24,7 +25,7 @@ interface BatchInfoBannerProps {
 export function BatchInfoBanner({
   showButton = true,
   buttonText = "Ver Planos",
-  buttonLink = "/planos",
+  buttonLink = PUBLIC_ROUTES.plans,
 }: BatchInfoBannerProps) {
   const { currentBatch, isLoading } = useBatchInfo();
 

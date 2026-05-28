@@ -19,6 +19,7 @@ import {
   useCustomerOrderProgress,
   type CustomerOrderType,
 } from "@/hooks/customer/useCustomerOrderProgress";
+import { AUTH_ROUTES, profileSectionPath } from "@/config/routes";
 
 export default function CustomerOrderProgressPage() {
   const { orderId, orderType } = useParams<{ orderId: string; orderType: string }>();
@@ -66,7 +67,7 @@ export default function CustomerOrderProgressPage() {
               ? error.message
               : "Nao foi possivel carregar as informacoes do pedido."}
           </p>
-          <Button onClick={() => navigate("/dashboard")}>Voltar ao Dashboard</Button>
+          <Button onClick={() => navigate(AUTH_ROUTES.dashboard)}>Voltar ao Dashboard</Button>
         </div>
       </Page>
     );
@@ -165,7 +166,7 @@ export default function CustomerOrderProgressPage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => navigate("/perfil?section=support")}
+                  onClick={() => navigate(profileSectionPath("support"))}
                 >
                   Falar com Suporte
                 </Button>

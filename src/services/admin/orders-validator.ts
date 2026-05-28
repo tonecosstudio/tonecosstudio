@@ -10,13 +10,13 @@
 
 import {
   OrderStatus,
-  SubscriptionDeliveryStatus,
-  StandalonePurchaseStatus,
-  ManualPaymentStatus,
-  QuoteStatus,
   StatusTransitionError,
   StatusTransitionMatrix
 } from '@/types/admin/orders';
+import { getOrderStatusLabel } from '@/config/admin-order-status';
+
+type OrderType = 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote';
+type StatusTransitionMap = Partial<Record<OrderStatus, OrderStatus[]>>;
 
 // ============================================================================
 // Matrizes de Transições Válidas
@@ -28,7 +28,7 @@ import {
  * Define quais status podem ser alcançados a partir de cada status atual.
  * Baseado no fluxo de negócio de entregas de assinatura.
  */
-const SUBSCRIPTION_DELIVERY_TRANSITIONS: Record<SubscriptionDeliveryStatus, SubscriptionDeliveryStatus[]> = {
+const SUBSCRIPTION_DELIVERY_TRANSITIONS: StatusTransitionMap = {
   // Entrega agendada pode ir para escolha pendente, confirmada ou cancelada
   'scheduled': ['pending_choice', 'confirmed', 'cancelled'],
   
@@ -60,7 +60,13 @@ const SUBSCRIPTION_DELIVERY_TRANSITIONS: Record<SubscriptionDeliveryStatus, Subs
  * Define quais status podem ser alcançados a partir de cada status atual.
  * Baseado no fluxo de pagamento em duas etapas (depósito + saldo).
  */
-const STANDALONE_PURCHASE_TRANSITIONS: Record<StandalonePurchaseStatus, StandalonePurchaseStatus[]> = {
+const STANDALONE_PURCHASE_TRANSITIONS: StatusTransitionMap = {
+  // Status legados do enum original de compras avulsas
+  'pending': ['deposit_paid', 'cancelled'],
+
+  // Status legado ainda existente no banco em compras antigas
+  'confirmed': ['deposit_paid', 'cancelled'],
+
   // Aguardando depósito pode ter depósito pago ou ser cancelada
   'awaiting_deposit': ['deposit_paid', 'cancelled'],
   
@@ -71,7 +77,7 @@ const STANDALONE_PURCHASE_TRANSITIONS: Record<StandalonePurchaseStatus, Standalo
   'awaiting_balance': ['balance_paid', 'cancelled'],
   
   // Saldo pago pode ir para produção ou ser cancelada
-  'balance_paid': ['in_production', 'cancelled'],
+  'balance_paid': ['in_production', 'shipped', 'cancelled'],
   
   // Em produção pode ser enviada ou cancelada
   'in_production': ['shipped', 'cancelled'],
@@ -95,7 +101,7 @@ const STANDALONE_PURCHASE_TRANSITIONS: Record<StandalonePurchaseStatus, Standalo
  * Define quais status podem ser alcançados a partir de cada status atual.
  * Baseado no fluxo de verificação de comprovantes de pagamento manual.
  */
-const MANUAL_PAYMENT_TRANSITIONS: Record<ManualPaymentStatus, ManualPaymentStatus[]> = {
+const MANUAL_PAYMENT_TRANSITIONS: StatusTransitionMap = {
   // Pendente pode ir para análise ou ser rejeitado
   'pending': ['under_review', 'rejected'],
   
@@ -118,7 +124,7 @@ const MANUAL_PAYMENT_TRANSITIONS: Record<ManualPaymentStatus, ManualPaymentStatu
  * Define quais status podem ser alcançados a partir de cada status atual.
  * Baseado no fluxo de análise e resposta de orçamentos.
  */
-const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
+const QUOTE_TRANSITIONS: StatusTransitionMap = {
   // Pendente pode ir para análise ou ser arquivado
   'pending': ['reviewing', 'archived'],
   
@@ -131,6 +137,20 @@ const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
   // Arquivado é um estado final (sem transições)
   'archived': []
 };
+
+const ALL_TRANSITION_MATRICES: StatusTransitionMap[] = [
+  SUBSCRIPTION_DELIVERY_TRANSITIONS,
+  STANDALONE_PURCHASE_TRANSITIONS,
+  MANUAL_PAYMENT_TRANSITIONS,
+  QUOTE_TRANSITIONS
+];
+
+function getTransitionMatrixForOrderType(orderType: OrderType): StatusTransitionMap {
+  if (orderType === 'subscription_delivery') return SUBSCRIPTION_DELIVERY_TRANSITIONS;
+  if (orderType === 'standalone_purchase') return STANDALONE_PURCHASE_TRANSITIONS;
+  if (orderType === 'manual_payment') return MANUAL_PAYMENT_TRANSITIONS;
+  return QUOTE_TRANSITIONS;
+}
 
 // ============================================================================
 // Funções de Validação
@@ -155,25 +175,21 @@ const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
 export function validateStatusTransition(
   currentStatus: OrderStatus,
   newStatus: OrderStatus,
-  orderType: 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote'
+  orderType: OrderType
 ): StatusTransitionError | null {
   // Não permitir transição para o mesmo status
   if (currentStatus === newStatus) {
     return {
       type: 'validation_error',
       field: 'status',
-      message: `O pedido já está no status "${getStatusLabel(currentStatus)}".`,
+      message: `O pedido já está no status "${getOrderStatusLabel(currentStatus)}".`,
       currentStatus,
       attemptedStatus: newStatus
     };
   }
 
   // Selecionar a matriz de transições apropriada
-  const transitionMatrix: Partial<StatusTransitionMatrix> =
-    orderType === 'subscription_delivery' ? SUBSCRIPTION_DELIVERY_TRANSITIONS :
-    orderType === 'standalone_purchase' ? STANDALONE_PURCHASE_TRANSITIONS :
-    orderType === 'manual_payment' ? MANUAL_PAYMENT_TRANSITIONS :
-    QUOTE_TRANSITIONS;
+  const transitionMatrix = getTransitionMatrixForOrderType(orderType);
 
   // Verificar se o status atual existe na matriz
   if (!(currentStatus in transitionMatrix)) {
@@ -200,7 +216,7 @@ export function validateStatusTransition(
     return {
       type: 'validation_error',
       field: 'status',
-      message: `Transição de "${getStatusLabel(currentStatus)}" para "${getStatusLabel(newStatus)}" não é permitida. ${getTransitionHint(currentStatus, orderType)}`,
+      message: `Transição de "${getOrderStatusLabel(currentStatus)}" para "${getOrderStatusLabel(newStatus)}" não é permitida. ${getTransitionHint(currentStatus, orderType)}`,
       currentStatus,
       attemptedStatus: newStatus
     };
@@ -225,15 +241,10 @@ export function validateStatusTransition(
  */
 export function getValidTransitions(
   currentStatus: OrderStatus,
-  orderType: 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote'
+  orderType: OrderType
 ): OrderStatus[] {
-  const transitionMatrix = 
-    orderType === 'subscription_delivery' ? SUBSCRIPTION_DELIVERY_TRANSITIONS :
-    orderType === 'standalone_purchase' ? STANDALONE_PURCHASE_TRANSITIONS :
-    orderType === 'manual_payment' ? MANUAL_PAYMENT_TRANSITIONS :
-    QUOTE_TRANSITIONS;
-
-  return transitionMatrix[currentStatus as keyof typeof transitionMatrix] || [];
+  const transitionMatrix = getTransitionMatrixForOrderType(orderType);
+  return transitionMatrix[currentStatus] || [];
 }
 
 /**
@@ -254,7 +265,7 @@ export function getValidTransitions(
 export function isValidTransition(
   currentStatus: OrderStatus,
   newStatus: OrderStatus,
-  orderType: 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote'
+  orderType: OrderType
 ): boolean {
   return validateStatusTransition(currentStatus, newStatus, orderType) === null;
 }
@@ -262,49 +273,6 @@ export function isValidTransition(
 // ============================================================================
 // Funções Auxiliares
 // ============================================================================
-
-/**
- * Obtém o rótulo legível de um status
- * 
- * @param status - Status do pedido
- * @returns Rótulo em português
- */
-function getStatusLabel(status: OrderStatus): string {
-  const labels: Record<OrderStatus, string> = {
-    // Entregas de assinatura
-    'scheduled': 'Agendada',
-    'pending_choice': 'Aguardando Escolha',
-    'confirmed': 'Confirmada',
-    'in_production': 'Em Produção',
-    'shipped': 'Enviada',
-    'delivered': 'Entregue',
-    'revealed': 'Revelada',
-    
-    // Compras avulsas
-    'awaiting_deposit': 'Aguardando Depósito',
-    'deposit_paid': 'Depósito Pago',
-    'awaiting_balance': 'Aguardando Saldo',
-    'balance_paid': 'Saldo Pago',
-    'completed': 'Completa',
-    
-    // Pagamentos manuais
-    'pending': 'Pendente',
-    'under_review': 'Em Análise',
-    'requires_info': 'Requer Informações',
-    'approved': 'Aprovado',
-    'rejected': 'Rejeitado',
-    
-    // Orçamentos
-    'reviewing': 'Em Análise',
-    'answered': 'Respondido',
-    'archived': 'Arquivado',
-    
-    // Comum
-    'cancelled': 'Cancelada'
-  };
-
-  return labels[status] || status;
-}
 
 /**
  * Obtém uma dica sobre transições válidas para o status atual
@@ -315,7 +283,7 @@ function getStatusLabel(status: OrderStatus): string {
  */
 function getTransitionHint(
   currentStatus: OrderStatus,
-  orderType: 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote'
+  orderType: OrderType
 ): string {
   const validTransitions = getValidTransitions(currentStatus, orderType);
 
@@ -323,8 +291,8 @@ function getTransitionHint(
     return 'Este pedido está em um estado final e não pode ter seu status alterado.';
   }
 
-  const validLabels = validTransitions.map(s => `"${getStatusLabel(s)}"`).join(', ');
-  return `Status válidos a partir de "${getStatusLabel(currentStatus)}": ${validLabels}.`;
+  const validLabels = validTransitions.map(s => `"${getOrderStatusLabel(s)}"`).join(', ');
+  return `Status válidos a partir de "${getOrderStatusLabel(currentStatus)}": ${validLabels}.`;
 }
 
 /**
@@ -336,10 +304,25 @@ function getTransitionHint(
  */
 export function isFinalStatus(
   status: OrderStatus,
-  orderType: 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote'
+  orderType?: OrderType
 ): boolean {
-  const validTransitions = getValidTransitions(status, orderType);
-  return validTransitions.length === 0;
+  if (orderType) {
+    const validTransitions = getValidTransitions(status, orderType);
+    return validTransitions.length === 0;
+  }
+
+  let statusExistsInMatrix = false;
+
+  for (const transitionMatrix of ALL_TRANSITION_MATRICES) {
+    if (Object.prototype.hasOwnProperty.call(transitionMatrix, status)) {
+      statusExistsInMatrix = true;
+      if ((transitionMatrix[status] || []).length > 0) {
+        return false;
+      }
+    }
+  }
+
+  return statusExistsInMatrix;
 }
 
 /**
@@ -349,17 +332,9 @@ export function isFinalStatus(
  * @returns Matriz de transições
  */
 export function getTransitionMatrix(
-  orderType: 'subscription_delivery' | 'standalone_purchase' | 'manual_payment' | 'quote'
+  orderType: OrderType
 ): StatusTransitionMatrix {
-  if (orderType === 'subscription_delivery') {
-    return SUBSCRIPTION_DELIVERY_TRANSITIONS as StatusTransitionMatrix;
-  } else if (orderType === 'standalone_purchase') {
-    return STANDALONE_PURCHASE_TRANSITIONS as StatusTransitionMatrix;
-  } else if (orderType === 'manual_payment') {
-    return MANUAL_PAYMENT_TRANSITIONS as StatusTransitionMatrix;
-  } else {
-    return QUOTE_TRANSITIONS as StatusTransitionMatrix;
-  }
+  return getTransitionMatrixForOrderType(orderType) as StatusTransitionMatrix;
 }
 
 

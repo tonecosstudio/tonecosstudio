@@ -18,6 +18,7 @@ import { messageService } from "@/lib/services/messageService";
 import { fileUploadService } from "@/lib/services/fileUploadService";
 import { useSanitizedInput } from "@/hooks/useSanitizedInput";
 import { sanitizeURL } from "@/lib/security/input-sanitizer";
+import { openSafeExternalUrl } from "@/lib/security/safe-open";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
 import {
   useSupportAttachmentPublicUrl,
@@ -708,8 +709,30 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
   const thumbnailUrl = attachment.thumbnail_path ? getPublicUrl(attachment.thumbnail_path) : null;
   const fileIsImage = isImage(attachment.file_type);
 
+  const getSafeUrl = (url: string | null) => {
+    if (!url) return "";
+
+    try {
+      return sanitizeURL(url, ["http", "https"]);
+    } catch {
+      return "";
+    }
+  };
+
+  const safePublicUrl = getSafeUrl(publicUrl);
+  const safeThumbnailUrl = getSafeUrl(thumbnailUrl);
+
   const handleDownload = () => {
-    window.open(publicUrl, "_blank");
+    if (!safePublicUrl) {
+      toast.error("URL do anexo invalida");
+      return;
+    }
+
+    try {
+      openSafeExternalUrl(safePublicUrl);
+    } catch {
+      toast.error("URL do anexo invalida");
+    }
   };
 
   if (fileIsImage) {
@@ -736,14 +759,22 @@ function AttachmentDisplay({ attachment, getPublicUrl, isImage, isAdmin }: Attac
 
     return (
       <div className="relative group">
-        <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="block">
+        <a
+          href={safePublicUrl || undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+          onClick={(event) => {
+            if (!safePublicUrl) event.preventDefault();
+          }}
+        >
           <img
-            src={thumbnailUrl || publicUrl}
+            src={safeThumbnailUrl || safePublicUrl}
             alt={attachment.file_name}
             className="max-w-[200px] max-h-[200px] rounded border-2 border-border hover:border-primary transition-colors cursor-pointer"
             onError={(e) => {
-              if (thumbnailUrl && e.currentTarget.src === thumbnailUrl) {
-                e.currentTarget.src = publicUrl;
+              if (safeThumbnailUrl && e.currentTarget.src === safeThumbnailUrl) {
+                e.currentTarget.src = safePublicUrl;
               } else {
                 setImageError(true);
               }

@@ -45,8 +45,8 @@ interface CycleData {
   year: number;
   shipping_date: string;
   status: string;
-  capacity_current: number;
-  capacity_max: number;
+  capacity?: number;
+  used_capacity?: number;
 }
 
 /**
@@ -63,7 +63,10 @@ async function getCurrentCycle(service: any): Promise<CycleData> {
  * Verifica capacidade do ciclo
  */
 function checkCycleCapacity(cycle: CycleData): void {
-  if (cycle.capacity_current >= cycle.capacity_max) {
+  const capacity = cycle.capacity ?? 100;
+  const usedCapacity = cycle.used_capacity ?? 0;
+
+  if (usedCapacity >= capacity) {
     throw new Error(
       `Ciclo ${cycle.cycle_number} de ${cycle.month}/${cycle.year} está com capacidade máxima. ` +
         `Você será alocado no próximo ciclo disponível.`,
@@ -113,7 +116,7 @@ async function checkAllDeliveryCyclesCapacity(
     const cycleInfo = deliveryCycles[i];
     const { data: existingCycle } = await service
       .from("cycles")
-      .select("id, capacity_current, capacity_max, capacity_limit")
+      .select("id")
       .eq("cycle_number", cycleInfo.cycleNumber)
       .eq("month", cycleInfo.month)
       .eq("year", cycleInfo.year)
@@ -144,6 +147,8 @@ async function reserveAllDeliveryCyclesCapacity(
   deliveries: any[],
   _subscriptionId: string,
 ): Promise<void> {
+  const reservedCycleIds: string[] = [];
+
   for (const delivery of deliveries) {
     if (delivery.cycle_id) {
       const { error } = await service.rpc("reserve_capacity", {
@@ -151,11 +156,40 @@ async function reserveAllDeliveryCyclesCapacity(
         p_quantity: 1,
       });
       if (error) {
-        console.error(
-          `Erro ao reservar capacidade para ciclo ${delivery.cycle_id}:`,
-          error,
+        for (const cycleId of reservedCycleIds) {
+          const { error: releaseError } = await service.rpc("release_capacity", {
+            p_cycle_id: cycleId,
+            p_quantity: 1,
+          });
+          if (releaseError) {
+            console.error(`Erro ao desfazer reserva de capacidade ${cycleId}:`, releaseError);
+          }
+        }
+
+        throw new Error(
+          `Erro ao reservar capacidade para ciclo ${delivery.cycle_id}: ${error.message}`,
         );
       }
+
+      reservedCycleIds.push(delivery.cycle_id);
+    }
+  }
+}
+
+async function cleanupSubscriptionDraft(
+  service: any,
+  subscriptionId: string,
+): Promise<void> {
+  const cleanupSteps = [
+    service.from("bonus_pieces").delete().eq("subscription_id", subscriptionId),
+    service.from("subscription_deliveries").delete().eq("subscription_id", subscriptionId),
+    service.from("subscriptions").delete().eq("id", subscriptionId),
+  ];
+
+  for (const step of cleanupSteps) {
+    const { error } = await step;
+    if (error) {
+      console.error(`Erro ao limpar assinatura parcial ${subscriptionId}:`, error);
     }
   }
 }
@@ -340,12 +374,15 @@ serve(async (req) => {
     if (subscriptionError) throw subscriptionError;
 
     // Agendar entregas consecutivas (Requirements 20.5)
-    const deliveries = await scheduleDeliveries(
-      service,
-      subscription.id,
-      plan.plan_type,
-      currentCycle.id,
-    );
+    let deliveries: any[] = [];
+
+    try {
+      deliveries = await scheduleDeliveries(
+        service,
+        subscription.id,
+        plan.plan_type,
+        currentCycle.id,
+      );
 
     // Criar peça bônus se for plano semestral
     if (plan.includes_bonus && deliveries.length > 0) {
@@ -355,11 +392,15 @@ serve(async (req) => {
 
     // Reservar capacidade para todos os ciclos de entrega (Requirement 20.7)
     // This increments capacity_current for each cycle used
-    await reserveAllDeliveryCyclesCapacity(
-      service,
-      deliveries,
-      subscription.id,
-    );
+      await reserveAllDeliveryCyclesCapacity(
+        service,
+        deliveries,
+        subscription.id,
+      );
+    } catch (error) {
+      await cleanupSubscriptionDraft(service, subscription.id);
+      throw error;
+    }
 
     return new Response(
       JSON.stringify({
@@ -389,7 +430,7 @@ serve(async (req) => {
     console.error("Error creating subscription v2:", msg);
     const status =
       msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
+    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

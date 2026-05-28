@@ -14,6 +14,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { ManualPayment, PaymentFilters, PaymentStatus } from "@/types/manual-payment";
+import { paymentDetailsPath } from "@/config/routes";
 
 type PaymentStatusFilter = PaymentStatus | "all";
 
@@ -123,7 +124,7 @@ export default function MyPaymentsArcade() {
                   className="p-4 cursor-pointer"
                   hover
                 >
-                  <div onClick={() => navigate(`/pagamentos/${payment.id}`)}>
+                  <div onClick={() => navigate(paymentDetailsPath(payment.id))}>
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-mono text-xs text-[hsl(0,0%,60%)] truncate">{payment.reference_number || "—"}</span>
                       <div className={`flex items-center gap-1 ${cfg.color}`}>

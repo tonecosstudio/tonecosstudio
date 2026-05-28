@@ -8,6 +8,7 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizePostgrestSearchTerm } from "@/lib/postgrest-search";
 import type { ManualPayment, PaymentFilters } from "@/types/manual-payment";
 
 const PAGE_SIZE = 25;
@@ -41,9 +42,10 @@ async function fetchPayments(
   }
 
   if (filters.search) {
-    query = query.or(
-      `reference_number.ilike.%${filters.search}%`
-    );
+    const search = sanitizePostgrestSearchTerm(filters.search);
+    if (search) {
+      query = query.or(`reference_number.ilike.%${search}%`);
+    }
   }
 
   // Apply pagination

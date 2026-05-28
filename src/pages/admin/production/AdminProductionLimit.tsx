@@ -128,7 +128,7 @@ export default function AdminProductionLimit() {
               </Badge>
               {isClosed && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Motivo: {limit?.is_closed ? "Limite atingido" : "Manual"}
+                  Motivo: {isClosed ? "Limite atingido" : "Manual"}
                 </p>
               )}
             </CardContent>
@@ -144,11 +144,11 @@ export default function AdminProductionLimit() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Vendas realizadas:</span>
-                <span className="font-medium">{limit?.units_sold || 0}</span>
+                <span className="font-medium">{limit?.prod_units_sold || 0}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Limite global:</span>
-                <span className="font-medium">{limit?.global_limit || 0}</span>
+                <span className="font-medium">{total}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Vagas restantes:</span>

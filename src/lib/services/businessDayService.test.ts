@@ -6,6 +6,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { businessDayService } from './businessDayService';
 import { timezoneService } from './timezoneService';
 
+const { mockRpc } = vi.hoisted(() => ({
+  mockRpc: vi.fn(),
+}));
+
 // Mock do Supabase
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -81,11 +85,47 @@ vi.mock('@/integrations/supabase/client', () => ({
         eq: vi.fn(() => Promise.resolve({ error: null })),
       })),
     })),
+    rpc: mockRpc,
   },
 }));
 
 describe('BusinessDayService', () => {
   beforeEach(() => {
+    mockRpc.mockReset();
+    mockRpc.mockImplementation((functionName: string) => {
+      if (functionName === 'admin_add_holiday') {
+        return Promise.resolve({
+          data: {
+            id: '3',
+            holiday_date: '2026-12-31',
+            name: 'Teste',
+            type: 'national',
+            is_recurring: false,
+          },
+          error: null,
+        });
+      }
+
+      if (functionName === 'admin_update_holiday') {
+        return Promise.resolve({
+          data: {
+            id: '1',
+            holiday_date: '2026-01-01',
+            name: 'Ano Novo Atualizado',
+            type: 'national',
+            is_recurring: true,
+          },
+          error: null,
+        });
+      }
+
+      if (functionName === 'admin_delete_holiday') {
+        return Promise.resolve({ data: null, error: null });
+      }
+
+      return Promise.resolve({ data: null, error: null });
+    });
+
     // Limpar cache antes de cada teste
     businessDayService.clearHolidayCache();
   });
@@ -253,6 +293,14 @@ describe('BusinessDayService', () => {
       
       expect(holiday).toBeDefined();
       expect(holiday.name).toBe('Teste'); // Mock retorna 'Teste'
+      expect(mockRpc).toHaveBeenCalledWith('admin_add_holiday', {
+        p_holiday_date: '2026-12-31',
+        p_name: 'Véspera de Ano Novo',
+        p_description: null,
+        p_type: 'national',
+        p_state_code: null,
+        p_is_recurring: false,
+      });
     });
 
     it('deve limpar cache ao adicionar feriado', async () => {
@@ -281,6 +329,15 @@ describe('BusinessDayService', () => {
       
       expect(updated).toBeDefined();
       expect(updated.name).toBe('Ano Novo Atualizado');
+      expect(mockRpc).toHaveBeenCalledWith('admin_update_holiday', {
+        p_holiday_id: '1',
+        p_holiday_date: null,
+        p_name: 'Ano Novo Atualizado',
+        p_description: null,
+        p_type: null,
+        p_state_code: null,
+        p_is_recurring: null,
+      });
     });
   });
 
@@ -289,6 +346,9 @@ describe('BusinessDayService', () => {
       await expect(
         businessDayService.deleteHoliday('1')
       ).resolves.not.toThrow();
+      expect(mockRpc).toHaveBeenCalledWith('admin_delete_holiday', {
+        p_holiday_id: '1',
+      });
     });
   });
 

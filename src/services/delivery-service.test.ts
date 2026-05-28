@@ -11,6 +11,14 @@ import { supabase } from '@/integrations/supabase/client';
 // Mock the supabase client
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    auth: {
+      getUser: vi.fn(() =>
+        Promise.resolve({
+          data: { user: { id: 'user-789' } },
+          error: null,
+        })
+      ),
+    },
     rpc: vi.fn(),
     from: vi.fn(),
   },
@@ -24,6 +32,8 @@ vi.mock('./automatic-maintenance-service', () => ({
 describe('Delivery Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (supabase.rpc as any) = vi.fn().mockResolvedValue({ data: null, error: null });
+    (supabase.from as any) = vi.fn();
   });
 
   describe('activateDelivery', () => {
@@ -52,142 +62,25 @@ describe('Delivery Service', () => {
   });
 
   describe('activateDeliveryWithService', () => {
-    it('should activate delivery and apply automatic maintenance for non-first delivery', async () => {
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { status: 'scheduled', delivery_number: 2 },
-            error: null,
-          }),
-        }),
-      });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-
-      (supabase.from as any) = vi.fn((table: string) => {
-        if (table === 'subscription_deliveries') {
-          return {
-            select: mockSelect,
-            update: mockUpdate,
-          };
-        }
-        return {};
-      });
-
-      const automaticMaintenanceModule = await import('./automatic-maintenance-service');
-      const applyAutomaticMaintenanceSpy = vi.spyOn(automaticMaintenanceModule, 'applyAutomaticMaintenance').mockResolvedValue(undefined);
-
+    it('should delegate activation and maintenance to the atomic delivery RPC', async () => {
       const deliveryId = 'delivery-123';
       const subscriptionId = 'sub-123';
       await activateDeliveryWithService(deliveryId, subscriptionId);
 
-      expect(mockUpdate).toHaveBeenCalledWith({
-        status: 'pending_choice',
-        updated_at: expect.any(String),
+      expect(supabase.rpc).toHaveBeenCalledWith('activate_delivery_with_auto_maintenance', {
+        p_delivery_id: deliveryId,
       });
-      expect(applyAutomaticMaintenanceSpy).toHaveBeenCalledWith(deliveryId, subscriptionId);
     });
 
-    it('should skip automatic maintenance for first delivery', async () => {
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { status: 'scheduled', delivery_number: 1 },
-            error: null,
-          }),
-        }),
+    it('should propagate activation RPC failures', async () => {
+      (supabase.rpc as any).mockResolvedValue({
+        data: null,
+        error: { message: 'Activation failed' },
       });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-
-      (supabase.from as any) = vi.fn((table: string) => {
-        if (table === 'subscription_deliveries') {
-          return {
-            select: mockSelect,
-            update: mockUpdate,
-          };
-        }
-        return {};
-      });
-
-      const automaticMaintenanceModule = await import('./automatic-maintenance-service');
-      const applyAutomaticMaintenanceSpy = vi.spyOn(automaticMaintenanceModule, 'applyAutomaticMaintenance');
-
-      const deliveryId = 'delivery-123';
-      const subscriptionId = 'sub-123';
-      await activateDeliveryWithService(deliveryId, subscriptionId);
-
-      expect(mockUpdate).toHaveBeenCalled();
-      expect(applyAutomaticMaintenanceSpy).not.toHaveBeenCalled();
-    });
-
-    it('should skip activation if delivery is not in scheduled status', async () => {
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { status: 'confirmed', delivery_number: 2 },
-            error: null,
-          }),
-        }),
-      });
-
-      const mockUpdate = vi.fn();
-
-      (supabase.from as any) = vi.fn((table: string) => {
-        if (table === 'subscription_deliveries') {
-          return {
-            select: mockSelect,
-            update: mockUpdate,
-          };
-        }
-        return {};
-      });
-
-      const deliveryId = 'delivery-123';
-      const subscriptionId = 'sub-123';
-      await activateDeliveryWithService(deliveryId, subscriptionId);
-
-      expect(mockUpdate).not.toHaveBeenCalled();
-    });
-
-    it('should not fail activation if automatic maintenance fails', async () => {
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { status: 'scheduled', delivery_number: 2 },
-            error: null,
-          }),
-        }),
-      });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-
-      (supabase.from as any) = vi.fn((table: string) => {
-        if (table === 'subscription_deliveries') {
-          return {
-            select: mockSelect,
-            update: mockUpdate,
-          };
-        }
-        return {};
-      });
-
-      const automaticMaintenanceModule = await import('./automatic-maintenance-service');
-      vi.spyOn(automaticMaintenanceModule, 'applyAutomaticMaintenance').mockRejectedValue(new Error('Maintenance failed'));
-
-      const deliveryId = 'delivery-123';
-      const subscriptionId = 'sub-123';
       
-      // Should not throw
-      await expect(activateDeliveryWithService(deliveryId, subscriptionId)).resolves.not.toThrow();
-      
-      expect(mockUpdate).toHaveBeenCalled();
+      await expect(
+        activateDeliveryWithService('delivery-123', 'sub-123')
+      ).rejects.toThrow('Failed to activate delivery: Activation failed');
     });
   });
 
@@ -341,39 +234,32 @@ describe('Delivery Service', () => {
   });
 
   describe('changeCollectionChoice', () => {
-    it('should update delivery and create audit trail when allowed', async () => {
-      const mockSelect = vi.fn().mockReturnValue({
+    it('should change delivery collection through the current-user RPC when allowed', async () => {
+      const mockDeliveryStatusQuery = {
         eq: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({
-            data: { 
-              status: 'pending_choice', 
+            data: {
+              status: 'pending_choice',
               cycle_id: 'cycle-123',
-              collection_id: 'old-collection-123',
-              auto_maintained: true
             },
             error: null,
           }),
         }),
+      };
+      const mockSelect = vi.fn().mockReturnValueOnce(mockDeliveryStatusQuery);
+
+      const mockRpc = vi.fn((fn: string) => {
+        if (fn === 'is_before_cutoff') {
+          return Promise.resolve({ data: true, error: null });
+        }
+
+        return Promise.resolve({ data: 'choice-change-id', error: null });
       });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-
-      const mockInsert = vi.fn().mockResolvedValue({ error: null });
-
-      const mockRpc = vi.fn().mockResolvedValue({ data: true, error: null });
 
       (supabase.from as any) = vi.fn((table: string) => {
         if (table === 'subscription_deliveries') {
           return {
             select: mockSelect,
-            update: mockUpdate,
-          };
-        }
-        if (table === 'collection_choice_history') {
-          return {
-            insert: mockInsert,
           };
         }
         return {};
@@ -389,22 +275,12 @@ describe('Delivery Service', () => {
         'Mozilla/5.0'
       );
 
-      expect(mockUpdate).toHaveBeenCalledWith({
-        collection_id: 'new-collection-456',
-        auto_maintained: false,
-        updated_at: expect.any(String),
-      });
-
-      expect(mockInsert).toHaveBeenCalledWith({
-        delivery_id: 'delivery-123',
-        user_id: 'user-789',
-        previous_collection_id: 'old-collection-123',
-        new_collection_id: 'new-collection-456',
-        change_reason: 'manual',
-        changed_by_admin: false,
-        admin_user_id: null,
-        ip_address: '192.168.1.1',
-        user_agent: 'Mozilla/5.0',
+      expect(mockRpc).toHaveBeenCalledWith('change_delivery_collection_choice_for_current_user', {
+        p_delivery_id: 'delivery-123',
+        p_new_collection_id: 'new-collection-456',
+        p_user_id: 'user-789',
+        p_ip_address: '192.168.1.1',
+        p_user_agent: 'Mozilla/5.0',
       });
     });
 
@@ -431,39 +307,31 @@ describe('Delivery Service', () => {
       ).rejects.toThrow('CUTOFF_PASSED');
     });
 
-    it('should reset auto_maintained flag when manually changed', async () => {
-      const mockSelect = vi.fn().mockReturnValue({
+    it('should send nullable request metadata to the current-user change RPC', async () => {
+      const mockDeliveryStatusQuery = {
         eq: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({
-            data: { 
-              status: 'pending_choice', 
+            data: {
+              status: 'pending_choice',
               cycle_id: 'cycle-123',
-              collection_id: 'old-collection-123',
-              auto_maintained: true
             },
             error: null,
           }),
         }),
+      };
+      const mockSelect = vi.fn().mockReturnValueOnce(mockDeliveryStatusQuery);
+      const mockRpc = vi.fn((fn: string) => {
+        if (fn === 'is_before_cutoff') {
+          return Promise.resolve({ data: true, error: null });
+        }
+
+        return Promise.resolve({ data: 'choice-change-id', error: null });
       });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-
-      const mockInsert = vi.fn().mockResolvedValue({ error: null });
-
-      const mockRpc = vi.fn().mockResolvedValue({ data: true, error: null });
 
       (supabase.from as any) = vi.fn((table: string) => {
         if (table === 'subscription_deliveries') {
           return {
             select: mockSelect,
-            update: mockUpdate,
-          };
-        }
-        if (table === 'collection_choice_history') {
-          return {
-            insert: mockInsert,
           };
         }
         return {};
@@ -473,11 +341,13 @@ describe('Delivery Service', () => {
       const { changeCollectionChoice } = await import('./delivery-service');
       await changeCollectionChoice('delivery-123', 'new-collection-456', 'user-789');
 
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          auto_maintained: false,
-        })
-      );
+      expect(mockRpc).toHaveBeenCalledWith('change_delivery_collection_choice_for_current_user', {
+        p_delivery_id: 'delivery-123',
+        p_new_collection_id: 'new-collection-456',
+        p_user_id: 'user-789',
+        p_ip_address: null,
+        p_user_agent: null,
+      });
     });
   });
 });

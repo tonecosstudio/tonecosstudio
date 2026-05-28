@@ -5,13 +5,31 @@
  * upload de fotos e cálculo de datas estimadas de conclusão.
  */
 import { supabase } from "@/integrations/supabase/client";
-import log from "@/lib/logger";
+import { generateSecureToken, sanitizeFilename } from "@/lib/security/input-sanitizer";
 import type { ProductionStageRecord, StageType } from "./stage-types";
 
 // ============================================================================
 
-type ProductionStageUpdatePayload = Record<string, string | string[]>;
 type ProductionStageRaw = Record<string, unknown>;
+
+interface AdminStageRpcError {
+  message: string;
+}
+
+interface AdminStageRpcClient {
+  rpc(
+    name: "admin_complete_production_stage",
+    args: {
+      p_stage_id: string;
+      p_notes: string | null;
+      p_photos: string[];
+      p_is_override: boolean;
+      p_justification: string | null;
+    }
+  ): Promise<{ data: ProductionStageRaw | null; error: AdminStageRpcError | null }>;
+}
+
+const adminStageRpc = supabase as unknown as AdminStageRpcClient;
 
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -93,121 +111,19 @@ export async function completeStage(
   isOverride: boolean = false,
   justification?: string
 ): Promise<ProductionStageRecord> {
-  // Buscar estágio atual
-  const { data: currentStage, error: fetchError } = await supabase
-    .from("production_stages")
-    .select("*")
-    .eq("id", stageId)
-    .single();
+  const { data, error } = await adminStageRpc.rpc("admin_complete_production_stage", {
+    p_stage_id: stageId,
+    p_notes: notes ?? null,
+    p_photos: photos ?? [],
+    p_is_override: isOverride,
+    p_justification: justification ?? null,
+  });
 
-  if (fetchError || !currentStage) {
-    throw new Error(`Estágio não encontrado: ${fetchError?.message || "ID inválido"}`);
+  if (error || !data) {
+    throw new Error(`Erro ao completar estágio: ${error?.message || "Falha na atualização"}`);
   }
 
-  // Validar que o estágio pode ser completado
-  if (currentStage.status === "completed") {
-    throw new Error("Este estágio já foi completado");
-  }
-
-  if (currentStage.is_blocked) {
-    throw new Error("Não é possível completar um estágio bloqueado. Desbloqueie primeiro.");
-  }
-
-  // Validate stage transition (unless override is enabled)
-  if (!isOverride) {
-    const { validateStageTransition } = await import("./stage-validation");
-    const validation = await validateStageTransition(currentStage.production_queue_id, stageId);
-
-    if (!validation.isValid) {
-      throw new Error(validation.error || "Stage transition validation failed");
-    }
-  } else {
-    // If override is enabled, validate that justification is provided
-    if (!justification || justification.trim() === "") {
-      throw new Error("Justification is required for admin override");
-    }
-
-    // Validate that user has admin permissions
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
-
-    const { canUserOverride } = await import("./stage-validation");
-    const hasPermission = await canUserOverride(user.id);
-    if (!hasPermission) {
-      throw new Error("User does not have permission to override stage validation");
-    }
-  }
-
-  // Preparar dados de atualização
-  const now = new Date().toISOString();
-  const updateData: ProductionStageUpdatePayload = {
-    status: "completed",
-    completed_at: now,
-    updated_at: now,
-  };
-
-  // Se o estágio ainda não foi iniciado, iniciar agora
-  if (!currentStage.started_at) {
-    updateData.started_at = now;
-  }
-
-  // Adicionar notas se fornecidas
-  if (notes) {
-    updateData.notes = notes;
-  }
-
-  // Adicionar fotos se fornecidas
-  if (photos && photos.length > 0) {
-    updateData.photos = photos;
-  }
-
-  // Atualizar estágio
-  const { data: updatedStage, error: updateError } = await supabase
-    .from("production_stages")
-    .update(updateData)
-    .eq("id", stageId)
-    .select()
-    .single();
-
-  if (updateError || !updatedStage) {
-    throw new Error(`Erro ao completar estágio: ${updateError?.message || "Falha na atualização"}`);
-  }
-
-  // Log the stage transition
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      // Get user profile for name
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
-
-      const userName = profile?.full_name || user.email || "Unknown User";
-
-      // Determine previous stage
-      const { getPreviousStage, logStageTransition } = await import("./stage-validation");
-      const previousStage = getPreviousStage(updatedStage.stage_name as StageType);
-
-      await logStageTransition(
-        updatedStage.production_queue_id,
-        previousStage,
-        updatedStage.stage_name as StageType,
-        user.id,
-        userName,
-        isOverride,
-        justification || null
-      );
-    }
-  } catch (logError) {
-    // Log error but don't fail the operation
-    log.error("Failed to log stage transition", { logError });
-  }
-
-  return transformStageRecord(updatedStage as ProductionStageRaw);
+  return transformStageRecord(data);
 }
 
 // ============================================================================
@@ -241,9 +157,9 @@ export async function uploadStagePhoto(stageId: string, file: File): Promise<str
 
   // Gerar nome único para o arquivo
   const timestamp = Date.now();
-  const randomStr = Math.random().toString(36).substring(2, 15);
-  const extension = file.name.split(".").pop();
-  const fileName = `${stageId}/${timestamp}-${randomStr}.${extension}`;
+  const safeStageId = sanitizeFilename(stageId) || "stage";
+  const extension = sanitizeFilename(file.name.split(".").pop() || "jpg");
+  const fileName = `${safeStageId}/${timestamp}-${generateSecureToken(8)}.${extension}`;
 
   // Upload para Supabase Storage
   const { data, error } = await supabase.storage.from("production-photos").upload(fileName, file, {

@@ -113,8 +113,9 @@ serve(async (req) => {
       // Surface pricing/rate limit
       if (resp.status === 429) return json(429, { error: "Muitas requisições. Tente novamente em instantes." });
       if (resp.status === 402) return json(402, { error: "Créditos esgotados. Adicione créditos para usar IA." });
-      const t = await resp.text();
-      return json(500, { error: `Falha na IA (${resp.status}).`, details: t.slice(0, 500) });
+      const details = await resp.text();
+      console.error("Preference analysis provider error:", resp.status, details.slice(0, 500));
+      return json(500, { error: "Falha na IA. Tente novamente em instantes." });
     }
 
     const raw = await resp.text();
@@ -137,6 +138,7 @@ serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     if (msg.toLowerCase().includes("unauthorized")) return json(401, { error: "Não autenticado" });
-    return json(500, { error: msg });
+    console.error("Error in analyze-preferences:", msg);
+    return json(500, { error: "Internal server error" });
   }
 });
