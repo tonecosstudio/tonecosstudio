@@ -16,6 +16,10 @@ import {
   catalogModelDetailsPath,
   collectionDetailsPath,
 } from "@/config/routes";
+import {
+  getCatalogCharacterName,
+  getCatalogSourceName,
+} from "@/pages/catalog/catalogUtils";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -369,6 +373,8 @@ export default function LandingPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               {models.map((m) => {
                 const imgUrl = m.imageUrl;
+                const characterName = getCatalogCharacterName(m);
+                const sourceName = getCatalogSourceName(m);
                 return (
                   <div
                     key={m.id}
@@ -380,7 +386,7 @@ export default function LandingPage() {
                         {imgUrl ? (
                           <img
                             src={imgUrl}
-                            alt={m.name}
+                            alt={characterName}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100"
                             loading="lazy"
                             decoding="async"
@@ -393,10 +399,10 @@ export default function LandingPage() {
                       </div>
                       <div className="p-3">
                         <p className="font-mono text-[10px] text-[hsl(0,0%,70%)] line-clamp-1 tracking-wider uppercase">
-                          {m.name}
+                          {characterName}
                         </p>
-                        {m.franchise && (
-                          <p className="font-mono text-[8px] text-[hsl(0,0%,30%)] mt-0.5">{m.franchise}</p>
+                        {sourceName && (
+                          <p className="font-mono text-[8px] text-[hsl(0,0%,30%)] mt-0.5">{sourceName}</p>
                         )}
                       </div>
                     </ArcadeCard>

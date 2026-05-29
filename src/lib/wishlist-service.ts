@@ -8,6 +8,12 @@ export interface WishlistModel {
   image_bucket: string | null;
   franchise: string | null;
   category: string | null;
+  subcategory?: string | null;
+  tags?: string[] | null;
+  character_name?: string | null;
+  variant_name?: string | null;
+  source_title?: string | null;
+  source_type?: string | null;
 }
 
 export interface WishlistItem {
@@ -66,7 +72,7 @@ export async function listWishlistItems(userId: string): Promise<WishlistItem[]>
   const { data, error } = await wishlistTable
     .from("wishlist")
     .select(
-      "id, notes, priority, notify_when_available, added_at, models (id, name, image_path, image_bucket, franchise, category)"
+      "id, notes, priority, notify_when_available, added_at, models (id, name, image_path, image_bucket, franchise, category, subcategory, tags, character_name, variant_name, source_title, source_type)"
     )
     .eq("user_id", userId)
     .order("priority", { ascending: false })

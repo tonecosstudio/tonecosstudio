@@ -20,16 +20,42 @@ export interface PublicBadge {
 }
 
 export interface PublicCollectionModel {
+  id: string;
   name: string | null;
   image_bucket: string | null;
   image_path: string | null;
   franchise: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  tags?: string[] | null;
+  character_name?: string | null;
+  variant_name?: string | null;
+  source_title?: string | null;
+  source_type?: string | null;
 }
 
 export interface PublicCollectionItem {
   id: string;
   models: PublicCollectionModel | null;
 }
+
+type PublicCollectionQueryResult = {
+  data: PublicCollectionItem[] | null;
+  error: { message?: string } | null;
+};
+
+interface PublicCollectionQuery extends PromiseLike<PublicCollectionQueryResult> {
+  eq(column: string, value: string): PublicCollectionQuery;
+  order(column: string, options: { ascending: boolean }): PublicCollectionQuery;
+}
+
+interface PublicProfileCatalogGateway {
+  from(table: "public_collection"): {
+    select(columns: string): PublicCollectionQuery;
+  };
+}
+
+const publicProfileCatalogGateway = supabase as unknown as PublicProfileCatalogGateway;
 
 export async function getPublicProfileByUsername(
   username?: string
@@ -60,9 +86,9 @@ export async function listPublicBadges(userId: string): Promise<PublicBadge[]> {
 }
 
 export async function listPublicCollectionItems(userId: string): Promise<PublicCollectionItem[]> {
-  const { data, error } = await supabase
+  const { data, error } = await publicProfileCatalogGateway
     .from("public_collection")
-    .select("id, models (name, image_bucket, image_path, franchise)")
+    .select("id, models (id, name, image_bucket, image_path, franchise, category, subcategory, tags, character_name, variant_name, source_title, source_type)")
     .eq("user_id", userId)
     .order("display_order", { ascending: true });
 

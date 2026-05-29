@@ -1,5 +1,6 @@
 import { CATALOG_PAGE_SIZE } from "@/config/catalog";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeCatalogTag } from "@/pages/catalog/catalogUtils";
 import type { CatalogModelDetailsRow, CatalogModelRow } from "@/types/catalog";
 
 export type CatalogSort = "recent" | "az";
@@ -58,7 +59,7 @@ const catalogModelsGateway = supabase as unknown as CatalogModelsGateway;
 function normalizeTags(tagsCSV: string) {
   return tagsCSV
     .split(",")
-    .map((tag) => tag.trim())
+    .map((tag) => normalizeCatalogTag(tag))
     .filter(Boolean)
     .slice(0, 10);
 }

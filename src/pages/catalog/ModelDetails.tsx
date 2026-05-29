@@ -23,7 +23,11 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
 import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
-import { buildModelTitle } from "@/pages/catalog/catalogUtils";
+import {
+  buildModelTitle,
+  getCatalogPublicTags,
+  normalizeCatalogTag,
+} from "@/pages/catalog/catalogUtils";
 import { useModelDetails } from "@/hooks/catalog/useModelDetails";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { formatCurrency } from "@/lib/utils";
@@ -52,6 +56,12 @@ const VARIANT_TYPE_LABELS: Record<string, string> = {
 };
 
 // ─── Types ───────────────────────────────────────────────────
+function catalogFilterPath(key: "tag" | "franchise" | "character", value: string) {
+  const params = new URLSearchParams();
+  params.set(key, key === "tag" ? normalizeCatalogTag(value) : value);
+  return `${PUBLIC_ROUTES.catalog}?${params.toString()}`;
+}
+
 export default function ModelDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -98,7 +108,7 @@ export default function ModelDetails() {
   const title = model
     ? variantName
       ? `${displayName} - ${variantName}`
-      : buildModelTitle(model.name, sourceTitle)
+      : buildModelTitle(displayName, sourceTitle)
     : "Modelo";
   const seoDescription = model
     ? `Veja detalhes do modelo ${title}. Estatueta artesanal da Tonecos Studios.`
@@ -106,18 +116,29 @@ export default function ModelDetails() {
 
   const imageUrl = model?.imageUrl ?? null;
 
-  const infoLine = model
-    ? [sourceTitle, mediaLabel, model.category, model.subcategory].filter(Boolean).join(" • ")
-    : "";
+  const metaChips = [
+    sourceTitle
+      ? { label: "Obra", value: sourceTitle, href: catalogFilterPath("tag", sourceTitle) }
+      : null,
+    mediaLabel ? { label: "Midia", value: mediaLabel } : null,
+    model?.category ? { label: "Categoria", value: model.category } : null,
+    model?.subcategory ? { label: "Linha", value: model.subcategory } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string; href?: string }>;
 
-  const tags = (model?.tags ?? []).map((t) => String(t).trim()).filter(Boolean);
+  const tags = getCatalogPublicTags(model, 14);
   const taxonomyRows = [
-    { label: "Personagem", value: model?.character_name },
+    model?.character_name
+      ? {
+          label: "Personagem",
+          value: model.character_name,
+          href: catalogFilterPath("character", model.character_name),
+        }
+      : null,
     { label: "Versao", value: variantName },
     { label: "Tipo", value: variantLabel && variantLabel !== "Padrao" ? variantLabel : null },
-    { label: "Origem", value: sourceTitle },
+    sourceTitle ? { label: "Obra", value: sourceTitle, href: catalogFilterPath("tag", sourceTitle) } : null,
     { label: "Midia", value: mediaLabel },
-  ].filter((row) => row.value);
+  ].filter((row): row is { label: string; value: string; href?: string } => Boolean(row?.value));
   const fixedCashPrice =
     model?.price_mode === "fixed" &&
     typeof model.price_standalone_override === "number" &&
@@ -174,7 +195,7 @@ export default function ModelDetails() {
 
   // ─── Render ─────────────────────────────────────────────────
   return (
-    <Page title={title} description={seoDescription} keywords={["modelo", "catálogo", model.name]}>
+    <Page title={title} description={seoDescription} keywords={["modelo", "catálogo", displayName]}>
       {/* Scanlines Effect */}
       <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]">
         <div
@@ -212,7 +233,7 @@ export default function ModelDetails() {
                   {imageUrl ? (
                     <img
                       src={imageUrl}
-                      alt={model.name}
+                      alt={displayName}
                       className="h-full w-full object-contain p-4"
                       loading="eager"
                       fetchPriority="high"
@@ -238,6 +259,12 @@ export default function ModelDetails() {
                 <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-[hsl(var(--gold-accent))]" />
                 <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-[hsl(var(--gold-accent))]" />
               </div>
+
+              <p className="mt-3 border-l-2 border-[hsl(var(--gold-accent)/0.45)] pl-3 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                Imagem de referencia do modelo
+                {sourceTitle ? ` - ${sourceTitle}` : ""}. Producao sob
+                encomenda com acabamento artesanal.
+              </p>
 
               {/* Like Button */}
               <button
@@ -281,10 +308,28 @@ export default function ModelDetails() {
                   {title}
                 </h1>
 
-                {infoLine && (
-                  <p className="text-[hsl(var(--muted-foreground))] text-sm md:text-base font-mono uppercase tracking-wider">
-                    {infoLine}
-                  </p>
+                {metaChips.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {metaChips.map((chip) =>
+                      chip.href ? (
+                        <Link
+                          key={`${chip.label}-${chip.value}`}
+                          to={chip.href}
+                          className="inline-flex items-center gap-1.5 border border-[hsl(var(--gold-accent)/0.35)] bg-[hsl(var(--gold-accent)/0.08)] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.14)]"
+                        >
+                          <Tag className="h-3 w-3" />
+                          {chip.value}
+                        </Link>
+                      ) : (
+                        <span
+                          key={`${chip.label}-${chip.value}`}
+                          className="inline-flex items-center border border-[hsl(var(--border))] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]"
+                        >
+                          {chip.value}
+                        </span>
+                      ),
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -304,9 +349,19 @@ export default function ModelDetails() {
                       <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         {row.label}
                       </p>
-                      <p className="truncate text-sm font-semibold" title={String(row.value)}>
-                        {row.value}
-                      </p>
+                      {row.href ? (
+                        <Link
+                          to={row.href}
+                          className="block truncate text-sm font-semibold text-[hsl(var(--gold-accent))] underline-offset-2 hover:underline"
+                          title={String(row.value)}
+                        >
+                          {row.value}
+                        </Link>
+                      ) : (
+                        <p className="truncate text-sm font-semibold" title={String(row.value)}>
+                          {row.value}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -324,9 +379,16 @@ export default function ModelDetails() {
                       <Badge
                         key={t}
                         variant="outline"
-                        className="font-mono text-xs uppercase tracking-wider border-[hsl(var(--border))] hover:border-[hsl(var(--gold-accent))] transition-colors duration-300"
+                        className="border-[hsl(var(--border))] p-0 font-mono text-xs uppercase tracking-wider transition-colors duration-300 hover:border-[hsl(var(--gold-accent))]"
                       >
-                        {t}
+                        <Link
+                          to={catalogFilterPath("tag", t)}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5"
+                          aria-label={`Filtrar tag ${t}`}
+                        >
+                          <Tag className="h-3 w-3" />
+                          {t}
+                        </Link>
                       </Badge>
                     ))}
                   </div>
@@ -336,7 +398,7 @@ export default function ModelDetails() {
               {/* Info Card */}
               <div className="bg-[hsl(var(--card))] border-2 border-[hsl(var(--gold-accent)/0.3)] rounded-sm p-6">
                 <h3 className="text-sm font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-3">
-                  Produção Artesanal
+                  Modelo sob encomenda
                 </h3>
                 <div className="mb-4 grid gap-3 sm:grid-cols-2">
                   {hasFixedCoinPrice && (
@@ -363,15 +425,18 @@ export default function ModelDetails() {
                     <div className="border border-[hsl(var(--border))] bg-[hsl(var(--background)/0.6)] p-3 sm:col-span-2">
                       <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         <MessageCircle className="h-3 w-3" />
-                        Preco
+                        Preco do modelo
                       </p>
                       <p className="text-xl font-bold">Sob consulta</p>
+                      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                        Valor definido conforme escala, acabamento e lote.
+                      </p>
                     </div>
                   )}
                 </div>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4 leading-relaxed">
-                  Peça feita sob encomenda, com pintura artística à mão. Disponível para compra
-                  avulsa ou através das coleções com assinatura.
+                  Item de catalogo para consulta e planejamento. A disponibilidade,
+                  escala, base e pintura podem variar conforme o projeto aprovado.
                 </p>
 
                 <div className="flex flex-col gap-3">
@@ -382,7 +447,7 @@ export default function ModelDetails() {
                   >
                     <Link to={PUBLIC_ROUTES.collectionsArcade}>
                       <Crown className="w-5 h-5 mr-2" />
-                      Ver Coleções
+                      Ver Colecoes
                     </Link>
                   </Button>
                   <Button
@@ -391,7 +456,7 @@ export default function ModelDetails() {
                     className="w-full border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-wider text-sm"
                     asChild
                   >
-                    <Link to={PUBLIC_ROUTES.plans}>Ver Planos de Assinatura</Link>
+                    <Link to={PUBLIC_ROUTES.plans}>Ver Planos</Link>
                   </Button>
                 </div>
               </div>
@@ -415,11 +480,10 @@ export default function ModelDetails() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-2">
-                  Quer essa peça?
+                  Quer consultar esse modelo?
                 </h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Explore nossas coleções e planos de assinatura para adquirir este e outros modelos
-                  exclusivos
+                  Use as tags e a obra para navegar por modelos relacionados, ou veja os planos para organizar sua proxima escolha.
                 </p>
               </div>
               <Button

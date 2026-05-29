@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "@/components/layouts/Page";
 import { ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
@@ -10,6 +10,12 @@ import {
   listPublicBadges,
   listPublicCollectionItems,
 } from "@/lib/public-profile-service";
+import { catalogModelDetailsPath } from "@/config/routes";
+import {
+  getCatalogCharacterName,
+  getCatalogPublicTags,
+  getCatalogSourceName,
+} from "@/pages/catalog/catalogUtils";
 
 export default function PublicProfileArcade() {
   const { username } = useParams<{ username: string }>();
@@ -140,11 +146,14 @@ export default function PublicProfileArcade() {
               {collection.map((item) => {
                 const model = item.models;
                 const imageUrl = getPublicCollectionImageUrl(model);
+                const characterName = getCatalogCharacterName(model);
+                const sourceName = getCatalogSourceName(model);
+                const tags = getCatalogPublicTags(model, 2);
                 return (
                   <ArcadeCard key={item.id} className="overflow-hidden">
                     <div className="aspect-square bg-[hsl(0,0%,8%)]">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={model?.name ?? ""} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                        <img src={imageUrl} alt={characterName} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Trophy className="w-8 h-8 text-[hsl(0,0%,15%)]" />
@@ -152,9 +161,26 @@ export default function PublicProfileArcade() {
                       )}
                     </div>
                     <div className="p-3">
-                      <p className="font-mono text-xs text-[hsl(0,0%,80%)] truncate">{model?.name}</p>
-                      {model?.franchise && (
-                        <p className="font-mono text-[9px] text-[hsl(var(--gold-accent)/0.5)] tracking-wider">{model.franchise}</p>
+                      <p className="truncate font-mono text-xs text-[hsl(0,0%,80%)]">
+                        {model?.id ? (
+                          <Link to={catalogModelDetailsPath(model.id)} className="hover:text-[hsl(var(--gold-accent))]">
+                            {characterName}
+                          </Link>
+                        ) : (
+                          characterName
+                        )}
+                      </p>
+                      {sourceName && (
+                        <p className="font-mono text-[9px] text-[hsl(var(--gold-accent)/0.5)] tracking-wider">{sourceName}</p>
+                      )}
+                      {tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {tags.map((tag) => (
+                            <span key={tag} className="border border-[hsl(0,0%,18%)] px-1 py-0.5 font-mono text-[7px] uppercase text-[hsl(0,0%,42%)]">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </ArcadeCard>

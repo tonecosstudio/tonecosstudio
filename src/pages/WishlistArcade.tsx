@@ -18,6 +18,12 @@ import {
   type UpdateWishlistItemInput,
 } from "@/lib/wishlist-service";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
+import {
+  getCatalogCharacterName,
+  getCatalogPublicTags,
+  getCatalogSourceName,
+  getCatalogVersionName,
+} from "@/pages/catalog/catalogUtils";
 
 export default function WishlistArcade() {
   const { user } = useAuth();
@@ -84,6 +90,10 @@ export default function WishlistArcade() {
             {items.map((item) => {
               const model = item.models;
               const imageUrl = getWishlistModelImageUrl(model);
+              const characterName = getCatalogCharacterName(model);
+              const sourceName = getCatalogSourceName(model);
+              const versionName = getCatalogVersionName(model);
+              const tags = getCatalogPublicTags(model, 3);
               const priority = getPriorityConfig(item.priority);
               const isEditing = editingItem?.id === item.id;
 
@@ -93,7 +103,7 @@ export default function WishlistArcade() {
                     {/* Image */}
                     <div className="w-full sm:w-36 h-36 flex-shrink-0 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] overflow-hidden">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={model?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" decoding="async" />
+                        <img src={imageUrl} alt={characterName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" decoding="async" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[hsl(0,0%,20%)] font-mono text-[9px]">NO IMG</div>
                       )}
@@ -104,11 +114,19 @@ export default function WishlistArcade() {
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
                           <h3 className="font-mono text-sm text-[hsl(0,0%,90%)] font-bold uppercase tracking-wider line-clamp-2">
-                            {model?.name || "???"}
+                            {characterName}
                           </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            {model?.franchise && <span className="font-mono text-[10px] text-[hsl(0,0%,40%)]">{model.franchise}</span>}
-                            {model?.category && <span className="font-mono text-[10px] text-[hsl(0,0%,30%)]">• {model.category}</span>}
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            {sourceName && <span className="font-mono text-[10px] text-[hsl(var(--gold-accent)/0.65)]">{sourceName}</span>}
+                            {versionName && <span className="font-mono text-[10px] text-[hsl(0,0%,40%)]">{versionName}</span>}
+                            {tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="border border-[hsl(0,0%,18%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,42%)]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

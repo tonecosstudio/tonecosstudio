@@ -43,10 +43,18 @@ export type PublicCollectionItem = {
 };
 
 export type PublicCollectionModel = {
+  id: string;
   name: string;
   image_path: string | null;
   image_bucket: string | null;
   franchise: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  tags?: string[] | null;
+  character_name?: string | null;
+  variant_name?: string | null;
+  source_title?: string | null;
+  source_type?: string | null;
 };
 
 export type PublicCollectionEntry = PublicCollectionItem & {
@@ -59,7 +67,41 @@ export type AvailablePublicCollectionModel = {
   image_path: string | null;
   image_bucket: string | null;
   franchise: string | null;
+  character_name?: string | null;
+  source_title?: string | null;
 };
+
+type PublicCollectionQueryResult = {
+  data: PublicCollectionEntry[] | null;
+  error: { message?: string } | null;
+};
+
+interface PublicCollectionQuery extends PromiseLike<PublicCollectionQueryResult> {
+  eq(column: string, value: string): PublicCollectionQuery;
+  order(column: string, options: { ascending: boolean }): PublicCollectionQuery;
+}
+
+type AvailableModelsQueryResult = {
+  data: AvailablePublicCollectionModel[] | null;
+  error: { message?: string } | null;
+};
+
+interface AvailableModelsQuery extends PromiseLike<AvailableModelsQueryResult> {
+  ilike(column: string, pattern: string): AvailableModelsQuery;
+  limit(count: number): AvailableModelsQuery;
+  or(filters: string): AvailableModelsQuery;
+}
+
+interface CollectorCatalogGateway {
+  from(table: "public_collection"): {
+    select(columns: string): PublicCollectionQuery;
+  };
+  from(table: "models"): {
+    select(columns: string): AvailableModelsQuery;
+  };
+}
+
+const collectorCatalogGateway = supabase as unknown as CollectorCatalogGateway;
 
 type UserBadgeQueryRow = {
   earned_at: string;
@@ -170,7 +212,7 @@ export async function getUserBadges(userId: string) {
  * Busca a coleção pública do usuário
  */
 export async function getPublicCollection(userId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await collectorCatalogGateway
     .from("public_collection")
     .select(
       `
@@ -179,10 +221,18 @@ export async function getPublicCollection(userId: string) {
       notes,
       display_order,
       models (
+        id,
         name,
         image_path,
         image_bucket,
-        franchise
+        franchise,
+        category,
+        subcategory,
+        tags,
+        character_name,
+        variant_name,
+        source_title,
+        source_type
       )
     `
     )
@@ -197,10 +247,14 @@ export async function getPublicCollection(userId: string) {
 export async function searchAvailablePublicCollectionModels(
   searchQuery: string
 ): Promise<AvailablePublicCollectionModel[]> {
-  const { data, error } = await supabase
+  const normalizedQuery = searchQuery.replace(/[%_,()]/g, " ").replace(/\s+/g, " ").trim();
+  if (!normalizedQuery) return [];
+  const pattern = `%${normalizedQuery}%`;
+
+  const { data, error } = await collectorCatalogGateway
     .from("models")
-    .select("id, name, image_path, image_bucket, franchise")
-    .ilike("name", `%${searchQuery}%`)
+    .select("id, name, image_path, image_bucket, franchise, character_name, source_title")
+    .or(`name.ilike.${pattern},character_name.ilike.${pattern},source_title.ilike.${pattern},franchise.ilike.${pattern}`)
     .limit(10);
 
   if (error) throw error;

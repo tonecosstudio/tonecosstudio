@@ -39,6 +39,12 @@ import {
 import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { formatCurrency } from "@/lib/utils";
+import {
+  getCatalogCharacterName,
+  getCatalogPublicTags,
+  getCatalogSourceName,
+  getCatalogVersionName,
+} from "@/pages/catalog/catalogUtils";
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   anime: "Anime",
@@ -51,18 +57,6 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   original: "Original",
   other: "Outro",
 };
-
-const INTERNAL_TAG_PREFIXES = ["drive-id-", "media-", "category-", "source-", "price-"];
-const INTERNAL_TAGS = new Set(["drive-import", "drive-identified", "catalog-staging", "needs-visual-review"]);
-
-function getDisplayTags(tags: string[] | null | undefined) {
-  return (tags ?? [])
-    .map((tag) => String(tag).trim().toLocaleLowerCase())
-    .filter(Boolean)
-    .filter((tag) => !INTERNAL_TAGS.has(tag))
-    .filter((tag) => !INTERNAL_TAG_PREFIXES.some((prefix) => tag.startsWith(prefix)))
-    .slice(0, 3);
-}
 
 const VARIANT_TYPE_LABELS: Record<string, string> = {
   default: "Padrao",
@@ -82,18 +76,20 @@ export default function CatalogArcade() {
   const { user } = useAuth();
   const isAdminQuery = useIsAdmin(user?.id);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [page, setPage] = useState(0);
-  const [character, setCharacter] = useState("");
-  const [franchise, setFranchise] = useState("");
+  const [character, setCharacter] = useState(searchParams.get("character") ?? "");
+  const [franchise, setFranchise] = useState(searchParams.get("franchise") ?? "");
   const [category, setCategory] = useState("");
   const [sourceType, setSourceType] = useState("");
   const [variantType, setVariantType] = useState("");
-  const [tagsCSV, setTagsCSV] = useState("");
+  const [tagsCSV, setTagsCSV] = useState(searchParams.get("tag") ?? "");
   const [sort, setSort] = useState<CatalogSort>("recent");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(
+    Boolean(searchParams.get("tag") || searchParams.get("franchise") || searchParams.get("character")),
+  );
 
   const needle = useMemo(() => q.trim(), [q]);
   const wantsStagingPreview = searchParams.get("preview") === "staging";
@@ -101,6 +97,19 @@ export default function CatalogArcade() {
   const catalogMode = wantsStagingPreview && canPreviewStaging ? "staging" : "public";
 
   useEffect(() => { setPage(0); }, [needle, character, franchise, category, sourceType, variantType, tagsCSV, sort, catalogMode]);
+
+  useEffect(() => {
+    const urlTag = searchParams.get("tag") ?? "";
+    const urlFranchise = searchParams.get("franchise") ?? "";
+    const urlCharacter = searchParams.get("character") ?? "";
+    const urlQuery = searchParams.get("q") ?? "";
+
+    setTagsCSV(urlTag);
+    setFranchise(urlFranchise);
+    setCharacter(urlCharacter);
+    setQ(urlQuery);
+    if (urlTag || urlFranchise || urlCharacter || urlQuery) setShowFilters(true);
+  }, [searchParams]);
 
   const modelsQuery = useCatalogModels(needle, page, {
     character,
@@ -149,8 +158,33 @@ export default function CatalogArcade() {
   };
 
   const handleTagFilter = (tag: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tag", tag);
+    next.delete("franchise");
+    next.delete("character");
+    next.delete("q");
+    setSearchParams(next);
     setTagsCSV(tag);
+    setFranchise("");
+    setCharacter("");
+    setQ("");
     setShowFilters(true);
+  };
+
+  const clearCatalogFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("tag");
+    next.delete("franchise");
+    next.delete("character");
+    next.delete("q");
+    setSearchParams(next);
+    setCharacter("");
+    setFranchise("");
+    setCategory("");
+    setSourceType("");
+    setVariantType("");
+    setTagsCSV("");
+    setQ("");
   };
 
   const toggleStagingPreview = () => {
@@ -161,6 +195,8 @@ export default function CatalogArcade() {
   const sourceTypes = Object.entries(SOURCE_TYPE_LABELS);
   const variantTypes = Object.entries(VARIANT_TYPE_LABELS);
   const activeFilterCount = [character, franchise, category, sourceType, variantType, tagsCSV].filter(Boolean).length;
+  const showPersonalizedSuggestions =
+    user && catalogMode === "public" && !needle && activeFilterCount === 0;
 
   return (
     <Page
@@ -286,12 +322,7 @@ export default function CatalogArcade() {
             {activeFilterCount > 0 && (
               <button
                 onClick={() => {
-                  setCharacter("");
-                  setFranchise("");
-                  setCategory("");
-                  setSourceType("");
-                  setVariantType("");
-                  setTagsCSV("");
+                  clearCatalogFilters();
                 }}
                 className="col-span-2 md:col-span-3 lg:col-span-6 text-[hsl(var(--gold-accent)/0.6)] hover:text-[hsl(var(--gold-accent))] font-mono text-[10px] tracking-widest uppercase transition-colors"
               >
@@ -346,7 +377,7 @@ export default function CatalogArcade() {
       </section>
 
       {/* ═══ FOR YOU SECTION ═══ */}
-      {user && catalogMode === "public" && !needle && forYouRows.length > 0 && (
+      {showPersonalizedSuggestions && forYouRows.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 md:px-6 mb-12">
           <ArcadeSectionTitle>Para Você</ArcadeSectionTitle>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
@@ -457,11 +488,11 @@ function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
   const imageUrl = model.thumbnailUrl ?? model.imageUrl;
-  const displayTags = getDisplayTags(model.tags);
+  const displayTags = getCatalogPublicTags(model, 3);
   const isStaging = !model.is_active || (model.tags ?? []).includes("catalog-staging");
-  const characterName = model.character_name || model.name;
-  const sourceName = model.source_title || model.franchise;
-  const versionName = model.variant_name;
+  const characterName = getCatalogCharacterName(model);
+  const sourceName = getCatalogSourceName(model);
+  const versionName = getCatalogVersionName(model);
   const mediaLabel = model.source_type ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type : null;
   const variantLabel = model.variant_type ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type : null;
   const fixedCashPrice =
@@ -487,7 +518,7 @@ function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={model.name}
+              alt={characterName}
               className={`h-full w-full opacity-80 transition-all duration-700 group-hover:opacity-100 ${
                 isStaging ? "object-contain p-2 group-hover:scale-105" : "object-cover group-hover:scale-110"
               }`}
@@ -538,9 +569,30 @@ function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
             {characterName}
           </h3>
           {(versionName || sourceName) && (
-            <p className="font-mono text-[9px] text-[hsl(0,0%,40%)] tracking-wider line-clamp-1 mb-2">
-              {[versionName, sourceName].filter(Boolean).join(" | ")}
-            </p>
+            <div className="mb-2 flex min-h-4 flex-wrap items-center gap-x-1.5 gap-y-1 font-mono text-[9px] tracking-wider">
+              {versionName && (
+                <span className="max-w-full truncate text-[hsl(0,0%,40%)]">
+                  {versionName}
+                </span>
+              )}
+              {versionName && sourceName && (
+                <span className="text-[hsl(0,0%,28%)]">|</span>
+              )}
+              {sourceName && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onTagClick?.(sourceName);
+                  }}
+                  className="max-w-full truncate uppercase text-[hsl(var(--gold-accent)/0.7)] underline-offset-2 transition-colors hover:text-[hsl(var(--gold-accent))] hover:underline"
+                  aria-label={`Filtrar por ${sourceName}`}
+                >
+                  {sourceName}
+                </button>
+              )}
+            </div>
           )}
 
           {variantLabel && variantLabel !== "Padrao" && (

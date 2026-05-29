@@ -23,6 +23,10 @@ import {
   getPublicModelImageUrl,
 } from "@/lib/collector";
 import { Plus, Trash2, Edit2, X } from "lucide-react";
+import {
+  getCatalogCharacterName,
+  getCatalogSourceName,
+} from "@/pages/catalog/catalogUtils";
 
 type Props = {
   userId: string;
@@ -129,6 +133,8 @@ export function ManagePublicCollection({ userId }: Props) {
                         (item) => item.model_id === model.id
                       );
                       const imageUrl = getPublicModelImageUrl(model);
+                      const characterName = getCatalogCharacterName(model);
+                      const sourceName = getCatalogSourceName(model);
                       return (
                         <div
                           key={model.id}
@@ -138,15 +144,15 @@ export function ManagePublicCollection({ userId }: Props) {
                             {imageUrl ? (
                               <img
                                 src={imageUrl}
-                                alt={model.name}
+                                alt={characterName}
                                 className="h-full w-full object-cover rounded"
                               />
                             ) : null}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm line-clamp-1">{model.name}</p>
-                            {model.franchise && (
-                              <p className="text-xs text-muted-foreground">{model.franchise}</p>
+                            <p className="font-medium text-sm line-clamp-1">{characterName}</p>
+                            {sourceName && (
+                              <p className="text-xs text-muted-foreground">{sourceName}</p>
                             )}
                           </div>
                           <Button
@@ -178,13 +184,15 @@ export function ManagePublicCollection({ userId }: Props) {
               const imageUrl = item.models
                 ? getPublicModelImageUrl(item.models)
                 : null;
+              const characterName = getCatalogCharacterName(item.models);
+              const sourceName = getCatalogSourceName(item.models);
               return (
                 <div key={item.id} className="border rounded-lg overflow-hidden">
                   <div className="aspect-square bg-muted relative">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
-                        alt={item.models?.name || "Modelo"}
+                        alt={characterName}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -204,10 +212,10 @@ export function ManagePublicCollection({ userId }: Props) {
                   <div className="p-3 space-y-2">
                     <div>
                       <p className="font-medium text-sm line-clamp-2">
-                        {item.models?.name || "Sem nome"}
+                        {characterName}
                       </p>
-                      {item.models?.franchise && (
-                        <p className="text-xs text-muted-foreground">{item.models.franchise}</p>
+                      {sourceName && (
+                        <p className="text-xs text-muted-foreground">{sourceName}</p>
                       )}
                     </div>
                     {editingItem?.id === item.id ? (

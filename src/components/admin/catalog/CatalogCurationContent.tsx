@@ -45,6 +45,7 @@ import {
   type CatalogVisibility,
 } from "@/hooks/admin/useCatalogCuration";
 import { useToast } from "@/hooks/use-toast";
+import { getCatalogPublicTags } from "@/pages/catalog/catalogUtils";
 
 type PublishForm = {
   name: string;
@@ -207,55 +208,20 @@ function shouldShowForQuickFilter(
   return true;
 }
 
-function normalizePublicTag(value: string | null | undefined) {
-  return cleanFileName(value || "")
-    .replace(/^animes$/i, "anime")
-    .toLocaleLowerCase();
-}
-
-function isInternalTag(tag: string) {
-  const canonicalTag = tag.replace(/\s+/g, "-");
-  return (
-    canonicalTag.startsWith("drive-") ||
-    canonicalTag.startsWith("source-") ||
-    canonicalTag.startsWith("category-") ||
-    canonicalTag.startsWith("media-") ||
-    canonicalTag.startsWith("price-") ||
-    canonicalTag.startsWith("bg-") ||
-    canonicalTag.startsWith("needs-") ||
-    [
-      "catalog-staging",
-      "queued-from-staging",
-      "generic-filename",
-      "manually-identified",
-      "hidden-duplicate",
-      "duplicate-legacy",
-      "ia",
-      "revisao",
-      "revisar",
-      "oculto",
-    ].includes(canonicalTag)
-  );
-}
-
 function getPublicTagLabels(item: CatalogCurationItem) {
-  const candidates = [
-    item.source_title,
-    item.source_folder_name,
-    item.character_name,
-    item.proposed_name,
-    item.media_type === "anime" ? "anime" : item.media_type,
-    item.category,
-    item.subcategory,
-    ...(item.tags ?? []),
-  ];
-
-  const tags = candidates
-    .map((tag) => normalizePublicTag(tag))
-    .filter(Boolean)
-    .filter((tag) => !isInternalTag(tag));
-
-  return Array.from(new Set(tags)).slice(0, 8);
+  return getCatalogPublicTags(
+    {
+      name: item.proposed_name || cleanFileName(item.file_name),
+      franchise: item.source_folder_name,
+      category: item.category,
+      subcategory: item.subcategory,
+      tags: item.tags,
+      character_name: item.character_name || item.proposed_name,
+      source_title: item.source_title || item.source_folder_name,
+      source_type: item.media_type,
+    },
+    8,
+  );
 }
 
 function buildInitialForm(item: CatalogCurationItem | null): PublishForm {

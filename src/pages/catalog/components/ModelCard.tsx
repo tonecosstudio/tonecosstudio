@@ -3,7 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import type { ModelRow } from "../catalogTypes";
-import { buildModelTitle, compactTags } from "../catalogUtils";
+import {
+  getCatalogCharacterName,
+  getCatalogPublicTags,
+  getCatalogSourceName,
+  getCatalogTitle,
+  getCatalogVersionName,
+} from "../catalogUtils";
 import { Link } from "react-router-dom";
 import { catalogModelDetailsPath } from "@/config/routes";
 
@@ -15,7 +21,8 @@ export function ModelCard(props: {
   onToggleLike: () => void;
 }) {
   const { model: m, imageUrl, variant, isLiked, onToggleLike } = props;
-  const title = buildModelTitle(m.name, m.franchise);
+  const title = getCatalogTitle(m);
+  const characterName = getCatalogCharacterName(m);
   const detailsPath = catalogModelDetailsPath(m.id);
 
   if (variant === "forYou") {
@@ -28,7 +35,7 @@ export function ModelCard(props: {
           >
             <img
               src={imageUrl}
-              alt={m.name}
+              alt={characterName}
               className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02]"
               loading="lazy"
             />
@@ -64,8 +71,12 @@ export function ModelCard(props: {
     );
   }
 
-  const line = [m.franchise, m.category, m.subcategory].filter(Boolean).join(" • ");
-  const extraTags = compactTags(m.tags, 2);
+  const line = [
+    getCatalogVersionName(m),
+    getCatalogSourceName(m),
+    m.category,
+  ].filter(Boolean).join(" | ");
+  const extraTags = getCatalogPublicTags(m, 2);
 
   return (
     <Card className="group flex flex-col overflow-hidden border border-border bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium">
@@ -76,7 +87,7 @@ export function ModelCard(props: {
         >
           <img
             src={imageUrl}
-            alt={m.name}
+            alt={characterName}
             className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.02]"
             loading="lazy"
           />
