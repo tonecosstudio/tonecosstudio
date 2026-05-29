@@ -1,92 +1,102 @@
 /**
- * AdminCollectionsHub - Catálogo & Produtos (Hub Unificado)
+ * AdminCollectionsHub - Catalogo & Produtos (hub unificado)
  *
- * Consolida gerenciamento de produtos:
- * - Coleções (produtos de assinatura)
- * - Personagens de Crédito (sistema de coins)
- *
- * Nota: Precos e Planos usam o SSOT central de rotas.
+ * Consolida gerenciamento de modelos, colecoes e personagens de credito.
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/shared/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Package,
-  Coins,
-  ClipboardCheck,
-} from "lucide-react";
+import { Coins, Layers3, Package } from "lucide-react";
 import AdminCollections from "./AdminCollections";
 import { CreditCharactersContent } from "@/components/admin/catalog/CreditCharactersContent";
 import { CatalogCurationContent } from "@/components/admin/catalog/CatalogCurationContent";
 
+const ADMIN_CATALOG_TABS = [
+  "models",
+  "collections",
+  "credit-characters",
+] as const;
+type AdminCatalogTab = (typeof ADMIN_CATALOG_TABS)[number];
+
+function normalizeCatalogTab(tab: string | null): AdminCatalogTab {
+  if (tab === "curation") return "models";
+  if (ADMIN_CATALOG_TABS.includes(tab as AdminCatalogTab))
+    return tab as AdminCatalogTab;
+  return "models";
+}
+
 export default function AdminCollectionsHub() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<string>(tabParam || "collections");
+  const [activeTab, setActiveTab] = useState<AdminCatalogTab>(() =>
+    normalizeCatalogTab(tabParam),
+  );
 
-  // Sincronizar tab com URL
   useEffect(() => {
-    if (tabParam && ["collections", "curation", "credit-characters"].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
+    setActiveTab(normalizeCatalogTab(tabParam));
   }, [tabParam]);
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams({ tab: value });
+    const nextTab = normalizeCatalogTab(value);
+    setActiveTab(nextTab);
+    setSearchParams({ tab: nextTab });
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1
             className="text-2xl md:text-3xl tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))]"
-            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif", textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)" }}
+            style={{
+              fontFamily: "'Bebas Neue', Impact, sans-serif",
+              textShadow: "0 0 20px hsl(var(--gold-accent) / 0.2)",
+            }}
           >
-            Catálogo & Produtos
+            Catalogo & Produtos
           </h1>
-          <p className="text-[hsl(0,0%,45%)] text-xs tracking-wider font-mono uppercase mt-1">
-            Gerencie coleções e personagens de crédito
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-[hsl(0,0%,45%)]">
+            Modelos, colecoes e personagens de credito em um fluxo unico
           </p>
         </div>
 
-        {/* Tabs Unificadas */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="collections">
-              <Package className="h-4 w-4 mr-2" />
-              Coleções
+            <TabsTrigger value="models">
+              <Package className="mr-2 h-4 w-4" />
+              Modelos
             </TabsTrigger>
-            <TabsTrigger value="curation">
-              <ClipboardCheck className="h-4 w-4 mr-2" />
-              Curadoria
+            <TabsTrigger value="collections">
+              <Layers3 className="mr-2 h-4 w-4" />
+              Colecoes
             </TabsTrigger>
             <TabsTrigger value="credit-characters">
-              <Coins className="h-4 w-4 mr-2" />
+              <Coins className="mr-2 h-4 w-4" />
               Personagens (Coins)
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab 1: Coleções */}
+          <TabsContent value="models" className="space-y-4">
+            <CatalogCurationContent />
+          </TabsContent>
+
           <TabsContent value="collections" className="space-y-4">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight mb-2">
-                Coleções
+              <h2 className="mb-2 text-2xl font-bold tracking-tight">
+                Colecoes
               </h2>
               <p className="text-muted-foreground">
-                Crie coleções com modelos selecionados e atribua níveis de preço
+                Crie colecoes com modelos selecionados e atribua niveis de
+                preco.
               </p>
             </div>
             <AdminCollections />
-          </TabsContent>
-
-          {/* Tab 2: Personagens de Crédito (Coins) */}
-          <TabsContent value="curation" className="space-y-4">
-            <CatalogCurationContent />
           </TabsContent>
 
           <TabsContent value="credit-characters" className="space-y-4">
