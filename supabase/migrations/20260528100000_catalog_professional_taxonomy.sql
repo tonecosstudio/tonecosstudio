@@ -83,3 +83,5 @@ COMMENT ON COLUMN public.models.source_title IS
   'Canonical source/franchise title, e.g. Dragon Ball Z or Thundercats.';
 COMMENT ON COLUMN public.models.catalog_visibility IS
   'Publication destination: general catalog, collection page, both, or hidden.';
+
+NOTIFY pgrst, 'reload schema';

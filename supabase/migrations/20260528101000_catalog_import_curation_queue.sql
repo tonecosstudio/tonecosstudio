@@ -107,3 +107,5 @@ GRANT ALL ON public.catalog_import_items TO authenticated, service_role;
 
 COMMENT ON TABLE public.catalog_import_items IS
   'Raw catalog import queue. Items are reviewed before becoming published models or collection characters.';
+
+NOTIFY pgrst, 'reload schema';

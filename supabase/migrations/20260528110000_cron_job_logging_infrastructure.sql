@@ -195,3 +195,5 @@ COMMENT ON FUNCTION public.fail_cron_job_log(uuid, text, jsonb) IS
 
 COMMENT ON FUNCTION public.cleanup_old_cron_logs(integer) IS
   'Deletes cron job logs older than the configured retention window.';
+
+NOTIFY pgrst, 'reload schema';

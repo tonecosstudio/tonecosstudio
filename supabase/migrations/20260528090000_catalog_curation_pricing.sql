@@ -31,3 +31,5 @@ COMMENT ON COLUMN public.models.price_standalone_override IS
   'Fixed standalone price in cents when price_mode is fixed.';
 COMMENT ON COLUMN public.models.price_coins_override IS
   'Fixed coin price when price_mode is fixed.';
+
+NOTIFY pgrst, 'reload schema';

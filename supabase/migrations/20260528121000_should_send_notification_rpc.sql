@@ -62,3 +62,5 @@ GRANT EXECUTE ON FUNCTION public.should_send_notification(uuid, text) TO authent
 
 COMMENT ON FUNCTION public.should_send_notification(uuid, text) IS
   'Authoritative server-side opt-out check for non-critical customer notifications.';
+
+NOTIFY pgrst, 'reload schema';

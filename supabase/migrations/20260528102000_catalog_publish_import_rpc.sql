@@ -177,3 +177,5 @@ GRANT EXECUTE ON FUNCTION public.admin_publish_catalog_import_item(uuid, jsonb) 
 
 COMMENT ON FUNCTION public.admin_publish_catalog_import_item(uuid, jsonb) IS
   'Publishes one reviewed Drive import queue item into models atomically, including taxonomy, visibility, and price metadata.';
+
+NOTIFY pgrst, 'reload schema';

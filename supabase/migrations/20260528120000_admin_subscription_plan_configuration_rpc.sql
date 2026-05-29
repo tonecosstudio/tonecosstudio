@@ -145,3 +145,5 @@ GRANT EXECUTE ON FUNCTION public.admin_save_subscription_plan_configuration(uuid
 
 COMMENT ON FUNCTION public.admin_save_subscription_plan_configuration(uuid, jsonb) IS
   'Validated admin-only subscription plan configuration writer.';
+
+NOTIFY pgrst, 'reload schema';
