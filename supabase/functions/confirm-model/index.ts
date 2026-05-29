@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { classifyNameWithAI } from "../_shared/ai.ts";
 import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { createEdgeLogger } from "../_shared/edge-logger.ts";
+
+const log = createEdgeLogger("confirm-model");
 
 function modelForCache() {
   const env = (Deno.env.get("AI_CLASSIFY_MODELS") || "").trim();
@@ -22,7 +25,9 @@ function applyFranchiseRules(name: string, rules: FranchiseRuleRow[]) {
     .filter((r) => r.enabled)
     .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
   for (const r of enabled) {
-    const pat = String(r.pattern ?? "").trim().toLowerCase();
+    const pat = String(r.pattern ?? "")
+      .trim()
+      .toLowerCase();
     if (!pat) continue;
     if (hay.includes(pat)) return String(r.franchise_canonical);
   }
@@ -50,13 +55,18 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const queueId = String(body?.queueId ?? "").trim();
     const name = String(body?.name ?? "").trim();
-    const franchiseOverride = body?.franchiseOverride ? String(body.franchiseOverride).trim() : "";
+    const franchiseOverride = body?.franchiseOverride
+      ? String(body.franchiseOverride).trim()
+      : "";
 
     if (!queueId || !name) {
-      return new Response(JSON.stringify({ ok: false, error: "queueId and name are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ ok: false, error: "queueId and name are required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { data: queueRow, error: qErr } = await service
@@ -65,10 +75,14 @@ serve(async (req) => {
       .eq("id", queueId)
       .maybeSingle();
     if (qErr) throw qErr;
-    if (!queueRow) return new Response(JSON.stringify({ ok: false, error: "queue item not found" }), {
-      status: 404,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (!queueRow)
+      return new Response(
+        JSON.stringify({ ok: false, error: "queue item not found" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
 
     // Get cached classification if possible
     const { data: cached } = await service
@@ -86,9 +100,12 @@ serve(async (req) => {
         .eq("enabled", true)
         .order("priority", { ascending: true })
         .limit(500);
-      franchiseFromRule = applyFranchiseRules(name, (rules ?? []) as FranchiseRuleRow[]);
+      franchiseFromRule = applyFranchiseRules(
+        name,
+        (rules ?? []) as FranchiseRuleRow[],
+      );
     } catch (rulesErr) {
-      console.error("Error fetching franchise_rules (ignoring):", rulesErr);
+      log.warn("franchise_rules_fetch_failed", { error: rulesErr });
       // Ignora erro e continua sem regras
     }
 
@@ -104,12 +121,21 @@ serve(async (req) => {
     const ai = {
       ...aiBase,
       franchise:
-        franchiseOverride || franchiseFromRule || (aiBase.franchise?.trim() ? aiBase.franchise.trim() : null),
+        franchiseOverride ||
+        franchiseFromRule ||
+        (aiBase.franchise?.trim() ? aiBase.franchise.trim() : null),
     };
 
     if (!cached) {
       await service.from("ai_name_cache").upsert(
-        { name, franchise: ai.franchise, category: ai.category, subcategory: ai.subcategory, tags: ai.tags, model: modelForCache() },
+        {
+          name,
+          franchise: ai.franchise,
+          category: ai.category,
+          subcategory: ai.subcategory,
+          tags: ai.tags,
+          model: modelForCache(),
+        },
         { onConflict: "name" },
       );
     }
@@ -127,7 +153,10 @@ serve(async (req) => {
           note: "auto: confirmado na esteira",
         });
       } catch (insertRuleErr) {
-        console.error("Error inserting franchise_rule (ignoring):", insertRuleErr);
+        log.warn("franchise_rule_insert_failed", {
+          error: insertRuleErr,
+          queueId,
+        });
         // Ignora erro e continua
       }
     }
@@ -136,13 +165,24 @@ serve(async (req) => {
     const franchise = ai.franchise?.trim() || null;
     if (franchise) {
       const canonical = franchise; // mantém o que a IA sugeriu como canônico por enquanto
-      const { data: existing } = await service.from("franchises").select("id,canonical,aliases").eq("canonical", canonical).maybeSingle();
+      const { data: existing } = await service
+        .from("franchises")
+        .select("id,canonical,aliases")
+        .eq("canonical", canonical)
+        .maybeSingle();
       if (!existing) {
-        await service.from("franchises").insert({ canonical, aliases: [franchise] });
+        await service
+          .from("franchises")
+          .insert({ canonical, aliases: [franchise] });
       } else {
-        const aliases = Array.isArray(existing.aliases) ? (existing.aliases as string[]) : [];
+        const aliases = Array.isArray(existing.aliases)
+          ? (existing.aliases as string[])
+          : [];
         if (!aliases.includes(franchise)) {
-          await service.from("franchises").update({ aliases: [...aliases, franchise] }).eq("id", existing.id);
+          await service
+            .from("franchises")
+            .update({ aliases: [...aliases, franchise] })
+            .eq("id", existing.id);
         }
       }
     }
@@ -154,16 +194,35 @@ serve(async (req) => {
     const newPath = `catalog/${cat}/${sub}/${nameSlug}.${ext}`;
 
     // Copy file instead of move (more reliable)
-    console.log("Copying image:", queueRow.storage_path, "->", newPath);
-    const { error: copyErr } = await service.storage.from(queueRow.storage_bucket).copy(queueRow.storage_path, newPath);
+    log.info("image_copy_started", {
+      queueId,
+      sourceBucket: queueRow.storage_bucket,
+      sourcePath: queueRow.storage_path,
+      destinationPath: newPath,
+    });
+    const { error: copyErr } = await service.storage
+      .from(queueRow.storage_bucket)
+      .copy(queueRow.storage_path, newPath);
     if (copyErr) throw new Error(`Storage copy failed: ${copyErr.message}`);
 
     // Delete original image
-    console.log("Deleting original image:", queueRow.storage_path);
-    await service.storage.from(queueRow.storage_bucket).remove([queueRow.storage_path]);
+    log.info("queue_image_remove_started", {
+      queueId,
+      sourcePath: queueRow.storage_path,
+    });
+    await service.storage
+      .from(queueRow.storage_bucket)
+      .remove([queueRow.storage_path]);
 
     // create model
-    console.log("Creating model:", { name, franchise, category: ai.category, subcategory: ai.subcategory, tags: ai.tags });
+    log.info("model_create_started", {
+      queueId,
+      name,
+      franchise,
+      category: ai.category,
+      subcategory: ai.subcategory,
+      tagCount: ai.tags.length,
+    });
     const { error: mErr } = await service.from("models").insert({
       created_by: userId,
       name,
@@ -175,21 +234,24 @@ serve(async (req) => {
       image_path: newPath,
     });
     if (mErr) {
-      console.error("Error creating model:", mErr);
+      log.error("model_create_failed", { error: mErr, queueId });
       throw mErr;
     }
-    console.log("Model created successfully");
+    log.info("model_create_succeeded", { queueId, destinationPath: newPath });
 
     // update queue
-    const { error: uErr } = await service.from("images_queue").update({
-      status: "processed",
-      name,
-      franchise,
-      category: ai.category,
-      subcategory: ai.subcategory,
-      tags: ai.tags,
-      last_error: null,
-    }).eq("id", queueId);
+    const { error: uErr } = await service
+      .from("images_queue")
+      .update({
+        status: "processed",
+        name,
+        franchise,
+        category: ai.category,
+        subcategory: ai.subcategory,
+        tags: ai.tags,
+        last_error: null,
+      })
+      .eq("id", queueId);
     if (uErr) throw uErr;
 
     return new Response(JSON.stringify({ ok: true, newPath }), {
@@ -197,10 +259,25 @@ serve(async (req) => {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    const status = msg.startsWith("Forbidden") ? 403 : msg === "Unauthorized" ? 401 : 500;
-    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const status = msg.startsWith("Forbidden")
+      ? 403
+      : msg === "Unauthorized"
+        ? 401
+        : 500;
+    if (status >= 500) {
+      log.error("request_failed", { error: e });
+    } else {
+      log.warn("request_rejected", { status, reason: msg });
+    }
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: status >= 500 ? "Internal server error" : msg,
+      }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
