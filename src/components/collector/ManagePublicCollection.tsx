@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +32,7 @@ import { Plus, Trash2, Edit2, X } from "lucide-react";
 import {
   getCatalogCharacterName,
   getCatalogSourceName,
-} from "@/pages/catalog/catalogUtils";
+} from "@/lib/catalog-utils";
 
 type Props = {
   userId: string;
@@ -37,7 +43,10 @@ export function ManagePublicCollection({ userId }: Props) {
   const qc = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingItem, setEditingItem] = useState<{ id: string; notes: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<{
+    id: string;
+    notes: string;
+  } | null>(null);
 
   const collectionQuery = useQuery({
     queryKey: ["my-public-collection", userId],
@@ -65,7 +74,8 @@ export function ManagePublicCollection({ userId }: Props) {
   });
 
   const removeMutation = useMutation({
-    mutationFn: (collectionId: string) => removeFromPublicCollection(collectionId),
+    mutationFn: (collectionId: string) =>
+      removeFromPublicCollection(collectionId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-public-collection"] });
       toast({ title: "Removido da coleção pública" });
@@ -76,7 +86,8 @@ export function ManagePublicCollection({ userId }: Props) {
   });
 
   const updateNotesMutation = useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) => updateCollectionNotes(id, notes),
+    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+      updateCollectionNotes(id, notes),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-public-collection"] });
       toast({ title: "Notas atualizadas" });
@@ -110,7 +121,9 @@ export function ManagePublicCollection({ userId }: Props) {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Adicionar à Coleção Pública</DialogTitle>
-                <DialogDescription>Busque e adicione modelos que você possui</DialogDescription>
+                <DialogDescription>
+                  Busque e adicione modelos que você possui
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -130,7 +143,7 @@ export function ManagePublicCollection({ userId }: Props) {
                   <div className="grid gap-3 max-h-96 overflow-y-auto">
                     {availableModels.map((model) => {
                       const isInCollection = collection.some(
-                        (item) => item.model_id === model.id
+                        (item) => item.model_id === model.id,
                       );
                       const imageUrl = getPublicModelImageUrl(model);
                       const characterName = getCatalogCharacterName(model);
@@ -150,9 +163,13 @@ export function ManagePublicCollection({ userId }: Props) {
                             ) : null}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm line-clamp-1">{characterName}</p>
+                            <p className="font-medium text-sm line-clamp-1">
+                              {characterName}
+                            </p>
                             {sourceName && (
-                              <p className="text-xs text-muted-foreground">{sourceName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {sourceName}
+                              </p>
                             )}
                           </div>
                           <Button
@@ -176,7 +193,9 @@ export function ManagePublicCollection({ userId }: Props) {
         {collection.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>Sua coleção pública está vazia</p>
-            <p className="text-sm mt-1">Adicione modelos para mostrar no seu perfil</p>
+            <p className="text-sm mt-1">
+              Adicione modelos para mostrar no seu perfil
+            </p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -187,7 +206,10 @@ export function ManagePublicCollection({ userId }: Props) {
               const characterName = getCatalogCharacterName(item.models);
               const sourceName = getCatalogSourceName(item.models);
               return (
-                <div key={item.id} className="border rounded-lg overflow-hidden">
+                <div
+                  key={item.id}
+                  className="border rounded-lg overflow-hidden"
+                >
                   <div className="aspect-square bg-muted relative">
                     {imageUrl ? (
                       <img
@@ -215,7 +237,9 @@ export function ManagePublicCollection({ userId }: Props) {
                         {characterName}
                       </p>
                       {sourceName && (
-                        <p className="text-xs text-muted-foreground">{sourceName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {sourceName}
+                        </p>
                       )}
                     </div>
                     {editingItem?.id === item.id ? (
@@ -223,7 +247,10 @@ export function ManagePublicCollection({ userId }: Props) {
                         <Textarea
                           value={editingItem.notes}
                           onChange={(e) =>
-                            setEditingItem({ ...editingItem, notes: e.target.value })
+                            setEditingItem({
+                              ...editingItem,
+                              notes: e.target.value,
+                            })
                           }
                           placeholder="Adicione uma nota..."
                           className="text-xs min-h-[60px]"
@@ -234,12 +261,19 @@ export function ManagePublicCollection({ userId }: Props) {
                             size="sm"
                             className="flex-1"
                             onClick={() =>
-                              updateNotesMutation.mutate({ id: item.id, notes: editingItem.notes })
+                              updateNotesMutation.mutate({
+                                id: item.id,
+                                notes: editingItem.notes,
+                              })
                             }
                           >
                             Salvar
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingItem(null)}
+                          >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -251,13 +285,20 @@ export function ManagePublicCollection({ userId }: Props) {
                             {item.notes}
                           </p>
                         ) : (
-                          <p className="text-xs text-muted-foreground flex-1">Sem notas</p>
+                          <p className="text-xs text-muted-foreground flex-1">
+                            Sem notas
+                          </p>
                         )}
                         <Button
                           size="icon"
                           variant="ghost"
                           className="h-6 w-6 flex-shrink-0"
-                          onClick={() => setEditingItem({ id: item.id, notes: item.notes || "" })}
+                          onClick={() =>
+                            setEditingItem({
+                              id: item.id,
+                              notes: item.notes || "",
+                            })
+                          }
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>

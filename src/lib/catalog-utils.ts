@@ -55,24 +55,36 @@ export function isInternalCatalogTag(tag: string): boolean {
   );
 }
 
-export function getCatalogCharacterName(model: CatalogDisplayModel | null | undefined): string {
+export function getCatalogCharacterName(
+  model: CatalogDisplayModel | null | undefined,
+): string {
   return model?.character_name || model?.name || "Modelo";
 }
 
-export function getCatalogSourceName(model: CatalogDisplayModel | null | undefined): string | null {
+export function getCatalogSourceName(
+  model: CatalogDisplayModel | null | undefined,
+): string | null {
   return model?.source_title || model?.franchise || null;
 }
 
-export function getCatalogVersionName(model: CatalogDisplayModel | null | undefined): string | null {
+export function getCatalogVersionName(
+  model: CatalogDisplayModel | null | undefined,
+): string | null {
   return model?.variant_name || null;
 }
 
-export function buildModelTitle(name: string, franchise: string | null): string {
+export function buildModelTitle(
+  name: string,
+  franchise: string | null,
+): string {
   if (!franchise) return name;
   return `${name} (${franchise})`;
 }
 
-export function compactTags(tags: string[] | null, limit: number = 2): string[] {
+export function compactTags(
+  tags: string[] | null,
+  limit: number = 2,
+): string[] {
   if (!tags || tags.length === 0) return [];
   return tags
     .map((tag) => normalizeCatalogTag(tag))
@@ -106,7 +118,9 @@ export function getCatalogPublicTags(
   ).slice(0, limit);
 }
 
-export function getCatalogTitle(model: CatalogDisplayModel | null | undefined): string {
+export function getCatalogTitle(
+  model: CatalogDisplayModel | null | undefined,
+): string {
   const characterName = getCatalogCharacterName(model);
   const sourceName = getCatalogSourceName(model);
   const versionName = getCatalogVersionName(model);

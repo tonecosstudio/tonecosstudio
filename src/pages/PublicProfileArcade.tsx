@@ -1,7 +1,11 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "@/components/layouts/Page";
-import { ArcadeCard, ArcadeSectionTitle, GlitchText } from "@/components/arcade/ArcadeLayout";
+import {
+  ArcadeCard,
+  ArcadeSectionTitle,
+  GlitchText,
+} from "@/components/arcade/ArcadeLayout";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { Trophy } from "lucide-react";
 import {
@@ -15,7 +19,7 @@ import {
   getCatalogCharacterName,
   getCatalogPublicTags,
   getCatalogSourceName,
-} from "@/pages/catalog/catalogUtils";
+} from "@/lib/catalog-utils";
 
 export default function PublicProfileArcade() {
   const { username } = useParams<{ username: string }>();
@@ -56,20 +60,31 @@ export default function PublicProfileArcade() {
     return (
       <Page title="Perfil não encontrado" description="">
         <div className="text-center py-32">
-          <h1 className="text-3xl font-bold tracking-wider mb-2" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+          <h1
+            className="text-3xl font-bold tracking-wider mb-2"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+          >
             SOLDIER NOT FOUND
           </h1>
-          <p className="font-mono text-xs text-[hsl(0,0%,45%)] tracking-wider">Este perfil não existe ou é privado</p>
+          <p className="font-mono text-xs text-[hsl(0,0%,45%)] tracking-wider">
+            Este perfil não existe ou é privado
+          </p>
         </div>
       </Page>
     );
   }
 
   const xpForNextLevel = profile.collector_level * 1000;
-  const xpProgress = Math.min(100, (profile.collector_xp / xpForNextLevel) * 100);
+  const xpProgress = Math.min(
+    100,
+    (profile.collector_xp / xpForNextLevel) * 100,
+  );
 
   return (
-    <Page title={`${profile.display_name || profile.username} | ORDAX`} description={profile.bio || ""}>
+    <Page
+      title={`${profile.display_name || profile.username} | ORDAX`}
+      description={profile.bio || ""}
+    >
       {/* Hero */}
       <section className="relative py-16 px-6 overflow-hidden">
         <FloatingParticles />
@@ -77,35 +92,66 @@ export default function PublicProfileArcade() {
           {/* Avatar */}
           <div className="w-24 h-24 mx-auto mb-4 border-2 border-[hsl(var(--gold-accent)/0.5)] overflow-hidden">
             {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+              <img
+                src={profile.avatar_url}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="eager"
+                fetchPriority="high"
+              />
             ) : (
               <div className="w-full h-full bg-[hsl(0,0%,12%)] flex items-center justify-center font-mono text-2xl text-[hsl(var(--gold-accent))]">
-                {(profile.display_name || profile.username || "?")[0].toUpperCase()}
+                {(profile.display_name ||
+                  profile.username ||
+                  "?")[0].toUpperCase()}
               </div>
             )}
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black tracking-[0.15em] mb-2" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-            <GlitchText text={profile.display_name || profile.username || "ANÔNIMO"} />
+          <h1
+            className="text-4xl md:text-5xl font-black tracking-[0.15em] mb-2"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+          >
+            <GlitchText
+              text={profile.display_name || profile.username || "ANÔNIMO"}
+            />
           </h1>
-          <p className="font-mono text-xs text-[hsl(var(--gold-accent)/0.6)] tracking-[0.2em] mb-4">@{profile.username}</p>
-          {profile.bio && <p className="font-mono text-xs text-[hsl(0,0%,50%)] max-w-md mx-auto leading-relaxed">{profile.bio}</p>}
+          <p className="font-mono text-xs text-[hsl(var(--gold-accent)/0.6)] tracking-[0.2em] mb-4">
+            @{profile.username}
+          </p>
+          {profile.bio && (
+            <p className="font-mono text-xs text-[hsl(0,0%,50%)] max-w-md mx-auto leading-relaxed">
+              {profile.bio}
+            </p>
+          )}
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-8 mt-8 font-mono text-xs">
             <div className="text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">{profile.collector_level}</p>
-              <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">NÍVEL</p>
+              <p className="text-2xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">
+                {profile.collector_level}
+              </p>
+              <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">
+                NÍVEL
+              </p>
             </div>
             <div className="w-px h-10 bg-[hsl(0,0%,20%)]" />
             <div className="text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">{profile.pieces_owned}</p>
-              <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">PEÇAS</p>
+              <p className="text-2xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">
+                {profile.pieces_owned}
+              </p>
+              <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">
+                PEÇAS
+              </p>
             </div>
             <div className="w-px h-10 bg-[hsl(0,0%,20%)]" />
             <div className="text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">{badges.length}</p>
-              <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">BADGES</p>
+              <p className="text-2xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">
+                {badges.length}
+              </p>
+              <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">
+                BADGES
+              </p>
             </div>
           </div>
 
@@ -113,10 +159,15 @@ export default function PublicProfileArcade() {
           <div className="max-w-xs mx-auto mt-6">
             <div className="flex justify-between font-mono text-[9px] text-[hsl(0,0%,40%)] tracking-widest mb-1">
               <span>XP</span>
-              <span>{profile.collector_xp}/{xpForNextLevel}</span>
+              <span>
+                {profile.collector_xp}/{xpForNextLevel}
+              </span>
             </div>
             <div className="h-1.5 bg-[hsl(0,0%,12%)] overflow-hidden">
-              <div className="h-full bg-[hsl(var(--gold-accent))]" style={{ width: `${xpProgress}%` }} />
+              <div
+                className="h-full bg-[hsl(var(--gold-accent))]"
+                style={{ width: `${xpProgress}%` }}
+              />
             </div>
           </div>
         </div>
@@ -130,8 +181,12 @@ export default function PublicProfileArcade() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {badges.map((b) => (
                 <ArcadeCard key={b.id} className="p-3 text-center">
-                  <span className="text-2xl mb-1 block">{b.collector_badges?.icon || "🏆"}</span>
-                  <p className="font-mono text-[10px] text-[hsl(var(--gold-accent))] tracking-wider">{b.collector_badges?.name}</p>
+                  <span className="text-2xl mb-1 block">
+                    {b.collector_badges?.icon || "🏆"}
+                  </span>
+                  <p className="font-mono text-[10px] text-[hsl(var(--gold-accent))] tracking-wider">
+                    {b.collector_badges?.name}
+                  </p>
                 </ArcadeCard>
               ))}
             </div>
@@ -153,7 +208,13 @@ export default function PublicProfileArcade() {
                   <ArcadeCard key={item.id} className="overflow-hidden">
                     <div className="aspect-square bg-[hsl(0,0%,8%)]">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={characterName} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                        <img
+                          src={imageUrl}
+                          alt={characterName}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Trophy className="w-8 h-8 text-[hsl(0,0%,15%)]" />
@@ -163,7 +224,10 @@ export default function PublicProfileArcade() {
                     <div className="p-3">
                       <p className="truncate font-mono text-xs text-[hsl(0,0%,80%)]">
                         {model?.id ? (
-                          <Link to={catalogModelDetailsPath(model.id)} className="hover:text-[hsl(var(--gold-accent))]">
+                          <Link
+                            to={catalogModelDetailsPath(model.id)}
+                            className="hover:text-[hsl(var(--gold-accent))]"
+                          >
                             {characterName}
                           </Link>
                         ) : (
@@ -171,12 +235,17 @@ export default function PublicProfileArcade() {
                         )}
                       </p>
                       {sourceName && (
-                        <p className="font-mono text-[9px] text-[hsl(var(--gold-accent)/0.5)] tracking-wider">{sourceName}</p>
+                        <p className="font-mono text-[9px] text-[hsl(var(--gold-accent)/0.5)] tracking-wider">
+                          {sourceName}
+                        </p>
                       )}
                       {tags.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {tags.map((tag) => (
-                            <span key={tag} className="border border-[hsl(0,0%,18%)] px-1 py-0.5 font-mono text-[7px] uppercase text-[hsl(0,0%,42%)]">
+                            <span
+                              key={tag}
+                              className="border border-[hsl(0,0%,18%)] px-1 py-0.5 font-mono text-[7px] uppercase text-[hsl(0,0%,42%)]"
+                            >
                               {tag}
                             </span>
                           ))}

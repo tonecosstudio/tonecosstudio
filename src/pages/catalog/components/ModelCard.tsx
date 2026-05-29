@@ -9,7 +9,7 @@ import {
   getCatalogSourceName,
   getCatalogTitle,
   getCatalogVersionName,
-} from "../catalogUtils";
+} from "@/lib/catalog-utils";
 import { Link } from "react-router-dom";
 import { catalogModelDetailsPath } from "@/config/routes";
 
@@ -29,10 +29,7 @@ export function ModelCard(props: {
     return (
       <Card className="group h-full overflow-hidden border border-border bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium">
         <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
-          <Link
-            to={detailsPath}
-            aria-label={`Abrir detalhes de ${title}`}
-          >
+          <Link to={detailsPath} aria-label={`Abrir detalhes de ${title}`}>
             <img
               src={imageUrl}
               alt={characterName}
@@ -49,14 +46,18 @@ export function ModelCard(props: {
               onToggleLike();
             }}
             aria-pressed={isLiked}
-            aria-label={isLiked ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            aria-label={
+              isLiked ? "Remover dos favoritos" : "Adicionar aos favoritos"
+            }
           >
             <Heart className={isLiked ? "h-5 w-5 fill-current" : "h-5 w-5"} />
           </button>
         </div>
         <CardContent className="flex h-full min-w-0 flex-col p-5">
           <Link to={detailsPath} className="min-w-0" title={title}>
-            <p className="min-w-0 truncate text-base font-semibold leading-tight">{title}</p>
+            <p className="min-w-0 truncate text-base font-semibold leading-tight">
+              {title}
+            </p>
           </Link>
           <div className="mt-auto pt-4">
             <Button
@@ -71,20 +72,15 @@ export function ModelCard(props: {
     );
   }
 
-  const line = [
-    getCatalogVersionName(m),
-    getCatalogSourceName(m),
-    m.category,
-  ].filter(Boolean).join(" | ");
+  const line = [getCatalogVersionName(m), getCatalogSourceName(m), m.category]
+    .filter(Boolean)
+    .join(" | ");
   const extraTags = getCatalogPublicTags(m, 2);
 
   return (
     <Card className="group flex flex-col overflow-hidden border border-border bg-card shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-premium">
       <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
-        <Link
-          to={detailsPath}
-          aria-label={`Abrir detalhes de ${title}`}
-        >
+        <Link to={detailsPath} aria-label={`Abrir detalhes de ${title}`}>
           <img
             src={imageUrl}
             alt={characterName}
@@ -106,7 +102,9 @@ export function ModelCard(props: {
             onToggleLike();
           }}
           aria-pressed={isLiked}
-          aria-label={isLiked ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+          aria-label={
+            isLiked ? "Remover dos favoritos" : "Adicionar aos favoritos"
+          }
         >
           <Heart className={isLiked ? "h-5 w-5 fill-current" : "h-5 w-5"} />
         </button>
@@ -115,9 +113,14 @@ export function ModelCard(props: {
       <CardContent className="flex flex-col flex-1 p-6">
         <div className="min-w-0 space-y-2">
           <Link to={detailsPath} className="min-w-0" title={title}>
-            <p className="min-w-0 truncate text-lg font-semibold leading-tight">{title}</p>
+            <p className="min-w-0 truncate text-lg font-semibold leading-tight">
+              {title}
+            </p>
           </Link>
-          <p className="min-w-0 truncate text-sm text-muted-foreground" title={line || "—"}>
+          <p
+            className="min-w-0 truncate text-sm text-muted-foreground"
+            title={line || "—"}
+          >
             {line || "—"}
           </p>
         </div>
@@ -125,7 +128,11 @@ export function ModelCard(props: {
         {extraTags.length ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {extraTags.map((t) => (
-              <Badge key={t} variant="outline" className="text-xs border-border">
+              <Badge
+                key={t}
+                variant="outline"
+                className="text-xs border-border"
+              >
                 {t}
               </Badge>
             ))}

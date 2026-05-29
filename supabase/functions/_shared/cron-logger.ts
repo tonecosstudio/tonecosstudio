@@ -1,9 +1,9 @@
 /**
  * Cron Job Logging Utility for ORDAX Platform
- * 
+ *
  * Provides functions to log cron job executions and send alerts on errors.
  * Integrates with the cron_job_logs table created in task 12.1.
- * 
+ *
  * Requirements:
  * - 34.1: Log all cron job executions with success/failure status
  * - 34.8: Send alert notifications for critical errors
@@ -11,100 +11,103 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { EmailService, getEmailConfig } from "./email.ts";
+import { createEdgeLogger } from "./edge-logger.ts";
+
+const log = createEdgeLogger("cron-logger");
 
 /**
  * Starts logging a cron job execution
- * 
+ *
  * @param jobName - Name of the cron job being executed
  * @param executionDetails - Optional additional details about the execution
  * @returns Promise resolving to the log ID (UUID)
- * 
+ *
  * @example
  * const logId = await logCronStart('daily-delivery-creation');
  */
 export async function logCronStart(
   jobName: string,
-  executionDetails?: Record<string, unknown>
+  executionDetails?: Record<string, unknown>,
 ): Promise<string> {
   if (!jobName) {
-    throw new Error('jobName is required');
+    throw new Error("jobName is required");
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables not configured');
+    throw new Error("Supabase environment variables not configured");
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const { data, error } = await supabase.rpc('start_cron_job_log', {
+  const { data, error } = await supabase.rpc("start_cron_job_log", {
     p_job_name: jobName,
     p_execution_details: executionDetails || null,
   });
 
   if (error) {
-    console.error('Failed to start cron job log:', error);
+    log.error("cron_start_log_failed", { error, jobName });
     throw new Error(`Failed to start cron job log: ${error.message}`);
   }
 
   if (!data) {
-    throw new Error('No log ID returned from start_cron_job_log');
+    throw new Error("No log ID returned from start_cron_job_log");
   }
 
-  console.log(`Cron job started: ${jobName} (log ID: ${data})`);
+  log.info("cron_started", { jobName, logId: data });
   return data as string;
 }
 
 /**
  * Marks a cron job execution as successful
- * 
+ *
  * @param logId - The log ID returned from logCronStart
  * @param executionDetails - Optional additional details about the execution
  * @returns Promise that resolves when the log is updated
- * 
+ *
  * @example
  * await logCronSuccess(logId, { deliveriesCreated: 42 });
  */
 export async function logCronSuccess(
   logId: string,
-  executionDetails?: Record<string, unknown>
+  executionDetails?: Record<string, unknown>,
 ): Promise<void> {
   if (!logId) {
-    throw new Error('logId is required');
+    throw new Error("logId is required");
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables not configured');
+    throw new Error("Supabase environment variables not configured");
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const { error } = await supabase.rpc('complete_cron_job_log', {
+  const { error } = await supabase.rpc("complete_cron_job_log", {
     p_log_id: logId,
     p_execution_details: executionDetails || null,
   });
 
   if (error) {
-    console.error('Failed to complete cron job log:', error);
+    log.error("cron_success_log_failed", { error, logId });
     throw new Error(`Failed to complete cron job log: ${error.message}`);
   }
 
-  console.log(`Cron job completed successfully (log ID: ${logId})`);
+  log.info("cron_completed", { logId });
 }
 
 /**
  * Marks a cron job execution as failed and sends an alert notification
- * 
+ *
  * @param logId - The log ID returned from logCronStart
  * @param error - The error that caused the failure
  * @param executionDetails - Optional additional details about the execution
  * @returns Promise that resolves when the log is updated and alert is sent
- * 
+ *
  * @example
  * try {
  *   // ... cron job logic
@@ -115,28 +118,28 @@ export async function logCronSuccess(
 export async function logCronError(
   logId: string,
   error: Error,
-  executionDetails?: Record<string, unknown>
+  executionDetails?: Record<string, unknown>,
 ): Promise<void> {
   if (!logId) {
-    throw new Error('logId is required');
+    throw new Error("logId is required");
   }
 
   if (!error) {
-    throw new Error('error is required');
+    throw new Error("error is required");
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables not configured');
+    throw new Error("Supabase environment variables not configured");
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   // Extract error message and stack trace
-  const errorMessage = error.message || 'Unknown error';
-  const errorStack = error.stack || '';
+  const errorMessage = error.message || "Unknown error";
+  const errorStack = error.stack || "";
 
   // Combine execution details with error information
   const detailsWithError = {
@@ -146,31 +149,31 @@ export async function logCronError(
   };
 
   // Mark the cron job as failed
-  const { error: logError } = await supabase.rpc('fail_cron_job_log', {
+  const { error: logError } = await supabase.rpc("fail_cron_job_log", {
     p_log_id: logId,
     p_error_message: errorMessage,
     p_execution_details: detailsWithError,
   });
 
   if (logError) {
-    console.error('Failed to mark cron job as failed:', logError);
+    log.error("cron_failure_log_update_failed", { error: logError, logId });
     // Don't throw here - we still want to send the alert
   }
 
-  console.error(`Cron job failed (log ID: ${logId}): ${errorMessage}`);
+  log.error("cron_failed", { logId, errorMessage });
 
   // Send alert notification
   try {
     await sendCronErrorAlert(logId, errorMessage, errorStack);
   } catch (alertError) {
-    console.error('Failed to send cron error alert:', alertError);
+    log.error("cron_error_alert_failed", { error: alertError, logId });
     // Don't throw - the log has been updated, which is the primary goal
   }
 }
 
 /**
  * Sends an alert notification for a cron job error
- * 
+ *
  * @param logId - The log ID of the failed cron job
  * @param errorMessage - The error message
  * @param errorStack - The error stack trace
@@ -179,42 +182,42 @@ export async function logCronError(
 async function sendCronErrorAlert(
   logId: string,
   errorMessage: string,
-  errorStack: string
+  errorStack: string,
 ): Promise<void> {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables not configured');
+    throw new Error("Supabase environment variables not configured");
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   // Get the cron job details from the log
   const { data: logData, error: fetchError } = await supabase
-    .from('cron_job_logs')
-    .select('job_name, started_at')
-    .eq('id', logId)
+    .from("cron_job_logs")
+    .select("job_name, started_at")
+    .eq("id", logId)
     .single();
 
   if (fetchError || !logData) {
-    console.error('Failed to fetch cron job log details:', fetchError);
-    throw new Error('Failed to fetch cron job log details');
+    log.error("cron_log_fetch_failed", { error: fetchError, logId });
+    throw new Error("Failed to fetch cron job log details");
   }
 
   const jobName = logData.job_name;
-  const startedAt = new Date(logData.started_at).toLocaleString('pt-BR', {
-    timeZone: 'America/Bahia',
+  const startedAt = new Date(logData.started_at).toLocaleString("pt-BR", {
+    timeZone: "America/Bahia",
   });
 
   // Get admin profiles for alerts
   const { data: adminProfiles, error: profileError } = await supabase
-    .from('profiles')
-    .select('email, full_name')
-    .in('role', ['admin', 'super_admin']);
+    .from("profiles")
+    .select("email, full_name")
+    .in("role", ["admin", "super_admin"]);
 
   if (profileError || !adminProfiles || adminProfiles.length === 0) {
-    console.warn('No admin profiles found with emails');
+    log.warn("cron_alert_recipients_missing", { error: profileError, logId });
     return;
   }
 
@@ -230,10 +233,13 @@ async function sendCronErrorAlert(
 
   const emailService = new EmailService(
     getEmailConfig({
-      baseUrlEnvNames: ['FRONTEND_URL', 'BASE_URL', 'SITE_URL'],
-      fromName: Deno.env.get('EMAIL_FROM_NAME') || 'ORDAX Alerts',
+      baseUrlEnvNames: ["FRONTEND_URL", "BASE_URL", "SITE_URL"],
+      fromName: Deno.env.get("EMAIL_FROM_NAME") || "ORDAX Alerts",
     }),
   );
+
+  let sentCount = 0;
+  let failedCount = 0;
 
   for (const admin of adminProfiles) {
     if (!admin.email) continue;
@@ -245,12 +251,23 @@ async function sendCronErrorAlert(
         html: htmlContent,
       });
 
-      console.log(`Alert email sent to admin: ${admin.email}`);
+      sentCount += 1;
     } catch (emailError) {
-      console.error(`Failed to send alert email to ${admin.email}:`, emailError);
+      failedCount += 1;
+      log.error("cron_alert_email_send_failed", {
+        error: emailError,
+        logId,
+        recipientIndex: sentCount + failedCount,
+      });
       // Continue sending to other admins
     }
   }
+
+  log.info("cron_alert_email_batch_completed", {
+    logId,
+    sentCount,
+    failedCount,
+  });
 }
 
 /**
@@ -364,7 +381,7 @@ function generateAlertEmailHTML(params: {
       <p style="color: #dc2626; font-weight: 600;">${params.errorMessage}</p>
       
       <h3>Stack Trace:</h3>
-      <div class="error-stack">${params.errorStack || 'No stack trace available'}</div>
+      <div class="error-stack">${params.errorStack || "No stack trace available"}</div>
       
       <p style="margin-top: 24px; font-size: 14px; color: #64748b;">
         Please investigate this issue as soon as possible. Check the cron_job_logs table for more details.

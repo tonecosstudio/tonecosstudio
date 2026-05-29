@@ -25,7 +25,10 @@ import {
 } from "lucide-react";
 
 import type { ModelRow } from "@/pages/catalog/catalogTypes";
-import { useCatalogModels, type CatalogSort } from "@/hooks/catalog/useCatalogModels";
+import {
+  useCatalogModels,
+  type CatalogSort,
+} from "@/hooks/catalog/useCatalogModels";
 import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
 import { useProfileQuery } from "@/pages/catalog/hooks/useProfileQuery";
 import { useForYouModels } from "@/hooks/catalog/useForYouModels";
@@ -36,7 +39,10 @@ import {
   ArcadeCard,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
-import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
+import {
+  FloatingParticles,
+  GlitchText,
+} from "@/components/arcade/ArcadeEffects";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -44,7 +50,7 @@ import {
   getCatalogPublicTags,
   getCatalogSourceName,
   getCatalogVersionName,
-} from "@/pages/catalog/catalogUtils";
+} from "@/lib/catalog-utils";
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   anime: "Anime",
@@ -80,23 +86,44 @@ export default function CatalogArcade() {
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [page, setPage] = useState(0);
-  const [character, setCharacter] = useState(searchParams.get("character") ?? "");
-  const [franchise, setFranchise] = useState(searchParams.get("franchise") ?? "");
+  const [character, setCharacter] = useState(
+    searchParams.get("character") ?? "",
+  );
+  const [franchise, setFranchise] = useState(
+    searchParams.get("franchise") ?? "",
+  );
   const [category, setCategory] = useState("");
   const [sourceType, setSourceType] = useState("");
   const [variantType, setVariantType] = useState("");
   const [tagsCSV, setTagsCSV] = useState(searchParams.get("tag") ?? "");
   const [sort, setSort] = useState<CatalogSort>("recent");
   const [showFilters, setShowFilters] = useState(
-    Boolean(searchParams.get("tag") || searchParams.get("franchise") || searchParams.get("character")),
+    Boolean(
+      searchParams.get("tag") ||
+      searchParams.get("franchise") ||
+      searchParams.get("character"),
+    ),
   );
 
   const needle = useMemo(() => q.trim(), [q]);
   const wantsStagingPreview = searchParams.get("preview") === "staging";
   const canPreviewStaging = Boolean(isAdminQuery.data);
-  const catalogMode = wantsStagingPreview && canPreviewStaging ? "staging" : "public";
+  const catalogMode =
+    wantsStagingPreview && canPreviewStaging ? "staging" : "public";
 
-  useEffect(() => { setPage(0); }, [needle, character, franchise, category, sourceType, variantType, tagsCSV, sort, catalogMode]);
+  useEffect(() => {
+    setPage(0);
+  }, [
+    needle,
+    character,
+    franchise,
+    category,
+    sourceType,
+    variantType,
+    tagsCSV,
+    sort,
+    catalogMode,
+  ]);
 
   useEffect(() => {
     const urlTag = searchParams.get("tag") ?? "";
@@ -108,7 +135,8 @@ export default function CatalogArcade() {
     setFranchise(urlFranchise);
     setCharacter(urlCharacter);
     setQ(urlQuery);
-    if (urlTag || urlFranchise || urlCharacter || urlQuery) setShowFilters(true);
+    if (urlTag || urlFranchise || urlCharacter || urlQuery)
+      setShowFilters(true);
   }, [searchParams]);
 
   const modelsQuery = useCatalogModels(needle, page, {
@@ -138,14 +166,19 @@ export default function CatalogArcade() {
   });
   const forYouRows = useMemo(() => {
     const visibleIds = new Set(rows.map((row) => row.id));
-    return (forYouQuery.data ?? []).filter((model) => !visibleIds.has(model.id));
+    return (forYouQuery.data ?? []).filter(
+      (model) => !visibleIds.has(model.id),
+    );
   }, [forYouQuery.data, rows]);
 
   const getIsLiked = (id: string) => Boolean(user?.id) && likedIds.has(id);
 
   const handleToggleLike = async (m: ModelRow, isLiked: boolean) => {
     if (!user?.id) {
-      toast({ title: "Entre para favoritar", description: "Faça login para salvar seus modelos preferidos." });
+      toast({
+        title: "Entre para favoritar",
+        description: "Faça login para salvar seus modelos preferidos.",
+      });
       return;
     }
     try {
@@ -188,13 +221,31 @@ export default function CatalogArcade() {
   };
 
   const toggleStagingPreview = () => {
-    navigate(catalogMode === "staging" ? PUBLIC_ROUTES.catalog : `${PUBLIC_ROUTES.catalog}?preview=staging`);
+    navigate(
+      catalogMode === "staging"
+        ? PUBLIC_ROUTES.catalog
+        : `${PUBLIC_ROUTES.catalog}?preview=staging`,
+    );
   };
 
-  const categories = ["animes", "filmes", "series", "jogos", "quadrinhos", "outros"];
+  const categories = [
+    "animes",
+    "filmes",
+    "series",
+    "jogos",
+    "quadrinhos",
+    "outros",
+  ];
   const sourceTypes = Object.entries(SOURCE_TYPE_LABELS);
   const variantTypes = Object.entries(VARIANT_TYPE_LABELS);
-  const activeFilterCount = [character, franchise, category, sourceType, variantType, tagsCSV].filter(Boolean).length;
+  const activeFilterCount = [
+    character,
+    franchise,
+    category,
+    sourceType,
+    variantType,
+    tagsCSV,
+  ].filter(Boolean).length;
   const showPersonalizedSuggestions =
     user && catalogMode === "public" && !needle && activeFilterCount === 0;
 
@@ -223,7 +274,10 @@ export default function CatalogArcade() {
               className="w-full h-12 pl-11 pr-10 bg-[hsl(0,0%,7%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-sm tracking-wider placeholder:text-[hsl(0,0%,30%)] focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none transition-colors"
             />
             {q && (
-              <button onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(0,0%,40%)] hover:text-[hsl(var(--gold-accent))]">
+              <button
+                onClick={() => setQ("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(0,0%,40%)] hover:text-[hsl(var(--gold-accent))]"
+              >
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -248,7 +302,9 @@ export default function CatalogArcade() {
         {showFilters && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 p-4 border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] animate-fade-in">
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Personagem</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+                Personagem
+              </label>
               <input
                 value={character}
                 onChange={(e) => setCharacter(e.target.value)}
@@ -257,7 +313,9 @@ export default function CatalogArcade() {
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Obra</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+                Obra
+              </label>
               <input
                 value={franchise}
                 onChange={(e) => setFranchise(e.target.value)}
@@ -266,40 +324,60 @@ export default function CatalogArcade() {
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Categoria</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+                Categoria
+              </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               >
                 <option value="">Todas</option>
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Midia</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+                Midia
+              </label>
               <select
                 value={sourceType}
                 onChange={(e) => setSourceType(e.target.value)}
                 className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               >
                 <option value="">Todas</option>
-                {sourceTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                {sourceTypes.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Tipo</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+                Tipo
+              </label>
               <select
                 value={variantType}
                 onChange={(e) => setVariantType(e.target.value)}
                 className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               >
                 <option value="">Todos</option>
-                {variantTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                {variantTypes.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Tags</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+                Tags
+              </label>
               <input
                 value={tagsCSV}
                 onChange={(e) => setTagsCSV(e.target.value)}
@@ -308,7 +386,9 @@ export default function CatalogArcade() {
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">Ordenar</label>
+              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+                Ordenar
+              </label>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as CatalogSort)}
@@ -335,7 +415,12 @@ export default function CatalogArcade() {
         {/* Status bar */}
         <div className="mb-6 flex flex-col gap-3 font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider sm:flex-row sm:items-center sm:justify-between">
           <span>
-            {catalogMode === "staging" ? "Conferencia staging" : needle ? `Resultados: "${needle}"` : "Catalogo geral"} • Pagina {page + 1}
+            {catalogMode === "staging"
+              ? "Conferencia staging"
+              : needle
+                ? `Resultados: "${needle}"`
+                : "Catalogo geral"}{" "}
+            • Pagina {page + 1}
             {activeFilterCount ? ` • ${activeFilterCount} filtros` : ""}
           </span>
           <div className="flex flex-wrap items-center gap-3">
@@ -349,8 +434,14 @@ export default function CatalogArcade() {
                     : "text-[hsl(var(--gold-accent)/0.65)] hover:text-[hsl(var(--gold-accent))]"
                 }`}
               >
-                {catalogMode === "staging" ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                {catalogMode === "staging" ? "Sair da conferencia" : "Conferir staging"}
+                {catalogMode === "staging" ? (
+                  <EyeOff className="h-3.5 w-3.5" />
+                ) : (
+                  <Eye className="h-3.5 w-3.5" />
+                )}
+                {catalogMode === "staging"
+                  ? "Sair da conferencia"
+                  : "Conferir staging"}
               </button>
             )}
             <button
@@ -363,15 +454,19 @@ export default function CatalogArcade() {
           </div>
         </div>
 
-        {wantsStagingPreview && !canPreviewStaging && !isAdminQuery.isLoading && (
-          <div className="mb-6 border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-red-300">
-            O modo de conferencia exige login administrativo.
-          </div>
-        )}
+        {wantsStagingPreview &&
+          !canPreviewStaging &&
+          !isAdminQuery.isLoading && (
+            <div className="mb-6 border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-red-300">
+              O modo de conferencia exige login administrativo.
+            </div>
+          )}
 
         {catalogMode === "staging" && (
           <div className="mb-6 border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(var(--gold-accent)/0.08)] px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))]">
-            Modo conferencia: estes modelos estao inativos no catalogo publico e servem para revisar nome, imagem, tags e categoria antes de publicar.
+            Modo conferencia: estes modelos estao inativos no catalogo publico e
+            servem para revisar nome, imagem, tags e categoria antes de
+            publicar.
           </div>
         )}
       </section>
@@ -401,7 +496,10 @@ export default function CatalogArcade() {
         {modelsQuery.isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="aspect-[3/4] bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] animate-pulse" />
+              <div
+                key={i}
+                className="aspect-[3/4] bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] animate-pulse"
+              />
             ))}
           </div>
         ) : rows.length === 0 ? (
@@ -415,8 +513,13 @@ export default function CatalogArcade() {
               >
                 <GlitchText text="NO TARGETS" />
               </h2>
-              <p className="text-[hsl(0,0%,40%)] font-mono text-[9px] tracking-[0.15em] mb-6" style={{ fontFamily: "'Press Start 2P', monospace" }}>
-                {needle ? `Nenhum resultado para "${needle}"` : "Nenhum modelo encontrado."}
+              <p
+                className="text-[hsl(0,0%,40%)] font-mono text-[9px] tracking-[0.15em] mb-6"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                {needle
+                  ? `Nenhum resultado para "${needle}"`
+                  : "Nenhum modelo encontrado."}
               </p>
               {needle && (
                 <button
@@ -470,7 +573,11 @@ export default function CatalogArcade() {
         badge="Colecionáveis Sob Encomenda"
         title="EXPLORE AS COLEÇÕES"
         description="Veja as coleções disponíveis e escolha seus personagens favoritos."
-        primaryAction={{ label: "VER COLEÇÕES", href: PUBLIC_ROUTES.collections, icon: <ArrowRight className="w-4 h-4" /> }}
+        primaryAction={{
+          label: "VER COLEÇÕES",
+          href: PUBLIC_ROUTES.collections,
+          icon: <ArrowRight className="w-4 h-4" />,
+        }}
         secondaryAction={{ label: "VER PLANOS", href: PUBLIC_ROUTES.plans }}
       />
     </Page>
@@ -479,7 +586,12 @@ export default function CatalogArcade() {
 
 // ─── MODEL CARD ──────────────────────────────────────────────────────
 
-function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
+function ModelArcadeCard({
+  model,
+  isLiked,
+  onToggleLike,
+  onTagClick,
+}: {
   model: ModelRow;
   isLiked: boolean;
   onToggleLike: () => void;
@@ -489,12 +601,17 @@ function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
   const navigate = useNavigate();
   const imageUrl = model.thumbnailUrl ?? model.imageUrl;
   const displayTags = getCatalogPublicTags(model, 3);
-  const isStaging = !model.is_active || (model.tags ?? []).includes("catalog-staging");
+  const isStaging =
+    !model.is_active || (model.tags ?? []).includes("catalog-staging");
   const characterName = getCatalogCharacterName(model);
   const sourceName = getCatalogSourceName(model);
   const versionName = getCatalogVersionName(model);
-  const mediaLabel = model.source_type ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type : null;
-  const variantLabel = model.variant_type ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type : null;
+  const mediaLabel = model.source_type
+    ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type
+    : null;
+  const variantLabel = model.variant_type
+    ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type
+    : null;
   const fixedCashPrice =
     model.price_mode === "fixed" &&
     typeof model.price_standalone_override === "number" &&
@@ -520,7 +637,9 @@ function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
               src={imageUrl}
               alt={characterName}
               className={`h-full w-full opacity-80 transition-all duration-700 group-hover:opacity-100 ${
-                isStaging ? "object-contain p-2 group-hover:scale-105" : "object-cover group-hover:scale-110"
+                isStaging
+                  ? "object-contain p-2 group-hover:scale-105"
+                  : "object-cover group-hover:scale-110"
               }`}
               loading="lazy"
               decoding="async"
@@ -533,7 +652,10 @@ function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
 
           {/* Like button */}
           <button
-            onClick={(e) => { e.preventDefault(); onToggleLike(); }}
+            onClick={(e) => {
+              e.preventDefault();
+              onToggleLike();
+            }}
             className={`absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center border transition-all ${
               isLiked
                 ? "bg-[hsl(0,70%,50%)/0.2] border-[hsl(0,70%,50%)/0.5] text-[hsl(0,70%,60%)]"

@@ -27,7 +27,7 @@ import {
   buildModelTitle,
   getCatalogPublicTags,
   normalizeCatalogTag,
-} from "@/pages/catalog/catalogUtils";
+} from "@/lib/catalog-utils";
 import { useModelDetails } from "@/hooks/catalog/useModelDetails";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { formatCurrency } from "@/lib/utils";
@@ -56,7 +56,10 @@ const VARIANT_TYPE_LABELS: Record<string, string> = {
 };
 
 // ─── Types ───────────────────────────────────────────────────
-function catalogFilterPath(key: "tag" | "franchise" | "character", value: string) {
+function catalogFilterPath(
+  key: "tag" | "franchise" | "character",
+  value: string,
+) {
   const params = new URLSearchParams();
   params.set(key, key === "tag" ? normalizeCatalogTag(value) : value);
   return `${PUBLIC_ROUTES.catalog}?${params.toString()}`;
@@ -74,7 +77,8 @@ export default function ModelDetails() {
   // ─── Likes ──────────────────────────────────────────────────
   const likesQuery = useLikedModelIdsQuery(user?.id);
   const likedIds = likesQuery.data ?? new Set<string>();
-  const isLiked = Boolean(user?.id) && Boolean(model?.id) && likedIds.has(model?.id ?? "");
+  const isLiked =
+    Boolean(user?.id) && Boolean(model?.id) && likedIds.has(model?.id ?? "");
 
   const onToggleLike = async () => {
     if (!model) return;
@@ -103,8 +107,12 @@ export default function ModelDetails() {
   const displayName = model?.character_name || model?.name || "Modelo";
   const sourceTitle = model?.source_title || model?.franchise || null;
   const variantName = model?.variant_name || null;
-  const mediaLabel = model?.source_type ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type : null;
-  const variantLabel = model?.variant_type ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type : null;
+  const mediaLabel = model?.source_type
+    ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type
+    : null;
+  const variantLabel = model?.variant_type
+    ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type
+    : null;
   const title = model
     ? variantName
       ? `${displayName} - ${variantName}`
@@ -118,7 +126,11 @@ export default function ModelDetails() {
 
   const metaChips = [
     sourceTitle
-      ? { label: "Obra", value: sourceTitle, href: catalogFilterPath("tag", sourceTitle) }
+      ? {
+          label: "Obra",
+          value: sourceTitle,
+          href: catalogFilterPath("tag", sourceTitle),
+        }
       : null,
     mediaLabel ? { label: "Midia", value: mediaLabel } : null,
     model?.category ? { label: "Categoria", value: model.category } : null,
@@ -135,10 +147,21 @@ export default function ModelDetails() {
         }
       : null,
     { label: "Versao", value: variantName },
-    { label: "Tipo", value: variantLabel && variantLabel !== "Padrao" ? variantLabel : null },
-    sourceTitle ? { label: "Obra", value: sourceTitle, href: catalogFilterPath("tag", sourceTitle) } : null,
+    {
+      label: "Tipo",
+      value: variantLabel && variantLabel !== "Padrao" ? variantLabel : null,
+    },
+    sourceTitle
+      ? {
+          label: "Obra",
+          value: sourceTitle,
+          href: catalogFilterPath("tag", sourceTitle),
+        }
+      : null,
     { label: "Midia", value: mediaLabel },
-  ].filter((row): row is { label: string; value: string; href?: string } => Boolean(row?.value));
+  ].filter((row): row is { label: string; value: string; href?: string } =>
+    Boolean(row?.value),
+  );
   const fixedCashPrice =
     model?.price_mode === "fixed" &&
     typeof model.price_standalone_override === "number" &&
@@ -153,7 +176,10 @@ export default function ModelDetails() {
   // ─── Loading ────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <Page title="Carregando..." description="Carregando informações do modelo">
+      <Page
+        title="Carregando..."
+        description="Carregando informações do modelo"
+      >
         <div className="min-h-screen bg-[hsl(var(--background))] py-12">
           <div className="container max-w-6xl mx-auto px-4">
             <Skeleton className="h-12 w-48 mb-8" />
@@ -174,7 +200,10 @@ export default function ModelDetails() {
   // ─── Not Found ──────────────────────────────────────────────
   if (!model) {
     return (
-      <Page title="Modelo não encontrado" description="O modelo solicitado não foi encontrado">
+      <Page
+        title="Modelo não encontrado"
+        description="O modelo solicitado não foi encontrado"
+      >
         <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
           <div className="text-center">
             <Package className="w-16 h-16 mx-auto mb-4 text-[hsl(var(--muted-foreground))]" />
@@ -195,7 +224,11 @@ export default function ModelDetails() {
 
   // ─── Render ─────────────────────────────────────────────────
   return (
-    <Page title={title} description={seoDescription} keywords={["modelo", "catálogo", displayName]}>
+    <Page
+      title={title}
+      description={seoDescription}
+      keywords={["modelo", "catálogo", displayName]}
+    >
       {/* Scanlines Effect */}
       <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]">
         <div
@@ -262,8 +295,8 @@ export default function ModelDetails() {
 
               <p className="mt-3 border-l-2 border-[hsl(var(--gold-accent)/0.45)] pl-3 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                 Imagem de referencia do modelo
-                {sourceTitle ? ` - ${sourceTitle}` : ""}. Producao sob
-                encomenda com acabamento artesanal.
+                {sourceTitle ? ` - ${sourceTitle}` : ""}. Producao sob encomenda
+                com acabamento artesanal.
               </p>
 
               {/* Like Button */}
@@ -272,7 +305,9 @@ export default function ModelDetails() {
                 className="absolute right-4 top-4 z-20 inline-flex h-12 w-12 items-center justify-center rounded-sm border-2 border-[hsl(var(--gold-accent))] bg-[hsl(var(--background)/0.9)] text-[hsl(var(--foreground))] shadow-[0_0_15px_hsl(var(--gold-accent)/0.3)] backdrop-blur-sm transition-all duration-300 hover:bg-[hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_25px_hsl(var(--gold-accent)/0.5)]"
                 onClick={onToggleLike}
                 aria-pressed={isLiked}
-                aria-label={isLiked ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                aria-label={
+                  isLiked ? "Remover dos favoritos" : "Adicionar aos favoritos"
+                }
               >
                 <Heart
                   className={`h-5 w-5 transition-colors duration-300 ${
@@ -345,7 +380,10 @@ export default function ModelDetails() {
               {taxonomyRows.length > 0 && (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {taxonomyRows.map((row) => (
-                    <div key={row.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3">
+                    <div
+                      key={row.label}
+                      className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3"
+                    >
                       <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         {row.label}
                       </p>
@@ -358,7 +396,10 @@ export default function ModelDetails() {
                           {row.value}
                         </Link>
                       ) : (
-                        <p className="truncate text-sm font-semibold" title={String(row.value)}>
+                        <p
+                          className="truncate text-sm font-semibold"
+                          title={String(row.value)}
+                        >
                           {row.value}
                         </p>
                       )}
@@ -435,8 +476,9 @@ export default function ModelDetails() {
                   )}
                 </div>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4 leading-relaxed">
-                  Item de catalogo para consulta e planejamento. A disponibilidade,
-                  escala, base e pintura podem variar conforme o projeto aprovado.
+                  Item de catalogo para consulta e planejamento. A
+                  disponibilidade, escala, base e pintura podem variar conforme
+                  o projeto aprovado.
                 </p>
 
                 <div className="flex flex-col gap-3">
@@ -483,7 +525,8 @@ export default function ModelDetails() {
                   Quer consultar esse modelo?
                 </h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Use as tags e a obra para navegar por modelos relacionados, ou veja os planos para organizar sua proxima escolha.
+                  Use as tags e a obra para navegar por modelos relacionados, ou
+                  veja os planos para organizar sua proxima escolha.
                 </p>
               </div>
               <Button

@@ -9,7 +9,17 @@ import {
   ArcadeCard,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
-import { Heart, Trash2, Eye, Edit2, X, Check, Bell, BellOff, Crosshair } from "lucide-react";
+import {
+  Heart,
+  Trash2,
+  Eye,
+  Edit2,
+  X,
+  Check,
+  Bell,
+  BellOff,
+  Crosshair,
+} from "lucide-react";
 import {
   getWishlistModelImageUrl,
   listWishlistItems,
@@ -23,14 +33,17 @@ import {
   getCatalogPublicTags,
   getCatalogSourceName,
   getCatalogVersionName,
-} from "@/pages/catalog/catalogUtils";
+} from "@/lib/catalog-utils";
 
 export default function WishlistArcade() {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [editingItem, setEditingItem] = useState<{
-    id: string; notes: string; priority: number; notify: boolean;
+    id: string;
+    notes: string;
+    priority: number;
+    notify: boolean;
   } | null>(null);
 
   const wishlistQuery = useQuery({
@@ -41,14 +54,25 @@ export default function WishlistArcade() {
 
   const removeMutation = useMutation({
     mutationFn: removeWishlistItem,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["wishlist"] }); toast({ title: "Removido" }); },
-    onError: () => { toast({ title: "Erro ao remover", variant: "destructive" }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["wishlist"] });
+      toast({ title: "Removido" });
+    },
+    onError: () => {
+      toast({ title: "Erro ao remover", variant: "destructive" });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: (input: UpdateWishlistItemInput) => updateWishlistItem(input),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["wishlist"] }); toast({ title: "Atualizado" }); setEditingItem(null); },
-    onError: () => { toast({ title: "Erro", variant: "destructive" }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["wishlist"] });
+      toast({ title: "Atualizado" });
+      setEditingItem(null);
+    },
+    onError: () => {
+      toast({ title: "Erro", variant: "destructive" });
+    },
   });
 
   const items = wishlistQuery.data || [];
@@ -59,10 +83,14 @@ export default function WishlistArcade() {
     return { label: "NORMAL", color: "hsl(0,0%,40%)" };
   };
 
-  const inputClass = "w-full bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,18%)] text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] font-mono text-xs px-3 py-2 focus:outline-none focus:border-[hsl(var(--gold-accent))] transition-all";
+  const inputClass =
+    "w-full bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,18%)] text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] font-mono text-xs px-3 py-2 focus:outline-none focus:border-[hsl(var(--gold-accent))] transition-all";
 
   return (
-    <Page title="Lista de Desejos" description="Gerencie sua lista de desejos de colecionáveis">
+    <Page
+      title="Lista de Desejos"
+      description="Gerencie sua lista de desejos de colecionáveis"
+    >
       <ArcadeHero
         badge="Inventário"
         title="WISHLIST"
@@ -75,8 +103,12 @@ export default function WishlistArcade() {
           <ArcadeCard>
             <div className="p-12 text-center">
               <Heart className="w-16 h-16 mx-auto mb-4 text-[hsl(0,0%,15%)]" />
-              <p className="font-mono text-[hsl(0,0%,40%)] text-xs tracking-wider mb-1">INVENTÁRIO VAZIO</p>
-              <p className="font-mono text-[hsl(0,0%,25%)] text-[9px] tracking-wider mb-6">Adicione itens pelo catálogo</p>
+              <p className="font-mono text-[hsl(0,0%,40%)] text-xs tracking-wider mb-1">
+                INVENTÁRIO VAZIO
+              </p>
+              <p className="font-mono text-[hsl(0,0%,25%)] text-[9px] tracking-wider mb-6">
+                Adicione itens pelo catálogo
+              </p>
               <Link
                 to={PUBLIC_ROUTES.catalog}
                 className="inline-flex items-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] font-mono uppercase tracking-[0.15em] text-xs h-10 px-8 hover:brightness-110 transition-all"
@@ -103,9 +135,17 @@ export default function WishlistArcade() {
                     {/* Image */}
                     <div className="w-full sm:w-36 h-36 flex-shrink-0 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] overflow-hidden">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={characterName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" decoding="async" />
+                        <img
+                          src={imageUrl}
+                          alt={characterName}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[hsl(0,0%,20%)] font-mono text-[9px]">NO IMG</div>
+                        <div className="w-full h-full flex items-center justify-center text-[hsl(0,0%,20%)] font-mono text-[9px]">
+                          NO IMG
+                        </div>
                       )}
                     </div>
 
@@ -117,8 +157,16 @@ export default function WishlistArcade() {
                             {characterName}
                           </h3>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
-                            {sourceName && <span className="font-mono text-[10px] text-[hsl(var(--gold-accent)/0.65)]">{sourceName}</span>}
-                            {versionName && <span className="font-mono text-[10px] text-[hsl(0,0%,40%)]">{versionName}</span>}
+                            {sourceName && (
+                              <span className="font-mono text-[10px] text-[hsl(var(--gold-accent)/0.65)]">
+                                {sourceName}
+                              </span>
+                            )}
+                            {versionName && (
+                              <span className="font-mono text-[10px] text-[hsl(0,0%,40%)]">
+                                {versionName}
+                              </span>
+                            )}
                             {tags.map((tag) => (
                               <span
                                 key={tag}
@@ -130,7 +178,13 @@ export default function WishlistArcade() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[8px] px-2 py-1 border tracking-[0.2em]" style={{ borderColor: priority.color, color: priority.color }}>
+                          <span
+                            className="font-mono text-[8px] px-2 py-1 border tracking-[0.2em]"
+                            style={{
+                              borderColor: priority.color,
+                              color: priority.color,
+                            }}
+                          >
                             {priority.label}
                           </span>
                           {item.notify_when_available && (
@@ -143,7 +197,12 @@ export default function WishlistArcade() {
                         <div className="space-y-3">
                           <textarea
                             value={editingItem.notes}
-                            onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
+                            onChange={(e) =>
+                              setEditingItem({
+                                ...editingItem,
+                                notes: e.target.value,
+                              })
+                            }
                             placeholder="Notas..."
                             maxLength={500}
                             className={`${inputClass} min-h-[60px] resize-none`}
@@ -151,7 +210,12 @@ export default function WishlistArcade() {
                           <div className="flex flex-wrap gap-2">
                             <select
                               value={editingItem.priority}
-                              onChange={(e) => setEditingItem({ ...editingItem, priority: Number(e.target.value) })}
+                              onChange={(e) =>
+                                setEditingItem({
+                                  ...editingItem,
+                                  priority: Number(e.target.value),
+                                })
+                              }
                               className={`${inputClass} w-32`}
                             >
                               <option value={0}>Normal</option>
@@ -159,26 +223,45 @@ export default function WishlistArcade() {
                               <option value={2}>Urgente</option>
                             </select>
                             <button
-                              onClick={() => setEditingItem({ ...editingItem, notify: !editingItem.notify })}
+                              onClick={() =>
+                                setEditingItem({
+                                  ...editingItem,
+                                  notify: !editingItem.notify,
+                                })
+                              }
                               className={`flex items-center gap-1 px-3 py-1.5 border font-mono text-[10px] uppercase tracking-wider transition-all ${
                                 editingItem.notify
                                   ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]"
                                   : "border-[hsl(0,0%,18%)] text-[hsl(0,0%,40%)]"
                               }`}
                             >
-                              {editingItem.notify ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
+                              {editingItem.notify ? (
+                                <Bell className="w-3 h-3" />
+                              ) : (
+                                <BellOff className="w-3 h-3" />
+                              )}
                               {editingItem.notify ? "ON" : "OFF"}
                             </button>
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => updateMutation.mutate({ id: item.id, notes: editingItem.notes, priority: editingItem.priority, notify: editingItem.notify })}
+                              onClick={() =>
+                                updateMutation.mutate({
+                                  id: item.id,
+                                  notes: editingItem.notes,
+                                  priority: editingItem.priority,
+                                  notify: editingItem.notify,
+                                })
+                              }
                               disabled={updateMutation.isPending}
                               className="flex items-center gap-1 px-4 py-1.5 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] font-mono text-[10px] uppercase tracking-wider hover:brightness-110 transition-all"
                             >
                               <Check className="w-3 h-3" /> SALVAR
                             </button>
-                            <button onClick={() => setEditingItem(null)} className="flex items-center gap-1 px-3 py-1.5 border border-[hsl(0,0%,18%)] text-[hsl(0,0%,45%)] font-mono text-[10px] uppercase tracking-wider hover:text-[hsl(0,0%,70%)] transition-all">
+                            <button
+                              onClick={() => setEditingItem(null)}
+                              className="flex items-center gap-1 px-3 py-1.5 border border-[hsl(0,0%,18%)] text-[hsl(0,0%,45%)] font-mono text-[10px] uppercase tracking-wider hover:text-[hsl(0,0%,70%)] transition-all"
+                            >
                               <X className="w-3 h-3" />
                             </button>
                           </div>
@@ -186,17 +269,30 @@ export default function WishlistArcade() {
                       ) : (
                         <>
                           {item.notes && (
-                            <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] mb-3 line-clamp-2">{item.notes}</p>
+                            <p className="font-mono text-[10px] text-[hsl(0,0%,40%)] mb-3 line-clamp-2">
+                              {item.notes}
+                            </p>
                           )}
                           <div className="flex flex-wrap gap-2">
                             <button
-                              onClick={() => setEditingItem({ id: item.id, notes: item.notes || "", priority: item.priority, notify: item.notify_when_available })}
+                              onClick={() =>
+                                setEditingItem({
+                                  id: item.id,
+                                  notes: item.notes || "",
+                                  priority: item.priority,
+                                  notify: item.notify_when_available,
+                                })
+                              }
                               className="flex items-center gap-1 px-3 py-1.5 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono text-[9px] uppercase tracking-wider transition-all"
                             >
                               <Edit2 className="w-3 h-3" /> EDITAR
                             </button>
                             <Link
-                              to={model?.id ? catalogModelDetailsPath(model.id) : PUBLIC_ROUTES.catalog}
+                              to={
+                                model?.id
+                                  ? catalogModelDetailsPath(model.id)
+                                  : PUBLIC_ROUTES.catalog
+                              }
                               className="flex items-center gap-1 px-3 py-1.5 border border-[hsl(0,0%,18%)] text-[hsl(0,0%,50%)] hover:text-[hsl(var(--gold-accent))] hover:border-[hsl(var(--gold-accent)/0.3)] font-mono text-[9px] uppercase tracking-wider transition-all"
                             >
                               <Eye className="w-3 h-3" /> VER

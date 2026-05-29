@@ -1,13 +1,30 @@
 import { CATALOG_PAGE_SIZE } from "@/config/catalog";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeCatalogTag } from "@/pages/catalog/catalogUtils";
+import { normalizeCatalogTag } from "@/lib/catalog-utils";
 import type { CatalogModelDetailsRow, CatalogModelRow } from "@/types/catalog";
 
 export type CatalogSort = "recent" | "az";
 export type CatalogMode = "public" | "staging";
 
-export type CatalogSourceType = "anime" | "manga" | "movie" | "series" | "game" | "comic" | "tokusatsu" | "original" | "other";
-export type CatalogVariantType = "default" | "form" | "costume" | "pose" | "scale" | "edition" | "variant" | "other";
+export type CatalogSourceType =
+  | "anime"
+  | "manga"
+  | "movie"
+  | "series"
+  | "game"
+  | "comic"
+  | "tokusatsu"
+  | "original"
+  | "other";
+export type CatalogVariantType =
+  | "default"
+  | "form"
+  | "costume"
+  | "pose"
+  | "scale"
+  | "edition"
+  | "variant"
+  | "other";
 
 export type CatalogModelFilters = {
   character: string;
@@ -21,20 +38,24 @@ export type CatalogModelFilters = {
 };
 
 type CatalogModelDbRow = Omit<CatalogModelRow, "imageUrl" | "thumbnailUrl">;
-type CatalogModelDetailsDbRow = Omit<CatalogModelDetailsRow, "imageUrl" | "thumbnailUrl">;
+type CatalogModelDetailsDbRow = Omit<
+  CatalogModelDetailsRow,
+  "imageUrl" | "thumbnailUrl"
+>;
 
 const LEGACY_CATALOG_MODEL_SELECT =
   "id,name,franchise,category,subcategory,tags,is_active,image_bucket,image_path,thumbnail_url,created_at";
 
-const CATALOG_MODEL_SELECT =
-  `${LEGACY_CATALOG_MODEL_SELECT},price_mode,price_standalone_override,price_coins_override,character_name,variant_name,variant_type,source_title,source_type,catalog_visibility`;
+const CATALOG_MODEL_SELECT = `${LEGACY_CATALOG_MODEL_SELECT},price_mode,price_standalone_override,price_coins_override,character_name,variant_name,variant_type,source_title,source_type,catalog_visibility`;
 
 const CATALOG_MODEL_DETAILS_SELECT = `${CATALOG_MODEL_SELECT},description`;
 const LEGACY_CATALOG_MODEL_DETAILS_SELECT = `${LEGACY_CATALOG_MODEL_SELECT},description`;
 
 type CatalogModelsQueryResult<T> = { data: T[] | null; error: unknown };
 
-interface CatalogModelsQuery<T> extends PromiseLike<CatalogModelsQueryResult<T>> {
+interface CatalogModelsQuery<T> extends PromiseLike<
+  CatalogModelsQueryResult<T>
+> {
   contains(column: string, value: string[]): CatalogModelsQuery<T>;
   eq(column: string, value: string | boolean): CatalogModelsQuery<T>;
   ilike(column: string, pattern: string): CatalogModelsQuery<T>;
@@ -43,7 +64,10 @@ interface CatalogModelsQuery<T> extends PromiseLike<CatalogModelsQueryResult<T>>
   maybeSingle(): Promise<{ data: T | null; error: unknown }>;
   not(column: string, operator: string, value: string): CatalogModelsQuery<T>;
   or(filters: string): CatalogModelsQuery<T>;
-  order(column: string, options?: { ascending?: boolean }): CatalogModelsQuery<T>;
+  order(
+    column: string,
+    options?: { ascending?: boolean },
+  ): CatalogModelsQuery<T>;
   overlaps(column: string, values: string[]): CatalogModelsQuery<T>;
   range(from: number, to: number): CatalogModelsQuery<T>;
 }
@@ -70,7 +94,10 @@ function getPublicModelImageUrl(bucket: string | null, path: string | null) {
 }
 
 function normalizeSearchValue(value: string) {
-  return value.replace(/[%_,()]/g, " ").replace(/\s+/g, " ").trim();
+  return value
+    .replace(/[%_,()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function isProfessionalCatalogSchemaError(error: unknown) {
@@ -99,7 +126,9 @@ function mapCatalogModel(row: CatalogModelDbRow): CatalogModelRow {
   };
 }
 
-function mapCatalogModelDetails(row: CatalogModelDetailsDbRow): CatalogModelDetailsRow {
+function mapCatalogModelDetails(
+  row: CatalogModelDetailsDbRow,
+): CatalogModelDetailsRow {
   const imageUrl = getPublicModelImageUrl(row.image_bucket, row.image_path);
   return {
     ...row,
@@ -108,7 +137,10 @@ function mapCatalogModelDetails(row: CatalogModelDetailsDbRow): CatalogModelDeta
   };
 }
 
-function scoreByPreferenceTags(model: CatalogModelRow, preferenceTags: Set<string>) {
+function scoreByPreferenceTags(
+  model: CatalogModelRow,
+  preferenceTags: Set<string>,
+) {
   if (!preferenceTags.size) return 0;
 
   return (model.tags ?? [])
@@ -155,7 +187,10 @@ export async function listCatalogModels(params: {
 
     const normalizedNeedle = normalizeSearchValue(needle);
     if (normalizedNeedle) {
-      const pattern = normalizedNeedle.length <= 2 ? `${normalizedNeedle}%` : `%${normalizedNeedle}%`;
+      const pattern =
+        normalizedNeedle.length <= 2
+          ? `${normalizedNeedle}%`
+          : `%${normalizedNeedle}%`;
       const searchFields = professional
         ? `name.ilike.${pattern},character_name.ilike.${pattern},variant_name.ilike.${pattern},source_title.ilike.${pattern},franchise.ilike.${pattern},category.ilike.${pattern},subcategory.ilike.${pattern}`
         : `name.ilike.${pattern},franchise.ilike.${pattern},category.ilike.${pattern},subcategory.ilike.${pattern}`;
@@ -244,7 +279,7 @@ export async function listForYouCatalogModels(params: {
     models.sort(
       (left, right) =>
         scoreByPreferenceTags(right, params.preferenceTags) -
-        scoreByPreferenceTags(left, params.preferenceTags)
+        scoreByPreferenceTags(left, params.preferenceTags),
     );
   }
 
@@ -252,9 +287,14 @@ export async function listForYouCatalogModels(params: {
 }
 
 export async function getCatalogModelDetails(modelId: string) {
-  const runQuery = (professional: boolean) => catalogModelsGateway
+  const runQuery = (professional: boolean) =>
+    catalogModelsGateway
       .from("models")
-      .select(professional ? CATALOG_MODEL_DETAILS_SELECT : LEGACY_CATALOG_MODEL_DETAILS_SELECT)
+      .select(
+        professional
+          ? CATALOG_MODEL_DETAILS_SELECT
+          : LEGACY_CATALOG_MODEL_DETAILS_SELECT,
+      )
       .eq("id", modelId)
       .maybeSingle();
   let { data, error } = await runQuery(true);
@@ -265,7 +305,9 @@ export async function getCatalogModelDetails(modelId: string) {
   return data ? mapCatalogModelDetails(data as CatalogModelDetailsDbRow) : null;
 }
 
-export async function listRecentLandingModels(limit = 6): Promise<CatalogModelRow[]> {
+export async function listRecentLandingModels(
+  limit = 6,
+): Promise<CatalogModelRow[]> {
   const runQuery = async (professional: boolean) => {
     const query = catalogModelsGateway
       .from("models")
@@ -274,7 +316,9 @@ export async function listRecentLandingModels(limit = 6): Promise<CatalogModelRo
       .order("created_at", { ascending: false })
       .limit(limit);
 
-    return professional ? query.in("catalog_visibility", ["general", "both"]) : query;
+    return professional
+      ? query.in("catalog_visibility", ["general", "both"])
+      : query;
   };
 
   let { data, error } = await runQuery(true);

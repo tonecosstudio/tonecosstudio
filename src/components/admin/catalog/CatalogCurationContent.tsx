@@ -45,7 +45,7 @@ import {
   type CatalogVisibility,
 } from "@/hooks/admin/useCatalogCuration";
 import { useToast } from "@/hooks/use-toast";
-import { getCatalogPublicTags } from "@/pages/catalog/catalogUtils";
+import { getCatalogPublicTags } from "@/lib/catalog-utils";
 
 type PublishForm = {
   name: string;
@@ -704,14 +704,14 @@ export function CatalogCurationContent() {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {getPublicTagLabels(item).map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="outline"
-                              className="gap-1 text-[10px]"
-                            >
-                              <Tags className="h-3 w-3" />
-                              {tag}
-                            </Badge>
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="gap-1 text-[10px]"
+                              >
+                                <Tags className="h-3 w-3" />
+                                {tag}
+                              </Badge>
                             ))}
                           </div>
                         </div>

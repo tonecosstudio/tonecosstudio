@@ -1,5 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Crosshair, Shield, Zap, Eye, Trophy, ChevronDown, Gamepad2, Star } from "lucide-react";
+import {
+  ArrowRight,
+  Crosshair,
+  Shield,
+  Zap,
+  Eye,
+  Trophy,
+  ChevronDown,
+  Gamepad2,
+  Star,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -7,7 +17,10 @@ import {
   ArcadeSectionTitle,
   ArcadeCTA,
 } from "@/components/arcade/ArcadeLayout";
-import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
+import {
+  FloatingParticles,
+  GlitchText,
+} from "@/components/arcade/ArcadeEffects";
 import { useAuth } from "@/lib/auth";
 import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
 import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
@@ -19,7 +32,7 @@ import {
 import {
   getCatalogCharacterName,
   getCatalogSourceName,
-} from "@/pages/catalog/catalogUtils";
+} from "@/lib/catalog-utils";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -167,7 +180,10 @@ function FeaturedCollectionCard({
 
   return (
     <ArcadeCard className="cursor-pointer" hover>
-      <div onClick={() => navigate(collectionDetailsPath(slug))} className="relative overflow-hidden">
+      <div
+        onClick={() => navigate(collectionDetailsPath(slug))}
+        className="relative overflow-hidden"
+      >
         {/* Image */}
         <div className="h-48 bg-[hsl(0,0%,8%)] overflow-hidden">
           {coverUrl ? (
@@ -238,7 +254,14 @@ export default function LandingPage() {
     <Page
       title="ORDAX — Colecionáveis Premium de Elite"
       description="Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão."
-      keywords={["colecionáveis", "premium", "artesanal", "figuras", "estátuas", "ordax"]}
+      keywords={[
+        "colecionáveis",
+        "premium",
+        "artesanal",
+        "figuras",
+        "estátuas",
+        "ordax",
+      ]}
     >
       {/* ═══ HERO ═══ */}
       <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
@@ -247,7 +270,10 @@ export default function LandingPage() {
 
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-[0.06] pointer-events-none"
-          style={{ background: "radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)" }}
+          style={{
+            background:
+              "radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)",
+          }}
         />
 
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
@@ -287,7 +313,10 @@ export default function LandingPage() {
               className="text-[9px] sm:text-[10px] text-[hsl(0,0%,45%)] tracking-wider"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
-              <TypewriterText text=">> PEÇAS PREMIUM ARTESANAIS. FEITAS À MÃO. SOB ENCOMENDA." delay={800} />
+              <TypewriterText
+                text=">> PEÇAS PREMIUM ARTESANAIS. FEITAS À MÃO. SOB ENCOMENDA."
+                delay={800}
+              />
             </p>
           </div>
 
@@ -297,7 +326,10 @@ export default function LandingPage() {
               onClick={() => navigate(PUBLIC_ROUTES.collections)}
               className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
             >
-              <Crosshair className="w-5 h-5 group-hover:animate-spin" style={{ animationDuration: "3s" }} />
+              <Crosshair
+                className="w-5 h-5 group-hover:animate-spin"
+                style={{ animationDuration: "3s" }}
+              />
               EXPLORAR COLEÇÕES
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -402,7 +434,9 @@ export default function LandingPage() {
                           {characterName}
                         </p>
                         {sourceName && (
-                          <p className="font-mono text-[8px] text-[hsl(0,0%,30%)] mt-0.5">{sourceName}</p>
+                          <p className="font-mono text-[8px] text-[hsl(0,0%,30%)] mt-0.5">
+                            {sourceName}
+                          </p>
                         )}
                       </div>
                     </ArcadeCard>
