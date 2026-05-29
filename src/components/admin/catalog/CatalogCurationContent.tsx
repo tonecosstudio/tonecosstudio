@@ -207,19 +207,55 @@ function shouldShowForQuickFilter(
   return true;
 }
 
-function getVisibleTagLabels(item: CatalogCurationItem) {
-  return getItemTags(item)
-    .filter((tag) => !tag.startsWith("drive-id-"))
-    .filter(
-      (tag) =>
-        ![
-          "drive-import",
-          "drive-identified",
-          "catalog-staging",
-          "queued-from-staging",
-        ].includes(tag),
-    )
-    .slice(0, 5);
+function normalizePublicTag(value: string | null | undefined) {
+  return cleanFileName(value || "")
+    .replace(/^animes$/i, "anime")
+    .toLocaleLowerCase();
+}
+
+function isInternalTag(tag: string) {
+  const canonicalTag = tag.replace(/\s+/g, "-");
+  return (
+    canonicalTag.startsWith("drive-") ||
+    canonicalTag.startsWith("source-") ||
+    canonicalTag.startsWith("category-") ||
+    canonicalTag.startsWith("media-") ||
+    canonicalTag.startsWith("price-") ||
+    canonicalTag.startsWith("bg-") ||
+    canonicalTag.startsWith("needs-") ||
+    [
+      "catalog-staging",
+      "queued-from-staging",
+      "generic-filename",
+      "manually-identified",
+      "hidden-duplicate",
+      "duplicate-legacy",
+      "ia",
+      "revisao",
+      "revisar",
+      "oculto",
+    ].includes(canonicalTag)
+  );
+}
+
+function getPublicTagLabels(item: CatalogCurationItem) {
+  const candidates = [
+    item.source_title,
+    item.source_folder_name,
+    item.character_name,
+    item.proposed_name,
+    item.media_type === "anime" ? "anime" : item.media_type,
+    item.category,
+    item.subcategory,
+    ...(item.tags ?? []),
+  ];
+
+  const tags = candidates
+    .map((tag) => normalizePublicTag(tag))
+    .filter(Boolean)
+    .filter((tag) => !isInternalTag(tag));
+
+  return Array.from(new Set(tags)).slice(0, 8);
 }
 
 function buildInitialForm(item: CatalogCurationItem | null): PublishForm {
@@ -237,7 +273,7 @@ function buildInitialForm(item: CatalogCurationItem | null): PublishForm {
     franchise: item.source_title || item.source_folder_name || "",
     category: item.category || "",
     subcategory: item.subcategory || "",
-    tags: (item.tags ?? []).join(", "),
+    tags: getPublicTagLabels(item).join(", "),
     catalogVisibility:
       (item.catalog_visibility as CatalogVisibility) || "hidden",
     collectionId: item.collection_id || "none",
@@ -695,9 +731,13 @@ export function CatalogCurationContent() {
                           </Badge>
                         )}
                       </div>
-                      {getVisibleTagLabels(item).length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {getVisibleTagLabels(item).map((tag) => (
+                      {getPublicTagLabels(item).length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                            Tags publicas
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {getPublicTagLabels(item).map((tag) => (
                             <Badge
                               key={tag}
                               variant="outline"
@@ -706,7 +746,8 @@ export function CatalogCurationContent() {
                               <Tags className="h-3 w-3" />
                               {tag}
                             </Badge>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
                       <div className="flex gap-2">
@@ -720,7 +761,7 @@ export function CatalogCurationContent() {
                           disabled={classifyMutation.isPending}
                         >
                           <Bot className="mr-1 h-3 w-3" />
-                          IA
+                          Analisar imagem
                         </Button>
                         <Button
                           size="sm"
@@ -731,7 +772,7 @@ export function CatalogCurationContent() {
                           }}
                         >
                           <Eye className="mr-1 h-3 w-3" />
-                          Revisar
+                          Editar e publicar
                         </Button>
                       </div>
                     </div>
@@ -784,6 +825,14 @@ export function CatalogCurationContent() {
                 <div className="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
                   Selecione um modelo da fila para revisar nome, imagem, tags,
                   destino e preco.
+                </div>
+                <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+                  <strong className="font-medium text-foreground">
+                    Organizacao:
+                  </strong>{" "}
+                  tags publicas usam personagem, obra e categoria pesquisavel.
+                  Status, confianca da IA, resolucao, duplicidade e origem ficam
+                  como metadados internos do admin.
                 </div>
                 <div className="grid gap-2 text-sm">
                   <button
@@ -1068,14 +1117,18 @@ export function CatalogCurationContent() {
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
-                    <Label>Tags</Label>
+                    <Label>Tags publicas</Label>
                     <Input
                       value={form.tags}
                       onChange={(event) =>
                         setForm({ ...form, tags: event.target.value })
                       }
-                      placeholder="anime, guerreiro, premium"
+                      placeholder="dragon ball z, zarbon, anime"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Use somente tags que devem aparecer no site e servir para
+                      filtro. Metadados internos nao entram aqui.
+                    </p>
                   </div>
                 </div>
 
