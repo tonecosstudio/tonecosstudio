@@ -131,10 +131,11 @@ describe("PeriodFilter", () => {
       to: new Date("invalid"),
     };
 
-    // date-fns lança erro com datas inválidas, então esperamos o erro
     expect(() => {
       render(<PeriodFilter value={invalidValue} onChange={mockOnChange} />);
-    }).toThrow();
+    }).not.toThrow();
+
+    expect(screen.getByText("Periodo invalido")).toBeInTheDocument();
   });
 });
 

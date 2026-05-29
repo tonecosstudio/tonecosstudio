@@ -301,9 +301,11 @@ describe('PaymentVoucherUpload', () => {
     });
 
     it('should show loading state during upload', async () => {
-      const mockUpload = vi.fn().mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ error: null }), 100))
-      );
+      let resolveUpload: (value: { error: null }) => void = () => {};
+      const pendingUpload = new Promise<{ error: null }>((resolve) => {
+        resolveUpload = resolve;
+      });
+      const mockUpload = vi.fn().mockReturnValue(pendingUpload);
       const mockGetPublicUrl = vi.fn().mockReturnValue({
         data: { publicUrl: 'https://example.com/file.jpg' },
       });
@@ -324,6 +326,8 @@ describe('PaymentVoucherUpload', () => {
 
       // Should show loading state
       expect(screen.getByText(/Enviando arquivo/i)).toBeInTheDocument();
+
+      resolveUpload({ error: null });
 
       await waitFor(() => {
         expect(mockOnUploadSuccess).toHaveBeenCalled();

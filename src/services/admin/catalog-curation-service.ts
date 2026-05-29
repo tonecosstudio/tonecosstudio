@@ -64,6 +64,21 @@ export type CatalogCurationItem = {
   published_model_id: string | null;
   confidence: number | null;
   notes: string | null;
+  original_sha256: string | null;
+  optimized_sha256: string | null;
+  perceptual_hash: string | null;
+  perceptual_hash_algorithm: string | null;
+  canonical_identity_key: string | null;
+  duplicate_status: string | null;
+  duplicate_of_import_item_id: string | null;
+  duplicate_of_model_id: string | null;
+  duplicate_distance: number | null;
+  image_width: number | null;
+  image_height: number | null;
+  image_format: string | null;
+  name_review_status: string | null;
+  visual_review_status: string | null;
+  analysis_notes: string | null;
   created_at: string;
   updated_at: string;
   reviewed_at: string | null;
@@ -99,7 +114,7 @@ export type CatalogCollectionTarget = {
 };
 
 const CATALOG_IMPORT_SELECT =
-  "id,source_type,source_folder_id,source_folder_name,source_drive_path,source_file_id,source_file_url,file_name,mime_type,original_size_bytes,storage_bucket,storage_path,thumbnail_url,status,proposed_name,character_name,variant_name,variant_type,source_title,media_type,category,subcategory,tags,catalog_visibility,collection_id,published_model_id,confidence,notes,created_at,updated_at,reviewed_at,published_at";
+  "id,source_type,source_folder_id,source_folder_name,source_drive_path,source_file_id,source_file_url,file_name,mime_type,original_size_bytes,storage_bucket,storage_path,thumbnail_url,status,proposed_name,character_name,variant_name,variant_type,source_title,media_type,category,subcategory,tags,catalog_visibility,collection_id,published_model_id,confidence,notes,original_sha256,optimized_sha256,perceptual_hash,perceptual_hash_algorithm,canonical_identity_key,duplicate_status,duplicate_of_import_item_id,duplicate_of_model_id,duplicate_distance,image_width,image_height,image_format,name_review_status,visual_review_status,analysis_notes,created_at,updated_at,reviewed_at,published_at";
 
 type CatalogImportRow = Omit<CatalogCurationItem, "image_url">;
 

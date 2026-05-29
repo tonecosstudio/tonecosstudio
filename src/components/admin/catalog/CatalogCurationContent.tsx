@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, CheckCircle2, Eye, FileQuestion, PackagePlus, Search, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Bot,
+  CheckCircle2,
+  Eye,
+  FileQuestion,
+  GitCompare,
+  ImageOff,
+  PackagePlus,
+  Search,
+  Tags,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +53,8 @@ type PublishForm = {
   priceCoinsOverride: string;
 };
 
+type ReviewQuickFilter = "all" | "generic" | "visual" | "duplicate" | "ready";
+
 const STATUS_LABELS: Record<string, string> = {
   queued: "Fila",
   draft: "Rascunho",
@@ -57,6 +71,22 @@ const VISIBILITY_LABELS: Record<CatalogVisibility, string> = {
   collection: "Somente colecao",
   both: "Catalogo e colecao",
   hidden: "Oculto",
+};
+
+const QUICK_FILTER_LABELS: Record<ReviewQuickFilter, string> = {
+  all: "Todos",
+  generic: "Sem nome",
+  visual: "Revisao visual",
+  duplicate: "Duplicidade",
+  ready: "Prontos",
+};
+
+const DUPLICATE_STATUS_LABELS: Record<string, string> = {
+  exact_duplicate: "imagem duplicada",
+  identity_duplicate: "mesma identidade",
+  source_duplicate: "mesmo Drive",
+  visual_duplicate: "visual duplicado",
+  needs_review: "similaridade visual",
 };
 
 const EMPTY_FORM: PublishForm = {
@@ -84,6 +114,55 @@ function getErrorMessage(error: unknown) {
 
 function cleanFileName(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function getItemTags(item: CatalogCurationItem) {
+  return (item.tags ?? []).map((tag) => String(tag).trim().toLocaleLowerCase()).filter(Boolean);
+}
+
+function hasTag(item: CatalogCurationItem, tag: string) {
+  return getItemTags(item).includes(tag);
+}
+
+function hasTagPrefix(item: CatalogCurationItem, prefix: string) {
+  return getItemTags(item).some((tag) => tag.startsWith(prefix));
+}
+
+function isGenericImport(item: CatalogCurationItem) {
+  return item.name_review_status === "needs_review" || hasTag(item, "generic-filename") || hasTag(item, "needs-name-review");
+}
+
+function needsVisualReview(item: CatalogCurationItem) {
+  return item.visual_review_status === "needs_review" || item.duplicate_status === "needs_review" || hasTag(item, "needs-visual-review");
+}
+
+function isDuplicateCandidate(item: CatalogCurationItem) {
+  return (
+    item.status === "duplicate" ||
+    Boolean(item.duplicate_status && item.duplicate_status !== "unique") ||
+    hasTag(item, "duplicate-legacy") ||
+    hasTag(item, "hidden-duplicate")
+  );
+}
+
+function isReadyForFinalReview(item: CatalogCurationItem) {
+  return !isGenericImport(item) && !needsVisualReview(item) && !isDuplicateCandidate(item);
+}
+
+function shouldShowForQuickFilter(item: CatalogCurationItem, quickFilter: ReviewQuickFilter) {
+  if (quickFilter === "all") return true;
+  if (quickFilter === "generic") return isGenericImport(item);
+  if (quickFilter === "visual") return needsVisualReview(item);
+  if (quickFilter === "duplicate") return isDuplicateCandidate(item);
+  if (quickFilter === "ready") return isReadyForFinalReview(item);
+  return true;
+}
+
+function getVisibleTagLabels(item: CatalogCurationItem) {
+  return getItemTags(item)
+    .filter((tag) => !tag.startsWith("drive-id-"))
+    .filter((tag) => !["drive-import", "drive-identified", "catalog-staging", "queued-from-staging"].includes(tag))
+    .slice(0, 5);
 }
 
 function buildInitialForm(item: CatalogCurationItem | null): PublishForm {
@@ -125,7 +204,8 @@ function parseOptionalInteger(value: string) {
 
 export function CatalogCurationContent() {
   const { toast } = useToast();
-  const [status, setStatus] = useState("queued");
+  const [status, setStatus] = useState("review");
+  const [quickFilter, setQuickFilter] = useState<ReviewQuickFilter>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<CatalogCurationItem | null>(null);
   const [form, setForm] = useState<PublishForm>(EMPTY_FORM);
@@ -135,21 +215,38 @@ export function CatalogCurationContent() {
 
   const items = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase();
-    if (!needle) return queueQuery.data ?? [];
-    return (queueQuery.data ?? []).filter((item) =>
-      [
-        item.file_name,
-        item.proposed_name,
-        item.character_name,
-        item.variant_name,
-        item.source_title,
-        item.source_folder_name,
-        item.status,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLocaleLowerCase().includes(needle)),
-    );
-  }, [queueQuery.data, search]);
+    return (queueQuery.data ?? [])
+      .filter((item) => shouldShowForQuickFilter(item, quickFilter))
+      .filter((item) => {
+        if (!needle) return true;
+        return [
+          item.file_name,
+          item.proposed_name,
+          item.character_name,
+          item.variant_name,
+          item.source_title,
+          item.source_folder_name,
+          item.source_file_id,
+          item.status,
+          item.duplicate_status,
+          item.canonical_identity_key,
+          ...(item.tags ?? []),
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLocaleLowerCase().includes(needle));
+      });
+  }, [queueQuery.data, quickFilter, search]);
+
+  const queueStats = useMemo(() => {
+    const data = queueQuery.data ?? [];
+    return {
+      total: data.length,
+      generic: data.filter(isGenericImport).length,
+      visual: data.filter(needsVisualReview).length,
+      duplicate: data.filter(isDuplicateCandidate).length,
+      ready: data.filter(isReadyForFinalReview).length,
+    };
+  }, [queueQuery.data]);
 
   useEffect(() => {
     setForm(buildInitialForm(selected));
@@ -234,6 +331,33 @@ export function CatalogCurationContent() {
           </p>
         </div>
 
+        <div className="grid gap-2 sm:grid-cols-4">
+          <Card>
+            <CardContent className="flex items-center justify-between p-3">
+              <span className="text-xs font-medium text-muted-foreground">Fila</span>
+              <span className="font-mono text-lg font-semibold">{queueStats.total}</span>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center justify-between p-3">
+              <span className="text-xs font-medium text-muted-foreground">Sem nome</span>
+              <span className="font-mono text-lg font-semibold">{queueStats.generic}</span>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center justify-between p-3">
+              <span className="text-xs font-medium text-muted-foreground">Visual</span>
+              <span className="font-mono text-lg font-semibold">{queueStats.visual}</span>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center justify-between p-3">
+              <span className="text-xs font-medium text-muted-foreground">Prontos</span>
+              <span className="font-mono text-lg font-semibold">{queueStats.ready}</span>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -253,10 +377,30 @@ export function CatalogCurationContent() {
               <SelectItem value="review">Revisao</SelectItem>
               <SelectItem value="approved">Aprovados</SelectItem>
               <SelectItem value="published">Publicados</SelectItem>
+              <SelectItem value="duplicate">Duplicados</SelectItem>
+              <SelectItem value="rejected">Rejeitados</SelectItem>
               <SelectItem value="hidden">Ocultos</SelectItem>
               <SelectItem value="all">Todos</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(QUICK_FILTER_LABELS) as ReviewQuickFilter[]).map((filter) => (
+            <Button
+              key={filter}
+              type="button"
+              size="sm"
+              variant={quickFilter === filter ? "default" : "outline"}
+              onClick={() => setQuickFilter(filter)}
+            >
+              {filter === "generic" && <FileQuestion className="mr-1 h-3.5 w-3.5" />}
+              {filter === "visual" && <AlertTriangle className="mr-1 h-3.5 w-3.5" />}
+              {filter === "duplicate" && <GitCompare className="mr-1 h-3.5 w-3.5" />}
+              {filter === "ready" && <CheckCircle2 className="mr-1 h-3.5 w-3.5" />}
+              {QUICK_FILTER_LABELS[filter]}
+            </Button>
+          ))}
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -276,10 +420,10 @@ export function CatalogCurationContent() {
                 <div className="flex gap-3">
                   <div className="h-24 w-20 shrink-0 overflow-hidden rounded bg-muted">
                     {item.image_url ? (
-                      <img src={item.image_url} alt={item.file_name} className="h-full w-full object-cover" />
+                      <img src={item.image_url} alt={item.file_name} className="h-full w-full object-contain" />
                     ) : (
                       <div className="flex h-full items-center justify-center">
-                        <FileQuestion className="h-8 w-8 text-muted-foreground" />
+                        <ImageOff className="h-8 w-8 text-muted-foreground" />
                       </div>
                     )}
                   </div>
@@ -294,7 +438,25 @@ export function CatalogCurationContent() {
                       <Badge variant="secondary">{STATUS_LABELS[item.status] || item.status}</Badge>
                       <Badge variant="outline">{VISIBILITY_LABELS[item.catalog_visibility as CatalogVisibility] || item.catalog_visibility}</Badge>
                       {item.confidence !== null && <Badge variant="outline">{Math.round(item.confidence * 100)}% IA</Badge>}
+                      {isGenericImport(item) && <Badge variant="outline">sem nome</Badge>}
+                      {needsVisualReview(item) && <Badge variant="destructive">revisar imagem</Badge>}
+                      {isDuplicateCandidate(item) && <Badge variant="destructive">duplicidade</Badge>}
+                      {item.image_width && item.image_height && (
+                        <Badge variant="outline">
+                          {item.image_width}x{item.image_height}
+                        </Badge>
+                      )}
                     </div>
+                    {getVisibleTagLabels(item).length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {getVisibleTagLabels(item).map((tag) => (
+                          <Badge key={tag} variant="outline" className="gap-1 text-[10px]">
+                            <Tags className="h-3 w-3" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -354,6 +516,53 @@ export function CatalogCurationContent() {
               {selected.image_url && (
                 <img src={selected.image_url} alt={selected.file_name} className="max-h-72 w-full rounded bg-muted object-contain" />
               )}
+
+              <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+                <div className="grid gap-1 sm:grid-cols-2">
+                  <div>
+                    <span className="font-medium text-foreground">Arquivo: </span>
+                    {selected.file_name}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Drive ID: </span>
+                    {selected.source_file_id || "sem id"}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Origem: </span>
+                    {selected.source_drive_path || selected.source_folder_name || "nao definida"}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Status: </span>
+                    {STATUS_LABELS[selected.status] || selected.status}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Dedupe: </span>
+                    {selected.duplicate_status && selected.duplicate_status !== "unique"
+                      ? DUPLICATE_STATUS_LABELS[selected.duplicate_status] || selected.duplicate_status
+                      : "unico"}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Imagem: </span>
+                    {selected.image_width && selected.image_height
+                      ? `${selected.image_width}x${selected.image_height}${selected.image_format ? ` ${selected.image_format}` : ""}`
+                      : "sem metadados"}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="font-medium text-foreground">Chave: </span>
+                    {selected.canonical_identity_key || "sem chave"}
+                  </div>
+                </div>
+                {selected.notes && <p>{selected.notes}</p>}
+                {selected.analysis_notes && <p>{selected.analysis_notes}</p>}
+                {(isGenericImport(selected) || needsVisualReview(selected) || isDuplicateCandidate(selected)) && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {isGenericImport(selected) && <Badge variant="outline">Arquivo sem nome</Badge>}
+                    {needsVisualReview(selected) && <Badge variant="destructive">Confirmar imagem x nome</Badge>}
+                    {isDuplicateCandidate(selected) && <Badge variant="destructive">Candidato duplicado</Badge>}
+                    {hasTagPrefix(selected, "drive-id-") && <Badge variant="outline">Origem rastreada</Badge>}
+                  </div>
+                )}
+              </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">

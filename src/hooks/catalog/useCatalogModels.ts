@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { CATALOG_PAGE_SIZE } from "@/config/catalog";
 import {
   listCatalogModels,
+  type CatalogMode,
   type CatalogSort,
 } from "@/services/catalog/catalog-models-service";
 
-export type { CatalogSort };
+export type { CatalogMode, CatalogSort };
 
 export function useCatalogModels(
   needle: string,
@@ -17,6 +18,7 @@ export function useCatalogModels(
     sourceType: string;
     variantType: string;
     tagsCSV: string;
+    catalogMode: CatalogMode;
     sort: CatalogSort;
   },
 ) {
@@ -33,6 +35,7 @@ export function useCatalogModels(
         sourceType: filters.sourceType,
         variantType: filters.variantType,
         tagsCSV: filters.tagsCSV,
+        catalogMode: filters.catalogMode,
         sort: filters.sort,
       },
     ],

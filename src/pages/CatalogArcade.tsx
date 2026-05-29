@@ -4,8 +4,9 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { useIsAdmin } from "@/lib/roles";
 import { useToast } from "@/hooks/use-toast";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
 import {
@@ -18,6 +19,9 @@ import {
   ArrowRight,
   Crosshair,
   Coins,
+  Eye,
+  EyeOff,
+  Tags,
 } from "lucide-react";
 
 import type { ModelRow } from "@/pages/catalog/catalogTypes";
@@ -48,6 +52,18 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   other: "Outro",
 };
 
+const INTERNAL_TAG_PREFIXES = ["drive-id-", "media-", "category-", "source-", "price-"];
+const INTERNAL_TAGS = new Set(["drive-import", "drive-identified", "catalog-staging", "needs-visual-review"]);
+
+function getDisplayTags(tags: string[] | null | undefined) {
+  return (tags ?? [])
+    .map((tag) => String(tag).trim().toLocaleLowerCase())
+    .filter(Boolean)
+    .filter((tag) => !INTERNAL_TAGS.has(tag))
+    .filter((tag) => !INTERNAL_TAG_PREFIXES.some((prefix) => tag.startsWith(prefix)))
+    .slice(0, 3);
+}
+
 const VARIANT_TYPE_LABELS: Record<string, string> = {
   default: "Padrao",
   form: "Forma",
@@ -64,7 +80,9 @@ const VARIANT_TYPE_LABELS: Record<string, string> = {
 export default function CatalogArcade() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const isAdminQuery = useIsAdmin(user?.id);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -78,8 +96,11 @@ export default function CatalogArcade() {
   const [showFilters, setShowFilters] = useState(false);
 
   const needle = useMemo(() => q.trim(), [q]);
+  const wantsStagingPreview = searchParams.get("preview") === "staging";
+  const canPreviewStaging = Boolean(isAdminQuery.data);
+  const catalogMode = wantsStagingPreview && canPreviewStaging ? "staging" : "public";
 
-  useEffect(() => { setPage(0); }, [needle, character, franchise, category, sourceType, variantType, tagsCSV, sort]);
+  useEffect(() => { setPage(0); }, [needle, character, franchise, category, sourceType, variantType, tagsCSV, sort, catalogMode]);
 
   const modelsQuery = useCatalogModels(needle, page, {
     character,
@@ -88,9 +109,11 @@ export default function CatalogArcade() {
     sourceType,
     variantType,
     tagsCSV,
+    catalogMode,
     sort,
   });
-  const rows = modelsQuery.data?.rows ?? [];
+  const queryRows = modelsQuery.data?.rows;
+  const rows = useMemo(() => queryRows ?? [], [queryRows]);
   const hasNext = modelsQuery.data?.hasNext ?? false;
 
   const likesQuery = useLikedModelIdsQuery(user?.id);
@@ -104,6 +127,10 @@ export default function CatalogArcade() {
     profilePreferenceTags: profileQuery.data?.preference_tags,
     profileLoading: profileQuery.isLoading,
   });
+  const forYouRows = useMemo(() => {
+    const visibleIds = new Set(rows.map((row) => row.id));
+    return (forYouQuery.data ?? []).filter((model) => !visibleIds.has(model.id));
+  }, [forYouQuery.data, rows]);
 
   const getIsLiked = (id: string) => Boolean(user?.id) && likedIds.has(id);
 
@@ -119,6 +146,15 @@ export default function CatalogArcade() {
     } catch {
       toast({ title: "Erro ao favoritar", variant: "destructive" });
     }
+  };
+
+  const handleTagFilter = (tag: string) => {
+    setTagsCSV(tag);
+    setShowFilters(true);
+  };
+
+  const toggleStagingPreview = () => {
+    navigate(catalogMode === "staging" ? PUBLIC_ROUTES.catalog : `${PUBLIC_ROUTES.catalog}?preview=staging`);
   };
 
   const categories = ["animes", "filmes", "series", "jogos", "quadrinhos", "outros"];
@@ -266,29 +302,61 @@ export default function CatalogArcade() {
         )}
 
         {/* Status bar */}
-        <div className="flex items-center justify-between mb-6 font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider">
-          <span>{needle ? `Resultados: "${needle}"` : "Catalogo geral"} • Pagina {page + 1}{activeFilterCount ? ` • ${activeFilterCount} filtros` : ""}</span>
-          <button
-            type="button"
-            onClick={() => navigate(PUBLIC_ROUTES.collections)}
-            className="hidden sm:inline text-[hsl(var(--gold-accent)/0.65)] hover:text-[hsl(var(--gold-accent))] uppercase"
-          >
-            Colecoes ativas
-          </button>
+        <div className="mb-6 flex flex-col gap-3 font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {catalogMode === "staging" ? "Conferencia staging" : needle ? `Resultados: "${needle}"` : "Catalogo geral"} • Pagina {page + 1}
+            {activeFilterCount ? ` • ${activeFilterCount} filtros` : ""}
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            {canPreviewStaging && (
+              <button
+                type="button"
+                onClick={toggleStagingPreview}
+                className={`inline-flex items-center gap-1.5 uppercase transition-colors ${
+                  catalogMode === "staging"
+                    ? "text-red-400 hover:text-red-300"
+                    : "text-[hsl(var(--gold-accent)/0.65)] hover:text-[hsl(var(--gold-accent))]"
+                }`}
+              >
+                {catalogMode === "staging" ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {catalogMode === "staging" ? "Sair da conferencia" : "Conferir staging"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => navigate(PUBLIC_ROUTES.collections)}
+              className="hidden text-[hsl(var(--gold-accent)/0.65)] hover:text-[hsl(var(--gold-accent))] uppercase sm:inline"
+            >
+              Colecoes ativas
+            </button>
+          </div>
         </div>
+
+        {wantsStagingPreview && !canPreviewStaging && !isAdminQuery.isLoading && (
+          <div className="mb-6 border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-red-300">
+            O modo de conferencia exige login administrativo.
+          </div>
+        )}
+
+        {catalogMode === "staging" && (
+          <div className="mb-6 border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(var(--gold-accent)/0.08)] px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))]">
+            Modo conferencia: estes modelos estao inativos no catalogo publico e servem para revisar nome, imagem, tags e categoria antes de publicar.
+          </div>
+        )}
       </section>
 
       {/* ═══ FOR YOU SECTION ═══ */}
-      {user && !needle && forYouQuery.data && forYouQuery.data.length > 0 && (
+      {user && catalogMode === "public" && !needle && forYouRows.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 md:px-6 mb-12">
           <ArcadeSectionTitle>Para Você</ArcadeSectionTitle>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {forYouQuery.data.slice(0, 6).map((m) => (
+            {forYouRows.slice(0, 6).map((m) => (
               <ModelArcadeCard
                 key={m.id}
                 model={m}
                 isLiked={getIsLiked(m.id)}
                 onToggleLike={() => handleToggleLike(m, getIsLiked(m.id))}
+                onTagClick={handleTagFilter}
               />
             ))}
           </div>
@@ -337,6 +405,7 @@ export default function CatalogArcade() {
                 model={m}
                 isLiked={getIsLiked(m.id)}
                 onToggleLike={() => handleToggleLike(m, getIsLiked(m.id))}
+                onTagClick={handleTagFilter}
               />
             ))}
           </div>
@@ -379,14 +448,17 @@ export default function CatalogArcade() {
 
 // ─── MODEL CARD ──────────────────────────────────────────────────────
 
-function ModelArcadeCard({ model, isLiked, onToggleLike }: {
+function ModelArcadeCard({ model, isLiked, onToggleLike, onTagClick }: {
   model: ModelRow;
   isLiked: boolean;
   onToggleLike: () => void;
+  onTagClick?: (tag: string) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
   const imageUrl = model.thumbnailUrl ?? model.imageUrl;
+  const displayTags = getDisplayTags(model.tags);
+  const isStaging = !model.is_active || (model.tags ?? []).includes("catalog-staging");
   const characterName = model.character_name || model.name;
   const sourceName = model.source_title || model.franchise;
   const versionName = model.variant_name;
@@ -416,7 +488,9 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
             <img
               src={imageUrl}
               alt={model.name}
-              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
+              className={`h-full w-full opacity-80 transition-all duration-700 group-hover:opacity-100 ${
+                isStaging ? "object-contain p-2 group-hover:scale-105" : "object-cover group-hover:scale-110"
+              }`}
               loading="lazy"
               decoding="async"
             />
@@ -442,6 +516,12 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
           {(mediaLabel || model.category) && (
             <div className="absolute top-2 left-2 z-10 font-mono text-[8px] text-[hsl(var(--gold-accent))] bg-[hsl(0,0%,5%)]/90 px-2 py-0.5 tracking-widest uppercase border border-[hsl(var(--gold-accent)/0.3)]">
               {mediaLabel || model.category}
+            </div>
+          )}
+
+          {isStaging && (
+            <div className="absolute bottom-2 left-2 z-10 border border-red-500/40 bg-red-500/15 px-2 py-0.5 font-mono text-[8px] uppercase tracking-widest text-red-300">
+              Conferencia
             </div>
           )}
 
@@ -486,6 +566,23 @@ function ModelArcadeCard({ model, isLiked, onToggleLike }: {
               </span>
             )}
           </div>
+
+          {displayTags.length > 0 && (
+            <div className="mb-3 flex min-h-6 flex-wrap items-center gap-1.5">
+              {displayTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => onTagClick?.(tag)}
+                  className="inline-flex items-center gap-1 border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,50%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))]"
+                  aria-label={`Filtrar tag ${tag}`}
+                >
+                  <Tags className="h-2.5 w-2.5" />
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* CTA */}
           <button

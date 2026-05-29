@@ -15,6 +15,38 @@ export interface DateRange {
   to: Date;
 }
 
+const DATE_DISPLAY_FORMAT = "dd/MM/yyyy";
+const INVALID_PERIOD_LABEL = "Periodo invalido";
+
+function isValidDate(date: Date): boolean {
+  return date instanceof Date && !Number.isNaN(date.getTime());
+}
+
+function isValidDateRange(range: DateRange): boolean {
+  return isValidDate(range.from) && isValidDate(range.to);
+}
+
+function parsePersistedDateRange(from?: string, to?: string): DateRange | null {
+  if (!from || !to) return null;
+
+  const range = {
+    from: new Date(from),
+    to: new Date(to),
+  };
+
+  return isValidDateRange(range) ? range : null;
+}
+
+function formatDateRange(range: DateRange): string {
+  if (!isValidDateRange(range)) return INVALID_PERIOD_LABEL;
+
+  return `${format(range.from, DATE_DISPLAY_FORMAT, { locale: ptBR })} - ${format(
+    range.to,
+    DATE_DISPLAY_FORMAT,
+    { locale: ptBR }
+  )}`;
+}
+
 interface PeriodFilterProps {
   value: DateRange;
   onChange: (range: DateRange) => void;
@@ -87,10 +119,14 @@ export function PeriodFilter({
       };
       setPreset(savedPreset);
       if (savedPreset === "custom" && from && to) {
-        onChange({
-          from: new Date(from),
-          to: new Date(to),
-        });
+        const range = parsePersistedDateRange(from, to);
+        if (!range) {
+          localStorage.removeItem(persistKey);
+          log.warn("Preferencia de periodo customizada invalida removida", { persistKey });
+          return;
+        }
+
+        onChange(range);
       } else {
         handlePresetChange(savedPreset, false);
       }
@@ -100,6 +136,11 @@ export function PeriodFilter({
   }, [handlePresetChange, onChange, persistKey]);
 
   const handleCustomApply = () => {
+    if (!isValidDateRange(value)) {
+      log.warn("Intervalo de periodo invalido ignorado", { value });
+      return;
+    }
+
     setPreset("custom");
     setIsOpen(false);
 
@@ -148,8 +189,7 @@ export function PeriodFilter({
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
             <CalendarIcon className="h-4 w-4" />
-            {format(value.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-            {format(value.to, "dd/MM/yyyy", { locale: ptBR })}
+            {formatDateRange(value)}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="end">

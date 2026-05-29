@@ -4,6 +4,7 @@ export type CatalogModelRow = {
   franchise: string | null;
   category: string | null;
   subcategory: string | null;
+  is_active: boolean;
   character_name?: string | null;
   variant_name?: string | null;
   variant_type?: string | null;
