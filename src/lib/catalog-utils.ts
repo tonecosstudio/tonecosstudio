@@ -16,13 +16,19 @@ const INTERNAL_TAG_PREFIXES = catalogTagPolicy.internalTagPrefixes;
 const INTERNAL_TAGS = new Set(catalogTagPolicy.internalTags);
 
 export function normalizeCatalogTag(value: string | null | undefined): string {
-  return String(value || "")
+  const normalized = String(value || "")
     .replace(/\.[a-z0-9]+$/i, "")
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/^animes$/i, "anime")
     .toLocaleLowerCase();
+
+  if (/^animes?$/.test(normalized)) return "anime";
+  if (/^(movie|filmes?)$/.test(normalized)) return "filme";
+  if (/^(series?|s[eé]ries?)$/.test(normalized)) return "serie";
+  if (/^(comic|comics|hq|quadrinhos?)$/.test(normalized)) return "quadrinhos";
+  if (/^(game|games|jogos?)$/.test(normalized)) return "game";
+  return normalized;
 }
 
 export function isInternalCatalogTag(tag: string): boolean {

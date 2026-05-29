@@ -54,9 +54,13 @@ function cleanName(value) {
 }
 
 function normalizePublicTag(value) {
-  return cleanName(value)
-    .replace(/^animes$/i, "anime")
-    .toLocaleLowerCase();
+  const normalized = cleanName(value).toLocaleLowerCase();
+  if (/^animes?$/.test(normalized)) return "anime";
+  if (/^(movie|filmes?)$/.test(normalized)) return "filme";
+  if (/^(series?|s[eé]ries?)$/.test(normalized)) return "serie";
+  if (/^(comic|comics|hq|quadrinhos?)$/.test(normalized)) return "quadrinhos";
+  if (/^(game|games|jogos?)$/.test(normalized)) return "game";
+  return normalized;
 }
 
 function isInternalTag(tag) {

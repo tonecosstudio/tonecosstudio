@@ -81,11 +81,23 @@ interface CatalogModelsGateway {
 const catalogModelsGateway = supabase as unknown as CatalogModelsGateway;
 
 function normalizeTags(tagsCSV: string) {
-  return tagsCSV
+  const tags = tagsCSV
     .split(",")
     .map((tag) => normalizeCatalogTag(tag))
     .filter(Boolean)
     .slice(0, 10);
+
+  const aliases: Record<string, string[]> = {
+    anime: ["anime", "animes"],
+    filme: ["filme", "filmes", "movie"],
+    serie: ["serie", "series", "série", "séries"],
+    quadrinhos: ["quadrinhos", "quadrinho", "comic", "comics", "hq"],
+    game: ["game", "games", "jogo", "jogos"],
+  };
+
+  return Array.from(
+    new Set(tags.flatMap((tag) => aliases[tag] ?? [tag])),
+  ).slice(0, 20);
 }
 
 function getPublicModelImageUrl(bucket: string | null, path: string | null) {
@@ -98,6 +110,11 @@ function normalizeSearchValue(value: string) {
     .replace(/[%_,()]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function buildWordStartPatterns(value: string) {
+  if (value.length <= 2) return [`${value}%`];
+  return [`${value}%`, `% ${value}%`];
 }
 
 function isProfessionalCatalogSchemaError(error: unknown) {
@@ -187,13 +204,23 @@ export async function listCatalogModels(params: {
 
     const normalizedNeedle = normalizeSearchValue(needle);
     if (normalizedNeedle) {
-      const pattern =
-        normalizedNeedle.length <= 2
-          ? `${normalizedNeedle}%`
-          : `%${normalizedNeedle}%`;
-      const searchFields = professional
-        ? `name.ilike.${pattern},character_name.ilike.${pattern},variant_name.ilike.${pattern},source_title.ilike.${pattern},franchise.ilike.${pattern},category.ilike.${pattern},subcategory.ilike.${pattern}`
-        : `name.ilike.${pattern},franchise.ilike.${pattern},category.ilike.${pattern},subcategory.ilike.${pattern}`;
+      const patterns = buildWordStartPatterns(normalizedNeedle);
+      const searchableFields = professional
+        ? [
+            "name",
+            "character_name",
+            "variant_name",
+            "source_title",
+            "franchise",
+            "category",
+            "subcategory",
+          ]
+        : ["name", "franchise", "category", "subcategory"];
+      const searchFields = searchableFields
+        .flatMap((field) =>
+          patterns.map((pattern) => `${field}.ilike.${pattern}`),
+        )
+        .join(",");
       query = query.or(searchFields);
     }
 
