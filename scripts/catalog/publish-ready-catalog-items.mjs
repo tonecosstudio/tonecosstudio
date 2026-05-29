@@ -5,6 +5,17 @@ import { createClient } from "@supabase/supabase-js";
 const ROOT = process.cwd();
 const DRY_RUN = process.argv.includes("--dry-run");
 const REPORT_PATH = join(ROOT, "tmp", "catalog-ready-publish-report.json");
+const CATALOG_TAG_POLICY_PATH = join(
+  ROOT,
+  "src",
+  "config",
+  "catalog-tag-policy.json",
+);
+const catalogTagPolicy = JSON.parse(
+  readFileSync(CATALOG_TAG_POLICY_PATH, "utf8"),
+);
+const INTERNAL_TAG_PREFIXES = catalogTagPolicy.internalTagPrefixes;
+const INTERNAL_TAGS = new Set(catalogTagPolicy.internalTags);
 
 function loadEnvFile(fileName) {
   const filePath = join(ROOT, fileName);
@@ -25,7 +36,9 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Missing VITE_SUPABASE_URL/SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  throw new Error(
+    "Missing VITE_SUPABASE_URL/SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY",
+  );
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -49,34 +62,15 @@ function normalizePublicTag(value) {
 function isInternalTag(tag) {
   const canonicalTag = tag.replace(/\s+/g, "-");
   return (
-    canonicalTag.startsWith("drive-") ||
-    canonicalTag.startsWith("source-") ||
-    canonicalTag.startsWith("category-") ||
-    canonicalTag.startsWith("media-") ||
-    canonicalTag.startsWith("price-") ||
-    canonicalTag.startsWith("bg-") ||
-    canonicalTag.startsWith("needs-") ||
-    [
-      "catalog-staging",
-      "queued-from-staging",
-      "generic-filename",
-      "manually-identified",
-      "hidden-duplicate",
-      "duplicate-legacy",
-      "ia",
-      "revisao",
-      "revisar",
-      "oculto",
-    ].includes(canonicalTag)
+    INTERNAL_TAGS.has(canonicalTag) ||
+    INTERNAL_TAG_PREFIXES.some((prefix) => canonicalTag.startsWith(prefix))
   );
 }
 
 function buildPublicTags(item) {
   const candidates = [
-    item.source_title,
-    item.source_folder_name,
+    item.source_title || item.source_folder_name,
     item.character_name,
-    item.proposed_name,
     item.media_type === "anime" ? "anime" : item.media_type,
     item.category,
     item.subcategory,
@@ -97,21 +91,27 @@ function rejectReason(item) {
   if (item.status === "duplicate") return "marked_duplicate";
   if (item.status === "rejected") return "rejected";
   if (item.name_review_status === "needs_review") return "needs_name_review";
-  if (item.visual_review_status === "needs_review") return "needs_visual_review";
-  if (item.duplicate_status && item.duplicate_status !== "unique") return "duplicate_candidate";
+  if (item.visual_review_status === "needs_review")
+    return "needs_visual_review";
+  if (item.duplicate_status && item.duplicate_status !== "unique")
+    return "duplicate_candidate";
   if (tags.includes("generic-filename") || tags.includes("needs-name-review")) {
     return "needs_name_review";
   }
   if (tags.includes("needs-visual-review")) return "needs_visual_review";
   if (!item.storage_path) return "missing_storage_path";
-  if (!cleanName(item.character_name || item.proposed_name || item.file_name)) return "missing_name";
-  if (!cleanName(item.source_title || item.source_folder_name)) return "missing_source";
+  if (!cleanName(item.character_name || item.proposed_name || item.file_name))
+    return "missing_name";
+  if (!cleanName(item.source_title || item.source_folder_name))
+    return "missing_source";
   return null;
 }
 
 function buildPayload(item) {
   const name = cleanName(item.proposed_name || item.file_name);
-  const characterName = cleanName(item.character_name || name.replace(/\s+\([^)]+\)$/, ""));
+  const characterName = cleanName(
+    item.character_name || name.replace(/\s+\([^)]+\)$/, ""),
+  );
   const sourceTitle = cleanName(item.source_title || item.source_folder_name);
 
   return {
@@ -169,7 +169,11 @@ const skipped = [];
 for (const item of items || []) {
   const reason = rejectReason(item);
   if (reason) {
-    skipped.push({ id: item.id, name: item.proposed_name || item.file_name, reason });
+    skipped.push({
+      id: item.id,
+      name: item.proposed_name || item.file_name,
+      reason,
+    });
   } else {
     ready.push({ item, payload: buildPayload(item) });
   }

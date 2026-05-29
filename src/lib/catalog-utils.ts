@@ -1,3 +1,5 @@
+import catalogTagPolicy from "@/config/catalog-tag-policy.json";
+
 export type CatalogDisplayModel = {
   name?: string | null;
   franchise?: string | null;
@@ -10,32 +12,8 @@ export type CatalogDisplayModel = {
   source_type?: string | null;
 };
 
-const INTERNAL_TAG_PREFIXES = [
-  "drive-id-",
-  "media-",
-  "category-",
-  "source-",
-  "price-",
-  "bg-",
-  "needs-",
-];
-
-const INTERNAL_TAGS = new Set([
-  "drive-import",
-  "drive-identified",
-  "catalog-staging",
-  "queued-from-staging",
-  "generic-filename",
-  "needs-visual-review",
-  "needs-name-review",
-  "manually-identified",
-  "hidden-duplicate",
-  "duplicate-legacy",
-  "ia",
-  "revisao",
-  "revisar",
-  "oculto",
-]);
+const INTERNAL_TAG_PREFIXES = catalogTagPolicy.internalTagPrefixes;
+const INTERNAL_TAGS = new Set(catalogTagPolicy.internalTags);
 
 export function normalizeCatalogTag(value: string | null | undefined): string {
   return String(value || "")

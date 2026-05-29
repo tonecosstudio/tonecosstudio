@@ -1,0 +1,33 @@
+{
+  "internalTagPrefixes": [
+    "drive-",
+    "media-",
+    "category-",
+    "source-",
+    "price-",
+    "bg-",
+    "needs-"
+  ],
+  "internalTags": [
+    "drive-import",
+    "drive-identified",
+    "catalog-staging",
+    "queued-from-staging",
+    "generic-filename",
+    "needs-visual-review",
+    "needs-name-review",
+    "manually-identified",
+    "manual-curation",
+    "visual-approved",
+    "ready-to-publish",
+    "hidden-duplicate",
+    "duplicate-legacy",
+    "catalogo-raiz",
+    "catalogo-raiz-genericos",
+    "generic-review",
+    "ia",
+    "revisao",
+    "revisar",
+    "oculto"
+  ]
+}

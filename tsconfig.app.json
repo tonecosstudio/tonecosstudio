@@ -3,11 +3,7 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleDetection": "force",
     "moduleResolution": "bundler",
@@ -15,11 +11,10 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "resolveJsonModule": true,
     "noImplicitAny": true,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "skipLibCheck": true,
     "strict": true,
@@ -27,10 +22,7 @@
     "types": [],
     "useDefineForClassFields": true
   },
-  "include": [
-    "src/**/*",
-    "src/vite-env.d.ts"
-  ],
+  "include": ["src/**/*", "src/vite-env.d.ts"],
   "exclude": [
     "src/test/**",
     "src/**/*.test.ts",

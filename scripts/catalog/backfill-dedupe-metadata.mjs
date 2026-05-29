@@ -11,10 +11,16 @@ loadEnv({ path: ".env", override: false, quiet: true });
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BACKFILL_VERSION = "2026-05-29";
-const DRY_RUN = process.env.DRY_RUN === "true" || process.argv.includes("--dry-run");
+const DRY_RUN =
+  process.env.DRY_RUN === "true" || process.argv.includes("--dry-run");
 const SCOPE = process.env.CATALOG_DEDUPE_BACKFILL_SCOPE || "all";
-const REPORT_PATH = process.env.CATALOG_DEDUPE_BACKFILL_REPORT_PATH || "tmp/catalog-dedupe-backfill-report.json";
-const VISUAL_DISTANCE_THRESHOLD = Number.parseInt(process.env.VISUAL_DISTANCE_THRESHOLD || "6", 10);
+const REPORT_PATH =
+  process.env.CATALOG_DEDUPE_BACKFILL_REPORT_PATH ||
+  "tmp/catalog-dedupe-backfill-report.json";
+const VISUAL_DISTANCE_THRESHOLD = Number.parseInt(
+  process.env.VISUAL_DISTANCE_THRESHOLD || "6",
+  10,
+);
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   throw new Error("Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
@@ -52,11 +58,17 @@ function cleanName(value) {
 }
 
 function inferVariantName(value) {
-  return String(value || "").match(/\(([^)]+)\)\s*$/)?.[1]?.trim() || "";
+  return (
+    String(value || "")
+      .match(/\(([^)]+)\)\s*$/)?.[1]
+      ?.trim() || ""
+  );
 }
 
 function stripVariantSuffix(value) {
-  return String(value || "").replace(/\s+\([^)]+\)\s*$/, "").trim();
+  return String(value || "")
+    .replace(/\s+\([^)]+\)\s*$/, "")
+    .trim();
 }
 
 function isGenericName(value) {
@@ -71,7 +83,13 @@ function isGenericName(value) {
 }
 
 function canonicalIdentityKey({ sourceTitle, characterName, variantName }) {
-  return [sourceTitle || "catalogo", characterName || "sem-nome", variantName || ""].map(slugKey).join("|");
+  return [
+    sourceTitle || "catalogo",
+    characterName || "sem-nome",
+    variantName || "",
+  ]
+    .map(slugKey)
+    .join("|");
 }
 
 function hammingDistanceHex(left, right) {
@@ -105,19 +123,26 @@ async function dHash64(bytes) {
 }
 
 function driveIdFromTags(tags) {
-  return (tags || []).find((tag) => /^drive-id-/.test(tag))?.replace(/^drive-id-/, "") || null;
+  return (
+    (tags || [])
+      .find((tag) => /^drive-id-/.test(tag))
+      ?.replace(/^drive-id-/, "") || null
+  );
 }
 
 async function downloadImage({ bucket, storagePath, fallbackUrl }) {
   if (bucket && storagePath) {
-    const { data, error } = await supabase.storage.from(bucket).download(storagePath);
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .download(storagePath);
     if (error) throw error;
     return Buffer.from(await data.arrayBuffer());
   }
 
   if (fallbackUrl) {
     const response = await fetch(fallbackUrl, { redirect: "follow" });
-    if (!response.ok) throw new Error(`Image download failed: ${response.status}`);
+    if (!response.ok)
+      throw new Error(`Image download failed: ${response.status}`);
     return Buffer.from(await response.arrayBuffer());
   }
 
@@ -128,7 +153,7 @@ async function fetchQueueRows() {
   const { data, error } = await supabase
     .from("catalog_import_items")
     .select(
-      "id,file_name,proposed_name,character_name,variant_name,source_title,source_folder_name,category,subcategory,tags,source_file_id,storage_bucket,storage_path,thumbnail_url,image_hash,original_sha256,optimized_sha256,perceptual_hash,canonical_identity_key"
+      "id,file_name,proposed_name,character_name,variant_name,source_title,source_folder_name,category,subcategory,tags,source_file_id,storage_bucket,storage_path,thumbnail_url,image_hash,original_sha256,optimized_sha256,perceptual_hash,canonical_identity_key",
     )
     .order("created_at", { ascending: true })
     .limit(2000);
@@ -141,7 +166,7 @@ async function fetchModelRows() {
   const { data, error } = await supabase
     .from("models")
     .select(
-      "id,name,character_name,variant_name,source_title,franchise,category,subcategory,tags,file_url,thumbnail_url,image_bucket,image_path,is_active,original_sha256,optimized_sha256,perceptual_hash,canonical_identity_key"
+      "id,name,character_name,variant_name,source_title,franchise,category,subcategory,tags,file_url,thumbnail_url,image_bucket,image_path,is_active,original_sha256,optimized_sha256,perceptual_hash,canonical_identity_key",
     )
     .order("created_at", { ascending: true })
     .limit(2000);
@@ -154,7 +179,12 @@ function queueIdentity(row) {
   const proposedName = row.proposed_name || cleanName(row.file_name);
   const characterName = row.character_name || stripVariantSuffix(proposedName);
   return {
-    sourceTitle: row.source_title || row.source_folder_name || row.subcategory || row.category || "catalogo",
+    sourceTitle:
+      row.source_title ||
+      row.source_folder_name ||
+      row.subcategory ||
+      row.category ||
+      "catalogo",
     characterName,
     variantName: row.variant_name || inferVariantName(proposedName),
   };
@@ -162,7 +192,12 @@ function queueIdentity(row) {
 
 function modelIdentity(row) {
   return {
-    sourceTitle: row.source_title || row.franchise || row.subcategory || row.category || "catalogo",
+    sourceTitle:
+      row.source_title ||
+      row.franchise ||
+      row.subcategory ||
+      row.category ||
+      "catalogo",
     characterName: row.character_name || stripVariantSuffix(row.name),
     variantName: row.variant_name || inferVariantName(row.name),
   };
@@ -191,7 +226,9 @@ async function analyzeQueueRow(row) {
     imageWidth: metadata.width || null,
     imageHeight: metadata.height || null,
     imageFormat: metadata.format || null,
-    isGeneric: isGenericName(row.file_name) || !identity.characterName,
+    isGeneric:
+      isGenericName(row.proposed_name || row.file_name) ||
+      !identity.characterName,
     needsVisualReview: (row.tags || []).includes("needs-visual-review"),
   };
 }
@@ -209,7 +246,10 @@ async function analyzeModelRow(row) {
     table: "models",
     id: row.id,
     label: row.name,
-    driveFileId: driveIdFromTags(row.tags) || row.file_url?.match(/\/d\/([^/]+)/)?.[1] || null,
+    driveFileId:
+      driveIdFromTags(row.tags) ||
+      row.file_url?.match(/\/d\/([^/]+)/)?.[1] ||
+      null,
     tags: row.tags || [],
     identity,
     identityKey: canonicalIdentityKey(identity),
@@ -255,7 +295,11 @@ function assignDuplicateStatus(records) {
         if (group.length < 2) continue;
         const canonical = chooseCanonicalDuplicateTarget(group);
         const status =
-          keyName === "driveFileId" ? "source_duplicate" : keyName === "optimizedSha256" ? "exact_duplicate" : "identity_duplicate";
+          keyName === "driveFileId"
+            ? "source_duplicate"
+            : keyName === "optimizedSha256"
+              ? "exact_duplicate"
+              : "identity_duplicate";
 
         for (const duplicate of group) {
           if (duplicate.id === canonical.id) continue;
@@ -271,10 +315,18 @@ function assignDuplicateStatus(records) {
         const left = items[i];
         const right = items[j];
         if (left.optimizedSha256 === right.optimizedSha256) continue;
-        const distance = hammingDistanceHex(left.perceptualHash, right.perceptualHash);
+        if (left.identityKey !== right.identityKey) continue;
+        const distance = hammingDistanceHex(
+          left.perceptualHash,
+          right.perceptualHash,
+        );
         if (distance === null || distance > VISUAL_DISTANCE_THRESHOLD) continue;
 
-        if (left.duplicateStatus !== "unique" || right.duplicateStatus !== "unique") continue;
+        if (
+          left.duplicateStatus !== "unique" ||
+          right.duplicateStatus !== "unique"
+        )
+          continue;
 
         const leftRank = duplicateCanonicalRank(left);
         const rightRank = duplicateCanonicalRank(right);
@@ -303,7 +355,10 @@ function assignDuplicateStatus(records) {
 }
 
 function chooseCanonicalDuplicateTarget(group) {
-  return [...group].sort((left, right) => duplicateCanonicalRank(left) - duplicateCanonicalRank(right))[0];
+  return [...group].sort(
+    (left, right) =>
+      duplicateCanonicalRank(left) - duplicateCanonicalRank(right),
+  )[0];
 }
 
 function duplicateCanonicalRank(item) {
@@ -328,8 +383,14 @@ function updatePayload(record) {
     image_height: record.imageHeight,
     image_format: record.imageFormat,
     name_review_status: record.isGeneric ? "needs_review" : "approved",
-    visual_review_status: record.needsVisualReview || record.duplicateStatus === "needs_review" ? "needs_review" : "approved",
-    analysis_notes: record.duplicateStatus === "unique" ? null : `Duplicate audit: ${record.duplicateStatus}.`,
+    visual_review_status:
+      record.needsVisualReview || record.duplicateStatus === "needs_review"
+        ? "needs_review"
+        : "approved",
+    analysis_notes:
+      record.duplicateStatus === "unique"
+        ? null
+        : `Duplicate audit: ${record.duplicateStatus}.`,
     updated_at: new Date().toISOString(),
   };
 
@@ -346,7 +407,10 @@ function updatePayload(record) {
 }
 
 async function updateRecord(record) {
-  const { error } = await supabase.from(record.table).update(updatePayload(record)).eq("id", record.id);
+  const { error } = await supabase
+    .from(record.table)
+    .update(updatePayload(record))
+    .eq("id", record.id);
   if (error) throw error;
 }
 
@@ -359,7 +423,12 @@ async function analyzeAll() {
       try {
         records.push({ ...(await analyzeQueueRow(row)), ok: true });
       } catch (error) {
-        failures.push({ kind: "queue", id: row.id, label: row.proposed_name || row.file_name, error: String(error.message || error) });
+        failures.push({
+          kind: "queue",
+          id: row.id,
+          label: row.proposed_name || row.file_name,
+          error: String(error.message || error),
+        });
       }
     }
   }
@@ -369,7 +438,12 @@ async function analyzeAll() {
       try {
         records.push({ ...(await analyzeModelRow(row)), ok: true });
       } catch (error) {
-        failures.push({ kind: "model", id: row.id, label: row.name, error: String(error.message || error) });
+        failures.push({
+          kind: "model",
+          id: row.id,
+          label: row.name,
+          error: String(error.message || error),
+        });
       }
     }
   }
@@ -389,13 +463,17 @@ function summarize(records, failures, updateFailures) {
     duplicateStatus: {},
     review: {
       genericOrMissingName: records.filter((record) => record.isGeneric).length,
-      visualReview: records.filter((record) => record.needsVisualReview || record.duplicateStatus === "needs_review").length,
+      visualReview: records.filter(
+        (record) =>
+          record.needsVisualReview || record.duplicateStatus === "needs_review",
+      ).length,
     },
   };
 
   for (const record of records) {
     summary.byKind[record.kind] = (summary.byKind[record.kind] || 0) + 1;
-    summary.duplicateStatus[record.duplicateStatus] = (summary.duplicateStatus[record.duplicateStatus] || 0) + 1;
+    summary.duplicateStatus[record.duplicateStatus] =
+      (summary.duplicateStatus[record.duplicateStatus] || 0) + 1;
   }
 
   return summary;
@@ -410,7 +488,12 @@ async function main() {
       try {
         await updateRecord(record);
       } catch (error) {
-        updateFailures.push({ kind: record.kind, id: record.id, label: record.label, error: String(error.message || error) });
+        updateFailures.push({
+          kind: record.kind,
+          id: record.id,
+          label: record.label,
+          error: String(error.message || error),
+        });
       }
     }
   }
