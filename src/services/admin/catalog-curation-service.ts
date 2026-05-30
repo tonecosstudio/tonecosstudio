@@ -148,6 +148,7 @@ export type CatalogCurationOverview = {
     queueMissingHashes: number;
     publicMissingTaxonomy: number;
     publicMissingImage: number;
+    publicMissingHashes: number;
     publicInternalTagRows: number;
     publicBlockedTagRows: number;
     publicDuplicateCandidates: number;
@@ -332,6 +333,7 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
     readyToPublish,
     publicMissingTaxonomy,
     publicMissingImage,
+    publicMissingHashes,
     publicInternalTagRows,
     publicBlockedTagRows,
     publicDuplicateCandidates,
@@ -371,6 +373,11 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
     ),
     countRows("models", (query) =>
       publicModels(query).is("image_path", null).is("thumbnail_url", null),
+    ),
+    countRows("models", (query) =>
+      publicModels(query).or(
+        "optimized_sha256.is.null,perceptual_hash.is.null,canonical_identity_key.is.null",
+      ),
     ),
     countRows("models", (query) =>
       publicModels(query).overlaps("tags", INTERNAL_TAGS),
@@ -414,6 +421,7 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
         queueMissingHashes === 0 &&
         publicMissingTaxonomy === 0 &&
         publicMissingImage === 0 &&
+        publicMissingHashes === 0 &&
         publicInternalTagRows === 0 &&
         publicBlockedTagRows === 0 &&
         publicDuplicateCandidates === 0,
@@ -424,6 +432,7 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
         queueMissingHashes +
         publicMissingTaxonomy +
         publicMissingImage +
+        publicMissingHashes +
         publicInternalTagRows +
         publicBlockedTagRows +
         publicDuplicateCandidates,
@@ -431,6 +440,7 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
       queueMissingHashes,
       publicMissingTaxonomy,
       publicMissingImage,
+      publicMissingHashes,
       publicInternalTagRows,
       publicBlockedTagRows,
       publicDuplicateCandidates,

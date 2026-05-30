@@ -167,6 +167,12 @@ function buildReport(queueRows, modelRows) {
   const publicMissingImage = publicModels.filter(
     (row) => !row.image_path && !row.thumbnail_url,
   );
+  const publicMissingHashes = publicModels.filter(
+    (row) =>
+      !row.optimized_sha256 ||
+      !row.perceptual_hash ||
+      !row.canonical_identity_key,
+  );
   const publicInternalTags = publicModels
     .map((row) => ({ row, tags: publicTagViolations(row) }))
     .filter((entry) => entry.tags.length > 0);
@@ -194,6 +200,7 @@ function buildReport(queueRows, modelRows) {
       readyToPublish: readyToPublish.length,
       publicMissingTaxonomy: publicMissingTaxonomy.length,
       publicMissingImage: publicMissingImage.length,
+      publicMissingHashes: publicMissingHashes.length,
       publicInternalTagRows: publicInternalTags.length,
       publicBlockedTagRows: publicBlockedTags.length,
       publicDuplicateCandidates: publicDuplicateCandidates.length,
@@ -237,6 +244,13 @@ function buildReport(queueRows, modelRows) {
         id: row.id,
         name: row.name,
       })),
+      publicMissingHashes: compactRows(publicMissingHashes, (row) => ({
+        id: row.id,
+        name: row.name,
+        hasOptimizedSha: Boolean(row.optimized_sha256),
+        hasPerceptualHash: Boolean(row.perceptual_hash),
+        hasIdentityKey: Boolean(row.canonical_identity_key),
+      })),
       publicInternalTags: compactRows(publicInternalTags, (entry) => ({
         id: entry.row.id,
         name: entry.row.name,
@@ -266,6 +280,7 @@ const STRICT_ISSUE_LABELS = {
   queueMissingHashes: "fila sem hashes/metadados de dedupe",
   publicMissingTaxonomy: "modelos publicos sem taxonomia",
   publicMissingImage: "modelos publicos sem imagem",
+  publicMissingHashes: "modelos publicos sem hashes/metadados de dedupe",
   publicInternalTagRows: "modelos publicos com tags internas",
   publicBlockedTagRows: "modelos publicos com tags genericas bloqueadas",
   publicDuplicateCandidates: "modelos publicos marcados como duplicidade",

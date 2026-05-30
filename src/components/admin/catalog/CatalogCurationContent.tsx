@@ -312,9 +312,74 @@ export function CatalogCurationContent() {
       duplicate:
         overview?.duplicateCandidates ??
         data.filter(isDuplicateCandidate).length,
-      ready: data.filter(isReadyForFinalReview).length,
+      ready:
+        overview?.health.readyToPublish ??
+        data.filter(isReadyForFinalReview).length,
     };
   }, [overviewQuery.data, queueQuery.data]);
+
+  const healthChecks = useMemo(() => {
+    const overview = overviewQuery.data;
+    if (!overview) return [];
+
+    return [
+      {
+        label: "Nomes na fila",
+        count: overview.needsNameReview,
+        blocking: true,
+      },
+      {
+        label: "Revisao visual",
+        count: overview.needsVisualReview,
+        blocking: true,
+      },
+      {
+        label: "Duplicidade na fila",
+        count: overview.duplicateCandidates,
+        blocking: true,
+      },
+      {
+        label: "Hashes da fila",
+        count: overview.health.queueMissingHashes,
+        blocking: true,
+      },
+      {
+        label: "Taxonomia publica",
+        count: overview.health.publicMissingTaxonomy,
+        blocking: true,
+      },
+      {
+        label: "Imagem publica",
+        count: overview.health.publicMissingImage,
+        blocking: true,
+      },
+      {
+        label: "Hashes publicos",
+        count: overview.health.publicMissingHashes,
+        blocking: true,
+      },
+      {
+        label: "Tags internas publicas",
+        count: overview.health.publicInternalTagRows,
+        blocking: true,
+      },
+      {
+        label: "Tags bloqueadas",
+        count: overview.health.publicBlockedTagRows,
+        blocking: true,
+      },
+      {
+        label: "Duplicidade publica",
+        count: overview.health.publicDuplicateCandidates,
+        blocking: true,
+      },
+      {
+        label: "Prontos para publicar",
+        count: overview.health.readyToPublish,
+        blocking: false,
+      },
+    ];
+  }, [overviewQuery.data]);
 
   useEffect(() => {
     setForm(buildInitialForm(selected));
@@ -580,8 +645,57 @@ export function CatalogCurationContent() {
       {overviewQuery.data?.health && !overviewQuery.data.health.strictPass && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           A curadoria tem pendencias bloqueantes. Priorize nomes, revisao
-          visual, duplicidade, hashes, imagem, taxonomia e tags publicas antes
-          de publicar um lote grande.
+          visual, duplicidade, hashes, imagem, taxonomia, tags publicas e
+          identidade dos modelos publicados antes de publicar um lote grande.
+        </div>
+      )}
+
+      {healthChecks.length > 0 && (
+        <div className="rounded-lg border bg-card p-4">
+          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-semibold">Checklist de escala</h3>
+              <p className="text-xs text-muted-foreground">
+                Gate unico para importar, revisar e publicar sem duplicidade ou
+                metadados perdidos.
+              </p>
+            </div>
+            <Badge
+              variant={
+                overviewQuery.data?.health.strictPass
+                  ? "outline"
+                  : "destructive"
+              }
+              className="w-fit"
+            >
+              {overviewQuery.data?.health.strictPass
+                ? "Aprovado"
+                : `${formatCount(
+                    overviewQuery.data?.health.blockingIssueCount,
+                  )} bloqueios`}
+            </Badge>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {healthChecks.map((check) => (
+              <div
+                key={check.label}
+                className="flex min-h-11 items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm"
+              >
+                <span className="text-muted-foreground">{check.label}</span>
+                <Badge
+                  variant={
+                    check.blocking && check.count > 0
+                      ? "destructive"
+                      : check.blocking
+                        ? "outline"
+                        : "secondary"
+                  }
+                >
+                  {formatCount(check.count)}
+                </Badge>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -875,6 +989,16 @@ export function CatalogCurationContent() {
                     <span>Candidatos duplicados</span>
                     <Badge variant="outline">
                       {formatCount(queueStats.duplicate)}
+                    </Badge>
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center justify-between rounded-md border px-3 py-2 text-left transition-colors hover:bg-muted"
+                    onClick={() => setQuickFilter("ready")}
+                  >
+                    <span>Prontos para publicar</span>
+                    <Badge variant="outline">
+                      {formatCount(queueStats.ready)}
                     </Badge>
                   </button>
                 </div>
