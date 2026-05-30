@@ -68,6 +68,8 @@ Depois da importacao, rode a auditoria de hashes/duplicidade:
 node scripts/catalog/backfill-dedupe-metadata.mjs
 ```
 
+O importador e idempotente por `source_file_id`. Se o mesmo arquivo do Drive ja existir na fila com status `published`, `duplicate`, `rejected` ou `hidden`, ele e registrado como `skipped` no relatorio e nao sobrescreve a imagem no Storage nem altera o modelo publico.
+
 ## Bloqueio atual
 
 As migrations de catalogo profissional precisam estar no Supabase remoto antes da fila funcionar:

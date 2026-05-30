@@ -92,6 +92,13 @@ const supabase = DRY_RUN
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+const LOCKED_QUEUE_STATUSES = new Set([
+  "published",
+  "duplicate",
+  "rejected",
+  "hidden",
+]);
+
 const GENERIC_FOLDER_NAMES = new Set([
   "catalogo",
   "colecao tonecos",
@@ -348,6 +355,22 @@ async function uploadFile(storagePath, bytes) {
   if (error) throw error;
 }
 
+async function findExistingQueueItem(sourceFileId) {
+  const { data, error } = await supabase
+    .from("catalog_import_items")
+    .select("id,status,published_model_id")
+    .eq("source_file_id", sourceFileId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+function shouldSkipExistingQueueItem(existing) {
+  return Boolean(
+    existing?.status && LOCKED_QUEUE_STATUSES.has(existing.status),
+  );
+}
+
 function getPublicStorageUrl(storagePath) {
   return supabase.storage.from(IMPORT_BUCKET).getPublicUrl(storagePath).data
     .publicUrl;
@@ -436,7 +459,12 @@ function existingQueuePatch(payload) {
   };
 }
 
-async function upsertQueueItem(item, optimized, originalBytes) {
+async function upsertQueueItem(
+  item,
+  optimized,
+  originalBytes,
+  existing = null,
+) {
   const { storagePath, thumbnailPath } = getStoragePaths(item);
 
   await uploadFile(storagePath, optimized.main);
@@ -454,12 +482,7 @@ async function upsertQueueItem(item, optimized, originalBytes) {
     },
   );
 
-  const { data: existing, error: findError } = await supabase
-    .from("catalog_import_items")
-    .select("id,status")
-    .eq("source_file_id", item.id)
-    .maybeSingle();
-  if (findError) throw findError;
+  existing = existing || (await findExistingQueueItem(item.id));
 
   if (existing?.id) {
     const { error } = await supabase
@@ -525,9 +548,24 @@ async function main() {
         continue;
       }
 
+      const existing = await findExistingQueueItem(item.id);
+      if (shouldSkipExistingQueueItem(existing)) {
+        results.push({
+          ok: true,
+          fileId: item.id,
+          name: item.name,
+          queueId: existing.id,
+          created: false,
+          skipped: true,
+          status: existing.status,
+          reason: "locked_existing_queue_item",
+        });
+        continue;
+      }
+
       const original = await downloadImage(item);
       const optimized = await makeOptimizedImages(original);
-      const record = await upsertQueueItem(item, optimized, original);
+      const record = await upsertQueueItem(item, optimized, original, existing);
       results.push({
         ok: true,
         fileId: item.id,
@@ -551,8 +589,11 @@ async function main() {
     manifest: MANIFEST_PATH,
     total: results.length,
     imported: results.filter((result) => result.ok && result.created).length,
-    updated: results.filter((result) => result.ok && result.created === false)
-      .length,
+    updated: results.filter(
+      (result) =>
+        result.ok && result.created === false && result.skipped !== true,
+    ).length,
+    skipped: results.filter((result) => result.ok && result.skipped).length,
     failed: results.filter((result) => !result.ok).length,
     report: REPORT_PATH,
   };
