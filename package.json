@@ -25,6 +25,7 @@
     "catalog:publish-ready": "node scripts/catalog/publish-ready-catalog-items.mjs",
     "catalog:dedupe": "node scripts/catalog/backfill-dedupe-metadata.mjs",
     "catalog:health": "node scripts/catalog/catalog-health-report.mjs",
+    "catalog:health:strict": "node scripts/catalog/catalog-health-report.mjs --strict",
     "catalog:clean-public-tags": "node scripts/catalog/clean-public-model-tags.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\" \"*.{json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\" \"*.{json,md}\"",

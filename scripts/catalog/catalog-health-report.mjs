@@ -16,6 +16,10 @@ function argValue(name, fallback = null) {
   return fallback;
 }
 
+function argFlag(name) {
+  return process.argv.includes(`--${name}`);
+}
+
 const ROOT = process.cwd();
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -24,6 +28,8 @@ const REPORT_PATH = argValue(
   process.env.CATALOG_HEALTH_REPORT_PATH || "tmp/catalog-health-report.json",
 );
 const LIMIT = Number.parseInt(argValue("limit", "5000"), 10);
+const STRICT =
+  argFlag("strict") || process.env.CATALOG_HEALTH_STRICT === "true";
 const catalogTagPolicy = JSON.parse(
   readFileSync(
     path.join(ROOT, "src", "config", "catalog-tag-policy.json"),
@@ -253,14 +259,56 @@ function buildReport(queueRows, modelRows) {
   };
 }
 
+const STRICT_ISSUE_LABELS = {
+  queueNeedsNameReview: "fila com nomes pendentes",
+  queueNeedsVisualReview: "fila com revisao visual pendente",
+  queueDuplicateCandidates: "fila com duplicidade pendente",
+  queueMissingHashes: "fila sem hashes/metadados de dedupe",
+  publicMissingTaxonomy: "modelos publicos sem taxonomia",
+  publicMissingImage: "modelos publicos sem imagem",
+  publicInternalTagRows: "modelos publicos com tags internas",
+  publicBlockedTagRows: "modelos publicos com tags genericas bloqueadas",
+  publicDuplicateCandidates: "modelos publicos marcados como duplicidade",
+};
+
+function strictIssues(summary) {
+  return Object.entries(STRICT_ISSUE_LABELS)
+    .filter(([key]) => Number(summary[key] || 0) > 0)
+    .map(([key, label]) => ({
+      key,
+      label,
+      count: summary[key],
+    }));
+}
+
 const [queueRows, modelRows] = await Promise.all([
   fetchQueueRows(),
   fetchModelRows(),
 ]);
 
 const report = buildReport(queueRows, modelRows);
+report.strict = {
+  enabled: STRICT,
+  pass: strictIssues(report.summary).length === 0,
+  issues: strictIssues(report.summary),
+};
+
 await fs.mkdir(path.dirname(REPORT_PATH), { recursive: true });
 await fs.writeFile(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
 
 console.log(JSON.stringify(report.summary, null, 2));
+if (STRICT) {
+  console.log(
+    JSON.stringify(
+      {
+        strict: report.strict.pass ? "pass" : "fail",
+        issues: report.strict.issues,
+      },
+      null,
+      2,
+    ),
+  );
+}
 console.log(`Report: ${REPORT_PATH}`);
+
+if (STRICT && !report.strict.pass) process.exitCode = 1;

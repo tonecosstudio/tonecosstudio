@@ -86,7 +86,10 @@ Depois da auditoria, gere o relatorio de saude do catalogo:
 
 ```powershell
 npm run catalog:health
+npm run catalog:health:strict
 ```
+
+Use `catalog:health:strict` como gate antes de publicar lote grande ou fazer deploy. Ele falha quando encontra pendencias de nome, revisao visual, duplicidade, hashes ausentes, modelo publico sem taxonomia/imagem, tags internas ou tags genericas bloqueadas.
 
 Se o relatorio apontar tags internas em modelos publicos, normalize as tags publicas pelo SSOT:
 
