@@ -26,10 +26,24 @@ Arquivos importados passam por:
 
 ## Dry run
 
-Use antes de qualquer importacao real:
+Antes do dry-run, valide o manifesto. Essa etapa nao acessa o Supabase e apenas confere formato, duplicidade interna, IDs e tipo de arquivo:
 
 ```powershell
-node scripts/catalog/import-drive-manifest.mjs `
+npm run catalog:import-drive -- `
+  --validate-only `
+  --manifest tmp/drive-folder-items.json `
+  --slug thundercats `
+  --context collection `
+  --source-folder-id 1chAOa3EOmMmE-fzrLyomQ9IbxMNK4QVF `
+  --source-folder-name Thundercats `
+  --source-title Thundercats `
+  --media-type series
+```
+
+Depois use dry-run antes de qualquer importacao real:
+
+```powershell
+npm run catalog:import-drive -- `
   --dry-run `
   --limit 8 `
   --manifest tmp/drive-folder-items.json `
@@ -49,7 +63,7 @@ O script carrega `.env.local` e `.env` automaticamente para ler `VITE_SUPABASE_U
 Antes de enviar qualquer imagem, ele verifica se `catalog_import_items` existe. Se a migration ainda nao foi aplicada, a importacao para antes do upload.
 
 ```powershell
-node scripts/catalog/import-drive-manifest.mjs `
+npm run catalog:import-drive -- `
   --manifest tmp/drive-folder-items.json `
   --slug thundercats `
   --context collection `
@@ -65,10 +79,10 @@ node scripts/catalog/import-drive-manifest.mjs `
 Depois da importacao, rode a auditoria de hashes/duplicidade:
 
 ```powershell
-node scripts/catalog/backfill-dedupe-metadata.mjs
+npm run catalog:dedupe
 ```
 
-O importador e idempotente por `source_file_id`. Se o mesmo arquivo do Drive ja existir na fila com status `published`, `duplicate`, `rejected` ou `hidden`, ele e registrado como `skipped` no relatorio e nao sobrescreve a imagem no Storage nem altera o modelo publico.
+O relatorio informa `manifestTotal`, `valid`, `rejected`, `imported`, `updated`, `skipped` e `failed`. O importador e idempotente por `source_file_id`. Se o mesmo arquivo do Drive ja existir na fila com status `published`, `duplicate`, `rejected` ou `hidden`, ele e registrado como `skipped` no relatorio e nao sobrescreve a imagem no Storage nem altera o modelo publico.
 
 ## Bloqueio atual
 

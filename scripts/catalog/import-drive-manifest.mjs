@@ -79,18 +79,21 @@ const REPORT_PATH = argValue(
   process.env.IMPORT_REPORT_PATH || "tmp/catalog-drive-import-report.json",
 );
 const DRY_RUN = argFlag("dry-run") || process.env.DRY_RUN === "true";
+const VALIDATE_ONLY =
+  argFlag("validate-only") || process.env.VALIDATE_ONLY === "true";
 
-if (!DRY_RUN && (!SUPABASE_URL || !SERVICE_ROLE_KEY)) {
+if (!DRY_RUN && !VALIDATE_ONLY && (!SUPABASE_URL || !SERVICE_ROLE_KEY)) {
   throw new Error(
     "Missing VITE_SUPABASE_URL/SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
   );
 }
 
-const supabase = DRY_RUN
-  ? null
-  : createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+const supabase =
+  DRY_RUN || VALIDATE_ONLY
+    ? null
+    : createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
 
 const LOCKED_QUEUE_STATUSES = new Set([
   "published",
@@ -111,6 +114,36 @@ const GENERIC_FOLDER_NAMES = new Set([
   "animes",
   "classicos",
 ]);
+
+const VALID_MEDIA_TYPES = new Set([
+  "anime",
+  "manga",
+  "movie",
+  "series",
+  "game",
+  "comic",
+  "tokusatsu",
+  "original",
+  "other",
+]);
+
+const VALID_VISIBILITIES = new Set(["general", "collection", "both", "hidden"]);
+const VALID_SOURCE_TITLE_MODES = new Set(["auto", "filename", "folder"]);
+
+function assertImportConfig() {
+  if (!VALID_MEDIA_TYPES.has(IMPORT_MEDIA_TYPE)) {
+    throw new Error(`Invalid --media-type: ${IMPORT_MEDIA_TYPE}`);
+  }
+  if (!VALID_VISIBILITIES.has(IMPORT_VISIBILITY)) {
+    throw new Error(`Invalid --visibility: ${IMPORT_VISIBILITY}`);
+  }
+  if (!VALID_SOURCE_TITLE_MODES.has(IMPORT_SOURCE_TITLE_MODE)) {
+    throw new Error(`Invalid --source-title-mode: ${IMPORT_SOURCE_TITLE_MODE}`);
+  }
+  if (Number.isFinite(IMPORT_LIMIT) && IMPORT_LIMIT < 1) {
+    throw new Error("--limit must be a positive integer.");
+  }
+}
 
 function normalizeComparable(value) {
   return String(value || "")
@@ -139,58 +172,117 @@ function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function normalizeInputItems(raw) {
+function rawManifestItems(raw) {
   const files = Array.isArray(raw) ? raw : raw.files;
   if (!Array.isArray(files)) {
     throw new Error("Manifest must be an array or an object with files[].");
   }
 
-  return files
-    .filter((item) => (item.file_or_folder ?? item.type ?? "file") === "file")
-    .map((item) => {
-      const id = item.id || item.fileId || item.file_id;
-      const name =
-        item.name ||
-        item.title ||
-        item.file_name ||
-        item.fileName ||
-        `${id}.jpg`;
-      const mimeType = item.mimeType || item.mime_type || item.mime || "";
-      return {
+  return files;
+}
+
+function normalizeManifestItem(item, index) {
+  const id = item.id || item.fileId || item.file_id;
+  const name =
+    item.name ||
+    item.title ||
+    item.file_name ||
+    item.fileName ||
+    (id ? `${id}.jpg` : "");
+  const mimeType = item.mimeType || item.mime_type || item.mime || "";
+  const mediaType = item.mediaType || item.media_type || null;
+
+  return {
+    id,
+    index,
+    name,
+    mimeType,
+    url:
+      item.url ||
+      item.webViewLink ||
+      item.web_view_link ||
+      item.link ||
+      (id ? `https://drive.google.com/file/d/${id}/view` : null),
+    downloadUrl:
+      item.downloadUrl ||
+      item.download_url ||
+      item.webContentLink ||
+      item.web_content_link ||
+      item.file_uri?.download_url ||
+      item.structuredContent?.download_url ||
+      null,
+    size: item.size || item.original_size_bytes || null,
+    characterName: item.characterName || item.character_name || null,
+    variantName: item.variantName || item.variant_name || null,
+    sourceTitle: item.sourceTitle || item.source_title || null,
+    mediaType,
+    category: item.category || null,
+    subcategory: item.subcategory || null,
+    tags: Array.isArray(item.tags) ? item.tags : [],
+    notes: item.notes || null,
+    localPath: item.localPath || item.local_path || null,
+  };
+}
+
+function validateManifestItem(item, seenIds) {
+  const errors = [];
+  const fileOrFolder = item.file_or_folder ?? item.type ?? "file";
+  const id = item.id || item.fileId || item.file_id;
+  const name = item.name || item.title || item.file_name || item.fileName;
+  const mimeType = item.mimeType || item.mime_type || item.mime || "";
+  const mediaType = item.mediaType || item.media_type || null;
+
+  if (fileOrFolder !== "file") errors.push("not_a_file");
+  if (!id) errors.push("missing_source_file_id");
+  if (id && seenIds.has(id)) errors.push("duplicate_source_file_id");
+  if (mediaType && !VALID_MEDIA_TYPES.has(mediaType)) {
+    errors.push("invalid_media_type");
+  }
+  if (
+    mimeType &&
+    !String(mimeType).startsWith("image/") &&
+    !/\.(png|jpe?g|webp)$/i.test(String(name || ""))
+  ) {
+    errors.push("not_an_image");
+  }
+  if (!mimeType && name && !/\.(png|jpe?g|webp)$/i.test(String(name))) {
+    errors.push("unknown_image_type");
+  }
+
+  return errors;
+}
+
+function normalizeInputItems(raw) {
+  const items = [];
+  const rejected = [];
+  const seenIds = new Set();
+  const files = rawManifestItems(raw);
+
+  for (const [index, item] of files.entries()) {
+    if (!item || typeof item !== "object") {
+      rejected.push({ index, reason: "invalid_item_shape" });
+      continue;
+    }
+
+    const errors = validateManifestItem(item, seenIds);
+    const id = item.id || item.fileId || item.file_id || null;
+    if (id) seenIds.add(id);
+
+    if (errors.length > 0) {
+      rejected.push({
+        index,
         id,
-        name,
-        mimeType,
-        url:
-          item.url ||
-          item.webViewLink ||
-          item.web_view_link ||
-          item.link ||
-          (id ? `https://drive.google.com/file/d/${id}/view` : null),
-        downloadUrl:
-          item.downloadUrl ||
-          item.download_url ||
-          item.webContentLink ||
-          item.web_content_link ||
-          item.file_uri?.download_url ||
-          item.structuredContent?.download_url ||
-          null,
-        size: item.size || item.original_size_bytes || null,
-        characterName: item.characterName || item.character_name || null,
-        variantName: item.variantName || item.variant_name || null,
-        sourceTitle: item.sourceTitle || item.source_title || null,
-        mediaType: item.mediaType || item.media_type || null,
-        category: item.category || null,
-        subcategory: item.subcategory || null,
-        tags: Array.isArray(item.tags) ? item.tags : [],
-        notes: item.notes || null,
-        localPath: item.localPath || item.local_path || null,
-      };
-    })
-    .filter((item) => item.id)
-    .filter((item) => {
-      if (item.mimeType) return String(item.mimeType).startsWith("image/");
-      return /\.(png|jpe?g|webp)$/i.test(item.name);
-    });
+        name:
+          item.name || item.title || item.file_name || item.fileName || null,
+        reasons: errors,
+      });
+      continue;
+    }
+
+    items.push(normalizeManifestItem(item, index));
+  }
+
+  return { items, rejected, manifestTotal: files.length };
 }
 
 function splitNameAndSource(fileName) {
@@ -508,12 +600,14 @@ async function writeReport(report) {
 }
 
 async function main() {
-  if (!DRY_RUN) {
+  assertImportConfig();
+
+  if (!DRY_RUN && !VALIDATE_ONLY) {
     await assertCatalogQueueReady();
     await ensureStorageBucket();
   }
 
-  const items = await loadItems();
+  const { items, rejected, manifestTotal } = await loadItems();
   const selectedItems =
     Number.isFinite(IMPORT_LIMIT) && IMPORT_LIMIT > 0
       ? items.slice(0, IMPORT_LIMIT)
@@ -522,7 +616,7 @@ async function main() {
 
   for (const item of selectedItems) {
     try {
-      if (DRY_RUN) {
+      if (DRY_RUN || VALIDATE_ONLY) {
         const { storagePath, thumbnailPath } = getStoragePaths(item);
         const payload = buildQueuePayload(
           item,
@@ -586,7 +680,11 @@ async function main() {
 
   const summary = {
     dryRun: DRY_RUN,
+    validateOnly: VALIDATE_ONLY,
     manifest: MANIFEST_PATH,
+    manifestTotal,
+    valid: items.length,
+    rejected: rejected.length,
     total: results.length,
     imported: results.filter((result) => result.ok && result.created).length,
     updated: results.filter(
@@ -601,6 +699,7 @@ async function main() {
   await writeReport({
     generatedAt: new Date().toISOString(),
     summary,
+    rejected,
     results,
   });
   console.log(JSON.stringify(summary, null, 2));
