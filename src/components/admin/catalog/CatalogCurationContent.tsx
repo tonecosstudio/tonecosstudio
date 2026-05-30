@@ -430,6 +430,27 @@ export function CatalogCurationContent() {
               <Database className="h-3.5 w-3.5" />
               Supabase
             </Badge>
+            {overviewQuery.data?.health && (
+              <Badge
+                variant={
+                  overviewQuery.data.health.strictPass
+                    ? "outline"
+                    : "destructive"
+                }
+                className="gap-1"
+              >
+                {overviewQuery.data.health.strictPass ? (
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                ) : (
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                )}
+                {overviewQuery.data.health.strictPass
+                  ? "Saude OK"
+                  : `${formatCount(
+                      overviewQuery.data.health.blockingIssueCount,
+                    )} pendencias`}
+              </Badge>
+            )}
           </div>
           <h2 className="text-2xl font-semibold tracking-tight">
             Modelos do catalogo
@@ -471,7 +492,7 @@ export function CatalogCurationContent() {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -537,7 +558,32 @@ export function CatalogCurationContent() {
             <GitCompare className="h-5 w-5 text-muted-foreground" />
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Saude
+              </p>
+              <p className="text-2xl font-semibold">
+                {formatCount(overviewQuery.data?.health.blockingIssueCount)}
+              </p>
+            </div>
+            {overviewQuery.data?.health.strictPass ? (
+              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {overviewQuery.data?.health && !overviewQuery.data.health.strictPass && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          A curadoria tem pendencias bloqueantes. Priorize nomes, revisao
+          visual, duplicidade, hashes, imagem, taxonomia e tags publicas antes
+          de publicar um lote grande.
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(430px,0.85fr)]">
         <div className="space-y-4">

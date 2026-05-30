@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCatalogTags } from "@/lib/catalog-utils";
+import catalogTagPolicy from "@/config/catalog-tag-policy.json";
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 
@@ -140,6 +141,17 @@ export type CatalogCurationOverview = {
   publishedModels: number;
   stagingModels: number;
   totalModels: number;
+  health: {
+    strictPass: boolean;
+    blockingIssueCount: number;
+    readyToPublish: number;
+    queueMissingHashes: number;
+    publicMissingTaxonomy: number;
+    publicMissingImage: number;
+    publicInternalTagRows: number;
+    publicBlockedTagRows: number;
+    publicDuplicateCandidates: number;
+  };
 };
 
 const CATALOG_IMPORT_SELECT =
@@ -162,7 +174,12 @@ interface CatalogCountQuery extends PromiseLike<{
 }> {
   contains(column: string, value: string[]): CatalogCountQuery;
   eq(column: string, value: string | boolean): CatalogCountQuery;
+  in(column: string, value: string[]): CatalogCountQuery;
+  is(column: string, value: null | boolean): CatalogCountQuery;
   neq(column: string, value: string | boolean): CatalogCountQuery;
+  not(column: string, operator: string, value: string): CatalogCountQuery;
+  or(filters: string): CatalogCountQuery;
+  overlaps(column: string, value: string[]): CatalogCountQuery;
 }
 
 interface CatalogImportUpdateQuery {
@@ -192,6 +209,9 @@ interface CatalogCountGateway {
 }
 
 const catalogCountGateway = supabase as unknown as CatalogCountGateway;
+const PUBLIC_CATALOG_VISIBILITIES = ["general", "both"];
+const PUBLIC_TAG_BLOCKLIST = catalogTagPolicy.publicTagBlocklist;
+const INTERNAL_TAGS = catalogTagPolicy.internalTags;
 
 function normalizeTags(tags: string) {
   return normalizeCatalogTags(tags.split(","), 20);
@@ -285,6 +305,12 @@ async function countRows(
   return count ?? 0;
 }
 
+function publicModels(query: CatalogCountQuery) {
+  return query
+    .eq("is_active", true)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES);
+}
+
 export async function getCatalogCurationOverview(): Promise<CatalogCurationOverview> {
   const statuses: CatalogCurationStatus[] = [
     "queued",
@@ -302,6 +328,13 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
     needsNameReview,
     needsVisualReview,
     duplicateCandidates,
+    queueMissingHashes,
+    readyToPublish,
+    publicMissingTaxonomy,
+    publicMissingImage,
+    publicInternalTagRows,
+    publicBlockedTagRows,
+    publicDuplicateCandidates,
     publishedModels,
     stagingModels,
     totalModels,
@@ -316,6 +349,37 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
     ),
     countRows("catalog_import_items", (query) =>
       query.neq("duplicate_status", "unique"),
+    ),
+    countRows("catalog_import_items", (query) =>
+      query.or(
+        "optimized_sha256.is.null,perceptual_hash.is.null,canonical_identity_key.is.null",
+      ),
+    ),
+    countRows("catalog_import_items", (query) =>
+      query
+        .not("status", "in", "(published,duplicate,rejected)")
+        .eq("name_review_status", "approved")
+        .eq("visual_review_status", "approved")
+        .eq("duplicate_status", "unique")
+        .not("storage_path", "is", "null")
+        .not("source_title", "is", "null"),
+    ),
+    countRows("models", (query) =>
+      publicModels(query).or(
+        "character_name.is.null,source_title.is.null,source_type.is.null",
+      ),
+    ),
+    countRows("models", (query) =>
+      publicModels(query).is("image_path", null).is("thumbnail_url", null),
+    ),
+    countRows("models", (query) =>
+      publicModels(query).overlaps("tags", INTERNAL_TAGS),
+    ),
+    countRows("models", (query) =>
+      publicModels(query).overlaps("tags", PUBLIC_TAG_BLOCKLIST),
+    ),
+    countRows("models", (query) =>
+      publicModels(query).neq("duplicate_status", "unique"),
     ),
     countRows("models", (query) => query.eq("is_active", true)),
     countRows("models", (query) => query.contains("tags", ["catalog-staging"])),
@@ -342,6 +406,35 @@ export async function getCatalogCurationOverview(): Promise<CatalogCurationOverv
     publishedModels,
     stagingModels,
     totalModels,
+    health: {
+      strictPass:
+        needsNameReview === 0 &&
+        needsVisualReview === 0 &&
+        duplicateCandidates === 0 &&
+        queueMissingHashes === 0 &&
+        publicMissingTaxonomy === 0 &&
+        publicMissingImage === 0 &&
+        publicInternalTagRows === 0 &&
+        publicBlockedTagRows === 0 &&
+        publicDuplicateCandidates === 0,
+      blockingIssueCount:
+        needsNameReview +
+        needsVisualReview +
+        duplicateCandidates +
+        queueMissingHashes +
+        publicMissingTaxonomy +
+        publicMissingImage +
+        publicInternalTagRows +
+        publicBlockedTagRows +
+        publicDuplicateCandidates,
+      readyToPublish,
+      queueMissingHashes,
+      publicMissingTaxonomy,
+      publicMissingImage,
+      publicInternalTagRows,
+      publicBlockedTagRows,
+      publicDuplicateCandidates,
+    },
   };
 }
 
