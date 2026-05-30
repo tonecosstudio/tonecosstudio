@@ -138,6 +138,14 @@ function assertImportConfig() {
   if (!VALID_VISIBILITIES.has(IMPORT_VISIBILITY)) {
     throw new Error(`Invalid --visibility: ${IMPORT_VISIBILITY}`);
   }
+  if (
+    ["collection", "both"].includes(IMPORT_VISIBILITY) &&
+    !IMPORT_COLLECTION_ID
+  ) {
+    throw new Error(
+      "--collection-id is required when --visibility is collection or both.",
+    );
+  }
   if (!VALID_SOURCE_TITLE_MODES.has(IMPORT_SOURCE_TITLE_MODE)) {
     throw new Error(`Invalid --source-title-mode: ${IMPORT_SOURCE_TITLE_MODE}`);
   }

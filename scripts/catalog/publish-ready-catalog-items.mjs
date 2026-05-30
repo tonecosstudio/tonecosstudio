@@ -109,6 +109,12 @@ function rejectReason(item) {
     return "missing_name";
   if (!cleanName(item.source_title || item.source_folder_name))
     return "missing_source";
+  if (
+    ["collection", "both"].includes(item.catalog_visibility) &&
+    !item.collection_id
+  ) {
+    return "missing_collection";
+  }
   return null;
 }
 
@@ -131,8 +137,8 @@ function buildPayload(item) {
     category: cleanName(item.category) || null,
     subcategory: cleanName(item.subcategory) || null,
     tags: buildPublicTags(item),
-    catalog_visibility: "general",
-    collection_id: null,
+    catalog_visibility: item.catalog_visibility || "general",
+    collection_id: item.collection_id || null,
     price_mode: "consultation",
     price_standalone_override: null,
     price_coins_override: null,
@@ -155,6 +161,7 @@ const selectColumns = [
   "subcategory",
   "tags",
   "catalog_visibility",
+  "collection_id",
   "published_model_id",
   "duplicate_status",
   "name_review_status",

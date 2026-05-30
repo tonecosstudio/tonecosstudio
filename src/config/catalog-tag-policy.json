@@ -60,6 +60,12 @@
     "default",
     "general",
     "collection",
-    "both"
+    "both",
+    "category",
+    "categories",
+    "categoria",
+    "categorias",
+    "colecao",
+    "colecoes"
   ]
 }
