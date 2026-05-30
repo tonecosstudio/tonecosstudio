@@ -1,12 +1,19 @@
-import { supabase } from '@/integrations/supabase/client';
-import { BATCH } from '@/config/constants';
+import { supabase } from "@/integrations/supabase/client";
+import { BATCH } from "@/config/constants";
+import { resolveCycleCapacity } from "@/lib/cycle-capacity";
 import {
   getOrCreateDeliveryCycleRpc,
   transitionDeliveryCycleStatusRpc,
-} from '@/services/delivery-cycle-mutations-service';
-import { timezoneService } from './timezoneService';
+} from "@/services/delivery-cycle-mutations-service";
+import { timezoneService } from "./timezoneService";
 
-export type CycleStatus = 'open' | 'active' | 'sales' | 'production' | 'shipping' | 'completed';
+export type CycleStatus =
+  | "open"
+  | "active"
+  | "sales"
+  | "production"
+  | "shipping"
+  | "completed";
 
 export interface Cycle {
   id: string;
@@ -36,8 +43,8 @@ export interface CycleCapacity {
 
 interface CycleCapacityRpcClient {
   rpc(
-    name: 'reserve_capacity' | 'release_capacity',
-    args: { p_cycle_id: string; p_quantity: number }
+    name: "reserve_capacity" | "release_capacity",
+    args: { p_cycle_id: string; p_quantity: number },
   ): Promise<{ error: { message: string } | null }>;
 }
 
@@ -45,31 +52,38 @@ const cycleCapacityRpc = supabase as unknown as CycleCapacityRpcClient;
 
 class CycleService {
   private normalizeCycle(row: Record<string, unknown>): Cycle {
-    const capacity = Number(row.capacity ?? row.capacity_max ?? row.capacity_limit ?? 100);
-    const usedCapacity = Math.max(
-      Number(row.used_capacity ?? row.capacity_current ?? row.reserved_capacity ?? 0),
-      0
-    );
+    const capacity = resolveCycleCapacity(row);
     const openStart = String(
-      row.open_start ?? row.sales_start_date ?? row.created_at ?? new Date().toISOString()
+      row.open_start ??
+        row.sales_start_date ??
+        row.created_at ??
+        new Date().toISOString(),
     );
-    const openEnd = String(row.open_end ?? row.sales_end_date ?? row.cutoff_date ?? openStart);
-    const productionStart = String(row.production_start ?? row.production_start_date ?? openEnd);
-    const productionEnd = String(row.production_end ?? row.production_end_date ?? productionStart);
-    const shippingDate = String(row.shipping_date ?? row.shipping_start_date ?? productionEnd);
+    const openEnd = String(
+      row.open_end ?? row.sales_end_date ?? row.cutoff_date ?? openStart,
+    );
+    const productionStart = String(
+      row.production_start ?? row.production_start_date ?? openEnd,
+    );
+    const productionEnd = String(
+      row.production_end ?? row.production_end_date ?? productionStart,
+    );
+    const shippingDate = String(
+      row.shipping_date ?? row.shipping_start_date ?? productionEnd,
+    );
 
     return {
       ...(row as unknown as Cycle),
-      capacity,
-      used_capacity: usedCapacity,
+      capacity: capacity.capacity,
+      used_capacity: capacity.usedCapacity,
       cycle_number: Number(row.cycle_number ?? 1) as 1 | 2,
       open_start: openStart,
       open_end: openEnd,
       production_start: productionStart,
       production_end: productionEnd,
       shipping_date: shippingDate,
-      capacity_max: capacity,
-      capacity_current: usedCapacity,
+      capacity_max: capacity.capacity,
+      capacity_current: capacity.usedCapacity,
     };
   }
 
@@ -88,15 +102,15 @@ class CycleService {
     const year = timezoneService.getYear(systemDate);
 
     const { data, error } = await supabase
-      .from('cycles')
-      .select('*')
-      .eq('cycle_number', cycleNumber)
-      .eq('month', month)
-      .eq('year', year)
+      .from("cycles")
+      .select("*")
+      .eq("cycle_number", cycleNumber)
+      .eq("month", month)
+      .eq("year", year)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw new Error(`Erro ao buscar ciclo atual: ${error.message}`);
@@ -108,12 +122,12 @@ class CycleService {
   async createCycleIfNotExists(
     cycleNumber: 1 | 2,
     month: number,
-    year: number
+    year: number,
   ): Promise<Cycle> {
     const cycle = await getOrCreateDeliveryCycleRpc<Record<string, unknown>>(
       cycleNumber,
       month,
-      year
+      year,
     );
 
     return this.normalizeCycle(cycle);
@@ -135,7 +149,10 @@ class CycleService {
     return this.createCycleIfNotExists(cycleNumber, month, year);
   }
 
-  async transitionCycleStatus(cycleId: string, newStatus: CycleStatus): Promise<void> {
+  async transitionCycleStatus(
+    cycleId: string,
+    newStatus: CycleStatus,
+  ): Promise<void> {
     await transitionDeliveryCycleStatusRpc<Cycle>(cycleId, newStatus);
   }
 
@@ -143,9 +160,9 @@ class CycleService {
     const now = timezoneService.getCurrentTime();
 
     const { data: cycles, error } = await supabase
-      .from('cycles')
-      .select('*')
-      .neq('status', 'completed');
+      .from("cycles")
+      .select("*")
+      .neq("status", "completed");
 
     if (error) {
       throw new Error(`Erro ao buscar ciclos: ${error.message}`);
@@ -161,36 +178,38 @@ class CycleService {
       const productionEnd = new Date(normalized.production_end);
       const shippingDate = new Date(normalized.shipping_date);
 
-      if (normalized.status === 'open' && now > openEnd) {
-        await this.transitionCycleStatus(normalized.id, 'production');
-      } else if (normalized.status === 'production' && now > productionEnd) {
-        await this.transitionCycleStatus(normalized.id, 'shipping');
-      } else if (normalized.status === 'shipping' && now > shippingDate) {
-        await this.transitionCycleStatus(normalized.id, 'completed');
+      if (normalized.status === "open" && now > openEnd) {
+        await this.transitionCycleStatus(normalized.id, "production");
+      } else if (normalized.status === "production" && now > productionEnd) {
+        await this.transitionCycleStatus(normalized.id, "shipping");
+      } else if (normalized.status === "shipping" && now > shippingDate) {
+        await this.transitionCycleStatus(normalized.id, "completed");
       }
     }
   }
 
   async checkCapacity(cycleId: string): Promise<CycleCapacity> {
     const { data, error } = await supabase
-      .from('cycles')
-      .select('capacity, used_capacity')
-      .eq('id', cycleId)
+      .from("cycles")
+      .select("capacity, used_capacity")
+      .eq("id", cycleId)
       .single();
 
     if (error) {
       throw new Error(`Erro ao verificar capacidade: ${error.message}`);
     }
 
+    const capacity = resolveCycleCapacity(data, `Cycle ${cycleId}`);
+
     return {
-      current: data.used_capacity ?? 0,
-      max: data.capacity ?? 100,
-      available: Math.max(0, (data.capacity ?? 100) - (data.used_capacity ?? 0)),
+      current: capacity.usedCapacity,
+      max: capacity.capacity,
+      available: capacity.available,
     };
   }
 
   async incrementCapacity(cycleId: string): Promise<void> {
-    const { error } = await cycleCapacityRpc.rpc('reserve_capacity', {
+    const { error } = await cycleCapacityRpc.rpc("reserve_capacity", {
       p_cycle_id: cycleId,
       p_quantity: 1,
     });
@@ -201,7 +220,7 @@ class CycleService {
   }
 
   async decrementCapacity(cycleId: string): Promise<void> {
-    const { error } = await cycleCapacityRpc.rpc('release_capacity', {
+    const { error } = await cycleCapacityRpc.rpc("release_capacity", {
       p_cycle_id: cycleId,
       p_quantity: 1,
     });
@@ -213,9 +232,9 @@ class CycleService {
 
   async getCycleById(cycleId: string): Promise<Cycle> {
     const { data, error } = await supabase
-      .from('cycles')
-      .select('*')
-      .eq('id', cycleId)
+      .from("cycles")
+      .select("*")
+      .eq("id", cycleId)
       .single();
 
     if (error) {
@@ -227,18 +246,18 @@ class CycleService {
 
   async getCyclesByMonth(month: number, year: number): Promise<Cycle[]> {
     const { data, error } = await supabase
-      .from('cycles')
-      .select('*')
-      .eq('month', month)
-      .eq('year', year)
-      .order('cycle_number', { ascending: true });
+      .from("cycles")
+      .select("*")
+      .eq("month", month)
+      .eq("year", year)
+      .order("cycle_number", { ascending: true });
 
     if (error) {
       throw new Error(`Erro ao buscar ciclos: ${error.message}`);
     }
 
     return ((data || []) as Array<Record<string, unknown>>).map((cycle) =>
-      this.normalizeCycle(cycle)
+      this.normalizeCycle(cycle),
     );
   }
 
@@ -256,7 +275,7 @@ class CycleService {
       const cycle = await this.createCycleIfNotExists(
         currentCycleNumber,
         currentMonth,
-        currentYear
+        currentYear,
       );
 
       cycles.push(cycle);

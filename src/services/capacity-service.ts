@@ -8,6 +8,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCycleCapacity } from "@/lib/cycle-capacity";
 import log from "@/lib/logger";
 
 interface CapacityRpcError {
@@ -17,15 +18,15 @@ interface CapacityRpcError {
 interface CapacityRpcClient {
   rpc(
     name: "check_capacity_available",
-    args: { p_cycle_id: string; p_quantity: number }
+    args: { p_cycle_id: string; p_quantity: number },
   ): Promise<{ data: boolean | null; error: CapacityRpcError | null }>;
   rpc(
     name: "reserve_capacity",
-    args: { p_cycle_id: string; p_quantity: number }
+    args: { p_cycle_id: string; p_quantity: number },
   ): Promise<{ data: unknown; error: CapacityRpcError | null }>;
   rpc(
     name: "release_capacity",
-    args: { p_cycle_id: string; p_quantity: number }
+    args: { p_cycle_id: string; p_quantity: number },
   ): Promise<{ data: unknown; error: CapacityRpcError | null }>;
 }
 
@@ -80,11 +81,11 @@ export interface CapacityUsage {
  */
 export async function checkAvailability(
   cycleId: string,
-  quantity: number
+  quantity: number,
 ): Promise<boolean> {
-  const { data, error } = await capacityRpc.rpc('check_capacity_available', {
+  const { data, error } = await capacityRpc.rpc("check_capacity_available", {
     p_cycle_id: cycleId,
-    p_quantity: quantity
+    p_quantity: quantity,
   });
 
   if (error) {
@@ -115,18 +116,18 @@ export async function checkAvailability(
 export async function reserveCapacity(
   cycleId: string,
   quantity: number,
-  referenceId: string
+  referenceId: string,
 ): Promise<void> {
-  const { error } = await capacityRpc.rpc('reserve_capacity', {
+  const { error } = await capacityRpc.rpc("reserve_capacity", {
     p_cycle_id: cycleId,
-    p_quantity: quantity
+    p_quantity: quantity,
   });
 
   if (error) {
     throw new Error(`Failed to reserve capacity: ${error.message}`);
   }
 
-  log.info('Capacity reserved', { quantity, cycleId, referenceId });
+  log.info("Capacity reserved", { quantity, cycleId, referenceId });
 }
 
 /**
@@ -150,18 +151,18 @@ export async function reserveCapacity(
 export async function releaseCapacity(
   cycleId: string,
   quantity: number,
-  referenceId: string
+  referenceId: string,
 ): Promise<void> {
-  const { error } = await capacityRpc.rpc('release_capacity', {
+  const { error } = await capacityRpc.rpc("release_capacity", {
     p_cycle_id: cycleId,
-    p_quantity: quantity
+    p_quantity: quantity,
   });
 
   if (error) {
     throw new Error(`Failed to release capacity: ${error.message}`);
   }
 
-  log.info('Capacity released', { quantity, cycleId, referenceId });
+  log.info("Capacity released", { quantity, cycleId, referenceId });
 }
 
 /**
@@ -183,11 +184,13 @@ export async function releaseCapacity(
  *
  * Requirements: 3.5, 16.6
  */
-export async function getCapacityUsage(cycleId: string): Promise<CapacityUsage> {
+export async function getCapacityUsage(
+  cycleId: string,
+): Promise<CapacityUsage> {
   const { data: cycle, error } = await supabase
-    .from('cycles')
-    .select('capacity, used_capacity')
-    .eq('id', cycleId)
+    .from("cycles")
+    .select("capacity, used_capacity")
+    .eq("id", cycleId)
     .single<CycleCapacityRow>();
 
   if (error) {
@@ -198,18 +201,14 @@ export async function getCapacityUsage(cycleId: string): Promise<CapacityUsage> 
     throw new Error(`Cycle not found: ${cycleId}`);
   }
 
-  const max = cycle.capacity ?? 100;
-  const current = cycle.used_capacity ?? 0;
-
-  const available = Math.max(0, max - current);
-  const percentage = max > 0 ? Math.round((current / max) * 100) : 0;
+  const capacity = resolveCycleCapacity(cycle, `Cycle ${cycleId}`);
 
   return {
-    max,
-    current,
-    available,
-    percentage,
-    reserved: 0
+    max: capacity.capacity,
+    current: capacity.usedCapacity,
+    available: capacity.available,
+    percentage: capacity.percentage,
+    reserved: 0,
   };
 }
 
@@ -242,7 +241,7 @@ export interface SubscriptionCapacityCheck {
  */
 function calculateDeliveryCycles(
   entryCycle: { cycle_number: 1 | 2; month: number; year: number },
-  deliveryCount: number
+  deliveryCount: number,
 ): Array<{ cycleNumber: 1 | 2; month: number; year: number }> {
   const cycles: Array<{ cycleNumber: 1 | 2; month: number; year: number }> = [];
 
@@ -270,7 +269,7 @@ function calculateDeliveryCycles(
     cycles.push({
       cycleNumber: currentCycleNumber,
       month: currentMonth,
-      year: currentYear
+      year: currentYear,
     });
   }
 
@@ -298,7 +297,7 @@ function calculateDeliveryCycles(
  * Requirements: 3.2, 9.9, 22.1, 22.2, 22.3
  */
 export async function checkSubscriptionCapacity(
-  deliveryCount: number
+  deliveryCount: number,
 ): Promise<SubscriptionCapacityCheck> {
   const now = new Date();
   const fallbackCycle: CurrentCycleRow = {
@@ -308,12 +307,12 @@ export async function checkSubscriptionCapacity(
   };
 
   const { data: openCycle, error: cycleError } = await supabase
-    .from('cycles')
-    .select('cycle_number, month, year')
-    .eq('month', fallbackCycle.month)
-    .eq('year', fallbackCycle.year)
-    .in('status', ['open', 'active', 'sales'])
-    .order('cycle_number', { ascending: true })
+    .from("cycles")
+    .select("cycle_number, month, year")
+    .eq("month", fallbackCycle.month)
+    .eq("year", fallbackCycle.year)
+    .in("status", ["open", "active", "sales"])
+    .order("cycle_number", { ascending: true })
     .limit(1)
     .maybeSingle<CurrentCycleRow>();
 
@@ -328,9 +327,9 @@ export async function checkSubscriptionCapacity(
     {
       cycle_number: currentCycle.cycle_number,
       month: currentCycle.month,
-      year: currentCycle.year
+      year: currentCycle.year,
     },
-    deliveryCount
+    deliveryCount,
   );
 
   // Check capacity for each cycle
@@ -339,19 +338,22 @@ export async function checkSubscriptionCapacity(
 
     // Try to find existing cycle
     const { data: existingCycle } = await supabase
-      .from('cycles')
-      .select('id')
-      .eq('cycle_number', cycleInfo.cycleNumber)
-      .eq('month', cycleInfo.month)
-      .eq('year', cycleInfo.year)
+      .from("cycles")
+      .select("id")
+      .eq("cycle_number", cycleInfo.cycleNumber)
+      .eq("month", cycleInfo.month)
+      .eq("year", cycleInfo.year)
       .maybeSingle();
 
     if (existingCycle) {
       // Check capacity using database function
-      const { data: hasCapacity, error } = await capacityRpc.rpc('check_capacity_available', {
-        p_cycle_id: existingCycle.id,
-        p_quantity: 1
-      });
+      const { data: hasCapacity, error } = await capacityRpc.rpc(
+        "check_capacity_available",
+        {
+          p_cycle_id: existingCycle.id,
+          p_quantity: 1,
+        },
+      );
 
       if (error) {
         throw new Error(`Failed to check capacity: ${error.message}`);
@@ -376,7 +378,11 @@ export async function checkSubscriptionCapacity(
         }
 
         // Estimated date is the start of the next cycle
-        const estimatedDate = new Date(nextYear, nextMonth - 1, nextCycleNumber === 1 ? 1 : 16);
+        const estimatedDate = new Date(
+          nextYear,
+          nextMonth - 1,
+          nextCycleNumber === 1 ? 1 : 16,
+        );
 
         return {
           available: false,
@@ -384,9 +390,9 @@ export async function checkSubscriptionCapacity(
             cycleNumber: cycleInfo.cycleNumber,
             month: cycleInfo.month,
             year: cycleInfo.year,
-            deliveryNumber: i + 1
+            deliveryNumber: i + 1,
           },
-          estimatedAvailableDate: estimatedDate
+          estimatedAvailableDate: estimatedDate,
         };
       }
     }
@@ -394,6 +400,6 @@ export async function checkSubscriptionCapacity(
   }
 
   return {
-    available: true
+    available: true,
   };
 }

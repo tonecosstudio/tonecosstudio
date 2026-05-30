@@ -21,7 +21,10 @@ type QueryError = {
   message: string;
 };
 
-function mockRpcResult<T>(data: T | null, error: QueryError | null = null): void {
+function mockRpcResult<T>(
+  data: T | null,
+  error: QueryError | null = null,
+): void {
   (supabase.rpc as Mock).mockResolvedValue({ data, error });
 }
 
@@ -69,7 +72,7 @@ describe("Capacity Alert Service", () => {
           threshold: 0,
           email: null,
           sms: null,
-        })
+        }),
       ).rejects.toThrow("Alert threshold must be between 1 and 100");
 
       expect(supabase.rpc).not.toHaveBeenCalled();
@@ -81,7 +84,7 @@ describe("Capacity Alert Service", () => {
           threshold: 101,
           email: null,
           sms: null,
-        })
+        }),
       ).rejects.toThrow("Alert threshold must be between 1 and 100");
 
       expect(supabase.rpc).not.toHaveBeenCalled();
@@ -93,8 +96,10 @@ describe("Capacity Alert Service", () => {
           threshold: 75,
           email: "admin@ordax.com",
           sms: "+5571999999999",
-        })
-      ).rejects.toThrow("SMS capacity alerts require a configured server-side SMS provider");
+        }),
+      ).rejects.toThrow(
+        "SMS capacity alerts require a configured server-side SMS provider",
+      );
 
       expect(supabase.rpc).not.toHaveBeenCalled();
     });
@@ -136,7 +141,9 @@ describe("Capacity Alert Service", () => {
         email: "test@ordax.com",
         sms: "+5571888888888",
       });
-      expect(query.select).toHaveBeenCalledWith("alert_threshold, alert_email, alert_sms");
+      expect(query.select).toHaveBeenCalledWith(
+        "alert_threshold, alert_email, alert_sms",
+      );
       expect(query.eq).toHaveBeenCalledWith("id", MOCK_CYCLE_ID);
     });
 
@@ -158,7 +165,7 @@ describe("Capacity Alert Service", () => {
       mockCycleQuery(null, { message: "Database error" });
 
       await expect(getAlertConfig(MOCK_CYCLE_ID)).rejects.toThrow(
-        "Failed to get alert config: Database error"
+        "Failed to get alert config: Database error",
       );
     });
   });
@@ -182,7 +189,7 @@ describe("Capacity Alert Service", () => {
         threshold: 80,
       });
       expect(query.select).toHaveBeenCalledWith(
-        "alert_triggered, alert_triggered_at, alert_threshold, used_capacity, capacity"
+        "alert_triggered, alert_triggered_at, alert_threshold, used_capacity, capacity",
       );
     });
 
@@ -203,7 +210,7 @@ describe("Capacity Alert Service", () => {
       expect(status.currentPercentage).toBe(85);
     });
 
-    it("uses safe defaults for nullable capacity and alert fields", async () => {
+    it("rejects alert status when canonical capacity is missing", async () => {
       mockCycleQuery({
         alert_triggered: null,
         alert_triggered_at: null,
@@ -212,12 +219,9 @@ describe("Capacity Alert Service", () => {
         capacity: null,
       });
 
-      await expect(getAlertStatus(MOCK_CYCLE_ID)).resolves.toEqual({
-        triggered: false,
-        triggeredAt: null,
-        currentPercentage: 0,
-        threshold: 80,
-      });
+      await expect(getAlertStatus(MOCK_CYCLE_ID)).rejects.toThrow(
+        `Cycle ${MOCK_CYCLE_ID} capacity is missing or invalid`,
+      );
     });
   });
 

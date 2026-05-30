@@ -9,7 +9,10 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-function mockCycleCapacity(capacity: number | null, usedCapacity: number | null) {
+function mockCycleCapacity(
+  capacity: number | null,
+  usedCapacity: number | null,
+) {
   vi.mocked(supabase.from).mockReturnValue({
     select: vi.fn().mockReturnValue({
       eq: vi.fn().mockReturnValue({
@@ -42,15 +45,12 @@ describe("Capacity Reservation Integration", () => {
       });
     });
 
-    it("falls back to safe defaults when nullable capacity fields are absent", async () => {
+    it("rejects cycles without canonical capacity", async () => {
       mockCycleCapacity(null, null);
 
-      const usage = await getCapacityUsage("cycle-123");
-
-      expect(usage.max).toBe(100);
-      expect(usage.current).toBe(0);
-      expect(usage.available).toBe(100);
-      expect(usage.percentage).toBe(0);
+      await expect(getCapacityUsage("cycle-123")).rejects.toThrow(
+        "Cycle cycle-123 capacity is missing or invalid",
+      );
     });
 
     it("does not expose negative available capacity", async () => {
@@ -65,7 +65,10 @@ describe("Capacity Reservation Integration", () => {
 
   describe("checkAvailability", () => {
     it("delegates availability checks to the database RPC", async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: true, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: true,
+        error: null,
+      } as any);
 
       const available = await checkAvailability("cycle-123", 5);
 
@@ -77,7 +80,10 @@ describe("Capacity Reservation Integration", () => {
     });
 
     it("returns false when the database rejects the requested quantity", async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({ data: false, error: null } as any);
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: false,
+        error: null,
+      } as any);
 
       await expect(checkAvailability("cycle-123", 60)).resolves.toBe(false);
     });

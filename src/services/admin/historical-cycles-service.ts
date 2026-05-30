@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCycleCapacity } from "@/lib/cycle-capacity";
 
 export interface HistoricalCycle {
   id: string;
@@ -27,7 +28,7 @@ export interface HistoricalCyclesFilters {
 }
 
 export async function fetchHistoricalCycles(
-  filters: HistoricalCyclesFilters
+  filters: HistoricalCyclesFilters,
 ): Promise<HistoricalCycle[]> {
   const { selectedYear, selectedStatus, currentYear, currentMonth } = filters;
 
@@ -42,22 +43,21 @@ export async function fetchHistoricalCycles(
   }
 
   query = query.or(
-    `year.lt.${currentYear},and(year.eq.${currentYear},month.lt.${currentMonth})`
+    `year.lt.${currentYear},and(year.eq.${currentYear},month.lt.${currentMonth})`,
   );
 
   const { data, error } = await query;
   if (error) throw error;
 
   return ((data || []) as Array<Record<string, unknown>>).map((cycle) => {
-    const capacity = Number(cycle.capacity ?? cycle.capacity_max ?? cycle.capacity_limit ?? 100);
-    const usedCapacity = Math.max(Number(cycle.used_capacity ?? cycle.capacity_current ?? cycle.reserved_capacity ?? 0), 0);
+    const capacity = resolveCycleCapacity(cycle, "Historical cycle");
 
     return {
       ...(cycle as unknown as HistoricalCycle),
-      capacity,
-      used_capacity: usedCapacity,
-      capacity_max: capacity,
-      capacity_current: usedCapacity,
+      capacity: capacity.capacity,
+      used_capacity: capacity.usedCapacity,
+      capacity_max: capacity.capacity,
+      capacity_current: capacity.usedCapacity,
     };
   });
 }
