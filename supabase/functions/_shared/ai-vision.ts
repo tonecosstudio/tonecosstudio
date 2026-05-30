@@ -1,10 +1,13 @@
 /**
  * AI Vision Classification Helper
- * 
+ *
  * Provides functions to classify images using OpenAI Vision API (GPT-4o, GPT-4o mini)
  */
 
+import { createEdgeLogger } from "./edge-logger.ts";
+
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const log = createEdgeLogger("ai-vision");
 
 // ============================================================================
 // Types
@@ -16,7 +19,7 @@ export type VisionClassification = {
   category: string | null;
   subcategory: string | null;
   tags: string[];
-  confidence: number;  // 0-100
+  confidence: number; // 0-100
   tokensUsed: number;
   costUsd: number;
   processingTimeMs: number;
@@ -41,12 +44,12 @@ type OpenAIVisionResponse = {
 
 const PRICING = {
   "gpt-4o-mini": {
-    input: 0.15,   // $0.15 per 1M input tokens
-    output: 0.60,  // $0.60 per 1M output tokens
+    input: 0.15, // $0.15 per 1M input tokens
+    output: 0.6, // $0.60 per 1M output tokens
   },
   "gpt-4o": {
-    input: 2.50,   // $2.50 per 1M input tokens
-    output: 10.00, // $10.00 per 1M output tokens
+    input: 2.5, // $2.50 per 1M input tokens
+    output: 10.0, // $10.00 per 1M output tokens
   },
 };
 
@@ -64,7 +67,7 @@ function sleep(ms: number): Promise<void> {
 export function calculateCost(
   promptTokens: number,
   completionTokens: number,
-  model: "gpt-4o-mini" | "gpt-4o"
+  model: "gpt-4o-mini" | "gpt-4o",
 ): number {
   const pricing = PRICING[model];
   const inputCost = (promptTokens / 1_000_000) * pricing.input;
@@ -76,8 +79,10 @@ export function calculateCost(
  * Build vision prompt for classification
  */
 function buildVisionPrompt(currentName?: string): string {
-  const context = currentName ? `Current name: "${currentName}". Use this as a hint but verify if it's accurate.` : "";
-  
+  const context = currentName
+    ? `Current name: "${currentName}". Use this as a hint but verify if it's accurate.`
+    : "";
+
   return `Analyze this collectible figurine/statue image and classify it.
 
 You are an expert at identifying collectible figurines, statues, action figures, busts and similar products from ANIME, MOVIES, SERIES, GAMES and COMICS.
@@ -108,9 +113,17 @@ Return ONLY valid JSON in this exact format:
 }`;
 }
 
-type CanonicalCategory = "animes" | "filmes" | "series" | "jogos" | "quadrinhos" | "outros";
+type CanonicalCategory =
+  | "animes"
+  | "filmes"
+  | "series"
+  | "jogos"
+  | "quadrinhos"
+  | "outros";
 
-function normalizeCategoryPTBR(rawCategory: string | null): CanonicalCategory | null {
+function normalizeCategoryPTBR(
+  rawCategory: string | null,
+): CanonicalCategory | null {
   if (!rawCategory) return null;
   const c = rawCategory.toLowerCase();
 
@@ -137,7 +150,9 @@ function normalizeCategoryPTBR(rawCategory: string | null): CanonicalCategory | 
 /**
  * Parse and validate AI response
  */
-function parseVisionResult(content: string): Omit<VisionClassification, "tokensUsed" | "costUsd" | "processingTimeMs"> {
+function parseVisionResult(
+  content: string,
+): Omit<VisionClassification, "tokensUsed" | "costUsd" | "processingTimeMs"> {
   try {
     // Try to extract JSON from markdown code blocks if present
     let jsonStr = content.trim();
@@ -145,12 +160,21 @@ function parseVisionResult(content: string): Omit<VisionClassification, "tokensU
     if (jsonMatch) {
       jsonStr = jsonMatch[1];
     }
-    
+
     const parsed = JSON.parse(jsonStr);
-    
-    const rawFranchise = parsed.franchise === null ? null : String(parsed.franchise || "").trim() || null;
-    const rawCategory = parsed.category === null ? null : String(parsed.category || "").trim() || null;
-    const rawSubcategory = parsed.subcategory === null ? null : String(parsed.subcategory || "").trim() || null;
+
+    const rawFranchise =
+      parsed.franchise === null
+        ? null
+        : String(parsed.franchise || "").trim() || null;
+    const rawCategory =
+      parsed.category === null
+        ? null
+        : String(parsed.category || "").trim() || null;
+    const rawSubcategory =
+      parsed.subcategory === null
+        ? null
+        : String(parsed.subcategory || "").trim() || null;
 
     const normalizedCategory = normalizeCategoryPTBR(rawCategory);
     const subcategory = rawSubcategory || rawFranchise || null;
@@ -161,14 +185,19 @@ function parseVisionResult(content: string): Omit<VisionClassification, "tokensU
       category: normalizedCategory,
       subcategory,
       tags: Array.isArray(parsed.tags)
-        ? parsed.tags.map((t: any) => String(t).trim().toLowerCase()).filter(Boolean).slice(0, 12)
+        ? parsed.tags
+            .map((t: any) => String(t).trim().toLowerCase())
+            .filter(Boolean)
+            .slice(0, 12)
         : [],
       confidence: Math.min(100, Math.max(0, Number(parsed.confidence) || 50)),
     };
   } catch (error) {
-    console.error("Failed to parse AI response:", error);
-    console.error("Content:", content);
-    
+    log.error("vision_response_parse_failed", {
+      error,
+      contentLength: content.length,
+    });
+
     // Return fallback
     return {
       name: "Unknown",
@@ -188,19 +217,19 @@ async function callOpenAIVision(
   imageUrl: string,
   prompt: string,
   model: "gpt-4o-mini" | "gpt-4o",
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<OpenAIVisionResponse> {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   if (!OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -217,52 +246,73 @@ async function callOpenAIVision(
                   type: "image_url",
                   image_url: {
                     url: imageUrl,
-                    detail: "high",  // Use high detail for better accuracy
+                    detail: "high", // Use high detail for better accuracy
                   },
                 },
               ],
             },
           ],
           max_tokens: 500,
-          temperature: 0.3,  // Lower temperature for more consistent results
+          temperature: 0.3, // Lower temperature for more consistent results
         }),
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
-        
+
         // Don't retry on auth/payment errors
-        if (response.status === 401 || response.status === 402 || response.status === 403) {
-          throw new Error(`OpenAI API error [${response.status}]: ${errorText}`);
+        if (
+          response.status === 401 ||
+          response.status === 402 ||
+          response.status === 403
+        ) {
+          throw new Error(
+            `OpenAI API error [${response.status}]: ${errorText}`,
+          );
         }
-        
+
         // Retry on rate limit or server errors
-        if (response.status === 429 || (response.status >= 500 && response.status <= 599)) {
+        if (
+          response.status === 429 ||
+          (response.status >= 500 && response.status <= 599)
+        ) {
           if (attempt < maxRetries) {
-            const delay = 1000 * Math.pow(2, attempt - 1);  // Exponential backoff
-            console.log(`Retrying after ${delay}ms (attempt ${attempt}/${maxRetries})...`);
+            const delay = 1000 * Math.pow(2, attempt - 1); // Exponential backoff
+            log.info("vision_retry_scheduled", {
+              attempt,
+              maxRetries,
+              delayMs: delay,
+              status: response.status,
+            });
             await sleep(delay);
             continue;
           }
         }
-        
+
         throw new Error(`OpenAI API error [${response.status}]: ${errorText}`);
       }
-      
+
       const data = await response.json();
       return data as OpenAIVisionResponse;
-      
     } catch (error) {
-      if (attempt < maxRetries && !(error instanceof Error && error.message.includes("API error"))) {
+      if (
+        attempt < maxRetries &&
+        !(error instanceof Error && error.message.includes("API error"))
+      ) {
         const delay = 1000 * Math.pow(2, attempt - 1);
-        console.log(`Retrying after ${delay}ms (attempt ${attempt}/${maxRetries})...`);
+        log.info("vision_retry_scheduled", {
+          attempt,
+          maxRetries,
+          delayMs: delay,
+          error,
+        });
         await sleep(delay);
         continue;
       }
       throw error;
     }
   }
-  
+
   throw new Error("OpenAI Vision API failed after all retries");
 }
 
@@ -272,7 +322,7 @@ async function callOpenAIVision(
 
 /**
  * Classify an image using OpenAI Vision API
- * 
+ *
  * @param imageUrl - Public URL of the image to classify
  * @param model - OpenAI model to use ('gpt-4o-mini' or 'gpt-4o')
  * @returns Classification result with metrics
@@ -280,29 +330,29 @@ async function callOpenAIVision(
 export async function classifyImageWithVision(
   imageUrl: string,
   model: "gpt-4o-mini" | "gpt-4o" = "gpt-4o-mini",
-  currentName?: string
+  currentName?: string,
 ): Promise<VisionClassification> {
   const startTime = Date.now();
-  
+
   // 1. Build prompt with current name as context
   const prompt = buildVisionPrompt(currentName);
-  
+
   // 2. Call OpenAI Vision API
   const response = await callOpenAIVision(imageUrl, prompt, model);
-  
+
   // 3. Parse result
   const content = response.choices[0]?.message?.content || "{}";
   const classification = parseVisionResult(content);
-  
+
   // 4. Calculate metrics
   const processingTimeMs = Date.now() - startTime;
   const tokensUsed = response.usage.total_tokens;
   const costUsd = calculateCost(
     response.usage.prompt_tokens,
     response.usage.completion_tokens,
-    model
+    model,
   );
-  
+
   return {
     ...classification,
     tokensUsed,
@@ -313,7 +363,7 @@ export async function classifyImageWithVision(
 
 /**
  * Generate SHA-256 hash of image content for caching
- * 
+ *
  * @param imageUrl - URL of the image
  * @returns SHA-256 hash as hex string
  */
@@ -324,25 +374,27 @@ export async function hashImage(imageUrl: string): Promise<string> {
     if (!response.ok) {
       throw new Error(`Failed to fetch image: ${response.status}`);
     }
-    
+
     // Get image data
     const imageData = await response.arrayBuffer();
-    
+
     // Calculate SHA-256 hash
     const hashBuffer = await crypto.subtle.digest("SHA-256", imageData);
-    
+
     // Convert to hex string
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-    
+    const hashHex = hashArray
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     return hashHex;
   } catch (error) {
-    console.error("Failed to hash image:", error);
+    log.error("image_hash_failed", { error });
     // Fallback: use URL as hash (not ideal but prevents crashes)
     const encoder = new TextEncoder();
     const data = encoder.encode(imageUrl);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 }
