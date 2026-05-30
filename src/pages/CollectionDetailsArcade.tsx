@@ -511,13 +511,13 @@ export default function CollectionDetailsArcade() {
         {/* Catalog Characters */}
         {catalogCharacters.length > 0 && (
           <section>
-            <SectionHeader title="Catálogo Permanente" count={catalogCharacters.length} variant="accent" />
+            <SectionHeader title="Modelos da Coleção" count={catalogCharacters.length} variant="accent" />
 
             <ArcadeCard hover={false} className="mb-6 p-4">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-5 h-5 text-[hsl(var(--gold-accent)/0.6)] flex-shrink-0" />
                 <p className="text-[10px] font-mono text-[hsl(0,0%,45%)] tracking-wider">
-                  Personagens do catálogo estão sempre disponíveis, independente do mês.
+                  Modelos organizados para esta coleção, com imagem e apresentação próprias.
                 </p>
               </div>
             </ArcadeCard>

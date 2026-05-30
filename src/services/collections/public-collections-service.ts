@@ -160,8 +160,13 @@ type CharacterSelectCollectionDbRow = Omit<CharacterSelectCollection, "image_url
 type CollectionCharacterDbRow = {
   id: string;
   name: string | null;
+  description: string | null;
   image_url: string | null;
   is_catalog: boolean | null;
+  release_order: number | null;
+  release_month: number | null;
+  status: string | null;
+  source_model_id: string | null;
 };
 
 type CollectionModelDbRow = {
@@ -187,13 +192,13 @@ function mapCollectionCharacter(
   return {
     id: character.id,
     name: character.name || "Personagem",
-    description: null,
+    description: character.description,
     image_url: character.image_url,
-    detail_url: null,
-    release_order: index + 1,
-    release_month: null,
+    detail_url: character.source_model_id ? catalogModelDetailsPath(character.source_model_id) : null,
+    release_order: character.release_order ?? index + 1,
+    release_month: character.release_month,
     is_catalog: character.is_catalog ?? false,
-    status: "released",
+    status: character.status ?? "released",
   };
 }
 
@@ -210,7 +215,7 @@ function mapCollectionModel(
     detail_url: catalogModelDetailsPath(model.id),
     release_order: index + 1,
     release_month: null,
-    is_catalog: true,
+    is_catalog: false,
     status: "released",
   };
 }
@@ -309,11 +314,22 @@ export async function getCollectionDetailsBySlug(
 
   const { data: charactersData, error: charactersError } = await supabase
     .from("collection_characters")
-    .select("id, name, image_url, is_catalog")
+    .select("id, name, description, image_url, is_catalog, release_order, release_month, status, source_model_id")
     .eq("collection_id", collectionData.id)
-    .order("name", { ascending: true });
+    .order("release_order", { ascending: true });
 
   if (charactersError) throw charactersError;
+
+  const legacyCharacters = ((charactersData ?? []) as CollectionCharacterDbRow[]).map(
+    mapCollectionCharacter,
+  );
+
+  if (legacyCharacters.length > 0) {
+    return {
+      ...(collectionData as Omit<CollectionDetails, "collection_characters">),
+      collection_characters: legacyCharacters,
+    };
+  }
 
   const { data: modelData, error: modelError } = await supabase
     .from("models")
@@ -325,16 +341,13 @@ export async function getCollectionDetailsBySlug(
 
   if (modelError) throw modelError;
 
-  const legacyCharacters = ((charactersData ?? []) as CollectionCharacterDbRow[]).map(
-    mapCollectionCharacter,
-  );
   const catalogCharacters = ((modelData ?? []) as CollectionModelDbRow[]).map(
     mapCollectionModel,
   );
 
   return {
     ...(collectionData as Omit<CollectionDetails, "collection_characters">),
-    collection_characters: [...legacyCharacters, ...catalogCharacters],
+    collection_characters: catalogCharacters,
   };
 }
 
