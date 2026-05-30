@@ -43,13 +43,35 @@ type CatalogModelDetailsDbRow = Omit<
   "imageUrl" | "thumbnailUrl"
 >;
 
-const LEGACY_CATALOG_MODEL_SELECT =
-  "id,name,franchise,category,subcategory,tags,is_active,image_bucket,image_path,thumbnail_url,created_at";
+const CATALOG_MODEL_COLUMNS = [
+  "id",
+  "name",
+  "franchise",
+  "category",
+  "subcategory",
+  "tags",
+  "is_active",
+  "image_bucket",
+  "image_path",
+  "thumbnail_url",
+  "created_at",
+  "price_mode",
+  "price_standalone_override",
+  "price_coins_override",
+  "character_name",
+  "variant_name",
+  "variant_type",
+  "source_title",
+  "source_type",
+  "catalog_visibility",
+];
 
-const CATALOG_MODEL_SELECT = `${LEGACY_CATALOG_MODEL_SELECT},price_mode,price_standalone_override,price_coins_override,character_name,variant_name,variant_type,source_title,source_type,catalog_visibility`;
-
-const CATALOG_MODEL_DETAILS_SELECT = `${CATALOG_MODEL_SELECT},description`;
-const LEGACY_CATALOG_MODEL_DETAILS_SELECT = `${LEGACY_CATALOG_MODEL_SELECT},description`;
+const CATALOG_MODEL_SELECT = CATALOG_MODEL_COLUMNS.join(",");
+const CATALOG_MODEL_DETAILS_SELECT = [
+  ...CATALOG_MODEL_COLUMNS,
+  "description",
+].join(",");
+const PUBLIC_CATALOG_VISIBILITIES = ["general", "both"];
 
 type CatalogModelsQueryResult<T> = { data: T[] | null; error: unknown };
 
@@ -105,23 +127,6 @@ function buildWordStartPatterns(value: string) {
   return [`${value}%`, `% ${value}%`];
 }
 
-function isProfessionalCatalogSchemaError(error: unknown) {
-  if (!error || typeof error !== "object") return false;
-  const code = "code" in error ? String(error.code) : "";
-  const message = "message" in error ? String(error.message) : "";
-  return (
-    code === "PGRST204" ||
-    code === "42703" ||
-    message.includes("price_mode") ||
-    message.includes("price_standalone_override") ||
-    message.includes("price_coins_override") ||
-    message.includes("catalog_visibility") ||
-    message.includes("character_name") ||
-    message.includes("variant_name") ||
-    message.includes("source_title")
-  );
-}
-
 function mapCatalogModel(row: CatalogModelDbRow): CatalogModelRow {
   const imageUrl = getPublicModelImageUrl(row.image_bucket, row.image_path);
   return {
@@ -166,89 +171,75 @@ export async function listCatalogModels(params: {
   const { needle, page, filters } = params;
   const from = page * CATALOG_PAGE_SIZE;
   const to = from + CATALOG_PAGE_SIZE;
+  const stagingMode = filters.catalogMode === "staging";
 
-  const runQuery = async (professional: boolean) => {
-    const stagingMode = filters.catalogMode === "staging";
-    let query = catalogModelsGateway
-      .from("models")
-      .select(professional ? CATALOG_MODEL_SELECT : LEGACY_CATALOG_MODEL_SELECT)
-      .range(from, to);
+  let query = catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .range(from, to);
 
-    if (stagingMode) {
-      query = query.contains("tags", ["catalog-staging"]);
-    } else {
-      query = query.eq("is_active", true);
-    }
-
-    if (professional && !stagingMode) {
-      query = query.in("catalog_visibility", ["general", "both"]);
-    }
-
-    if (filters.sort === "az") {
-      query = query.order("name", { ascending: true });
-    } else {
-      query = query.order("created_at", { ascending: false });
-    }
-
-    const normalizedNeedle = normalizeSearchValue(needle);
-    if (normalizedNeedle) {
-      const patterns = buildWordStartPatterns(normalizedNeedle);
-      const searchableFields = professional
-        ? [
-            "name",
-            "character_name",
-            "variant_name",
-            "source_title",
-            "franchise",
-            "category",
-            "subcategory",
-          ]
-        : ["name", "franchise", "category", "subcategory"];
-      const searchFields = searchableFields
-        .flatMap((field) =>
-          patterns.map((pattern) => `${field}.ilike.${pattern}`),
-        )
-        .join(",");
-      query = query.or(searchFields);
-    }
-
-    const franchise = normalizeSearchValue(filters.franchise ?? "");
-    if (franchise) {
-      const pattern = `%${franchise}%`;
-      query = professional
-        ? query.or(`source_title.ilike.${pattern},franchise.ilike.${pattern}`)
-        : query.ilike("franchise", pattern);
-    }
-
-    const character = normalizeSearchValue(filters.character ?? "");
-    if (character) {
-      const pattern = `%${character}%`;
-      query = professional
-        ? query.or(`character_name.ilike.${pattern},name.ilike.${pattern}`)
-        : query.ilike("name", pattern);
-    }
-
-    const category = (filters.category ?? "").trim();
-    if (category) query = query.eq("category", category);
-
-    if (professional) {
-      const sourceType = (filters.sourceType ?? "").trim();
-      if (sourceType) query = query.eq("source_type", sourceType);
-
-      const variantType = (filters.variantType ?? "").trim();
-      if (variantType) query = query.eq("variant_type", variantType);
-    }
-
-    const tags = normalizeTags(filters.tagsCSV ?? "");
-    if (tags.length) query = query.overlaps("tags", tags);
-
-    return query;
-  };
-
-  let { data, error } = await runQuery(true);
-  if (error && isProfessionalCatalogSchemaError(error)) {
-    ({ data, error } = await runQuery(false));
+  if (stagingMode) {
+    query = query.contains("tags", ["catalog-staging"]);
+  } else {
+    query = query.eq("is_active", true);
   }
+
+  if (!stagingMode) {
+    query = query.in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES);
+  }
+
+  if (filters.sort === "az") {
+    query = query.order("name", { ascending: true });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  const normalizedNeedle = normalizeSearchValue(needle);
+  if (normalizedNeedle) {
+    const patterns = buildWordStartPatterns(normalizedNeedle);
+    const searchFields = [
+      "name",
+      "character_name",
+      "variant_name",
+      "source_title",
+      "franchise",
+      "category",
+      "subcategory",
+    ]
+      .flatMap((field) =>
+        patterns.map((pattern) => `${field}.ilike.${pattern}`),
+      )
+      .join(",");
+    query = query.or(searchFields);
+  }
+
+  const franchise = normalizeSearchValue(filters.franchise ?? "");
+  if (franchise) {
+    const pattern = `%${franchise}%`;
+    query = query.or(
+      `source_title.ilike.${pattern},franchise.ilike.${pattern}`,
+    );
+  }
+
+  const character = normalizeSearchValue(filters.character ?? "");
+  if (character) {
+    const pattern = `%${character}%`;
+    query = query.or(`character_name.ilike.${pattern},name.ilike.${pattern}`);
+  }
+
+  const category = (filters.category ?? "").trim();
+  if (category) query = query.eq("category", category);
+
+  const sourceType = (filters.sourceType ?? "").trim();
+  if (sourceType) query = query.eq("source_type", sourceType);
+
+  const variantType = (filters.variantType ?? "").trim();
+  if (variantType) query = query.eq("variant_type", variantType);
+
+  const tags = normalizeTags(filters.tagsCSV ?? "");
+  if (tags.length) query = query.overlaps("tags", tags);
+
+  const { data, error } = await query;
   if (error) throw error;
 
   const all = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
@@ -264,29 +255,19 @@ export async function listForYouCatalogModels(params: {
 }) {
   const exclude = params.excludedIds.filter(Boolean).slice(0, 50);
 
-  const runQuery = async (professional: boolean) => {
-    let query = catalogModelsGateway
-      .from("models")
-      .select(professional ? CATALOG_MODEL_SELECT : LEGACY_CATALOG_MODEL_SELECT)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(8);
+  let query = catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(8)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES);
 
-    if (professional) {
-      query = query.in("catalog_visibility", ["general", "both"]);
-    }
-
-    if (exclude.length) {
-      query = query.not("id", "in", formatPostgrestIdList(exclude));
-    }
-
-    return query;
-  };
-
-  let { data, error } = await runQuery(true);
-  if (error && isProfessionalCatalogSchemaError(error)) {
-    ({ data, error } = await runQuery(false));
+  if (exclude.length) {
+    query = query.not("id", "in", formatPostgrestIdList(exclude));
   }
+
+  const { data, error } = await query;
   if (error) throw error;
 
   const models = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
@@ -302,20 +283,12 @@ export async function listForYouCatalogModels(params: {
 }
 
 export async function getCatalogModelDetails(modelId: string) {
-  const runQuery = (professional: boolean) =>
-    catalogModelsGateway
-      .from("models")
-      .select(
-        professional
-          ? CATALOG_MODEL_DETAILS_SELECT
-          : LEGACY_CATALOG_MODEL_DETAILS_SELECT,
-      )
-      .eq("id", modelId)
-      .maybeSingle();
-  let { data, error } = await runQuery(true);
-  if (error && isProfessionalCatalogSchemaError(error)) {
-    ({ data, error } = await runQuery(false));
-  }
+  const { data, error } = await catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_DETAILS_SELECT)
+    .eq("id", modelId)
+    .maybeSingle();
+
   if (error) throw error;
   return data ? mapCatalogModelDetails(data as CatalogModelDetailsDbRow) : null;
 }
@@ -323,23 +296,14 @@ export async function getCatalogModelDetails(modelId: string) {
 export async function listRecentLandingModels(
   limit = 6,
 ): Promise<CatalogModelRow[]> {
-  const runQuery = async (professional: boolean) => {
-    const query = catalogModelsGateway
-      .from("models")
-      .select(professional ? CATALOG_MODEL_SELECT : LEGACY_CATALOG_MODEL_SELECT)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(limit);
+  const { data, error } = await catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES);
 
-    return professional
-      ? query.in("catalog_visibility", ["general", "both"])
-      : query;
-  };
-
-  let { data, error } = await runQuery(true);
-  if (error && isProfessionalCatalogSchemaError(error)) {
-    ({ data, error } = await runQuery(false));
-  }
   if (error) throw error;
   return ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
 }
