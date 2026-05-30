@@ -55,10 +55,12 @@ function CharacterCard({
   collectionSlug: string;
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const detailsPath =
+    character.detail_url || collectionCharacterDetailsPath(collectionSlug, character.id);
 
   return (
     <Link
-      to={isUpcoming ? "#" : collectionCharacterDetailsPath(collectionSlug, character.id)}
+      to={isUpcoming ? "#" : detailsPath}
       onClick={(e) => isUpcoming && e.preventDefault()}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

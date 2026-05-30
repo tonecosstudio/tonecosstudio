@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { catalogModelDetailsPath } from "@/config/routes";
 
 export type PublicCollectionPreview = {
   id: string;
@@ -62,6 +63,7 @@ export type CollectionDetailsCharacter = {
   name: string;
   description: string | null;
   image_url: string | null;
+  detail_url?: string | null;
   release_order: number | null;
   release_month: number | null;
   is_catalog: boolean | null;
@@ -154,6 +156,64 @@ type ArcadeCollectionDbRow = Omit<ArcadeCollection, "character_count" | "image_u
 type CharacterSelectCollectionDbRow = Omit<CharacterSelectCollection, "image_url"> & {
   cover_image_url: string | null;
 };
+
+type CollectionCharacterDbRow = {
+  id: string;
+  name: string | null;
+  image_url: string | null;
+  is_catalog: boolean | null;
+};
+
+type CollectionModelDbRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  image_bucket: string | null;
+  image_path: string | null;
+  thumbnail_url: string | null;
+};
+
+const COLLECTION_MODEL_VISIBILITIES = ["collection", "both"];
+
+function getPublicStorageUrl(bucket: string | null, path: string | null) {
+  if (!bucket || !path) return null;
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
+function mapCollectionCharacter(
+  character: CollectionCharacterDbRow,
+  index: number,
+): CollectionDetailsCharacter {
+  return {
+    id: character.id,
+    name: character.name || "Personagem",
+    description: null,
+    image_url: character.image_url,
+    detail_url: null,
+    release_order: index + 1,
+    release_month: null,
+    is_catalog: character.is_catalog ?? false,
+    status: "released",
+  };
+}
+
+function mapCollectionModel(
+  model: CollectionModelDbRow,
+  index: number,
+): CollectionDetailsCharacter {
+  return {
+    id: model.id,
+    name: model.name,
+    description: model.description,
+    image_url:
+      model.thumbnail_url || getPublicStorageUrl(model.image_bucket, model.image_path),
+    detail_url: catalogModelDetailsPath(model.id),
+    release_order: index + 1,
+    release_month: null,
+    is_catalog: true,
+    status: "released",
+  };
+}
 
 export async function listShowcaseCollections(): Promise<ShowcaseCollection[]> {
   const { data, error } = await supabase
@@ -249,15 +309,32 @@ export async function getCollectionDetailsBySlug(
 
   const { data: charactersData, error: charactersError } = await supabase
     .from("collection_characters")
-    .select("id, name, description, image_url, release_order, release_month, is_catalog, status")
+    .select("id, name, image_url, is_catalog")
     .eq("collection_id", collectionData.id)
-    .order("release_month", { ascending: true, nullsFirst: false });
+    .order("name", { ascending: true });
 
   if (charactersError) throw charactersError;
 
+  const { data: modelData, error: modelError } = await supabase
+    .from("models")
+    .select("id, name, description, image_bucket, image_path, thumbnail_url")
+    .eq("collection_id", collectionData.id)
+    .eq("is_active", true)
+    .in("catalog_visibility", COLLECTION_MODEL_VISIBILITIES)
+    .order("name", { ascending: true });
+
+  if (modelError) throw modelError;
+
+  const legacyCharacters = ((charactersData ?? []) as CollectionCharacterDbRow[]).map(
+    mapCollectionCharacter,
+  );
+  const catalogCharacters = ((modelData ?? []) as CollectionModelDbRow[]).map(
+    mapCollectionModel,
+  );
+
   return {
     ...(collectionData as Omit<CollectionDetails, "collection_characters">),
-    collection_characters: (charactersData ?? []) as CollectionDetailsCharacter[],
+    collection_characters: [...legacyCharacters, ...catalogCharacters],
   };
 }
 
