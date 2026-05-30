@@ -1,6 +1,6 @@
 /**
  * Rate Limiting Middleware for Edge Functions
- * 
+ *
  * Uses database-backed rate limiting with configurable windows and limits.
  * Supports IP-based (anonymous) and user-based (authenticated) limiting.
  */
@@ -8,6 +8,9 @@
 import { getServiceClient } from "./supabase.ts";
 import { corsHeaders } from "./cors.ts";
 import { logRateLimitHit } from "./security-logger.ts";
+import { createEdgeLogger } from "./edge-logger.ts";
+
+const log = createEdgeLogger("rate-limit");
 
 /**
  * Rate limit configuration presets
@@ -53,7 +56,7 @@ export function buildRateLimitKey(req: Request, userId?: string): string {
 
 /**
  * Check rate limit and return 429 response if exceeded
- * 
+ *
  * @param req - The incoming request
  * @param endpoint - Endpoint identifier (e.g. "create-standalone-purchase")
  * @param config - Rate limit configuration { maxRequests, windowSeconds }
@@ -78,13 +81,18 @@ export async function checkRateLimit(
     });
 
     if (error) {
-      console.error("Rate limit check failed:", error.message);
+      log.error("rate_limit_check_failed", { error, endpoint });
       // Fail open: allow request if rate limit check fails
       return null;
     }
 
     if (!allowed) {
-      console.warn(`Rate limit exceeded: ${key} on ${endpoint}`);
+      log.warn("rate_limit_exceeded", {
+        endpoint,
+        keyType: userId ? "user" : "ip",
+        windowSeconds: config.windowSeconds,
+        maxRequests: config.maxRequests,
+      });
       logRateLimitHit(req, endpoint, key);
       return new Response(
         JSON.stringify({
@@ -105,7 +113,7 @@ export async function checkRateLimit(
 
     return null; // Request allowed
   } catch (err) {
-    console.error("Rate limit error:", err);
+    log.error("rate_limit_unexpected_error", { error: err, endpoint });
     // Fail open
     return null;
   }
