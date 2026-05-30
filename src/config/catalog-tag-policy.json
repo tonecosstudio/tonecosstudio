@@ -29,5 +29,23 @@
     "revisao",
     "revisar",
     "oculto"
-  ]
+  ],
+  "publicTagAliases": {
+    "anime": "anime",
+    "animes": "anime",
+    "filme": "filme",
+    "filmes": "filme",
+    "movie": "filme",
+    "serie": "serie",
+    "series": "serie",
+    "quadrinho": "quadrinhos",
+    "quadrinhos": "quadrinhos",
+    "comic": "quadrinhos",
+    "comics": "quadrinhos",
+    "hq": "quadrinhos",
+    "game": "game",
+    "games": "game",
+    "jogo": "game",
+    "jogos": "game"
+  }
 }

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeCatalogTags } from "@/lib/catalog-utils";
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 
@@ -193,11 +194,7 @@ interface CatalogCountGateway {
 const catalogCountGateway = supabase as unknown as CatalogCountGateway;
 
 function normalizeTags(tags: string) {
-  return tags
-    .split(",")
-    .map((tag) => tag.trim().toLocaleLowerCase())
-    .filter(Boolean)
-    .slice(0, 20);
+  return normalizeCatalogTags(tags.split(","), 20);
 }
 
 function getQueueImageUrl(row: {

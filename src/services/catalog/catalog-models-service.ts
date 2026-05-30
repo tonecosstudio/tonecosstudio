@@ -1,6 +1,6 @@
 import { CATALOG_PAGE_SIZE } from "@/config/catalog";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeCatalogTag } from "@/lib/catalog-utils";
+import { getCatalogTagFilterValues } from "@/lib/catalog-utils";
 import type { CatalogModelDetailsRow, CatalogModelRow } from "@/types/catalog";
 
 export type CatalogSort = "recent" | "az";
@@ -81,22 +81,10 @@ interface CatalogModelsGateway {
 const catalogModelsGateway = supabase as unknown as CatalogModelsGateway;
 
 function normalizeTags(tagsCSV: string) {
-  const tags = tagsCSV
-    .split(",")
-    .map((tag) => normalizeCatalogTag(tag))
-    .filter(Boolean)
-    .slice(0, 10);
-
-  const aliases: Record<string, string[]> = {
-    anime: ["anime", "animes"],
-    filme: ["filme", "filmes", "movie"],
-    serie: ["serie", "series", "série", "séries"],
-    quadrinhos: ["quadrinhos", "quadrinho", "comic", "comics", "hq"],
-    game: ["game", "games", "jogo", "jogos"],
-  };
-
   return Array.from(
-    new Set(tags.flatMap((tag) => aliases[tag] ?? [tag])),
+    new Set(
+      tagsCSV.split(",").flatMap((tag) => getCatalogTagFilterValues(tag)),
+    ),
   ).slice(0, 20);
 }
 

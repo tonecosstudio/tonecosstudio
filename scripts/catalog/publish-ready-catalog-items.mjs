@@ -16,6 +16,7 @@ const catalogTagPolicy = JSON.parse(
 );
 const INTERNAL_TAG_PREFIXES = catalogTagPolicy.internalTagPrefixes;
 const INTERNAL_TAGS = new Set(catalogTagPolicy.internalTags);
+const PUBLIC_TAG_ALIASES = catalogTagPolicy.publicTagAliases || {};
 
 function loadEnvFile(fileName) {
   const filePath = join(ROOT, fileName);
@@ -54,13 +55,11 @@ function cleanName(value) {
 }
 
 function normalizePublicTag(value) {
-  const normalized = cleanName(value).toLocaleLowerCase();
-  if (/^animes?$/.test(normalized)) return "anime";
-  if (/^(movie|filmes?)$/.test(normalized)) return "filme";
-  if (/^(series?|s[eé]ries?)$/.test(normalized)) return "serie";
-  if (/^(comic|comics|hq|quadrinhos?)$/.test(normalized)) return "quadrinhos";
-  if (/^(game|games|jogos?)$/.test(normalized)) return "game";
-  return normalized;
+  const normalized = cleanName(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase();
+  return PUBLIC_TAG_ALIASES[normalized] || normalized;
 }
 
 function isInternalTag(tag) {
