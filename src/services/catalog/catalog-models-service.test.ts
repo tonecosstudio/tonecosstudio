@@ -166,5 +166,29 @@ describe("catalog models service", () => {
     );
     expect(query.eq).toHaveBeenCalledWith("source_type", "movie");
     expect(query.eq).toHaveBeenCalledWith("variant_type", "default");
+    expect(query.overlaps).toHaveBeenCalledWith("tags", ["stitch", "disney"]);
+  });
+
+  it("expands public tag aliases and drops internal tags before filtering", async () => {
+    const query = createCatalogQuery({ data: [modelRow], error: null });
+    mocks.select.mockReturnValue(query);
+    const filters: CatalogModelFilters = {
+      character: "",
+      franchise: "",
+      category: "",
+      sourceType: "",
+      variantType: "",
+      tagsCSV: "Filmes, price-consultation, Revisar",
+      catalogMode: "public",
+      sort: "recent",
+    };
+
+    await listCatalogModels({ needle: "", page: 0, filters });
+
+    expect(query.overlaps).toHaveBeenCalledWith("tags", [
+      "filme",
+      "filmes",
+      "movie",
+    ]);
   });
 });
