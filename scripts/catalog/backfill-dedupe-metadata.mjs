@@ -166,7 +166,7 @@ async function fetchModelRows() {
   const { data, error } = await supabase
     .from("models")
     .select(
-      "id,name,character_name,variant_name,source_title,franchise,category,subcategory,tags,file_url,thumbnail_url,image_bucket,image_path,is_active,original_sha256,optimized_sha256,perceptual_hash,canonical_identity_key",
+      "id,name,character_name,variant_name,source_title,franchise,category,subcategory,tags,file_url,thumbnail_url,image_bucket,image_path,is_active,source_drive_file_id,original_sha256,optimized_sha256,perceptual_hash,canonical_identity_key",
     )
     .order("created_at", { ascending: true })
     .limit(2000);
@@ -247,9 +247,11 @@ async function analyzeModelRow(row) {
     id: row.id,
     label: row.name,
     driveFileId:
+      row.source_drive_file_id ||
       driveIdFromTags(row.tags) ||
       row.file_url?.match(/\/d\/([^/]+)/)?.[1] ||
       null,
+    explicitSourceDriveFileId: Boolean(row.source_drive_file_id),
     tags: row.tags || [],
     identity,
     identityKey: canonicalIdentityKey(identity),
@@ -364,6 +366,8 @@ function chooseCanonicalDuplicateTarget(group) {
 function duplicateCanonicalRank(item) {
   let rank = 0;
   if (item.kind === "model" && item.isActive) rank -= 1000;
+  if (item.kind === "model" && item.explicitSourceDriveFileId) rank -= 200;
+  else if (item.kind === "model" && item.driveFileId) rank -= 50;
   if ((item.tags || []).includes("catalog-staging")) rank += 100;
   if ((item.tags || []).includes("duplicate-legacy")) rank += 500;
   if ((item.tags || []).includes("hidden-duplicate")) rank += 500;
