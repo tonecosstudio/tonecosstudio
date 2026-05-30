@@ -24,6 +24,7 @@
     "catalog:import-drive": "node scripts/catalog/import-drive-manifest.mjs",
     "catalog:publish-ready": "node scripts/catalog/publish-ready-catalog-items.mjs",
     "catalog:dedupe": "node scripts/catalog/backfill-dedupe-metadata.mjs",
+    "catalog:db-ready": "node scripts/catalog/catalog-db-readiness.mjs",
     "catalog:health": "node scripts/catalog/catalog-health-report.mjs",
     "catalog:health:strict": "node scripts/catalog/catalog-health-report.mjs --strict",
     "catalog:clean-public-tags": "node scripts/catalog/clean-public-model-tags.mjs",
