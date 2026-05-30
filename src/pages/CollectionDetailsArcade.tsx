@@ -34,6 +34,9 @@ import {
   collectionCharacterDetailsPath,
 } from "@/config/routes";
 
+const SILHOUETTE_PLACEHOLDER = "/assets/collections/character-silhouette-arcade.svg";
+const LOCKED_PLACEHOLDER = "/assets/collections/character-locked-arcade.svg";
+
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
@@ -42,21 +45,66 @@ const MONTHS = [
 // ─── Types ───────────────────────────────────────────────────
 type Character = CollectionDetailsCharacter;
 
+function parseLocalDate(value: string | null | undefined) {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function startOfToday() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function isCharacterUnlocked(character: Character) {
+  if (character.unlock_override) return true;
+  if (character.status === "released" || character.status === "available") return true;
+  const releaseDate = parseLocalDate(character.release_date);
+  return Boolean(releaseDate && releaseDate <= startOfToday());
+}
+
+function getReleaseSortValue(character: Character) {
+  const releaseDate = parseLocalDate(character.release_date);
+  if (releaseDate) return releaseDate.getTime();
+  return (character.release_month ?? 99) * 100 + (character.release_order ?? 0);
+}
+
+function getReleaseLabel(character: Character) {
+  const releaseDate = parseLocalDate(character.release_date);
+  if (releaseDate) {
+    return releaseDate.toLocaleDateString("pt-BR", {
+      month: "short",
+      year: "2-digit",
+    });
+  }
+  if (character.release_month) return MONTHS[character.release_month - 1]?.substring(0, 3) ?? null;
+  return null;
+}
+
 // ─── Character Card ──────────────────────────────────────────
 function CharacterCard({
   character,
   index,
   isUpcoming = false,
+  lockVariant = "locked",
   collectionSlug,
 }: {
   character: Character;
   index: number;
   isUpcoming?: boolean;
+  lockVariant?: "silhouette" | "locked";
   collectionSlug: string;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const detailsPath =
     character.detail_url || collectionCharacterDetailsPath(collectionSlug, character.id);
+  const releaseLabel = getReleaseLabel(character);
+  const imageUrl = isUpcoming
+    ? lockVariant === "silhouette"
+      ? SILHOUETTE_PLACEHOLDER
+      : LOCKED_PLACEHOLDER
+    : character.image_url;
 
   return (
     <Link
@@ -69,13 +117,13 @@ function CharacterCard({
       <ArcadeCard hover={!isUpcoming}>
         {/* Image */}
         <div className="relative aspect-[3/4] bg-[hsl(0,0%,8%)] overflow-hidden">
-          {character.image_url ? (
+          {imageUrl ? (
             <img
-              src={character.image_url}
-              alt={character.name}
+              src={imageUrl}
+              alt={isUpcoming ? "Personagem bloqueado" : character.name}
               className={`w-full h-full object-cover transition-all duration-700 ${
                 isUpcoming
-                  ? "grayscale blur-sm scale-100"
+                  ? "grayscale-[0.25] scale-100"
                   : isHovered
                   ? "grayscale-0 scale-110"
                   : "grayscale-[0.6] scale-100"
@@ -109,10 +157,10 @@ function CharacterCard({
           </div>
 
           {/* Month badge */}
-          {character.release_month && !isUpcoming && (
+          {releaseLabel && (
             <div className="absolute top-2 right-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {MONTHS[character.release_month - 1]?.substring(0, 3)}
+              {releaseLabel}
             </div>
           )}
 
@@ -125,7 +173,7 @@ function CharacterCard({
                   className="text-[8px] tracking-[0.2em] uppercase text-[hsl(0,0%,40%)]"
                   style={{ fontFamily: "'Press Start 2P', monospace" }}
                 >
-                  Em Breve
+                  {lockVariant === "silhouette" ? "Próximo" : "Em Breve"}
                 </p>
               </div>
             </div>
@@ -159,8 +207,12 @@ function FeaturedCharacterHero({
   character: Character;
   collectionSlug: string;
 }) {
+  const detailsPath =
+    character.detail_url || collectionCharacterDetailsPath(collectionSlug, character.id);
+  const releaseLabel = getReleaseLabel(character);
+
   return (
-    <Link to={collectionCharacterDetailsPath(collectionSlug, character.id)} className="group block">
+    <Link to={detailsPath} className="group block">
       <div className="relative h-80 md:h-[480px] overflow-hidden border-2 border-[hsl(var(--gold-accent)/0.6)] group-hover:border-[hsl(var(--gold-accent))] transition-all duration-500 group-hover:shadow-[0_0_60px_hsl(var(--gold-accent)/0.3)]">
         {/* Corner brackets */}
         <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
@@ -207,9 +259,9 @@ function FeaturedCharacterHero({
                 Destaque do Mês
               </span>
             </div>
-            {character.release_month && (
+            {releaseLabel && (
               <span className="text-[10px] font-mono text-[hsl(0,0%,50%)] tracking-wider uppercase">
-                📅 {MONTHS[character.release_month - 1]}
+                {releaseLabel}
               </span>
             )}
           </div>
@@ -342,21 +394,19 @@ export default function CollectionDetailsArcade() {
       )
     : [];
 
-  const currentMonth = new Date().getMonth() + 1;
   const catalogCharacters = safeCharacters.filter((c) => c.is_catalog === true);
-  const monthlyCharacters = safeCharacters.filter((c) => c.is_catalog !== true);
+  const monthlyCharacters = safeCharacters
+    .filter((c) => c.is_catalog !== true)
+    .sort((a, b) => getReleaseSortValue(a) - getReleaseSortValue(b));
+  const unlockedCharacters = monthlyCharacters.filter(isCharacterUnlocked);
+  const lockedCharacters = monthlyCharacters.filter((c) => !isCharacterUnlocked(c));
+  const nextLockedCharacterId = lockedCharacters[0]?.id;
 
-  const featuredCharacter =
-    monthlyCharacters.find((c) => c.release_month === currentMonth && c.status === "released") ||
-    monthlyCharacters.find((c) => c.release_month === currentMonth);
+  const featuredCharacter = unlockedCharacters[0];
 
-  const releasedCharacters = monthlyCharacters
-    .filter((c) => c.status === "released" && c.id !== featuredCharacter?.id)
-    .sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
+  const releasedCharacters = unlockedCharacters.filter((c) => c.id !== featuredCharacter?.id);
 
-  const upcomingCharacters = monthlyCharacters
-    .filter((c) => (c.status === "upcoming" || c.status === "revealed") && c.id !== featuredCharacter?.id)
-    .sort((a, b) => (a.release_month || 0) - (b.release_month || 0));
+  const upcomingCharacters = lockedCharacters;
 
   return (
     <Page
@@ -489,7 +539,7 @@ export default function CollectionDetailsArcade() {
               <div className="flex items-center gap-3">
                 <Zap className="w-5 h-5 text-[hsl(var(--gold-accent)/0.6)] flex-shrink-0" />
                 <p className="text-[10px] font-mono text-[hsl(0,0%,45%)] tracking-wider">
-                  Novos personagens são lançados todo mês. Assine para ter acesso prioritário!
+                  Próximas revelações da coleção.
                 </p>
               </div>
             </ArcadeCard>
@@ -501,6 +551,7 @@ export default function CollectionDetailsArcade() {
                   character={character}
                   index={index}
                   isUpcoming={true}
+                  lockVariant={character.id === nextLockedCharacterId ? "silhouette" : "locked"}
                   collectionSlug={collection.slug}
                 />
               ))}

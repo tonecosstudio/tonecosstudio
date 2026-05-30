@@ -116,6 +116,8 @@ type CreateCharacterInput = {
   image_url: string | null;
   release_order: number;
   release_month: number | null;
+  release_date?: string | null;
+  unlock_override?: boolean;
   status: string;
 };
 
@@ -154,6 +156,8 @@ export interface AdminCharacterItem {
   description: string | null;
   release_order: number;
   release_month: number | null;
+  release_date: string | null;
+  unlock_override: boolean;
   status: string;
   image_url: string | null;
 }
@@ -239,6 +243,8 @@ export async function fetchCharactersByCollection(collectionId: string): Promise
     description: character.description,
     release_order: character.release_order ?? 0,
     release_month: character.release_month,
+    release_date: character.release_date ?? null,
+    unlock_override: character.unlock_override === true,
     status: character.status,
     image_url: character.image_url,
   }));

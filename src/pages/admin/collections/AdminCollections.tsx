@@ -62,6 +62,8 @@ type CharacterItem = {
   description: string | null;
   release_order: number;
   release_month: number | null;
+  release_date: string | null;
+  unlock_override: boolean;
   status: string;
   image_url: string | null;
 };
@@ -703,6 +705,17 @@ function CharacterCardPremium({ character, onSuccess }: CharacterCardPremiumProp
                 <span>{MONTHS[character.release_month - 1]}</span>
               </div>
             )}
+            {character.release_date && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(`${character.release_date}T00:00:00`).toLocaleDateString("pt-BR")}</span>
+              </div>
+            )}
+            {character.unlock_override && (
+              <Badge variant="outline" className="w-fit text-xs border-green-500/30 text-green-700">
+                Liberado antes da data
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1228,6 +1241,8 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
   const [description, setDescription] = useState("");
   const [releaseOrder, setReleaseOrder] = useState(String(maxOrder + 1));
   const [releaseMonth, setReleaseMonth] = useState("");
+  const [releaseDate, setReleaseDate] = useState("");
+  const [unlockOverride, setUnlockOverride] = useState(false);
   const [status, setStatus] = useState("upcoming");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -1264,6 +1279,8 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
         description,
         release_order: parseInt(releaseOrder),
         release_month: releaseMonth ? parseInt(releaseMonth) : null,
+        release_date: releaseDate || null,
+        unlock_override: unlockOverride,
         status,
         image_url: imageUrl,
       });
@@ -1277,6 +1294,8 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
       setDescription("");
       setReleaseOrder(String(maxOrder + 2));
       setReleaseMonth("");
+      setReleaseDate("");
+      setUnlockOverride(false);
       setStatus("upcoming");
       setImageFile(null);
       setImagePreview(null);
@@ -1411,6 +1430,30 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="char-release-date">Data de Lançamento</Label>
+              <Input
+                id="char-release-date"
+                type="date"
+                value={releaseDate}
+                onChange={(e) => setReleaseDate(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="char-unlock">Liberar antes da data</Label>
+                <Switch
+                  id="char-unlock"
+                  checked={unlockOverride}
+                  onCheckedChange={setUnlockOverride}
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="char-desc">Descrição</Label>
             <Textarea
@@ -1454,6 +1497,8 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
   const [releaseMonth, setReleaseMonth] = useState(
     character.release_month ? String(character.release_month) : ""
   );
+  const [releaseDate, setReleaseDate] = useState(character.release_date || "");
+  const [unlockOverride, setUnlockOverride] = useState(character.unlock_override);
   const [status, setStatus] = useState(character.status);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(character.image_url);
@@ -1488,6 +1533,8 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
         description,
         release_order: parseInt(releaseOrder),
         release_month: releaseMonth ? parseInt(releaseMonth) : null,
+        release_date: releaseDate || null,
+        unlock_override: unlockOverride,
         status,
         image_url: imageUrl,
       });
@@ -1606,6 +1653,25 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
                   <SelectItem value="released">Lançado</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Data de Lançamento</Label>
+              <Input
+                type="date"
+                value={releaseDate}
+                onChange={(e) => setReleaseDate(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label>Liberar antes da data</Label>
+                <Switch checked={unlockOverride} onCheckedChange={setUnlockOverride} />
+              </div>
             </div>
           </div>
 

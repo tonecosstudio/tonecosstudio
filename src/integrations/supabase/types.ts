@@ -616,11 +616,14 @@ export type Database = {
           name: string
           price_category_id: string | null
           product_line: string | null
+          release_date: string | null
           release_month: number | null
           release_order: number | null
+          source_model_id: string | null
           status: string
           stock_quantity: number
           theme_category: string | null
+          unlock_override: boolean
           updated_at: string
         }
         Insert: {
@@ -636,11 +639,14 @@ export type Database = {
           name: string
           price_category_id?: string | null
           product_line?: string | null
+          release_date?: string | null
           release_month?: number | null
           release_order?: number | null
+          source_model_id?: string | null
           status?: string
           stock_quantity?: number
           theme_category?: string | null
+          unlock_override?: boolean
           updated_at?: string
         }
         Update: {
@@ -656,11 +662,14 @@ export type Database = {
           name?: string
           price_category_id?: string | null
           product_line?: string | null
+          release_date?: string | null
           release_month?: number | null
           release_order?: number | null
+          source_model_id?: string | null
           status?: string
           stock_quantity?: number
           theme_category?: string | null
+          unlock_override?: boolean
           updated_at?: string
         }
         Relationships: [

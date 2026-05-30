@@ -66,6 +66,8 @@ export type CollectionDetailsCharacter = {
   detail_url?: string | null;
   release_order: number | null;
   release_month: number | null;
+  release_date: string | null;
+  unlock_override: boolean;
   is_catalog: boolean | null;
   status: string | null;
 };
@@ -165,6 +167,8 @@ type CollectionCharacterDbRow = {
   is_catalog: boolean | null;
   release_order: number | null;
   release_month: number | null;
+  release_date: string | null;
+  unlock_override: boolean | null;
   status: string | null;
   source_model_id: string | null;
 };
@@ -197,6 +201,8 @@ function mapCollectionCharacter(
     detail_url: character.source_model_id ? catalogModelDetailsPath(character.source_model_id) : null,
     release_order: character.release_order ?? index + 1,
     release_month: character.release_month,
+    release_date: character.release_date,
+    unlock_override: character.unlock_override ?? false,
     is_catalog: character.is_catalog ?? false,
     status: character.status ?? "released",
   };
@@ -215,6 +221,8 @@ function mapCollectionModel(
     detail_url: catalogModelDetailsPath(model.id),
     release_order: index + 1,
     release_month: null,
+    release_date: null,
+    unlock_override: false,
     is_catalog: false,
     status: "released",
   };
@@ -314,7 +322,7 @@ export async function getCollectionDetailsBySlug(
 
   const { data: charactersData, error: charactersError } = await supabase
     .from("collection_characters")
-    .select("id, name, description, image_url, is_catalog, release_order, release_month, status, source_model_id")
+    .select("id, name, description, image_url, is_catalog, release_order, release_month, release_date, unlock_override, status, source_model_id")
     .eq("collection_id", collectionData.id)
     .order("release_order", { ascending: true });
 
