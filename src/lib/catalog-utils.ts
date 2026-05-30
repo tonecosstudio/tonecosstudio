@@ -16,6 +16,7 @@ const INTERNAL_TAG_PREFIXES = catalogTagPolicy.internalTagPrefixes;
 const INTERNAL_TAGS = new Set(catalogTagPolicy.internalTags);
 const PUBLIC_TAG_ALIASES: Record<string, string> =
   catalogTagPolicy.publicTagAliases;
+const PUBLIC_TAG_BLOCKLIST = new Set(catalogTagPolicy.publicTagBlocklist);
 
 export function normalizeCatalogTag(value: string | null | undefined): string {
   const normalized = String(value || "")
@@ -40,7 +41,11 @@ export function isInternalCatalogTag(tag: string | null | undefined): boolean {
 
 export function isPublicCatalogTag(tag: string | null | undefined): boolean {
   const normalized = normalizeCatalogTag(tag);
-  return Boolean(normalized) && !isInternalCatalogTag(normalized);
+  return (
+    Boolean(normalized) &&
+    !isInternalCatalogTag(normalized) &&
+    !PUBLIC_TAG_BLOCKLIST.has(normalized)
+  );
 }
 
 export function normalizeCatalogTags(

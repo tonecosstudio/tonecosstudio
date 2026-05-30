@@ -47,5 +47,19 @@
     "games": "game",
     "jogo": "game",
     "jogos": "game"
-  }
+  },
+  "publicTagBlocklist": [
+    "catalogo",
+    "catalogo geral",
+    "geral",
+    "outro",
+    "other",
+    "outros",
+    "sem categoria",
+    "uncategorized",
+    "default",
+    "general",
+    "collection",
+    "both"
+  ]
 }

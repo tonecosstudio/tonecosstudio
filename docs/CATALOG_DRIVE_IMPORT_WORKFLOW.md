@@ -82,6 +82,19 @@ Depois da importacao, rode a auditoria de hashes/duplicidade:
 npm run catalog:dedupe
 ```
 
+Depois da auditoria, gere o relatorio de saude do catalogo:
+
+```powershell
+npm run catalog:health
+```
+
+Se o relatorio apontar tags internas em modelos publicos, normalize as tags publicas pelo SSOT:
+
+```powershell
+npm run catalog:clean-public-tags -- --dry-run
+npm run catalog:clean-public-tags
+```
+
 O relatorio informa `manifestTotal`, `valid`, `rejected`, `imported`, `updated`, `skipped` e `failed`. O importador e idempotente por `source_file_id`. Se o mesmo arquivo do Drive ja existir na fila com status `published`, `duplicate`, `rejected` ou `hidden`, ele e registrado como `skipped` no relatorio e nao sobrescreve a imagem no Storage nem altera o modelo publico.
 
 ## Bloqueio atual

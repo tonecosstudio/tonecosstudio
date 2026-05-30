@@ -17,6 +17,7 @@ const catalogTagPolicy = JSON.parse(
 const INTERNAL_TAG_PREFIXES = catalogTagPolicy.internalTagPrefixes;
 const INTERNAL_TAGS = new Set(catalogTagPolicy.internalTags);
 const PUBLIC_TAG_ALIASES = catalogTagPolicy.publicTagAliases || {};
+const PUBLIC_TAG_BLOCKLIST = new Set(catalogTagPolicy.publicTagBlocklist || []);
 
 function loadEnvFile(fileName) {
   const filePath = join(ROOT, fileName);
@@ -70,6 +71,10 @@ function isInternalTag(tag) {
   );
 }
 
+function isPublicTag(tag) {
+  return Boolean(tag) && !isInternalTag(tag) && !PUBLIC_TAG_BLOCKLIST.has(tag);
+}
+
 function buildPublicTags(item) {
   const candidates = [
     item.source_title || item.source_folder_name,
@@ -80,10 +85,7 @@ function buildPublicTags(item) {
     ...(item.tags || []),
   ];
 
-  const tags = candidates
-    .map(normalizePublicTag)
-    .filter(Boolean)
-    .filter((tag) => !isInternalTag(tag));
+  const tags = candidates.map(normalizePublicTag).filter(isPublicTag);
 
   return [...new Set(tags)].slice(0, 20);
 }
