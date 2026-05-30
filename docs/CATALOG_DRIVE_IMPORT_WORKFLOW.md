@@ -29,16 +29,16 @@ Arquivos importados passam por:
 Use antes de qualquer importacao real:
 
 ```powershell
-$env:DRY_RUN='true'
-$env:IMPORT_LIMIT='8'
-$env:DRIVE_ITEMS_PATH='tmp/drive-folder-items.json'
-$env:IMPORT_SLUG='thundercats'
-$env:IMPORT_CONTEXT='collection'
-$env:IMPORT_SOURCE_FOLDER_ID='1chAOa3EOmMmE-fzrLyomQ9IbxMNK4QVF'
-$env:IMPORT_SOURCE_FOLDER_NAME='Thundercats'
-$env:IMPORT_SOURCE_TITLE='Thundercats'
-$env:IMPORT_MEDIA_TYPE='series'
-node tmp/import-drive-folder-to-catalog-queue.mjs
+node scripts/catalog/import-drive-manifest.mjs `
+  --dry-run `
+  --limit 8 `
+  --manifest tmp/drive-folder-items.json `
+  --slug thundercats `
+  --context collection `
+  --source-folder-id 1chAOa3EOmMmE-fzrLyomQ9IbxMNK4QVF `
+  --source-folder-name Thundercats `
+  --source-title Thundercats `
+  --media-type series
 ```
 
 ## Importacao real
@@ -49,18 +49,24 @@ O script carrega `.env.local` e `.env` automaticamente para ler `VITE_SUPABASE_U
 Antes de enviar qualquer imagem, ele verifica se `catalog_import_items` existe. Se a migration ainda nao foi aplicada, a importacao para antes do upload.
 
 ```powershell
-$env:DRIVE_ITEMS_PATH='tmp/drive-folder-items.json'
-$env:IMPORT_SLUG='thundercats'
-$env:IMPORT_CONTEXT='collection'
-$env:IMPORT_SOURCE_FOLDER_ID='1chAOa3EOmMmE-fzrLyomQ9IbxMNK4QVF'
-$env:IMPORT_SOURCE_FOLDER_NAME='Thundercats'
-$env:IMPORT_SOURCE_TITLE='Thundercats'
-$env:IMPORT_MEDIA_TYPE='series'
-$env:IMPORT_VISIBILITY='hidden'
-node tmp/import-drive-folder-to-catalog-queue.mjs
+node scripts/catalog/import-drive-manifest.mjs `
+  --manifest tmp/drive-folder-items.json `
+  --slug thundercats `
+  --context collection `
+  --source-folder-id 1chAOa3EOmMmE-fzrLyomQ9IbxMNK4QVF `
+  --source-folder-name Thundercats `
+  --source-title Thundercats `
+  --media-type series `
+  --visibility hidden
 ```
 
 `IMPORT_VISIBILITY` deve ficar `hidden` por padrao. A decisao final de ir para catalogo geral, colecao, ambos ou oculto acontece na curadoria admin.
+
+Depois da importacao, rode a auditoria de hashes/duplicidade:
+
+```powershell
+node scripts/catalog/backfill-dedupe-metadata.mjs
+```
 
 ## Bloqueio atual
 
