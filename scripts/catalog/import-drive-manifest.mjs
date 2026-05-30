@@ -78,6 +78,7 @@ const REPORT_PATH = argValue(
   "report",
   process.env.IMPORT_REPORT_PATH || "tmp/catalog-drive-import-report.json",
 );
+const IMPORT_BATCH_ID = argValue("batch-id", process.env.IMPORT_BATCH_ID);
 const DRY_RUN = argFlag("dry-run") || process.env.DRY_RUN === "true";
 const VALIDATE_ONLY =
   argFlag("validate-only") || process.env.VALIDATE_ONLY === "true";
@@ -415,12 +416,37 @@ async function makeOptimizedImages(bytes) {
 async function assertCatalogQueueReady() {
   const { error } = await supabase
     .from("catalog_import_items")
-    .select("id")
+    .select("id,import_batch_id")
     .limit(1);
   if (error) {
     throw new Error(
       `Catalog import queue is not ready. Apply migrations first. Supabase said: ${error.message}`,
     );
+  }
+}
+
+function isMissingImportBatchTableError(error) {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = "message" in error ? String(error.message) : "";
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    message.includes("catalog_import_batches") ||
+    message.includes("import_batch_id")
+  );
+}
+
+async function assertCatalogBatchReady() {
+  const { error } = await supabase
+    .from("catalog_import_batches")
+    .select("id")
+    .limit(1);
+  if (error) {
+    const prefix = isMissingImportBatchTableError(error)
+      ? "Catalog import batch tracking is not ready. Apply migrations first."
+      : "Catalog import batch tracking failed.";
+    throw new Error(`${prefix} Supabase said: ${error.message}`);
   }
 }
 
@@ -434,6 +460,75 @@ async function ensureStorageBucket() {
     { public: true },
   );
   if (createError) throw createError;
+}
+
+function buildBatchPayload(summary = {}) {
+  const now = new Date().toISOString();
+  return {
+    source_type: "google_drive",
+    import_slug: IMPORT_SLUG,
+    source_folder_id: IMPORT_SOURCE_FOLDER_ID || null,
+    source_folder_name: IMPORT_SOURCE_FOLDER_NAME || null,
+    source_drive_path: IMPORT_SOURCE_DRIVE_PATH || null,
+    source_title: IMPORT_SOURCE_TITLE || null,
+    manifest_path: MANIFEST_PATH,
+    report_path: REPORT_PATH,
+    status: summary.status || "running",
+    dry_run: DRY_RUN,
+    validate_only: VALIDATE_ONLY,
+    manifest_total: summary.manifestTotal || 0,
+    valid_count: summary.valid || 0,
+    rejected_count: summary.rejected || 0,
+    imported_count: summary.imported || 0,
+    updated_count: summary.updated || 0,
+    skipped_count: summary.skipped || 0,
+    failed_count: summary.failed || 0,
+    error_message: summary.errorMessage || null,
+    updated_at: now,
+    ...(summary.finished ? { finished_at: now } : {}),
+  };
+}
+
+async function createImportBatch(manifestTotal, valid, rejected) {
+  const payload = buildBatchPayload({
+    manifestTotal,
+    valid,
+    rejected,
+    status: "running",
+  });
+
+  if (IMPORT_BATCH_ID) {
+    const { error } = await supabase
+      .from("catalog_import_batches")
+      .update(payload)
+      .eq("id", IMPORT_BATCH_ID);
+    if (error) throw error;
+    return IMPORT_BATCH_ID;
+  }
+
+  const { data, error } = await supabase
+    .from("catalog_import_batches")
+    .insert(payload)
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+async function finishImportBatch(batchId, summary, status) {
+  if (!batchId) return;
+
+  const { error } = await supabase
+    .from("catalog_import_batches")
+    .update(
+      buildBatchPayload({
+        ...summary,
+        status,
+        finished: true,
+      }),
+    )
+    .eq("id", batchId);
+  if (error) throw error;
 }
 
 async function uploadFile(storagePath, bytes) {
@@ -477,7 +572,13 @@ function getStoragePaths(item) {
   };
 }
 
-function buildQueuePayload(item, storagePath, thumbnailUrl, imageData) {
+function buildQueuePayload(
+  item,
+  storagePath,
+  thumbnailUrl,
+  imageData,
+  importBatchId = null,
+) {
   const genericName = isGenericFileName(item.name);
   const proposedBaseName = cleanName(item.name);
   const variantName = inferVariantName(item);
@@ -491,6 +592,7 @@ function buildQueuePayload(item, storagePath, thumbnailUrl, imageData) {
 
   return {
     source_type: "google_drive",
+    import_batch_id: importBatchId,
     source_folder_id: IMPORT_SOURCE_FOLDER_ID,
     source_folder_name: IMPORT_SOURCE_FOLDER_NAME,
     source_drive_path: IMPORT_SOURCE_DRIVE_PATH,
@@ -535,6 +637,7 @@ function buildQueuePayload(item, storagePath, thumbnailUrl, imageData) {
 
 function existingQueuePatch(payload) {
   return {
+    import_batch_id: payload.import_batch_id,
     source_file_url: payload.source_file_url,
     mime_type: payload.mime_type,
     original_size_bytes: payload.original_size_bytes,
@@ -556,6 +659,7 @@ async function upsertQueueItem(
   optimized,
   originalBytes,
   existing = null,
+  importBatchId = null,
 ) {
   const { storagePath, thumbnailPath } = getStoragePaths(item);
 
@@ -572,6 +676,7 @@ async function upsertQueueItem(
       optimizedSha256: sha256(optimized.main),
       metadata: optimized.metadata,
     },
+    importBatchId,
   );
 
   existing = existing || (await findExistingQueueItem(item.id));
@@ -604,10 +709,15 @@ async function main() {
 
   if (!DRY_RUN && !VALIDATE_ONLY) {
     await assertCatalogQueueReady();
+    await assertCatalogBatchReady();
     await ensureStorageBucket();
   }
 
   const { items, rejected, manifestTotal } = await loadItems();
+  const importBatchId =
+    DRY_RUN || VALIDATE_ONLY
+      ? null
+      : await createImportBatch(manifestTotal, items.length, rejected.length);
   const selectedItems =
     Number.isFinite(IMPORT_LIMIT) && IMPORT_LIMIT > 0
       ? items.slice(0, IMPORT_LIMIT)
@@ -659,7 +769,13 @@ async function main() {
 
       const original = await downloadImage(item);
       const optimized = await makeOptimizedImages(original);
-      const record = await upsertQueueItem(item, optimized, original, existing);
+      const record = await upsertQueueItem(
+        item,
+        optimized,
+        original,
+        existing,
+        importBatchId,
+      );
       results.push({
         ok: true,
         fileId: item.id,
@@ -694,6 +810,7 @@ async function main() {
     skipped: results.filter((result) => result.ok && result.skipped).length,
     failed: results.filter((result) => !result.ok).length,
     report: REPORT_PATH,
+    importBatchId,
   };
 
   await writeReport({
@@ -702,6 +819,13 @@ async function main() {
     rejected,
     results,
   });
+  await finishImportBatch(
+    importBatchId,
+    summary,
+    summary.failed > 0 || summary.rejected > 0
+      ? "completed_with_errors"
+      : "completed",
+  );
   console.log(JSON.stringify(summary, null, 2));
   if (summary.failed > 0) process.exitCode = 1;
 }

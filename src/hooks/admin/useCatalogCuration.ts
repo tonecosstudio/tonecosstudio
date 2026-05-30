@@ -2,10 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   classifyCurationImage,
   getCatalogCurationOverview,
+  listCatalogImportBatches,
   listCatalogCollectionTargets,
   listCatalogCurationQueue,
   publishCurationItem,
   updateCurationItemStatus,
+  type CatalogImportBatchesResult,
   type CatalogCurationOverview,
   type CatalogCurationItem,
   type CatalogCurationStatus,
@@ -17,6 +19,7 @@ import {
 } from "@/services/admin/catalog-curation-service";
 
 export type {
+  CatalogImportBatchesResult,
   CatalogCurationOverview,
   CatalogCurationItem,
   CatalogCurationStatus,
@@ -31,6 +34,7 @@ const CATALOG_CURATION_QUEUE_QUERY_KEY = "admin-catalog-curation-queue";
 const CATALOG_CURATION_OVERVIEW_QUERY_KEY = "admin-catalog-curation-overview";
 const CATALOG_CURATION_COLLECTIONS_QUERY_KEY =
   "admin-catalog-curation-collections";
+const CATALOG_IMPORT_BATCHES_QUERY_KEY = "admin-catalog-import-batches";
 const MODELS_QUERY_KEY = "models";
 
 export function useCatalogCurationQueue(status: string) {
@@ -54,6 +58,13 @@ export function useCatalogCurationCollections() {
   });
 }
 
+export function useCatalogImportBatches() {
+  return useQuery({
+    queryKey: [CATALOG_IMPORT_BATCHES_QUERY_KEY],
+    queryFn: listCatalogImportBatches,
+  });
+}
+
 export function useClassifyCatalogCurationImage() {
   const queryClient = useQueryClient();
 
@@ -65,6 +76,9 @@ export function useClassifyCatalogCurationImage() {
       });
       queryClient.invalidateQueries({
         queryKey: [CATALOG_CURATION_OVERVIEW_QUERY_KEY],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [CATALOG_IMPORT_BATCHES_QUERY_KEY],
       });
     },
   });
@@ -88,6 +102,9 @@ export function useUpdateCatalogCurationStatus() {
       queryClient.invalidateQueries({
         queryKey: [CATALOG_CURATION_OVERVIEW_QUERY_KEY],
       });
+      queryClient.invalidateQueries({
+        queryKey: [CATALOG_IMPORT_BATCHES_QUERY_KEY],
+      });
     },
   });
 }
@@ -103,6 +120,9 @@ export function usePublishCatalogCurationItem() {
       });
       queryClient.invalidateQueries({
         queryKey: [CATALOG_CURATION_OVERVIEW_QUERY_KEY],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [CATALOG_IMPORT_BATCHES_QUERY_KEY],
       });
       queryClient.invalidateQueries({ queryKey: [MODELS_QUERY_KEY] });
     },

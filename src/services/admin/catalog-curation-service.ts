@@ -132,6 +132,38 @@ export type CatalogCollectionTarget = {
   is_active: boolean | null;
 };
 
+export type CatalogImportBatch = {
+  id: string;
+  source_type: string;
+  import_slug: string;
+  source_folder_id: string | null;
+  source_folder_name: string | null;
+  source_drive_path: string | null;
+  source_title: string | null;
+  manifest_path: string | null;
+  report_path: string | null;
+  status: string;
+  dry_run: boolean;
+  validate_only: boolean;
+  manifest_total: number;
+  valid_count: number;
+  rejected_count: number;
+  imported_count: number;
+  updated_count: number;
+  skipped_count: number;
+  failed_count: number;
+  error_message: string | null;
+  started_at: string;
+  finished_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CatalogImportBatchesResult = {
+  schemaReady: boolean;
+  batches: CatalogImportBatch[];
+};
+
 export type CatalogCurationOverview = {
   queueTotal: number;
   queueByStatus: Record<CatalogCurationStatus | "all", number>;
@@ -157,6 +189,8 @@ export type CatalogCurationOverview = {
 
 const CATALOG_IMPORT_SELECT =
   "id,source_type,source_folder_id,source_folder_name,source_drive_path,source_file_id,source_file_url,file_name,mime_type,original_size_bytes,storage_bucket,storage_path,thumbnail_url,status,proposed_name,character_name,variant_name,variant_type,source_title,media_type,category,subcategory,tags,catalog_visibility,collection_id,published_model_id,confidence,notes,original_sha256,optimized_sha256,perceptual_hash,perceptual_hash_algorithm,canonical_identity_key,duplicate_status,duplicate_of_import_item_id,duplicate_of_model_id,duplicate_distance,image_width,image_height,image_format,name_review_status,visual_review_status,analysis_notes,created_at,updated_at,reviewed_at,published_at";
+const CATALOG_IMPORT_BATCH_SELECT =
+  "id,source_type,import_slug,source_folder_id,source_folder_name,source_drive_path,source_title,manifest_path,report_path,status,dry_run,validate_only,manifest_total,valid_count,rejected_count,imported_count,updated_count,skipped_count,failed_count,error_message,started_at,finished_at,created_at,updated_at";
 
 type CatalogImportRow = Omit<CatalogCurationItem, "image_url">;
 
@@ -199,6 +233,26 @@ interface CatalogImportItemsGateway {
 
 const catalogImportItemsGateway =
   supabase as unknown as CatalogImportItemsGateway;
+
+interface CatalogImportBatchQuery extends PromiseLike<{
+  data: CatalogImportBatch[] | null;
+  error: CatalogCurationRpcError | null;
+}> {
+  order(
+    column: string,
+    options?: { ascending?: boolean },
+  ): CatalogImportBatchQuery;
+  limit(count: number): CatalogImportBatchQuery;
+}
+
+interface CatalogImportBatchesGateway {
+  from(table: "catalog_import_batches"): {
+    select(columns: string): CatalogImportBatchQuery;
+  };
+}
+
+const catalogImportBatchesGateway =
+  supabase as unknown as CatalogImportBatchesGateway;
 
 interface CatalogCountGateway {
   from(table: "catalog_import_items" | "models"): {
@@ -259,6 +313,17 @@ function isMissingPublishRpcError(error: unknown) {
   );
 }
 
+function isMissingImportBatchTableError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const message = "message" in error ? String(error.message) : "";
+  const code = "code" in error ? String(error.code) : "";
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    message.includes("catalog_import_batches")
+  );
+}
+
 export async function listCatalogCurationQueue(
   status: string,
 ): Promise<CatalogCurationItem[]> {
@@ -283,6 +348,26 @@ export async function listCatalogCurationQueue(
   }
 
   return (data ?? []).map(mapQueueItem);
+}
+
+export async function listCatalogImportBatches(): Promise<CatalogImportBatchesResult> {
+  const { data, error } = await catalogImportBatchesGateway
+    .from("catalog_import_batches")
+    .select(CATALOG_IMPORT_BATCH_SELECT)
+    .order("started_at", { ascending: false })
+    .limit(8);
+
+  if (error) {
+    if (isMissingImportBatchTableError(error)) {
+      return { schemaReady: false, batches: [] };
+    }
+    throw error;
+  }
+
+  return {
+    schemaReady: true,
+    batches: data ?? [],
+  };
 }
 
 async function countRows(

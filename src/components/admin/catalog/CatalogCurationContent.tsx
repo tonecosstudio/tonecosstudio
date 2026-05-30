@@ -7,6 +7,7 @@ import {
   Eye,
   ExternalLink,
   FileQuestion,
+  FolderInput,
   GitCompare,
   ImageOff,
   ListFilter,
@@ -34,6 +35,7 @@ import {
   useCatalogCurationCollections,
   useCatalogCurationOverview,
   useCatalogCurationQueue,
+  useCatalogImportBatches,
   useClassifyCatalogCurationImage,
   usePublishCatalogCurationItem,
   useUpdateCatalogCurationStatus,
@@ -114,8 +116,25 @@ const DUPLICATE_STATUS_LABELS: Record<string, string> = {
   needs_review: "similaridade visual",
 };
 
+const BATCH_STATUS_LABELS: Record<string, string> = {
+  running: "Em andamento",
+  completed: "Concluido",
+  completed_with_errors: "Concluido com alertas",
+  failed: "Falhou",
+  dry_run: "Simulacao",
+  validate_only: "Validacao",
+};
+
 function formatCount(value: number | undefined) {
   return new Intl.NumberFormat("pt-BR").format(value ?? 0);
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "sem data";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 const EMPTY_FORM: PublishForm = {
@@ -274,6 +293,7 @@ export function CatalogCurationContent() {
   const overviewQuery = useCatalogCurationOverview();
   const queueQuery = useCatalogCurationQueue(status);
   const collectionsQuery = useCatalogCurationCollections();
+  const batchesQuery = useCatalogImportBatches();
 
   const items = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase();
@@ -380,6 +400,8 @@ export function CatalogCurationContent() {
       },
     ];
   }, [overviewQuery.data]);
+  const importBatches = batchesQuery.data?.batches ?? [];
+  const importBatchSchemaReady = batchesQuery.data?.schemaReady ?? false;
 
   useEffect(() => {
     setForm(buildInitialForm(selected));
@@ -533,6 +555,7 @@ export function CatalogCurationContent() {
             onClick={() => {
               overviewQuery.refetch();
               queueQuery.refetch();
+              batchesQuery.refetch();
             }}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -698,6 +721,121 @@ export function CatalogCurationContent() {
           </div>
         </div>
       )}
+
+      <div className="rounded-lg border bg-card p-4">
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 font-semibold">
+              <FolderInput className="h-4 w-4 text-muted-foreground" />
+              Lotes de importacao
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Auditoria dos manifestos processados: origem, totais, falhas e
+              atualizacoes.
+            </p>
+          </div>
+          <Badge variant="outline" className="w-fit">
+            {formatCount(importBatches.length)} recentes
+          </Badge>
+        </div>
+
+        {batchesQuery.isLoading && (
+          <p className="text-sm text-muted-foreground">Carregando lotes...</p>
+        )}
+
+        {batchesQuery.isError && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {getErrorMessage(batchesQuery.error)}
+          </div>
+        )}
+
+        {batchesQuery.data?.schemaReady === false && (
+          <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+            O controle de lotes ja esta preparado no codigo. Aplique a migration
+            catalog_import_batches para ativar a auditoria operacional no admin.
+          </div>
+        )}
+
+        {importBatchSchemaReady && importBatches.length === 0 && (
+          <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+            Nenhum lote registrado ainda. O proximo import via manifesto vai
+            abrir um lote auditavel automaticamente.
+          </div>
+        )}
+
+        {importBatchSchemaReady && importBatches.length > 0 && (
+          <div className="grid gap-2 lg:grid-cols-2">
+            {importBatches.map((batch) => (
+              <div
+                key={batch.id}
+                className="rounded-md border px-3 py-2 text-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">
+                      {batch.source_folder_name ||
+                        batch.source_title ||
+                        batch.import_slug}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {batch.source_drive_path ||
+                        batch.manifest_path ||
+                        "origem nao definida"}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      batch.status === "failed" ||
+                      batch.status === "completed_with_errors"
+                        ? "destructive"
+                        : "outline"
+                    }
+                  >
+                    {BATCH_STATUS_LABELS[batch.status] || batch.status}
+                  </Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-4 gap-2 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Validos</span>
+                    <p className="font-medium">
+                      {formatCount(batch.valid_count)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Novos</span>
+                    <p className="font-medium">
+                      {formatCount(batch.imported_count)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Atualizados</span>
+                    <p className="font-medium">
+                      {formatCount(batch.updated_count)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Falhas</span>
+                    <p className="font-medium">
+                      {formatCount(batch.failed_count + batch.rejected_count)}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Inicio {formatDateTime(batch.started_at)}
+                  {batch.finished_at
+                    ? ` | fim ${formatDateTime(batch.finished_at)}`
+                    : ""}
+                </p>
+                {batch.error_message && (
+                  <p className="mt-2 text-xs text-destructive">
+                    {batch.error_message}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(430px,0.85fr)]">
         <div className="space-y-4">
