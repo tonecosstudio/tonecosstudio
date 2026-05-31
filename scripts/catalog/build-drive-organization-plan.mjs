@@ -52,6 +52,38 @@ const GENERIC_PATH_SEGMENTS = new Set([
   "dioramas e confrontos",
   "dioramas do homem aranha",
 ]);
+const DISPLAY_ALIASES = new Map(
+  Object.entries({
+    "ataque de tita": "Attack on Titan",
+    "axterix e obelix": "Asterix e Obelix",
+    berseck: "Berserk",
+    brolly: "Broly",
+    "boku no hero": "My Hero Academia",
+    "cavaleiros do zodiaco": "Saint Seiya",
+    cdz: "Saint Seiya",
+    chainsawman: "Chainsaw Man",
+    "db super": "Dragon Ball Super",
+    deathstrocke: "Deathstroke",
+    "dr destino": "Doutor Destino",
+    "dr octopus": "Doutor Octopus",
+    "full metal": "Fullmetal Alchemist",
+    gotenksgogeta: "Gotenks e Gogeta",
+    "gotenks gogeta": "Gotenks e Gogeta",
+    "godzila kingkong": "Godzilla e King Kong",
+    "i t": "It",
+    jil: "Jill Valentine",
+    lol: "League of Legends",
+    "mulher hulk": "Mulher-Hulk",
+    picolo: "Piccolo",
+    "poderoso chefao": "O Poderoso Chefao",
+    "sreet fighter": "Street Fighter",
+    "the king of fighter": "The King of Fighters",
+    "tomb rader": "Tomb Raider",
+    xmen: "X-Men",
+    "x men": "X-Men",
+    zatana: "Zatanna",
+  }),
+);
 const DRIVE_FILE_OVERRIDES = {
   "1AyEzy7At9_6L69uc1kUtcdTaiLY9SHJH": {
     characterName: "Cheetara",
@@ -150,8 +182,13 @@ function displaySegment(value, fallback = "Sem Nome") {
   return cleaned || fallback;
 }
 
+function canonicalDisplay(value, fallback = "Sem Nome") {
+  const displayed = displaySegment(value, fallback);
+  return DISPLAY_ALIASES.get(normalizeComparable(displayed)) || displayed;
+}
+
 function cleanDriveSegment(value) {
-  return displaySegment(value).replace(/\s+Shared$/i, "").trim();
+  return canonicalDisplay(value).replace(/\s+Shared$/i, "").trim();
 }
 
 function cleanPathParts(value) {
@@ -166,6 +203,12 @@ function firstUsefulPart(parts, startIndex = 0) {
   return parts.slice(startIndex).find((part) => !GENERIC_PATH_SEGMENTS.has(normalizeComparable(part))) || null;
 }
 
+function firstUsefulPartAfter(parts, sourceIndex) {
+  return parts
+    .slice(sourceIndex + 1)
+    .find((part) => !GENERIC_PATH_SEGMENTS.has(normalizeComparable(part))) || null;
+}
+
 function lastUsefulFolderPart(parts) {
   const folders = parts.slice(0, -1);
   for (let index = folders.length - 1; index >= 0; index--) {
@@ -173,6 +216,17 @@ function lastUsefulFolderPart(parts) {
     if (!GENERIC_PATH_SEGMENTS.has(normalizeComparable(part))) return part;
   }
   return null;
+}
+
+function indexOfNormalized(parts, names) {
+  const normalizedNames = new Set(names.map((name) => normalizeComparable(name)));
+  return parts.findIndex((part) => normalizedNames.has(normalizeComparable(part)));
+}
+
+function indexOfCanonical(parts, title, startIndex = 0) {
+  return parts.findIndex(
+    (part, index) => index >= startIndex && normalizeComparable(canonicalDisplay(part)) === normalizeComparable(title),
+  );
 }
 
 function inferTaxonomyFromPath(row) {
@@ -185,47 +239,53 @@ function inferTaxonomyFromPath(row) {
   if (!parts.length) return {};
 
   if (top === "colecao tonecos") {
-    const sourceTitle = firstUsefulPart(folders, 1) || folders[1] || "Colecao Tonecos";
+    const sourceTitle = canonicalDisplay(firstUsefulPart(folders, 1) || folders[1] || "Colecao Tonecos");
     return {
       category: "colecoes",
       subcategory: slugSegment(sourceTitle),
       mediaType: "other",
       sourceTitle,
       collectionCandidate: true,
-      pathCharacterName: lastUsefulFolderPart(parts),
+      pathCharacterName: canonicalDisplay(lastUsefulFolderPart(parts) || stripExtension(parts.at(-1))),
     };
   }
 
   if (top === "games") {
-    const sourceTitle = firstUsefulPart(folders, 1) || "Games";
+    const sourceTitle = canonicalDisplay(firstUsefulPart(folders, 1) || "Games");
+    const sourceIndex = indexOfCanonical(folders, sourceTitle, 1);
     return {
       category: "jogos",
       subcategory: slugSegment(sourceTitle),
       mediaType: "game",
       sourceTitle,
-      pathCharacterName: lastUsefulFolderPart(parts),
+      pathCharacterName: canonicalDisplay(firstUsefulPartAfter(folders, sourceIndex) || ""),
     };
   }
 
   if (top === "animes e desenhos") {
-    const sourceTitle = firstUsefulPart(folders, second === "animes" || second === "classicos" || second === "outros" ? 2 : 1) || "Animes e Desenhos";
+    const sourceStart = second === "animes" || second === "classicos" || second === "outros" ? 2 : 1;
+    const sourceTitle = canonicalDisplay(firstUsefulPart(folders, sourceStart) || "Animes e Desenhos");
+    const sourceIndex = folders.findIndex(
+      (part, index) => index >= sourceStart && normalizeComparable(canonicalDisplay(part)) === normalizeComparable(sourceTitle),
+    );
     return {
       category: "animes",
       subcategory: slugSegment(sourceTitle),
       mediaType: "anime",
       sourceTitle,
-      pathCharacterName: lastUsefulFolderPart(parts),
+      pathCharacterName: canonicalDisplay(firstUsefulPartAfter(folders, sourceIndex) || ""),
     };
   }
 
   if (top === "tokusatsu e cultura japonesa") {
-    const sourceTitle = firstUsefulPart(folders, 1) || "Tokusatsu";
+    const sourceTitle = canonicalDisplay(firstUsefulPart(folders, 1) || "Tokusatsu");
+    const sourceIndex = indexOfCanonical(folders, sourceTitle, 1);
     return {
       category: "series",
       subcategory: slugSegment(sourceTitle),
       mediaType: "tokusatsu",
       sourceTitle,
-      pathCharacterName: lastUsefulFolderPart(parts),
+      pathCharacterName: canonicalDisplay(firstUsefulPartAfter(folders, sourceIndex) || ""),
     };
   }
 
@@ -235,56 +295,73 @@ function inferTaxonomyFromPath(row) {
       subcategory: "fisiculturistas",
       mediaType: "other",
       sourceTitle: "Fisiculturistas",
-      pathCharacterName: lastUsefulFolderPart(parts),
+      pathCharacterName: null,
     };
   }
 
   if (top === "filmes e series") {
     if (second === "02 series") {
-      const sourceTitle = firstUsefulPart(folders, 2) || "Series";
+      const sourceTitle = canonicalDisplay(firstUsefulPart(folders, 2) || "Series");
+      const sourceIndex = folders.findIndex(
+        (part, index) => index >= 2 && normalizeComparable(canonicalDisplay(part)) === normalizeComparable(sourceTitle),
+      );
       return {
         category: "series",
         subcategory: slugSegment(sourceTitle),
         mediaType: "series",
         sourceTitle,
-        pathCharacterName: lastUsefulFolderPart(parts),
+        pathCharacterName: canonicalDisplay(firstUsefulPartAfter(folders, sourceIndex) || ""),
       };
     }
 
     if (second === "dc") {
-      const sourceTitle = firstUsefulPart(folders, 2) || "DC";
+      const sourceTitle = "DC";
       return {
         category: "quadrinhos",
         subcategory: slugSegment(sourceTitle),
         mediaType: "comic",
         sourceTitle,
-        pathCharacterName: lastUsefulFolderPart(parts),
+        pathCharacterName: canonicalDisplay(firstUsefulPart(folders, 2) || ""),
       };
     }
 
     if (second === "marvel dc" || third === "marvel") {
-      const sourceTitle = firstUsefulPart(folders, third === "marvel" ? 3 : 2) || "Marvel";
+      const baseIndex = third === "marvel" ? 3 : 2;
+      const sourceIndex = [
+        indexOfNormalized(folders, ["X-Men", "xmen"]),
+        indexOfNormalized(folders, ["Vingadores"]),
+        indexOfNormalized(folders, ["Quarteto Fantastico"]),
+        indexOfNormalized(folders, ["Homem Aranha"]),
+      ]
+        .filter((index) => index >= 0)
+        .sort((a, b) => a - b)[0] ?? -1;
+      const sourceTitle = canonicalDisplay(sourceIndex >= 0 ? folders[sourceIndex] : "Marvel");
       return {
         category: "quadrinhos",
         subcategory: slugSegment(sourceTitle),
         mediaType: "comic",
         sourceTitle,
-        pathCharacterName: lastUsefulFolderPart(parts),
+        pathCharacterName: canonicalDisplay(
+          sourceIndex >= 0 ? firstUsefulPartAfter(folders, sourceIndex) || "" : firstUsefulPart(folders, baseIndex) || "",
+        ),
       };
     }
 
-    const sourceTitle = firstUsefulPart(folders, 1) || "Filmes e Series";
+    const sourceTitle = canonicalDisplay(firstUsefulPart(folders, 1) || "Filmes e Series");
+    const sourceIndex = folders.findIndex(
+      (part, index) => index >= 1 && normalizeComparable(canonicalDisplay(part)) === normalizeComparable(sourceTitle),
+    );
     return {
       category: second === "01 terror" || second === "04 classicos antigos" || second === "05 acao" ? "filmes" : "filmes",
       subcategory: slugSegment(sourceTitle),
       mediaType: "movie",
       sourceTitle,
-      pathCharacterName: lastUsefulFolderPart(parts),
+      pathCharacterName: canonicalDisplay(firstUsefulPartAfter(folders, sourceIndex) || ""),
     };
   }
 
   return {
-    pathCharacterName: lastUsefulFolderPart(parts),
+    pathCharacterName: canonicalDisplay(lastUsefulFolderPart(parts) || ""),
   };
 }
 
@@ -292,11 +369,24 @@ function isGenericName(value) {
   const normalized = normalizeComparable(stripExtension(value));
   return (
     !normalized ||
+    normalized === "sem nome" ||
+    normalized === "unnamed" ||
+    normalized === "images" ||
+    normalized === "copy" ||
+    /^[a-z]$/.test(normalized) ||
+    /^[a-f0-9]{16,}$/.test(normalized) ||
     /^photo \d{4}/.test(normalized) ||
+    /^img \d+/.test(normalized) ||
+    /^screenshot /.test(normalized) ||
+    /^image(\s|$)/.test(normalized) ||
+    /^image processing/.test(normalized) ||
+    /^il \d+xn/.test(normalized) ||
     /^image ?\d*$/.test(normalized) ||
     /^figura ?\d*$/.test(normalized) ||
     /^desconhecido$/.test(normalized) ||
-    /^\d+$/.test(normalized)
+    /^\d+$/.test(normalized) ||
+    /^\d+\s+copy$/.test(normalized) ||
+    /^\d{8,}\s+\d+$/.test(normalized)
   );
 }
 
@@ -399,48 +489,55 @@ function mergeRows(rows) {
 }
 
 function classify(row) {
-  const characterName = inferFromName(row);
-  const sourceTitle = row.sourceTitle || row.sourceFolderName || "Catalogo Geral";
-  const category = row.category || "revisao";
+  const inferredCharacter = inferFromName(row);
+  const characterName = inferredCharacter ? canonicalDisplay(inferredCharacter) : null;
+  const sourceTitle = canonicalDisplay(row.sourceTitle || row.sourceFolderName || "Catalogo Geral", "Catalogo Geral");
+  const category = canonicalDisplay(row.category || "revisao", "revisao");
   const subcategory = row.subcategory || slugSegment(sourceTitle);
   const originalGeneric = isGenericName(row.originalName);
+  const genericWithoutPathIdentity = originalGeneric && !characterName;
   const needsReview =
-    originalGeneric ||
+    genericWithoutPathIdentity ||
     !characterName ||
     REVIEW_CATEGORIES.has(normalizeComparable(category)) ||
     (row.tags || []).some((tag) => String(tag).startsWith("needs-"));
 
-  const sourceSlug = slugSegment(sourceTitle);
   const categorySlug = slugSegment(category);
   const collection = row.collectionCandidate;
+  const sourceFolder = displaySegment(sourceTitle, "Catalogo Geral");
+  const characterFolder = displaySegment(characterName, "Sem Nome");
 
   let status = "ready_to_organize";
   if (needsReview) status = "needs_review";
 
   let destinationFolder;
   if (status === "needs_review") {
-    destinationFolder = originalGeneric && characterName
-      ? "01_REVISAR/confirmar-identificacao"
-      : originalGeneric
-      ? "01_REVISAR/sem-nome-ou-generico"
-      : `01_REVISAR/${categorySlug}`;
+    if (originalGeneric && characterName) {
+      destinationFolder = `01_REVISAR/confirmar-identificacao/${displaySegment(category)}/${sourceFolder}/${characterFolder}`;
+    } else if (originalGeneric) {
+      destinationFolder = `01_REVISAR/sem-nome-ou-generico/${displaySegment(category)}/${sourceFolder}`;
+    } else {
+      destinationFolder = `01_REVISAR/${categorySlug}/${sourceFolder}/${characterFolder}`;
+    }
   } else if (collection) {
-    destinationFolder = `03_COLECOES/${displaySegment(sourceTitle)}`;
+    destinationFolder = `03_COLECOES/${sourceFolder}/${characterFolder}`;
   } else {
-    destinationFolder = `02_CATALOGO_GERAL/${displaySegment(category)}/${displaySegment(sourceTitle)}`;
+    destinationFolder = `02_CATALOGO_GERAL/${displaySegment(category)}/${sourceFolder}/${characterFolder}`;
   }
 
-  const parts = [
-    displaySegment(sourceTitle, "Catalogo Geral"),
-    displaySegment(characterName, "Sem Nome"),
-    row.variantName ? displaySegment(row.variantName) : null,
-  ].filter(Boolean);
+  const variantName = row.variantName ? canonicalDisplay(row.variantName) : null;
+  const parts = [sourceFolder];
+  if (characterName && normalizeComparable(characterName) !== normalizeComparable(sourceTitle)) {
+    parts.push(characterFolder);
+  }
+  if (variantName) parts.push(displaySegment(variantName));
 
   const proposedName = `${parts.join(" - ")}.${extension(row.originalName, row.mimeType)}`;
 
   return {
     ...row,
     characterName,
+    variantName,
     sourceTitle,
     category,
     subcategory,
@@ -449,7 +546,9 @@ function classify(row) {
     destinationFolder,
     proposedName,
     originalGeneric,
+    genericWithoutPathIdentity,
     collection,
+    curationLevel: status === "ready_to_organize" ? "path-curated" : "needs-review",
   };
 }
 

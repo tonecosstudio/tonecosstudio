@@ -18,11 +18,14 @@ function argFlag(name) {
 const PLAN_PATH = argValue("plan", "tmp/drive-organization/drive-organization-plan.json");
 const OUT_DIR = argValue("out", "catalog-assets/drive-organized");
 const SOURCE_ROOT = argValue("source-root");
+const EXISTING_ASSETS_MANIFEST = argValue("existing-assets-manifest");
 const LIMIT = Number.parseInt(argValue("limit", ""), 10);
 const CONCURRENCY = Number.parseInt(argValue("concurrency", "6"), 10);
 const DOWNLOAD = argFlag("download");
 const FORCE = argFlag("force");
 const INCLUDE_REVIEW = !argFlag("skip-review");
+const HASH_DEDUPE = !argFlag("no-hash-dedupe");
+let existingAssetsById = new Map();
 
 const IMAGE_SIGNATURES = [
   { type: "png", bytes: [0x89, 0x50, 0x4e, 0x47] },
@@ -151,7 +154,34 @@ async function findSourceFile(item) {
   return null;
 }
 
+async function loadExistingAssetsMap(manifestPath) {
+  if (!manifestPath) return new Map();
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  const rows = manifest.items || [];
+  const byId = new Map();
+
+  for (const row of rows) {
+    if (!row.id || !row.localPath || row.exportStatus === "error") continue;
+    byId.set(row.id, path.resolve(row.localPath));
+  }
+
+  return byId;
+}
+
 async function readSourceBytes(item) {
+  const existingAsset = item.id ? existingAssetsById.get(item.id) : null;
+  if (existingAsset) {
+    try {
+      return {
+        source: "existing-manifest",
+        sourceFile: existingAsset,
+        bytes: await fs.readFile(existingAsset),
+      };
+    } catch {
+      // Fall back to source-root or Drive download when the manifest path is stale.
+    }
+  }
+
   const sourceFile = await findSourceFile(item);
   if (sourceFile) {
     return {
@@ -180,6 +210,23 @@ async function writeFileAtomic(filePath, bytes) {
   const tmpPath = `${filePath}.tmp`;
   await fs.writeFile(tmpPath, bytes);
   await fs.rename(tmpPath, filePath);
+}
+
+async function uniqueFilePath(filePath) {
+  const ext = path.extname(filePath);
+  const base = ext ? filePath.slice(0, -ext.length) : filePath;
+  let candidate = filePath;
+  let count = 2;
+
+  while (true) {
+    try {
+      await fs.access(candidate);
+      candidate = `${base} - ${String(count).padStart(2, "0")}${ext}`;
+      count += 1;
+    } catch {
+      return candidate;
+    }
+  }
 }
 
 function toCsvValue(value) {
@@ -316,18 +363,75 @@ async function runPool(items, workerCount) {
   return rows.sort((a, b) => a.planIndex - b.planIndex);
 }
 
+function duplicateKeeperRank(row) {
+  if (row.status === "ready_to_organize") return 0;
+  if (row.status === "needs_review") return 1;
+  if (row.status === "duplicate_candidate") return 2;
+  return 3;
+}
+
+async function applyExactHashDedupe(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    if (!row.sha256 || row.exportStatus === "non_image" || row.exportStatus === "error") continue;
+    const group = groups.get(row.sha256) || [];
+    group.push(row);
+    groups.set(row.sha256, group);
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+
+    const keeper = [...group].sort((a, b) => {
+      const rankDiff = duplicateKeeperRank(a) - duplicateKeeperRank(b);
+      if (rankDiff) return rankDiff;
+      return a.planIndex - b.planIndex;
+    })[0];
+
+    for (const row of group) {
+      if (row === keeper) continue;
+
+      const currentPath = path.resolve(row.localPath);
+      const ext = path.extname(currentPath) || path.extname(row.proposedName || row.originalName) || ".jpg";
+      const baseName = sanitizePathPart(
+        [row.sourceTitle, row.characterName, row.variantName || row.proposedName || row.originalName]
+          .filter(Boolean)
+          .join(" - "),
+        row.id || row.sha256.slice(0, 12),
+      );
+      const duplicatePath = await uniqueFilePath(
+        path.join(OUT_DIR, "90_DUPLICATAS", "exatas", row.sha256.slice(0, 12), `${baseName}${ext}`),
+      );
+
+      await fs.mkdir(path.dirname(duplicatePath), { recursive: true });
+      await fs.rename(currentPath, duplicatePath);
+
+      row.statusBeforeHashDedupe = row.status;
+      row.status = "duplicate_exact";
+      row.destinationFolder = "90_DUPLICATAS/exatas";
+      row.localPath = path.relative(process.cwd(), duplicatePath);
+      row.duplicateOf = keeper.id;
+      row.duplicateOfHash = row.sha256;
+    }
+  }
+}
+
 async function main() {
   const plan = JSON.parse(await fs.readFile(PLAN_PATH, "utf8"));
+  existingAssetsById = await loadExistingAssetsMap(EXISTING_ASSETS_MANIFEST);
   const plannedItems = (plan.items || []).filter(shouldExport);
   const items = Number.isFinite(LIMIT) && LIMIT > 0 ? plannedItems.slice(0, LIMIT) : plannedItems;
   const rows = await runPool(items, CONCURRENCY);
+  if (HASH_DEDUPE) await applyExactHashDedupe(rows);
 
   const summary = {
     generatedAt: new Date().toISOString(),
     planPath: PLAN_PATH,
     outDir: OUT_DIR,
     sourceRoot: SOURCE_ROOT,
+    existingAssetsManifest: EXISTING_ASSETS_MANIFEST,
     download: DOWNLOAD,
+    hashDedupe: HASH_DEDUPE,
     concurrency: CONCURRENCY,
     total: rows.length,
     byExportStatus: rows.reduce((acc, row) => {
