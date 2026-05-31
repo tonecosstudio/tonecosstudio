@@ -207,15 +207,6 @@ function getPublicStorageUrl(bucket: string | null, path: string | null) {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
-function isMissingColumnError(
-  error: { code?: string; message?: string } | null,
-) {
-  return (
-    error?.code === "42703" ||
-    Boolean(error?.message?.toLowerCase().includes("does not exist"))
-  );
-}
-
 function normalizeCharacterDetailsRow(
   row: Partial<CharacterDetailsData> | null,
 ): CharacterDetailsData | null {
@@ -467,7 +458,7 @@ export async function listCollectionsWithCharacters(): Promise<
 export async function getCharacterDetailsById(
   characterId: string,
 ): Promise<CharacterDetailsData | null> {
-  const fullSelect = `
+  const characterDetailsSelect = `
     id, name, description, image_url, image_urls, status, is_catalog,
     collection_id, franchise, product_line, theme_category,
     release_order, release_month, release_date, stock_quantity,
@@ -475,31 +466,10 @@ export async function getCharacterDetailsById(
     price_categories (display_name, price_coins, price_standalone),
     collections (id, name, slug, description, cover_image_url, total_characters)
   `;
-  const legacySelect = `
-    id, name, description, image_url, status, is_catalog,
-    collection_id, release_order, release_month, release_date,
-    price_category_id,
-    price_categories (display_name, price_coins, price_standalone),
-    collections (id, name, slug, description, cover_image_url)
-  `;
-
-  const fullResult = await supabase
-    .from("collection_characters")
-    .select(fullSelect)
-    .eq("id", characterId)
-    .maybeSingle();
-
-  if (!fullResult.error) {
-    return normalizeCharacterDetailsRow(
-      (fullResult.data ?? null) as Partial<CharacterDetailsData> | null,
-    );
-  }
-
-  if (!isMissingColumnError(fullResult.error)) throw fullResult.error;
 
   const { data, error } = await supabase
     .from("collection_characters")
-    .select(legacySelect)
+    .select(characterDetailsSelect)
     .eq("id", characterId)
     .maybeSingle();
 
