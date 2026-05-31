@@ -1267,48 +1267,172 @@ export type Database = {
       }
       models: {
         Row: {
+          analysis_notes: string | null
+          canonical_identity_key: string | null
           category: string | null
+          catalog_visibility: string
+          character_name: string | null
+          collection_id: string | null
           created_at: string
+          created_by: string | null
+          curation_notes: string | null
+          curation_status: string
+          detected_labels: Json
           description: string | null
+          duplicate_distance: number | null
+          duplicate_of_model_id: string | null
+          duplicate_status: string
+          file_url: string | null
           franchise: string | null
           id: string
           image_bucket: string | null
+          image_format: string | null
+          image_height: number | null
           image_path: string | null
+          image_width: number | null
           is_active: boolean
           name: string
+          name_review_status: string
+          optimized_sha256: string | null
+          original_sha256: string | null
+          perceptual_hash: string | null
+          perceptual_hash_algorithm: string
+          price_category_id: string | null
+          price_coins_override: number | null
+          price_mode: string
+          price_standalone_override: number | null
+          source_drive_file_id: string | null
+          source_drive_folder_id: string | null
+          source_drive_path: string | null
+          source_title: string | null
+          source_type: string
           subcategory: string | null
           tags: string[] | null
+          thumbnail_url: string | null
           updated_at: string
+          variant_name: string | null
+          variant_type: string
+          visual_review_status: string
         }
         Insert: {
+          analysis_notes?: string | null
+          canonical_identity_key?: string | null
           category?: string | null
+          catalog_visibility?: string
+          character_name?: string | null
+          collection_id?: string | null
           created_at?: string
+          created_by?: string | null
+          curation_notes?: string | null
+          curation_status?: string
+          detected_labels?: Json
           description?: string | null
+          duplicate_distance?: number | null
+          duplicate_of_model_id?: string | null
+          duplicate_status?: string
+          file_url?: string | null
           franchise?: string | null
           id?: string
           image_bucket?: string | null
+          image_format?: string | null
+          image_height?: number | null
           image_path?: string | null
+          image_width?: number | null
           is_active?: boolean
           name: string
+          name_review_status?: string
+          optimized_sha256?: string | null
+          original_sha256?: string | null
+          perceptual_hash?: string | null
+          perceptual_hash_algorithm?: string
+          price_category_id?: string | null
+          price_coins_override?: number | null
+          price_mode?: string
+          price_standalone_override?: number | null
+          source_drive_file_id?: string | null
+          source_drive_folder_id?: string | null
+          source_drive_path?: string | null
+          source_title?: string | null
+          source_type?: string
           subcategory?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           updated_at?: string
+          variant_name?: string | null
+          variant_type?: string
+          visual_review_status?: string
         }
         Update: {
+          analysis_notes?: string | null
+          canonical_identity_key?: string | null
           category?: string | null
+          catalog_visibility?: string
+          character_name?: string | null
+          collection_id?: string | null
           created_at?: string
+          created_by?: string | null
+          curation_notes?: string | null
+          curation_status?: string
+          detected_labels?: Json
           description?: string | null
+          duplicate_distance?: number | null
+          duplicate_of_model_id?: string | null
+          duplicate_status?: string
+          file_url?: string | null
           franchise?: string | null
           id?: string
           image_bucket?: string | null
+          image_format?: string | null
+          image_height?: number | null
           image_path?: string | null
+          image_width?: number | null
           is_active?: boolean
           name?: string
+          name_review_status?: string
+          optimized_sha256?: string | null
+          original_sha256?: string | null
+          perceptual_hash?: string | null
+          perceptual_hash_algorithm?: string
+          price_category_id?: string | null
+          price_coins_override?: number | null
+          price_mode?: string
+          price_standalone_override?: number | null
+          source_drive_file_id?: string | null
+          source_drive_folder_id?: string | null
+          source_drive_path?: string | null
+          source_title?: string | null
+          source_type?: string
           subcategory?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           updated_at?: string
+          variant_name?: string | null
+          variant_type?: string
+          visual_review_status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "models_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "models_duplicate_of_model_id_fkey"
+            columns: ["duplicate_of_model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "models_price_category_id_fkey"
+            columns: ["price_category_id"]
+            isOneToOne: false
+            referencedRelation: "price_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
