@@ -28,6 +28,7 @@
     "catalog:health": "node scripts/catalog/catalog-health-report.mjs",
     "catalog:health:strict": "node scripts/catalog/catalog-health-report.mjs --strict",
     "catalog:drive-plan": "node scripts/catalog/build-drive-organization-plan.mjs",
+    "catalog:drive-appscript": "node scripts/catalog/generate-drive-apps-script.mjs",
     "catalog:clean-public-tags": "node scripts/catalog/clean-public-model-tags.mjs",
     "catalog:remove-backgrounds": "node scripts/catalog/remove-backgrounds-batch.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\" \"*.{json,md}\"",

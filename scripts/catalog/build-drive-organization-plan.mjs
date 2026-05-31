@@ -317,6 +317,28 @@ function withDuplicateGroups(rows) {
   });
 }
 
+function appendNameSuffix(fileName, suffix) {
+  const ext = fileName.match(/(\.[a-z0-9]+)$/i)?.[1] || "";
+  const base = ext ? fileName.slice(0, -ext.length) : fileName;
+  return `${base} - ${suffix}${ext}`;
+}
+
+function ensureUniqueNames(rows) {
+  const counters = new Map();
+  return rows.map((row) => {
+    const key = `${row.destinationFolder.toLowerCase()}|${row.proposedName.toLowerCase()}`;
+    const count = (counters.get(key) || 0) + 1;
+    counters.set(key, count);
+
+    if (count === 1) return row;
+    return {
+      ...row,
+      proposedName: appendNameSuffix(row.proposedName, String(count).padStart(2, "0")),
+      nameCollisionResolved: true,
+    };
+  });
+}
+
 function toCsvValue(value) {
   const text = Array.isArray(value) ? value.join("; ") : String(value ?? "");
   return `"${text.replace(/"/g, '""')}"`;
@@ -333,7 +355,7 @@ async function main() {
   }
 
   const merged = mergeRows(allRows);
-  const planned = withDuplicateGroups(merged.map(classify)).sort((a, b) => {
+  const planned = ensureUniqueNames(withDuplicateGroups(merged.map(classify))).sort((a, b) => {
     const status = a.status.localeCompare(b.status);
     if (status !== 0) return status;
     return a.destinationFolder.localeCompare(b.destinationFolder) || a.proposedName.localeCompare(b.proposedName);
