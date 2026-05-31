@@ -490,6 +490,566 @@
       "subcategory": "resident-evil",
       "mediaType": "game",
       "curationConfidence": "high"
+    },
+    "1UIbIlq0-isTtmrHl2u7DZ9mIUS3qUe2x": {
+      "characterName": "Batman",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1IAh0UyAT3lhYVJvWrISvP1c9bp6Jm-5V": {
+      "characterName": "Tinker Bell",
+      "sourceTitle": "Peter Pan",
+      "category": "filmes",
+      "subcategory": "peter-pan",
+      "mediaType": "movie",
+      "curationConfidence": "medium"
+    },
+    "1F7U3kdhqlBqVZNI7B2icTsagljGkg-rO": {
+      "characterName": "Katana Man",
+      "sourceTitle": "Chainsaw Man",
+      "category": "animes",
+      "subcategory": "chainsaw-man",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1g6dkJcHR9iy1RIUUmR-jExRdnvIsB2hC": {
+      "characterName": "Smoker",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1rKmJPYagwMWR2HP9IofFMHbNiNBb-R48": {
+      "characterName": "Smoker",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1nRZPQL2P1zm5PfmAUxwgGKaTEtbsML7G": {
+      "characterName": "Franky Shogun",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1Vb1EwNg-uaGiIMfIk7CWZPL616DiwPIb": {
+      "characterName": "Roronoa Zoro",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1FthM13oOCoAVGUckWFGySRuhLb5lRkrM": {
+      "characterName": "Monkey D. Luffy",
+      "variantName": "Gear 5",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1OLBpSYNslw6ZAEueoJqpZ0IWSshMbwlx": {
+      "characterName": "Trafalgar Law",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "16bCVwzaCgu3DCwi-fOm9mhzUikKLIeue": {
+      "characterName": "Nico Robin",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1ThWEiLeqAjEChu57WwuKzDyfB0ctIJv5": {
+      "characterName": "Marco",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1vV_zdsugOvM1kK9HHYizDJOp8YeS4rd_": {
+      "characterName": "Donquixote Doflamingo",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1cbH3j0pg7I71GJy_Men9aY0LPt04izjh": {
+      "characterName": "Dracule Mihawk",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1lxQg-8wM1OuvBEh7lORSipOhtzcdxLxr": {
+      "characterName": "Trafalgar Law",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1H3GNt547XpvAQOCJy4qHQLYuyT7CLjDs": {
+      "characterName": "Gardevoir",
+      "sourceTitle": "Pokemon",
+      "category": "animes",
+      "subcategory": "pokemon",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1Gn47EOBaVWKPKsY3VvHtpw2x4tgncHr4": {
+      "characterName": "Nessa",
+      "sourceTitle": "Pokemon",
+      "category": "animes",
+      "subcategory": "pokemon",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1ZLYpFYbksD0EwR3lpoIObjiHLu5lDYW9": {
+      "characterName": "Kenshin Himura",
+      "sourceTitle": "Samurai X",
+      "category": "animes",
+      "subcategory": "samurai-x",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1qLaKBJB72e37zGN8dMoIWwSgCUSg9r5y": {
+      "characterName": "Kaiba e Dragao Branco de Olhos Azuis",
+      "sourceTitle": "Yu-Gi-Oh!",
+      "category": "animes",
+      "subcategory": "yu-gi-oh",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1r3ha397xlF_1KhglpfSKVSNgo6M4OWx3": {
+      "characterName": "Mago Negro",
+      "sourceTitle": "Yu-Gi-Oh!",
+      "category": "animes",
+      "subcategory": "yu-gi-oh",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1IoId6TOi_KKDEvX4xoYuFrNYHyPwtq9a": {
+      "characterName": "Rei Leonidas",
+      "sourceTitle": "300",
+      "category": "filmes",
+      "subcategory": "300",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1In8NG6JHLpSX1h1aRuG6OLEqPhT2Y429": {
+      "characterName": "Rei Leonidas",
+      "sourceTitle": "300",
+      "category": "filmes",
+      "subcategory": "300",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1r-PFjFP6nuwvag0p3S-2uPtZnTl05Z8k": {
+      "characterName": "Conan",
+      "sourceTitle": "Conan",
+      "category": "filmes",
+      "subcategory": "conan",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1IVwRPetskqldphlSsvMDid7sHOsMAoEX": {
+      "characterName": "Bruce Lee",
+      "sourceTitle": "Bruce Lee",
+      "category": "filmes",
+      "subcategory": "bruce-lee",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "10xKhBvSlQBW4h1xu-DYYJSakt-dwdbFS": {
+      "characterName": "Godzilla e King Kong",
+      "sourceTitle": "Godzilla e King Kong",
+      "category": "filmes",
+      "subcategory": "godzilla-e-king-kong",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1IG4zdyud7pU6TNoTBoiIchHbI9HlfdwI": {
+      "characterName": "John Wick",
+      "sourceTitle": "John Wick",
+      "category": "filmes",
+      "subcategory": "john-wick",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1I4Y9DSo2GHZOBevJioU48wuQy_FwpTBS": {
+      "characterName": "John Wick",
+      "sourceTitle": "John Wick",
+      "category": "filmes",
+      "subcategory": "john-wick",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1Grx8fe0kv0u0fso9WJsiWUeurtfczPUy": {
+      "characterName": "Vito Corleone",
+      "sourceTitle": "O Poderoso Chefao",
+      "category": "filmes",
+      "subcategory": "o-poderoso-chefao",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1RwWm9c4t3a_moReW1ZDpWOEzvzh6ml_y": {
+      "characterName": "Vito Corleone",
+      "sourceTitle": "O Poderoso Chefao",
+      "category": "filmes",
+      "subcategory": "o-poderoso-chefao",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1GjNxzrXv0UZ79iWv8-XO9srkA44XU5WX": {
+      "characterName": "Gandalf",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1EE0vXLj4OPMR9Gzx-282qTIWP_VmO_t3": {
+      "characterName": "Ichigo Kurosaki",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1EE_2h-CM97e1oALfSi6jNmf4NS6lhxfo": {
+      "characterName": "Toshiro Hitsugaya",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1H4u8ql0xxzR8rnVsB3v3cwl25quoAzV3": {
+      "characterName": "Kenpachi Zaraki",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1EBDrU-lr8-ZQAjIvu3-a-vW0qddl4pem": {
+      "characterName": "Genryusai Shigekuni Yamamoto",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1O7zxZO9_v6fML75sfAHz-RyMmexEF2Fe": {
+      "characterName": "Eustass Kid",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1iv4VSc6qquVCFbOS6BgKH6a3BLJnfi3c": {
+      "characterName": "Marco",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1BNEh6ubFt-D8uEOVUlGyqZij0dbNFqpy": {
+      "characterName": "Yamato",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1eQ89Zsbfh5zHErmhi3YS6JLWDClzgo-3": {
+      "characterName": "Monkey D. Luffy",
+      "variantName": "Gear 5",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1E_UyrXYn9yVvhpss76wklZLTq_ozjn8Y": {
+      "characterName": "Jinbe",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1sTSRAYGg_Lt8bCF2pcRNYe9bpp3WRA48": {
+      "characterName": "Roronoa Zoro",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1FtqztAcvfQ6xJ-nFTw8WLTguONc1Emig": {
+      "characterName": "Monkey D. Luffy",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1BIkcUtAV6ndJe5fwScVdru_z-NVBxRmc": {
+      "characterName": "Brook",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "17-6IAdc0jfuUr2q2e1fe4vk1jFeBzhXl": {
+      "characterName": "Kaido",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1_WCnScLIb1aomLoR0KX3le4xA4flS3eu": {
+      "characterName": "Shanks",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "18-7qArX9yxnI-Z9LOUWOLeqairhMvRaM": {
+      "characterName": "Yamato",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1QhG1u1gvfjEZP2laoHlOqPNBqogwPpBs": {
+      "characterName": "Marshall D. Teach",
+      "variantName": "Barba Negra",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1xQVtiOajDCD6DEOiSnFa8cAmacOxovAu": {
+      "characterName": "Smoker",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "10r8o0dT9Fed4G2fbfGNmFiA3QD-kaXZu": {
+      "characterName": "Smoker",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1a3-YX3jo4rMYAbAO80q5wlrzWMt8ZWCV": {
+      "characterName": "Sakazuki",
+      "variantName": "Akainu",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-0R_3trtLFCAY1u5_cdnia8t1GRsa0LE": {
+      "characterName": "Kuzan",
+      "variantName": "Aokiji",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-0IvsNKTn9ZQ0xq175Ieyd5cXVKy0ngC": {
+      "characterName": "Silvers Rayleigh",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1--6VytaeUMbyq63bHGcMd0lgoHMskPLg": {
+      "characterName": "Edward Newgate",
+      "variantName": "Barba Branca",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-K7s2eku5s3aRlaAxA3L_-XJariD5QYE": {
+      "characterName": "Uryu Ishida",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-Iuxc7Y1hAKw6_T0kPCfZd2zY_d3e7_x": {
+      "characterName": "Edward Newgate",
+      "variantName": "Barba Branca",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-ITe2GtHFBJZVvyDokIL1KAvrScKBaqt": {
+      "characterName": "Cavendish",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1-H7HkXEjb4rb8luUWoOEfQ_H6qZe-0qF": {
+      "characterName": "Shanks",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-GaW1SXdouWSeq9JXQQ-2tUc6xRlHVRz": {
+      "characterName": "Crocodile",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-GQXb5sCYE6L1ZUG_eJEX-lPYb_4IhWT": {
+      "characterName": "Nami",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1-FYoOCmX_T6c8Xjbnt5HGzQjko5UgWXl": {
+      "characterName": "Nami",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1-FLXamfXiZclY0ZuqaAEG49br2QePBYw": {
+      "characterName": "Nami",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1fNEpMjTtZI5YVwW2nYY1IiX0gXfFu_B8": {
+      "characterName": "Gol D. Roger",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1cszxW0700VvywhNQgSdmdarWp7NRUjFL": {
+      "characterName": "Dash Parr",
+      "sourceTitle": "Os Incriveis",
+      "category": "filmes",
+      "subcategory": "os-incriveis",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1IgSFfD6sJDRkad2qTWzpP1Z2_xWQNIYN": {
+      "characterName": "Indiana Jones",
+      "sourceTitle": "Indiana Jones",
+      "category": "filmes",
+      "subcategory": "indiana-jones",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1IfIuvwAGcnM1TQ-bv_A5G6Bw6u3K1kyH": {
+      "characterName": "Indiana Jones",
+      "sourceTitle": "Indiana Jones",
+      "category": "filmes",
+      "subcategory": "indiana-jones",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1Ikcci-6yM1WOWSzeKr4M1fBkkE_LGmX-": {
+      "characterName": "Indiana Jones",
+      "sourceTitle": "Indiana Jones",
+      "category": "filmes",
+      "subcategory": "indiana-jones",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1TLFP8_0VuG4rWsItsiY_dQ2wNpgITxpT": {
+      "characterName": "Azog",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "medium"
+    },
+    "1l3q_wAiS1qDfBk28orqxsYe3DMXSfwtW": {
+      "characterName": "Legolas",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1tHPOVS_kdGHrPqGXa5wZ4l4LpNhQYvCj": {
+      "characterName": "Din Djarin",
+      "variantName": "Mandaloriano",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1zfCwoixcWulR_H9vrQscobC_p3FBfPp7": {
+      "characterName": "Darth Vader",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1SaXVcFYNtY0kWvO9Xjb9XsWIZjPDAO4S": {
+      "characterName": "Grogu",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high"
     }
   }
 }
