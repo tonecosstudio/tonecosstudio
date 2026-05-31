@@ -1,0 +1,495 @@
+{
+  "files": {
+    "1EEPX84sKslge65dbmjftrOdwhPRTJ1WE": {
+      "characterName": "Ichigo Kurosaki",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "curationNotes": "Identificado visualmente na folha needs-review-001."
+    },
+    "1GUIxzqN8AcoKt2RUJlxK9JiwvPAZP0Q4": {
+      "characterName": "Michael Myers",
+      "sourceTitle": "Halloween",
+      "category": "filmes",
+      "subcategory": "halloween",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1GS6jlZKsD1n4G9vqoXOV3jNpjAHtrY8t": {
+      "characterName": "Vito Corleone",
+      "sourceTitle": "O Poderoso Chefao",
+      "category": "filmes",
+      "subcategory": "o-poderoso-chefao",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1QsTI-A3NAvjkyQUlShghKy51phqub0KJ": {
+      "characterName": "Abby Anderson",
+      "sourceTitle": "The Last of Us",
+      "category": "jogos",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "10SZmfCjwZ9nCxhP5OxJUeo7n_oIZywWa": {
+      "characterName": "Ciri",
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1Esp76YdFeTWYWQ8ZzT8mfndEaV5UBvMn": {
+      "characterName": "Frieren",
+      "sourceTitle": "Frieren",
+      "category": "animes",
+      "subcategory": "frieren",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1SJFYiDaadmM2GTuKe8kJFSHogbXrADQf": {
+      "characterName": "Homem-Areia",
+      "sourceTitle": "Homem Aranha",
+      "category": "quadrinhos",
+      "subcategory": "homem-aranha",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1EwkIrItQKBVQSY4T0PVntdw7HiXtjZyB": {
+      "characterName": "Puri-Puri Prisoner",
+      "sourceTitle": "One Punch Man",
+      "category": "animes",
+      "subcategory": "one-punch-man",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1YNE6_LueGzuOklgCx0dGZBVf6Pyx7T6P": {
+      "characterName": "Rei Bruxo de Angmar",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1tk84rWVshBXvay6DtkBmBktMrLhlkMob": {
+      "characterName": "Sung Jinwoo",
+      "sourceTitle": "Solo Leveling",
+      "category": "animes",
+      "subcategory": "solo-leveling",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1ZWOWIdKUm_a3Iy1h9o4gJn1sSD-iI2-z": {
+      "characterName": "Alita",
+      "sourceTitle": "Alita",
+      "category": "filmes",
+      "subcategory": "alita",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1_ppwhOQbVXkptE3Tf4Lao286CbBjZWCR": {
+      "characterName": "Leonardo",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "subcategory": "tartarugas-ninja",
+      "mediaType": "animation",
+      "curationConfidence": "high"
+    },
+    "1Zq7ztv-X3pLYoUxz6agBr3LVaXvlbsn-": {
+      "characterName": "Ippo Makunouchi",
+      "sourceTitle": "Hajime no Ippo",
+      "category": "animes",
+      "subcategory": "hajime-no-ippo",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1_8UaFKirKVZGM_Z5pYBQSdmMtftqQGDI": {
+      "characterName": "Sub-Zero",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
+      "characterName": "Vegeta",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1YD5wwNDZjP5lb7dmNdNgI91UBYAMjF1o": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1HO5bl4jUkrzDhwBGUJQZ49r5mJd0syTD": {
+      "characterName": "Roronoa Zoro",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "14slMzBcr6r5j3GjybbIGGDtzbhtyP2Ds": {
+      "characterName": "Patrick Star",
+      "sourceTitle": "Bob Esponja",
+      "category": "animes",
+      "subcategory": "bob-esponja",
+      "mediaType": "animation",
+      "curationConfidence": "high"
+    },
+    "1agzKZ0pkGyIou8RfNa0b1zWqCjlcv2-J": {
+      "characterName": "Xenomorfo",
+      "sourceTitle": "Alien",
+      "category": "filmes",
+      "subcategory": "alien",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1E574ZoOGYbDh39gzioWoqNCYuIpRgthI": {
+      "characterName": "Toshiro Hitsugaya",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1E7N-KgeT8Rw0uX7rArD18uLstHC929Gq": {
+      "characterName": "Kenpachi Zaraki",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1E1xevZjTwd5pWaAddWe7mxXptnt1kESh": {
+      "characterName": "Genryusai Shigekuni Yamamoto",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1h4eatxWexzRKN0GKvIPQIvPxB_hpgFFw": {
+      "characterName": "Muichiro Tokito",
+      "sourceTitle": "Demon Slayer",
+      "category": "animes",
+      "subcategory": "demon-slayer",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1Acry1tkKQ1ZNTMy3GQ2A8YL7xY7QSU8W": {
+      "characterName": "Matt Ishida e Gabumon",
+      "sourceTitle": "Digimon",
+      "category": "animes",
+      "subcategory": "digimon",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1AV9QvPFeiNnF6RPuTOmKcCTscXqIFf6h": {
+      "characterName": "Tai Kamiya e Agumon",
+      "sourceTitle": "Digimon",
+      "category": "animes",
+      "subcategory": "digimon",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1I-WpSiIEM6sJQUi7642BuQ60LipIF_83": {
+      "characterName": "Janemba",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1GEGCLJurULOI9CAcCbef7P_yHb68jSdK": {
+      "characterName": "Launch",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1ELW-nfoqg7M8eCkFaSu-Jl-nDpXczzUk": {
+      "characterName": "Mestre Kame",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1ObFpu77GFEQfMxPjVccV-t7d8eYewbNR": {
+      "characterName": "Piccolo",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1F1I_SXg8wd11kS1wu2VWgVfj68QFE4Or": {
+      "characterName": "Majin Boo",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1F7F3pPifQQOIbtLuNoKhuMq4vGVb2JOd": {
+      "characterName": "Son Gohan",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1N4u1_JEu3R6Wfv8AOm96RAAgEvBIEtKy": {
+      "characterName": "Alphonse Elric",
+      "sourceTitle": "Fullmetal Alchemist",
+      "category": "animes",
+      "subcategory": "fullmetal-alchemist",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1FIj37wVeQzpOm1rIW904AOzuT4nMHwKz": {
+      "characterName": "Naruto Uzumaki",
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "subcategory": "naruto",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1gTLlL_VitmCEYUu5ySKJRzeywvon-XeH": {
+      "characterName": "Boa Hancock",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1LDL8lJBYKmMM3sUQp0DNQ9Y0XUOibccd": {
+      "characterName": "Nami",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1lca4m2-gs3AC3t8rzHQXjUh66oF1dO6w": {
+      "characterName": "Roronoa Zoro",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1mVGUYd5bMYZU1wiq7pdK3LuzBbx0YwcS": {
+      "characterName": "Brook",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1jrDG1xibjw9-utPuEbtCp3pTzq4VNo0T": {
+      "characterName": "Donquixote Doflamingo",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "109tWrnKw70xEr6Yo_qpuqkbnZI0XfW1N": {
+      "characterName": "Edward Newgate",
+      "variantName": "Barba Branca",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1Aw8tu38SMsVIEjn12JTaDgWZFjrJW4JU": {
+      "characterName": "Trafalgar Law",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1EITGmC_8VH1DhcKgRg51vxOLiAdIReuU": {
+      "characterName": "Eustass Kid",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1QSTFyhP_jaESIyvqSdLjmXJUc5BdwHRh": {
+      "characterName": "Borsalino",
+      "variantName": "Kizaru",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "17uWgjtXaXVu6e6jwJedrp5_HJGlj6UhF": {
+      "characterName": "Kaido",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1KiC71bFQbx9ErUoL-UJGe2Nv3DGliwOB": {
+      "characterName": "Porunga",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1_pRQrQ_M5hBPGLE7jl_g0HbAJBqlWlmz": {
+      "characterName": "Jesus Cristo",
+      "sourceTitle": "Arte Sacra",
+      "category": "outros",
+      "subcategory": "arte-sacra",
+      "mediaType": "other",
+      "curationConfidence": "high"
+    },
+    "1ZqEjbUQGU93qFZCAIaYmiVedWyknlypb": {
+      "characterName": "Jessie",
+      "sourceTitle": "Toy Story",
+      "category": "filmes",
+      "subcategory": "toy-story",
+      "mediaType": "movie",
+      "curationConfidence": "medium"
+    },
+    "1YA4wVPiHJcf3Me1W58loQsqauEAEzr7y": {
+      "characterName": "Ryu",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1UmqmFTkdC-sHL5ay0XvxCJ9hQ_XqbJ-B": {
+      "characterName": "Ken Masters",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1UteXyt3BVhVJLmexDfCxE8ftRXjGuLcu": {
+      "characterName": "Batman",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1S8MWM-_AiKQEQkRHe3lZWRZsxfc7XIDd": {
+      "characterName": "Alita",
+      "sourceTitle": "Alita",
+      "category": "filmes",
+      "subcategory": "alita",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1QlwbfjHVyKN-aDSjvw8V4hwBPliudrJp": {
+      "characterName": "Kenshiro",
+      "sourceTitle": "Hokuto no Ken",
+      "category": "animes",
+      "subcategory": "hokuto-no-ken",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1F0L03YjegrJGjjIjkYp-p5mhaTQTUyVe": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1XIcwIzC7G0efebIn_1iwQpMsjXMvvwAp": {
+      "characterName": "Son Gohan",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1HIodr--1ff3xZ6razHJXoK07kCLI21Yd": {
+      "characterName": "Tinker Bell",
+      "sourceTitle": "Peter Pan",
+      "category": "filmes",
+      "subcategory": "peter-pan",
+      "mediaType": "movie",
+      "curationConfidence": "medium"
+    },
+    "1FYyA-3ckRt-A0kh4rxrT32bpINOwswZu": {
+      "characterName": "Titan Quadrupede",
+      "sourceTitle": "Attack on Titan",
+      "category": "animes",
+      "subcategory": "attack-on-titan",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1FXLQn_eT9WmfsC73OUC41ha4LVnYw5d0": {
+      "characterName": "Titan Femea",
+      "sourceTitle": "Attack on Titan",
+      "category": "animes",
+      "subcategory": "attack-on-titan",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1FWrFbKQR-TBckomscRMjnOiKBgIARVJ_": {
+      "characterName": "Titan de Ataque",
+      "sourceTitle": "Attack on Titan",
+      "category": "animes",
+      "subcategory": "attack-on-titan",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1E6ZuavPCgYFjA6VUBEZIyfpO-KNqyMGp": {
+      "characterName": "Byakuya Kuchiki",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1E7buRI1Xej-VUnECJ211kQ7wyNTwFKUp": {
+      "characterName": "Uryu Ishida",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1EDK6EzDR-xam5jzKaqltexK5v9VKSMb8": {
+      "characterName": "Kisuke Urahara",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1wuZUPpPWfAb2hSq8TyO_spuUV-F6RpOe": {
+      "characterName": "Ada Wong",
+      "sourceTitle": "Resident Evil",
+      "category": "jogos",
+      "subcategory": "resident-evil",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    }
+  }
+}

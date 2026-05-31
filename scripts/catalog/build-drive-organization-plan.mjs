@@ -22,6 +22,7 @@ const MANIFESTS = argValue("manifests", DEFAULT_MANIFESTS.join(","))
   .map((item) => item.trim())
   .filter(Boolean);
 const REPORT_DIR = argValue("report-dir", "tmp/drive-organization");
+const OVERRIDES_PATH = argValue("overrides", "scripts/catalog/drive-curation-overrides.json");
 
 const COLLECTION_SOURCES = new Set(["inimigos da vizinhanca", "quarteto fantastico", "terror", "thundercats"]);
 const REVIEW_CATEGORIES = new Set(["revisao", "review", "sem-nome"]);
@@ -144,6 +145,20 @@ const DRIVE_FILE_OVERRIDES = {
     mediaType: "series",
   },
 };
+let driveFileOverrides = { ...DRIVE_FILE_OVERRIDES };
+
+async function loadCurationOverrides(filePath) {
+  if (!filePath) return {};
+
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    return parsed.files || parsed;
+  } catch (error) {
+    if (error.code === "ENOENT") return {};
+    throw error;
+  }
+}
 
 function stripExtension(value) {
   return String(value || "").replace(/\.[a-z0-9]+$/i, "");
@@ -399,7 +414,7 @@ async function readManifest(file) {
   const raw = await fs.readFile(file, "utf8");
   return normalizeRows(JSON.parse(raw)).map((item) => {
     const id = item.id || item.fileId || item.file_id;
-    const override = DRIVE_FILE_OVERRIDES[id] || {};
+    const override = driveFileOverrides[id] || {};
     const pathTaxonomy = inferTaxonomyFromPath(item);
     return {
       manifest: file,
@@ -420,11 +435,11 @@ async function readManifest(file) {
       pathCharacterName: pathTaxonomy.pathCharacterName || null,
       collectionCandidate:
         pathTaxonomy.collectionCandidate ||
-        Boolean(DRIVE_FILE_OVERRIDES[id] && normalizeComparable(override.sourceTitle) === "thundercats"),
+        Boolean(driveFileOverrides[id] && normalizeComparable(override.sourceTitle) === "thundercats"),
       tags: item.tags || [],
       notes: item.notes || null,
       ...override,
-      overrideApplied: Boolean(DRIVE_FILE_OVERRIDES[id]),
+      overrideApplied: Boolean(driveFileOverrides[id]),
     };
   });
 }
@@ -615,6 +630,11 @@ function toCsvValue(value) {
 }
 
 async function main() {
+  driveFileOverrides = {
+    ...DRIVE_FILE_OVERRIDES,
+    ...(await loadCurationOverrides(OVERRIDES_PATH)),
+  };
+
   const allRows = [];
   for (const file of MANIFESTS) {
     try {
@@ -637,6 +657,8 @@ async function main() {
   const summary = {
     generatedAt: new Date().toISOString(),
     manifests: MANIFESTS,
+    overridesPath: OVERRIDES_PATH,
+    overridesApplied: planned.filter((row) => row.overrideApplied).length,
     sourceRows: allRows.length,
     uniqueFiles: planned.length,
     byStatus: planned.reduce((acc, row) => {
