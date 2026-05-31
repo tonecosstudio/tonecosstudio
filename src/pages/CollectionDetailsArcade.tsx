@@ -1,48 +1,62 @@
 /**
- * Collection Details Page - Metal Slug Arcade Style
+ * Collection Details Page - character select layout.
  *
- * Uses Page shell for consistent aesthetic with Home, Collections, Plans.
+ * The public collection view is driven by collection_characters. Catalog models
+ * can back entries, but collection naming, imagery, release dates, and locks
+ * remain presentation data owned by the collection.
  */
 
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   type CollectionDetailsCharacter,
   useCollectionDetails,
 } from "@/hooks/collections/usePublicCollections";
 import { Page } from "@/components/layouts/Page";
+import { ArcadeCTA } from "@/components/arcade/ArcadeLayout";
 import {
-  ArcadeCard,
-  ArcadeSectionTitle,
-  ArcadeCTA,
-} from "@/components/arcade/ArcadeLayout";
-import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
+  FloatingParticles,
+  GlitchText,
+} from "@/components/arcade/ArcadeEffects";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Star,
-  Package,
-  Crown,
-  Sparkles,
-  Calendar,
-  Eye,
-  Lock,
-  Zap,
-} from "lucide-react";
-import {
-  PUBLIC_ROUTES,
-  collectionCharacterDetailsPath,
-} from "@/config/routes";
+import { ArrowLeft, Crown, Eye, Lock, Package, Star } from "lucide-react";
+import { PUBLIC_ROUTES, collectionCharacterDetailsPath } from "@/config/routes";
+import { getCollectionBackdropUrl } from "@/lib/collection-assets";
 
-const SILHOUETTE_PLACEHOLDER = "/assets/collections/character-silhouette-arcade.svg";
+const SILHOUETTE_PLACEHOLDER =
+  "/assets/collections/character-silhouette-arcade.svg";
 const LOCKED_PLACEHOLDER = "/assets/collections/character-locked-arcade.svg";
+const MIN_COLLECTION_SLOT_COUNT = 12;
 
 const MONTHS = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
 ];
 
-// ─── Types ───────────────────────────────────────────────────
+const SHORT_MONTHS = [
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+];
+
 type Character = CollectionDetailsCharacter;
 
 function parseLocalDate(value: string | null | undefined) {
@@ -59,7 +73,9 @@ function startOfToday() {
 
 function isCharacterUnlocked(character: Character) {
   if (character.unlock_override) return true;
-  if (character.status === "released" || character.status === "available") return true;
+  if (character.status === "released" || character.status === "available")
+    return true;
+
   const releaseDate = parseLocalDate(character.release_date);
   return Boolean(releaseDate && releaseDate <= startOfToday());
 }
@@ -75,543 +91,545 @@ function getReleaseLabel(character: Character) {
   if (releaseDate) {
     return releaseDate.toLocaleDateString("pt-BR", {
       month: "short",
-      year: "2-digit",
+      year: "numeric",
     });
   }
-  if (character.release_month) return MONTHS[character.release_month - 1]?.substring(0, 3) ?? null;
+
+  if (character.release_month) {
+    return MONTHS[character.release_month - 1] ?? null;
+  }
+
   return null;
 }
 
-// ─── Character Card ──────────────────────────────────────────
-function CharacterCard({
-  character,
-  index,
-  isUpcoming = false,
-  lockVariant = "locked",
-  collectionSlug,
-}: {
-  character: Character;
-  index: number;
-  isUpcoming?: boolean;
-  lockVariant?: "silhouette" | "locked";
-  collectionSlug: string;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-  const detailsPath =
-    character.detail_url || collectionCharacterDetailsPath(collectionSlug, character.id);
-  const releaseLabel = getReleaseLabel(character);
-  const imageUrl = isUpcoming
-    ? lockVariant === "silhouette"
-      ? SILHOUETTE_PLACEHOLDER
-      : LOCKED_PLACEHOLDER
-    : character.image_url;
+function getEditionDateLabel(character: Character | null) {
+  const releaseDate = parseLocalDate(character?.release_date);
+  const monthIndex =
+    typeof character?.release_order === "number" && character.release_order > 0
+      ? character.release_order - 1
+      : typeof character?.release_month === "number" &&
+          character.release_month > 0
+        ? character.release_month - 1
+        : 0;
+  const month = SHORT_MONTHS[monthIndex] ?? SHORT_MONTHS[0];
+  const year = String(releaseDate?.getFullYear() ?? 2026).slice(-2);
 
+  return `${month} / ${year}`;
+}
+
+function getDetailsPath(character: Character, collectionSlug: string) {
   return (
-    <Link
-      to={isUpcoming ? "#" : detailsPath}
-      onClick={(e) => isUpcoming && e.preventDefault()}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className={`group block ${isUpcoming ? "cursor-not-allowed" : ""}`}
-    >
-      <ArcadeCard hover={!isUpcoming}>
-        {/* Image */}
-        <div className="relative aspect-[3/4] bg-[hsl(0,0%,8%)] overflow-hidden">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={isUpcoming ? "Personagem bloqueado" : character.name}
-              className={`w-full h-full object-cover transition-all duration-700 ${
-                isUpcoming
-                  ? "grayscale-[0.25] scale-100"
-                  : isHovered
-                  ? "grayscale-0 scale-110"
-                  : "grayscale-[0.6] scale-100"
-              }`}
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Package className="w-12 h-12 text-[hsl(0,0%,25%)]" />
-            </div>
-          )}
-
-          {/* Scanline */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.06]"
-            style={{
-              background:
-                "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0%) 2px, hsl(0 0% 0%) 4px)",
-            }}
-          />
-
-          {/* Hover glow */}
-          {isHovered && !isUpcoming && (
-            <div className="absolute inset-0 bg-[hsl(var(--gold-accent)/0.12)] pointer-events-none transition-opacity" />
-          )}
-
-          {/* Index tag */}
-          <div className="absolute top-2 left-2 bg-[hsl(0,0%,95%)/0.9] text-[hsl(0,0%,5%)] px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider">
-            #{String(index + 1).padStart(2, "0")}
-          </div>
-
-          {/* Month badge */}
-          {releaseLabel && (
-            <div className="absolute top-2 right-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {releaseLabel}
-            </div>
-          )}
-
-          {/* Upcoming overlay */}
-          {isUpcoming && (
-            <div className="absolute inset-0 bg-[hsl(0,0%,5%)/0.85] flex items-center justify-center">
-              <div className="text-center">
-                <Lock className="w-8 h-8 text-[hsl(0,0%,30%)] mx-auto mb-2" />
-                <p
-                  className="text-[8px] tracking-[0.2em] uppercase text-[hsl(0,0%,40%)]"
-                  style={{ fontFamily: "'Press Start 2P', monospace" }}
-                >
-                  {lockVariant === "silhouette" ? "Próximo" : "Em Breve"}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="p-3 border-t border-[hsl(0,0%,12%)]">
-          <h4
-            className={`text-sm font-bold uppercase tracking-tight transition-colors duration-300 line-clamp-1 ${
-              isUpcoming
-                ? "text-[hsl(0,0%,35%)]"
-                : isHovered
-                ? "text-[hsl(var(--gold-accent))]"
-                : "text-[hsl(0,0%,85%)]"
-            }`}
-          >
-            {isUpcoming ? "???" : character.name}
-          </h4>
-        </div>
-      </ArcadeCard>
-    </Link>
+    character.detail_url ||
+    collectionCharacterDetailsPath(collectionSlug, character.id)
   );
 }
 
-// ─── Featured Character (Hero Style) ─────────────────────────
-function FeaturedCharacterHero({
+function getLockedImage(lockVariant: "silhouette" | "locked") {
+  return lockVariant === "silhouette"
+    ? SILHOUETTE_PLACEHOLDER
+    : LOCKED_PLACEHOLDER;
+}
+
+function getCharacterImage(
+  character: Character,
+  isLocked: boolean,
+  lockVariant: "silhouette" | "locked",
+) {
+  if (isLocked) return getLockedImage(lockVariant);
+  return character.image_url;
+}
+
+function CharacterSlotCard({
   character,
+  index,
+  isLocked,
+  isSelected,
+  lockVariant,
   collectionSlug,
+  layout = "compact",
 }: {
   character: Character;
+  index: number;
+  isLocked: boolean;
+  isSelected: boolean;
+  lockVariant: "silhouette" | "locked";
   collectionSlug: string;
+  layout?: "compact" | "wide";
 }) {
-  const detailsPath =
-    character.detail_url || collectionCharacterDetailsPath(collectionSlug, character.id);
+  const imageUrl = getCharacterImage(character, isLocked, lockVariant);
   const releaseLabel = getReleaseLabel(character);
+  const detailsPath = getDetailsPath(character, collectionSlug);
+  const layoutClass =
+    layout === "wide"
+      ? "collection-slot-card collection-slot-card--wide"
+      : "collection-slot-card collection-slot-card--compact";
+  const label = isLocked ? "???" : character.name;
+  const statusLabel = isLocked
+    ? lockVariant === "silhouette"
+      ? "Próximo"
+      : "Em breve"
+    : releaseLabel || "Disponível";
 
   return (
-    <Link to={detailsPath} className="group block">
-      <div className="relative h-80 md:h-[480px] overflow-hidden border-2 border-[hsl(var(--gold-accent)/0.6)] group-hover:border-[hsl(var(--gold-accent))] transition-all duration-500 group-hover:shadow-[0_0_60px_hsl(var(--gold-accent)/0.3)]">
-        {/* Corner brackets */}
-        <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
-        <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[hsl(var(--gold-accent))] z-20" />
-        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
-        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[hsl(var(--gold-accent))] z-20" />
-
-        {/* Image */}
-        {character.image_url ? (
-          <img
-            src={character.image_url}
-            alt={character.name}
-            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--gold-accent)/0.15)] to-[hsl(0,0%,5%)] flex items-center justify-center">
-            <Package className="w-24 h-24 text-[hsl(var(--gold-accent)/0.3)]" />
-          </div>
-        )}
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,5%)] via-[hsl(0,0%,5%)/0.4] to-transparent" />
-
-        {/* Scanline */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={{
-            background:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0%) 2px, hsl(0 0% 0%) 4px)",
-          }}
+    <Link
+      to={isLocked ? "#" : detailsPath}
+      onClick={(event) => isLocked && event.preventDefault()}
+      className={`${layoutClass} group relative block overflow-hidden border bg-black transition-all duration-300 ${
+        isLocked ? "cursor-not-allowed" : "hover:-translate-y-1"
+      } ${
+        isSelected
+          ? "border-[hsl(var(--gold-accent))] shadow-[0_0_34px_hsl(var(--gold-accent)/0.22)]"
+          : "border-[hsl(var(--gold-accent)/0.18)] hover:border-[hsl(var(--gold-accent)/0.65)]"
+      }`}
+    >
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={isLocked ? "Personagem bloqueado" : character.name}
+          className={`absolute inset-0 h-full w-full object-contain p-2 transition-transform duration-700 ${
+            isLocked
+              ? "grayscale opacity-55"
+              : "grayscale-[0.25] group-hover:scale-110"
+          }`}
+          loading="lazy"
+          decoding="async"
         />
-
-        {/* Content */}
-        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10 z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.15)]">
-              <Star className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
-              <span
-                className="text-[8px] text-[hsl(var(--gold-accent))] tracking-[0.2em] uppercase"
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
-              >
-                Destaque do Mês
-              </span>
-            </div>
-            {releaseLabel && (
-              <span className="text-[10px] font-mono text-[hsl(0,0%,50%)] tracking-wider uppercase">
-                {releaseLabel}
-              </span>
-            )}
-          </div>
-
-          <h3
-            className="text-4xl md:text-6xl font-black tracking-[0.1em] mb-3 leading-none"
-            style={{
-              fontFamily: "'Bebas Neue', Impact, sans-serif",
-              textShadow: "0 0 30px hsl(var(--gold-accent) / 0.3)",
-            }}
-          >
-            <GlitchText text={character.name} />
-          </h3>
-
-          {character.description && (
-            <p className="text-[hsl(0,0%,50%)] max-w-2xl text-sm mb-4 line-clamp-2">
-              {character.description}
-            </p>
-          )}
-
-          <div className="inline-flex items-center gap-2 text-[hsl(var(--gold-accent))] font-mono text-xs tracking-wider uppercase group-hover:gap-3 transition-all">
-            <Eye className="w-4 h-4" />
-            Ver Detalhes
-            <span className="transition-transform group-hover:translate-x-1">→</span>
-          </div>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-[hsl(0,0%,8%)]">
+          <Package className="h-12 w-12 text-[hsl(0,0%,28%)]" />
         </div>
+      )}
 
-        {/* Hover glow */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[hsl(var(--gold-accent)/0.06)] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,3%)] via-[hsl(0,0%,3%)/0.35] to-transparent" />
+
+      <div className="absolute left-3 top-3 font-mono text-base text-[hsl(var(--gold-accent))] opacity-90">
+        {String(index + 1).padStart(2, "0")}
+      </div>
+
+      {isLocked && (
+        <div className="absolute right-3 top-3 rounded-sm border border-[hsl(0,0%,22%)] bg-black/50 p-1">
+          <Lock className="h-3.5 w-3.5 text-[hsl(0,0%,45%)]" />
+        </div>
+      )}
+
+      <div className="absolute inset-x-3 bottom-3 text-center">
+        <div
+          className={`mx-auto mb-2 h-px max-w-24 ${
+            isSelected
+              ? "bg-[hsl(var(--gold-accent))]"
+              : "bg-[hsl(var(--gold-accent)/0.24)]"
+          }`}
+        />
+        <h3
+          className={`truncate text-lg font-black uppercase tracking-[0.08em] ${
+            isLocked ? "text-[hsl(0,0%,58%)]" : "text-[hsl(0,0%,92%)]"
+          }`}
+          style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+        >
+          {label}
+        </h3>
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-[hsl(0,0%,42%)]">
+          {statusLabel}
+        </p>
       </div>
     </Link>
   );
 }
 
-// ─── Section Header ──────────────────────────────────────────
-function SectionHeader({
-  title,
-  count,
-  variant = "default",
-}: {
-  title: string;
-  count: number;
-  variant?: "default" | "muted" | "accent";
-}) {
-  const colors = {
-    default: {
-      title: "text-[hsl(0,0%,90%)]",
-      badge: "border-[hsl(var(--gold-accent)/0.4)] text-[hsl(var(--gold-accent))]",
-    },
-    muted: {
-      title: "text-[hsl(0,0%,45%)]",
-      badge: "border-[hsl(0,0%,20%)] text-[hsl(0,0%,45%)]",
-    },
-    accent: {
-      title: "text-[hsl(var(--gold-accent))]",
-      badge: "border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))]",
-    },
-  };
-
-  const c = colors[variant];
-
+function PlaceholderSlotCard({ index }: { index: number }) {
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <h2
-        className={`text-xl md:text-2xl font-black tracking-[0.1em] uppercase ${c.title}`}
-        style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-      >
-        {title}
-      </h2>
-      <span className={`text-[10px] font-mono tracking-wider px-2 py-0.5 border ${c.badge}`}>
-        {count}
-      </span>
-      <div className="flex-1 h-px bg-gradient-to-r from-[hsl(var(--gold-accent)/0.2)] to-transparent" />
+    <div className="collection-slot-card collection-slot-card--compact relative block overflow-hidden border border-[hsl(var(--gold-accent)/0.14)] bg-black">
+      <img
+        src={LOCKED_PLACEHOLDER}
+        alt=""
+        className="absolute inset-0 h-full w-full object-contain p-3 grayscale opacity-45"
+        loading="lazy"
+        decoding="async"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,3%)] via-[hsl(0,0%,3%)/0.4] to-transparent" />
+      <div className="absolute left-3 top-3 font-mono text-base text-[hsl(var(--gold-accent))] opacity-70">
+        {String(index + 1).padStart(2, "0")}
+      </div>
+      <div className="absolute right-3 top-3 rounded-sm border border-[hsl(0,0%,22%)] bg-black/50 p-1">
+        <Lock className="h-3.5 w-3.5 text-[hsl(0,0%,45%)]" />
+      </div>
+      <div className="absolute inset-x-3 bottom-3 text-center">
+        <div className="mx-auto mb-2 h-px max-w-24 bg-[hsl(var(--gold-accent)/0.18)]" />
+        <h3
+          className="truncate text-lg font-black uppercase tracking-[0.08em] text-[hsl(0,0%,58%)]"
+          style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+        >
+          ???
+        </h3>
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-[hsl(0,0%,42%)]">
+          A revelar
+        </p>
+      </div>
     </div>
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────
+function EmptyCollectionState({ onBack }: { onBack: () => void }) {
+  return (
+    <section className="flex min-h-[70vh] items-center justify-center px-6">
+      <div className="text-center">
+        <Package className="mx-auto mb-4 h-16 w-16 text-[hsl(0,0%,25%)]" />
+        <h1
+          className="mb-4 text-3xl font-black uppercase tracking-[0.1em]"
+          style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+        >
+          Coleção sem personagens
+        </h1>
+        <button
+          onClick={onBack}
+          className="border border-[hsl(var(--gold-accent)/0.4)] px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.1)]"
+        >
+          Voltar para coleções
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function CollectionDetailsArcade() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-
   const { data: collection, isLoading } = useCollectionDetails(slug);
 
-  // Loading state
   if (isLoading) {
     return (
       <Page title="Carregando..." description="Carregando coleção">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-16">
-          <Skeleton className="h-10 w-48 mb-8 bg-[hsl(0,0%,10%)]" />
-          <Skeleton className="h-80 w-full mb-8 bg-[hsl(0,0%,10%)]" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="aspect-[3/4] bg-[hsl(0,0%,10%)]" />
-            ))}
+        <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
+          <Skeleton className="mb-8 h-10 w-48 bg-[hsl(0,0%,10%)]" />
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <Skeleton className="min-h-[620px] bg-[hsl(0,0%,10%)]" />
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {[...Array(8)].map((_, index) => (
+                <Skeleton
+                  key={index}
+                  className="min-h-[190px] bg-[hsl(0,0%,10%)]"
+                />
+              ))}
+            </div>
           </div>
         </div>
       </Page>
     );
   }
 
-  // Not found
   if (!collection) {
     return (
       <Page title="Coleção não encontrada" description="Coleção não encontrada">
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="text-center">
-            <Package className="w-16 h-16 text-[hsl(0,0%,25%)] mx-auto mb-4" />
-            <h1
-              className="text-3xl font-black tracking-[0.1em] uppercase mb-4"
-              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-            >
-              Coleção não encontrada
-            </h1>
-            <button
-              onClick={() => navigate(PUBLIC_ROUTES.collections)}
-              className="font-mono text-xs tracking-[0.2em] uppercase text-[hsl(var(--gold-accent))] border border-[hsl(var(--gold-accent)/0.4)] px-6 py-2 hover:bg-[hsl(var(--gold-accent)/0.1)] transition-colors"
-            >
-              ← Voltar para Coleções
-            </button>
-          </div>
-        </div>
+        <EmptyCollectionState
+          onBack={() => navigate(PUBLIC_ROUTES.collections)}
+        />
       </Page>
     );
   }
 
   const safeCharacters = Array.isArray(collection.collection_characters)
     ? collection.collection_characters.filter(
-        (c): c is Character => Boolean(c && c.id && c.name)
+        (character): character is Character =>
+          Boolean(character && character.id && character.name),
       )
     : [];
 
-  const catalogCharacters = safeCharacters.filter((c) => c.is_catalog === true);
+  const catalogCharacters = safeCharacters.filter(
+    (character) => character.is_catalog === true,
+  );
   const monthlyCharacters = safeCharacters
-    .filter((c) => c.is_catalog !== true)
+    .filter((character) => character.is_catalog !== true)
     .sort((a, b) => getReleaseSortValue(a) - getReleaseSortValue(b));
-  const unlockedCharacters = monthlyCharacters.filter(isCharacterUnlocked);
-  const lockedCharacters = monthlyCharacters.filter((c) => !isCharacterUnlocked(c));
+  const usesReleaseSchedule = monthlyCharacters.length > 0;
+  const selectorCharacters = usesReleaseSchedule
+    ? monthlyCharacters
+    : catalogCharacters;
+  const unlockedCharacters = usesReleaseSchedule
+    ? monthlyCharacters.filter(isCharacterUnlocked)
+    : selectorCharacters;
+  const lockedCharacters = usesReleaseSchedule
+    ? monthlyCharacters.filter((character) => !isCharacterUnlocked(character))
+    : [];
   const nextLockedCharacterId = lockedCharacters[0]?.id;
-
-  const featuredCharacter = unlockedCharacters[0];
-
-  const releasedCharacters = unlockedCharacters.filter((c) => c.id !== featuredCharacter?.id);
-
-  const upcomingCharacters = lockedCharacters;
+  const featuredCharacter =
+    unlockedCharacters[0] || selectorCharacters[0] || null;
+  const featuredIsLocked = Boolean(
+    featuredCharacter &&
+    usesReleaseSchedule &&
+    !isCharacterUnlocked(featuredCharacter),
+  );
+  const featuredLockVariant =
+    featuredCharacter?.id === nextLockedCharacterId ? "silhouette" : "locked";
+  const featuredImageUrl = featuredCharacter
+    ? getCharacterImage(
+        featuredCharacter,
+        featuredIsLocked,
+        featuredLockVariant,
+      )
+    : collection.cover_image_url;
+  const collectionBackdropUrl = getCollectionBackdropUrl(
+    collection.slug,
+    collection.cover_image_url,
+  );
+  const availableCount = unlockedCharacters.length;
+  const totalCount = Math.max(
+    selectorCharacters.length,
+    MIN_COLLECTION_SLOT_COUNT,
+  );
+  const progress =
+    totalCount > 0 ? Math.round((availableCount / totalCount) * 100) : 0;
+  const showCatalogSection =
+    usesReleaseSchedule && catalogCharacters.length > 0;
+  const displayedSlotCount = Math.max(
+    selectorCharacters.length,
+    MIN_COLLECTION_SLOT_COUNT,
+  );
+  const placeholderSlotIndexes = Array.from(
+    {
+      length: Math.max(0, displayedSlotCount - selectorCharacters.length),
+    },
+    (_, index) => selectorCharacters.length + index,
+  );
 
   return (
     <Page
       title={`${collection.name} | Coleção`}
-      description={collection.description || `Coleção ${collection.name} - Personagens exclusivos`}
+      description={
+        collection.description ||
+        `Coleção ${collection.name} - Personagens exclusivos`
+      }
     >
-      {/* Hero Section */}
-      <section className="relative py-16 md:py-24 px-6 overflow-hidden">
+      <section className="collection-select-shell relative overflow-hidden border-b border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,3%)]">
         <FloatingParticles />
 
-        {/* Cover image background */}
-        {collection.cover_image_url && (
-          <div className="absolute inset-0 z-0">
-            <img
-              src={collection.cover_image_url}
-              alt=""
-              className="w-full h-full object-cover opacity-[0.08] blur-sm"
-              loading="lazy"
-              decoding="async"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-[hsl(0,0%,5%)/0.6] via-[hsl(0,0%,5%)/0.8] to-[hsl(0,0%,5%)]" />
-          </div>
-        )}
-
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.04] pointer-events-none"
-          style={{ background: "radial-gradient(circle, hsl(var(--gold-accent)), transparent 70%)" }}
-        />
-
-        <div className="relative max-w-5xl mx-auto z-10">
-          {/* Back button */}
-          <button
-            onClick={() => navigate(PUBLIC_ROUTES.collections)}
-            className="flex items-center gap-2 mb-8 font-mono text-[10px] tracking-[0.2em] uppercase text-[hsl(0,0%,45%)] hover:text-[hsl(var(--gold-accent))] transition-colors"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            Coleções
-          </button>
-
-          {/* Title */}
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 border border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.05)]">
-              <Crown className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
+        <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-none flex-col px-0 py-0">
+          <div className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between gap-4 px-4 md:px-8 lg:px-10">
+            <button
+              onClick={() => navigate(PUBLIC_ROUTES.collections)}
+              className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(0,0%,48%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Coleções
+            </button>
+            <div className="hidden items-center gap-2 border border-[hsl(var(--gold-accent)/0.28)] px-3 py-1.5 text-[hsl(var(--gold-accent))] md:flex">
+              <Crown className="h-3.5 w-3.5" />
               <span
-                className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
+                className="text-[8px] uppercase tracking-[0.28em]"
                 style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
-                Coleção Exclusiva
+                Coleção
               </span>
             </div>
+          </div>
 
-            <h1
-              className="text-5xl md:text-7xl lg:text-8xl font-black tracking-[0.15em] mb-4 leading-none"
-              style={{
-                fontFamily: "'Bebas Neue', Impact, sans-serif",
-                textShadow: "0 0 40px hsl(var(--gold-accent) / 0.15)",
-              }}
-            >
-              <GlitchText text={collection.name} />
-            </h1>
+          {selectorCharacters.length === 0 ? (
+            <EmptyCollectionState
+              onBack={() => navigate(PUBLIC_ROUTES.collections)}
+            />
+          ) : (
+            <div className="collection-select-grid flex-1">
+              <div className="collection-hero-stage relative overflow-hidden bg-transparent">
+                {collectionBackdropUrl && (
+                  <div
+                    className="absolute inset-0 bg-center bg-no-repeat opacity-85"
+                    style={{
+                      backgroundImage: `url(${collectionBackdropUrl})`,
+                      backgroundSize: "min(96%, 1040px) auto",
+                    }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-[hsl(0,0%,3%)/0.94] via-[hsl(0,0%,3%)/0.5] to-[hsl(0,0%,3%)/0.08]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0,0%,3%)/0.8] via-transparent to-[hsl(0,0%,3%)/0.36]" />
 
-            {collection.description && (
-              <p
-                className="text-[hsl(0,0%,50%)] text-[10px] md:text-xs max-w-lg mx-auto tracking-[0.15em] mb-8"
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
-              >
-                {collection.description}
-              </p>
-            )}
+                <div className="collection-hero-content">
+                  <div className="collection-hero-copy relative z-10 flex flex-col justify-center">
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 text-[hsl(var(--gold-accent))]">
+                        <Star className="h-3 w-3" />
+                        <span className="font-mono text-[8px] uppercase tracking-[0.18em]">
+                          Personagem do mês
+                        </span>
+                      </span>
+                    </div>
 
-            {/* Stats */}
-            <div className="flex items-center justify-center gap-6 md:gap-10 font-mono text-xs">
-              {[
-                { value: safeCharacters.length, label: "Personagens" },
-                { value: releasedCharacters.length + (featuredCharacter ? 1 : 0), label: "Disponíveis" },
-                { value: upcomingCharacters.length, label: "Em Breve" },
-              ].map((stat, i) => (
-                <div key={i} className="flex items-center gap-6 md:gap-10">
-                  {i > 0 && <div className="w-px h-10 bg-[hsl(0,0%,20%)]" />}
-                  <div className="text-center">
-                    <p className="text-2xl md:text-3xl font-bold text-[hsl(var(--gold-accent))] tabular-nums">
-                      {stat.value}
-                    </p>
-                    <p className="text-[hsl(0,0%,40%)] text-[10px] tracking-widest uppercase mt-1">
-                      {stat.label}
-                    </p>
+                    <h1
+                      className="mb-4 break-words text-[2rem] font-black uppercase leading-none tracking-[0.04em] text-[hsl(0,0%,92%)] sm:text-5xl sm:tracking-[0.08em] md:text-6xl lg:text-5xl xl:text-7xl 2xl:text-8xl"
+                      style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+                    >
+                      <GlitchText
+                        text={
+                          featuredIsLocked
+                            ? "???"
+                            : featuredCharacter?.name || collection.name
+                        }
+                      />
+                    </h1>
+
+                    {featuredCharacter && !featuredIsLocked && (
+                      <Link
+                        to={getDetailsPath(featuredCharacter, collection.slug)}
+                        className="mt-2 inline-flex w-fit items-center gap-3 border border-[hsl(var(--gold-accent)/0.82)] bg-[hsl(var(--gold-accent)/0.06)] px-5 py-3 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] shadow-[0_0_28px_hsl(var(--gold-accent)/0.18)] transition-colors hover:bg-[hsl(var(--gold-accent)/0.14)]"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ver detalhes
+                      </Link>
+                    )}
+
+                    <div className="mt-8 w-fit font-mono uppercase tracking-[0.16em] sm:mt-12 xl:mt-16">
+                      <span className="text-[10px] font-semibold text-[hsl(0,0%,80%)]">
+                        Edição
+                      </span>
+                      <span className="mt-1 block text-4xl leading-none text-[hsl(var(--gold-accent))] drop-shadow-[0_0_14px_hsl(var(--gold-accent)/0.28)] sm:text-5xl">
+                        {String(featuredCharacter?.release_order || 1).padStart(
+                          2,
+                          "0",
+                        )}
+                      </span>
+                      <span className="mt-3 block whitespace-nowrap text-[10px] font-semibold normal-case tracking-[0.24em] text-[hsl(0,0%,88%)] drop-shadow-[0_0_10px_hsl(0,0%,100%/0.12)]">
+                        {getEditionDateLabel(featuredCharacter)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="collection-hero-figure-panel">
+                    {featuredImageUrl ? (
+                      <img
+                        src={featuredImageUrl}
+                        alt={
+                          featuredIsLocked
+                            ? "Personagem bloqueado"
+                            : featuredCharacter?.name || collection.name
+                        }
+                        className={`collection-featured-figure transition-transform duration-700 ${
+                          featuredIsLocked
+                            ? "grayscale opacity-55"
+                            : "collection-featured-figure--unlocked"
+                        }`}
+                        loading="eager"
+                        decoding="async"
+                      />
+                    ) : (
+                      <Package className="h-24 w-24 text-[hsl(0,0%,22%)]" />
+                    )}
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <aside className="collection-selector-panel relative flex flex-col border-t border-[hsl(var(--gold-accent)/0.14)] bg-[hsl(0_0%_5%/0.92)] py-6 lg:border-l lg:border-t-0 lg:py-4">
+                <div className="mb-3 text-center lg:mb-3">
+                  <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.28em] text-[hsl(var(--gold-accent))]">
+                    Coleção {collection.name}
+                  </p>
+                  <h2
+                    className="mx-auto max-w-[18rem] text-2xl font-black uppercase tracking-[0.08em] text-[hsl(0,0%,90%)] sm:max-w-none sm:text-3xl sm:tracking-[0.12em] xl:text-4xl"
+                    style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+                  >
+                    Selecione um personagem
+                  </h2>
+                </div>
+
+                <div className="collection-slot-grid grid gap-2 sm:gap-3 xl:gap-4">
+                  {selectorCharacters.map((character, index) => {
+                    const isLocked =
+                      usesReleaseSchedule && !isCharacterUnlocked(character);
+                    const lockVariant =
+                      character.id === nextLockedCharacterId
+                        ? "silhouette"
+                        : "locked";
+
+                    return (
+                      <CharacterSlotCard
+                        key={character.id}
+                        character={character}
+                        index={index}
+                        isLocked={isLocked}
+                        isSelected={
+                          character.id === featuredCharacter?.id && !isLocked
+                        }
+                        lockVariant={lockVariant}
+                        collectionSlug={collection.slug}
+                      />
+                    );
+                  })}
+
+                  {placeholderSlotIndexes.map((index) => (
+                    <PlaceholderSlotCard
+                      key={`placeholder-${index}`}
+                      index={index}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-4 grid gap-3 border border-[hsl(var(--gold-accent)/0.16)] bg-[hsl(0_0%_6%/0.72)] p-3 md:grid-cols-[1fr_auto] md:items-center">
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,48%)]">
+                      <span>Desbloqueados</span>
+                      <span className="text-[hsl(0,0%,72%)]">
+                        {String(availableCount).padStart(2, "0")} /{" "}
+                        {String(totalCount).padStart(2, "0")}
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden bg-[hsl(0,0%,14%)]">
+                      <div
+                        className="h-full bg-[hsl(var(--gold-accent))] shadow-[0_0_18px_hsl(var(--gold-accent)/0.55)]"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <Link
+                    to={PUBLIC_ROUTES.collections}
+                    className="inline-flex items-center justify-center gap-3 border border-[hsl(var(--gold-accent)/0.35)] px-5 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)]"
+                  >
+                    Ver coleções
+                    <Crown className="h-4 w-4" />
+                  </Link>
+                </div>
+              </aside>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 pb-16 space-y-16">
-        {/* Featured Character */}
-        {featuredCharacter && (
-          <section>
-            <ArcadeSectionTitle>Lançamento do Mês</ArcadeSectionTitle>
-            <FeaturedCharacterHero character={featuredCharacter} collectionSlug={collection.slug} />
-          </section>
-        )}
+      {showCatalogSection && (
+        <section className="mx-auto max-w-7xl px-4 py-16 md:px-6">
+          <div className="mb-6 flex items-center gap-4">
+            <h2
+              className="text-2xl font-black uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))]"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
+              Modelos da coleção
+            </h2>
+            <span className="border border-[hsl(var(--gold-accent)/0.35)] px-2 py-0.5 font-mono text-[10px] text-[hsl(var(--gold-accent))]">
+              {catalogCharacters.length}
+            </span>
+            <div className="h-px flex-1 bg-gradient-to-r from-[hsl(var(--gold-accent)/0.2)] to-transparent" />
+          </div>
 
-        {/* Released Characters */}
-        {releasedCharacters.length > 0 && (
-          <section>
-            <SectionHeader title="Já Lançados" count={releasedCharacters.length} variant="default" />
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
-              {releasedCharacters.map((character, index) => (
-                <CharacterCard
-                  key={character.id}
-                  character={character}
-                  index={index}
-                  isUpcoming={false}
-                  collectionSlug={collection.slug}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {catalogCharacters.map((character, index) => (
+              <CharacterSlotCard
+                key={character.id}
+                character={character}
+                index={index}
+                isLocked={false}
+                isSelected={false}
+                lockVariant="locked"
+                collectionSlug={collection.slug}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-        {/* Upcoming Characters */}
-        {upcomingCharacters.length > 0 && (
-          <section>
-            <SectionHeader title="Próximos Lançamentos" count={upcomingCharacters.length} variant="muted" />
-
-            {/* Info banner */}
-            <ArcadeCard hover={false} className="mb-6 p-4">
-              <div className="flex items-center gap-3">
-                <Zap className="w-5 h-5 text-[hsl(var(--gold-accent)/0.6)] flex-shrink-0" />
-                <p className="text-[10px] font-mono text-[hsl(0,0%,45%)] tracking-wider">
-                  Próximas revelações da coleção.
-                </p>
-              </div>
-            </ArcadeCard>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
-              {upcomingCharacters.map((character, index) => (
-                <CharacterCard
-                  key={character.id}
-                  character={character}
-                  index={index}
-                  isUpcoming={true}
-                  lockVariant={character.id === nextLockedCharacterId ? "silhouette" : "locked"}
-                  collectionSlug={collection.slug}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Catalog Characters */}
-        {catalogCharacters.length > 0 && (
-          <section>
-            <SectionHeader title="Modelos da Coleção" count={catalogCharacters.length} variant="accent" />
-
-            <ArcadeCard hover={false} className="mb-6 p-4">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-[hsl(var(--gold-accent)/0.6)] flex-shrink-0" />
-                <p className="text-[10px] font-mono text-[hsl(0,0%,45%)] tracking-wider">
-                  Modelos organizados para esta coleção, com imagem e apresentação próprias.
-                </p>
-              </div>
-            </ArcadeCard>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
-              {catalogCharacters.map((character, index) => (
-                <CharacterCard
-                  key={character.id}
-                  character={character}
-                  index={index}
-                  isUpcoming={false}
-                  collectionSlug={collection.slug}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Empty state */}
-        {safeCharacters.length === 0 && (
-          <ArcadeCard hover={false} className="p-12">
-            <div className="text-center">
-              <Package className="w-16 h-16 text-[hsl(0,0%,20%)] mx-auto mb-4" />
-              <p
-                className="text-[10px] tracking-[0.2em] uppercase text-[hsl(0,0%,40%)]"
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
-              >
-                Nenhum personagem disponível
-              </p>
-            </div>
-          </ArcadeCard>
-        )}
-      </div>
-
-      {/* Bottom CTA */}
       <ArcadeCTA
         badge="Assine Agora"
         title="JUNTE-SE AO CLUBE"
-        description="Assine e tenha acesso exclusivo a todos os personagens desta coleção com preços especiais."
+        description="Assine e tenha acesso exclusivo aos personagens desta coleção com preços especiais."
         primaryAction={{
           label: "Ver Planos",
           href: PUBLIC_ROUTES.plans,
-          icon: <Crown className="w-4 h-4" />,
+          icon: <Crown className="h-4 w-4" />,
         }}
         secondaryAction={{
           label: "Ver Coleções",

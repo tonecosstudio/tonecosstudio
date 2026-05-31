@@ -12,10 +12,14 @@ export type PublicCollectionPreview = {
   is_active?: boolean;
 };
 
-export async function listActiveCollectionPreviews(limit = 3): Promise<PublicCollectionPreview[]> {
+export async function listActiveCollectionPreviews(
+  limit = 3,
+): Promise<PublicCollectionPreview[]> {
   const { data, error } = await supabase
     .from("collections")
-    .select("id,name,slug,description,cover_image_url,total_characters,is_active")
+    .select(
+      "id,name,slug,description,cover_image_url,total_characters,is_active",
+    )
     .eq("is_active", true)
     .limit(limit);
 
@@ -111,6 +115,12 @@ export type CharacterDetailsData = {
   is_catalog: boolean;
   collection_id: string;
   franchise: string | null;
+  product_line: string | null;
+  theme_category: string | null;
+  release_order: number | null;
+  release_month: number | null;
+  release_date: string | null;
+  stock_quantity: number | null;
   price_category_id: string | null;
   price_categories: {
     display_name: string;
@@ -122,6 +132,8 @@ export type CharacterDetailsData = {
     name: string;
     slug: string;
     description: string | null;
+    cover_image_url: string | null;
+    total_characters: number | null;
   } | null;
 };
 
@@ -151,11 +163,17 @@ type CatalogCharacterDbRow = Omit<
   price_categories?: CatalogCharacterPriceCategory | null;
 };
 
-type ArcadeCollectionDbRow = Omit<ArcadeCollection, "character_count" | "image_url"> & {
+type ArcadeCollectionDbRow = Omit<
+  ArcadeCollection,
+  "character_count" | "image_url"
+> & {
   cover_image_url: string | null;
 };
 
-type CharacterSelectCollectionDbRow = Omit<CharacterSelectCollection, "image_url"> & {
+type CharacterSelectCollectionDbRow = Omit<
+  CharacterSelectCollection,
+  "image_url"
+> & {
   cover_image_url: string | null;
 };
 
@@ -189,6 +207,55 @@ function getPublicStorageUrl(bucket: string | null, path: string | null) {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
+function isMissingColumnError(
+  error: { code?: string; message?: string } | null,
+) {
+  return (
+    error?.code === "42703" ||
+    Boolean(error?.message?.toLowerCase().includes("does not exist"))
+  );
+}
+
+function normalizeCharacterDetailsRow(
+  row: Partial<CharacterDetailsData> | null,
+): CharacterDetailsData | null {
+  if (!row?.id || !row.name || !row.collection_id) return null;
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? null,
+    image_url: row.image_url ?? null,
+    image_urls: Array.isArray(row.image_urls)
+      ? row.image_urls
+      : row.image_url
+        ? [row.image_url]
+        : null,
+    status: row.status ?? "released",
+    is_catalog: row.is_catalog === true,
+    collection_id: row.collection_id,
+    franchise: row.franchise ?? null,
+    product_line: row.product_line ?? null,
+    theme_category: row.theme_category ?? null,
+    release_order: row.release_order ?? null,
+    release_month: row.release_month ?? null,
+    release_date: row.release_date ?? null,
+    stock_quantity: row.stock_quantity ?? null,
+    price_category_id: row.price_category_id ?? null,
+    price_categories: row.price_categories ?? null,
+    collections: row.collections
+      ? {
+          id: row.collections.id,
+          name: row.collections.name,
+          slug: row.collections.slug,
+          description: row.collections.description ?? null,
+          cover_image_url: row.collections.cover_image_url ?? null,
+          total_characters: row.collections.total_characters ?? null,
+        }
+      : null,
+  };
+}
+
 function mapCollectionCharacter(
   character: CollectionCharacterDbRow,
   index: number,
@@ -198,7 +265,7 @@ function mapCollectionCharacter(
     name: character.name || "Personagem",
     description: character.description,
     image_url: character.image_url,
-    detail_url: character.source_model_id ? catalogModelDetailsPath(character.source_model_id) : null,
+    detail_url: null,
     release_order: character.release_order ?? index + 1,
     release_month: character.release_month,
     release_date: character.release_date,
@@ -217,7 +284,8 @@ function mapCollectionModel(
     name: model.name,
     description: model.description,
     image_url:
-      model.thumbnail_url || getPublicStorageUrl(model.image_bucket, model.image_path),
+      model.thumbnail_url ||
+      getPublicStorageUrl(model.image_bucket, model.image_path),
     detail_url: catalogModelDetailsPath(model.id),
     release_order: index + 1,
     release_month: null,
@@ -231,7 +299,9 @@ function mapCollectionModel(
 export async function listShowcaseCollections(): Promise<ShowcaseCollection[]> {
   const { data, error } = await supabase
     .from("collections")
-    .select("id, name, slug, description, cover_image_url, total_characters, is_active")
+    .select(
+      "id, name, slug, description, cover_image_url, total_characters, is_active",
+    )
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
@@ -239,7 +309,9 @@ export async function listShowcaseCollections(): Promise<ShowcaseCollection[]> {
   return (data ?? []) as ShowcaseCollection[];
 }
 
-export async function listArcadeCollectionsWithCounts(): Promise<ArcadeCollection[]> {
+export async function listArcadeCollectionsWithCounts(): Promise<
+  ArcadeCollection[]
+> {
   const { data, error } = await supabase
     .from("collections")
     .select("id, name, slug, description, cover_image_url, is_active")
@@ -270,7 +342,9 @@ export async function listArcadeCollectionsWithCounts(): Promise<ArcadeCollectio
   );
 }
 
-export async function listReleasedCatalogCharacters(): Promise<ArcadeCatalogCharacter[]> {
+export async function listReleasedCatalogCharacters(): Promise<
+  ArcadeCatalogCharacter[]
+> {
   const { data, error } = await supabase
     .from("collection_characters")
     .select(
@@ -300,7 +374,8 @@ export async function listReleasedCatalogCharacters(): Promise<ArcadeCatalogChar
   return ((data ?? []) as CatalogCharacterDbRow[]).map((character) => ({
     ...character,
     price_category_name: character.price_categories?.name,
-    price_category_display_name: character.price_categories?.display_name ?? null,
+    price_category_display_name:
+      character.price_categories?.display_name ?? null,
     price_coins: character.price_categories?.price_coins ?? null,
     price_standalone: character.price_categories?.price_standalone ?? null,
     price_category_order: character.price_categories?.display_order ?? 999,
@@ -322,15 +397,17 @@ export async function getCollectionDetailsBySlug(
 
   const { data: charactersData, error: charactersError } = await supabase
     .from("collection_characters")
-    .select("id, name, description, image_url, is_catalog, release_order, release_month, release_date, unlock_override, status, source_model_id")
+    .select(
+      "id, name, description, image_url, is_catalog, release_order, release_month, release_date, unlock_override, status, source_model_id",
+    )
     .eq("collection_id", collectionData.id)
     .order("release_order", { ascending: true });
 
   if (charactersError) throw charactersError;
 
-  const legacyCharacters = ((charactersData ?? []) as CollectionCharacterDbRow[]).map(
-    mapCollectionCharacter,
-  );
+  const legacyCharacters = (
+    (charactersData ?? []) as CollectionCharacterDbRow[]
+  ).map(mapCollectionCharacter);
 
   if (legacyCharacters.length > 0) {
     return {
@@ -359,7 +436,9 @@ export async function getCollectionDetailsBySlug(
   };
 }
 
-export async function listCollectionsWithCharacters(): Promise<CharacterSelectCollection[]> {
+export async function listCollectionsWithCharacters(): Promise<
+  CharacterSelectCollection[]
+> {
   const { data, error } = await supabase
     .from("collections")
     .select(
@@ -372,35 +451,62 @@ export async function listCollectionsWithCharacters(): Promise<CharacterSelectCo
     .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return ((data ?? []) as CharacterSelectCollectionDbRow[]).map((collection) => ({
-    id: collection.id,
-    name: collection.name,
-    slug: collection.slug,
-    description: collection.description,
-    image_url: collection.cover_image_url,
-    is_active: collection.is_active,
-    collection_characters: collection.collection_characters,
-  }));
+  return ((data ?? []) as CharacterSelectCollectionDbRow[]).map(
+    (collection) => ({
+      id: collection.id,
+      name: collection.name,
+      slug: collection.slug,
+      description: collection.description,
+      image_url: collection.cover_image_url,
+      is_active: collection.is_active,
+      collection_characters: collection.collection_characters,
+    }),
+  );
 }
 
 export async function getCharacterDetailsById(
   characterId: string,
 ): Promise<CharacterDetailsData | null> {
+  const fullSelect = `
+    id, name, description, image_url, image_urls, status, is_catalog,
+    collection_id, franchise, product_line, theme_category,
+    release_order, release_month, release_date, stock_quantity,
+    price_category_id,
+    price_categories (display_name, price_coins, price_standalone),
+    collections (id, name, slug, description, cover_image_url, total_characters)
+  `;
+  const legacySelect = `
+    id, name, description, image_url, status, is_catalog,
+    collection_id, release_order, release_month, release_date,
+    price_category_id,
+    price_categories (display_name, price_coins, price_standalone),
+    collections (id, name, slug, description, cover_image_url)
+  `;
+
+  const fullResult = await supabase
+    .from("collection_characters")
+    .select(fullSelect)
+    .eq("id", characterId)
+    .maybeSingle();
+
+  if (!fullResult.error) {
+    return normalizeCharacterDetailsRow(
+      (fullResult.data ?? null) as Partial<CharacterDetailsData> | null,
+    );
+  }
+
+  if (!isMissingColumnError(fullResult.error)) throw fullResult.error;
+
   const { data, error } = await supabase
     .from("collection_characters")
-    .select(
-      `
-        id, name, description, image_url, image_urls, status, is_catalog,
-        collection_id, franchise, price_category_id,
-        price_categories (display_name, price_coins, price_standalone),
-        collections (id, name, slug, description)
-      `,
-    )
+    .select(legacySelect)
     .eq("id", characterId)
     .maybeSingle();
 
   if (error) throw error;
-  return (data ?? null) as CharacterDetailsData | null;
+  return normalizeCharacterDetailsRow(
+    (data ?? null) as Partial<CharacterDetailsData> | null,
+  );
 }
 
 export async function listRelatedCharacters(
@@ -413,7 +519,7 @@ export async function listRelatedCharacters(
     .eq("collection_id", collectionId)
     .neq("id", characterId)
     .eq("status", "released")
-    .order("display_order", { ascending: true })
+    .order("release_order", { ascending: true })
     .limit(6);
 
   if (error) throw error;

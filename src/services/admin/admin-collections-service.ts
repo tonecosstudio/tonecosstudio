@@ -1,8 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const MAX_MODEL_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_MODEL_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const SAFE_MODEL_IMAGE_PATH = /^(?:collections|characters)\/[a-zA-Z0-9_-]+\.(?:jpe?g|png|webp)$/i;
+const ALLOWED_MODEL_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const SAFE_MODEL_IMAGE_PATH =
+  /^(?:collections|characters)\/[a-zA-Z0-9_-]+\.(?:jpe?g|png|webp)$/i;
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 
@@ -17,36 +22,45 @@ interface AdminCollectionsRpcError {
 interface AdminCollectionsRpcClient {
   rpc(
     name: "admin_create_collection",
-    args: { p_payload: JsonObject }
-  ): Promise<{ data: JsonObject | null; error: AdminCollectionsRpcError | null }>;
+    args: { p_payload: JsonObject },
+  ): Promise<{
+    data: JsonObject | null;
+    error: AdminCollectionsRpcError | null;
+  }>;
   rpc(
     name: "admin_update_collection",
-    args: { p_collection_id: string; p_payload: JsonObject }
+    args: { p_collection_id: string; p_payload: JsonObject },
   ): Promise<{ data: string | null; error: AdminCollectionsRpcError | null }>;
   rpc(
     name: "admin_delete_collection",
-    args: { p_collection_id: string }
+    args: { p_collection_id: string },
   ): Promise<{ data: string | null; error: AdminCollectionsRpcError | null }>;
   rpc(
     name: "admin_insert_collection_characters",
-    args: { p_characters: JsonObject[] }
-  ): Promise<{ data: JsonValue | null; error: AdminCollectionsRpcError | null }>;
+    args: { p_characters: JsonObject[] },
+  ): Promise<{
+    data: JsonValue | null;
+    error: AdminCollectionsRpcError | null;
+  }>;
   rpc(
     name: "admin_insert_collection_character",
-    args: { p_payload: JsonObject }
+    args: { p_payload: JsonObject },
   ): Promise<{ data: string | null; error: AdminCollectionsRpcError | null }>;
   rpc(
     name: "admin_update_collection_character",
-    args: { p_character_id: string; p_payload: JsonObject }
+    args: { p_character_id: string; p_payload: JsonObject },
   ): Promise<{ data: string | null; error: AdminCollectionsRpcError | null }>;
   rpc(
     name: "admin_delete_collection_character",
-    args: { p_character_id: string }
+    args: { p_character_id: string },
   ): Promise<{ data: string | null; error: AdminCollectionsRpcError | null }>;
   rpc(
     name: "get_collection_financial_analysis",
-    args: { p_collection_id: string }
-  ): Promise<{ data: CollectionFinancialAnalysis[] | null; error: AdminCollectionsRpcError | null }>;
+    args: { p_collection_id: string },
+  ): Promise<{
+    data: CollectionFinancialAnalysis[] | null;
+    error: AdminCollectionsRpcError | null;
+  }>;
 }
 
 const adminCollectionsRpc = supabase as unknown as AdminCollectionsRpcClient;
@@ -97,7 +111,8 @@ interface CollectionsFinancialSummaryClient {
   };
 }
 
-const collectionsFinancialSupabase = supabase as unknown as CollectionsFinancialSummaryClient;
+const collectionsFinancialSupabase =
+  supabase as unknown as CollectionsFinancialSummaryClient;
 
 type CreateCollectionInput = {
   name: string;
@@ -114,6 +129,12 @@ type CreateCharacterInput = {
   name: string;
   description: string;
   image_url: string | null;
+  image_urls?: string[] | null;
+  franchise?: string | null;
+  product_line?: string | null;
+  theme_category?: string | null;
+  stock_quantity?: number;
+  display_order?: number | null;
   release_order: number;
   release_month: number | null;
   release_date?: string | null;
@@ -154,36 +175,53 @@ export interface AdminCharacterItem {
   collection_id: string;
   name: string;
   description: string | null;
+  franchise: string | null;
+  product_line: string | null;
+  theme_category: string | null;
+  stock_quantity: number;
+  display_order: number | null;
   release_order: number;
   release_month: number | null;
   release_date: string | null;
   unlock_override: boolean;
   status: string;
   image_url: string | null;
+  image_urls: string[] | null;
 }
 
 function toRotationType(value: unknown): CollectionRotationType {
-  return value === "odd_months" || value === "even_months" || value === "fixed" ? value : "fixed";
+  return value === "odd_months" || value === "even_months" || value === "fixed"
+    ? value
+    : "fixed";
 }
 
 function toStringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-function normalizeCollectionImage<T extends CollectionRowWithImageAlias>(collection: T) {
+function normalizeCollectionImage<T extends CollectionRowWithImageAlias>(
+  collection: T,
+) {
   return {
     ...collection,
     id: toStringValue(collection.id),
     name: toStringValue(collection.name),
     slug: toStringValue(collection.slug),
-    description: typeof collection.description === "string" ? collection.description : null,
+    description:
+      typeof collection.description === "string"
+        ? collection.description
+        : null,
     image_url: collection.image_url ?? collection.cover_image_url ?? null,
     is_active: collection.is_active === true,
     rotation_type: toRotationType(collection.rotation_type),
     total_characters:
-      typeof collection.total_characters === "number" ? collection.total_characters : 0,
+      typeof collection.total_characters === "number"
+        ? collection.total_characters
+        : 0,
     character_count:
-      typeof collection.character_count === "number" ? collection.character_count : 0,
+      typeof collection.character_count === "number"
+        ? collection.character_count
+        : 0,
   };
 }
 
@@ -201,7 +239,9 @@ function validateModelImageUpload(filePath: string, file: File) {
   }
 }
 
-export async function fetchCollectionsWithCharacterCount(): Promise<AdminCollectionItem[]> {
+export async function fetchCollectionsWithCharacterCount(): Promise<
+  AdminCollectionItem[]
+> {
   const { data: collections, error } = await supabase
     .from("collections")
     .select("*")
@@ -218,17 +258,22 @@ export async function fetchCollectionsWithCharacterCount(): Promise<AdminCollect
         .eq("collection_id", collection.id);
 
       if (countError) {
-      return normalizeCollectionImage({ ...collection, character_count: 0 });
+        return normalizeCollectionImage({ ...collection, character_count: 0 });
       }
 
-      return normalizeCollectionImage({ ...collection, character_count: count || 0 });
-    })
+      return normalizeCollectionImage({
+        ...collection,
+        character_count: count || 0,
+      });
+    }),
   );
 
   return withCount;
 }
 
-export async function fetchCharactersByCollection(collectionId: string): Promise<AdminCharacterItem[]> {
+export async function fetchCharactersByCollection(
+  collectionId: string,
+): Promise<AdminCharacterItem[]> {
   const { data, error } = await supabase
     .from("collection_characters")
     .select("*")
@@ -241,19 +286,35 @@ export async function fetchCharactersByCollection(collectionId: string): Promise
     collection_id: character.collection_id,
     name: character.name,
     description: character.description,
+    franchise: character.franchise ?? null,
+    product_line: character.product_line ?? null,
+    theme_category: character.theme_category ?? null,
+    stock_quantity:
+      typeof character.stock_quantity === "number"
+        ? character.stock_quantity
+        : 0,
+    display_order: character.display_order ?? null,
     release_order: character.release_order ?? 0,
     release_month: character.release_month,
     release_date: character.release_date ?? null,
     unlock_override: character.unlock_override === true,
     status: character.status,
     image_url: character.image_url,
+    image_urls: Array.isArray(character.image_urls)
+      ? character.image_urls
+      : null,
   }));
 }
 
-export async function createCollection(input: CreateCollectionInput): Promise<{ id: string }> {
-  const { data, error } = await adminCollectionsRpc.rpc("admin_create_collection", {
-    p_payload: input,
-  });
+export async function createCollection(
+  input: CreateCollectionInput,
+): Promise<{ id: string }> {
+  const { data, error } = await adminCollectionsRpc.rpc(
+    "admin_create_collection",
+    {
+      p_payload: input,
+    },
+  );
   if (error) throw error;
   if (!data?.id || typeof data.id !== "string") {
     throw new Error("Colecao criada sem identificador");
@@ -261,10 +322,15 @@ export async function createCollection(input: CreateCollectionInput): Promise<{ 
   return { id: data.id };
 }
 
-export async function insertCollectionCharacters(characters: CreateCharacterInput[]) {
-  const { error } = await adminCollectionsRpc.rpc("admin_insert_collection_characters", {
-    p_characters: characters,
-  });
+export async function insertCollectionCharacters(
+  characters: CreateCharacterInput[],
+) {
+  const { error } = await adminCollectionsRpc.rpc(
+    "admin_insert_collection_characters",
+    {
+      p_characters: characters,
+    },
+  );
   if (error) throw error;
 }
 
@@ -275,7 +341,10 @@ export async function deleteCollectionById(collectionId: string) {
   if (error) throw error;
 }
 
-export async function updateCollectionById(collectionId: string, payload: Record<string, unknown>) {
+export async function updateCollectionById(
+  collectionId: string,
+  payload: Record<string, unknown>,
+) {
   const { error } = await adminCollectionsRpc.rpc("admin_update_collection", {
     p_collection_id: collectionId,
     p_payload: payload as JsonObject,
@@ -286,7 +355,9 @@ export async function updateCollectionById(collectionId: string, payload: Record
 export async function uploadModelImage(filePath: string, file: File) {
   validateModelImageUpload(filePath, file);
 
-  const { error } = await supabase.storage.from("models").upload(filePath, file);
+  const { error } = await supabase.storage
+    .from("models")
+    .upload(filePath, file);
   if (error) throw error;
 }
 
@@ -299,27 +370,36 @@ export function getModelPublicUrl(filePath: string) {
 }
 
 export async function insertCollectionCharacter(payload: CreateCharacterInput) {
-  const { error } = await adminCollectionsRpc.rpc("admin_insert_collection_character", {
-    p_payload: payload,
-  });
+  const { error } = await adminCollectionsRpc.rpc(
+    "admin_insert_collection_character",
+    {
+      p_payload: payload,
+    },
+  );
   if (error) throw error;
 }
 
 export async function updateCollectionCharacterById(
   characterId: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
 ) {
-  const { error } = await adminCollectionsRpc.rpc("admin_update_collection_character", {
-    p_character_id: characterId,
-    p_payload: payload as JsonObject,
-  });
+  const { error } = await adminCollectionsRpc.rpc(
+    "admin_update_collection_character",
+    {
+      p_character_id: characterId,
+      p_payload: payload as JsonObject,
+    },
+  );
   if (error) throw error;
 }
 
 export async function deleteCollectionCharacterById(characterId: string) {
-  const { error } = await adminCollectionsRpc.rpc("admin_delete_collection_character", {
-    p_character_id: characterId,
-  });
+  const { error } = await adminCollectionsRpc.rpc(
+    "admin_delete_collection_character",
+    {
+      p_character_id: characterId,
+    },
+  );
   if (error) throw error;
 }
 
@@ -355,9 +435,12 @@ export async function fetchCollectionsFinancialSummary() {
 }
 
 export async function fetchCollectionFinancialAnalysis(collectionId: string) {
-  const { data, error } = await adminCollectionsRpc.rpc("get_collection_financial_analysis", {
-    p_collection_id: collectionId,
-  });
+  const { data, error } = await adminCollectionsRpc.rpc(
+    "get_collection_financial_analysis",
+    {
+      p_collection_id: collectionId,
+    },
+  );
 
   if (error) throw error;
   return data?.[0] || null;

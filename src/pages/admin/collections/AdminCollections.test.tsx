@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -35,11 +35,18 @@ vi.mock('@/components/SEOHead', () => ({
   default: () => null,
 }));
 
+type MockCollection = Record<string, unknown>;
+type MockCharacter = Record<string, unknown>;
+
+let mockCollections: MockCollection[] = [];
+let mockCharacters: MockCharacter[] = [];
+let mockSelectedCollectionData: MockCollection | null = null;
+
 vi.mock('@/hooks/admin/useAdminCollectionsData', () => ({
   useAdminCollectionsData: () => ({
-    collections: [],
-    characters: [],
-    selectedCollectionData: null,
+    collections: mockCollections,
+    characters: mockCharacters,
+    selectedCollectionData: mockSelectedCollectionData,
     collectionsQuery: { isLoading: false, error: null },
     charactersQuery: { isLoading: false, error: null },
   }),
@@ -61,6 +68,9 @@ describe('AdminCollections - Rotation Configuration', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
+    mockCollections = [];
+    mockCharacters = [];
+    mockSelectedCollectionData = null;
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -96,6 +106,62 @@ describe('AdminCollections - Rotation Configuration', () => {
     validRotationTypes.forEach(type => {
       expect(['fixed', 'odd_months', 'even_months']).toContain(type);
     });
+  });
+
+  it('should render character public taxonomy and inventory metadata', async () => {
+    mockSelectedCollectionData = {
+      id: 'collection-1',
+      name: 'ThunderCats',
+      slug: 'thundercats',
+      description: 'Colecao mensal de personagens ThunderCats',
+      image_url: null,
+      is_active: true,
+      character_count: 1,
+    };
+    mockCollections = [mockSelectedCollectionData];
+    mockCharacters = [
+      {
+        id: 'character-1',
+        collection_id: 'collection-1',
+        name: 'Cheetara',
+        description: 'Guerreira veloz dos ThunderCats',
+        image_url: 'https://example.com/cheetara.webp',
+        image_urls: [
+          'https://example.com/cheetara.webp',
+          'https://example.com/cheetara-detail.webp',
+        ],
+        release_order: 1,
+        display_order: 3,
+        release_month: 6,
+        release_date: null,
+        status: 'released',
+        is_catalog: true,
+        unlock_override: false,
+        franchise: 'ThunderCats',
+        product_line: 'Herois ThunderCats',
+        theme_category: 'Guerreira velocista',
+        stock_quantity: 2,
+      },
+    ];
+
+    const AdminCollections = (await import('./AdminCollections')).default;
+
+    render(
+      <BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <AdminCollections />
+        </QueryClientProvider>
+      </BrowserRouter>
+    );
+
+    fireEvent.click(screen.getByText('ThunderCats'));
+
+    expect(screen.getByText('Cheetara')).toBeInTheDocument();
+    expect(screen.getByText('Herois ThunderCats')).toBeInTheDocument();
+    expect(screen.getByText('Guerreira velocista')).toBeInTheDocument();
+    expect(screen.getByText('2 fotos')).toBeInTheDocument();
+    expect(screen.getByText('2 em estoque')).toBeInTheDocument();
+    expect(screen.getByText('Ordem visual 3')).toBeInTheDocument();
   });
 
   it('should format rotation schedule correctly for odd months', () => {

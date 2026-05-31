@@ -1,13 +1,22 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CollectionForm, type CollectionFormDataWithCharacters } from "@/components/admin/collections/CollectionForm";
+import {
+  CollectionForm,
+  type CollectionFormDataWithCharacters,
+} from "@/components/admin/collections/CollectionForm";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +40,7 @@ import {
   Trash2,
   Package,
   Image as ImageIcon,
+  Images,
   Calendar,
   Upload,
   X,
@@ -60,12 +70,18 @@ type CharacterItem = {
   collection_id: string;
   name: string;
   description: string | null;
+  franchise: string | null;
+  product_line: string | null;
+  theme_category: string | null;
+  stock_quantity: number;
+  display_order: number | null;
   release_order: number;
   release_month: number | null;
   release_date: string | null;
   unlock_override: boolean;
   status: string;
   image_url: string | null;
+  image_urls: string[] | null;
 };
 
 type CollectionCardPremiumProps = {
@@ -124,9 +140,36 @@ function getImageExtension(file: File): string {
   throw new Error("Formato de imagem invalido");
 }
 
-function buildModelImagePath(folder: "collections" | "characters", baseName: string, file: File) {
+function buildModelImagePath(
+  folder: "collections" | "characters",
+  baseName: string,
+  file: File,
+) {
   const safeBaseName = slugifyCollectionName(baseName) || "image";
   return `${folder}/${safeBaseName}-${Date.now()}.${getImageExtension(file)}`;
+}
+
+function getUniqueImageUrls(urls: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(urls.filter((url): url is string => Boolean(url?.trim()))),
+  );
+}
+
+function nullableText(value: string) {
+  return value.trim() || null;
+}
+
+function nullableInteger(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return null;
+
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function nonNegativeInteger(value: string, fallback = 0) {
+  const parsed = nullableInteger(value);
+  return parsed !== null && parsed >= 0 ? parsed : fallback;
 }
 
 export default function AdminCollectionsV2() {
@@ -134,10 +177,14 @@ export default function AdminCollectionsV2() {
   const qc = useQueryClient();
   const adminCollectionsService = useAdminCollectionsOperations();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingCollection, setEditingCollection] = useState<CollectionItem | null>(null);
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+  const [editingCollection, setEditingCollection] =
+    useState<CollectionItem | null>(null);
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(
+    null,
+  );
   const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
-  const { collections, characters, selectedCollectionData } = useAdminCollectionsData(selectedCollection);
+  const { collections, characters, selectedCollectionData } =
+    useAdminCollectionsData(selectedCollection);
 
   return (
     <div className="space-y-6">
@@ -146,18 +193,21 @@ export default function AdminCollectionsV2() {
         <div className="h-px w-20 bg-foreground mb-6" />
         <div className="flex items-center justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-2">Coleções Premium</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-2">
+              Coleções Premium
+            </h2>
             <p className="text-lg text-muted-foreground">
               Sistema completo de gerenciamento de coleções temáticas
             </p>
           </div>
-            <CollectionForm
-              open={isCreateOpen}
-              onOpenChange={setIsCreateOpen}
-              onSubmit={async (data: CollectionFormDataWithCharacters) => {
-                try {
-                  // 1. Criar a coleção
-                  const newCollection = await adminCollectionsService.createCollection({
+          <CollectionForm
+            open={isCreateOpen}
+            onOpenChange={setIsCreateOpen}
+            onSubmit={async (data: CollectionFormDataWithCharacters) => {
+              try {
+                // 1. Criar a coleção
+                const newCollection =
+                  await adminCollectionsService.createCollection({
                     name: data.name,
                     slug: slugifyCollectionName(data.name),
                     description: data.description,
@@ -167,321 +217,390 @@ export default function AdminCollectionsV2() {
                     is_active: data.is_active,
                   });
 
-                  // 2. Criar os personagens se houver
-                  if (data.characters && data.characters.length > 0) {
-                    const charactersToInsert = data.characters.map((char) => ({
-                      collection_id: newCollection.id,
-                      name: char.name,
-                      description: char.description,
-                      image_url: char.imageUrl || null,
-                      release_order: char.releaseOrder,
-                      release_month: char.releaseMonth,
-                      status: "upcoming" as const,
-                    }));
+                // 2. Criar os personagens se houver
+                if (data.characters && data.characters.length > 0) {
+                  const charactersToInsert = data.characters.map((char) => ({
+                    collection_id: newCollection.id,
+                    name: char.name,
+                    description: char.description,
+                    image_url: char.imageUrl || null,
+                    release_order: char.releaseOrder,
+                    release_month: char.releaseMonth,
+                    status: "upcoming" as const,
+                  }));
 
-                    try {
-                      await adminCollectionsService.insertCollectionCharacters(charactersToInsert);
-                    } catch (charactersError: unknown) {
-                      // Rollback: deletar a coleção criada
-                      await adminCollectionsService.deleteCollectionById(newCollection.id);
-                      throw new Error(`Erro ao criar personagens: ${getErrorMessage(charactersError)}`);
-                    }
+                  try {
+                    await adminCollectionsService.insertCollectionCharacters(
+                      charactersToInsert,
+                    );
+                  } catch (charactersError: unknown) {
+                    // Rollback: deletar a coleção criada
+                    await adminCollectionsService.deleteCollectionById(
+                      newCollection.id,
+                    );
+                    throw new Error(
+                      `Erro ao criar personagens: ${getErrorMessage(charactersError)}`,
+                    );
                   }
-
-                  // 3. Invalidar queries e fechar modal
-                  qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
-                  qc.invalidateQueries({ queryKey: ["collections"] });
-                  qc.invalidateQueries({ queryKey: ["active-collections"] });
-
-                  toast({
-                    title: "Coleção criada com sucesso!",
-                    description: `${data.name} foi criada com ${data.characters.length} personagens.`,
-                  });
-
-                  setIsCreateOpen(false);
-                } catch (error: unknown) {
-                  toast({
-                    title: "Erro ao criar coleção",
-                    description: getErrorMessage(error),
-                    variant: "destructive",
-                  });
-                  throw error;
                 }
-              }}
-            />
-          </div>
+
+                // 3. Invalidar queries e fechar modal
+                qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
+                qc.invalidateQueries({ queryKey: ["collections"] });
+                qc.invalidateQueries({ queryKey: ["active-collections"] });
+
+                toast({
+                  title: "Coleção criada com sucesso!",
+                  description: `${data.name} foi criada com ${data.characters.length} personagens.`,
+                });
+
+                setIsCreateOpen(false);
+              } catch (error: unknown) {
+                toast({
+                  title: "Erro ao criar coleção",
+                  description: getErrorMessage(error),
+                  variant: "destructive",
+                });
+                throw error;
+              }
+            }}
+          />
         </div>
+      </div>
 
-        {/* Stats Premium */}
-        <div className="grid gap-4 md:grid-cols-4 mb-8">
-          <Card className="border-border bg-gradient-to-br from-primary/10 to-primary/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Coleções</CardTitle>
-              <Package className="h-5 w-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{collections.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Coleções cadastradas</p>
-            </CardContent>
-          </Card>
+      {/* Stats Premium */}
+      <div className="grid gap-4 md:grid-cols-4 mb-8">
+        <Card className="border-border bg-gradient-to-br from-primary/10 to-primary/5">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total de Coleções
+            </CardTitle>
+            <Package className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{collections.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Coleções cadastradas
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="border-border bg-gradient-to-br from-green-500/10 to-green-500/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Coleções Ativas</CardTitle>
-              <Package className="h-5 w-5 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">
-                {collections.filter((c: CollectionItem) => c.is_active).length}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Disponíveis para assinatura</p>
-            </CardContent>
-          </Card>
+        <Card className="border-border bg-gradient-to-br from-green-500/10 to-green-500/5">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Coleções Ativas
+            </CardTitle>
+            <Package className="h-5 w-5 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-600">
+              {collections.filter((c: CollectionItem) => c.is_active).length}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Disponíveis para assinatura
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="border-border bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Personagens</CardTitle>
-              <ImageIcon className="h-5 w-5 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">
-                {collections.reduce((acc: number, c: CollectionItem) => acc + (c.character_count || 0), 0)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Personagens cadastrados</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-gradient-to-br from-amber-500/10 to-amber-500/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Com Imagens</CardTitle>
-              <ImageIcon className="h-5 w-5 text-amber-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-amber-600">
-                {collections.filter((c: CollectionItem) => c.image_url).length}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Coleções com capa</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Layout Principal */}
-        <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
-          {/* Sidebar: Lista de Coleções */}
-          <Card className="border-border shadow-premium h-fit sticky top-4">
-            <CardHeader className="border-b border-border">
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Coleções ({collections.length})
-              </CardTitle>
-              <CardDescription>Selecione uma coleção para gerenciar</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {collections.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                  <p className="text-muted-foreground mb-4">Nenhuma coleção cadastrada</p>
-                  <Button variant="outline" onClick={() => setIsCreateOpen(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Criar Primeira Coleção
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                  {collections.map((collection: CollectionItem) => (
-                    <CollectionCardPremium
-                      key={collection.id}
-                      collection={collection}
-                      isSelected={selectedCollection === collection.id}
-                      onSelect={() => setSelectedCollection(collection.id)}
-                      onEdit={() => setEditingCollection(collection)}
-                      onSuccess={() => qc.invalidateQueries({ queryKey: ["admin-collections-v2"] })}
-                    />
-                  ))}
-                </div>
+        <Card className="border-border bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total de Personagens
+            </CardTitle>
+            <ImageIcon className="h-5 w-5 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-600">
+              {collections.reduce(
+                (acc: number, c: CollectionItem) =>
+                  acc + (c.character_count || 0),
+                0,
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Personagens cadastrados
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Main: Personagens */}
-          <div className="space-y-6">
-            {!selectedCollection ? (
+        <Card className="border-border bg-gradient-to-br from-amber-500/10 to-amber-500/5">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Com Imagens</CardTitle>
+            <ImageIcon className="h-5 w-5 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-amber-600">
+              {collections.filter((c: CollectionItem) => c.image_url).length}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Coleções com capa
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Layout Principal */}
+      <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
+        {/* Sidebar: Lista de Coleções */}
+        <Card className="border-border shadow-premium h-fit sticky top-4">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Coleções ({collections.length})
+            </CardTitle>
+            <CardDescription>
+              Selecione uma coleção para gerenciar
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {collections.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                <p className="text-muted-foreground mb-4">
+                  Nenhuma coleção cadastrada
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Criar Primeira Coleção
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                {collections.map((collection: CollectionItem) => (
+                  <CollectionCardPremium
+                    key={collection.id}
+                    collection={collection}
+                    isSelected={selectedCollection === collection.id}
+                    onSelect={() => setSelectedCollection(collection.id)}
+                    onEdit={() => setEditingCollection(collection)}
+                    onSuccess={() =>
+                      qc.invalidateQueries({
+                        queryKey: ["admin-collections-v2"],
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Main: Personagens */}
+        <div className="space-y-6">
+          {!selectedCollection ? (
+            <Card className="border-border shadow-premium">
+              <CardContent className="pt-12 pb-12">
+                <div className="text-center">
+                  <ImageIcon className="h-20 w-20 mx-auto mb-6 opacity-20" />
+                  <h3 className="text-2xl font-semibold mb-2">
+                    Selecione uma Coleção
+                  </h3>
+                  <p className="text-muted-foreground mb-6">
+                    Escolha uma coleção na lista ao lado para gerenciar seus
+                    personagens
+                  </p>
+                  {collections.length === 0 && (
+                    <Button
+                      onClick={() => setIsCreateOpen(true)}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Criar Nova Coleção
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Header da Coleção Selecionada */}
               <Card className="border-border shadow-premium">
-                <CardContent className="pt-12 pb-12">
-                  <div className="text-center">
-                    <ImageIcon className="h-20 w-20 mx-auto mb-6 opacity-20" />
-                    <h3 className="text-2xl font-semibold mb-2">Selecione uma Coleção</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Escolha uma coleção na lista ao lado para gerenciar seus personagens
-                    </p>
-                    {collections.length === 0 && (
-                      <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Criar Nova Coleção
-                      </Button>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-6">
+                    {/* Imagem da Coleção */}
+                    {selectedCollectionData?.image_url ? (
+                      <img
+                        src={selectedCollectionData.image_url}
+                        alt={selectedCollectionData.name}
+                        className="w-32 h-32 object-cover rounded-lg border-2 border-border"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 bg-muted rounded-lg border-2 border-border flex items-center justify-center">
+                        <ImageIcon className="h-12 w-12 text-muted-foreground opacity-50" />
+                      </div>
                     )}
+
+                    {/* Info da Coleção */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div>
+                          <h2 className="text-2xl font-bold mb-1">
+                            {selectedCollectionData?.name}
+                          </h2>
+                          <p className="text-muted-foreground">
+                            {selectedCollectionData?.description}
+                          </p>
+                        </div>
+                        {selectedCollectionData?.is_active ? (
+                          <Badge className="bg-green-500">Ativa</Badge>
+                        ) : (
+                          <Badge variant="secondary">Inativa</Badge>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <ImageIcon className="h-4 w-4" />
+                          {characters.length} personagens
+                        </span>
+                        <span>•</span>
+                        <span>
+                          {
+                            characters.filter((c: CharacterItem) => c.image_url)
+                              .length
+                          }{" "}
+                          com imagem
+                        </span>
+                        <span>•</span>
+                        <span className="font-mono">
+                          /{selectedCollectionData?.slug}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            ) : (
-              <>
-                {/* Header da Coleção Selecionada */}
-                <Card className="border-border shadow-premium">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-6">
-                      {/* Imagem da Coleção */}
-                      {selectedCollectionData?.image_url ? (
-                        <img
-                          src={selectedCollectionData.image_url}
-                          alt={selectedCollectionData.name}
-                          className="w-32 h-32 object-cover rounded-lg border-2 border-border"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div className="w-32 h-32 bg-muted rounded-lg border-2 border-border flex items-center justify-center">
-                          <ImageIcon className="h-12 w-12 text-muted-foreground opacity-50" />
-                        </div>
-                      )}
 
-                      {/* Info da Coleção */}
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between gap-4 mb-2">
-                          <div>
-                            <h2 className="text-2xl font-bold mb-1">
-                              {selectedCollectionData?.name}
-                            </h2>
-                            <p className="text-muted-foreground">
-                              {selectedCollectionData?.description}
-                            </p>
-                          </div>
-                          {selectedCollectionData?.is_active ? (
-                            <Badge className="bg-green-500">Ativa</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inativa</Badge>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <ImageIcon className="h-4 w-4" />
-                            {characters.length} personagens
-                          </span>
-                          <span>•</span>
-                          <span>
-                            {characters.filter((c: CharacterItem) => c.image_url).length} com imagem
-                          </span>
-                          <span>•</span>
-                          <span className="font-mono">/{selectedCollectionData?.slug}</span>
-                        </div>
-                      </div>
+              {/* Toolbar */}
+              <Card className="border-border">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={viewMode === "grid" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setViewMode("grid")}
+                      >
+                        Grid
+                      </Button>
+                      <Button
+                        variant={
+                          viewMode === "calendar" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setViewMode("calendar")}
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Calendário
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
 
-                {/* Toolbar */}
-                <Card className="border-border">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant={viewMode === "grid" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setViewMode("grid")}
-                        >
-                          Grid
-                        </Button>
-                        <Button
-                          variant={viewMode === "calendar" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setViewMode("calendar")}
-                        >
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Calendário
-                        </Button>
-                      </div>
+                    <CreateCharacterDialog
+                      collectionId={selectedCollection}
+                      maxOrder={characters.length}
+                      onSuccess={() => {
+                        qc.invalidateQueries({
+                          queryKey: ["admin-characters-v2"],
+                        });
+                        qc.invalidateQueries({
+                          queryKey: ["admin-collections-v2"],
+                        });
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
+              {/* Personagens */}
+              {characters.length === 0 ? (
+                <Card className="border-border shadow-premium">
+                  <CardContent className="pt-12 pb-12">
+                    <div className="text-center">
+                      <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                      <h3 className="text-xl font-semibold mb-2">
+                        Nenhum Personagem
+                      </h3>
+                      <p className="text-muted-foreground mb-6">
+                        Adicione personagens para começar a montar esta coleção
+                      </p>
                       <CreateCharacterDialog
                         collectionId={selectedCollection}
-                        maxOrder={characters.length}
+                        maxOrder={0}
                         onSuccess={() => {
-                          qc.invalidateQueries({ queryKey: ["admin-characters-v2"] });
-                          qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
+                          qc.invalidateQueries({
+                            queryKey: ["admin-characters-v2"],
+                          });
+                          qc.invalidateQueries({
+                            queryKey: ["admin-collections-v2"],
+                          });
                         }}
+                        trigger={
+                          <Button className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Adicionar Primeiro Personagem
+                          </Button>
+                        }
                       />
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* Personagens */}
-                {characters.length === 0 ? (
-                  <Card className="border-border shadow-premium">
-                    <CardContent className="pt-12 pb-12">
-                      <div className="text-center">
-                        <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                        <h3 className="text-xl font-semibold mb-2">Nenhum Personagem</h3>
-                        <p className="text-muted-foreground mb-6">
-                          Adicione personagens para começar a montar esta coleção
-                        </p>
-                        <CreateCharacterDialog
-                          collectionId={selectedCollection}
-                          maxOrder={0}
-                          onSuccess={() => {
-                            qc.invalidateQueries({ queryKey: ["admin-characters-v2"] });
-                            qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
-                          }}
-                          trigger={
-                            <Button className="gap-2">
-                              <Plus className="h-4 w-4" />
-                              Adicionar Primeiro Personagem
-                            </Button>
-                          }
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : viewMode === "grid" ? (
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {characters.map((character: CharacterItem) => (
-                      <CharacterCardPremium
-                        key={character.id}
-                        character={character}
-                        onSuccess={() => {
-                          qc.invalidateQueries({ queryKey: ["admin-characters-v2"] });
-                          qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <CalendarView characters={characters} />
-                )}
-              </>
-            )}
-          </div>
+              ) : viewMode === "grid" ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {characters.map((character: CharacterItem) => (
+                    <CharacterCardPremium
+                      key={character.id}
+                      character={character}
+                      onSuccess={() => {
+                        qc.invalidateQueries({
+                          queryKey: ["admin-characters-v2"],
+                        });
+                        qc.invalidateQueries({
+                          queryKey: ["admin-collections-v2"],
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <CalendarView characters={characters} />
+              )}
+            </>
+          )}
         </div>
-
-        {/* Dialog de Edição */}
-        {editingCollection && (
-          <EditCollectionDialog
-            collection={editingCollection}
-            isOpen={Boolean(editingCollection)}
-            onOpenChange={(open) => !open && setEditingCollection(null)}
-            onSuccess={() => {
-              qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
-              setEditingCollection(null);
-            }}
-          />
-        )}
       </div>
+
+      {/* Dialog de Edição */}
+      {editingCollection && (
+        <EditCollectionDialog
+          collection={editingCollection}
+          isOpen={Boolean(editingCollection)}
+          onOpenChange={(open) => !open && setEditingCollection(null)}
+          onSuccess={() => {
+            qc.invalidateQueries({ queryKey: ["admin-collections-v2"] });
+            setEditingCollection(null);
+          }}
+        />
+      )}
+    </div>
   );
 }
 
 // Componente: Card de Coleção Premium
-function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuccess }: CollectionCardPremiumProps) {
+function CollectionCardPremium({
+  collection,
+  isSelected,
+  onSelect,
+  onEdit,
+  onSuccess,
+}: CollectionCardPremiumProps) {
   const { toast } = useToast();
   const adminCollectionsService = useAdminCollectionsOperations();
-
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -506,7 +625,7 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
         "group relative p-4 rounded-lg border cursor-pointer transition-all",
         isSelected
           ? "border-primary bg-primary/10 shadow-md"
-          : "hover:bg-muted/50 hover:border-primary/50"
+          : "hover:bg-muted/50 hover:border-primary/50",
       )}
       onClick={onSelect}
     >
@@ -539,7 +658,9 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
         </div>
 
         {collection.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{collection.description}</p>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {collection.description}
+          </p>
         )}
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -555,11 +676,17 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
                 📅 Fixa (Todos os meses)
               </Badge>
             ) : collection.rotation_type === "odd_months" ? (
-              <Badge variant="outline" className="text-xs bg-blue-500/10 border-blue-500/20 text-blue-600">
+              <Badge
+                variant="outline"
+                className="text-xs bg-blue-500/10 border-blue-500/20 text-blue-600"
+              >
                 📅 Meses Ímpares
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-xs bg-purple-500/10 border-purple-500/20 text-purple-600">
+              <Badge
+                variant="outline"
+                className="text-xs bg-purple-500/10 border-purple-500/20 text-purple-600"
+              >
                 📅 Meses Pares
               </Badge>
             )}
@@ -572,7 +699,12 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
         className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => e.stopPropagation()}
       >
-        <Button size="sm" variant="secondary" className="h-7 w-7 p-0" onClick={onEdit}>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-7 w-7 p-0"
+          onClick={onEdit}
+        >
           <Edit2 className="h-3 w-3" />
         </Button>
         <Button
@@ -594,10 +726,18 @@ function CollectionCardPremium({ collection, isSelected, onSelect, onEdit, onSuc
 }
 
 // Componente: Card de Personagem Premium
-function CharacterCardPremium({ character, onSuccess }: CharacterCardPremiumProps) {
+function CharacterCardPremium({
+  character,
+  onSuccess,
+}: CharacterCardPremiumProps) {
   const { toast } = useToast();
   const adminCollectionsService = useAdminCollectionsOperations();
   const [isEditing, setIsEditing] = useState(false);
+  const taxonomyBadges = [
+    character.franchise,
+    character.product_line,
+    character.theme_category,
+  ].filter((value): value is string => Boolean(value));
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -690,13 +830,34 @@ function CharacterCardPremium({ character, onSuccess }: CharacterCardPremiumProp
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <h4 className="font-semibold line-clamp-1">{character.name}</h4>
-              <Badge className={cn("text-xs shrink-0", getStatusColor(character.status))}>
+              <Badge
+                className={cn(
+                  "text-xs shrink-0",
+                  getStatusColor(character.status),
+                )}
+              >
                 {getStatusLabel(character.status)}
               </Badge>
             </div>
 
             {character.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">{character.description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {character.description}
+              </p>
+            )}
+
+            {taxonomyBadges.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {taxonomyBadges.slice(0, 3).map((value) => (
+                  <Badge
+                    key={value}
+                    variant="outline"
+                    className="max-w-full truncate text-xs"
+                  >
+                    {value}
+                  </Badge>
+                ))}
+              </div>
             )}
 
             {character.release_month && (
@@ -708,11 +869,39 @@ function CharacterCardPremium({ character, onSuccess }: CharacterCardPremiumProp
             {character.release_date && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span>{new Date(`${character.release_date}T00:00:00`).toLocaleDateString("pt-BR")}</span>
+                <span>
+                  {new Date(
+                    `${character.release_date}T00:00:00`,
+                  ).toLocaleDateString("pt-BR")}
+                </span>
               </div>
             )}
+            {(character.image_urls?.length ?? 0) > 1 && (
+              <Badge
+                variant="outline"
+                className="w-fit gap-1 text-xs border-primary/30"
+              >
+                <Images className="h-3 w-3" />
+                {character.image_urls?.length} fotos
+              </Badge>
+            )}
+            {character.stock_quantity > 0 && (
+              <Badge variant="outline" className="w-fit gap-1 text-xs">
+                <Package className="h-3 w-3" />
+                {character.stock_quantity} em estoque
+              </Badge>
+            )}
+            {character.display_order !== null &&
+              character.display_order !== character.release_order && (
+                <Badge variant="outline" className="w-fit text-xs">
+                  Ordem visual {character.display_order}
+                </Badge>
+              )}
             {character.unlock_override && (
-              <Badge variant="outline" className="w-fit text-xs border-green-500/30 text-green-700">
+              <Badge
+                variant="outline"
+                className="w-fit text-xs border-green-500/30 text-green-700"
+              >
                 Liberado antes da data
               </Badge>
             )}
@@ -738,12 +927,15 @@ function CharacterCardPremium({ character, onSuccess }: CharacterCardPremiumProp
 // Componente: Vista de Calendário
 function CalendarView({ characters }: CalendarViewProps) {
   // Agrupar por mês
-  const charactersByMonth = characters.reduce((acc: Record<number, CharacterItem[]>, char: CharacterItem) => {
-    const month = char.release_month || 0;
-    if (!acc[month]) acc[month] = [];
-    acc[month].push(char);
-    return acc;
-  }, {});
+  const charactersByMonth = characters.reduce(
+    (acc: Record<number, CharacterItem[]>, char: CharacterItem) => {
+      const month = char.release_month || 0;
+      if (!acc[month]) acc[month] = [];
+      acc[month].push(char);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <Card className="border-border shadow-premium">
@@ -765,11 +957,16 @@ function CalendarView({ characters }: CalendarViewProps) {
                   <Badge variant="secondary">{monthChars.length}</Badge>
                 </h4>
                 {monthChars.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum lançamento</p>
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum lançamento
+                  </p>
                 ) : (
                   <div className="space-y-2">
                     {monthChars.map((char: CharacterItem) => (
-                      <div key={char.id} className="text-sm p-2 rounded bg-muted/50">
+                      <div
+                        key={char.id}
+                        className="text-sm p-2 rounded bg-muted/50"
+                      >
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs text-muted-foreground">
                             #{char.release_order}
@@ -792,7 +989,11 @@ function CalendarView({ characters }: CalendarViewProps) {
 // Dialog: Criar Coleção (continua no próximo arquivo devido ao tamanho)
 
 // Dialog: Criar Coleção
-export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: CreateCollectionDialogProps) {
+export function CreateCollectionDialog({
+  isOpen,
+  onOpenChange,
+  onSuccess,
+}: CreateCollectionDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const adminCollectionsService = useAdminCollectionsOperations();
@@ -829,7 +1030,11 @@ export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: Crea
 
       // Upload da imagem se houver
       if (imageFile) {
-        const filePath = buildModelImagePath("collections", collectionSlug, imageFile);
+        const filePath = buildModelImagePath(
+          "collections",
+          collectionSlug,
+          imageFile,
+        );
 
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
@@ -855,7 +1060,7 @@ export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: Crea
       setSlug("");
       setDescription("");
       setIsActive(true);
-      setRotationType('fixed');
+      setRotationType("fixed");
       setImageFile(null);
       setImagePreview(null);
       setIsUploading(false);
@@ -882,7 +1087,9 @@ export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: Crea
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Criar Nova Coleção</DialogTitle>
-          <DialogDescription>Crie uma coleção temática com 6 ou 12 personagens</DialogDescription>
+          <DialogDescription>
+            Crie uma coleção temática com 6 ou 12 personagens
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -914,9 +1121,14 @@ export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: Crea
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Upload className="h-10 w-10 text-muted-foreground mb-3" />
                     <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Clique para fazer upload</span> ou arraste
+                      <span className="font-semibold">
+                        Clique para fazer upload
+                      </span>{" "}
+                      ou arraste
                     </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG ou WEBP (MAX. 5MB)</p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG ou WEBP (MAX. 5MB)
+                    </p>
                   </div>
                   <input
                     type="file"
@@ -952,7 +1164,10 @@ export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: Crea
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              URL: {collectionDetailsPath(slugifyCollectionName(slug || name) || "slug")}
+              URL:{" "}
+              {collectionDetailsPath(
+                slugifyCollectionName(slug || name) || "slug",
+              )}
             </p>
           </div>
 
@@ -982,22 +1197,32 @@ export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: Crea
           {/* Rotation Type */}
           <div>
             <Label htmlFor="rotation-type">Tipo de Rotação *</Label>
-            <Select value={rotationType} onValueChange={(value: RotationType) => setRotationType(value)}>
+            <Select
+              value={rotationType}
+              onValueChange={(value: RotationType) => setRotationType(value)}
+            >
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Selecione o tipo de rotação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="fixed">Fixa (Disponível todos os meses)</SelectItem>
-                <SelectItem value="odd_months">Meses Ímpares (Jan, Mar, Mai, Jul, Set, Nov)</SelectItem>
-                <SelectItem value="even_months">Meses Pares (Fev, Abr, Jun, Ago, Out, Dez)</SelectItem>
+                <SelectItem value="fixed">
+                  Fixa (Disponível todos os meses)
+                </SelectItem>
+                <SelectItem value="odd_months">
+                  Meses Ímpares (Jan, Mar, Mai, Jul, Set, Nov)
+                </SelectItem>
+                <SelectItem value="even_months">
+                  Meses Pares (Fev, Abr, Jun, Ago, Out, Dez)
+                </SelectItem>
               </SelectContent>
             </Select>
-            {rotationType !== 'fixed' && (
+            {rotationType !== "fixed" && (
               <div className="mt-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  📅 Disponível em: {rotationType === 'odd_months'
-                    ? 'Janeiro, Março, Maio, Julho, Setembro, Novembro'
-                    : 'Fevereiro, Abril, Junho, Agosto, Outubro, Dezembro'}
+                  📅 Disponível em:{" "}
+                  {rotationType === "odd_months"
+                    ? "Janeiro, Março, Maio, Julho, Setembro, Novembro"
+                    : "Fevereiro, Abril, Junho, Agosto, Outubro, Dezembro"}
                 </p>
               </div>
             )}
@@ -1025,18 +1250,25 @@ export function CreateCollectionDialog({ isOpen, onOpenChange, onSuccess }: Crea
 }
 
 // Dialog: Editar Coleção
-function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: EditCollectionDialogProps) {
+function EditCollectionDialog({
+  collection,
+  isOpen,
+  onOpenChange,
+  onSuccess,
+}: EditCollectionDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const adminCollectionsService = useAdminCollectionsOperations();
   const [name, setName] = useState(collection.name);
   const [slug, setSlug] = useState(collection.slug);
   const [description, setDescription] = useState(collection.description || "");
-  const [rotationType, setRotationType] = useState<'fixed' | 'odd_months' | 'even_months'>(
-    collection.rotation_type || 'fixed'
-  );
+  const [rotationType, setRotationType] = useState<
+    "fixed" | "odd_months" | "even_months"
+  >(collection.rotation_type || "fixed");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(collection.image_url);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    collection.image_url,
+  );
   const [isUploading, setIsUploading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1059,12 +1291,15 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
       }
 
       // Validate minimum fixed collections if changing from fixed to rotating
-      if (collection.rotation_type === "fixed" && rotationType !== 'fixed') {
-        const count = await adminCollectionsService.countActiveFixedCollections();
+      if (collection.rotation_type === "fixed" && rotationType !== "fixed") {
+        const count =
+          await adminCollectionsService.countActiveFixedCollections();
 
         // Need at least 2 fixed collections, so if count is 2 or less, we can't change this one
         if ((count || 0) <= 2) {
-          throw new Error('Deve haver pelo menos 2 coleções fixas ativas. Não é possível alterar esta coleção para rotativa.');
+          throw new Error(
+            "Deve haver pelo menos 2 coleções fixas ativas. Não é possível alterar esta coleção para rotativa.",
+          );
         }
       }
 
@@ -1073,7 +1308,11 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
 
       // Upload da nova imagem se houver
       if (imageFile) {
-        const filePath = buildModelImagePath("collections", collectionSlug, imageFile);
+        const filePath = buildModelImagePath(
+          "collections",
+          collectionSlug,
+          imageFile,
+        );
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
@@ -1141,9 +1380,13 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Upload className="h-10 w-10 text-muted-foreground mb-3" />
                     <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Clique para fazer upload</span>
+                      <span className="font-semibold">
+                        Clique para fazer upload
+                      </span>
                     </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG ou WEBP</p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG ou WEBP
+                    </p>
                   </div>
                   <input
                     type="file"
@@ -1189,22 +1432,32 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
           {/* Rotation Type */}
           <div>
             <Label htmlFor="edit-rotation-type">Tipo de Rotação *</Label>
-            <Select value={rotationType} onValueChange={(value: RotationType) => setRotationType(value)}>
+            <Select
+              value={rotationType}
+              onValueChange={(value: RotationType) => setRotationType(value)}
+            >
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Selecione o tipo de rotação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="fixed">Fixa (Disponível todos os meses)</SelectItem>
-                <SelectItem value="odd_months">Meses Ímpares (Jan, Mar, Mai, Jul, Set, Nov)</SelectItem>
-                <SelectItem value="even_months">Meses Pares (Fev, Abr, Jun, Ago, Out, Dez)</SelectItem>
+                <SelectItem value="fixed">
+                  Fixa (Disponível todos os meses)
+                </SelectItem>
+                <SelectItem value="odd_months">
+                  Meses Ímpares (Jan, Mar, Mai, Jul, Set, Nov)
+                </SelectItem>
+                <SelectItem value="even_months">
+                  Meses Pares (Fev, Abr, Jun, Ago, Out, Dez)
+                </SelectItem>
               </SelectContent>
             </Select>
-            {rotationType !== 'fixed' && (
+            {rotationType !== "fixed" && (
               <div className="mt-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  📅 Disponível em: {rotationType === 'odd_months'
-                    ? 'Janeiro, Março, Maio, Julho, Setembro, Novembro'
-                    : 'Fevereiro, Abril, Junho, Agosto, Outubro, Dezembro'}
+                  📅 Disponível em:{" "}
+                  {rotationType === "odd_months"
+                    ? "Janeiro, Março, Maio, Julho, Setembro, Novembro"
+                    : "Fevereiro, Abril, Junho, Agosto, Outubro, Dezembro"}
                 </p>
               </div>
             )}
@@ -1232,13 +1485,23 @@ function EditCollectionDialog({ collection, isOpen, onOpenChange, onSuccess }: E
 }
 
 // Dialog: Criar Personagem
-function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: CreateCharacterDialogProps) {
+function CreateCharacterDialog({
+  collectionId,
+  maxOrder,
+  onSuccess,
+  trigger,
+}: CreateCharacterDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const adminCollectionsService = useAdminCollectionsOperations();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [franchise, setFranchise] = useState("");
+  const [productLine, setProductLine] = useState("");
+  const [themeCategory, setThemeCategory] = useState("");
+  const [stockQuantity, setStockQuantity] = useState("0");
+  const [displayOrder, setDisplayOrder] = useState(String(maxOrder + 1));
   const [releaseOrder, setReleaseOrder] = useState(String(maxOrder + 1));
   const [releaseMonth, setReleaseMonth] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
@@ -1246,6 +1509,8 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
   const [status, setStatus] = useState("upcoming");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1260,6 +1525,21 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
     }
   };
 
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    setGalleryFiles((current) => [...current, ...files]);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGalleryPreviews((current) => [...current, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
   const createMutation = useMutation({
     mutationFn: async () => {
       setIsUploading(true);
@@ -1267,22 +1547,45 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
 
       // Upload da imagem se houver
       if (imageFile) {
-        const filePath = buildModelImagePath("characters", `char-${collectionId}-${releaseOrder}`, imageFile);
+        const filePath = buildModelImagePath(
+          "characters",
+          `char-${collectionId}-${releaseOrder}`,
+          imageFile,
+        );
 
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
 
+      const galleryUrls = await Promise.all(
+        galleryFiles.map(async (file, index) => {
+          const filePath = buildModelImagePath(
+            "characters",
+            `char-${collectionId}-${releaseOrder}-gallery-${index + 1}`,
+            file,
+          );
+          await adminCollectionsService.uploadModelImage(filePath, file);
+          return adminCollectionsService.getModelPublicUrl(filePath);
+        }),
+      );
+      const imageUrls = getUniqueImageUrls([imageUrl, ...galleryUrls]);
+
       await adminCollectionsService.insertCollectionCharacter({
         collection_id: collectionId,
         name,
         description,
+        franchise: nullableText(franchise),
+        product_line: nullableText(productLine),
+        theme_category: nullableText(themeCategory),
+        stock_quantity: nonNegativeInteger(stockQuantity),
+        display_order: nullableInteger(displayOrder) ?? parseInt(releaseOrder),
         release_order: parseInt(releaseOrder),
         release_month: releaseMonth ? parseInt(releaseMonth) : null,
         release_date: releaseDate || null,
         unlock_override: unlockOverride,
         status,
         image_url: imageUrl,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
       });
     },
     onSuccess: () => {
@@ -1292,6 +1595,11 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
       qc.invalidateQueries({ queryKey: ["collection"] });
       setName("");
       setDescription("");
+      setFranchise("");
+      setProductLine("");
+      setThemeCategory("");
+      setStockQuantity("0");
+      setDisplayOrder(String(maxOrder + 2));
       setReleaseOrder(String(maxOrder + 2));
       setReleaseMonth("");
       setReleaseDate("");
@@ -1299,6 +1607,8 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
       setStatus("upcoming");
       setImageFile(null);
       setImagePreview(null);
+      setGalleryFiles([]);
+      setGalleryPreviews([]);
       setIsUploading(false);
       setIsOpen(false);
       onSuccess();
@@ -1326,7 +1636,9 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Adicionar Personagem</DialogTitle>
-          <DialogDescription>Adicione um novo personagem à coleção</DialogDescription>
+          <DialogDescription>
+            Adicione um novo personagem à coleção
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -1358,9 +1670,13 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Upload className="h-12 w-12 text-muted-foreground mb-4" />
                     <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Clique para fazer upload</span>
+                      <span className="font-semibold">
+                        Clique para fazer upload
+                      </span>
                     </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG ou WEBP</p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG ou WEBP
+                    </p>
                   </div>
                   <input
                     type="file"
@@ -1372,6 +1688,131 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
               )}
             </div>
           </div>
+
+          <div>
+            <Label>Galeria opcional</Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Fotos extras aparecem na página pública somente quando houver mais
+              de uma imagem para o personagem.
+            </p>
+            {galleryPreviews.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                {galleryPreviews.map((preview, index) => (
+                  <div key={`${preview}-${index}`} className="relative">
+                    <img
+                      src={preview}
+                      alt={`Galeria ${index + 1}`}
+                      className="h-24 w-full rounded-md border object-cover"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute right-1 top-1 h-6 w-6 p-0"
+                      onClick={() => {
+                        setGalleryFiles((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        );
+                        setGalleryPreviews((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        );
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="mt-3 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border hover:bg-muted/50">
+              <Images className="mb-2 h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                Adicionar fotos extras
+              </span>
+              <span className="text-xs text-muted-foreground">
+                PNG, JPG ou WEBP
+              </span>
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleGalleryChange}
+              />
+            </label>
+          </div>
+
+          <section className="rounded-lg border border-border p-4">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
+                Ficha pública
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Dados usados na página de detalhes, filtros e organização do
+                catálogo.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="char-franchise">Franquia / Universo</Label>
+                <Input
+                  id="char-franchise"
+                  value={franchise}
+                  onChange={(e) => setFranchise(e.target.value)}
+                  placeholder="Ex: Thundercats"
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="char-product-line">Linha / Versão</Label>
+                <Input
+                  id="char-product-line"
+                  value={productLine}
+                  onChange={(e) => setProductLine(e.target.value)}
+                  placeholder="Ex: Personagem principal"
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="char-theme-category">Categoria / Tema</Label>
+                <Input
+                  id="char-theme-category"
+                  value={themeCategory}
+                  onChange={(e) => setThemeCategory(e.target.value)}
+                  placeholder="Ex: Animação"
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="char-stock">Estoque avulso</Label>
+                  <Input
+                    id="char-stock"
+                    type="number"
+                    min="0"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="char-display-order">Ordem visual</Label>
+                  <Input
+                    id="char-display-order"
+                    type="number"
+                    min="1"
+                    value={displayOrder}
+                    onChange={(e) => setDisplayOrder(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -1472,7 +1913,12 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
           </Button>
           <Button
             onClick={() => createMutation.mutate()}
-            disabled={!name.trim() || !releaseOrder || createMutation.isPending || isUploading}
+            disabled={
+              !name.trim() ||
+              !releaseOrder ||
+              createMutation.isPending ||
+              isUploading
+            }
           >
             {isUploading
               ? "Fazendo upload..."
@@ -1487,21 +1933,50 @@ function CreateCharacterDialog({ collectionId, maxOrder, onSuccess, trigger }: C
 }
 
 // Dialog: Editar Personagem
-function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: EditCharacterDialogProps) {
+function EditCharacterDialog({
+  character,
+  isOpen,
+  onOpenChange,
+  onSuccess,
+}: EditCharacterDialogProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const adminCollectionsService = useAdminCollectionsOperations();
   const [name, setName] = useState(character.name);
   const [description, setDescription] = useState(character.description || "");
-  const [releaseOrder, setReleaseOrder] = useState(String(character.release_order));
+  const [franchise, setFranchise] = useState(character.franchise || "");
+  const [productLine, setProductLine] = useState(character.product_line || "");
+  const [themeCategory, setThemeCategory] = useState(
+    character.theme_category || "",
+  );
+  const [stockQuantity, setStockQuantity] = useState(
+    String(character.stock_quantity ?? 0),
+  );
+  const [displayOrder, setDisplayOrder] = useState(
+    character.display_order ? String(character.display_order) : "",
+  );
+  const [releaseOrder, setReleaseOrder] = useState(
+    String(character.release_order),
+  );
   const [releaseMonth, setReleaseMonth] = useState(
-    character.release_month ? String(character.release_month) : ""
+    character.release_month ? String(character.release_month) : "",
   );
   const [releaseDate, setReleaseDate] = useState(character.release_date || "");
-  const [unlockOverride, setUnlockOverride] = useState(character.unlock_override);
+  const [unlockOverride, setUnlockOverride] = useState(
+    character.unlock_override,
+  );
   const [status, setStatus] = useState(character.status);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(character.image_url);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    character.image_url,
+  );
+  const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>(
+    getUniqueImageUrls(character.image_urls ?? []).filter(
+      (url) => url !== character.image_url,
+    ),
+  );
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1516,28 +1991,73 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
     }
   };
 
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    setGalleryFiles((current) => [...current, ...files]);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGalleryPreviews((current) => [...current, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
   const updateMutation = useMutation({
     mutationFn: async () => {
       setIsUploading(true);
-      let imageUrl = character.image_url;
+      let imageUrl = imagePreview ? character.image_url : null;
 
       // Upload da nova imagem se houver
       if (imageFile) {
-        const filePath = buildModelImagePath("characters", `char-${character.collection_id}-${releaseOrder}`, imageFile);
+        const filePath = buildModelImagePath(
+          "characters",
+          `char-${character.collection_id}-${releaseOrder}`,
+          imageFile,
+        );
         await adminCollectionsService.uploadModelImage(filePath, imageFile);
         imageUrl = adminCollectionsService.getModelPublicUrl(filePath);
       }
 
-      await adminCollectionsService.updateCollectionCharacterById(character.id, {
-        name,
-        description,
-        release_order: parseInt(releaseOrder),
-        release_month: releaseMonth ? parseInt(releaseMonth) : null,
-        release_date: releaseDate || null,
-        unlock_override: unlockOverride,
-        status,
-        image_url: imageUrl,
-      });
+      const uploadedGalleryUrls = await Promise.all(
+        galleryFiles.map(async (file, index) => {
+          const filePath = buildModelImagePath(
+            "characters",
+            `char-${character.collection_id}-${releaseOrder}-gallery-${index + 1}`,
+            file,
+          );
+          await adminCollectionsService.uploadModelImage(filePath, file);
+          return adminCollectionsService.getModelPublicUrl(filePath);
+        }),
+      );
+      const imageUrls = getUniqueImageUrls([
+        imageUrl,
+        ...existingGalleryUrls,
+        ...uploadedGalleryUrls,
+      ]);
+
+      await adminCollectionsService.updateCollectionCharacterById(
+        character.id,
+        {
+          name,
+          description,
+          franchise: nullableText(franchise),
+          product_line: nullableText(productLine),
+          theme_category: nullableText(themeCategory),
+          stock_quantity: nonNegativeInteger(stockQuantity),
+          display_order: nullableInteger(displayOrder),
+          release_order: parseInt(releaseOrder),
+          release_month: releaseMonth ? parseInt(releaseMonth) : null,
+          release_date: releaseDate || null,
+          unlock_override: unlockOverride,
+          status,
+          image_url: imageUrl,
+          image_urls: imageUrls.length > 0 ? imageUrls : null,
+        },
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-characters-v2"] });
@@ -1593,7 +2113,9 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Upload className="h-12 w-12 text-muted-foreground mb-4" />
                     <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Clique para fazer upload</span>
+                      <span className="font-semibold">
+                        Clique para fazer upload
+                      </span>
                     </p>
                   </div>
                   <input
@@ -1607,10 +2129,155 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
             </div>
           </div>
 
+          <div>
+            <Label>Galeria opcional</Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use para detalhes, ângulos e close-ups. A galeria pública só
+              aparece quando houver mais fotos além da principal.
+            </p>
+            {(existingGalleryUrls.length > 0 || galleryPreviews.length > 0) && (
+              <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                {existingGalleryUrls.map((url) => (
+                  <div key={url} className="relative">
+                    <img
+                      src={url}
+                      alt="Foto da galeria"
+                      className="h-24 w-full rounded-md border object-cover"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute right-1 top-1 h-6 w-6 p-0"
+                      onClick={() =>
+                        setExistingGalleryUrls((current) =>
+                          current.filter((item) => item !== url),
+                        )
+                      }
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                {galleryPreviews.map((preview, index) => (
+                  <div key={`${preview}-${index}`} className="relative">
+                    <img
+                      src={preview}
+                      alt={`Nova foto ${index + 1}`}
+                      className="h-24 w-full rounded-md border object-cover"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute right-1 top-1 h-6 w-6 p-0"
+                      onClick={() => {
+                        setGalleryFiles((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        );
+                        setGalleryPreviews((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        );
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="mt-3 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border hover:bg-muted/50">
+              <Images className="mb-2 h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                Adicionar fotos extras
+              </span>
+              <span className="text-xs text-muted-foreground">
+                PNG, JPG ou WEBP
+              </span>
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleGalleryChange}
+              />
+            </label>
+          </div>
+
+          <section className="rounded-lg border border-border p-4">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
+                Ficha pública
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Dados usados na página de detalhes, filtros e organização do
+                catálogo.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Franquia / Universo</Label>
+                <Input
+                  value={franchise}
+                  onChange={(e) => setFranchise(e.target.value)}
+                  placeholder="Ex: Thundercats"
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label>Linha / Versão</Label>
+                <Input
+                  value={productLine}
+                  onChange={(e) => setProductLine(e.target.value)}
+                  placeholder="Ex: Personagem principal"
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label>Categoria / Tema</Label>
+                <Input
+                  value={themeCategory}
+                  onChange={(e) => setThemeCategory(e.target.value)}
+                  placeholder="Ex: Animação"
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Estoque avulso</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label>Ordem visual</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={displayOrder}
+                    onChange={(e) => setDisplayOrder(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Nome</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-2" />
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-2"
+              />
             </div>
 
             <div>
@@ -1670,7 +2337,10 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
             <div className="rounded-lg border border-border p-3">
               <div className="flex items-center justify-between gap-3">
                 <Label>Liberar antes da data</Label>
-                <Switch checked={unlockOverride} onCheckedChange={setUnlockOverride} />
+                <Switch
+                  checked={unlockOverride}
+                  onCheckedChange={setUnlockOverride}
+                />
               </div>
             </div>
           </div>
@@ -1704,6 +2374,3 @@ function EditCharacterDialog({ character, isOpen, onOpenChange, onSuccess }: Edi
     </Dialog>
   );
 }
-
-
-

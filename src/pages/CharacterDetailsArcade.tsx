@@ -1,515 +1,542 @@
-/**
- * Character Details Page - Metal Slug Arcade Style (v2)
- *
- * Página completa de detalhes do personagem com estética arcade
- */
-
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Crown,
+  Package,
+  Shield,
+  ShoppingBag,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import {
   type RelatedCharacter,
   useCharacterDetails,
   useRelatedCharacters,
 } from "@/hooks/collections/usePublicCollections";
 import { Page } from "@/components/layouts/Page";
-import {
-  ArcadeCard,
-  ArcadeSectionTitle,
-} from "@/components/arcade/ArcadeLayout";
-import { FloatingParticles, GlitchText } from "@/components/arcade/ArcadeEffects";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Coins,
-  ShoppingCart,
-  Star,
-  Shield,
-  Zap,
-  Package,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Crown,
-  Swords,
-  Heart,
-} from "lucide-react";
 import {
   PUBLIC_ROUTES,
   collectionCharacterDetailsPath,
   collectionDetailsPath,
 } from "@/config/routes";
+import { getCollectionBackdropUrl } from "@/lib/collection-assets";
 
-// ─── Types ───────────────────────────────────────────────────
-// ─── Stat Bar Component ──────────────────────────────────────
-function StatBar({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType }) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider">
-        <span className="flex items-center gap-1.5 text-[hsl(var(--muted-foreground))]">
-          <Icon className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
-          {label}
-        </span>
-        <span className="text-[hsl(var(--gold-accent))]">{value}%</span>
-      </div>
-      <div className="h-2 bg-[hsl(0,0%,10%)] border border-[hsl(0,0%,15%)] overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-[hsl(var(--gold-accent))] to-[hsl(var(--gold-accent)/0.6)] transition-all duration-1000 ease-out"
-          style={{ width: `${value}%` }}
-        />
-      </div>
-    </div>
+const STATUS_LABELS: Record<string, string> = {
+  upcoming: "Em breve",
+  revealed: "Revelado",
+  released: "Disponível",
+  available: "Disponível",
+  archived: "Arquivado",
+};
+
+const MONTHS = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+function uniqueImages(urls: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(urls.filter((url): url is string => Boolean(url?.trim()))),
   );
 }
 
-// ─── Image Gallery ───────────────────────────────────────────
-function ImageGallery({ images, name }: { images: string[]; name: string }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+function parseLocalDate(value: string | null | undefined) {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
 
-  if (images.length === 0) {
-    return (
-      <div className="relative aspect-square bg-[hsl(0,0%,6%)] flex items-center justify-center border-2 border-[hsl(0,0%,12%)]">
-        <Package className="w-24 h-24 text-[hsl(0,0%,20%)]" />
-      </div>
-    );
+function formatReleaseLabel(
+  releaseDate: string | null | undefined,
+  releaseMonth: number | null | undefined,
+) {
+  const date = parseLocalDate(releaseDate);
+  if (date) {
+    return date.toLocaleDateString("pt-BR", {
+      month: "short",
+      year: "2-digit",
+    });
   }
 
+  if (releaseMonth && MONTHS[releaseMonth - 1]) {
+    return MONTHS[releaseMonth - 1];
+  }
+
+  return "A definir";
+}
+
+function formatMoneyFromCents(value: number | null | undefined) {
+  if (!value) return "Sob consulta";
+
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value / 100);
+}
+
+function getBuyCharacterPath(slug: string, characterId: string) {
+  return `${PUBLIC_ROUTES.buyCharacter.replace(
+    ":slug",
+    encodeURIComponent(slug),
+  )}?character=${encodeURIComponent(characterId)}`;
+}
+
+function DetailStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="space-y-3">
-      {/* Main Image */}
-      <div className="relative aspect-square overflow-hidden border-2 border-[hsl(var(--gold-accent)/0.5)] shadow-[0_0_40px_hsl(var(--gold-accent)/0.15)] group">
-        {/* Corner brackets */}
-        <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
-        <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[hsl(var(--gold-accent))] z-20" />
-        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[hsl(var(--gold-accent))] z-20" />
-        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[hsl(var(--gold-accent))] z-20" />
-
-        <img
-          src={images[activeIndex]}
-          alt={`${name} - ${activeIndex + 1}`}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          loading="eager"
-          fetchPriority="high"
-        />
-
-        {/* Scanline */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={{
-            background:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0%) 2px, hsl(0 0% 0%) 4px)",
-          }}
-        />
-
-        {/* Gradient overlay bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[hsl(0,0%,5%)] to-transparent" />
-
-        {/* Image counter */}
-        <div className="absolute bottom-3 left-3 z-10 bg-[hsl(0,0%,5%)/0.8] border border-[hsl(var(--gold-accent)/0.3)] px-3 py-1 font-mono text-[10px] tracking-widest text-[hsl(var(--gold-accent))]">
-          <Eye className="w-3 h-3 inline mr-1.5" />
-          {activeIndex + 1} / {images.length}
-        </div>
-
-        {/* Navigation arrows */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={() => setActiveIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[hsl(0,0%,5%)/0.8] border border-[hsl(var(--gold-accent)/0.3)] flex items-center justify-center hover:bg-[hsl(var(--gold-accent)/0.2)] hover:border-[hsl(var(--gold-accent))] transition-all"
-            >
-              <ChevronLeft className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
-            </button>
-            <button
-              onClick={() => setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-[hsl(0,0%,5%)/0.8] border border-[hsl(var(--gold-accent)/0.3)] flex items-center justify-center hover:bg-[hsl(var(--gold-accent)/0.2)] hover:border-[hsl(var(--gold-accent))] transition-all"
-            >
-              <ChevronRight className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Thumbnails */}
-      {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIndex(i)}
-              className={`flex-shrink-0 w-16 h-16 border-2 overflow-hidden transition-all duration-300 ${
-                i === activeIndex
-                  ? "border-[hsl(var(--gold-accent))] shadow-[0_0_12px_hsl(var(--gold-accent)/0.4)]"
-                  : "border-[hsl(0,0%,15%)] opacity-50 hover:opacity-80"
-              }`}
-            >
-              <img src={img} alt={`${name} thumb ${i + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="border-l border-[hsl(var(--gold-accent)/0.18)] px-4 py-2 first:border-l-0">
+      <Icon className="mx-auto mb-2 h-5 w-5 text-[hsl(var(--gold-accent))]" />
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.7)]">
+        {label}
+      </p>
+      <p className="mt-1 text-center text-xs uppercase tracking-[0.12em] text-[hsl(0,0%,82%)]">
+        {value}
+      </p>
     </div>
   );
 }
 
-// ─── Related Character Card ──────────────────────────────────
-function RelatedCharacterCard({ char, collectionSlug }: { char: RelatedCharacter; collectionSlug: string }) {
-  const [hovered, setHovered] = useState(false);
+function SpecRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-4 text-xs">
+      <span className="font-mono uppercase tracking-[0.18em] text-[hsl(0,0%,58%)]">
+        {label}
+      </span>
+      <span className="uppercase tracking-[0.08em] text-[hsl(0,0%,86%)]">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function GalleryStrip({
+  images,
+  activeImage,
+  characterName,
+  onSelect,
+}: {
+  images: string[];
+  activeImage: string | null;
+  characterName: string;
+  onSelect: (image: string) => void;
+}) {
+  if (images.length <= 1) return null;
 
   return (
-    <Link
-      to={collectionCharacterDetailsPath(collectionSlug, char.id)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="group block"
-    >
-      <ArcadeCard hover>
-        <div className="relative aspect-[3/4] bg-[hsl(0,0%,8%)] overflow-hidden">
-          {char.image_url ? (
-            <img
-              src={char.image_url}
-              alt={char.name}
-              className={`w-full h-full object-cover transition-all duration-500 ${
-                hovered ? "scale-110 grayscale-0" : "grayscale-[0.5]"
+    <section className="border border-[hsl(var(--gold-accent)/0.16)] bg-black/35 p-3">
+      <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">
+        Galeria
+      </h2>
+      <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+        {images.map((image, index) => {
+          const isActive = image === activeImage;
+
+          return (
+            <button
+              key={image}
+              type="button"
+              onClick={() => onSelect(image)}
+              className={`aspect-square overflow-hidden border bg-[hsl(0,0%,4%)] transition-all ${
+                isActive
+                  ? "border-[hsl(var(--gold-accent))] shadow-[0_0_18px_hsl(var(--gold-accent)/0.2)]"
+                  : "border-[hsl(var(--gold-accent)/0.22)] opacity-70 hover:opacity-100"
               }`}
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Package className="w-10 h-10 text-[hsl(0,0%,20%)]" />
-            </div>
-          )}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.05]"
-            style={{
-              background: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0%) 2px, hsl(0 0% 0%) 4px)",
-            }}
+              aria-label={`Ver foto ${index + 1} de ${characterName}`}
+            >
+              <img
+                src={image}
+                alt={`${characterName} - foto ${index + 1}`}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function RelatedCharacterCard({
+  character,
+  collectionSlug,
+}: {
+  character: RelatedCharacter;
+  collectionSlug: string;
+}) {
+  return (
+    <Link
+      to={collectionCharacterDetailsPath(collectionSlug, character.id)}
+      className="group block border border-[hsl(var(--gold-accent)/0.16)] bg-black/55 transition-colors hover:border-[hsl(var(--gold-accent)/0.7)]"
+    >
+      <div className="aspect-[3/4] bg-[hsl(0,0%,5%)]">
+        {character.image_url ? (
+          <img
+            src={character.image_url}
+            alt={character.name}
+            className="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
           />
-        </div>
-        <div className="p-2.5 border-t border-[hsl(0,0%,12%)]">
-          <p className={`text-xs font-bold uppercase tracking-tight line-clamp-1 transition-colors ${
-            hovered ? "text-[hsl(var(--gold-accent))]" : "text-[hsl(0,0%,80%)]"
-          }`}>
-            {char.name}
-          </p>
-        </div>
-      </ArcadeCard>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <Package className="h-10 w-10 text-[hsl(0,0%,25%)]" />
+          </div>
+        )}
+      </div>
+      <div className="border-t border-[hsl(var(--gold-accent)/0.12)] p-3">
+        <p className="truncate text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(0,0%,82%)] group-hover:text-[hsl(var(--gold-accent))]">
+          {character.name}
+        </p>
+      </div>
     </Link>
   );
 }
 
-// ─── Main Component ──────────────────────────────────────────
 export default function CharacterDetailsArcade() {
-  const { slug, characterId } = useParams<{ slug: string; characterId: string }>();
+  const { slug, characterId } = useParams<{
+    slug: string;
+    characterId: string;
+  }>();
   const navigate = useNavigate();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const { data: character, isLoading } = useCharacterDetails(characterId);
-  const { data: relatedChars } = useRelatedCharacters(character?.collection_id, characterId);
+  const { data: relatedCharacters } = useRelatedCharacters(
+    character?.collection_id,
+    characterId,
+  );
 
+  const allImages = useMemo(
+    () =>
+      uniqueImages([character?.image_url, ...(character?.image_urls ?? [])]),
+    [character?.image_url, character?.image_urls],
+  );
+
+  const activeImage =
+    selectedImage && allImages.includes(selectedImage)
+      ? selectedImage
+      : (allImages[0] ?? null);
   const collectionSlug = character?.collections?.slug || slug || "";
   const collectionName = character?.collections?.name || "";
+  const collectionTotal = character?.collections?.total_characters ?? null;
+  const statusLabel = STATUS_LABELS[character?.status ?? ""] ?? "A definir";
+  const releaseOrder = character?.release_order ?? 1;
+  const releaseLabel = formatReleaseLabel(
+    character?.release_date,
+    character?.release_month,
+  );
+  const editionLabel = String(releaseOrder).padStart(2, "0");
+  const totalLabel = collectionTotal
+    ? String(collectionTotal).padStart(2, "0")
+    : null;
+  const franchiseLabel = character?.franchise || collectionName;
+  const lineLabel = character?.product_line || "Colecao";
+  const categoryLabel =
+    character?.theme_category || character?.product_line || "Personagem";
+  const headlineLabel =
+    character?.theme_category ||
+    character?.product_line ||
+    character?.franchise ||
+    "Personagem de coleção";
   const priceCategory = character?.price_categories;
+  const canBuy =
+    character?.status === "released" || character?.status === "available";
+  const primaryCtaPath =
+    canBuy && collectionSlug && character
+      ? getBuyCharacterPath(collectionSlug, character.id)
+      : collectionSlug
+        ? collectionDetailsPath(collectionSlug)
+        : PUBLIC_ROUTES.collections;
+  const backdropUrl = getCollectionBackdropUrl(
+    collectionSlug,
+    character?.collections?.cover_image_url ?? activeImage,
+  );
 
-  // Build image list
-  const allImages: string[] = [];
-  if (character?.image_urls?.length) {
-    allImages.push(...character.image_urls);
-  } else if (character?.image_url) {
-    allImages.push(character.image_url);
-  }
-
-  // Generate pseudo-random stat values based on character name for visual flair
-  const nameHash = (character?.name || "").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const stats = {
-    detail: 70 + (nameHash % 30),
-    rarity: 50 + ((nameHash * 3) % 50),
-    power: 60 + ((nameHash * 7) % 40),
-  };
-
-  // ─── Loading ─────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <Page title="Carregando..." description="Carregando detalhes do personagem">
-        <div className="container max-w-6xl mx-auto px-4 py-12">
-          <Skeleton className="h-10 w-48 mb-8" />
-          <div className="grid md:grid-cols-2 gap-10">
-            <Skeleton className="aspect-square" />
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-3/4" />
-              <Skeleton className="h-6 w-1/2" />
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-48 w-full" />
-            </div>
+      <Page title="Carregando..." description="Carregando detalhes">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <Skeleton className="min-h-[620px] bg-[hsl(0,0%,9%)]" />
+          <div className="space-y-4">
+            <Skeleton className="h-16 bg-[hsl(0,0%,9%)]" />
+            <Skeleton className="h-28 bg-[hsl(0,0%,9%)]" />
+            <Skeleton className="h-24 bg-[hsl(0,0%,9%)]" />
+            <Skeleton className="h-40 bg-[hsl(0,0%,9%)]" />
           </div>
         </div>
       </Page>
     );
   }
 
-  // ─── Not Found ───────────────────────────────────────────────
   if (!character) {
     return (
-      <Page title="Personagem não encontrado" description="O personagem solicitado não foi encontrado">
-        <div className="flex items-center justify-center py-32">
-          <div className="text-center space-y-6">
-            <div className="text-6xl mb-4">💀</div>
-            <GlitchText
-              text="PERSONAGEM NÃO ENCONTRADO"
-              className="text-xl md:text-2xl font-bold tracking-wider"
-            />
-            <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
-              Este personagem pode ter sido removido ou o link está incorreto.
+      <Page title="Personagem não encontrado" description="Item não encontrado">
+        <section className="flex min-h-[70vh] items-center justify-center px-4">
+          <div className="max-w-md text-center">
+            <Package className="mx-auto mb-5 h-14 w-14 text-[hsl(0,0%,28%)]" />
+            <h1
+              className="text-3xl font-black uppercase tracking-[0.08em]"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
+              Personagem não encontrado
+            </h1>
+            <p className="mt-3 text-sm text-[hsl(var(--muted-foreground))]">
+              Este item pode ter sido removido ou o link está incorreto.
             </p>
             <Button
-              onClick={() => navigate(slug ? collectionDetailsPath(slug) : PUBLIC_ROUTES.collections)}
-              className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--background))] font-mono uppercase tracking-wider hover:bg-[hsl(var(--gold-accent)/0.9)]"
+              onClick={() =>
+                navigate(
+                  slug
+                    ? collectionDetailsPath(slug)
+                    : PUBLIC_ROUTES.collections,
+                )
+              }
+              className="mt-6 bg-[hsl(var(--gold-accent))] font-mono text-xs uppercase tracking-[0.16em] text-black hover:bg-[hsl(var(--gold-accent)/0.88)]"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar para Coleção
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
             </Button>
           </div>
-        </div>
+        </section>
       </Page>
     );
   }
 
-  // ─── Main Render ─────────────────────────────────────────────
   return (
     <Page
       title={`${character.name} | ${collectionName}`}
-      description={character.description || `Detalhes do personagem ${character.name} da coleção ${collectionName}`}
+      description={
+        character.description ||
+        `Detalhes do personagem ${character.name} da coleção ${collectionName}`
+      }
     >
-      <FloatingParticles />
-
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden border-b border-[hsl(var(--gold-accent)/0.2)]">
-        {/* Background blur image */}
-        {allImages[0] && (
+      <section className="relative overflow-hidden bg-[hsl(0,0%,3%)]">
+        {backdropUrl && (
           <div
-            className="absolute inset-0 bg-cover bg-center blur-3xl opacity-[0.08] scale-125"
-            style={{ backgroundImage: `url(${allImages[0]})` }}
+            className="absolute inset-0 bg-center bg-no-repeat opacity-55"
+            style={{
+              backgroundImage: `url(${backdropUrl})`,
+              backgroundSize: "min(92vw, 900px) auto",
+            }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(0,0%,5%)/0.5] via-transparent to-[hsl(0,0%,5%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_34%_46%,hsl(var(--gold-accent)/0.16),transparent_34%),linear-gradient(90deg,hsl(0,0%,3%)/0.24,hsl(0,0%,3%)_58%)]" />
 
-        <div className="container max-w-6xl mx-auto px-4 pt-6 pb-4 relative z-10">
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-[hsl(var(--muted-foreground))] mb-4">
-            <Link to={PUBLIC_ROUTES.collections} className="hover:text-[hsl(var(--gold-accent))] transition-colors">
-              Coleções
-            </Link>
-            <span className="text-[hsl(0,0%,25%)]">/</span>
-            <Link to={collectionDetailsPath(collectionSlug)} className="hover:text-[hsl(var(--gold-accent))] transition-colors">
-              {collectionName}
-            </Link>
-            <span className="text-[hsl(0,0%,25%)]">/</span>
-            <span className="text-[hsl(var(--gold-accent))]">{character.name}</span>
-          </nav>
-
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(collectionDetailsPath(collectionSlug))}
-            className="font-mono uppercase tracking-wider text-[10px] hover:text-[hsl(var(--gold-accent))] border border-[hsl(0,0%,15%)] hover:border-[hsl(var(--gold-accent)/0.5)] h-8 px-3"
-          >
-            <ArrowLeft className="w-3 h-3 mr-1.5" />
-            Voltar
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="container max-w-6xl mx-auto px-4 py-8 md:py-12">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-          {/* Left: Image Gallery */}
-          <ImageGallery images={allImages} name={character.name} />
-
-          {/* Right: Info */}
-          <div className="space-y-6">
-            {/* Title Block */}
-            <div>
-              {character.franchise && (
-                <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-[hsl(var(--gold-accent)/0.7)] mb-1 block">
-                  {character.franchise}
+        <div className="relative z-10 mx-auto grid min-h-[calc(100svh-72px)] max-w-[1680px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1.06fr)_minmax(420px,0.94fr)] lg:gap-10 lg:px-8 lg:py-8">
+          <div className="relative flex min-h-[520px] flex-col justify-between border-b border-[hsl(var(--gold-accent)/0.12)] pb-6 lg:min-h-[780px] lg:border-b-0 lg:pb-0">
+            <div className="flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    collectionSlug
+                      ? collectionDetailsPath(collectionSlug)
+                      : PUBLIC_ROUTES.collections,
+                  )
+                }
+                className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(0,0%,62%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Coleções
+              </button>
+              {collectionName && (
+                <span className="hidden font-mono text-[10px] uppercase tracking-[0.26em] text-[hsl(var(--gold-accent)/0.72)] sm:inline">
+                  {collectionName}
                 </span>
               )}
+            </div>
+
+            <div className="pointer-events-none absolute bottom-24 left-0 hidden items-center gap-5 lg:flex">
+              <div className="h-24 w-px bg-[hsl(var(--gold-accent)/0.45)]" />
+              <span className="-rotate-90 font-mono text-[10px] uppercase tracking-[0.3em] text-[hsl(0,0%,58%)]">
+                Coleção {collectionName}
+              </span>
+            </div>
+
+            <div className="flex flex-1 items-center justify-center py-8">
+              {activeImage ? (
+                <img
+                  src={activeImage}
+                  alt={character.name}
+                  className="max-h-[64svh] w-full max-w-[760px] object-contain drop-shadow-[0_28px_80px_hsl(0,0%,0%/0.72)] lg:max-h-[78svh]"
+                  loading="eager"
+                  decoding="async"
+                />
+              ) : (
+                <div className="flex aspect-[4/5] w-full max-w-md items-center justify-center border border-[hsl(var(--gold-accent)/0.14)] bg-black/45">
+                  <Package className="h-20 w-20 text-[hsl(0,0%,24%)]" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-end justify-between gap-6">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(0,0%,58%)]">
+                  Edição
+                </p>
+                <p className="mt-1 font-mono text-5xl leading-none text-[hsl(var(--gold-accent))]">
+                  {editionLabel}
+                </p>
+                {totalLabel && (
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(0,0%,66%)]">
+                    de {totalLabel}
+                  </p>
+                )}
+              </div>
+              <p className="max-w-40 text-right font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(0,0%,58%)]">
+                {releaseLabel}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-center gap-6 lg:py-6">
+            <header>
+              <p className="font-mono text-xs uppercase tracking-[0.34em] text-[hsl(var(--gold-accent))]">
+                {franchiseLabel}
+              </p>
               <h1
-                className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[hsl(0,0%,95%)] leading-none"
+                className="mt-3 text-5xl font-black uppercase leading-none tracking-[0.05em] text-[hsl(0,0%,92%)] sm:text-7xl xl:text-8xl"
                 style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
               >
                 {character.name}
               </h1>
-              <Link
-                to={collectionDetailsPath(collectionSlug)}
-                className="inline-flex items-center gap-1.5 mt-2 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--gold-accent))] transition-colors font-mono uppercase tracking-wider"
-              >
-                <Crown className="w-3 h-3" />
-                {collectionName}
-              </Link>
-            </div>
-
-            {/* Status + Category Badges */}
-            <div className="flex flex-wrap gap-2">
-              {character.status === "released" && (
-                <Badge className="bg-green-900/30 text-green-400 border border-green-800/50 font-mono uppercase tracking-wider text-[10px] px-3">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Disponível
-                </Badge>
-              )}
-              {character.is_catalog && priceCategory?.display_name && (
-                <Badge className="bg-[hsl(var(--gold-accent)/0.15)] text-[hsl(var(--gold-accent))] border border-[hsl(var(--gold-accent)/0.3)] font-mono uppercase tracking-wider text-[10px] px-3">
-                  <Star className="w-3 h-3 mr-1" />
-                  {priceCategory.display_name}
-                </Badge>
-              )}
-            </div>
-
-            {/* Description */}
-            {character.description && (
-              <div className="bg-[hsl(0,0%,6%)] border border-[hsl(0,0%,12%)] p-5 relative overflow-hidden">
-                <div
-                  className="absolute inset-0 pointer-events-none opacity-[0.02]"
-                  style={{
-                    background: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 100%) 2px, hsl(0 0% 100%) 4px)",
-                  }}
-                />
-                <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed relative z-10">
-                  {character.description}
+              <div className="mt-4 flex items-center gap-4">
+                <div className="h-px flex-1 bg-[hsl(var(--gold-accent)/0.28)]" />
+                <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-[hsl(0,0%,72%)]">
+                  {headlineLabel}
                 </p>
+                <div className="h-px flex-1 bg-[hsl(var(--gold-accent)/0.28)]" />
               </div>
+            </header>
+
+            {character.description && (
+              <p className="max-w-3xl text-base leading-8 text-[hsl(0,0%,72%)]">
+                {character.description}
+              </p>
             )}
 
-            {/* Stats (Visual Flair) */}
-            <div className="bg-[hsl(0,0%,6%)] border border-[hsl(0,0%,12%)] p-5 space-y-3">
-              <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))] mb-3 flex items-center gap-2">
-                <Swords className="w-3.5 h-3.5" />
-                Atributos
-              </h3>
-              <StatBar label="Detalhamento" value={stats.detail} icon={Eye} />
-              <StatBar label="Raridade" value={stats.rarity} icon={Star} />
-              <StatBar label="Poder" value={stats.power} icon={Zap} />
-            </div>
-
-            {/* Pricing Card */}
-            <div className="bg-[hsl(0,0%,6%)] border-2 border-[hsl(var(--gold-accent)/0.3)] p-6 space-y-4 relative overflow-hidden">
-              <div
-                className="absolute inset-0 pointer-events-none opacity-[0.02]"
-                style={{
-                  background: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--gold-accent)) 2px, hsl(var(--gold-accent)) 4px)",
-                }}
+            <div className="grid grid-cols-2 border-y border-[hsl(var(--gold-accent)/0.16)] py-4 sm:grid-cols-4">
+              <DetailStat icon={Crown} label="Coleção" value={collectionName} />
+              <DetailStat icon={Users} label="Linha" value={lineLabel} />
+              <DetailStat icon={Sparkles} label="Status" value={statusLabel} />
+              <DetailStat
+                icon={Shield}
+                label="Tipo"
+                value={character.is_catalog ? "Catálogo" : "Coleção"}
               />
-
-              <h3 className="text-sm font-bold uppercase tracking-[0.2em] font-mono text-[hsl(var(--gold-accent))] relative z-10 flex items-center gap-2">
-                <Coins className="w-4 h-4" />
-                Preços
-              </h3>
-
-              {priceCategory?.price_coins ? (
-                <div className="flex items-center justify-between p-3 bg-[hsl(0,0%,4%)] border border-[hsl(var(--gold-accent)/0.2)] relative z-10">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-[hsl(var(--gold-accent))]" />
-                    <span className="font-mono text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                      Com Coins
-                    </span>
-                  </div>
-                  <span className="text-2xl font-bold text-[hsl(var(--gold-accent))] font-mono tabular-nums">
-                    {priceCategory.price_coins}
-                  </span>
-                </div>
-              ) : null}
-
-              {priceCategory?.price_standalone ? (
-                <div className="flex items-center justify-between p-3 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] relative z-10">
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                    <span className="font-mono text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                      Avulso
-                    </span>
-                  </div>
-                  <span className="text-2xl font-bold text-[hsl(0,0%,90%)] font-mono tabular-nums">
-                    R$ {(priceCategory.price_standalone / 100).toFixed(0)}
-                  </span>
-                </div>
-              ) : null}
-
-              {!priceCategory && (
-                <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono relative z-10">
-                  Preço disponível em breve
-                </p>
-              )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button
-                size="lg"
-                className="w-full bg-[hsl(var(--gold-accent))] text-[hsl(var(--background))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-xs h-12 shadow-[0_0_20px_hsl(var(--gold-accent)/0.3)] hover:shadow-[0_0_30px_hsl(var(--gold-accent)/0.5)] transition-all"
-              >
-                <Coins className="w-5 h-5 mr-2" />
-                Comprar com Coins
-              </Button>
+            <GalleryStrip
+              images={allImages}
+              activeImage={activeImage}
+              characterName={character.name}
+              onSelect={setSelectedImage}
+            />
 
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full border-[hsl(var(--gold-accent)/0.4)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent))] font-mono uppercase tracking-wider text-xs h-12 transition-all"
-              >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Comprar Avulso
-              </Button>
-            </div>
-
-            {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { icon: Shield, label: "Qualidade Premium" },
-                { icon: Zap, label: "Produção Rápida" },
-                { icon: Heart, label: "Feito à Mão" },
-              ].map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="text-center p-3 bg-[hsl(0,0%,6%)] border border-[hsl(0,0%,12%)] hover:border-[hsl(var(--gold-accent)/0.3)] transition-colors"
-                >
-                  <Icon className="w-5 h-5 mx-auto mb-1.5 text-[hsl(var(--gold-accent))]" />
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] leading-tight">
-                    {label}
-                  </p>
+            <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+              <section className="border border-[hsl(var(--gold-accent)/0.16)] bg-black/35 p-5">
+                <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">
+                  Especificações
+                </h2>
+                <div className="space-y-3">
+                  <SpecRow label="Escala" value="Sob consulta" />
+                  <SpecRow label="Lançamento" value={releaseLabel} />
+                  <SpecRow label="Categoria" value={categoryLabel} />
+                  <SpecRow label="Franquia" value={franchiseLabel} />
+                  <SpecRow label="Status" value={statusLabel} />
                 </div>
-              ))}
+              </section>
+
+              <section className="border border-[hsl(var(--gold-accent)/0.16)] bg-black/35 p-5">
+                <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">
+                  Disponibilidade
+                </h2>
+                <div className="space-y-3">
+                  <SpecRow
+                    label="Coins"
+                    value={
+                      priceCategory?.price_coins
+                        ? `${priceCategory.price_coins} coins`
+                        : "Sob consulta"
+                    }
+                  />
+                  <SpecRow
+                    label="Avulso"
+                    value={formatMoneyFromCents(
+                      priceCategory?.price_standalone,
+                    )}
+                  />
+                  <SpecRow
+                    label="Estoque"
+                    value={
+                      typeof character.stock_quantity === "number"
+                        ? String(character.stock_quantity)
+                        : "Sob consulta"
+                    }
+                  />
+                </div>
+              </section>
             </div>
+
+            <Button
+              asChild
+              className="h-14 w-full border border-[hsl(var(--gold-accent)/0.78)] bg-[hsl(var(--gold-accent)/0.08)] font-mono text-sm uppercase tracking-[0.28em] text-[hsl(var(--gold-accent))] shadow-[0_0_28px_hsl(var(--gold-accent)/0.18)] hover:bg-[hsl(var(--gold-accent)/0.16)]"
+            >
+              <Link to={primaryCtaPath}>
+                {canBuy ? "Quero esta peça" : "Acompanhar coleção"}
+                {canBuy ? (
+                  <ShoppingBag className="ml-3 h-4 w-4" />
+                ) : (
+                  <Calendar className="ml-3 h-4 w-4" />
+                )}
+              </Link>
+            </Button>
+
+            {relatedCharacters && relatedCharacters.length > 0 && (
+              <section>
+                <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">
+                  Outros personagens
+                </h2>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                  {relatedCharacters.slice(0, 4).map((relatedCharacter) => (
+                    <RelatedCharacterCard
+                      key={relatedCharacter.id}
+                      character={relatedCharacter}
+                      collectionSlug={collectionSlug}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </div>
-
-        {/* Related Characters */}
-        {relatedChars && relatedChars.length > 0 && (
-          <section className="mt-16 md:mt-24">
-            <ArcadeSectionTitle>Outros Personagens</ArcadeSectionTitle>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
-              {relatedChars.map((char) => (
-                <RelatedCharacterCard
-                  key={char.id}
-                  char={char}
-                  collectionSlug={collectionSlug}
-                />
-              ))}
-            </div>
-
-            <div className="text-center mt-8">
-              <Link
-                to={collectionDetailsPath(collectionSlug)}
-                className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:text-[hsl(var(--gold-accent)/0.8)] transition-colors border border-[hsl(var(--gold-accent)/0.3)] hover:border-[hsl(var(--gold-accent))] px-6 py-3"
-              >
-                Ver toda a coleção
-                <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </section>
-        )}
-      </div>
+      </section>
     </Page>
   );
 }
