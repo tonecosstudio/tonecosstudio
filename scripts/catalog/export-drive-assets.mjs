@@ -19,6 +19,7 @@ const PLAN_PATH = argValue("plan", "tmp/drive-organization/drive-organization-pl
 const OUT_DIR = argValue("out", "catalog-assets/drive-organized");
 const SOURCE_ROOT = argValue("source-root");
 const LIMIT = Number.parseInt(argValue("limit", ""), 10);
+const CONCURRENCY = Number.parseInt(argValue("concurrency", "6"), 10);
 const DOWNLOAD = argFlag("download");
 const FORCE = argFlag("force");
 const INCLUDE_REVIEW = !argFlag("skip-review");
@@ -228,83 +229,98 @@ async function writeManifest(rows, summary) {
   );
 }
 
-async function main() {
-  const plan = JSON.parse(await fs.readFile(PLAN_PATH, "utf8"));
-  const plannedItems = (plan.items || []).filter(shouldExport);
-  const items = Number.isFinite(LIMIT) && LIMIT > 0 ? plannedItems.slice(0, LIMIT) : plannedItems;
-  const rows = [];
+async function exportItem(item, index, total) {
+  const localPath = destinationPath(item);
+  const relativePath = path.relative(process.cwd(), localPath);
 
-  for (const [index, item] of items.entries()) {
-    const localPath = destinationPath(item);
-    const relativePath = path.relative(process.cwd(), localPath);
-
-    try {
-      if (!FORCE) {
-        try {
-          const existing = await fs.readFile(localPath);
-          rows.push({
-            ...item,
-            exportStatus: "already_exists",
-            localPath: relativePath,
-            plannedLocalPath: relativePath,
-            bytes: existing.length,
-            sha256: sha256(existing),
-            source: "existing",
-            error: null,
-          });
-          console.log(`[${index + 1}/${items.length}] exists ${relativePath}`);
-          continue;
-        } catch {
-          // Missing file; export it below.
-        }
-      }
-
-      const source = await readSourceBytes(item);
-      if (!isImage(source.bytes)) {
-        const invalidPath = invalidDestinationPath(item, source.bytes);
-        await writeFileAtomic(invalidPath, source.bytes);
-        rows.push({
+  try {
+    if (!FORCE) {
+      try {
+        const existing = await fs.readFile(localPath);
+        console.log(`[${index + 1}/${total}] exists ${relativePath}`);
+        return {
           ...item,
-          exportStatus: "non_image",
-          localPath: path.relative(process.cwd(), invalidPath),
+          planIndex: index,
+          exportStatus: "already_exists",
+          localPath: relativePath,
           plannedLocalPath: relativePath,
-          bytes: source.bytes.length,
-          sha256: sha256(source.bytes),
-          source: source.source,
-          sourceFile: source.sourceFile,
-          error: "Source content is not a supported image.",
-        });
-        console.warn(`[${index + 1}/${items.length}] non-image ${item.originalName}`);
-        continue;
+          bytes: existing.length,
+          sha256: sha256(existing),
+          source: "existing",
+          error: null,
+        };
+      } catch {
+        // Missing file; export it below.
       }
+    }
 
-      await writeFileAtomic(localPath, source.bytes);
-      rows.push({
+    const source = await readSourceBytes(item);
+    if (!isImage(source.bytes)) {
+      const invalidPath = invalidDestinationPath(item, source.bytes);
+      await writeFileAtomic(invalidPath, source.bytes);
+      console.warn(`[${index + 1}/${total}] non-image ${item.originalName}`);
+      return {
         ...item,
-        exportStatus: "exported",
-        localPath: relativePath,
+        planIndex: index,
+        exportStatus: "non_image",
+        localPath: path.relative(process.cwd(), invalidPath),
         plannedLocalPath: relativePath,
         bytes: source.bytes.length,
         sha256: sha256(source.bytes),
         source: source.source,
         sourceFile: source.sourceFile,
-        error: null,
-      });
-      console.log(`[${index + 1}/${items.length}] exported ${relativePath}`);
-    } catch (error) {
-      rows.push({
-        ...item,
-        exportStatus: "error",
-        localPath: relativePath,
-        plannedLocalPath: relativePath,
-        bytes: null,
-        sha256: null,
-        source: null,
-        error: error.message,
-      });
-      console.warn(`[${index + 1}/${items.length}] error ${item.originalName}: ${error.message}`);
+        error: "Source content is not a supported image.",
+      };
     }
+
+    await writeFileAtomic(localPath, source.bytes);
+    console.log(`[${index + 1}/${total}] exported ${relativePath}`);
+    return {
+      ...item,
+      planIndex: index,
+      exportStatus: "exported",
+      localPath: relativePath,
+      plannedLocalPath: relativePath,
+      bytes: source.bytes.length,
+      sha256: sha256(source.bytes),
+      source: source.source,
+      sourceFile: source.sourceFile,
+      error: null,
+    };
+  } catch (error) {
+    console.warn(`[${index + 1}/${total}] error ${item.originalName}: ${error.message}`);
+    return {
+      ...item,
+      planIndex: index,
+      exportStatus: "error",
+      localPath: relativePath,
+      plannedLocalPath: relativePath,
+      bytes: null,
+      sha256: null,
+      source: null,
+      error: error.message,
+    };
   }
+}
+
+async function runPool(items, workerCount) {
+  const rows = [];
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.max(1, workerCount) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      rows.push(await exportItem(items[index], index, items.length));
+    }
+  });
+  await Promise.all(workers);
+  return rows.sort((a, b) => a.planIndex - b.planIndex);
+}
+
+async function main() {
+  const plan = JSON.parse(await fs.readFile(PLAN_PATH, "utf8"));
+  const plannedItems = (plan.items || []).filter(shouldExport);
+  const items = Number.isFinite(LIMIT) && LIMIT > 0 ? plannedItems.slice(0, LIMIT) : plannedItems;
+  const rows = await runPool(items, CONCURRENCY);
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -312,6 +328,7 @@ async function main() {
     outDir: OUT_DIR,
     sourceRoot: SOURCE_ROOT,
     download: DOWNLOAD,
+    concurrency: CONCURRENCY,
     total: rows.length,
     byExportStatus: rows.reduce((acc, row) => {
       acc[row.exportStatus] = (acc[row.exportStatus] || 0) + 1;

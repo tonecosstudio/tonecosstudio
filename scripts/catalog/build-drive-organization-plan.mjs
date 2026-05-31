@@ -23,8 +23,35 @@ const MANIFESTS = argValue("manifests", DEFAULT_MANIFESTS.join(","))
   .filter(Boolean);
 const REPORT_DIR = argValue("report-dir", "tmp/drive-organization");
 
-const COLLECTION_SOURCES = new Set(["thundercats"]);
+const COLLECTION_SOURCES = new Set(["inimigos da vizinhanca", "quarteto fantastico", "terror", "thundercats"]);
 const REVIEW_CATEGORIES = new Set(["revisao", "review", "sem-nome"]);
+const GENERIC_PATH_SEGMENTS = new Set([
+  "catalogo",
+  "animes e desenhos",
+  "animes",
+  "classicos",
+  "outros",
+  "filmes e series",
+  "01 terror",
+  "02 series",
+  "04 classicos antigos",
+  "05 acao",
+  "games",
+  "00 fliperama",
+  "tokusatsu e cultura japonesa",
+  "colecao tonecos",
+  "marvel dc",
+  "marvel",
+  "dc",
+  "equipes e grupos",
+  "herois individuais",
+  "personagens extras e outros",
+  "viloes",
+  "viloes outros",
+  "vilões inimigos da vizinhanca",
+  "dioramas e confrontos",
+  "dioramas do homem aranha",
+]);
 const DRIVE_FILE_OVERRIDES = {
   "1AyEzy7At9_6L69uc1kUtcdTaiLY9SHJH": {
     characterName: "Cheetara",
@@ -123,6 +150,144 @@ function displaySegment(value, fallback = "Sem Nome") {
   return cleaned || fallback;
 }
 
+function cleanDriveSegment(value) {
+  return displaySegment(value).replace(/\s+Shared$/i, "").trim();
+}
+
+function cleanPathParts(value) {
+  const parts = String(value || "")
+    .split("/")
+    .map(cleanDriveSegment)
+    .filter(Boolean);
+  return normalizeComparable(parts[0]) === "catalogo" ? parts.slice(1) : parts;
+}
+
+function firstUsefulPart(parts, startIndex = 0) {
+  return parts.slice(startIndex).find((part) => !GENERIC_PATH_SEGMENTS.has(normalizeComparable(part))) || null;
+}
+
+function lastUsefulFolderPart(parts) {
+  const folders = parts.slice(0, -1);
+  for (let index = folders.length - 1; index >= 0; index--) {
+    const part = folders[index];
+    if (!GENERIC_PATH_SEGMENTS.has(normalizeComparable(part))) return part;
+  }
+  return null;
+}
+
+function inferTaxonomyFromPath(row) {
+  const parts = cleanPathParts(row.sourceDrivePath || row.source_drive_path);
+  const folders = parts.slice(0, -1);
+  const top = normalizeComparable(folders[0]);
+  const second = normalizeComparable(folders[1]);
+  const third = normalizeComparable(folders[2]);
+
+  if (!parts.length) return {};
+
+  if (top === "colecao tonecos") {
+    const sourceTitle = firstUsefulPart(folders, 1) || folders[1] || "Colecao Tonecos";
+    return {
+      category: "colecoes",
+      subcategory: slugSegment(sourceTitle),
+      mediaType: "other",
+      sourceTitle,
+      collectionCandidate: true,
+      pathCharacterName: lastUsefulFolderPart(parts),
+    };
+  }
+
+  if (top === "games") {
+    const sourceTitle = firstUsefulPart(folders, 1) || "Games";
+    return {
+      category: "jogos",
+      subcategory: slugSegment(sourceTitle),
+      mediaType: "game",
+      sourceTitle,
+      pathCharacterName: lastUsefulFolderPart(parts),
+    };
+  }
+
+  if (top === "animes e desenhos") {
+    const sourceTitle = firstUsefulPart(folders, second === "animes" || second === "classicos" || second === "outros" ? 2 : 1) || "Animes e Desenhos";
+    return {
+      category: "animes",
+      subcategory: slugSegment(sourceTitle),
+      mediaType: "anime",
+      sourceTitle,
+      pathCharacterName: lastUsefulFolderPart(parts),
+    };
+  }
+
+  if (top === "tokusatsu e cultura japonesa") {
+    const sourceTitle = firstUsefulPart(folders, 1) || "Tokusatsu";
+    return {
+      category: "series",
+      subcategory: slugSegment(sourceTitle),
+      mediaType: "tokusatsu",
+      sourceTitle,
+      pathCharacterName: lastUsefulFolderPart(parts),
+    };
+  }
+
+  if (top === "fisiculturistas") {
+    return {
+      category: "outros",
+      subcategory: "fisiculturistas",
+      mediaType: "other",
+      sourceTitle: "Fisiculturistas",
+      pathCharacterName: lastUsefulFolderPart(parts),
+    };
+  }
+
+  if (top === "filmes e series") {
+    if (second === "02 series") {
+      const sourceTitle = firstUsefulPart(folders, 2) || "Series";
+      return {
+        category: "series",
+        subcategory: slugSegment(sourceTitle),
+        mediaType: "series",
+        sourceTitle,
+        pathCharacterName: lastUsefulFolderPart(parts),
+      };
+    }
+
+    if (second === "dc") {
+      const sourceTitle = firstUsefulPart(folders, 2) || "DC";
+      return {
+        category: "quadrinhos",
+        subcategory: slugSegment(sourceTitle),
+        mediaType: "comic",
+        sourceTitle,
+        pathCharacterName: lastUsefulFolderPart(parts),
+      };
+    }
+
+    if (second === "marvel dc" || third === "marvel") {
+      const sourceTitle = firstUsefulPart(folders, third === "marvel" ? 3 : 2) || "Marvel";
+      return {
+        category: "quadrinhos",
+        subcategory: slugSegment(sourceTitle),
+        mediaType: "comic",
+        sourceTitle,
+        pathCharacterName: lastUsefulFolderPart(parts),
+      };
+    }
+
+    const sourceTitle = firstUsefulPart(folders, 1) || "Filmes e Series";
+    return {
+      category: second === "01 terror" || second === "04 classicos antigos" || second === "05 acao" ? "filmes" : "filmes",
+      subcategory: slugSegment(sourceTitle),
+      mediaType: "movie",
+      sourceTitle,
+      pathCharacterName: lastUsefulFolderPart(parts),
+    };
+  }
+
+  return {
+    pathCharacterName: lastUsefulFolderPart(parts),
+  };
+}
+
 function isGenericName(value) {
   const normalized = normalizeComparable(stripExtension(value));
   return (
@@ -145,6 +310,7 @@ async function readManifest(file) {
   return normalizeRows(JSON.parse(raw)).map((item) => {
     const id = item.id || item.fileId || item.file_id;
     const override = DRIVE_FILE_OVERRIDES[id] || {};
+    const pathTaxonomy = inferTaxonomyFromPath(item);
     return {
       manifest: file,
       id,
@@ -155,12 +321,16 @@ async function readManifest(file) {
       size: item.size || null,
       characterName: item.characterName || null,
       variantName: item.variantName || null,
-      sourceTitle: item.sourceTitle || item.franchise || item.source_title || null,
-      category: item.category || null,
-      subcategory: item.subcategory || null,
-      mediaType: item.mediaType || item.media_type || null,
+      sourceTitle: item.sourceTitle || item.franchise || item.source_title || pathTaxonomy.sourceTitle || null,
+      category: item.category || pathTaxonomy.category || null,
+      subcategory: item.subcategory || pathTaxonomy.subcategory || null,
+      mediaType: item.mediaType || item.media_type || pathTaxonomy.mediaType || null,
       sourceFolderName: item.sourceFolderName || item.source_folder_name || null,
       sourceDrivePath: item.sourceDrivePath || item.source_drive_path || null,
+      pathCharacterName: pathTaxonomy.pathCharacterName || null,
+      collectionCandidate:
+        pathTaxonomy.collectionCandidate ||
+        Boolean(DRIVE_FILE_OVERRIDES[id] && normalizeComparable(override.sourceTitle) === "thundercats"),
       tags: item.tags || [],
       notes: item.notes || null,
       ...override,
@@ -180,6 +350,7 @@ function inferFromName(row) {
     return row.characterName;
   }
   if (!isGenericName(base)) return base;
+  if (row.pathCharacterName && !isGenericName(row.pathCharacterName)) return row.pathCharacterName;
   return null;
 }
 
@@ -241,7 +412,7 @@ function classify(row) {
 
   const sourceSlug = slugSegment(sourceTitle);
   const categorySlug = slugSegment(category);
-  const collection = COLLECTION_SOURCES.has(sourceSlug);
+  const collection = row.collectionCandidate;
 
   let status = "ready_to_organize";
   if (needsReview) status = "needs_review";
