@@ -1,4 +1,7 @@
-import { CATALOG_PAGE_SIZE } from "@/config/catalog";
+import {
+  CATALOG_PAGE_SIZE,
+  PUBLIC_CATALOG_VISIBILITIES,
+} from "@/config/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import { getCatalogTagFilterValues } from "@/lib/catalog-utils";
 import type { CatalogModelDetailsRow, CatalogModelRow } from "@/types/catalog";
@@ -71,8 +74,6 @@ const CATALOG_MODEL_DETAILS_SELECT = [
   ...CATALOG_MODEL_COLUMNS,
   "description",
 ].join(",");
-const PUBLIC_CATALOG_VISIBILITIES = ["general", "both"];
-
 type CatalogModelsQueryResult<T> = { data: T[] | null; error: unknown };
 
 interface CatalogModelsQuery<T> extends PromiseLike<
@@ -81,7 +82,7 @@ interface CatalogModelsQuery<T> extends PromiseLike<
   contains(column: string, value: string[]): CatalogModelsQuery<T>;
   eq(column: string, value: string | boolean): CatalogModelsQuery<T>;
   ilike(column: string, pattern: string): CatalogModelsQuery<T>;
-  in(column: string, values: string[]): CatalogModelsQuery<T>;
+  in(column: string, values: readonly string[]): CatalogModelsQuery<T>;
   limit(count: number): CatalogModelsQuery<T>;
   maybeSingle(): Promise<{ data: T | null; error: unknown }>;
   not(column: string, operator: string, value: string): CatalogModelsQuery<T>;

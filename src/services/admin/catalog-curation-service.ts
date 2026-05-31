@@ -1,6 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCatalogTags } from "@/lib/catalog-utils";
 import catalogTagPolicy from "@/config/catalog-tag-policy.json";
+import {
+  PUBLIC_CATALOG_VISIBILITIES,
+  type CatalogVisibility,
+} from "@/config/catalog";
+
+export type { CatalogVisibility };
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 
@@ -33,7 +39,6 @@ export type CatalogCurationStatus =
   | "hidden";
 
 export type CatalogPriceMode = "consultation" | "category" | "fixed";
-export type CatalogVisibility = "general" | "collection" | "both" | "hidden";
 export type CatalogVariantType =
   | "default"
   | "form"
@@ -209,7 +214,7 @@ interface CatalogCountQuery extends PromiseLike<{
 }> {
   contains(column: string, value: string[]): CatalogCountQuery;
   eq(column: string, value: string | boolean): CatalogCountQuery;
-  in(column: string, value: string[]): CatalogCountQuery;
+  in(column: string, value: readonly string[]): CatalogCountQuery;
   is(column: string, value: null | boolean): CatalogCountQuery;
   neq(column: string, value: string | boolean): CatalogCountQuery;
   not(column: string, operator: string, value: string): CatalogCountQuery;
@@ -264,7 +269,6 @@ interface CatalogCountGateway {
 }
 
 const catalogCountGateway = supabase as unknown as CatalogCountGateway;
-const PUBLIC_CATALOG_VISIBILITIES = ["general", "both"];
 const PUBLIC_TAG_BLOCKLIST = catalogTagPolicy.publicTagBlocklist;
 const INTERNAL_TAGS = catalogTagPolicy.internalTags;
 

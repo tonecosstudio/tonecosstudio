@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { catalogModelDetailsPath } from "@/config/routes";
+import { COLLECTION_CATALOG_VISIBILITIES } from "@/config/catalog";
 
 export type PublicCollectionPreview = {
   id: string;
@@ -199,8 +200,6 @@ type CollectionModelDbRow = {
   image_path: string | null;
   thumbnail_url: string | null;
 };
-
-const COLLECTION_MODEL_VISIBILITIES = ["collection", "both"];
 
 function getPublicStorageUrl(bucket: string | null, path: string | null) {
   if (!bucket || !path) return null;
@@ -412,7 +411,7 @@ export async function getCollectionDetailsBySlug(
     .select("id, name, description, image_bucket, image_path, thumbnail_url")
     .eq("collection_id", collectionData.id)
     .eq("is_active", true)
-    .in("catalog_visibility", COLLECTION_MODEL_VISIBILITIES)
+    .in("catalog_visibility", COLLECTION_CATALOG_VISIBILITIES)
     .order("name", { ascending: true });
 
   if (modelError) throw modelError;
