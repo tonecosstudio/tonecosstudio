@@ -31,6 +31,7 @@
     "catalog:drive-appscript": "node scripts/catalog/generate-drive-apps-script.mjs",
     "catalog:drive-scrape-public": "node scripts/catalog/scrape-drive-public-folder.mjs",
     "catalog:export-drive-assets": "node scripts/catalog/export-drive-assets.mjs --download",
+    "catalog:visual-groups": "node scripts/catalog/audit-drive-visual-groups.mjs",
     "catalog:review-sheets": "node scripts/catalog/build-review-contact-sheets.mjs",
     "catalog:clean-public-tags": "node scripts/catalog/clean-public-model-tags.mjs",
     "catalog:remove-backgrounds": "node scripts/catalog/remove-backgrounds-batch.mjs",

@@ -1451,6 +1451,40 @@
       "subcategory": "league-of-legends",
       "mediaType": "game",
       "curationConfidence": "medium"
+    },
+    "1V7Lw-_paUyaMuHFaEL_p3TignacHzyfP": {
+      "characterName": "Videl",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1UZq7JOUmCvb4vxZO6PtTgYK3nO4f7oJx": {
+      "characterName": "Videl",
+      "variantName": "Com Capacete",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1FG0gTh3DYME9MpiqeoVNf-3_019BXwlw": {
+      "characterName": "Videl",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1FIWu3DXzgMqxFrDqeybg-u7yqorHS9Aq": {
+      "characterName": "Videl",
+      "variantName": "Com Capacete",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
     }
   }
 }
