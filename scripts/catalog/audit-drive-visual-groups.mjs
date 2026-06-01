@@ -12,10 +12,16 @@ function argValue(name, fallback = null) {
   return fallback;
 }
 
+function argFlag(name) {
+  return process.argv.includes(`--${name}`);
+}
+
 const MANIFEST_PATH = argValue("manifest", "catalog-assets/drive-curated-v12/_manifest/catalog-assets-manifest.json");
 const OUT_DIR = argValue("out", path.join(path.dirname(MANIFEST_PATH), "..", "_audit", "visual-groups"));
+const CACHE_PATH = argValue("cache", path.join(OUT_DIR, "visual-hash-cache.json"));
 const NEAR_THRESHOLD = Number.parseInt(argValue("near-threshold", "6"), 10);
 const MIN_GROUP_SIZE = Number.parseInt(argValue("min-group-size", "2"), 10);
+const SKIP_SHEETS = argFlag("skip-sheets");
 const STATUSES = new Set(
   argValue("statuses", "ready_to_organize,duplicate_candidate,duplicate_exact")
     .split(",")
@@ -120,6 +126,54 @@ async function analyzeItem(row) {
     height: metadata.height || null,
     variantName: row.variantName || null,
   };
+}
+
+function cacheKey(row) {
+  return [row.id, row.sha256 || row.size || row.localPath].filter(Boolean).join("|");
+}
+
+async function readCache() {
+  try {
+    const raw = await fs.readFile(CACHE_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return new Map(Object.entries(parsed.items || {}));
+  } catch (error) {
+    if (error.code === "ENOENT") return new Map();
+    throw error;
+  }
+}
+
+async function writeCache(cache) {
+  const items = Object.fromEntries(cache.entries());
+  await fs.mkdir(path.dirname(CACHE_PATH), { recursive: true });
+  await fs.writeFile(
+    CACHE_PATH,
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), items }, null, 2)}\n`,
+  );
+}
+
+async function analyzeItemWithCache(row, cache, stats) {
+  const key = cacheKey(row);
+  const cached = cache.get(key);
+  if (cached) {
+    stats.cacheHits += 1;
+    return {
+      ...row,
+      ...cached,
+      filePath: path.resolve(row.localPath),
+      variantName: row.variantName || null,
+    };
+  }
+
+  stats.cacheMisses += 1;
+  const analyzed = await analyzeItem(row);
+  cache.set(key, {
+    visualSha256: analyzed.visualSha256,
+    perceptualHash: analyzed.perceptualHash,
+    width: analyzed.width,
+    height: analyzed.height,
+  });
+  return analyzed;
 }
 
 function classifyGroup(items) {
@@ -253,6 +307,8 @@ async function writeGroupSheet(group, index) {
 
 async function main() {
   const manifest = JSON.parse(await fs.readFile(MANIFEST_PATH, "utf8"));
+  const cache = await readCache();
+  const cacheStats = { cacheHits: 0, cacheMisses: 0 };
   const usableRows = (manifest.items || []).filter(
     (row) =>
       row.localPath &&
@@ -265,7 +321,7 @@ async function main() {
   const analyzed = [];
   for (const row of usableRows) {
     try {
-      analyzed.push(await analyzeItem(row));
+      analyzed.push(await analyzeItemWithCache(row, cache, cacheStats));
     } catch (error) {
       analyzed.push({ ...row, error: error.message });
     }
@@ -304,8 +360,12 @@ async function main() {
   await fs.mkdir(OUT_DIR, { recursive: true });
 
   for (let index = 0; index < groups.length; index += 1) {
-    groups[index].sheetPath = await writeGroupSheet(groups[index], index);
+    groups[index].sheetPath = SKIP_SHEETS
+      ? null
+      : await writeGroupSheet(groups[index], index);
   }
+
+  await writeCache(cache);
 
   const reportGroups = groups.map((group) => ({
     identity: group.identity,
@@ -332,6 +392,9 @@ async function main() {
     generatedAt: new Date().toISOString(),
     manifest: MANIFEST_PATH,
     nearThreshold: NEAR_THRESHOLD,
+    cachePath: CACHE_PATH,
+    skipSheets: SKIP_SHEETS,
+    ...cacheStats,
     analyzedItems: analyzed.filter((row) => !row.error).length,
     failedItems: analyzed.filter((row) => row.error).length,
     groups: reportGroups.length,
