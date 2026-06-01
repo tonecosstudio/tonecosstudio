@@ -35,11 +35,13 @@ function normalizeComparable(value) {
 }
 
 function identityKey(row) {
-  return [row.sourceTitle, row.characterName].map(normalizeComparable).join("|");
+  return [row.sourceTitle, row.characterName, row.modelGroup || ""]
+    .map(normalizeComparable)
+    .join("|");
 }
 
 function identityTextKey(row) {
-  return normalizeComparable([row.sourceTitle, row.characterName].join(" "));
+  return normalizeComparable([row.sourceTitle, row.characterName, row.modelGroup].join(" "));
 }
 
 function variantKey(row) {

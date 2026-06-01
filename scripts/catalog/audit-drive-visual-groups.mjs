@@ -31,7 +31,7 @@ const STATUSES = new Set(
 
 const TILE_WIDTH = 220;
 const IMAGE_HEIGHT = 180;
-const LABEL_HEIGHT = 86;
+const LABEL_HEIGHT = 98;
 const TILE_HEIGHT = IMAGE_HEIGHT + LABEL_HEIGHT;
 const GAP = 12;
 const PADDING = 24;
@@ -49,13 +49,15 @@ function normalizeComparable(value) {
 }
 
 function displayIdentity(row) {
-  return [row.sourceTitle || "Catalogo", row.characterName || "Sem Nome"]
+  return [row.sourceTitle || "Catalogo", row.characterName || "Sem Nome", row.modelGroup || null]
     .filter(Boolean)
     .join(" / ");
 }
 
 function identityKey(row) {
-  return [row.sourceTitle, row.characterName].map(normalizeComparable).join("|");
+  return [row.sourceTitle, row.characterName, row.modelGroup || ""]
+    .map(normalizeComparable)
+    .join("|");
 }
 
 function sha256(bytes) {
@@ -125,6 +127,7 @@ async function analyzeItem(row) {
     width: metadata.width || null,
     height: metadata.height || null,
     variantName: row.variantName || null,
+    modelGroup: row.modelGroup || row.model_group || null,
   };
 }
 
@@ -162,6 +165,7 @@ async function analyzeItemWithCache(row, cache, stats) {
       ...cached,
       filePath: path.resolve(row.localPath),
       variantName: row.variantName || null,
+      modelGroup: row.modelGroup || row.model_group || null,
     };
   }
 
@@ -195,7 +199,9 @@ function classifyGroup(items) {
     }
   }
 
-  const variants = new Set(items.map((item) => item.variantName || "default"));
+  const variants = new Set(
+    items.map((item) => [item.variantName || "default", item.modelGroup || ""].join("|")),
+  );
   const uniqueHashes = new Set(items.map((item) => item.visualSha256));
   const hasExactDuplicates = [...exactGroups.values()].some((group) => group.length > 1);
   const hasVariants = variants.size > 1;
@@ -217,6 +223,7 @@ function classifyGroup(items) {
 function labelSvg(item, index) {
   const title = truncate(item.proposedName || item.originalName, 32);
   const variant = truncate(item.variantName || "default", 28);
+  const model = truncate(item.modelGroup || "-", 28);
   const status = truncate(item.status, 28);
   const id = truncate(item.id, 18);
 
@@ -226,7 +233,8 @@ function labelSvg(item, index) {
       <text x="10" y="18" fill="#f4c63d" font-family="Arial, sans-serif" font-size="13" font-weight="700">${String(index + 1).padStart(2, "0")} ${escapeXml(status)}</text>
       <text x="10" y="39" fill="#f3f3f3" font-family="Arial, sans-serif" font-size="11">${escapeXml(title)}</text>
       <text x="10" y="57" fill="#bdbdbd" font-family="Arial, sans-serif" font-size="10">variante: ${escapeXml(variant)}</text>
-      <text x="10" y="75" fill="#777" font-family="Arial, sans-serif" font-size="9">${escapeXml(id)}</text>
+      <text x="10" y="74" fill="#bdbdbd" font-family="Arial, sans-serif" font-size="10">modelo: ${escapeXml(model)}</text>
+      <text x="10" y="91" fill="#777" font-family="Arial, sans-serif" font-size="9">${escapeXml(id)}</text>
     </svg>
   `);
 }
@@ -382,6 +390,7 @@ async function main() {
       status: item.status,
       sourceDrivePath: item.sourceDrivePath,
       variantName: item.variantName,
+      modelGroup: item.modelGroup,
       localPath: item.localPath,
       sha256: item.visualSha256,
       perceptualHash: item.perceptualHash,

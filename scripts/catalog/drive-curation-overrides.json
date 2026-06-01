@@ -115,6 +115,138 @@
     },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
+      "variantName": "Espada e Escudo",
+      "modelGroup": "mulher-maravilha-eddyworkshop-espada",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1TAZwqu7lMp_pijlX6zy76jCTuzx4J4gq": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Estatua B3dserk",
+      "modelGroup": "mulher-maravilha-b3dserk-estatua",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1bGDPJT31AgTsM6DhGNJ-TtYbxPj4U_vm": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Estatua B3dserk",
+      "modelGroup": "mulher-maravilha-b3dserk-estatua",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "10EhdJRGX8uyf9h7qPshBgDasSE4rMN_1": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Laco",
+      "modelGroup": "mulher-maravilha-laco-classica",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1DxuAWSHKhN136Ut_Xn6JFsHnHXPIhBhh": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Escudo",
+      "modelGroup": "mulher-maravilha-escudo-classica",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1jIdaqyPy_ZTL34NjN7M2XZgcYnJlxt25": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Jaqueta",
+      "modelGroup": "mulher-maravilha-3dmoonn-jaqueta",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1m_N2M_erGWI9vSlMaXdRSge_U8uu-Sbd": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Busto Laco B3dserk",
+      "modelGroup": "mulher-maravilha-b3dserk-busto",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1bZRyG_ag4PYz5U1jUfynuqGJCF-0mIPJ": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Busto Espada B3dserk",
+      "modelGroup": "mulher-maravilha-b3dserk-busto",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1vqK1kQYf6Gm_5TMccwbr2G4kl7zhMIWb": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Jaqueta",
+      "modelGroup": "mulher-maravilha-3dmoonn-jaqueta",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1FpF6qFtYEgIWE6-fP4-MHYzWCoF4J7Ve": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Espada e Escudo",
+      "modelGroup": "mulher-maravilha-eddyworkshop-espada",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1UgA0WRptUfkeiOLXKXfWjRWrw82Fi51t": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Samurai",
+      "modelGroup": "mulher-maravilha-samurai",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1yav2nLWJfGdUS-KE3LRZ9izYnOOptLRo": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Escudo Xin Liang",
+      "modelGroup": "mulher-maravilha-xin-liang-escudo",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "12EW2OKDJ1_So2c0N-5f-oYRpPMcFW8oh": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Zez Studios",
+      "modelGroup": "mulher-maravilha-zez-studios",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1jzxK4AXGdNORvohjyvhnEeiWYPiH0mN8": {
+      "characterName": "Mulher-Maravilha",
+      "variantName": "B3dserk Batalha",
+      "modelGroup": "mulher-maravilha-b3dserk-batalha",
       "sourceTitle": "DC",
       "category": "quadrinhos",
       "subcategory": "dc",
@@ -1571,6 +1703,296 @@
       "subcategory": "dragon-ball",
       "mediaType": "anime",
       "curationConfidence": "high"
+    },
+    "1IMlSYVkuHxsC9jOG8vC0Pf7Vw9Y2TYSr": {
+      "characterName": "Vegeta",
+      "variantName": "Armadura Saiyajin",
+      "modelGroup": "vegeta-armadura-saiyajin-scouter",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1TqUURN7q6LBpw-IBR_uzjoDd_tye-7vF": {
+      "characterName": "Vegeta",
+      "variantName": "Resina Bruta",
+      "modelGroup": "vegeta-resina-bruta-pod",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1CreFZewMnAVwZhXroF6wfxzbIMmieEol": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Aura",
+      "modelGroup": "vegeta-super-saiyajin-aura-dourada",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1P_3DxP-FUsL78BnPK2-KPA6QEqljebw1": {
+      "characterName": "Baby Vegeta",
+      "variantName": "Oozaru",
+      "modelGroup": "baby-vegeta-oozaru",
+      "sourceTitle": "Dragon Ball GT",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1GGo4zUu6actuo2bjd9lJKGnpraPQTo0t": {
+      "characterName": "Vegeta",
+      "variantName": "Ataque Energia Verde",
+      "modelGroup": "vegeta-ataque-energia-verde",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1Ju2UTp_X05pLg5n56Vr1Uyt_qNwfn3Ag": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Energia",
+      "modelGroup": "vegeta-super-saiyajin-energia-azul",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1Jv7_pTxVtwCohE0Exb1_ot6ga7FSn2_e": {
+      "characterName": "Vegeta",
+      "variantName": "Armadura Classica",
+      "modelGroup": "vegeta-armadura-classica-base-rocha",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1KBNEdysxHoyPwFiQ7YAb_iYAA7P4-Jm8": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Energia",
+      "modelGroup": "vegeta-super-saiyajin-energia-mao",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1KI3xCFirjO85UhFuRC2np_QjQmO8jMua": {
+      "characterName": "Goku e Vegeta",
+      "variantName": "Diorama Batalha",
+      "modelGroup": "goku-e-vegeta-diorama-batalha",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1KIuBYYAdVDhd6OnGd02_7ZjJJvLCfqen": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin",
+      "modelGroup": "vegeta-super-saiyajin-energia-mao-02",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1Kj53aVr11GppM9s36Ble4V_iCP2g_1Ww": {
+      "characterName": "Nappa e Vegeta",
+      "variantName": "Diorama",
+      "modelGroup": "nappa-e-vegeta-diorama",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1KlShVGV0PyEgM4Bl8UNuOFoCVLx-jadC": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Espiral",
+      "modelGroup": "vegeta-super-saiyajin-espiral",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1KpgOWSelKBjjRyPiONz2OlTvS_ERcar9": {
+      "characterName": "Vegeta",
+      "variantName": "Final Flash Busto",
+      "modelGroup": "vegeta-final-flash-busto",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1KzohEzJwNqvk8dJ2u_r4MeL4MnfuAzr1": {
+      "characterName": "Vegeta",
+      "variantName": "Montagem Angulos",
+      "modelGroup": "vegeta-montagem-angulos",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1L3Jh0ehbspsnpPS6E0xM4u6eM2GU1Jdd": {
+      "characterName": "Goku e Vegeta",
+      "variantName": "Diorama Batalha",
+      "modelGroup": "goku-e-vegeta-diorama-batalha",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1IjPMqJpO0ONFD5XC8dh1fHDlVSGEFlaF": {
+      "characterName": "Vegeta",
+      "variantName": "Bracos Cruzados",
+      "modelGroup": "vegeta-bracos-cruzados",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1J0crzv588Dp_hMlrFR8xx7-5EHeeI5zb": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Chibi",
+      "modelGroup": "vegeta-super-saiyajin-chibi",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1J6FGs1lRNBaAwDEe8v5hgNUh86cbykcW": {
+      "characterName": "Vegeta",
+      "variantName": "Armadura Classica",
+      "modelGroup": "vegeta-armadura-classica-base",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1FmEv2D2Z0L63CLPISL0VGFhtzhejwce3": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Aura",
+      "modelGroup": "vegeta-super-saiyajin-aura-dourada",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1DZaxAeYn5zg-lCJQJ_ZLz-VW8y15pQvU": {
+      "characterName": "Vegeta",
+      "variantName": "Bracos Cruzados",
+      "modelGroup": "vegeta-bracos-cruzados",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1qafLSgdXFmuFmj-NpVfOJWw7Ey36udX8": {
+      "characterName": "Vegeta",
+      "variantName": "Busto Super Saiyajin",
+      "modelGroup": "vegeta-busto-super-saiyajin",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1zkadHoHTLyVrAkA1oTDvX_bVbarHhUfn": {
+      "characterName": "Vegeta",
+      "variantName": "Retrato",
+      "modelGroup": "vegeta-retrato",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1CqKWnUuRWQxVEwksHuf50NEquURny4B9": {
+      "characterName": "Vegeta",
+      "variantName": "Ultra Ego",
+      "modelGroup": "vegeta-ultra-ego",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1NA0GuAM48PHElGyQz-F-LRoYawpAh76x": {
+      "characterName": "Vegeta",
+      "variantName": "Armadura Saiyajin",
+      "modelGroup": "vegeta-armadura-saiyajin-base",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1liX1Bdt9_zBlYfoQ9qYhSmzCnU4oSnRs": {
+      "characterName": "Vegeta",
+      "variantName": "Oozaru",
+      "modelGroup": "vegeta-oozaru",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1QKPOOTZFCDaXu3Et9F_b6heJXHSrB8W1": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Base Verde",
+      "modelGroup": "vegeta-super-saiyajin-base-verde",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1CxuEyClpxr72KVclX-smxahLJi7BthOi": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin 4",
+      "modelGroup": "vegeta-super-saiyajin-4",
+      "sourceTitle": "Dragon Ball GT",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1Cp8p9zxCaMfCPkhTv4ARFlm5B-rroGV_": {
+      "characterName": "Vegeta",
+      "variantName": "Ultra Ego Energia",
+      "modelGroup": "vegeta-ultra-ego-energia",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1IGXjWE03NOL5PA32Hk-C-_j1A2RxXfUl": {
+      "characterName": "Vegeta",
+      "variantName": "Super Saiyajin Aura",
+      "modelGroup": "vegeta-super-saiyajin-aura-dourada",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
     }
   }
 }
