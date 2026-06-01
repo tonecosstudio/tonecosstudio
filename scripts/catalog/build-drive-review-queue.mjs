@@ -45,14 +45,22 @@ function reviewTypeWeight(reviewType) {
   return 0;
 }
 
+function hasAllowedNumericMeaning(normalized) {
+  return (
+    /\b(?:versao|v|diorama|busto|bust|chibi|gear|super saiyajin|android|t)\s*\d+$/.test(normalized) ||
+    /\bx\s*23$/.test(normalized)
+  );
+}
+
 function isSuspiciousName(value) {
   if (value === null || value === undefined || String(value).trim() === "") {
     return false;
   }
   const normalized = normalizeComparable(value);
+  if (hasAllowedNumericMeaning(normalized)) return false;
   return (
     !normalized ||
-    /^(.+)\s+\d+$/.test(normalized) ||
+    (/^(.+)\s+\d+$/.test(normalized) && !hasAllowedNumericMeaning(normalized)) ||
     /\b(copy|copia|sem nome|desconhecido|photo|figura|image)\b/.test(normalized) ||
     /\b(axterix|ataque on titan|scorpion\d+|chun lii|picolo)\b/.test(normalized)
   );

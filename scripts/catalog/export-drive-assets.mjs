@@ -426,6 +426,31 @@ async function exportItem(item, index, total) {
       } catch {
         // Missing file; export it below.
       }
+
+      if (existingAsset && isInsideOutDir(existingAsset) && path.resolve(existingAsset) !== path.resolve(localPath)) {
+        try {
+          const existing = await fs.readFile(existingAsset);
+          if (isImage(existing)) {
+            const movedPath = await moveOrReuseFile(existingAsset, localPath, sha256(existing));
+            const movedRelativePath = path.relative(process.cwd(), movedPath);
+            console.log(`[${index + 1}/${total}] moved ${movedRelativePath}`);
+            return {
+              ...item,
+              planIndex: index,
+              exportStatus: "exported",
+              localPath: movedRelativePath,
+              plannedLocalPath: relativePath,
+              bytes: existing.length,
+              sha256: sha256(existing),
+              source: "moved-existing-manifest",
+              sourceFile: path.relative(process.cwd(), existingAsset),
+              error: null,
+            };
+          }
+        } catch {
+          // Fall back to source-root or Drive download when the manifest path is stale.
+        }
+      }
     }
 
     const source = await readSourceBytes(item);

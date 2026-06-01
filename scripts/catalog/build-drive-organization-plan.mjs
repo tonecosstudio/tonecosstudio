@@ -57,6 +57,8 @@ const GENERIC_PATH_SEGMENTS = new Set([
 const DISPLAY_ALIASES = new Map(
   Object.entries({
     "ataque de tita": "Attack on Titan",
+    "ataque on titan": "Attack on Titan",
+    "attack on titan": "Attack on Titan",
     "axterix e obelix": "Asterix e Obelix",
     animes: "animes",
     filmes: "filmes",
@@ -78,6 +80,7 @@ const DISPLAY_ALIASES = new Map(
     deathstrocke: "Deathstroke",
     "dr destino": "Doutor Destino",
     "dr octopus": "Doutor Octopus",
+    darksied: "Darkseid",
     "full metal": "Fullmetal Alchemist",
     gotenksgogeta: "Gotenks e Gogeta",
     "gotenks gogeta": "Gotenks e Gogeta",
@@ -88,6 +91,9 @@ const DISPLAY_ALIASES = new Map(
     "indiana jones": "Indiana Jones",
     jil: "Jill Valentine",
     "lion o": "Lion-O",
+    "lotr the witch king of angmar": "Rei Bruxo de Angmar",
+    lion: "Lion-O",
+    "mr white": "Walter White",
     lol: "League of Legends",
     "mumm ra": "Mumm-Ra",
     "mulher gato": "Mulher-Gato",
@@ -96,14 +102,21 @@ const DISPLAY_ALIASES = new Map(
     namor: "Namor",
     picolo: "Piccolo",
     "poderoso chefao": "O Poderoso Chefao",
+    pennywhuise: "Pennywise",
     scopion: "Scorpion",
+    "snake solid": "Snake",
     snarf: "Snarf",
+    "spider man": "Homem-Aranha",
+    spidergwen: "Spider-Gwen",
+    "solid snake solid": "Solid Snake",
     "sreet fighter": "Street Fighter",
+    "super girl": "Supergirl",
     superman: "Superman",
     "the king of fighter": "The King of Fighters",
     thundercats: "ThunderCats",
     "tomb rader": "Tomb Raider",
     vegeta: "Vegeta",
+    "wonder woman": "Mulher-Maravilha",
     "wilykit e wilykat": "WilyKit & WilyKat",
     "willy kit e willy kat": "WilyKit & WilyKat",
     xmen: "X-Men",
@@ -262,6 +275,89 @@ function canonicalDisplay(value, fallback = "Sem Nome") {
   return DISPLAY_ALIASES.get(normalizeComparable(displayed)) || smartTitleCase(displayed);
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const GENERIC_SOURCE_TITLES = new Set([
+  "animes e desenhos",
+  "catalogo geral",
+  "filmes e series",
+  "games",
+  "outros",
+  "series",
+]);
+
+const SOURCE_TITLE_ALIASES = new Map(
+  Object.entries({
+    "breaking bad": ["Breaking Bed"],
+    "god of war": ["God of War"],
+    "homem aranha": ["Spider Man", "Spiderman"],
+    "metal gear": ["Metal Gear Solid"],
+    "resident evil": ["Resident Evil 4"],
+    "senhor dos aneis": ["Lotr", "Lord of the Rings"],
+    "tomb raider": ["Tomb Raider"],
+    "yugi oh": ["Yugioh", "Yu Gi Oh", "Yugi Oh"],
+  }),
+);
+
+function sourcePhrases(sourceTitle) {
+  const normalized = normalizeComparable(sourceTitle);
+  if (!normalized || GENERIC_SOURCE_TITLES.has(normalized)) return [];
+  if (["dc", "marvel"].includes(normalized)) return [];
+  return [sourceTitle, ...(SOURCE_TITLE_ALIASES.get(normalized) || [])]
+    .filter(Boolean)
+    .sort((left, right) => normalizeComparable(right).length - normalizeComparable(left).length);
+}
+
+function removePhraseIfUseful(value, phrase) {
+  const normalizedPhrase = normalizeComparable(phrase);
+  if (!normalizedPhrase) return value;
+
+  const pattern = new RegExp(`\\b${normalizedPhrase.split(" ").map(escapeRegExp).join("\\s+")}\\b`, "gi");
+  const next = displaySegment(String(value || "").replace(pattern, " "));
+  if (!next || isGenericName(next)) return value;
+  return next;
+}
+
+function stripSourceTitleNoise(value, sourceTitle) {
+  let cleaned = displaySegment(value);
+  for (const phrase of sourcePhrases(sourceTitle)) {
+    cleaned = removePhraseIfUseful(cleaned, phrase);
+  }
+  return cleaned;
+}
+
+function stripTechnicalNameNoise(value, row = {}) {
+  let cleaned = displaySegment(value)
+    .replace(/\b\d{3,4}\s*x\s*\d{3,4}\b/gi, " ")
+    .replace(/\b[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b/gi, " ")
+    .replace(/\b(?=[a-f0-9]*[a-f])(?=[a-f0-9]*\d)[a-f0-9]{8,}\b/gi, " ")
+    .replace(/\b(?:c4d|max|obj|fbx|ma|lwo|3ds|3dm)\b/gi, " ")
+    .replace(/\b(?:ready\s+to\s+print|3d\s+print\s+files?|3d\s+printable|3d\s+print|print\s+files?|print\s+model)\b/gi, " ")
+    .replace(/\b(?:3d\s+model|3d|stl|model|figure|sculpture|statue|promo|image|from\s+h3ll|files?)\b/gi, " ")
+    .replace(/\b(?:b3dserk|wicked)\b/gi, " ")
+    .replace(/\bghb\d*\b/gi, " ")
+    .replace(/\bfrom$/i, " ")
+    .replace(/^\s*\d{6,8}\b/g, " ")
+    .replace(/\b\d{5,}\b/g, " ")
+    .replace(/\s+(?:n|o)$/i, " ")
+    .replace(/\bsexy\s+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  cleaned = stripSourceTitleNoise(cleaned, row.sourceTitle || row.sourceFolderName || "");
+  cleaned = cleaned.replace(/\bfrom$/i, " ").replace(/\s+/g, " ").trim();
+  cleaned = DISPLAY_ALIASES.get(normalizeComparable(cleaned)) || cleaned;
+  return displaySegment(cleaned, "");
+}
+
+function cleanIdentityCandidate(value, row = {}) {
+  const cleaned = stripTechnicalNameNoise(value, row);
+  if (!cleaned || isGenericName(cleaned)) return null;
+  return canonicalDisplay(cleaned);
+}
+
 function titleizeSlug(value) {
   return displaySegment(String(value || "").replace(/[-_]+/g, " ")).replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
@@ -390,24 +486,36 @@ function modelFolderName(characterName, variantName, modelGroup, modelKind) {
   return null;
 }
 
+function catalogCategoryFolder(category, mediaType) {
+  const normalized = normalizeComparable(category || mediaType);
+  if (["anime", "animes"].includes(normalized)) return "anime";
+  if (["jogo", "jogos", "game", "games"].includes(normalized)) return "games";
+  if (["filme", "filmes", "movie", "movies"].includes(normalized)) return "filmes";
+  if (["serie", "series", "tokusatsu"].includes(normalized)) return "series";
+  if (["quadrinho", "quadrinhos", "comic", "comics", "hq"].includes(normalized)) return "quadrinhos";
+  if (["colecao", "colecoes"].includes(normalized)) return "colecoes";
+  return slugSegment(category || mediaType || "outros");
+}
+
 function buildDestinationFolder({ status, originalGeneric, collection, category, categorySlug, sourceFolder, characterFolder, modelKind }) {
   if (status === "needs_review") {
+    const reviewBase = `catalogo/nao-identificado/${catalogCategoryFolder(category)}/${sourceFolder}`;
     if (originalGeneric && characterFolder !== "Sem Nome") {
-      return `01_REVISAR/confirmar-identificacao/${displaySegment(category)}/${sourceFolder}/${characterFolder}`;
+      return `${reviewBase}/${characterFolder}`;
     }
     if (originalGeneric) {
-      return `01_REVISAR/sem-nome-ou-generico/${displaySegment(category)}/${sourceFolder}`;
+      return reviewBase;
     }
-    return `01_REVISAR/${categorySlug}/${sourceFolder}/${characterFolder}`;
+    return `${reviewBase}/${characterFolder}`;
   }
 
   if (collection) {
-    return `03_COLECOES/${sourceFolder}/Personagens/${characterFolder}`;
+    return `colecoes/${sourceFolder}/${characterFolder}`;
   }
 
-  const catalogBase = `02_CATALOGO_GERAL/${displaySegment(category)}/${sourceFolder}`;
-  if (modelKind === "diorama") return `${catalogBase}/Dioramas/${characterFolder}`;
-  return `${catalogBase}/Personagens/${characterFolder}`;
+  const catalogBase = `catalogo/${catalogCategoryFolder(category)}/${sourceFolder}`;
+  if (modelKind === "diorama") return `${catalogBase}/dioramas/${characterFolder}`;
+  return `${catalogBase}/${characterFolder}`;
 }
 
 function cleanDriveSegment(value) {
@@ -607,6 +715,9 @@ function isGenericName(value) {
     /^image ?\d*$/.test(normalized) ||
     /^figura ?\d*$/.test(normalized) ||
     /^desconhecido$/.test(normalized) ||
+    /^[a-f0-9]{8}\s+[a-f0-9]{4}\s+[a-f0-9]{4}\s+[a-f0-9]{4}\s+[a-f0-9]{12}$/.test(normalized) ||
+    /^\d+(?:\s+\d+){2,}\s+[a-z]?$/.test(normalized) ||
+    /^\d+\s+\d+\s+\d+x\d+$/.test(normalized) ||
     /^\d+$/.test(normalized) ||
     /^\d+\s+copy$/.test(normalized) ||
     /^\d{8,}\s+\d+$/.test(normalized)
@@ -660,10 +771,12 @@ function inferFromName(row) {
     .trim();
 
   if (row.characterName && !isGenericName(row.characterName)) {
-    return row.characterName;
+    return cleanIdentityCandidate(row.characterName, row) || row.characterName;
   }
-  if (!isGenericName(base)) return base;
-  if (row.pathCharacterName && !isGenericName(row.pathCharacterName)) return row.pathCharacterName;
+  const baseCandidate = cleanIdentityCandidate(base, row);
+  if (baseCandidate && !isGenericName(baseCandidate)) return baseCandidate;
+  const pathCandidate = cleanIdentityCandidate(row.pathCharacterName, row);
+  if (pathCandidate && !isGenericName(pathCandidate)) return pathCandidate;
   return null;
 }
 
@@ -753,17 +866,13 @@ function classify(row) {
     characterFolder,
     modelKind,
   });
-  const parts = [sourceFolder];
-  if (characterName && normalizeComparable(characterName) !== normalizeComparable(sourceTitle)) {
-    parts.push(displaySegment(characterName, "Sem Nome"));
-  }
-  if (modelFolder) {
-    parts.push(displaySegment(modelFolder));
-  } else if (variantName) {
-    parts.push(displaySegment(variantName));
+  const fileParts = [displaySegment(primaryCharacterName || characterName, "Sem Nome")];
+  const fileVariant = modelFolder || variantName;
+  if (fileVariant && normalizeComparable(fileVariant) !== normalizeComparable(fileParts[0])) {
+    fileParts.push(displaySegment(fileVariant));
   }
 
-  const proposedName = `${parts.join(" - ")}.${extension(row.originalName, row.mimeType)}`;
+  const proposedName = `${fileParts.join(" - ")}.${extension(row.originalName, row.mimeType)}`;
 
   return {
     ...row,
@@ -773,6 +882,7 @@ function classify(row) {
     modelGroup,
     modelKind,
     modelFolder,
+    primaryCharacterName,
     sourceTitle,
     category,
     subcategory,
@@ -830,6 +940,72 @@ function appendNameSuffix(fileName, suffix) {
   return `${base} - ${suffix}${ext}`;
 }
 
+function fileExtension(fileName, fallback = "jpg") {
+  return fileName.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase() || fallback;
+}
+
+function numberedFileBase(row) {
+  return displaySegment(row.primaryCharacterName || row.characterName || "Sem Nome", "Sem Nome");
+}
+
+function modelNumberKey(row) {
+  return [
+    normalizeComparable(row.modelGroup),
+    normalizeComparable(row.variantName),
+    normalizeComparable(row.modelFolder),
+    normalizeComparable(row.modelKind === "diorama" ? row.characterName : ""),
+  ].join("|");
+}
+
+function sortForFileNumbering(left, right) {
+  return (
+    modelNumberKey(left).localeCompare(modelNumberKey(right)) ||
+    normalizeComparable(left.originalName).localeCompare(normalizeComparable(right.originalName)) ||
+    String(left.id || "").localeCompare(String(right.id || ""))
+  );
+}
+
+function applyCatalogFileNumbers(rows) {
+  const byFolder = new Map();
+  for (const row of rows) {
+    if (row.status !== "ready_to_organize") continue;
+    const existing = byFolder.get(row.destinationFolder) || [];
+    existing.push(row);
+    byFolder.set(row.destinationFolder, existing);
+  }
+
+  const numberedById = new Map();
+  for (const folderRows of byFolder.values()) {
+    const modelGroups = new Map();
+    for (const row of folderRows.slice().sort(sortForFileNumbering)) {
+      const key = modelNumberKey(row);
+      const existing = modelGroups.get(key) || [];
+      existing.push(row);
+      modelGroups.set(key, existing);
+    }
+
+    let modelIndex = 0;
+    for (const modelRows of modelGroups.values()) {
+      modelIndex += 1;
+      const sortedModelRows = modelRows.slice().sort(sortForFileNumbering);
+      const hasGallery = sortedModelRows.length > 1;
+      sortedModelRows.forEach((row, imageIndex) => {
+        const ext = fileExtension(row.proposedName || row.originalName, extension(row.originalName, row.mimeType));
+        const number = hasGallery ? `${modelIndex}.${imageIndex + 1}` : String(modelIndex);
+        numberedById.set(row.id, {
+          ...row,
+          proposedName: `${numberedFileBase(row)} ${number}.${ext}`,
+          catalogModelNumber: modelIndex,
+          catalogImageNumber: imageIndex + 1,
+          catalogNumberedName: true,
+        });
+      });
+    }
+  }
+
+  return rows.map((row) => numberedById.get(row.id) || row);
+}
+
 function ensureUniqueNames(rows) {
   const counters = new Map();
   return rows.map((row) => {
@@ -867,7 +1043,7 @@ async function main() {
   }
 
   const merged = mergeRows(allRows);
-  const planned = ensureUniqueNames(withDuplicateGroups(merged.map(classify))).sort((a, b) => {
+  const planned = ensureUniqueNames(applyCatalogFileNumbers(withDuplicateGroups(merged.map(classify)))).sort((a, b) => {
     const status = a.status.localeCompare(b.status);
     if (status !== 0) return status;
     return a.destinationFolder.localeCompare(b.destinationFolder) || a.proposedName.localeCompare(b.proposedName);
