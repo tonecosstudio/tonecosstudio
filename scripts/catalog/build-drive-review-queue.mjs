@@ -48,6 +48,7 @@ function reviewTypeWeight(reviewType) {
 function hasAllowedNumericMeaning(normalized) {
   return (
     /\b(?:versao|v|diorama|busto|bust|chibi|gear|super saiyajin|android|t)\s*\d+$/.test(normalized) ||
+    /\bround\s*6$/.test(normalized) ||
     /\bx\s*23$/.test(normalized)
   );
 }

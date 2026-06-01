@@ -335,7 +335,7 @@ function stripTechnicalNameNoise(value, row = {}) {
     .replace(/\b(?=[a-f0-9]*[a-f])(?=[a-f0-9]*\d)[a-f0-9]{8,}\b/gi, " ")
     .replace(/\b(?:c4d|max|obj|fbx|ma|lwo|3ds|3dm)\b/gi, " ")
     .replace(/\b(?:ready\s+to\s+print|3d\s+print\s+files?|3d\s+printable|3d\s+print|print\s+files?|print\s+model)\b/gi, " ")
-    .replace(/\b(?:3d\s+model|3d|stl|model|figure|sculpture|statue|promo|image|from\s+h3ll|files?)\b/gi, " ")
+    .replace(/\b(?:3d\s+model|3d|stl|model|figure|sculpture|statue|promo|images?|from\s+h3ll|files?)\b/gi, " ")
     .replace(/\b(?:b3dserk|wicked)\b/gi, " ")
     .replace(/\bghb\d*\b/gi, " ")
     .replace(/\bfrom$/i, " ")
@@ -343,6 +343,8 @@ function stripTechnicalNameNoise(value, row = {}) {
     .replace(/\b\d{5,}\b/g, " ")
     .replace(/\s+(?:n|o)$/i, " ")
     .replace(/\bsexy\s+/gi, " ")
+    .replace(/\bpicolo\b/gi, "Piccolo")
+    .replace(/\s+0{2,}$/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -387,6 +389,22 @@ function splitNumericIdentitySuffix(characterName) {
     return {
       baseName: canonicalDisplay(versionMatch[1]),
       variantName: `V${formatNumericVariant(versionMatch[2])}`,
+    };
+  }
+
+  const twoPartMatch = text.match(/^(.+?)\s+(\d{1,2})\s+(\d{1,2})$/);
+  if (twoPartMatch && !isGenericName(twoPartMatch[1])) {
+    return {
+      baseName: canonicalDisplay(twoPartMatch[1]),
+      variantName: `Versao ${formatNumericVariant(twoPartMatch[2])}.${formatNumericVariant(twoPartMatch[3])}`,
+    };
+  }
+
+  const zeroPaddedMatch = text.match(/^(.+?)\s+0+([1-9]\d?)$/);
+  if (zeroPaddedMatch && !isGenericName(zeroPaddedMatch[1])) {
+    return {
+      baseName: canonicalDisplay(zeroPaddedMatch[1]),
+      variantName: `Versao ${formatNumericVariant(zeroPaddedMatch[2])}`,
     };
   }
 
@@ -718,6 +736,7 @@ function isGenericName(value) {
     /^[a-f0-9]{8}\s+[a-f0-9]{4}\s+[a-f0-9]{4}\s+[a-f0-9]{4}\s+[a-f0-9]{12}$/.test(normalized) ||
     /^\d+(?:\s+\d+){2,}\s+[a-z]?$/.test(normalized) ||
     /^\d+\s+\d+\s+\d+x\d+$/.test(normalized) ||
+    /^\d+(?:\s+\d+)+$/.test(normalized) ||
     /^\d+$/.test(normalized) ||
     /^\d+\s+copy$/.test(normalized) ||
     /^\d{8,}\s+\d+$/.test(normalized)

@@ -307,6 +307,29 @@ async function uniqueFilePath(filePath) {
   }
 }
 
+async function unlinkIfExists(filePath) {
+  try {
+    await fs.unlink(filePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+}
+
+async function findReusableFileByHash(dirPath, expectedHash) {
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      const candidate = path.join(dirPath, entry.name);
+      const bytes = await fs.readFile(candidate);
+      if (sha256(bytes) === expectedHash) return candidate;
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  return null;
+}
+
 async function moveOrReuseFile(currentPath, targetPath, expectedHash) {
   if (path.resolve(currentPath) === path.resolve(targetPath)) return targetPath;
 
@@ -314,7 +337,7 @@ async function moveOrReuseFile(currentPath, targetPath, expectedHash) {
   try {
     const existing = await fs.readFile(targetPath);
     if (sha256(existing) === expectedHash) {
-      await fs.unlink(currentPath);
+      await unlinkIfExists(currentPath);
       return targetPath;
     }
 
@@ -323,7 +346,14 @@ async function moveOrReuseFile(currentPath, targetPath, expectedHash) {
     return collisionPath;
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
-    await fs.rename(currentPath, targetPath);
+    try {
+      await fs.rename(currentPath, targetPath);
+    } catch (renameError) {
+      if (renameError.code !== "ENOENT") throw renameError;
+      const reusablePath = await findReusableFileByHash(path.dirname(targetPath), expectedHash);
+      if (reusablePath) return reusablePath;
+      throw renameError;
+    }
     return targetPath;
   }
 }
