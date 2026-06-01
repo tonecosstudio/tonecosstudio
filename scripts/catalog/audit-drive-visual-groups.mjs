@@ -12,7 +12,7 @@ function argValue(name, fallback = null) {
   return fallback;
 }
 
-const MANIFEST_PATH = argValue("manifest", "catalog-assets/drive-curated-v10/_manifest/catalog-assets-manifest.json");
+const MANIFEST_PATH = argValue("manifest", "catalog-assets/drive-curated-v12/_manifest/catalog-assets-manifest.json");
 const OUT_DIR = argValue("out", path.join(path.dirname(MANIFEST_PATH), "..", "_audit", "visual-groups"));
 const NEAR_THRESHOLD = Number.parseInt(argValue("near-threshold", "6"), 10);
 const MIN_GROUP_SIZE = Number.parseInt(argValue("min-group-size", "2"), 10);
