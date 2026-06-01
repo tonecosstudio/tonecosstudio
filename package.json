@@ -34,6 +34,7 @@
     "catalog:visual-groups": "node scripts/catalog/audit-drive-visual-groups.mjs",
     "catalog:visual-groups:fast": "node scripts/catalog/audit-drive-visual-groups.mjs --skip-sheets",
     "catalog:site-import-plan": "node scripts/catalog/build-drive-site-import-plan.mjs",
+    "catalog:review-queue": "node scripts/catalog/build-drive-review-queue.mjs",
     "catalog:review-sheets": "node scripts/catalog/build-review-contact-sheets.mjs",
     "catalog:clean-public-tags": "node scripts/catalog/clean-public-model-tags.mjs",
     "catalog:remove-backgrounds": "node scripts/catalog/remove-backgrounds-batch.mjs",
