@@ -413,9 +413,24 @@ async function main() {
     }, {}),
   };
 
+  const failures = analyzed
+    .filter((row) => row.error)
+    .map((row) => ({
+      id: row.id,
+      originalName: row.originalName,
+      proposedName: row.proposedName,
+      sourceTitle: row.sourceTitle,
+      characterName: row.characterName,
+      status: row.status,
+      exportStatus: row.exportStatus,
+      localPath: row.localPath,
+      sourceDrivePath: row.sourceDrivePath,
+      error: row.error,
+    }));
+
   await fs.writeFile(
     path.join(OUT_DIR, "visual-groups-report.json"),
-    `${JSON.stringify({ summary, groups: reportGroups }, null, 2)}\n`,
+    `${JSON.stringify({ summary, failures, groups: reportGroups }, null, 2)}\n`,
   );
 
   const columns = ["identity", "reviewType", "itemCount", "sheetPath"];

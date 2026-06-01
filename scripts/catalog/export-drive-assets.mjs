@@ -419,7 +419,12 @@ async function exportItem(item, index, total) {
     await ensureDirectoryPathCase(path.dirname(localPath));
     if (!FORCE) {
       const existingAsset = item.id ? existingAssetsById.get(item.id) : null;
-      if (existingAsset && isInsideOutDir(existingAsset) && isExactDuplicatePath(existingAsset)) {
+      if (
+        existingAsset &&
+        isInsideOutDir(existingAsset) &&
+        isExactDuplicatePath(existingAsset) &&
+        item.status !== "ready_to_organize"
+      ) {
         try {
           const existing = await fs.readFile(existingAsset);
           console.log(`[${index + 1}/${total}] exists ${path.relative(process.cwd(), existingAsset)}`);
@@ -589,6 +594,7 @@ async function applyExactHashDedupe(rows) {
       if (row === keeper) continue;
 
       const currentPath = path.resolve(row.localPath);
+      const keeperPath = path.resolve(keeper.localPath);
       const ext = path.extname(currentPath) || path.extname(row.proposedName || row.originalName) || ".jpg";
       const baseName = sanitizePathPart(
         [row.sourceTitle, row.characterName, row.variantName || row.proposedName || row.originalName, row.id]
@@ -598,7 +604,17 @@ async function applyExactHashDedupe(rows) {
       );
       let duplicatePath = path.join(OUT_DIR, "90_DUPLICATAS", "exatas", row.sha256.slice(0, 12), `${baseName}${ext}`);
 
-      duplicatePath = await moveOrReuseFile(currentPath, duplicatePath, row.sha256);
+      if (currentPath === keeperPath) {
+        duplicatePath = keeperPath;
+      } else {
+        try {
+          await fs.access(currentPath);
+          duplicatePath = await moveOrReuseFile(currentPath, duplicatePath, row.sha256);
+        } catch (error) {
+          if (error.code !== "ENOENT") throw error;
+          duplicatePath = keeperPath;
+        }
+      }
 
       row.statusBeforeHashDedupe = row.status;
       row.status = "duplicate_exact";

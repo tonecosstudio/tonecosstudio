@@ -2513,6 +2513,117 @@
       "subcategory": "god-of-war",
       "mediaType": "game",
       "curationConfidence": "high"
+    },
+    "1AdDoZxLyv4JS3rr6utNSuvBqeNxfOC3L": {
+      "characterName": "Peter Parker",
+      "variantName": "Sem Mascara",
+      "modelGroup": "peter-parker-sem-mascara-coluna",
+      "sourceTitle": "Homem-Aranha",
+      "category": "quadrinhos",
+      "subcategory": "homem-aranha",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo estava nomeado como Superman, mas o caminho original aponta Peter Parker e a imagem mostra Homem-Aranha sem mascara."
+    },
+    "1ImTT5DTcetf2aq4GqjEoWBQ6SWEQQLR1": {
+      "characterName": "Vingadores",
+      "variantName": "Diorama",
+      "modelGroup": "vingadores-diorama-grupo",
+      "sourceTitle": "Vingadores",
+      "category": "quadrinhos",
+      "subcategory": "vingadores",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Imagem de diorama de grupo dos Vingadores; remove prefixo tecnico 'Copia de'."
+    },
+    "12alpL1szs4TpxYvNjx3C65Ewr6UeWlN3": {
+      "characterName": "Conan",
+      "variantName": "Serpente",
+      "modelGroup": "conan-serpente",
+      "sourceTitle": "Conan",
+      "category": "filmes",
+      "subcategory": "conan",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "curationNotes": "Identificado visualmente como Conan the Barbarian lutando contra serpente."
+    },
+    "1HuEB_nJn8iYrCMk9j4mnw_7KZBuQkack": {
+      "characterName": "Bardock",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "curationNotes": "Nome Bardock aparece na propria imagem."
+    },
+    "1ITy2KTbeW3vRkBOEH08u6I4knKsGZpNI": {
+      "characterName": "Goku e Bulma",
+      "variantName": "Diorama",
+      "modelGroup": "goku-bulma-diorama",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "curationNotes": "Diorama com Goku crianca e Bulma."
+    },
+    "1EKk2Q_C09AGcmjTEJV-zWLCDUQKiy8Ws": {
+      "characterName": "Mestre Kame e Goku",
+      "variantName": "Diorama",
+      "modelGroup": "mestre-kame-goku-diorama",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "curationNotes": "Diorama com Mestre Kame e Goku crianca."
+    },
+    "1E0QuA6wNBZuNCvzb_5JsBwtaDbIo_1bE": {
+      "characterName": "Tora",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "curationNotes": "Nome Tora aparece na propria imagem como Bardock Squad."
+    },
+    "1ScqzVp8T3RyPFLC8zxzdokBeFifkQYF3": {
+      "characterName": "Conan",
+      "variantName": "Pose Classica",
+      "modelGroup": "conan-pose-classica",
+      "sourceTitle": "Conan",
+      "category": "filmes",
+      "subcategory": "conan",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "curationNotes": "Identificado visualmente como Conan."
+    },
+    "1X0CC5_biX4Bwgl8YBTpYMYlAsTqF-OVK": {
+      "characterName": "Homelander",
+      "sourceTitle": "The Boys",
+      "category": "series",
+      "subcategory": "the-boys",
+      "mediaType": "series",
+      "curationConfidence": "high",
+      "curationNotes": "Imagem contem Homelander fan art."
+    },
+    "1JlJPyAjEmUxy0hFvTxIWLlFw5IP0sRO-": {
+      "characterName": "Darkseid",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Identificado visualmente como Darkseid."
+    },
+    "1JZGguJRjFmZiY9vtVFjo41iivzDohDy_": {
+      "characterName": "Caveira Vermelha",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Identificado visualmente como Caveira Vermelha."
     }
   }
 }
