@@ -2373,6 +2373,146 @@
       "subcategory": "dc",
       "mediaType": "comic",
       "curationConfidence": "high"
+    },
+    "19X3IE_pszZYLHiJwktpIwiDpb7WkPOih": {
+      "characterName": "Lara Croft",
+      "variantName": "Classica Pistolas",
+      "modelGroup": "lara-croft-classica-pistolas",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18ieNJEsz92GRU9w-KKjiIPa0kINF03yD": {
+      "characterName": "Lara Croft",
+      "variantName": "Top Azul",
+      "modelGroup": "lara-croft-top-azul",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18pzMcvGbhkKHQtfksrtwc51WBP5Hdphn": {
+      "characterName": "Lara Croft",
+      "variantName": "Aventureira",
+      "modelGroup": "lara-croft-aventureira",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "19IkwocCB3vyto1Rp81LTjJM6Bj1Dp6RI": {
+      "characterName": "Lara Croft",
+      "variantName": "Selva",
+      "modelGroup": "lara-croft-selva",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18hYyohB_2Epj9qZjvth-mdUb6h963I4N": {
+      "characterName": "Lara Croft",
+      "variantName": "Selva",
+      "modelGroup": "lara-croft-selva",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18amuDvVVIRCp5xzvLH2UaI4pCFtGJ1c9": {
+      "characterName": "Lara Croft",
+      "variantName": "Chibi",
+      "modelGroup": "lara-croft-chibi",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18ogdcPvOI7jvDFbFIejYHQuBjxI2HMKo": {
+      "characterName": "Lara Croft",
+      "variantName": "Sobre Base",
+      "modelGroup": "lara-croft-sobre-base",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1L5F7xz2cpyU9QaWfr2nnFCjv_pSQqdij": {
+      "characterName": "Odin",
+      "variantName": "Ragnarok",
+      "modelGroup": "odin-ragnarok",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1L8qCAeoUkofQ0l3RSLzj0rIe7cyYod8U": {
+      "characterName": "Tyr",
+      "variantName": "Ragnarok",
+      "modelGroup": "tyr-ragnarok",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1CEmjBrFPFfr3bdQnEatKMbkUMijmhfnT": {
+      "characterName": "Thor",
+      "variantName": "Ragnarok",
+      "modelGroup": "thor-ragnarok",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "199ltnwk96zAXb4XdOng8c6NE9XPoQV26": {
+      "characterName": "Freya",
+      "variantName": "Ragnarok",
+      "modelGroup": "freya-ragnarok",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1LAboAL-FY3MfB2iQb64Op79_YqB0cKiz": {
+      "characterName": "Atreus",
+      "variantName": "Ragnarok",
+      "modelGroup": "atreus-ragnarok",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1LAUh8sBR7RUsCioF1SBby13-ALGOoW7x": {
+      "characterName": "Kratos",
+      "variantName": "Ragnarok Sem Armadura",
+      "modelGroup": "kratos-ragnarok-sem-armadura",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1IT33y9o3GK7KiZX-RMXXOAg7IgfCVknH": {
+      "characterName": "Kratos",
+      "variantName": "Ragnarok Escudo",
+      "modelGroup": "kratos-ragnarok-escudo",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
     }
   }
 }
