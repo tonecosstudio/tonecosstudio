@@ -292,26 +292,24 @@ function modelFolderName(characterName, variantName, modelGroup, modelKind) {
   return null;
 }
 
-function buildDestinationFolder({ status, originalGeneric, collection, category, categorySlug, sourceFolder, characterFolder, modelKind, modelFolder }) {
-  const modelSuffix = modelFolder ? `/${modelFolder}` : "";
-
+function buildDestinationFolder({ status, originalGeneric, collection, category, categorySlug, sourceFolder, characterFolder, modelKind }) {
   if (status === "needs_review") {
     if (originalGeneric && characterFolder !== "Sem Nome") {
-      return `01_REVISAR/confirmar-identificacao/${displaySegment(category)}/${sourceFolder}/${characterFolder}${modelSuffix}`;
+      return `01_REVISAR/confirmar-identificacao/${displaySegment(category)}/${sourceFolder}/${characterFolder}`;
     }
     if (originalGeneric) {
       return `01_REVISAR/sem-nome-ou-generico/${displaySegment(category)}/${sourceFolder}`;
     }
-    return `01_REVISAR/${categorySlug}/${sourceFolder}/${characterFolder}${modelSuffix}`;
+    return `01_REVISAR/${categorySlug}/${sourceFolder}/${characterFolder}`;
   }
 
   if (collection) {
-    return `03_COLECOES/${sourceFolder}/Personagens/${characterFolder}${modelSuffix}`;
+    return `03_COLECOES/${sourceFolder}/Personagens/${characterFolder}`;
   }
 
   const catalogBase = `02_CATALOGO_GERAL/${displaySegment(category)}/${sourceFolder}`;
-  if (modelKind === "diorama") return `${catalogBase}/Dioramas/${characterFolder}${modelSuffix}`;
-  return `${catalogBase}/Personagens/${characterFolder}${modelSuffix}`;
+  if (modelKind === "diorama") return `${catalogBase}/Dioramas/${characterFolder}`;
+  return `${catalogBase}/Personagens/${characterFolder}`;
 }
 
 function cleanDriveSegment(value) {
@@ -656,13 +654,16 @@ function classify(row) {
     sourceFolder,
     characterFolder,
     modelKind,
-    modelFolder,
   });
   const parts = [sourceFolder];
   if (characterName && normalizeComparable(characterName) !== normalizeComparable(sourceTitle)) {
     parts.push(displaySegment(characterName, "Sem Nome"));
   }
-  if (variantName) parts.push(displaySegment(variantName));
+  if (modelFolder) {
+    parts.push(displaySegment(modelFolder));
+  } else if (variantName) {
+    parts.push(displaySegment(variantName));
+  }
 
   const proposedName = `${parts.join(" - ")}.${extension(row.originalName, row.mimeType)}`;
 
