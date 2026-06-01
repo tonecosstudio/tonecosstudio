@@ -1993,6 +1993,146 @@
       "subcategory": "dragon-ball",
       "mediaType": "anime",
       "curationConfidence": "medium"
+    },
+    "1aDzFEq5_8w7W2CaDMC_z3gNHFlzxhTZ1": {
+      "characterName": "Cyclops",
+      "variantName": "Base Sentinela",
+      "modelGroup": "cyclops-base-sentinela",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1FHenDquA52DM_xfsHKZkt2gWNr9mFfCs": {
+      "characterName": "Cyclops",
+      "variantName": "Gambody Saudacao",
+      "modelGroup": "cyclops-gambody-saudacao",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1NRGLgaBDtTiB6XRJmzXD6bSgivgyo7ej": {
+      "characterName": "Cyclops",
+      "variantName": "Wicked",
+      "modelGroup": "cyclops-wicked-base-sentinela",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1DeWZ8JRS8Tnu0Az8C0Pw-WyNWH_ivsix": {
+      "characterName": "Cyclops",
+      "variantName": "Raio Optico Longo",
+      "modelGroup": "cyclops-raio-optico-longo",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1KP7DL1ZM6C1NcCf2OPoJ6sd6W0vfiJVg": {
+      "characterName": "Cyclops",
+      "variantName": "Base Sentinela Raio",
+      "modelGroup": "cyclops-base-sentinela",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1EgXZSAgCthsQGKsacDpEmHfwGer0DxRo": {
+      "characterName": "Cyclops",
+      "variantName": "Raio Optico",
+      "modelGroup": "cyclops-wicked-efeito-raio",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1JLXFxgmEBJxlW5fL_iQgUtIPlxCAMMNA": {
+      "characterName": "Cyclops",
+      "variantName": "Escada em Chamas",
+      "modelGroup": "cyclops-escada-fogo",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1Qbj1DAt606MTcAgaxRUAGdE-XFdaUv5A": {
+      "characterName": "Cyclops",
+      "variantName": "Classico",
+      "modelGroup": "cyclops-classico-base",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1cZEVZL06fXNSqPemrNBeC67B9IDTyYjF": {
+      "characterName": "Cyclops",
+      "variantName": "Traje Vermelho",
+      "modelGroup": "cyclops-traje-vermelho",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1ERZ048L49YxOWUcvuhAMSVICOyYOGsQf": {
+      "characterName": "Cyclops",
+      "variantName": "Gambody Saudacao",
+      "modelGroup": "cyclops-gambody-saudacao",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1OfdaAKtxmWSOSpUo2e86QlNTgUf6CGYL": {
+      "characterName": "Cyclops",
+      "variantName": "Malix Design",
+      "modelGroup": "cyclops-malix-design",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1JkpxBTfTb6VIazQsvyCbWTzUgpxysLfG": {
+      "characterName": "Cyclops",
+      "variantName": "Sentinela Caido",
+      "modelGroup": "cyclops-sentinela-caido",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1aE0PUNmGTwzkKLP3sIFCQErPZQa4Csg4": {
+      "characterName": "Cyclops",
+      "variantName": "Escada em Chamas",
+      "modelGroup": "cyclops-escada-fogo",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1BqoG4kvu4KMg-unRfwwlzOXQ_BLbmral": {
+      "characterName": "Cyclops",
+      "variantName": "Base Sentinela",
+      "modelGroup": "cyclops-base-sentinela",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
     }
   }
 }
