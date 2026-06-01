@@ -114,11 +114,11 @@
       "curationConfidence": "high"
     },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
-      "characterName": "Vegeta",
-      "sourceTitle": "Dragon Ball",
-      "category": "animes",
-      "subcategory": "dragon-ball",
-      "mediaType": "anime",
+      "characterName": "Mulher-Maravilha",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
       "curationConfidence": "high"
     },
     "1YD5wwNDZjP5lb7dmNdNgI91UBYAMjF1o": {
@@ -388,11 +388,11 @@
       "curationConfidence": "high"
     },
     "1UteXyt3BVhVJLmexDfCxE8ftRXjGuLcu": {
-      "characterName": "Batman",
-      "sourceTitle": "DC",
-      "category": "quadrinhos",
-      "subcategory": "dc",
-      "mediaType": "comic",
+      "characterName": "Ken Masters",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
       "curationConfidence": "high"
     },
     "1S8MWM-_AiKQEQkRHe3lZWRZsxfc7XIDd": {
@@ -1480,6 +1480,92 @@
     "1FIWu3DXzgMqxFrDqeybg-u7yqorHS9Aq": {
       "characterName": "Videl",
       "variantName": "Com Capacete",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1Gbdkg2gr4-EYQFLN3Q3cOEpW6R62x3At": {
+      "characterName": "Batman",
+      "variantName": "Thomas Wayne",
+      "modelGroup": "batman-thomas-wayne",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1bSTQhUpXBwma7Thhm52RP4x2-Z99-vst": {
+      "characterName": "Mulher-Gato",
+      "variantName": "Busto",
+      "modelGroup": "mulher-gato-busto",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1qW5gNx23qso92NOOHopdWHFceMqMTrpZ": {
+      "characterName": "Arlequina",
+      "variantName": "Busto",
+      "modelGroup": "arlequina-busto",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1K2WlF7x0-sS9BvXlx4QH_dEXod1Dm3JG": {
+      "characterName": "Solomon Grundy",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1WCqrV64d14lkuXyS9i-b-AF0CK7JsSqy": {
+      "characterName": "Mulher-Gato",
+      "variantName": "Cofre Gotham",
+      "modelGroup": "mulher-gato-cofre-gotham",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1EHJ_R0kRz3M0Z_neUK0yqd38VhTLz3Jb": {
+      "characterName": "Mulher-Gato",
+      "variantName": "Cofre Gotham",
+      "modelGroup": "mulher-gato-cofre-gotham",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1L3BJaXcYpjrjI-TfeUDLCOXJ0P5HhQ2i": {
+      "characterName": "Vegeta",
+      "variantName": "Vs Android 19",
+      "modelGroup": "vegeta-vs-android-19",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1DCNiDlSGqIt7He_xw2Uu-yJUFMZL0JhO": {
+      "characterName": "Goku e Vegeta",
+      "modelGroup": "goku-e-vegeta",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1C1-pWR80e7STz3cq-8QO9KmdF-tnBMbQ": {
+      "characterName": "Nappa e Vegeta",
+      "modelGroup": "nappa-e-vegeta",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",

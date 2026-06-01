@@ -84,6 +84,7 @@ function makeVisualQueue(plan) {
         sourceTitle: model.sourceTitle,
         characterName: model.characterName,
         variantName: model.variantName || null,
+        modelGroup: model.modelGroup || null,
       };
     })
     .sort((left, right) => right.priority - left.priority || left.title.localeCompare(right.title));
@@ -111,6 +112,7 @@ function makeNameQueue(plan) {
       sourceTitle: model.sourceTitle,
       characterName: model.characterName,
       variantName: model.variantName || null,
+      modelGroup: model.modelGroup || null,
     }))
     .sort((left, right) => right.priority - left.priority || left.title.localeCompare(right.title));
 }
@@ -132,6 +134,7 @@ function makeInvalidQueue(manifest) {
       sourceTitle: item.sourceTitle || null,
       characterName: item.characterName || null,
       variantName: item.variantName || null,
+      modelGroup: item.modelGroup || item.model_group || null,
     }))
     .sort((left, right) => right.priority - left.priority || left.title.localeCompare(right.title));
 }
@@ -175,6 +178,7 @@ async function writeCsv(filePath, rows) {
     "sourceTitle",
     "characterName",
     "variantName",
+    "modelGroup",
   ];
   await fs.writeFile(
     filePath,

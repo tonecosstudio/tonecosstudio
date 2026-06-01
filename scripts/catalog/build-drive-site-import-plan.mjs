@@ -47,6 +47,7 @@ function variantKey(row) {
     row.sourceTitle,
     row.characterName,
     row.variantName || "default",
+    row.modelGroup || "",
   ]
     .map(normalizeComparable)
     .join("|");
@@ -94,6 +95,7 @@ function readItems(manifest) {
       category: item.category,
       subcategory: item.subcategory,
       mediaType: item.mediaType,
+      modelGroup: item.modelGroup || item.model_group || null,
       tags: item.tags || [],
       status: item.status,
       sourceDrivePath: item.sourceDrivePath,
@@ -169,6 +171,7 @@ function buildPlan(items, visualIndex) {
       title: displayTitle(primary),
       characterName: primary.characterName,
       variantName: primary.variantName,
+      modelGroup: primary.modelGroup,
       sourceTitle: primary.sourceTitle,
       category: primary.category,
       subcategory: primary.subcategory,

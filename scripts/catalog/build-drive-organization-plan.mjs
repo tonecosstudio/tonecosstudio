@@ -694,6 +694,7 @@ async function main() {
     "destinationFolder",
     "characterName",
     "variantName",
+    "modelGroup",
     "sourceTitle",
     "category",
     "subcategory",
