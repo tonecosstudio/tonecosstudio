@@ -2263,6 +2263,116 @@
       "subcategory": "dragon-ball",
       "mediaType": "anime",
       "curationConfidence": "high"
+    },
+    "1IO6-FD-4RnZvhTSOX93RJjYpasPXqMeT": {
+      "characterName": "Batman",
+      "variantName": "Gargula",
+      "modelGroup": "batman-gargula",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1LuXlIDrDGvY6h5vIGkB8xzRzOqI9tBDc": {
+      "characterName": "Batman",
+      "variantName": "Armadura Arkham",
+      "modelGroup": "batman-armadura-arkham",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1AjMfuMjbIVuvNDjeKrZSxNzlZLcmGXAB": {
+      "characterName": "Batman",
+      "variantName": "Cavaleiro das Trevas",
+      "modelGroup": "batman-cavaleiro-das-trevas",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1zHP5qIidMk47yWFJr9fc_K0OxYPvNlSm": {
+      "characterName": "Batman",
+      "variantName": "Armadura Tatica",
+      "modelGroup": "batman-armadura-tatica",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1tn9OXHv9htBBultnWlm0f1qNm4-K5zJ3": {
+      "characterName": "Batman",
+      "variantName": "Classico",
+      "modelGroup": "batman-classico-pedestal",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1F8jgsHEJvwhnPWoYavTpXJw98wbDZdWb": {
+      "characterName": "Batman",
+      "variantName": "Predio Gotham",
+      "modelGroup": "batman-predio-gotham",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1H0vJdnGr0bHJz2e2ZU244ovhvMQ5fxYg": {
+      "characterName": "Batman",
+      "variantName": "Animado",
+      "modelGroup": "batman-animado",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1HHQ_vZ-hy77LqA8xF8VuhK4Y_Xv-wuH3": {
+      "characterName": "Batman",
+      "variantName": "Gotham by Gaslight",
+      "modelGroup": "batman-gotham-by-gaslight",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1pOQdx9VO9j-AdEXo8vHbzHGDQAj24TfZ": {
+      "characterName": "Batman",
+      "variantName": "Trono Cranio",
+      "modelGroup": "batman-trono-cranio",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "19JwEd_jlkJvcpcDOQvNHA7lDOHsZzNMe": {
+      "characterName": "Batman",
+      "variantName": "Base Verde",
+      "modelGroup": "batman-base-verde",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1UIbIlq0-isTtmrHl2u7DZ9mIUS3qUe2x": {
+      "characterName": "Batman",
+      "variantName": "Trono Cranio",
+      "modelGroup": "batman-trono-cranio",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high"
     }
   }
 }
