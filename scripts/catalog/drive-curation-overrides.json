@@ -2133,6 +2133,136 @@
       "subcategory": "x-men",
       "mediaType": "comic",
       "curationConfidence": "high"
+    },
+    "1PbtlNpwLzzFcrfmMDy73OQp_jb4NhSx5": {
+      "characterName": "Goten e Trunks",
+      "variantName": "Kids Super Saiyajin",
+      "modelGroup": "goten-e-trunks-kids-ssj",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1JY91tX_XMsqo6GF7ShbA8pYKYy3rgfXX": {
+      "characterName": "Trunks",
+      "variantName": "Saga Cell",
+      "modelGroup": "trunks-saga-cell",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1JYY5Wl8fVZfoimyN08_7Rith7pDHcK-L": {
+      "characterName": "Trunks",
+      "variantName": "Super Saiyajin Saga Cell",
+      "modelGroup": "trunks-ssj-saga-cell",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1JZYLhP6IXBZJKRcnuMajZnLckVVLudhH": {
+      "characterName": "Trunks",
+      "variantName": "Saga Cell",
+      "modelGroup": "trunks-saga-cell",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1IZUROmxjtJcykGxknctfd3M_GvPuuCSe": {
+      "characterName": "Trunks",
+      "variantName": "Super Saiyajin Saga Cell",
+      "modelGroup": "trunks-ssj-saga-cell",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1Pc5yL2avt5Ku-_EayJfvVS51Tcx3lXL7": {
+      "characterName": "Gotenks",
+      "variantName": "Super Saiyajin 3",
+      "modelGroup": "gotenks-super-saiyajin-3",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1PdVPTMuu65psrqa0ma3W1hME1Lyia6UH": {
+      "characterName": "Gotenks",
+      "variantName": "Super Saiyajin 3",
+      "modelGroup": "gotenks-super-saiyajin-3",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1HQ6lWsucwX7yr0_E4geuELqc31kMW1dR": {
+      "characterName": "Trunks",
+      "variantName": "Super Saiyajin LucasPereZ",
+      "modelGroup": "trunks-ssj-lucasperez",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1PxSC0ykxdY1-hbQLBbkwF7qFbGC1QOg-": {
+      "characterName": "Goku e Trunks",
+      "variantName": "Diorama",
+      "modelGroup": "goku-e-trunks-diorama",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1PcL-S15QqGDHrzXlLs0U2l7S65-WoW9f": {
+      "characterName": "Goku e Trunks",
+      "variantName": "Chibi",
+      "modelGroup": "goku-e-trunks-chibi",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "medium"
+    },
+    "1xgmKYdQep70uhgYY91CJFTPteDM-CDNk": {
+      "characterName": "Trunks",
+      "variantName": "Samurai",
+      "modelGroup": "trunks-samurai",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1uWbdAAZOWoigElW01ltfrWa9Z5f1Gonh": {
+      "characterName": "Gotenks",
+      "variantName": "Super Saiyajin 3 Resina Bruta",
+      "modelGroup": "gotenks-super-saiyajin-3-resina-bruta",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "16u8OTkg6B9USHpZ2G2JSFu-1dKTSTCOx": {
+      "characterName": "Trunks",
+      "variantName": "Futuro",
+      "modelGroup": "trunks-futuro",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
     }
   }
 }
