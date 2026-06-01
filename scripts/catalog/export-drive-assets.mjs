@@ -40,6 +40,11 @@ function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
+async function readJsonFile(filePath) {
+  const text = await fs.readFile(filePath, "utf8");
+  return JSON.parse(text.replace(/^\uFEFF/, ""));
+}
+
 function sanitizePathPart(value, fallback = "sem-nome") {
   const cleaned = String(value || "")
     .replace(/[<>:"\\|?*\u0000-\u001f]+/g, " ")
@@ -158,7 +163,7 @@ async function findSourceFile(item) {
 
 async function loadExistingAssetsMap(manifestPath) {
   if (!manifestPath) return new Map();
-  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  const manifest = await readJsonFile(manifestPath);
   const rows = manifest.items || [];
   const byId = new Map();
 
@@ -173,7 +178,7 @@ async function loadExistingAssetsMap(manifestPath) {
 async function loadOutputManifest() {
   const manifestPath = path.join(OUT_DIR, "_manifest", "catalog-assets-manifest.json");
   try {
-    const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+    const manifest = await readJsonFile(manifestPath);
     return manifest.items || [];
   } catch (error) {
     if (error.code === "ENOENT") return [];
@@ -633,7 +638,7 @@ async function pruneEmptyDirectories(rootDir = OUT_DIR) {
 }
 
 async function main() {
-  const plan = JSON.parse(await fs.readFile(PLAN_PATH, "utf8"));
+  const plan = await readJsonFile(PLAN_PATH);
   const previousOutputRows = await loadOutputManifest();
   existingAssetsById = await loadExistingAssetsMap(EXISTING_ASSETS_MANIFEST);
   const plannedItems = (plan.items || []).filter(shouldExport);

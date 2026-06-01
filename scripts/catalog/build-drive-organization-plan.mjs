@@ -111,7 +111,7 @@ const DISPLAY_ALIASES = new Map(
     zatana: "Zatanna",
   }),
 );
-const TITLE_CASE_LOWER_WORDS = new Set(["a", "as", "da", "das", "de", "do", "dos", "e", "em", "o", "os"]);
+const TITLE_CASE_LOWER_WORDS = new Set(["a", "and", "as", "da", "das", "de", "do", "dos", "e", "em", "no", "o", "of", "os", "the"]);
 const TITLE_CASE_UPPER_WORDS = new Map(
   Object.entries({
     dbz: "DBZ",
@@ -266,6 +266,65 @@ function titleizeSlug(value) {
   return displaySegment(String(value || "").replace(/[-_]+/g, " ")).replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function formatNumericVariant(value) {
+  const number = Number.parseInt(value, 10);
+  if (!Number.isFinite(number)) return displaySegment(value);
+  return String(number).padStart(2, "0");
+}
+
+function shouldKeepNumericIdentity(characterName, suffix) {
+  const comparable = normalizeComparable(characterName);
+  const number = Number.parseInt(suffix, 10);
+  if (!Number.isFinite(number)) return true;
+  if (number >= 100) return true;
+  if (/^android (?:8|13|16|17|18|19|20|21)$/.test(comparable)) return true;
+  if (/^x ?23$/.test(comparable)) return true;
+  if (/\bt ?(?:800|1000)$/.test(comparable)) return true;
+  if (/\b\d+\s*x\s*\d+$/.test(comparable)) return true;
+  return false;
+}
+
+function splitNumericIdentitySuffix(characterName) {
+  const text = displaySegment(characterName);
+  const versionMatch = text.match(/^(.+?)\s+v(\d{1,2})$/i);
+  if (versionMatch && !shouldKeepNumericIdentity(text, versionMatch[2])) {
+    return {
+      baseName: canonicalDisplay(versionMatch[1]),
+      variantName: `V${formatNumericVariant(versionMatch[2])}`,
+    };
+  }
+
+  const match = text.match(/^(.+?)\s+(\d{1,2})$/) || text.match(/^(.+?)(\d{1,2})$/);
+  if (!match || shouldKeepNumericIdentity(text, match[2])) return null;
+  if (/\d$/.test(match[1].trim())) return null;
+
+  return {
+    baseName: canonicalDisplay(match[1]),
+    variantName: `Versao ${formatNumericVariant(match[2])}`,
+  };
+}
+
+function splitKeywordVariant(characterName, numericVariant = null) {
+  const rules = [
+    { pattern: /^\s*diorama\s+(.+?)\s*$/i, variantName: "Diorama", characterIndex: 1 },
+    { pattern: /^(.+?)\s+diorama\s*$/i, variantName: "Diorama", characterIndex: 1 },
+    { pattern: /^(.+?)\s+(trono|busto|bust|chibi)\s*$/i, characterIndex: 1 },
+  ];
+
+  for (const rule of rules) {
+    const match = String(characterName || "").match(rule.pattern);
+    if (!match) continue;
+    const rawVariant = rule.variantName || match[2];
+    const variantName = titleizeSlug(rawVariant === "bust" ? "Busto" : rawVariant);
+    return {
+      characterName: canonicalDisplay(match[rule.characterIndex]),
+      variantName: numericVariant ? `${variantName} ${numericVariant}` : variantName,
+    };
+  }
+
+  return null;
+}
+
 function splitCharacterNames(value) {
   const cleaned = String(value || "")
     .replace(/\bDiorama\b/gi, " ")
@@ -300,23 +359,17 @@ function extractInlineVariant(characterName, explicitVariantName) {
     return { characterName, variantName: explicitVariantName || null };
   }
 
-  const rules = [
-    { pattern: /^\s*diorama\s+(.+?)\s*$/i, variantName: "Diorama", characterIndex: 1 },
-    { pattern: /^(.+?)\s+diorama(?:\s+\d+)?\s*$/i, variantName: "Diorama", characterIndex: 1 },
-    { pattern: /^(.+?)\s+(trono|busto|bust|chibi)\s*$/i, characterIndex: 1 },
-  ];
-
-  for (const rule of rules) {
-    const match = String(characterName).match(rule.pattern);
-    if (!match) continue;
-    const variantName = rule.variantName || match[2];
+  const numberedIdentity = splitNumericIdentitySuffix(characterName);
+  if (numberedIdentity) {
+    const keywordVariant = splitKeywordVariant(numberedIdentity.baseName, numberedIdentity.variantName.replace(/^Versao\s+/, ""));
+    if (keywordVariant) return keywordVariant;
     return {
-      characterName: canonicalDisplay(match[rule.characterIndex]),
-      variantName: titleizeSlug(variantName === "bust" ? "Busto" : variantName),
+      characterName: numberedIdentity.baseName,
+      variantName: numberedIdentity.variantName,
     };
   }
 
-  return { characterName, variantName: null };
+  return splitKeywordVariant(characterName) || { characterName, variantName: null };
 }
 
 function withoutIdentityPrefix(folderName, characterName) {
