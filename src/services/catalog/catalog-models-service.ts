@@ -4,7 +4,11 @@ import {
 } from "@/config/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import { getCatalogTagFilterValues } from "@/lib/catalog-utils";
-import type { CatalogModelDetailsRow, CatalogModelRow } from "@/types/catalog";
+import type {
+  CatalogModelDetailsRow,
+  CatalogModelGalleryImage,
+  CatalogModelRow,
+} from "@/types/catalog";
 
 export type CatalogSort = "recent" | "az";
 export type CatalogMode = "public" | "staging";
@@ -43,6 +47,10 @@ export type CatalogModelFilters = {
 type CatalogModelDbRow = Omit<CatalogModelRow, "imageUrl" | "thumbnailUrl">;
 type CatalogModelDetailsDbRow = Omit<
   CatalogModelDetailsRow,
+  "galleryImages" | "imageUrl" | "thumbnailUrl"
+>;
+type CatalogModelGalleryDbRow = Omit<
+  CatalogModelGalleryImage,
   "imageUrl" | "thumbnailUrl"
 >;
 
@@ -101,7 +109,22 @@ interface CatalogModelsGateway {
   };
 }
 
+interface ModelGalleryQuery extends PromiseLike<{
+  data: CatalogModelGalleryDbRow[] | null;
+  error: unknown;
+}> {
+  eq(column: string, value: string): ModelGalleryQuery;
+  order(column: string, options?: { ascending?: boolean }): ModelGalleryQuery;
+}
+
+interface ModelGalleryGateway {
+  from(table: "model_gallery_images"): {
+    select(columns: string): ModelGalleryQuery;
+  };
+}
+
 const catalogModelsGateway = supabase as unknown as CatalogModelsGateway;
+const modelGalleryGateway = supabase as unknown as ModelGalleryGateway;
 
 function normalizeTags(tagsCSV: string) {
   return Array.from(
@@ -145,7 +168,50 @@ function mapCatalogModelDetails(
     ...row,
     imageUrl,
     thumbnailUrl: row.thumbnail_url ?? imageUrl,
+    galleryImages: [],
   };
+}
+
+function mapModelGalleryImage(
+  row: CatalogModelGalleryDbRow,
+): CatalogModelGalleryImage {
+  const imageUrl =
+    row.image_url ?? getPublicModelImageUrl(row.storage_bucket, row.storage_path);
+  return {
+    ...row,
+    imageUrl,
+    thumbnailUrl: row.thumbnail_url ?? imageUrl,
+  };
+}
+
+function isMissingGalleryTableError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = "message" in error ? String(error.message) : "";
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    message.includes("model_gallery_images")
+  );
+}
+
+async function listModelGalleryImages(modelId: string) {
+  const { data, error } = await modelGalleryGateway
+    .from("model_gallery_images")
+    .select(
+      "id,model_id,source_drive_file_id,storage_bucket,storage_path,thumbnail_url,image_url,alt_text,sort_order,image_role",
+    )
+    .eq("model_id", modelId)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    if (isMissingGalleryTableError(error)) return [];
+    throw error;
+  }
+
+  return ((data ?? []) as CatalogModelGalleryDbRow[]).map(
+    mapModelGalleryImage,
+  );
 }
 
 function scoreByPreferenceTags(
@@ -291,7 +357,11 @@ export async function getCatalogModelDetails(modelId: string) {
     .maybeSingle();
 
   if (error) throw error;
-  return data ? mapCatalogModelDetails(data as CatalogModelDetailsDbRow) : null;
+  if (!data) return null;
+
+  const model = mapCatalogModelDetails(data as CatalogModelDetailsDbRow);
+  model.galleryImages = await listModelGalleryImages(model.id);
+  return model;
 }
 
 export async function listRecentLandingModels(

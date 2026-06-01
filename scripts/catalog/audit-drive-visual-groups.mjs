@@ -142,13 +142,16 @@ function classifyGroup(items) {
   }
 
   const variants = new Set(items.map((item) => item.variantName || "default"));
+  const uniqueHashes = new Set(items.map((item) => item.visualSha256));
   const hasExactDuplicates = [...exactGroups.values()].some((group) => group.length > 1);
   const hasVariants = variants.size > 1;
 
   let reviewType = "same_model_or_angle_review";
   if (hasVariants) reviewType = "variant_candidate";
   else if (nearPairs.length > 0) reviewType = "near_duplicate_review";
-  else if (hasExactDuplicates) reviewType = "exact_duplicate_group";
+  else if (hasExactDuplicates && uniqueHashes.size === 1) {
+    reviewType = "exact_duplicate_group";
+  }
 
   return {
     reviewType,
@@ -306,6 +309,7 @@ async function main() {
 
   const reportGroups = groups.map((group) => ({
     identity: group.identity,
+    key: group.key,
     reviewType: group.reviewType,
     itemCount: group.itemCount,
     sheetPath: group.sheetPath,

@@ -4,6 +4,7 @@
  * Página interna do modelo com estética arcade
  */
 
+import { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
@@ -65,11 +66,67 @@ function catalogFilterPath(
   return `${PUBLIC_ROUTES.catalog}?${params.toString()}`;
 }
 
+function uniqueImages(urls: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(urls.filter((url): url is string => Boolean(url?.trim()))),
+  );
+}
+
+function ModelGalleryStrip({
+  images,
+  activeImage,
+  label,
+  onSelect,
+}: {
+  images: string[];
+  activeImage: string | null;
+  label: string;
+  onSelect: (image: string) => void;
+}) {
+  if (images.length <= 1) return null;
+
+  return (
+    <section className="mt-4 border border-[hsl(var(--gold-accent)/0.18)] bg-[hsl(var(--card)/0.7)] p-3">
+      <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-[hsl(var(--gold-accent))]">
+        Galeria
+      </h2>
+      <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+        {images.map((image, index) => {
+          const isActive = image === activeImage;
+
+          return (
+            <button
+              key={image}
+              type="button"
+              onClick={() => onSelect(image)}
+              className={`aspect-square overflow-hidden border bg-[hsl(var(--background))] transition-all ${
+                isActive
+                  ? "border-[hsl(var(--gold-accent))] shadow-[0_0_18px_hsl(var(--gold-accent)/0.25)]"
+                  : "border-[hsl(var(--gold-accent)/0.2)] opacity-70 hover:opacity-100"
+              }`}
+              aria-label={`Ver foto ${index + 1} de ${label}`}
+            >
+              <img
+                src={image}
+                alt={`${label} - foto ${index + 1}`}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function ModelDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // ─── Fetch model ────────────────────────────────────────────
   const { data: model, isLoading } = useModelDetails(id);
@@ -122,7 +179,18 @@ export default function ModelDetails() {
     ? `Veja detalhes do modelo ${title}. Estatueta artesanal da Tonecos Studios.`
     : "Veja detalhes do modelo. Estatueta artesanal da Tonecos Studios.";
 
-  const imageUrl = model?.imageUrl ?? null;
+  const galleryUrls = useMemo(
+    () =>
+      uniqueImages([
+        model?.imageUrl,
+        ...(model?.galleryImages ?? []).map((image) => image.imageUrl),
+      ]),
+    [model?.galleryImages, model?.imageUrl],
+  );
+  const imageUrl =
+    selectedImage && galleryUrls.includes(selectedImage)
+      ? selectedImage
+      : (galleryUrls[0] ?? null);
 
   const metaChips = [
     sourceTitle
@@ -298,6 +366,13 @@ export default function ModelDetails() {
                 {sourceTitle ? ` - ${sourceTitle}` : ""}. Producao sob encomenda
                 com acabamento artesanal.
               </p>
+
+              <ModelGalleryStrip
+                images={galleryUrls}
+                activeImage={imageUrl}
+                label={title}
+                onSelect={setSelectedImage}
+              />
 
               {/* Like Button */}
               <button

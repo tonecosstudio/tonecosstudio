@@ -25,4 +25,25 @@ export type CatalogModelRow = {
 
 export type CatalogModelDetailsRow = CatalogModelRow & {
   description: string | null;
+  galleryImages?: CatalogModelGalleryImage[];
+};
+
+export type CatalogModelGalleryImage = {
+  id: string;
+  model_id: string;
+  source_drive_file_id: string | null;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  thumbnail_url: string | null;
+  image_url: string | null;
+  alt_text: string | null;
+  sort_order: number;
+  image_role:
+    | "primary_reference"
+    | "gallery"
+    | "angle"
+    | "detail"
+    | "variant_reference";
+  imageUrl: string | null;
+  thumbnailUrl: string | null;
 };
