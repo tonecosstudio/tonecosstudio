@@ -1050,6 +1050,407 @@
       "subcategory": "star-wars",
       "mediaType": "movie",
       "curationConfidence": "high"
+    },
+    "1IkkgbjruDWeugbHfBGsBeTC4neBm3qJn": {
+      "characterName": "Indiana Jones",
+      "sourceTitle": "Indiana Jones",
+      "category": "filmes",
+      "subcategory": "indiana-jones",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1H4p0xlsbJLq-vLlNvRWpJqVzNuWN-yDW": {
+      "characterName": "Darth Vader",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1I4gF4DZeO-5kVlRmeZr5-mLltqlv5BDn": {
+      "characterName": "Darth Vader",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1bieQePm4EKG5X13ZaFMHdlu0uwuWB4CE": {
+      "characterName": "Darth Vader",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1GZITpZS509UHVS1tErddBhnkY8xcVYPr": {
+      "characterName": "Optimus Prime",
+      "sourceTitle": "Transformers",
+      "category": "filmes",
+      "subcategory": "transformers",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1IWPcvLIt8mLB9sZ2UJ13AwGDzQA7wIFu": {
+      "characterName": "Malenia",
+      "sourceTitle": "Elden Ring",
+      "category": "jogos",
+      "subcategory": "elden-ring",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "15fNVPOWZFDH8OIsHoYViRCI36-L-78Yu": {
+      "characterName": "Kratos",
+      "sourceTitle": "God of War",
+      "category": "jogos",
+      "subcategory": "god-of-war",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "19fR2WrADOlrssLsNdae6tKGk1clMCQLQ": {
+      "characterName": "Solid Snake",
+      "sourceTitle": "Metal Gear",
+      "category": "jogos",
+      "subcategory": "metal-gear",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1ouYKPZDpfOXZVZo49sHzb5TBbaXrhwp2": {
+      "characterName": "Raiden",
+      "sourceTitle": "Metal Gear",
+      "category": "jogos",
+      "subcategory": "metal-gear",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "12MlQDxbR5Hakfp9epKCc9IxVsVW0dxfk": {
+      "characterName": "Arthur Morgan",
+      "sourceTitle": "Red Dead Redemption",
+      "category": "jogos",
+      "subcategory": "red-dead-redemption",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "1G9uIzLAl0WgVgRwd3FLGFg7EtnT6BiJq": {
+      "characterName": "Arthur Morgan",
+      "sourceTitle": "Red Dead Redemption",
+      "category": "jogos",
+      "subcategory": "red-dead-redemption",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "19X3IE_pszZYLHiJwktpIwiDpb7WkPOih": {
+      "characterName": "Lara Croft",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18ieNJEsz92GRU9w-KKjiIPa0kINF03yD": {
+      "characterName": "Lara Croft",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18pzMcvGbhkKHQtfksrtwc51WBP5Hdphn": {
+      "characterName": "Lara Croft",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "19IkwocCB3vyto1Rp81LTjJM6Bj1Dp6RI": {
+      "characterName": "Lara Croft",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18hYyohB_2Epj9qZjvth-mdUb6h963I4N": {
+      "characterName": "Lara Croft",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18amuDvVVIRCp5xzvLH2UaI4pCFtGJ1c9": {
+      "characterName": "Lara Croft",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "18ogdcPvOI7jvDFbFIejYHQuBjxI2HMKo": {
+      "characterName": "Lara Croft",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "subcategory": "tomb-raider",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1H0wqvqBnVVqKOmsj-DehTAC2G4UqeC5I": {
+      "characterName": "Nathan Drake",
+      "sourceTitle": "Uncharted",
+      "category": "jogos",
+      "subcategory": "uncharted",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1HgbD72rJK65RXQgFC2BBwIjw2BYy2aN-": {
+      "characterName": "Homem-Aranha",
+      "sourceTitle": "Homem Aranha",
+      "category": "quadrinhos",
+      "subcategory": "homem-aranha",
+      "mediaType": "comic",
+      "curationConfidence": "medium"
+    },
+    "1ZxONeFvuc_6Cs6thT5Vnq0A83FKupTWK": {
+      "characterName": "Venom",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1ZslAkRl3lFYT-teAFMp4b6wrbAmltif0": {
+      "characterName": "Hulk",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1RvwhpUTBZi2Pku-2Ymwvt5ohiYeTYt2U": {
+      "characterName": "Mulher-Hulk",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1_t-fYbTqiaogEfeDQlBw5uyoklDopu8T": {
+      "characterName": "Feiticeira Escarlate",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1aE0PUNmGTwzkKLP3sIFCQErPZQa4Csg4": {
+      "characterName": "Cyclops",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1aDzFEq5_8w7W2CaDMC_z3gNHFlzxhTZ1": {
+      "characterName": "Cyclops",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1a_Q4S7lNRlwTbg12ip6Ih-MkbCwMGR1G": {
+      "characterName": "Wolverine e Deadpool",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1a9CFyAqo1u_-etyOdFMsp0zGbtbdCPyQ": {
+      "characterName": "Noturno",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high"
+    },
+    "1IP7DrnReWx3xLMF9EoPOjNGjWB00n1wz": {
+      "characterName": "Stitch",
+      "sourceTitle": "Lilo e Stitch",
+      "category": "filmes",
+      "subcategory": "lilo-e-stitch",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1yPPU4IRX2DZfJ0FCDMxlm9CU5nFelCtr": {
+      "characterName": "Goku",
+      "variantName": "Super Saiyajin 4",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1nhv5weEzPmNizA8lZys3JgXTVNoj7N39": {
+      "characterName": "Arya Stark",
+      "sourceTitle": "Game of Thrones",
+      "category": "series",
+      "subcategory": "game-of-thrones",
+      "mediaType": "series",
+      "curationConfidence": "medium"
+    },
+    "1iu16dcGw8WSWjsxh4AsS2WlLtFnCrKf8": {
+      "characterName": "Sephiroth",
+      "sourceTitle": "Final Fantasy VII",
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
+      "mediaType": "game",
+      "curationConfidence": "high"
+    },
+    "1MewQlERP7sC92Kp4a3OeMjJiRMsAc7E3": {
+      "characterName": "Ghost",
+      "sourceTitle": "Call of Duty",
+      "category": "jogos",
+      "subcategory": "call-of-duty",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "1FAqnyZBv4p4sbMIGFWtKBB6xdN0lo2Nk": {
+      "characterName": "Caitlyn",
+      "sourceTitle": "League of Legends",
+      "category": "jogos",
+      "subcategory": "league-of-legends",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "1D6uDFHG9dsD9UEU4nCsJpChEJ7Yx4PAX": {
+      "characterName": "Leona Heidern",
+      "sourceTitle": "The King of Fighters",
+      "category": "jogos",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "1UiNUlmoMLtxLflBBB7NjAxKCNFWvxwb_": {
+      "characterName": "Ellie Williams",
+      "sourceTitle": "The Last of Us",
+      "category": "jogos",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "1b1r0LmLjon1THbSm3bJqHdeaGhSPqPJ3": {
+      "characterName": "Harry Potter e Voldemort",
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "subcategory": "harry-potter",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1Mc4WDmRmKrrb4wuGIihxatkmT15ZJV3B": {
+      "characterName": "Nazgul",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "medium"
+    },
+    "1kYHfxpFpOq7aeFJUuTOSJHklCZ5u3qfH": {
+      "characterName": "Daenerys Targaryen",
+      "sourceTitle": "Game of Thrones",
+      "category": "series",
+      "subcategory": "game-of-thrones",
+      "mediaType": "series",
+      "curationConfidence": "medium"
+    },
+    "1_0HyudFGSacs7coz9zy2L3AsNTbOCmM6": {
+      "characterName": "Bruce Lee",
+      "sourceTitle": "Bruce Lee",
+      "category": "filmes",
+      "subcategory": "bruce-lee",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1Fb6qmb_54jJOkmkgZ2-ei5yhjVXtNdXi": {
+      "characterName": "Popeye",
+      "sourceTitle": "Popeye",
+      "category": "desenhos",
+      "subcategory": "popeye",
+      "mediaType": "cartoon",
+      "curationConfidence": "high"
+    },
+    "1E5_e9zejLc0HZmYJ-CowZck3RwLQLSNL": {
+      "characterName": "Ichigo Kurosaki",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1QNM9b8JzlOttRA3Ma-8Bb8w1yw8kIdQp": {
+      "characterName": "Eustass Kid",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1R9YwA1-1CIUwqKTowRwB2ICWf--pV2nj": {
+      "characterName": "Luffy, Law e Eustass Kid",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1EQTIkOsg0ffoiyPKw2V1T0qunbf4ugoR": {
+      "characterName": "Marin de Aguia",
+      "sourceTitle": "Saint Seiya",
+      "category": "animes",
+      "subcategory": "saint-seiya",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1fo4qcQb9dR4FhXjPQjYRxHrIKylfBFPk": {
+      "characterName": "Camus de Aquario",
+      "sourceTitle": "Saint Seiya",
+      "category": "animes",
+      "subcategory": "saint-seiya",
+      "mediaType": "anime",
+      "curationConfidence": "high"
+    },
+    "1ObHC6EoFBWWIx6-kbAbYPrl2JkrtSufo": {
+      "characterName": "Darth Vader",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high"
+    },
+    "1zDMjqpKC3wY5VN0ytbHgryrbxLn-Rdoj": {
+      "characterName": "Orc Guerreiro",
+      "sourceTitle": "World of Warcraft",
+      "category": "jogos",
+      "subcategory": "world-of-warcraft",
+      "mediaType": "game",
+      "curationConfidence": "medium"
+    },
+    "1GwFbt3ef2HhARODgqnJqCJaBPT1uumw4": {
+      "characterName": "Gimli",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "medium"
+    },
+    "1F5dK1oFCWrHGt18KM5eYXdIux7zEilmH": {
+      "characterName": "Ekko",
+      "sourceTitle": "League of Legends",
+      "category": "jogos",
+      "subcategory": "league-of-legends",
+      "mediaType": "game",
+      "curationConfidence": "medium"
     }
   }
 }
