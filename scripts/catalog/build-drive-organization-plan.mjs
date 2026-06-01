@@ -58,6 +58,12 @@ const DISPLAY_ALIASES = new Map(
   Object.entries({
     "ataque de tita": "Attack on Titan",
     "axterix e obelix": "Asterix e Obelix",
+    animes: "animes",
+    filmes: "filmes",
+    jogos: "jogos",
+    quadrinhos: "quadrinhos",
+    revisao: "revisao",
+    series: "series",
     berseck: "Berserk",
     batman: "Batman",
     brolly: "Broly",
@@ -76,6 +82,8 @@ const DISPLAY_ALIASES = new Map(
     gotenksgogeta: "Gotenks e Gogeta",
     "gotenks gogeta": "Gotenks e Gogeta",
     "godzila kingkong": "Godzilla e King Kong",
+    "homem areia": "Homem-Areia",
+    "homem aranha": "Homem-Aranha",
     "i t": "It",
     "indiana jones": "Indiana Jones",
     jil: "Jill Valentine",
@@ -93,11 +101,28 @@ const DISPLAY_ALIASES = new Map(
     "sreet fighter": "Street Fighter",
     superman: "Superman",
     "the king of fighter": "The King of Fighters",
+    thundercats: "ThunderCats",
     "tomb rader": "Tomb Raider",
     vegeta: "Vegeta",
+    "wilykit e wilykat": "WilyKit & WilyKat",
+    "willy kit e willy kat": "WilyKit & WilyKat",
     xmen: "X-Men",
     "x men": "X-Men",
     zatana: "Zatanna",
+  }),
+);
+const TITLE_CASE_LOWER_WORDS = new Set(["a", "as", "da", "das", "de", "do", "dos", "e", "em", "o", "os"]);
+const TITLE_CASE_UPPER_WORDS = new Map(
+  Object.entries({
+    dbz: "DBZ",
+    dc: "DC",
+    hq: "HQ",
+    it: "It",
+    kame: "Kame",
+    motu: "MOTU",
+    nsfw: "NSFW",
+    ssj: "SSJ",
+    xmen: "X-Men",
   }),
 );
 const DRIVE_FILE_OVERRIDES = {
@@ -212,9 +237,29 @@ function displaySegment(value, fallback = "Sem Nome") {
   return cleaned || fallback;
 }
 
+function titleCaseWord(word, index) {
+  const comparable = normalizeComparable(word);
+  if (!comparable) return word;
+  if (TITLE_CASE_UPPER_WORDS.has(comparable)) return TITLE_CASE_UPPER_WORDS.get(comparable);
+  if (index > 0 && TITLE_CASE_LOWER_WORDS.has(comparable)) return comparable;
+  return comparable.charAt(0).toUpperCase() + comparable.slice(1);
+}
+
+function smartTitleCase(value) {
+  return String(value || "")
+    .split(" ")
+    .map((word, index) =>
+      word
+        .split("-")
+        .map((part, partIndex) => titleCaseWord(part, index + partIndex))
+        .join("-"),
+    )
+    .join(" ");
+}
+
 function canonicalDisplay(value, fallback = "Sem Nome") {
   const displayed = displaySegment(value, fallback);
-  return DISPLAY_ALIASES.get(normalizeComparable(displayed)) || displayed;
+  return DISPLAY_ALIASES.get(normalizeComparable(displayed)) || smartTitleCase(displayed);
 }
 
 function titleizeSlug(value) {

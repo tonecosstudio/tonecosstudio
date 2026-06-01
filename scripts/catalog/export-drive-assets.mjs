@@ -27,6 +27,7 @@ const INCLUDE_REVIEW = !argFlag("skip-review");
 const HASH_DEDUPE = !argFlag("no-hash-dedupe");
 const PRUNE = argFlag("prune");
 let existingAssetsById = new Map();
+let directoryCaseQueue = Promise.resolve();
 
 const IMAGE_SIGNATURES = [
   { type: "png", bytes: [0x89, 0x50, 0x4e, 0x47] },
@@ -228,7 +229,7 @@ async function readSourceBytes(item) {
 }
 
 async function writeFileAtomic(filePath, bytes) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await ensureDirectoryPathCase(path.dirname(filePath));
   const tmpPath = `${filePath}.tmp`;
   await fs.writeFile(tmpPath, bytes);
   try {
@@ -237,6 +238,50 @@ async function writeFileAtomic(filePath, bytes) {
     if (!["EEXIST", "EPERM"].includes(error.code)) throw error;
     await fs.rm(filePath, { force: true });
     await fs.rename(tmpPath, filePath);
+  }
+}
+
+async function ensureDirectoryPathCase(dirPath) {
+  const run = directoryCaseQueue.then(() => ensureDirectoryPathCaseUnlocked(dirPath));
+  directoryCaseQueue = run.catch(() => {});
+  return run;
+}
+
+async function ensureDirectoryPathCaseUnlocked(dirPath) {
+  const outRoot = path.resolve(OUT_DIR);
+  const resolvedDir = path.resolve(dirPath);
+  const relative = path.relative(outRoot, resolvedDir);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    await fs.mkdir(resolvedDir, { recursive: true });
+    return;
+  }
+
+  let current = outRoot;
+  await fs.mkdir(current, { recursive: true });
+
+  for (const part of relative.split(path.sep).filter(Boolean)) {
+    const target = path.join(current, part);
+    let entries = [];
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true });
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+
+    const existing = entries.find((entry) => entry.isDirectory() && entry.name.toLowerCase() === part.toLowerCase());
+    if (!existing) {
+      await fs.mkdir(target, { recursive: true });
+      current = target;
+      continue;
+    }
+
+    const existingPath = path.join(current, existing.name);
+    if (existing.name !== part) {
+      const tempPath = path.join(current, `.__casefix-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+      await fs.rename(existingPath, tempPath);
+      await fs.rename(tempPath, target);
+    }
+    current = target;
   }
 }
 
@@ -336,6 +381,7 @@ async function exportItem(item, index, total) {
   const relativePath = path.relative(process.cwd(), localPath);
 
   try {
+    await ensureDirectoryPathCase(path.dirname(localPath));
     if (!FORCE) {
       const existingAsset = item.id ? existingAssetsById.get(item.id) : null;
       if (existingAsset && isInsideOutDir(existingAsset) && isExactDuplicatePath(existingAsset)) {
