@@ -217,6 +217,103 @@ function canonicalDisplay(value, fallback = "Sem Nome") {
   return DISPLAY_ALIASES.get(normalizeComparable(displayed)) || displayed;
 }
 
+function titleizeSlug(value) {
+  return displaySegment(String(value || "").replace(/[-_]+/g, " ")).replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function splitCharacterNames(value) {
+  const cleaned = String(value || "")
+    .replace(/\bDiorama\b/gi, " ")
+    .replace(/\bDBZ\b/gi, " ")
+    .replace(/\bDB\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) return [];
+
+  return cleaned
+    .split(/\s+(?:e|and|vs|x)\s+|&/i)
+    .map((part) => canonicalDisplay(part))
+    .filter((part) => part && !isGenericName(part));
+}
+
+function inferModelKind(characterName, variantName, modelGroup) {
+  const characterText = normalizeComparable(characterName);
+  const variantText = normalizeComparable(variantName);
+  const modelText = normalizeComparable(modelGroup);
+  const hasMultipleCharacters = splitCharacterNames(characterName).length > 1;
+  const hasConfrontationText = /\b(e|and|vs|x)\b/.test(characterText);
+  const hasDioramaText = [characterText, variantText, modelText].some((text) => /\bdiorama\b/.test(text));
+
+  if (hasMultipleCharacters || hasConfrontationText) return "diorama";
+  if (hasDioramaText) return "character_diorama";
+  return "character";
+}
+
+function extractInlineVariant(characterName, explicitVariantName) {
+  if (!characterName || explicitVariantName) {
+    return { characterName, variantName: explicitVariantName || null };
+  }
+
+  const rules = [
+    { pattern: /^\s*diorama\s+(.+?)\s*$/i, variantName: "Diorama", characterIndex: 1 },
+    { pattern: /^(.+?)\s+diorama(?:\s+\d+)?\s*$/i, variantName: "Diorama", characterIndex: 1 },
+    { pattern: /^(.+?)\s+(trono|busto|bust|chibi)\s*$/i, characterIndex: 1 },
+  ];
+
+  for (const rule of rules) {
+    const match = String(characterName).match(rule.pattern);
+    if (!match) continue;
+    const variantName = rule.variantName || match[2];
+    return {
+      characterName: canonicalDisplay(match[rule.characterIndex]),
+      variantName: titleizeSlug(variantName === "bust" ? "Busto" : variantName),
+    };
+  }
+
+  return { characterName, variantName: null };
+}
+
+function withoutIdentityPrefix(folderName, characterName) {
+  const folderComparable = normalizeComparable(folderName);
+  const characterComparable = normalizeComparable(characterName);
+  if (!folderComparable || !characterComparable) return folderName;
+  if (folderComparable === characterComparable) return null;
+  if (!folderComparable.startsWith(`${characterComparable} `)) return folderName;
+
+  const prefixLength = characterComparable.split(" ").length;
+  return displaySegment(String(folderName).split(/\s+/).slice(prefixLength).join(" ")) || null;
+}
+
+function modelFolderName(characterName, variantName, modelGroup, modelKind) {
+  if (modelGroup) return withoutIdentityPrefix(titleizeSlug(modelGroup), characterName);
+  if (variantName) return withoutIdentityPrefix(displaySegment(variantName), characterName);
+  if (modelKind === "character_diorama") return "Diorama";
+  return null;
+}
+
+function buildDestinationFolder({ status, originalGeneric, collection, category, categorySlug, sourceFolder, characterFolder, modelKind, modelFolder }) {
+  const modelSuffix = modelFolder ? `/${modelFolder}` : "";
+
+  if (status === "needs_review") {
+    if (originalGeneric && characterFolder !== "Sem Nome") {
+      return `01_REVISAR/confirmar-identificacao/${displaySegment(category)}/${sourceFolder}/${characterFolder}${modelSuffix}`;
+    }
+    if (originalGeneric) {
+      return `01_REVISAR/sem-nome-ou-generico/${displaySegment(category)}/${sourceFolder}`;
+    }
+    return `01_REVISAR/${categorySlug}/${sourceFolder}/${characterFolder}${modelSuffix}`;
+  }
+
+  if (collection) {
+    return `03_COLECOES/${sourceFolder}/Personagens/${characterFolder}${modelSuffix}`;
+  }
+
+  const catalogBase = `02_CATALOGO_GERAL/${displaySegment(category)}/${sourceFolder}`;
+  if (modelKind === "diorama") return `${catalogBase}/Dioramas/${characterFolder}${modelSuffix}`;
+  return `${catalogBase}/Personagens/${characterFolder}${modelSuffix}`;
+}
+
 function cleanDriveSegment(value) {
   return canonicalDisplay(value).replace(/\s+Shared$/i, "").trim();
 }
@@ -520,7 +617,11 @@ function mergeRows(rows) {
 
 function classify(row) {
   const inferredCharacter = inferFromName(row);
-  const characterName = inferredCharacter ? canonicalDisplay(inferredCharacter) : null;
+  const inlineIdentity = extractInlineVariant(
+    inferredCharacter ? canonicalDisplay(inferredCharacter) : null,
+    row.variantName ? canonicalDisplay(row.variantName) : null,
+  );
+  const characterName = inlineIdentity.characterName;
   const sourceTitle = canonicalDisplay(row.sourceTitle || row.sourceFolderName || "Catalogo Geral", "Catalogo Geral");
   const category = canonicalDisplay(row.category || "revisao", "revisao");
   const subcategory = row.subcategory || slugSegment(sourceTitle);
@@ -535,30 +636,31 @@ function classify(row) {
   const categorySlug = slugSegment(category);
   const collection = row.collectionCandidate;
   const sourceFolder = displaySegment(sourceTitle, "Catalogo Geral");
-  const characterFolder = displaySegment(characterName, "Sem Nome");
 
   let status = "ready_to_organize";
   if (needsReview) status = "needs_review";
 
-  let destinationFolder;
-  if (status === "needs_review") {
-    if (originalGeneric && characterName) {
-      destinationFolder = `01_REVISAR/confirmar-identificacao/${displaySegment(category)}/${sourceFolder}/${characterFolder}`;
-    } else if (originalGeneric) {
-      destinationFolder = `01_REVISAR/sem-nome-ou-generico/${displaySegment(category)}/${sourceFolder}`;
-    } else {
-      destinationFolder = `01_REVISAR/${categorySlug}/${sourceFolder}/${characterFolder}`;
-    }
-  } else if (collection) {
-    destinationFolder = `03_COLECOES/${sourceFolder}/${characterFolder}`;
-  } else {
-    destinationFolder = `02_CATALOGO_GERAL/${displaySegment(category)}/${sourceFolder}/${characterFolder}`;
-  }
-
-  const variantName = row.variantName ? canonicalDisplay(row.variantName) : null;
+  const variantName = inlineIdentity.variantName;
+  const modelGroup = row.modelGroup || row.model_group || null;
+  const characterNames = splitCharacterNames(characterName);
+  const modelKind = inferModelKind(characterName, variantName, modelGroup);
+  const primaryCharacterName = modelKind === "diorama" ? characterName : characterNames[0] || characterName;
+  const characterFolder = displaySegment(primaryCharacterName, "Sem Nome");
+  const modelFolder = modelFolderName(primaryCharacterName, variantName, modelGroup, modelKind);
+  const destinationFolder = buildDestinationFolder({
+    status,
+    originalGeneric,
+    collection,
+    category,
+    categorySlug,
+    sourceFolder,
+    characterFolder,
+    modelKind,
+    modelFolder,
+  });
   const parts = [sourceFolder];
   if (characterName && normalizeComparable(characterName) !== normalizeComparable(sourceTitle)) {
-    parts.push(characterFolder);
+    parts.push(displaySegment(characterName, "Sem Nome"));
   }
   if (variantName) parts.push(displaySegment(variantName));
 
@@ -567,7 +669,11 @@ function classify(row) {
   return {
     ...row,
     characterName,
+    characterNames,
     variantName,
+    modelGroup,
+    modelKind,
+    modelFolder,
     sourceTitle,
     category,
     subcategory,
@@ -589,6 +695,7 @@ function withDuplicateGroups(rows) {
       normalizeComparable(row.sourceTitle),
       normalizeComparable(row.characterName),
       normalizeComparable(row.variantName),
+      normalizeComparable(row.modelGroup),
       normalizeComparable(stripExtension(row.originalName)),
       row.size || "",
     ].join("|");
@@ -602,6 +709,7 @@ function withDuplicateGroups(rows) {
       normalizeComparable(row.sourceTitle),
       normalizeComparable(row.characterName),
       normalizeComparable(row.variantName),
+      normalizeComparable(row.modelGroup),
       normalizeComparable(stripExtension(row.originalName)),
       row.size || "",
     ].join("|");
@@ -695,8 +803,11 @@ async function main() {
     "proposedName",
     "destinationFolder",
     "characterName",
+    "characterNames",
     "variantName",
     "modelGroup",
+    "modelKind",
+    "modelFolder",
     "sourceTitle",
     "category",
     "subcategory",

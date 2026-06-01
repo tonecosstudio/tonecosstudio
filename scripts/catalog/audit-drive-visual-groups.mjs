@@ -320,7 +320,7 @@ async function main() {
   const usableRows = (manifest.items || []).filter(
     (row) =>
       row.localPath &&
-      row.exportStatus === "exported" &&
+      ["exported", "already_exists"].includes(row.exportStatus) &&
       STATUSES.has(row.status) &&
       row.characterName &&
       row.sourceTitle,

@@ -61,6 +61,22 @@ function displayTitle(row) {
     .join(" - ");
 }
 
+function buildTags(row) {
+  const tags = new Set((row.tags || []).filter(Boolean).map(String));
+  for (const value of [
+    row.sourceTitle,
+    row.category,
+    row.mediaType,
+    row.characterName,
+    row.variantName,
+    row.modelKind,
+    ...(row.characterNames || []),
+  ]) {
+    if (value) tags.add(value);
+  }
+  return Array.from(tags);
+}
+
 function curationScore(row) {
   let score = 0;
   if (row.status === "ready_to_organize") score += 1000;
@@ -79,7 +95,7 @@ function readItems(manifest) {
   return (manifest.items || [])
     .filter(
       (item) =>
-        item.exportStatus === "exported" &&
+        ["exported", "already_exists"].includes(item.exportStatus) &&
         item.localPath &&
         item.characterName &&
         item.sourceTitle &&
@@ -98,6 +114,9 @@ function readItems(manifest) {
       subcategory: item.subcategory,
       mediaType: item.mediaType,
       modelGroup: item.modelGroup || item.model_group || null,
+      modelKind: item.modelKind || item.model_kind || "character",
+      modelFolder: item.modelFolder || item.model_folder || null,
+      characterNames: item.characterNames || item.character_names || [item.characterName].filter(Boolean),
       tags: item.tags || [],
       status: item.status,
       sourceDrivePath: item.sourceDrivePath,
@@ -174,11 +193,14 @@ function buildPlan(items, visualIndex) {
       characterName: primary.characterName,
       variantName: primary.variantName,
       modelGroup: primary.modelGroup,
+      modelKind: primary.modelKind,
+      modelFolder: primary.modelFolder,
+      characterNames: primary.characterNames,
       sourceTitle: primary.sourceTitle,
       category: primary.category,
       subcategory: primary.subcategory,
       mediaType: primary.mediaType,
-      tags: primary.tags,
+      tags: buildTags(primary),
       importAction: visualStatus === "approved" ? "model_with_gallery" : "review_before_publish",
       visualStatus,
       visualReview,

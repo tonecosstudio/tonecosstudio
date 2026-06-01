@@ -25,6 +25,7 @@ const DOWNLOAD = argFlag("download");
 const FORCE = argFlag("force");
 const INCLUDE_REVIEW = !argFlag("skip-review");
 const HASH_DEDUPE = !argFlag("no-hash-dedupe");
+const PRUNE = argFlag("prune");
 let existingAssetsById = new Map();
 
 const IMAGE_SIGNATURES = [
@@ -168,6 +169,27 @@ async function loadExistingAssetsMap(manifestPath) {
   return byId;
 }
 
+async function loadOutputManifest() {
+  const manifestPath = path.join(OUT_DIR, "_manifest", "catalog-assets-manifest.json");
+  try {
+    const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+    return manifest.items || [];
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+function isInsideOutDir(filePath) {
+  const relative = path.relative(path.resolve(OUT_DIR), path.resolve(filePath));
+  return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+function isExactDuplicatePath(filePath) {
+  const relative = path.relative(path.resolve(OUT_DIR), path.resolve(filePath));
+  return relative.split(path.sep).slice(0, 2).join("/") === "90_DUPLICATAS/exatas";
+}
+
 async function readSourceBytes(item) {
   const existingAsset = item.id ? existingAssetsById.get(item.id) : null;
   if (existingAsset) {
@@ -209,7 +231,13 @@ async function writeFileAtomic(filePath, bytes) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   const tmpPath = `${filePath}.tmp`;
   await fs.writeFile(tmpPath, bytes);
-  await fs.rename(tmpPath, filePath);
+  try {
+    await fs.rename(tmpPath, filePath);
+  } catch (error) {
+    if (!["EEXIST", "EPERM"].includes(error.code)) throw error;
+    await fs.rm(filePath, { force: true });
+    await fs.rename(tmpPath, filePath);
+  }
 }
 
 async function uniqueFilePath(filePath) {
@@ -226,6 +254,27 @@ async function uniqueFilePath(filePath) {
     } catch {
       return candidate;
     }
+  }
+}
+
+async function moveOrReuseFile(currentPath, targetPath, expectedHash) {
+  if (path.resolve(currentPath) === path.resolve(targetPath)) return targetPath;
+
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  try {
+    const existing = await fs.readFile(targetPath);
+    if (sha256(existing) === expectedHash) {
+      await fs.unlink(currentPath);
+      return targetPath;
+    }
+
+    const collisionPath = await uniqueFilePath(targetPath);
+    await fs.rename(currentPath, collisionPath);
+    return collisionPath;
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    await fs.rename(currentPath, targetPath);
+    return targetPath;
   }
 }
 
@@ -249,6 +298,12 @@ async function writeManifest(rows, summary) {
     "originalName",
     "proposedName",
     "destinationFolder",
+    "characterName",
+    "characterNames",
+    "variantName",
+    "modelGroup",
+    "modelKind",
+    "modelFolder",
     "localPath",
     "plannedLocalPath",
     "bytes",
@@ -282,6 +337,27 @@ async function exportItem(item, index, total) {
 
   try {
     if (!FORCE) {
+      const existingAsset = item.id ? existingAssetsById.get(item.id) : null;
+      if (existingAsset && isInsideOutDir(existingAsset) && isExactDuplicatePath(existingAsset)) {
+        try {
+          const existing = await fs.readFile(existingAsset);
+          console.log(`[${index + 1}/${total}] exists ${path.relative(process.cwd(), existingAsset)}`);
+          return {
+            ...item,
+            planIndex: index,
+            exportStatus: "already_exists",
+            localPath: path.relative(process.cwd(), existingAsset),
+            plannedLocalPath: relativePath,
+            bytes: existing.length,
+            sha256: sha256(existing),
+            source: "existing-duplicate",
+            error: null,
+          };
+        } catch {
+          // Missing duplicate file; continue with the planned destination.
+        }
+      }
+
       try {
         const existing = await fs.readFile(localPath);
         console.log(`[${index + 1}/${total}] exists ${relativePath}`);
@@ -388,23 +464,35 @@ async function applyExactHashDedupe(rows) {
       return a.planIndex - b.planIndex;
     })[0];
 
+    if (
+      keeper.plannedLocalPath &&
+      keeper.localPath &&
+      path.resolve(keeper.localPath) !== path.resolve(keeper.plannedLocalPath) &&
+      isInsideOutDir(keeper.localPath) &&
+      isInsideOutDir(keeper.plannedLocalPath)
+    ) {
+      const keeperPath = await moveOrReuseFile(
+        path.resolve(keeper.localPath),
+        path.resolve(keeper.plannedLocalPath),
+        keeper.sha256,
+      );
+      keeper.localPath = path.relative(process.cwd(), keeperPath);
+    }
+
     for (const row of group) {
       if (row === keeper) continue;
 
       const currentPath = path.resolve(row.localPath);
       const ext = path.extname(currentPath) || path.extname(row.proposedName || row.originalName) || ".jpg";
       const baseName = sanitizePathPart(
-        [row.sourceTitle, row.characterName, row.variantName || row.proposedName || row.originalName]
+        [row.sourceTitle, row.characterName, row.variantName || row.proposedName || row.originalName, row.id]
           .filter(Boolean)
           .join(" - "),
         row.id || row.sha256.slice(0, 12),
       );
-      const duplicatePath = await uniqueFilePath(
-        path.join(OUT_DIR, "90_DUPLICATAS", "exatas", row.sha256.slice(0, 12), `${baseName}${ext}`),
-      );
+      let duplicatePath = path.join(OUT_DIR, "90_DUPLICATAS", "exatas", row.sha256.slice(0, 12), `${baseName}${ext}`);
 
-      await fs.mkdir(path.dirname(duplicatePath), { recursive: true });
-      await fs.rename(currentPath, duplicatePath);
+      duplicatePath = await moveOrReuseFile(currentPath, duplicatePath, row.sha256);
 
       row.statusBeforeHashDedupe = row.status;
       row.status = "duplicate_exact";
@@ -416,13 +504,98 @@ async function applyExactHashDedupe(rows) {
   }
 }
 
+async function removeEmptyParents(startDir) {
+  const outRoot = path.resolve(OUT_DIR);
+  let current = path.resolve(startDir);
+
+  while (current.startsWith(outRoot) && current !== outRoot) {
+    try {
+      await fs.rmdir(current);
+      current = path.dirname(current);
+    } catch {
+      return;
+    }
+  }
+}
+
+async function pruneStaleFiles(previousRows, currentRows) {
+  if (!PRUNE || !previousRows.length) return 0;
+
+  const keepPaths = new Set(
+    currentRows
+      .map((row) => row.localPath)
+      .filter(Boolean)
+      .map((localPath) => path.resolve(localPath)),
+  );
+  let pruned = 0;
+
+  for (const row of previousRows) {
+    if (!row.localPath) continue;
+    const filePath = path.resolve(row.localPath);
+    if (!isInsideOutDir(filePath) || keepPaths.has(filePath)) continue;
+
+    try {
+      await fs.unlink(filePath);
+      pruned += 1;
+      await removeEmptyParents(path.dirname(filePath));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+
+  return pruned;
+}
+
+async function pruneEmptyDirectories(rootDir = OUT_DIR) {
+  if (!PRUNE) return 0;
+
+  const outRoot = path.resolve(OUT_DIR);
+  const root = path.resolve(rootDir);
+  if (root !== outRoot && !isInsideOutDir(root)) return 0;
+
+  let pruned = 0;
+
+  async function visit(dir) {
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch (error) {
+      if (error.code === "ENOENT") return;
+      throw error;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      await visit(path.join(dir, entry.name));
+    }
+
+    if (path.resolve(dir) === outRoot) return;
+
+    try {
+      const remaining = await fs.readdir(dir);
+      if (remaining.length === 0) {
+        await fs.rmdir(dir);
+        pruned += 1;
+      }
+    } catch (error) {
+      if (error.code !== "ENOENT" && error.code !== "ENOTEMPTY") throw error;
+    }
+  }
+
+  await visit(root);
+  return pruned;
+}
+
 async function main() {
   const plan = JSON.parse(await fs.readFile(PLAN_PATH, "utf8"));
+  const previousOutputRows = await loadOutputManifest();
   existingAssetsById = await loadExistingAssetsMap(EXISTING_ASSETS_MANIFEST);
   const plannedItems = (plan.items || []).filter(shouldExport);
   const items = Number.isFinite(LIMIT) && LIMIT > 0 ? plannedItems.slice(0, LIMIT) : plannedItems;
   const rows = await runPool(items, CONCURRENCY);
   if (HASH_DEDUPE) await applyExactHashDedupe(rows);
+  const prunedFiles = await pruneStaleFiles(previousOutputRows, rows);
+  const prunedEmptyDirectories = await pruneEmptyDirectories();
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -432,6 +605,9 @@ async function main() {
     existingAssetsManifest: EXISTING_ASSETS_MANIFEST,
     download: DOWNLOAD,
     hashDedupe: HASH_DEDUPE,
+    prune: PRUNE,
+    prunedFiles,
+    prunedEmptyDirectories,
     concurrency: CONCURRENCY,
     total: rows.length,
     byExportStatus: rows.reduce((acc, row) => {
