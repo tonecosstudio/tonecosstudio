@@ -32,6 +32,7 @@ const GENERIC_PATH_SEGMENTS = new Set([
   "animes",
   "classicos",
   "outros",
+  "saiyajin",
   "filmes e series",
   "01 terror",
   "02 series",
