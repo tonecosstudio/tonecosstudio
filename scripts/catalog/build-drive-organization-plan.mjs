@@ -132,6 +132,7 @@ const TITLE_CASE_UPPER_WORDS = new Map(
     dc: "DC",
     hq: "HQ",
     it: "It",
+    "3dmoon": "3DMoon",
     kame: "Kame",
     lafigures: "LAfigures",
     motu: "MOTU",
@@ -202,6 +203,8 @@ const DRIVE_FILE_OVERRIDES = {
     mediaType: "series",
   },
 };
+const MARVEL_SOURCE_TITLES = new Set(["homem aranha", "quarteto fantastico", "vingadores", "x men"]);
+const FRANCHISE_SOURCE_TITLES = new Set([...MARVEL_SOURCE_TITLES, "dc", "marvel"]);
 let driveFileOverrides = { ...DRIVE_FILE_OVERRIDES };
 
 async function loadCurationOverrides(filePath) {
@@ -514,9 +517,38 @@ function catalogCategoryFolder(category, mediaType) {
   if (["jogo", "jogos", "game", "games"].includes(normalized)) return "games";
   if (["filme", "filmes", "movie", "movies"].includes(normalized)) return "filmes";
   if (["serie", "series", "tokusatsu"].includes(normalized)) return "series";
+  if (["franquia", "franquias", "franchise", "franchises", "universo", "universos"].includes(normalized)) return "franquias";
   if (["quadrinho", "quadrinhos", "comic", "comics", "hq"].includes(normalized)) return "quadrinhos";
   if (["colecao", "colecoes"].includes(normalized)) return "colecoes";
   return slugSegment(category || mediaType || "outros");
+}
+
+function catalogSourceFolder(category, sourceTitle) {
+  const sourceFolder = displaySegment(sourceTitle, "Catalogo Geral");
+  if (MARVEL_SOURCE_TITLES.has(normalizeComparable(sourceTitle))) {
+    return `Marvel/${sourceFolder}`;
+  }
+  return sourceFolder;
+}
+
+function normalizeTaxonomyCategory(category, sourceTitle) {
+  const normalizedCategory = normalizeComparable(category);
+  if (
+    FRANCHISE_SOURCE_TITLES.has(normalizeComparable(sourceTitle)) &&
+    ["quadrinho", "quadrinhos", "comic", "comics", "hq"].includes(normalizedCategory)
+  ) {
+    return "franquias";
+  }
+  return category;
+}
+
+function normalizeMediaType(mediaType, category) {
+  const normalizedCategory = normalizeComparable(category);
+  const normalizedMediaType = normalizeComparable(mediaType);
+  if (normalizedCategory === "franquias" && ["comic", "comics", "quadrinho", "quadrinhos", "hq"].includes(normalizedMediaType)) {
+    return "franchise";
+  }
+  return mediaType || "other";
 }
 
 function buildDestinationFolder({ status, originalGeneric, collection, category, categorySlug, sourceFolder, characterFolder, modelKind }) {
@@ -855,7 +887,8 @@ function classify(row) {
   );
   const characterName = inlineIdentity.characterName;
   const sourceTitle = canonicalDisplay(row.sourceTitle || row.sourceFolderName || "Catalogo Geral", "Catalogo Geral");
-  const category = canonicalDisplay(row.category || "revisao", "revisao");
+  const rawCategory = canonicalDisplay(row.category || "revisao", "revisao");
+  const category = normalizeTaxonomyCategory(rawCategory, sourceTitle);
   const subcategory = row.subcategory || slugSegment(sourceTitle);
   const originalGeneric = isGenericName(row.originalName);
   const genericWithoutPathIdentity = originalGeneric && !characterName;
@@ -867,7 +900,7 @@ function classify(row) {
 
   const categorySlug = slugSegment(category);
   const collection = row.collectionCandidate;
-  const sourceFolder = displaySegment(sourceTitle, "Catalogo Geral");
+  const sourceFolder = catalogSourceFolder(category, sourceTitle);
 
   let status = "ready_to_organize";
   if (needsReview) status = "needs_review";
@@ -909,7 +942,7 @@ function classify(row) {
     sourceTitle,
     category,
     subcategory,
-    mediaType: row.mediaType || "other",
+    mediaType: normalizeMediaType(row.mediaType, category),
     status,
     destinationFolder,
     proposedName,

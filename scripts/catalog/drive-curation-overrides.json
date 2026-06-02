@@ -4254,6 +4254,132 @@
       "variantName": "LAfigures Base Rocha",
       "modelGroup": "gambit-lafigures-base-rocha",
       "curationNotes": "Prancha 021 item 08: modelo LAfigures com carta em chamas e base de rocha; variante distinta do render Malix."
+    },
+    "1tDLOVhqp_rK7Ek-ZN0JIF-QiuAkIfvuc": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "Wicked Raio Dourado",
+      "modelGroup": "tempestade-wicked-raio-dourado",
+      "curationNotes": "Prancha 021 item Storm: mesmo modelo Wicked da Tempestade 1.1; consolidar como galeria/angulo e manter Storm como alias/tag."
+    },
+    "1dI_9zwfdcWXCPbFkTXl3cynG9b_596j9": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "Wicked Raio Dourado",
+      "modelGroup": "tempestade-wicked-raio-dourado",
+      "curationNotes": "Prancha 021 item 01: modelo Wicked com traje branco/prata, base circular e raios dourados; imagem principal do grupo."
+    },
+    "1OyrhdW3FzLyRmr7Sf3hly7Vapwni_6g7": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "Malix Tornado Base Redonda",
+      "modelGroup": "tempestade-malix-tornado-base-redonda",
+      "curationNotes": "Prancha 021 item 02: pose com bracos abertos, traje branco e base de tornado redonda; variante distinta."
+    },
+    "1zmve6IgCjNLkC-WH6zSkIcInWCzLyyPb": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "3DMoon Raio Circular",
+      "modelGroup": "tempestade-3dmoon-raio-circular",
+      "curationNotes": "Prancha 021 item 03: traje preto/dourado com aro de raio ao fundo e base de tornado; variante distinta."
+    },
+    "1C6xr4buGO7KbwFKmwPlnWcVt_5Tic2jM": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "LAfigures Nuvem Raio Dourado",
+      "modelGroup": "tempestade-lafigures-nuvem-raio-dourado",
+      "curationNotes": "Prancha 021 item 04: traje branco, nuvem/base elevada e raios dourados; variante LAfigures distinta."
+    },
+    "1Kgj9uw_OsjL_z4NhleSrNYCuroWkQUQq": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "Traje Preto Tornado",
+      "modelGroup": "tempestade-traje-preto-tornado",
+      "curationNotes": "Prancha 021 item 05: foto de modelo fisico com traje preto/branco sobre base de tornado; variante distinta."
+    },
+    "1XkW8QzvNtDSwJDoud0jDsdMxtL79Fdtc": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "Render Cinza Capa Aberta",
+      "modelGroup": "tempestade-render-cinza-capa-aberta",
+      "curationNotes": "Prancha 021 item 06: render cinza com capa ampla e maos no colarinho; variante distinta."
+    },
+    "1MNtVKNnA3uuVnAAghn90eTElLb8k2nn-": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "Malix Traje Preto Nuvem",
+      "modelGroup": "tempestade-malix-traje-preto-nuvem",
+      "curationNotes": "Prancha 021 item 07: traje preto sobre base de nuvem; variante Malix distinta."
+    },
+    "14zZ_je_iymlPoLKbqyGmIO12Z-yyKVq4": {
+      "characterName": "Tempestade",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "tags": [
+        "Storm"
+      ],
+      "variantName": "SpecialSTL Raio Dourado",
+      "modelGroup": "tempestade-specialstl-raio-dourado",
+      "curationNotes": "Prancha 021 item 08: falso candidato a duplicata; visualmente e um modelo SpecialSTL distinto com raio dourado."
     }
   },
   "visualApprovals": {
@@ -4388,6 +4514,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Consolidacao Justiceiro: x Wolverine x Justiceiro e punisher 3 sao a mesma peca/diorama; manter como um modelo com galeria."
+    },
+    "X-Men|Tempestade|tempestade-wicked-raio-dourado": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 021: Storm 1.png e Tempestade 1.1 sao o mesmo modelo Wicked; Storm vira alias/tag e imagem de galeria."
     }
   }
 }
