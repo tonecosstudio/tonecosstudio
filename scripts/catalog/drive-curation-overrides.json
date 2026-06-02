@@ -86,7 +86,17 @@
       "category": "filmes",
       "subcategory": "o-poderoso-chefao",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "variantName": "Em Pe",
+      "modelGroup": "vito-corleone-em-pe-escala-1-6",
+      "tags": [
+        "O Poderoso Chefao",
+        "Vito Corleone",
+        "The Godfather",
+        "Marlon Brando",
+        "Em Pe"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 064 item 01: Vito Corleone em pe, escala 1/6; item 03 e galeria/print do mesmo modelo."
     },
     "1QsTI-A3NAvjkyQUlShghKy51phqub0KJ": {
       "characterName": "Abby Anderson",
@@ -3876,7 +3886,18 @@
       "category": "filmes",
       "subcategory": "o-poderoso-chefao",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "variantName": "Poltrona com Gato",
+      "modelGroup": "vito-corleone-poltrona-com-gato",
+      "tags": [
+        "O Poderoso Chefao",
+        "Vito Corleone",
+        "The Godfather",
+        "Marlon Brando",
+        "Poltrona",
+        "Gato"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 064 item 02: Vito Corleone sentado na poltrona com gato; produto separado do modelo em pe."
     },
     "1RwWm9c4t3a_moReW1ZDpWOEzvzh6ml_y": {
       "characterName": "Vito Corleone",
@@ -3884,7 +3905,17 @@
       "category": "filmes",
       "subcategory": "o-poderoso-chefao",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "variantName": "Em Pe",
+      "modelGroup": "vito-corleone-em-pe-escala-1-6",
+      "tags": [
+        "O Poderoso Chefao",
+        "Vito Corleone",
+        "The Godfather",
+        "Marlon Brando",
+        "Em Pe"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 064 item 03: print/render do mesmo Vito Corleone em pe do item 01; manter como galeria."
     },
     "1GjNxzrXv0UZ79iWv8-XO9srkA44XU5WX": {
       "characterName": "Gandalf",
@@ -8210,6 +8241,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 052 itens 01 e 02 mostram a mesma Ellie Williams em roupa de inverno com rifle; publicar como um modelo com galeria."
+    },
+    "O Poderoso Chefao|Vito Corleone|vito-corleone-em-pe-escala-1-6": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 064 itens 01 e 03 mostram o mesmo Vito Corleone em pe, em render e print; publicar como um modelo com galeria."
     },
     "X-Men|Anjo|anjo-special-stl-uniforme-vermelho": {
       "status": "approved",
