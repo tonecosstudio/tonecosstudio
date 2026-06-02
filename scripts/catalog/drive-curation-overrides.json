@@ -337,6 +337,108 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 026 item 07: Ranger Verde com Adaga Dragao; corrigir grupo generico Powerranger."
     },
+    "1YrN2hWKkPG5TEGZwmeDuy9v7vNwyf-kI": {
+      "characterName": "Modelo Masculino Ajoelhado",
+      "sourceTitle": "Nao Identificado",
+      "category": "revisao",
+      "subcategory": "nao-identificado",
+      "mediaType": "other",
+      "variantName": "Corpo Muscular",
+      "modelGroup": "modelo-masculino-ajoelhado-corpo-muscular",
+      "tags": [
+        "Nao Identificado",
+        "Needs Visual Review",
+        "needs-visual-review"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 027 item 01: imagem nao possui elementos visuais de Exterminador do Futuro; remover do personagem e manter para identificacao posterior."
+    },
+    "171Dm2eHkIzCv2rNR0fYvo4jWKjhd67DM": {
+      "characterName": "T-800",
+      "sourceTitle": "Exterminador do Futuro",
+      "category": "filmes",
+      "subcategory": "exterminador-do-futuro",
+      "mediaType": "movie",
+      "variantName": "Minigun",
+      "modelGroup": "t-800-minigun",
+      "tags": [
+        "Exterminador do Futuro",
+        "Terminator",
+        "T-800",
+        "Minigun"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 027 item 02: T-800/Arnold com metralhadora giratoria; corrigir grafia Extrerminador e consolidar como variante de T-800."
+    },
+    "1bjF1NaztFOE5oqJ6_HTggXYbxcL1tkIu": {
+      "characterName": "T-800",
+      "sourceTitle": "Exterminador do Futuro",
+      "category": "filmes",
+      "subcategory": "exterminador-do-futuro",
+      "mediaType": "movie",
+      "variantName": "Battle Damaged Lancador",
+      "modelGroup": "t-800-battle-damaged-lancador",
+      "tags": [
+        "Exterminador do Futuro",
+        "Terminator",
+        "T-800",
+        "Battle Damaged"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 027 item 03: T-800 danificado com lancador em arte promocional; modelo distinto, nao galeria do minigun."
+    },
+    "1VCUVn8IKUggYvhaqTeFcFKgEM6wFXNQR": {
+      "characterName": "T-800",
+      "sourceTitle": "Exterminador do Futuro",
+      "category": "filmes",
+      "subcategory": "exterminador-do-futuro",
+      "mediaType": "movie",
+      "variantName": "Endoesqueleto Rifle",
+      "modelGroup": "t-800-endoesqueleto-rifle",
+      "tags": [
+        "Exterminador do Futuro",
+        "Terminator",
+        "T-800",
+        "Endoesqueleto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 027 item 04: endoesqueleto T-800 com arma; manter no personagem T-800 como versao/tipo."
+    },
+    "1UOJnw724ia55dPMKQ9j14_1QL5tJxcPF": {
+      "characterName": "T-800",
+      "sourceTitle": "Exterminador do Futuro",
+      "category": "filmes",
+      "subcategory": "exterminador-do-futuro",
+      "mediaType": "movie",
+      "variantName": "Diorama Fundicao",
+      "modelGroup": "t-800-diorama-fundicao",
+      "tags": [
+        "Exterminador do Futuro",
+        "Terminator",
+        "T-800",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 027 item 05: T-800 em diorama de fundicao/lava; fica dentro do personagem T-800 como diorama de personagem."
+    },
+    "1PLSW9ysaPYLAtBv7FaXr5_9GjAMhqQh5": {
+      "characterName": "T-800",
+      "sourceTitle": "Exterminador do Futuro",
+      "category": "filmes",
+      "subcategory": "exterminador-do-futuro",
+      "mediaType": "movie",
+      "variantName": "Busto Endoesqueleto",
+      "modelGroup": "t-800-busto-endoesqueleto",
+      "tags": [
+        "Exterminador do Futuro",
+        "Terminator",
+        "T-800",
+        "Endoesqueleto",
+        "Busto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 027 item 06: busto/cabeca do endoesqueleto T-800 em vista de montagem; variante propria."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
