@@ -2605,11 +2605,21 @@
     },
     "1HO5bl4jUkrzDhwBGUJQZ49r5mJd0syTD": {
       "characterName": "Roronoa Zoro",
+      "variantName": "Komatsuna Yaiba",
+      "modelGroup": "roronoa-zoro-komatsuna-yaiba",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Roronoa Zoro",
+        "Komatsuna",
+        "Yaiba",
+        "Espadas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 050 item 04: mesmo modelo do item 01, com enquadramento/imagem equivalente; manter como galeria do grupo Komatsuna Yaiba."
     },
     "14slMzBcr6r5j3GjybbIGGDtzbhtyP2Ds": {
       "characterName": "Patrick Star",
@@ -2758,11 +2768,21 @@
     },
     "1lca4m2-gs3AC3t8rzHQXjUh66oF1dO6w": {
       "characterName": "Roronoa Zoro",
+      "variantName": "Komatsuna Yaiba",
+      "modelGroup": "roronoa-zoro-komatsuna-yaiba",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Roronoa Zoro",
+        "Komatsuna",
+        "Yaiba",
+        "Espadas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 050 item 01: Zoro com espadas sobre base rochosa e efeito roxo; item 04 e galeria do mesmo modelo."
     },
     "1mVGUYd5bMYZU1wiq7pdK3LuzBbx0YwcS": {
       "characterName": "Brook",
@@ -3018,11 +3038,21 @@
     },
     "1Vb1EwNg-uaGiIMfIk7CWZPL616DiwPIb": {
       "characterName": "Roronoa Zoro",
+      "variantName": "November Tori 3",
+      "modelGroup": "roronoa-zoro-november-tori-3",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Roronoa Zoro",
+        "November Tori 3",
+        "Espadas",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 050 item 02: diorama Zoro November Tori 3 com golpe de espada; produto separado dos outros Zoro."
     },
     "1FthM13oOCoAVGUckWFGySRuhLb5lRkrM": {
       "characterName": "Monkey D. Luffy",
@@ -3276,11 +3306,21 @@
     },
     "1sTSRAYGg_Lt8bCF2pcRNYe9bpp3WRA48": {
       "characterName": "Roronoa Zoro",
+      "variantName": "Efeito Verde Santoryu",
+      "modelGroup": "roronoa-zoro-efeito-verde-santoryu",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Roronoa Zoro",
+        "Santoryu",
+        "Efeito Verde",
+        "Espadas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 050 item 03: Zoro em pose de combate com efeito verde amplo; produto separado do Komatsuna Yaiba."
     },
     "1FtqztAcvfQ6xJ-nFTw8WLTguONc1Emig": {
       "characterName": "Monkey D. Luffy",
@@ -7396,6 +7436,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 049 itens 03 e 04 mostram o mesmo modelo Nami Zaheh Studio com roupa azul; publicar como um modelo com galeria."
+    },
+    "One Piece|Roronoa Zoro|roronoa-zoro-komatsuna-yaiba": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 050 itens 01 e 04 mostram o mesmo Zoro Komatsuna Yaiba com enquadramento equivalente; publicar como um modelo com galeria."
     }
   }
 }
