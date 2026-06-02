@@ -10797,8 +10797,8 @@
       "curationConfidence": "high"
     },
     "12sU5baJ8VRpXX-EaSegvMSZCWk0RKb0l": {
-      "characterName": "Super Boo Vs Gotenks",
-      "modelGroup": "super-boo-vs-gotenks",
+      "characterName": "Super Boo e Gotenks",
+      "modelGroup": "super-boo-e-gotenks-diorama",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "mediaType": "anime",
@@ -10809,7 +10809,8 @@
         "Gotenks",
         "Diorama"
       ],
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Diorama"
     },
     "1E1rln1e91rhqkeA8CFzBzL9uDXYQshvX": {
       "characterName": "Freeza",
@@ -11146,19 +11147,19 @@
       "curationConfidence": "medium"
     },
     "1_LuzrjkMqRPNUHCBHW_pDj-K0TN2vPBC": {
-      "characterName": "Venom e Homem-Aranha",
-      "variantName": "Diorama Confronto",
-      "modelGroup": "venom-e-homem-aranha-diorama-confronto",
+      "characterName": "Venom",
+      "variantName": "Com Mascara do Homem-Aranha",
+      "modelGroup": "venom-com-mascara-do-homem-aranha",
       "sourceTitle": "Homem-Aranha",
-      "category": "Franquias",
+      "category": "franquias",
       "mediaType": "franchise",
       "subcategory": "homem-aranha",
       "tags": [
-        "Marvel",
         "Homem-Aranha",
+        "Marvel",
         "Venom",
-        "Spider-Man",
-        "Diorama"
+        "Homem-Aranha",
+        "Spider-Man"
       ],
       "curationConfidence": "high"
     },
@@ -12487,8 +12488,8 @@
     },
     "1C2Ay7N_mg8IViAlQgJRkkwIT-hHwPDIo": {
       "characterName": "Game of Thrones",
-      "variantName": "Chibi Grupo",
-      "modelGroup": "game-of-thrones-chibi-grupo",
+      "variantName": "Grupo Chibi",
+      "modelGroup": "game-of-thrones-grupo-chibi",
       "sourceTitle": "Game of Thrones",
       "category": "series",
       "mediaType": "series",
@@ -14003,6 +14004,765 @@
         "Marvel",
         "Polaris",
         "Base Ruinas"
+      ],
+      "curationConfidence": "high"
+    },
+    "1N0jYkSb15adQdKQ5L91yJsueBsPikRPR": {
+      "characterName": "Gohan e Piccolo",
+      "variantName": "Diorama",
+      "modelGroup": "gohan-e-piccolo-diorama",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Gohan",
+        "Piccolo",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1N-VhYYyjw-g-6i5e74-JRPyJ8m40SqO6": {
+      "characterName": "Goku e Gohan",
+      "variantName": "Diorama",
+      "modelGroup": "goku-e-gohan-diorama",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Goku",
+        "Gohan",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Cwtn0XBB1yehjLyBK6VVEh6pjRE_sBNq": {
+      "characterName": "Goku e Janemba",
+      "variantName": "Diorama DBZ",
+      "modelGroup": "goku-e-janemba-diorama-dbz",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Goku",
+        "Janemba",
+        "Diorama",
+        "DBZ"
+      ],
+      "curationConfidence": "high"
+    },
+    "1N7DrNFdvoGKZ9TJO6PARRNNJ0Cui0NRk": {
+      "characterName": "Freeza Mecha",
+      "variantName": "Busto",
+      "modelGroup": "freeza-mecha-busto",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Freeza",
+        "Freeza Mecha",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1N6LCoyq1tQ7wqi0zEo7OZ4r-RsUnBnO3": {
+      "characterName": "Freeza Namek",
+      "variantName": "Busto",
+      "modelGroup": "freeza-namek-busto",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Freeza",
+        "Namek",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1sRTGwcfQW4Bx9eo3cGHm0YrRadA8-K7b": {
+      "characterName": "Kenshin Himura",
+      "variantName": "Fanart",
+      "modelGroup": "kenshin-himura-fanart",
+      "sourceTitle": "Samurai X",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "samurai-x",
+      "tags": [
+        "Samurai X",
+        "Kenshin Himura",
+        "Rurouni Kenshin",
+        "Fanart"
+      ],
+      "curationConfidence": "high"
+    },
+    "1IapLPMJGqcyKJsjqt98uKUTBQaTXq__t": {
+      "characterName": "Lord Voldemort e Nagini",
+      "variantName": "Diorama",
+      "modelGroup": "lord-voldemort-e-nagini-diorama",
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "tags": [
+        "Harry Potter",
+        "Lord Voldemort",
+        "Nagini",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JdyBAl-zDgZ3v1Xz8dKuAY-agRQDGkrx": {
+      "characterName": "Capuz Vermelho e os Foragidos",
+      "variantName": "Diorama Versao 08",
+      "modelGroup": "capuz-vermelho-e-os-foragidos-diorama-08",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Capuz Vermelho",
+        "Red Hood",
+        "Outlaws",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1J_ob0egYGBZB7z9o-Ptv9HliqKT1Kydk": {
+      "characterName": "Capuz Vermelho e Coringa",
+      "variantName": "Diorama Versao 06",
+      "modelGroup": "capuz-vermelho-e-coringa-diorama-06",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Capuz Vermelho",
+        "Red Hood",
+        "Coringa",
+        "Joker",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JeWB-P_t_Qas9EYLEcC3X0NfUjZJOVQJ": {
+      "characterName": "Pinguim",
+      "variantName": "Arma",
+      "modelGroup": "pinguim-arma",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Pinguim",
+        "Penguin"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JKuN9M9rW52anx6DrQHoj9wisz7OzJ6_": {
+      "characterName": "Hulk e Homem-Aranha",
+      "variantName": "Diorama Confronto",
+      "modelGroup": "hulk-e-homem-aranha-diorama-confronto",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Hulk",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JHnPdE09HGIv2C6SwNC2bRfArEmqdNGS": {
+      "characterName": "Miles Morales",
+      "variantName": "Com Gato Versao 12",
+      "modelGroup": "miles-morales-com-gato-12",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Miles Morales",
+        "Gato"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JH39e4VRnc5DWjWK053t3En6kDbDNqX0": {
+      "characterName": "Venom e Homem-Aranha",
+      "variantName": "Diorama Confronto",
+      "modelGroup": "venom-e-homem-aranha-diorama-confronto",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Venom",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "13TmATjmLDfrg31xVb0PcQ5iK9gydeCWF": {
+      "characterName": "Venom e Homem-Aranha",
+      "variantName": "Diorama Confronto",
+      "modelGroup": "venom-e-homem-aranha-diorama-confronto",
+      "duplicateOf": "1JH39e4VRnc5DWjWK053t3En6kDbDNqX0",
+      "curationNotes": "Arquivo marcado como copia do diorama Venom e Homem-Aranha; manter como duplicata rastreada.",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Venom",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1dH-tcNs0PUkjAPNHYS3ccqscXIol2gDe": {
+      "characterName": "Homem-Aranha e Rhino",
+      "variantName": "Diorama Confronto",
+      "modelGroup": "homem-aranha-e-rhino-diorama-confronto",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Rhino",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1QDvJqLgz-nsZTGdE4I4YrbqOZmqGZvFL": {
+      "characterName": "Homem-Aranha e Spawn",
+      "variantName": "Diorama Crossover",
+      "modelGroup": "homem-aranha-e-spawn-diorama-crossover",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spawn",
+        "Diorama",
+        "Crossover"
+      ],
+      "curationConfidence": "high"
+    },
+    "1KGrj7LHFexRE5p5a7H6lNmWnoviHqVSq": {
+      "characterName": "Deadpool e Cable",
+      "variantName": "Diorama",
+      "modelGroup": "deadpool-e-cable-diorama",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "x-men",
+      "tags": [
+        "X-Men",
+        "Marvel",
+        "Deadpool",
+        "Cable",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1MFxnEdXcp8tTuUDRf3PI9bHgX91_mE7c": {
+      "characterName": "Juggernaut e Colossus",
+      "variantName": "Diorama",
+      "modelGroup": "juggernaut-e-colossus-diorama",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "x-men",
+      "tags": [
+        "X-Men",
+        "Marvel",
+        "Juggernaut",
+        "Colossus",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1MB4og94Js35lCcQtFZYlrwqsOdQHLjoR": {
+      "characterName": "Kitty Pryde e Lockheed",
+      "variantName": "Diorama",
+      "modelGroup": "kitty-pryde-e-lockheed-diorama",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "x-men",
+      "tags": [
+        "X-Men",
+        "Marvel",
+        "Kitty Pryde",
+        "Lockheed",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1CEgteO1SSkC2z463Qif0laovK8e35DmX": {
+      "characterName": "Charles Xavier",
+      "variantName": "Busto",
+      "modelGroup": "charles-xavier-busto",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "x-men",
+      "tags": [
+        "X-Men",
+        "Marvel",
+        "Charles Xavier",
+        "Professor X",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "12Ud6XXRyJAQpe9O-L8ZcJ7GUsAY3P1pP": {
+      "characterName": "Sub-Zero e Scorpion",
+      "variantName": "Chibi Diorama",
+      "modelGroup": "sub-zero-e-scorpion-chibi-diorama",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "mortal-kombat",
+      "tags": [
+        "Mortal Kombat",
+        "Sub-Zero",
+        "Scorpion",
+        "Chibi",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1IrSuCm-7A5soQ62RPEMUEwh1Aj01gxJT": {
+      "characterName": "Hank Schrader",
+      "variantName": "Busto Versao 03",
+      "modelGroup": "hank-schrader-busto-03",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "breaking-bad",
+      "tags": [
+        "Breaking Bad",
+        "Hank Schrader",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1IptUmPW_hvfHKtGKArBxuJbA6YE6ExBL": {
+      "characterName": "Jesse Pinkman",
+      "variantName": "Busto Versao 05",
+      "modelGroup": "jesse-pinkman-busto-05",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "breaking-bad",
+      "tags": [
+        "Breaking Bad",
+        "Jesse Pinkman",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1IppqqS8GV8hKX52ZOzCoHrqsjF_HeWYB": {
+      "characterName": "Mike Ehrmantraut",
+      "variantName": "Busto",
+      "modelGroup": "mike-ehrmantraut-busto",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "breaking-bad",
+      "tags": [
+        "Breaking Bad",
+        "Mike Ehrmantraut",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1IphHuJQnwnF_xN15SNmlb08XUDwlL37N": {
+      "characterName": "Saul Goodman",
+      "variantName": "Busto Versao 04",
+      "modelGroup": "saul-goodman-busto-04",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "breaking-bad",
+      "tags": [
+        "Breaking Bad",
+        "Saul Goodman",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "15ly8apNugDXatQHlO5QsfvNrsLQcdVcA": {
+      "characterName": "King Kong",
+      "variantName": "Busto",
+      "modelGroup": "king-kong-busto",
+      "sourceTitle": "Godzilla e King Kong",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "godzilla-e-king-kong",
+      "tags": [
+        "Godzilla e King Kong",
+        "King Kong",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1VHZPU40wX0-Tv1HAXqDbnuWrXWUZnt5o": {
+      "characterName": "John Wick",
+      "variantName": "Chibi",
+      "modelGroup": "john-wick-chibi",
+      "sourceTitle": "John Wick",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "john-wick",
+      "tags": [
+        "John Wick",
+        "John Wick",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Q5aTsGn2mL_MfAaytKW_NC7IWtmmebag": {
+      "characterName": "Pinhead",
+      "variantName": "Busto",
+      "modelGroup": "pinhead-busto",
+      "sourceTitle": "Pinhead",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "pinhead",
+      "tags": [
+        "Pinhead",
+        "Pinhead",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1o1g9aG6RLMmsfqO7NCBKxDqiUX1GMLr3": {
+      "characterName": "Robocop",
+      "variantName": "Busto",
+      "modelGroup": "robocop-busto",
+      "sourceTitle": "Robocop",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "robocop",
+      "tags": [
+        "Robocop",
+        "Robocop",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1XwMLbizYivgCKquR8rj63xva-eGXBNLx": {
+      "characterName": "Mandaloriano",
+      "variantName": "Chibi",
+      "modelGroup": "mandaloriano-chibi",
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "star-wars",
+      "tags": [
+        "Star Wars",
+        "Mandaloriano",
+        "The Mandalorian",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Hnk7pgZz_96LyuYN6Xcq29H0rq4G-MP7": {
+      "characterName": "Batman",
+      "variantName": "Busto",
+      "modelGroup": "batman-busto",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Batman",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Tam22YoeyqnBVipl4vsiC_d2dltpxPcD": {
+      "characterName": "Flash",
+      "variantName": "Busto",
+      "modelGroup": "flash-busto",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Flash",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1rMNHxs60AEBGdkDRFPWcnPOpH0lYO6_Q": {
+      "characterName": "Coringa",
+      "variantName": "Chibi",
+      "modelGroup": "coringa-chibi",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1SF4GxH3K77qm_GoQA02o4mo8LI7O-9zK": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Busto Versao 01",
+      "modelGroup": "homem-aranha-busto-01",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "11NE9aM2YbPOq1EFsiNGBngA0szLzMaTz": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Busto Versao 02",
+      "modelGroup": "homem-aranha-busto-02",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1MDqFhyoPLvl25fclNVBm0EeBp7N3_f54": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Chibi",
+      "modelGroup": "homem-aranha-chibi",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1LGaqyARiQDxdyKFKK9rwn9kWlOnO5Ftq": {
+      "characterName": "Thor",
+      "variantName": "Diorama Wakanda",
+      "modelGroup": "thor-diorama-wakanda",
+      "sourceTitle": "Vingadores",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "vingadores",
+      "tags": [
+        "Vingadores",
+        "Marvel",
+        "Thor",
+        "Wakanda",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "18F-I1cV-88rI6UXY8ZadOsPP2oZLuY0A": {
+      "characterName": "Deadpool",
+      "variantName": "Diorama Armas",
+      "modelGroup": "deadpool-diorama-armas",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "x-men",
+      "tags": [
+        "X-Men",
+        "Marvel",
+        "Deadpool",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "12eo_jj6y0vQVP80jm9RaIu3o6tNzmU1_": {
+      "characterName": "Baraka",
+      "variantName": "Chibi",
+      "modelGroup": "baraka-chibi",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "mortal-kombat",
+      "tags": [
+        "Mortal Kombat",
+        "Baraka",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "12Wqb9yrkBLcOujGUXv0yt-5TttxiFzVj": {
+      "characterName": "Shao Kahn",
+      "variantName": "Chibi",
+      "modelGroup": "shao-kahn-chibi",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "mortal-kombat",
+      "tags": [
+        "Mortal Kombat",
+        "Shao Kahn",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "11u59cXMtx2gM0nO-UbyvL8CqAx7tvjct": {
+      "characterName": "Mileena",
+      "variantName": "NSFW",
+      "modelGroup": "mileena-nsfw",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "mortal-kombat",
+      "tags": [
+        "Mortal Kombat",
+        "Mileena",
+        "NSFW"
+      ],
+      "excludeFromCatalog": true,
+      "curationNotes": "Conteudo NSFW; manter fora do catalogo publico.",
+      "curationConfidence": "high"
+    },
+    "15FpZGYRq1Kr6vNxPFa8ca3rkyy7RB3rO": {
+      "characterName": "Blanka",
+      "variantName": "Chibi",
+      "modelGroup": "blanka-chibi",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "street-fighter",
+      "tags": [
+        "Street Fighter",
+        "Blanka",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "14z-ywuHUK-0nwSVYqXphg7IWZzbDuiu8": {
+      "characterName": "Dhalsim",
+      "variantName": "Chibi",
+      "modelGroup": "dhalsim-chibi",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "street-fighter",
+      "tags": [
+        "Street Fighter",
+        "Dhalsim",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1802YRf8SJgj2XfDhDZ0LOZcWR-LQ05Un": {
+      "characterName": "Ryu",
+      "variantName": "Chibi",
+      "modelGroup": "ryu-chibi",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "street-fighter",
+      "tags": [
+        "Street Fighter",
+        "Ryu",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "15H5IHRN2CUc7Ki5BwPTZ_i0ODP5E0Pq7": {
+      "characterName": "Sakura",
+      "variantName": "Chibi",
+      "modelGroup": "sakura-chibi",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "street-fighter",
+      "tags": [
+        "Street Fighter",
+        "Sakura",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1CyUljNjoOYJISezFs3c7OH2UN-8kJ-Eh": {
+      "characterName": "Gohan e Piccolo",
+      "variantName": "Diorama",
+      "modelGroup": "gohan-e-piccolo-diorama",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Gohan",
+        "Piccolo",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Q21awzcZsROcM3m9FDzKRTyZ_tzpF54h": {
+      "characterName": "Gohan e Piccolo",
+      "variantName": "Diorama",
+      "modelGroup": "gohan-e-piccolo-diorama",
+      "duplicateOf": "1CyUljNjoOYJISezFs3c7OH2UN-8kJ-Eh",
+      "curationNotes": "Duplicata exata do arquivo Gohan e Piccolo em outra pasta do Drive.",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Gohan",
+        "Piccolo",
+        "Diorama"
       ],
       "curationConfidence": "high"
     }
