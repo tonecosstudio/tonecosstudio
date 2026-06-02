@@ -1886,6 +1886,86 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 036 item 05: Gotenks Super Saiyajin sentado com multiplos fantasmas Ghost Kamikaze; produto separado do item 04."
     },
+    "1Kh0aM_5eba0EPQcDc_T3cSvthrO9K44b": {
+      "characterName": "Goten e Trunks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Super Saiyajin Diorama Corrida",
+      "modelGroup": "goten-e-trunks-super-saiyajin-diorama-corrida",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Goten",
+        "Trunks",
+        "Super Saiyajin",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 046 item 01: duplicata exata; imagem mostra Goten e Trunks Super Saiyajin correndo sobre base, nao apenas Goten."
+    },
+    "1H86r8VLja5v_xqS-rKF7mtZ97fdlM4ZF": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Super Saiyajin 3 com Goku e Trunks",
+      "modelGroup": "gotenks-super-saiyajin-3-com-goku-e-trunks",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gotenks",
+        "Super Saiyajin 3",
+        "Goku",
+        "Trunks",
+        "Diorama",
+        "Lucas Perez Maidana"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 046 item 02: nome original/proposto como Goten estava errado; peca principal e Gotenks Super Saiyajin 3 com Goku e Trunks na base."
+    },
+    "1H9j-TeXXOLzI3h9-P3xOd_J_f3xV88Yk": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Super Saiyajin 3 com Goku e Trunks",
+      "modelGroup": "gotenks-super-saiyajin-3-com-goku-e-trunks",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gotenks",
+        "Super Saiyajin 3",
+        "Goku",
+        "Trunks",
+        "Diorama",
+        "Lucas Perez Maidana"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 046 item 03: mesma peca do item 02, com variacao visual dos personagens menores; manter como galeria/variante do mesmo modelo."
+    },
+    "1DEIEPpAUMHkw0FWgh0E_qTVUFRpTsZWA": {
+      "characterName": "Goku e Trunks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Chibi Carlos VP",
+      "modelGroup": "goku-e-trunks-chibi-carlos-vp",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Goku",
+        "Trunks",
+        "Chibi",
+        "Carlos VP"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 046 item 04: duplicata exata; imagem mostra Goku crianca sentado com Trunks crianca, nao Goten."
+    },
     "1IqbTnaEft0mP8BMqjVOjLeAuijNDJca_": {
       "characterName": "Piccolo",
       "sourceTitle": "Dragon Ball",
@@ -7553,6 +7633,12 @@
       "approvalType": "same_model_variant_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 014: mesmo modelo Trunks SSJ Saga Cell com troca de jaqueta/cabeca; manter como galeria/variante."
+    },
+    "Dragon Ball|Gotenks|gotenks-super-saiyajin-3-com-goku-e-trunks": {
+      "status": "approved",
+      "approvalType": "same_model_variant_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 046 itens 02 e 03: mesmo Gotenks SSJ3 com Goku e Trunks na base, variando cabecas/cores dos personagens menores; publicar como um modelo com galeria."
     },
     "Dragon Ball|Vegeta|vegeta-bracos-cruzados": {
       "status": "approved",

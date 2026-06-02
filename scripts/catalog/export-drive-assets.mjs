@@ -371,6 +371,24 @@ async function moveOrReuseFile(currentPath, targetPath, expectedHash) {
   }
 }
 
+async function copyOrReuseFile(currentPath, targetPath, expectedHash) {
+  if (path.resolve(currentPath) === path.resolve(targetPath)) return targetPath;
+
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  try {
+    const existing = await fs.readFile(targetPath);
+    if (sha256(existing) === expectedHash) return targetPath;
+
+    const collisionPath = await uniqueFilePath(targetPath);
+    await fs.copyFile(currentPath, collisionPath);
+    return collisionPath;
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    await fs.copyFile(currentPath, targetPath);
+    return targetPath;
+  }
+}
+
 function toCsvValue(value) {
   const text = Array.isArray(value) ? value.join("; ") : String(value ?? "");
   return `"${text.replace(/"/g, '""')}"`;
@@ -624,7 +642,9 @@ async function applyExactHashDedupe(rows) {
       } else {
         try {
           await fs.access(currentPath);
-          duplicatePath = await moveOrReuseFile(currentPath, duplicatePath, row.sha256);
+          duplicatePath = existingPathBelongsToAnotherId(currentPath, row.id)
+            ? await copyOrReuseFile(currentPath, duplicatePath, row.sha256)
+            : await moveOrReuseFile(currentPath, duplicatePath, row.sha256);
         } catch (error) {
           if (error.code !== "ENOENT") throw error;
           duplicatePath = keeperPath;
