@@ -747,6 +747,121 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 031 item 06: render do mesmo Cable Wicked com escudo e explosoes do item 01; consolidar como galeria."
     },
+    "1-2kCKItw35PoHzndf19-1JmbF5lYRSaI": {
+      "characterName": "Magia",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Sephon Demonios Vermelhos",
+      "modelGroup": "magia-sephon-demonios-vermelhos",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Magia",
+        "Magik",
+        "Illyana Rasputin",
+        "Novos Mutantes"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 032 item 01: foto/render vertical do mesmo modelo Sephon com demonios vermelhos do item 03; usar como galeria."
+    },
+    "1GdRGBToEbxQdPLTdT8LgVWUAdScGDke1": {
+      "characterName": "Magia",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Cardoso Base Fogo",
+      "modelGroup": "magia-cardoso-base-fogo",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Magia",
+        "Magik",
+        "Illyana Rasputin",
+        "Novos Mutantes"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 032 item 02: Magia/Cardoso com espada no ombro e base de fogo; modelo separado do SpecialSTL."
+    },
+    "1KYXQn9XoXbnofvIVJnk33BVoS96Bxetn": {
+      "characterName": "Magia",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Sephon Demonios Vermelhos",
+      "modelGroup": "magia-sephon-demonios-vermelhos",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Magia",
+        "Magik",
+        "Illyana Rasputin",
+        "Novos Mutantes"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 032 item 03: arte promocional New Mutants do mesmo modelo Sephon com demonios vermelhos do item 01; consolidar como modelo unico com galeria."
+    },
+    "1AGAtX8nnLJPhaKn_iVul6Fs1Mid_tD8i": {
+      "characterName": "Magia",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Genesis Espada Azul",
+      "modelGroup": "magia-genesis-espada-azul",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Magia",
+        "Magik",
+        "Illyana Rasputin",
+        "Novos Mutantes"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 032 item 04: Magia Genesis Collectibles saltando com espada azul e chama; variante propria."
+    },
+    "1G7-zocqJdU9cgTfrtrzh55Z1v8WGinXp": {
+      "characterName": "Magia",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Classica Espada Grande",
+      "modelGroup": "magia-classica-espada-grande",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Magia",
+        "Magik",
+        "Illyana Rasputin",
+        "Novos Mutantes"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 032 item 05: Magia em armadura cinza com espada grande e base simples; variante propria."
+    },
+    "1G5I7yMEy2gMCzT6UCLLP2yDSYFYsoHRj": {
+      "characterName": "Magia",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "SpecialSTL Sentinela",
+      "modelGroup": "magia-specialstl-sentinela",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Magia",
+        "Magik",
+        "Illyana Rasputin",
+        "Novos Mutantes",
+        "Sentinela"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 032 item 06: Magia SpecialSTL sobre destrocos de Sentinela; pose parecida com item 02, mas escultura/base diferentes."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
@@ -5634,6 +5749,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 031 itens 01 e 06 mostram o mesmo Cable Wicked com escudo e explosoes; manter como modelo unico com galeria."
+    },
+    "X-Men|Magia|magia-sephon-demonios-vermelhos": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 032 itens 01 e 03 representam o mesmo modelo Sephon/New Mutants com demonios vermelhos; manter como modelo unico com galeria."
     }
   }
 }
