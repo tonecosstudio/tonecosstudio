@@ -33,6 +33,78 @@
       "mediaType": "game",
       "curationConfidence": "high"
     },
+    "1bK8C6cKyBWVf9Suc7ixxG726V_NbfAkM": {
+      "characterName": "Ellie Williams",
+      "variantName": "Inverno Rifle",
+      "modelGroup": "ellie-williams-inverno-rifle",
+      "sourceTitle": "The Last of Us",
+      "category": "jogos",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "tags": [
+        "The Last of Us",
+        "Ellie Williams",
+        "Ellie",
+        "Inverno",
+        "Rifle"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 052 item 01: Ellie Williams em roupa de inverno com rifle; item 02 e angulo/galeria do mesmo modelo."
+    },
+    "1pRLvcJ7fizGNwO6WwYZ2ArU4sNVjAxXF": {
+      "characterName": "Ellie Williams",
+      "variantName": "Inverno Rifle",
+      "modelGroup": "ellie-williams-inverno-rifle",
+      "sourceTitle": "The Last of Us",
+      "category": "jogos",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "tags": [
+        "The Last of Us",
+        "Ellie Williams",
+        "Ellie",
+        "Inverno",
+        "Rifle"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 052 item 02: Ellie Williams em roupa de inverno com rifle; galeria do modelo Inverno Rifle."
+    },
+    "1Lte1BP6AQfefenwyVbAR8cwf7bPn8lV6": {
+      "characterName": "Ellie Williams",
+      "variantName": "Tocando Violao",
+      "modelGroup": "ellie-williams-tocando-violao",
+      "sourceTitle": "The Last of Us",
+      "category": "jogos",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "tags": [
+        "The Last of Us",
+        "Ellie Williams",
+        "Ellie",
+        "Violao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 052 item 03: Ellie Williams sentada tocando violao; produto separado da variante Inverno Rifle."
+    },
+    "1mz93KP9Bs9ghaVQt2hCEpAXYU6HzKiaE": {
+      "characterName": "Joel Miller e Ellie Williams",
+      "variantName": "Diorama",
+      "modelGroup": "joel-miller-e-ellie-williams-diorama",
+      "sourceTitle": "The Last of Us",
+      "category": "jogos",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "tags": [
+        "The Last of Us",
+        "Joel Miller",
+        "Ellie Williams",
+        "Joel",
+        "Ellie",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 052 item 04: diorama com Joel Miller e Ellie Williams; produto multi-personagem separado."
+    },
     "10SZmfCjwZ9nCxhP5OxJUeo7n_oIZywWa": {
       "characterName": "Ciri",
       "sourceTitle": "The Witcher",
@@ -7488,6 +7560,12 @@
       "approvalType": "same_model_variant_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 051 itens 01 a 04 mostram o mesmo Smoker com variacoes de efeito/fumaca; publicar como um modelo com galeria."
+    },
+    "The Last of Us|Ellie Williams|ellie-williams-inverno-rifle": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 052 itens 01 e 02 mostram a mesma Ellie Williams em roupa de inverno com rifle; publicar como um modelo com galeria."
     }
   }
 }
