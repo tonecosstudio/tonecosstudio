@@ -264,7 +264,16 @@
       "category": "jogos",
       "subcategory": "the-witcher",
       "mediaType": "game",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Armadura Base Monstro",
+      "modelGroup": "ciri-armadura-base-monstro",
+      "tags": [
+        "The Witcher",
+        "Ciri",
+        "Armadura",
+        "Base Monstro"
+      ],
+      "curationNotes": "Prancha final: Ciri #1 armadura/base monstro; modelo distinto."
     },
     "1Esp76YdFeTWYWQ8ZzT8mfndEaV5UBvMn": {
       "characterName": "Frieren",
@@ -4941,7 +4950,16 @@
       "category": "jogos",
       "subcategory": "uncharted",
       "mediaType": "game",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Uncharted 3 Tronco",
+      "modelGroup": "nathan-drake-uncharted-3-tronco",
+      "tags": [
+        "Uncharted",
+        "Nathan Drake",
+        "Uncharted 3",
+        "Tronco"
+      ],
+      "curationNotes": "Prancha final: Nathan Drake #2 sobre tronco; modelo distinto."
     },
     "1HgbD72rJK65RXQgFC2BBwIjw2BYy2aN-": {
       "characterName": "Homem-Aranha",
@@ -5836,9 +5854,17 @@
       "modelGroup": "cyclops-gambody-saudacao",
       "sourceTitle": "X-Men",
       "category": "franquias",
-      "subcategory": "x-men",
+      "subcategory": "marvel-x-men",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cyclops",
+        "Gambody",
+        "Saudacao"
+      ],
+      "curationNotes": "Prancha final: galeria do mesmo Cyclops Gambody Saudacao."
     },
     "1NRGLgaBDtTiB6XRJmzXD6bSgivgyo7ej": {
       "characterName": "Cyclops",
@@ -5916,9 +5942,17 @@
       "modelGroup": "cyclops-gambody-saudacao",
       "sourceTitle": "X-Men",
       "category": "franquias",
-      "subcategory": "x-men",
+      "subcategory": "marvel-x-men",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cyclops",
+        "Gambody",
+        "Saudacao"
+      ],
+      "curationNotes": "Prancha final: Cyclops #1 e #2 sao o mesmo modelo Gambody Saudacao."
     },
     "1OfdaAKtxmWSOSpUo2e86QlNTgUf6CGYL": {
       "characterName": "Cyclops",
@@ -10159,6 +10193,314 @@
         "Cano"
       ],
       "curationNotes": "Prancha bloco 3: Diorama #2 em base com cano; modelo distinto do item 01."
+    },
+    "10FRDE--zEfmPoXQBqRpfpbw49rOOZ_RX": {
+      "sourceTitle": "Tekken",
+      "category": "jogos",
+      "subcategory": "tekken",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Jin Kazama",
+      "variantName": "Luvas Vermelhas",
+      "modelGroup": "jin-kazama-luvas-vermelhas",
+      "tags": [
+        "Tekken",
+        "Jin Kazama",
+        "Luvas Vermelhas"
+      ],
+      "curationNotes": "Prancha final: Tekken #1 mostra Jin Kazama; item 02 e King."
+    },
+    "1NurJ_00ajjPa0XlE7-_Unf6axGO_Xyye": {
+      "sourceTitle": "Tekken",
+      "category": "jogos",
+      "subcategory": "tekken",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "King",
+      "variantName": "Pose Musculosa",
+      "modelGroup": "king-pose-musculosa",
+      "tags": [
+        "Tekken",
+        "King",
+        "Wrestler"
+      ],
+      "curationNotes": "Prancha final: Tekken #2 mostra King; separado de Jin Kazama."
+    },
+    "1S16CfyG9EGbdWf-1MdCUeJhyGOx0Q5OZ": {
+      "sourceTitle": "The King of Fighters",
+      "category": "jogos",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "King",
+      "variantName": "Chute Alto",
+      "modelGroup": "king-chute-alto",
+      "tags": [
+        "The King of Fighters",
+        "King",
+        "Chute Alto"
+      ],
+      "curationNotes": "Prancha final: The King #1 e King em chute alto."
+    },
+    "1yNuf4ydDJbHGco_5sfUTyFWlA4IQB3Q3": {
+      "sourceTitle": "The King of Fighters",
+      "category": "jogos",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Terry Bogard",
+      "variantName": "Insert Coin Fogo",
+      "modelGroup": "terry-bogard-insert-coin-fogo",
+      "tags": [
+        "The King of Fighters",
+        "Fatal Fury",
+        "Terry Bogard",
+        "Fogo"
+      ],
+      "curationNotes": "Prancha final: The King #2 estava generico, mas mostra Terry Bogard."
+    },
+    "1D-iFNW8vAQXHAf7K6yjXzZGVZI2QWind": {
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Ciri",
+      "variantName": "Pose Combate Rochas",
+      "modelGroup": "ciri-pose-combate-rochas",
+      "tags": [
+        "The Witcher",
+        "Ciri",
+        "Pose Combate",
+        "Rochas"
+      ],
+      "curationNotes": "Prancha final: Ciri #2 pose combate/rochas; modelo distinto."
+    },
+    "1GJ4elkHIHw7ptGwc2wATnyobBUzrAksR": {
+      "sourceTitle": "Uncharted",
+      "category": "jogos",
+      "subcategory": "uncharted",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Nathan Drake",
+      "variantName": "Base Placa Uncharted",
+      "modelGroup": "nathan-drake-base-placa-uncharted",
+      "tags": [
+        "Uncharted",
+        "Nathan Drake",
+        "Base Placa"
+      ],
+      "curationNotes": "Prancha final: Nathan Drake #1 base com placa; modelo distinto."
+    },
+    "13m-O3gT26kVG_oCTWsgst8L_iNta_xBe": {
+      "sourceTitle": "Vingadores",
+      "category": "franquias",
+      "subcategory": "marvel-vingadores",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Hulk Vermelho",
+      "variantName": "Rugido Base Escombros",
+      "modelGroup": "hulk-vermelho-rugido-base-escombros",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Hulk Vermelho",
+        "Red Hulk"
+      ],
+      "curationNotes": "Prancha final: Hulk Vermelho #1 e #2 parecem o mesmo modelo em fotos/render."
+    },
+    "1A8L7EqMoUtPzWDskWe0OC4PgSbgQVCcS": {
+      "sourceTitle": "Vingadores",
+      "category": "franquias",
+      "subcategory": "marvel-vingadores",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Hulk Vermelho",
+      "variantName": "Rugido Base Escombros",
+      "modelGroup": "hulk-vermelho-rugido-base-escombros",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Hulk Vermelho",
+        "Red Hulk"
+      ],
+      "curationNotes": "Prancha final: galeria do mesmo Hulk Vermelho rugindo."
+    },
+    "1wFC7Ji7EQm4ytC4AvV0DEETu39ZnTHkF": {
+      "sourceTitle": "Vingadores",
+      "category": "franquias",
+      "subcategory": "marvel-vingadores",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Visao",
+      "variantName": "Busto",
+      "modelGroup": "visao-busto",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Visao",
+        "Busto"
+      ],
+      "curationNotes": "Prancha final: Visao #1 e busto; modelo distinto."
+    },
+    "1Yl-mpHiRAclucdj-HR4bbPq_xkgQnEFc": {
+      "sourceTitle": "Vingadores",
+      "category": "franquias",
+      "subcategory": "marvel-vingadores",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Visao",
+      "variantName": "Estatua Base Globo",
+      "modelGroup": "visao-estatua-base-globo",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Visao",
+        "Estatua",
+        "Base Globo"
+      ],
+      "curationNotes": "Prancha final: Visao #2 estatua corpo inteiro; modelo distinto do busto."
+    },
+    "1HnbNlc56dglIG-h3wVuqzq-di_DO98hn": {
+      "sourceTitle": "Warcraft",
+      "category": "jogos",
+      "subcategory": "warcraft",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Orc Guerreiro",
+      "variantName": "Machado Base Warcraft",
+      "modelGroup": "orc-guerreiro-machado-base-warcraft",
+      "tags": [
+        "Warcraft",
+        "World of Warcraft",
+        "Orc",
+        "Machado"
+      ],
+      "curationNotes": "Prancha final: Orc #1 e #2 sao o mesmo modelo em foto/render."
+    },
+    "1vEfMK5X5GeFRbX1KW_kQGq2W74p6LkmP": {
+      "sourceTitle": "Warcraft",
+      "category": "jogos",
+      "subcategory": "warcraft",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Orc Guerreiro",
+      "variantName": "Machado Base Warcraft",
+      "modelGroup": "orc-guerreiro-machado-base-warcraft",
+      "tags": [
+        "Warcraft",
+        "World of Warcraft",
+        "Orc",
+        "Machado"
+      ],
+      "curationNotes": "Prancha final: galeria do mesmo Orc Guerreiro."
+    },
+    "1jodd5W8oVsurgWMQ8bemGb3f9eUrEtOp": {
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel-x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Mistica",
+      "variantName": "Sentada Base Rocha",
+      "modelGroup": "mistica-sentada-base-rocha",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Mistica",
+        "Mystique",
+        "Sentada"
+      ],
+      "curationNotes": "Prancha final: Mistica #1 sentada; modelo distinto."
+    },
+    "1RtFaejS0-ohJnpDK9BKmWTiKwjMcCtz7": {
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel-x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Mistica",
+      "variantName": "Em Pe Pistolas",
+      "modelGroup": "mistica-em-pe-pistolas",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Mistica",
+        "Mystique",
+        "Pistolas"
+      ],
+      "curationNotes": "Prancha final: Mistica #2 em pe com pistolas; modelo distinto."
+    },
+    "1KPPBB8zeh_UPkt2nfcJpFT0ouR7kbirk": {
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel-x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Sabretooth",
+      "variantName": "Pose Agachada Neve",
+      "modelGroup": "sabretooth-pose-agachada-neve",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Sabretooth",
+        "Dente de Sabre"
+      ],
+      "curationNotes": "Prancha final: Sabretooth #1 agachado; modelo distinto."
+    },
+    "1MOARlTy1f2uegoEWPmTx1PF6VuM_bBdS": {
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel-x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Sabretooth",
+      "variantName": "Base Rocha Manix",
+      "modelGroup": "sabretooth-base-rocha-manix",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Sabretooth",
+        "Dente de Sabre",
+        "Manix"
+      ],
+      "curationNotes": "Prancha final: Sabretooth #2 em base rocha; modelo distinto."
+    },
+    "1k_nm-UaBzBH0Jgm8kZxj_5CskzJwDqkk": {
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel-x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "X-23",
+      "variantName": "Ataque Dinamico",
+      "modelGroup": "x-23-ataque-dinamico",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "X-23",
+        "Laura Kinney",
+        "Ataque Dinamico"
+      ],
+      "curationNotes": "Prancha final: X 23 #1 ataque dinamico; modelo distinto."
+    },
+    "1lLK13oLEtdVE1uegMV7me6q77-SuXaai": {
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel-x-men",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "X-23",
+      "variantName": "Em Pe Dupla Pintura",
+      "modelGroup": "x-23-em-pe-dupla-pintura",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "X-23",
+        "Laura Kinney",
+        "Dupla Pintura"
+      ],
+      "curationNotes": "Prancha final: X 23 #2 em pe com duas pinturas; modelo distinto."
     }
   },
   "visualApprovals": {
@@ -10707,6 +11049,84 @@
       "approvalType": "split_variants",
       "reviewedAt": "2026-06-02",
       "notes": "Diorama TMNT separado em predio urbano e base com cano; personagem normalizado para Tartarugas Ninja."
+    },
+    "Tekken|Tekken|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Titulo generico Tekken corrigido para Jin Kazama e King."
+    },
+    "The King of Fighters|The King|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Grupo The King corrigido para King e Terry Bogard."
+    },
+    "The Witcher|Ciri|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Ciri separada em armadura/base monstro e pose combate/rochas."
+    },
+    "Uncharted|Nathan Drake|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Nathan Drake separado em dois modelos distintos."
+    },
+    "Vingadores|Hulk Vermelho|hulk-vermelho-rugido-base-escombros": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo Hulk Vermelho em apresentacoes diferentes; usar como galeria."
+    },
+    "Vingadores|Hulk Vermelho|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Grupo antigo normalizado para modelGroup Hulk Vermelho rugido/base escombros."
+    },
+    "Vingadores|Visao|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Visao separado em busto e estatua corpo inteiro/base globo."
+    },
+    "Warcraft|Orc Guerreiro|orc-guerreiro-machado-base-warcraft": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo Orc Guerreiro com machado; usar como galeria."
+    },
+    "Warcraft|Orc|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Orc normalizado para Orc Guerreiro e aprovado como galeria do mesmo modelo."
+    },
+    "X-Men|Cyclops|cyclops-gambody-saudacao": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo Cyclops Gambody Saudacao; manter como galeria."
+    },
+    "X-Men|Mistica|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mistica separada em sentada/base rocha e em pe/pistolas."
+    },
+    "X-Men|Sabretooth|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Sabretooth separado em pose agachada e base rocha Manix."
+    },
+    "X-Men|X 23|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "X 23 normalizado para X-23 e separado em ataque dinamico e em pe/dupla pintura."
     }
   }
 }
