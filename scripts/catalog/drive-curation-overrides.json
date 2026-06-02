@@ -2938,7 +2938,15 @@
       "category": "franquias",
       "subcategory": "dc",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "DC",
+        "Mulher-Maravilha",
+        "Wonder Woman",
+        "B3dserk",
+        "Estatua"
+      ],
+      "curationNotes": "Prancha 118: Mulher-Maravilha Estatua B3dserk; itens 01 e 02 sao apresentacoes da mesma peca, usar como galeria."
     },
     "1bGDPJT31AgTsM6DhGNJ-TtYbxPj4U_vm": {
       "characterName": "Mulher-Maravilha",
@@ -2948,7 +2956,15 @@
       "category": "franquias",
       "subcategory": "dc",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "DC",
+        "Mulher-Maravilha",
+        "Wonder Woman",
+        "B3dserk",
+        "Estatua"
+      ],
+      "curationNotes": "Prancha 118: Mulher-Maravilha Estatua B3dserk; itens 01 e 02 sao apresentacoes da mesma peca, usar como galeria."
     },
     "10EhdJRGX8uyf9h7qPshBgDasSE4rMN_1": {
       "characterName": "Mulher-Maravilha",
@@ -2972,13 +2988,21 @@
     },
     "1jIdaqyPy_ZTL34NjN7M2XZgcYnJlxt25": {
       "characterName": "Mulher-Maravilha",
-      "variantName": "Jaqueta",
+      "variantName": "Jaqueta 3DMoonn",
       "modelGroup": "mulher-maravilha-3dmoonn-jaqueta",
       "sourceTitle": "DC",
       "category": "franquias",
       "subcategory": "dc",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "DC",
+        "Mulher-Maravilha",
+        "Wonder Woman",
+        "3DMoonn",
+        "Jaqueta"
+      ],
+      "curationNotes": "Prancha 117: Mulher-Maravilha com jaqueta 3DMoonn; itens 01 e 02 sao angulos da mesma peca, usar como galeria."
     },
     "1m_N2M_erGWI9vSlMaXdRSge_U8uu-Sbd": {
       "characterName": "Mulher-Maravilha",
@@ -3002,13 +3026,21 @@
     },
     "1vqK1kQYf6Gm_5TMccwbr2G4kl7zhMIWb": {
       "characterName": "Mulher-Maravilha",
-      "variantName": "Jaqueta",
+      "variantName": "Jaqueta 3DMoonn",
       "modelGroup": "mulher-maravilha-3dmoonn-jaqueta",
       "sourceTitle": "DC",
       "category": "franquias",
       "subcategory": "dc",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "DC",
+        "Mulher-Maravilha",
+        "Wonder Woman",
+        "3DMoonn",
+        "Jaqueta"
+      ],
+      "curationNotes": "Prancha 117: Mulher-Maravilha com jaqueta 3DMoonn; itens 01 e 02 sao angulos da mesma peca, usar como galeria."
     },
     "1FpF6qFtYEgIWE6-fP4-MHYzWCoF4J7Ve": {
       "characterName": "Mulher-Maravilha",
@@ -5264,7 +5296,15 @@
       "category": "franquias",
       "subcategory": "dc",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "DC",
+        "Mulher-Gato",
+        "Catwoman",
+        "Cofre Gotham",
+        "Gotham"
+      ],
+      "curationNotes": "Prancha 116: Mulher-Gato no cofre Gotham; itens 01 e 02 sao o mesmo modelo em render/colorizacao diferente, usar como galeria."
     },
     "1EHJ_R0kRz3M0Z_neUK0yqd38VhTLz3Jb": {
       "characterName": "Mulher-Gato",
@@ -5274,7 +5314,15 @@
       "category": "franquias",
       "subcategory": "dc",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "tags": [
+        "DC",
+        "Mulher-Gato",
+        "Catwoman",
+        "Cofre Gotham",
+        "Gotham"
+      ],
+      "curationNotes": "Prancha 116: Mulher-Gato no cofre Gotham; itens 01 e 02 sao o mesmo modelo em render/colorizacao diferente, usar como galeria."
     },
     "1L3BJaXcYpjrjI-TfeUDLCOXJ0P5HhQ2i": {
       "characterName": "Vegeta",
@@ -8872,6 +8920,42 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Prancha 087 item 02: Walter White e Jesse Pinkman em trajes hazmat sobre base de laboratorio; produto separado do item 01."
+    },
+    "1gr0kRAN6hp9iqROI3iox4GL5QR6_zML-": {
+      "characterName": "Coringa",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "variantName": "Escada Joker",
+      "modelGroup": "coringa-escada-joker",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Escada",
+        "Arthur Fleck"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 115: Coringa/Joker na escada; os itens 01 e 02 sao o mesmo modelo em render e pintura final, usar como galeria."
+    },
+    "1yi3RiRJr0dlHg-GtrIoPMLs18K9LX5Hz": {
+      "characterName": "Coringa",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "variantName": "Escada Joker",
+      "modelGroup": "coringa-escada-joker",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Escada",
+        "Arthur Fleck"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 115: Coringa/Joker na escada; os itens 01 e 02 sao o mesmo modelo em render e pintura final, usar como galeria."
     }
   },
   "visualApprovals": {
@@ -9132,6 +9216,30 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 087 itens 01 e 02 mostram o mesmo diorama Asterix e Obelix/Banquete em fotos diferentes; usar como galeria."
+    },
+    "DC|Coringa|coringa-escada-joker": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 115 itens 01 e 02: mesmo Coringa/Joker na escada em render e pintura final; usar como galeria."
+    },
+    "DC|Mulher-Gato|mulher-gato-cofre-gotham": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 116 itens 01 e 02: mesma Mulher-Gato Cofre Gotham em render/colorizacao diferente; usar como galeria."
+    },
+    "DC|Mulher-Maravilha|mulher-maravilha-b3dserk-estatua": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 118 itens 01 e 02: mesma Mulher-Maravilha Estatua B3dserk em apresentacoes diferentes; usar como galeria."
+    },
+    "DC|Mulher-Maravilha|mulher-maravilha-3dmoonn-jaqueta": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 117 itens 01 e 02: mesma Mulher-Maravilha Jaqueta 3DMoonn em angulos diferentes; usar como galeria."
     }
   }
 }
