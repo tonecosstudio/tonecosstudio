@@ -1314,6 +1314,85 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 047 item 04: Super Boo em pose de braco cruzado com base gramada; produto separado do Transcendent Studio e da pose flutuando."
     },
+    "1EkmDzVO9dMiRa8wkKHFYBdUXE08UNWZn": {
+      "characterName": "Carnificina",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "ArchiveSTL Base Rochosa",
+      "modelGroup": "carnificina-archivestl-base-rochosa",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Carnificina",
+        "Carnage",
+        "ArchiveSTL",
+        "Base Rochosa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 035 item 06 / fila Viloes: imagem mostra Carnificina em pose agachada sobre base rochosa; corrigir personagem e remover pasta generica de viloes."
+    },
+    "1ElVSeYHuT2ww18cu7EGVxyi_Yr5rIVhy": {
+      "characterName": "Carnificina",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Malix Diorama Venom ao Fundo",
+      "modelGroup": "carnificina-malix-diorama-venom-ao-fundo",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Carnificina",
+        "Carnage",
+        "Malix",
+        "Venom",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 035 item 01 / fila Viloes: arte Malix3Design de Carnificina com Venom ao fundo; catalogar pelo personagem principal Carnificina."
+    },
+    "1Elt6KULqKAvI44OUmOQKig4cSyHkta6Z": {
+      "characterName": "Carnificina",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Busto Totem",
+      "modelGroup": "carnificina-busto-totem",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Carnificina",
+        "Carnage",
+        "Busto",
+        "Totem"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 035 item 02 / fila Viloes: busto do Carnificina em pedestal Totem; produto separado dos dioramas."
+    },
+    "1EnV_mV2Bt0E7n0MRkHLKRAtEV4b9BYnW": {
+      "characterName": "Venom e Carnificina",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Diorama Wicked Let There Be Carnage",
+      "modelGroup": "venom-e-carnificina-diorama-wicked-let-there-be-carnage",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Venom",
+        "Carnificina",
+        "Carnage",
+        "Diorama",
+        "Wicked",
+        "Let There Be Carnage"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 035 item 03 / fila Viloes: diorama Wicked Venom vs Carnificina, com os dois personagens; mover para dioramas e taguear ambos."
+    },
     "1Eq0cpewgnwRPQC-jwwY1CemLlDU0T9Pt": {
       "characterName": "Jupiter",
       "sourceTitle": "Cybercops",
