@@ -1346,6 +1346,99 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 036 item 05: Gotenks Super Saiyajin sentado com multiplos fantasmas Ghost Kamikaze; produto separado do item 04."
     },
+    "1IqbTnaEft0mP8BMqjVOjLeAuijNDJca_": {
+      "characterName": "Piccolo",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Aura Azul Base Namek",
+      "modelGroup": "piccolo-aura-azul-base-namek",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Piccolo",
+        "Namek",
+        "Aura Azul"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 037 item 01: Piccolo de bracos cruzados com manto, aura azul e base Namek/Dragon Ball Z; produto separado dos demais Piccolo."
+    },
+    "1J3tpgTpAwHzPmi7Ely5_m_FvAJJG1RyZ": {
+      "characterName": "Piccolo e Nail",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Black Tower Collectibles Namek",
+      "modelGroup": "piccolo-e-nail-black-tower-namek",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Piccolo",
+        "Nail",
+        "Namek",
+        "Black Tower Collectibles",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 037 item 02: conjunto Black Tower Collectibles com Piccolo e Nail sobre base Namek; mover para dioramas/multi-personagem."
+    },
+    "1HghBDWKTquWpYD5zUPJbb31V4fUrVrzP": {
+      "characterName": "Piccolo",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Lucas Perez Z Base Namek",
+      "modelGroup": "piccolo-lucas-perez-z-base-namek",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Piccolo",
+        "Namek",
+        "Lucas Perez Z"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 037 item 03: Piccolo Lucas Perez Z de bracos cruzados em base Namek circular; produto separado."
+    },
+    "1ObFpu77GFEQfMxPjVccV-t7d8eYewbNR": {
+      "characterName": "Goku e Piccolo Daimaoh",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Kaiden Confronto",
+      "modelGroup": "goku-e-piccolo-daimaoh-kaiden-confronto",
+      "tags": [
+        "Dragon Ball",
+        "Goku",
+        "Piccolo",
+        "Piccolo Daimaoh",
+        "Kaiden",
+        "Diorama"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 037 item 04: diorama Kaiden com Goku enfrentando uma forma Namekian/Daimaoh estilizada; separar de Piccolo simples e manter como multi-personagem para revisao futura se houver referencia melhor."
+    },
+    "1B5aISlPgHCl19AMDEpg6u3RgBsRVukj3": {
+      "characterName": "Piccolo",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Ataque Base Rochosa",
+      "modelGroup": "piccolo-ataque-base-rochosa",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Piccolo",
+        "3D Figure Prints",
+        "Ataque"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 037 item 05: Piccolo 3Dfigureprints.com em pose de ataque com imagem de detalhe e modelo completo; produto separado."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
@@ -1584,14 +1677,6 @@
     },
     "1ELW-nfoqg7M8eCkFaSu-Jl-nDpXczzUk": {
       "characterName": "Mestre Kame",
-      "sourceTitle": "Dragon Ball",
-      "category": "animes",
-      "subcategory": "dragon-ball",
-      "mediaType": "anime",
-      "curationConfidence": "high"
-    },
-    "1ObFpu77GFEQfMxPjVccV-t7d8eYewbNR": {
-      "characterName": "Piccolo",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
