@@ -235,11 +235,39 @@
     },
     "1ZWOWIdKUm_a3Iy1h9o4gJn1sSD-iI2-z": {
       "characterName": "Alita",
-      "sourceTitle": "Alita",
+      "sourceTitle": "Alita Battle Angel",
       "category": "filmes",
-      "subcategory": "alita",
+      "subcategory": "alita-battle-angel",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "variantName": "Motorball Base Sucata",
+      "modelGroup": "alita-motorball-base-sucata",
+      "tags": [
+        "Alita Battle Angel",
+        "Battle Angel Alita",
+        "Alita",
+        "Motorball",
+        "Base Sucata"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 055 item 01: Alita em pose dinamica sobre base de sucata/motorball; modelo separado do item 03."
+    },
+    "1VipeQAIxqMO5yeTbNVELJJvqrxeXDUct": {
+      "characterName": "Alita",
+      "sourceTitle": "Alita Battle Angel",
+      "category": "filmes",
+      "subcategory": "alita-battle-angel",
+      "mediaType": "movie",
+      "variantName": "Traje Berserker Espada",
+      "modelGroup": "alita-traje-berserker-espada",
+      "tags": [
+        "Alita Battle Angel",
+        "Battle Angel Alita",
+        "Alita",
+        "Traje Berserker",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 055 item 03: Alita em traje preto de combate com espada; modelo separado do item 01."
     },
     "1_ppwhOQbVXkptE3Tf4Lao286CbBjZWCR": {
       "characterName": "Leonardo",
@@ -3198,12 +3226,22 @@
       "curationConfidence": "high"
     },
     "1S8MWM-_AiKQEQkRHe3lZWRZsxfc7XIDd": {
-      "characterName": "Alita",
-      "sourceTitle": "Alita",
-      "category": "filmes",
-      "subcategory": "alita",
-      "mediaType": "movie",
-      "curationConfidence": "high"
+      "characterName": "Mirko",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "subcategory": "my-hero-academia",
+      "mediaType": "anime",
+      "variantName": "Rumi Usagiyama ES Monster",
+      "modelGroup": "mirko-rumi-usagiyama-es-monster",
+      "tags": [
+        "My Hero Academia",
+        "Mirko",
+        "Rumi Usagiyama",
+        "Heroina Coelha",
+        "ES Monster"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 055 item 02: personagem com orelhas de coelho e uniforme de heroi e Mirko/Rumi Usagiyama, nao Alita."
     },
     "1QlwbfjHVyKN-aDSjvw8V4hwBPliudrJp": {
       "characterName": "Kenshiro",
