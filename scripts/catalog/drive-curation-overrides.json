@@ -1381,7 +1381,109 @@
       "category": "franquias",
       "subcategory": "marvel",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "variantName": "Sofa ZZZ",
+      "modelGroup": "mulher-hulk-sofa-zzz",
+      "tags": [
+        "She-Hulk",
+        "Marvel"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 024 item 07: Mulher-Hulk em sofa com marcador ZZZ; modelo distinto, nao galeria do grupo generico."
+    },
+    "1RzNGCjKSSBFrh5hhhhJpq0_5GnZPwgXD": {
+      "characterName": "Mulher-Hulk",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Base Skate e Marreta",
+      "modelGroup": "mulher-hulk-base-skate-e-marreta",
+      "tags": [
+        "She-Hulk",
+        "Marvel"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 024 item 01: Mulher-Hulk com marreta e base vertical em estilo skate/logo; variante propria."
+    },
+    "1S0UfGuLrL1L3n2LNiciAaqR2cFQPfwu8": {
+      "characterName": "Mulher-Hulk",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Base Rocha",
+      "modelGroup": "mulher-hulk-base-rocha",
+      "tags": [
+        "She-Hulk",
+        "Marvel"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 024 item 02: Mulher-Hulk erguendo rocha sobre base rochosa; modelo separado dos demais."
+    },
+    "1QRCb8Xi_HqZepn30-3A1JSpCUPMDOb1f": {
+      "characterName": "Mulher-Hulk",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Treino com Halteres",
+      "modelGroup": "mulher-hulk-treino-com-halteres",
+      "tags": [
+        "She-Hulk",
+        "Marvel",
+        "Halteres"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 024 item 03: Mulher-Hulk em base de treino com halteres; variante propria."
+    },
+    "1QX1ecH3BfHP7auJbQO2LavzzFvNKXiYN": {
+      "characterName": "Mulher-Hulk",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Halter Correntes",
+      "modelGroup": "mulher-hulk-halter-correntes",
+      "tags": [
+        "She-Hulk",
+        "Marvel",
+        "Halter"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 024 item 04: render verde com Mulher-Hulk segurando halter preso por correntes; modelo distinto."
+    },
+    "1QdoIKrJ_Do5fWb7qKQFcIsbhUWdv_htA": {
+      "characterName": "Mulher-Hulk",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Pose Musculos Tres Angulos",
+      "modelGroup": "mulher-hulk-pose-musculos-tres-angulos",
+      "tags": [
+        "She-Hulk",
+        "Marvel",
+        "Tres Angulos"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 024 item 05: imagem composta com tres angulos da mesma pose; manter como modelo/arquivo proprio."
+    },
+    "1Rt9XEqbrRen_sGo2DPmhuKUdX2EkQfgE": {
+      "characterName": "Jennifer Walters e Mulher-Hulk",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Dupla Escritorio",
+      "modelGroup": "jennifer-walters-e-mulher-hulk-dupla-escritorio",
+      "tags": [
+        "Jennifer Walters",
+        "Mulher-Hulk",
+        "She-Hulk",
+        "Marvel"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 024 item 06: dupla com Jennifer Walters e Mulher-Hulk em roupa de escritorio; tratar como diorama/peca com duas personagens."
     },
     "1_t-fYbTqiaogEfeDQlBw5uyoklDopu8T": {
       "characterName": "Feiticeira Escarlate",

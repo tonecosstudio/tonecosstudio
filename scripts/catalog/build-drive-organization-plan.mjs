@@ -145,6 +145,7 @@ const TITLE_CASE_UPPER_WORDS = new Map(
     ssj: "SSJ",
     vstl: "VSTL",
     xmen: "X-Men",
+    zzz: "ZZZ",
   }),
 );
 const DRIVE_FILE_OVERRIDES = {
