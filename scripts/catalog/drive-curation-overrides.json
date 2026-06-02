@@ -7480,6 +7480,60 @@
       "modelGroup": "juri-pose-luta-base-fumaca",
       "curationNotes": "Prancha 020 item 09: escultura cinza de Juri em pose de luta sobre base de fumaca/rocha; variante distinta."
     },
+    "15qzmnYg9ziLzIXVIR2woUlGKQQvWZTse": {
+      "characterName": "Dhalsim",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "tags": [
+        "Street Fighter",
+        "Dhalsim",
+        "Special STLs",
+        "Yoga",
+        "Pose Dinamica"
+      ],
+      "variantName": "Special STLs Pose Dinamica",
+      "modelGroup": "dhalsim-special-stls-pose-dinamica",
+      "curationNotes": "Prancha 071 item 01: Dhalsim Special STLs em pose dinamica com efeito circular; produto separado dos itens 02 e 03."
+    },
+    "1iP6MckgmxNWkPF6o7_8WYZjezt0PpHIK": {
+      "characterName": "Dhalsim",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "tags": [
+        "Street Fighter",
+        "Dhalsim",
+        "Cobra",
+        "Fogo",
+        "Yoga"
+      ],
+      "variantName": "Cobra e Fogo",
+      "modelGroup": "dhalsim-cobra-e-fogo",
+      "curationNotes": "Prancha 071 item 02: Dhalsim colorido com cobra e base de fogo; produto separado dos itens 01 e 03."
+    },
+    "1KtJ6vQCUPcaGCLGk7uEjuoYDkYQNsTiS": {
+      "characterName": "Dhalsim",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "tags": [
+        "Street Fighter",
+        "Dhalsim",
+        "PCS Collectibles",
+        "Classic Exclusive",
+        "Capcom"
+      ],
+      "variantName": "PCS Collectibles Classic Exclusive",
+      "modelGroup": "dhalsim-pcs-collectibles-classic-exclusive",
+      "curationNotes": "Prancha 071 item 03: Dhalsim PCS Collectibles Classic Exclusive/Capcom; produto separado dos itens 01 e 02."
+    },
     "12WI4UkTKaTSwj-Y1nx2fgn8a8ZzzcgGV": {
       "characterName": "Wolverine e Justiceiro",
       "sourceTitle": "Marvel",
