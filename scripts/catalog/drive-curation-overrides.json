@@ -3637,7 +3637,15 @@
       "category": "jogos",
       "subcategory": "street-fighter",
       "mediaType": "game",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Gi Vermelho Base Rocha",
+      "modelGroup": "ken-masters-gi-vermelho-base-rocha",
+      "tags": [
+        "Street Fighter",
+        "Ken Masters",
+        "Gi Vermelho"
+      ],
+      "curationNotes": "Prancha bloco 3: galeria/duplicata visual do Ken Masters de gi vermelho."
     },
     "1S8MWM-_AiKQEQkRHe3lZWRZsxfc7XIDd": {
       "characterName": "Mirko",
@@ -5314,12 +5322,26 @@
       "curationConfidence": "medium"
     },
     "1GwFbt3ef2HhARODgqnJqCJaBPT1uumw4": {
-      "characterName": "Gimli",
+      "characterName": "Gimli e Legolas",
       "sourceTitle": "Senhor dos Aneis",
       "category": "filmes",
       "subcategory": "senhor-dos-aneis",
       "mediaType": "movie",
-      "curationConfidence": "medium"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Gimli",
+        "Legolas"
+      ],
+      "variantName": "Diorama Duplo Machado",
+      "modelGroup": "gimli-e-legolas-diorama-duplo-machado",
+      "modelKind": "diorama",
+      "tags": [
+        "Senhor dos Aneis",
+        "Gimli",
+        "Legolas",
+        "Diorama"
+      ],
+      "curationNotes": "Prancha bloco 3: itens 01 e 02 mostram o mesmo diorama Gimli/Legolas em apresentacao/corte diferente."
     },
     "1F5dK1oFCWrHGt18KM5eYXdIux7zEilmH": {
       "characterName": "Ekko",
@@ -9728,6 +9750,415 @@
         "Base Ornamental"
       ],
       "curationNotes": "Prancha bloco 2: Tinker Bell correta; separada do item 01 corrigido para Jujutsu Kaisen."
+    },
+    "1Fb6qmb_54jOkmkgZ2-ei5yhjVXtdNdXi": {
+      "sourceTitle": "Popeye",
+      "category": "desenhos",
+      "subcategory": "popeye",
+      "mediaType": "cartoon",
+      "curationConfidence": "high",
+      "characterName": "Popeye",
+      "variantName": "Em Pe Base Rocha",
+      "modelGroup": "popeye-em-pe-base-rocha",
+      "tags": [
+        "Popeye",
+        "Desenho",
+        "Base Rocha"
+      ],
+      "curationNotes": "Prancha bloco 3: Popeye #1 em pe/base rocha; modelo distinto do barco."
+    },
+    "1Q2syi6zc387_5l20RhE_lpKtnWkzcnaG": {
+      "sourceTitle": "Popeye",
+      "category": "desenhos",
+      "subcategory": "popeye",
+      "mediaType": "cartoon",
+      "curationConfidence": "high",
+      "characterName": "Popeye",
+      "variantName": "Barco com Espinafre",
+      "modelGroup": "popeye-barco-com-espinafre",
+      "tags": [
+        "Popeye",
+        "Desenho",
+        "Barco",
+        "Espinafre"
+      ],
+      "curationNotes": "Prancha bloco 3: Popeye #2 no barco com espinafre; modelo distinto do item 01."
+    },
+    "1CUiCz1rXlO-VslpTyZ4G6sWJwRG1DRlU": {
+      "sourceTitle": "Quarteto Fantastico",
+      "category": "franquias",
+      "subcategory": "marvel-quarteto-fantastico",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Galactus",
+      "variantName": "Classico Mao Estendida",
+      "modelGroup": "galactus-classico-mao-estendida",
+      "tags": [
+        "Marvel",
+        "Quarteto Fantastico",
+        "Galactus",
+        "Classico"
+      ],
+      "curationNotes": "Prancha bloco 3: Galactus #1 e #2 sao o mesmo modelo em pose classica."
+    },
+    "1rgA_jg4LRTT4bnuxu7EtCG7knsSoRWiv": {
+      "sourceTitle": "Quarteto Fantastico",
+      "category": "franquias",
+      "subcategory": "marvel-quarteto-fantastico",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Galactus",
+      "variantName": "Classico Mao Estendida",
+      "modelGroup": "galactus-classico-mao-estendida",
+      "tags": [
+        "Marvel",
+        "Quarteto Fantastico",
+        "Galactus",
+        "Classico"
+      ],
+      "curationNotes": "Prancha bloco 3: galeria do mesmo Galactus classico."
+    },
+    "137ChmfDdaf9wppLXhrawp7z0mt4UVJ-M": {
+      "sourceTitle": "Quarteto Fantastico",
+      "category": "franquias",
+      "subcategory": "marvel-quarteto-fantastico",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Surfista Prateado",
+      "variantName": "Prancha Redemoinho",
+      "modelGroup": "surfista-prateado-prancha-redemoinho",
+      "tags": [
+        "Marvel",
+        "Quarteto Fantastico",
+        "Surfista Prateado",
+        "Silver Surfer",
+        "Prancha"
+      ],
+      "curationNotes": "Prancha bloco 3: item 01 estava como Quarteto, mas mostra Surfista Prateado."
+    },
+    "1vwP4eDy8o6mXE55T9sGIHHssnT82PyZ8": {
+      "sourceTitle": "Quarteto Fantastico",
+      "category": "franquias",
+      "subcategory": "marvel-quarteto-fantastico",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Quarteto Fantastico e Galactus",
+      "characterNames": [
+        "Quarteto Fantastico",
+        "Galactus",
+        "Surfista Prateado"
+      ],
+      "variantName": "Diorama Equipe",
+      "modelGroup": "quarteto-fantastico-e-galactus-diorama-equipe",
+      "modelKind": "diorama",
+      "tags": [
+        "Marvel",
+        "Quarteto Fantastico",
+        "Galactus",
+        "Surfista Prateado",
+        "Diorama"
+      ],
+      "curationNotes": "Prancha bloco 3: item 02 e diorama da equipe com Galactus/Surfista; distinto do Surfista solo."
+    },
+    "10Ie9EyoEqo6FfB9euv__tM4BO1nV1zni": {
+      "sourceTitle": "Resident Evil",
+      "category": "jogos",
+      "subcategory": "resident-evil",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Leon Kennedy",
+      "variantName": "RE4 Base Porta",
+      "modelGroup": "leon-kennedy-re4-base-porta",
+      "tags": [
+        "Resident Evil",
+        "Leon Kennedy",
+        "RE4",
+        "Base Porta"
+      ],
+      "curationNotes": "Prancha bloco 3: Leon #1 em base com porta; modelo distinto do item 02."
+    },
+    "10KalVecwCLudUkSFxz5JlfNZLi2rIvVu": {
+      "sourceTitle": "Resident Evil",
+      "category": "jogos",
+      "subcategory": "resident-evil",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Leon Kennedy",
+      "variantName": "Pistola Base Simples",
+      "modelGroup": "leon-kennedy-pistola-base-simples",
+      "tags": [
+        "Resident Evil",
+        "Leon Kennedy",
+        "Pistola"
+      ],
+      "curationNotes": "Prancha bloco 3: Leon #2 com pistola/base simples; modelo distinto do item 01."
+    },
+    "1r5cXJqn78-xH2vTZmZ9gBkX8tCIP6qo1": {
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Azog",
+      "variantName": "Maca Base Cranios",
+      "modelGroup": "azog-maca-base-cranios",
+      "tags": [
+        "Senhor dos Aneis",
+        "O Hobbit",
+        "Azog",
+        "Maca"
+      ],
+      "curationNotes": "Prancha bloco 3: Azog #1 com maca/base cranios; modelo distinto."
+    },
+    "1TLFP8_0VuG4rWsltsiY_dQ2wNpgITxpT": {
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Azog",
+      "variantName": "Orc Guerreiro Base Rocha",
+      "modelGroup": "azog-orc-guerreiro-base-rocha",
+      "tags": [
+        "Senhor dos Aneis",
+        "O Hobbit",
+        "Azog",
+        "Orc Guerreiro"
+      ],
+      "curationNotes": "Prancha bloco 3: Azog #2 orc guerreiro/base rocha; modelo distinto do item 01."
+    },
+    "1oGVQuZivPx9f1hFm_vJWmMIOoykxxCOd": {
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Gimli e Legolas",
+      "characterNames": [
+        "Gimli",
+        "Legolas"
+      ],
+      "variantName": "Diorama Duplo Machado",
+      "modelGroup": "gimli-e-legolas-diorama-duplo-machado",
+      "modelKind": "diorama",
+      "tags": [
+        "Senhor dos Aneis",
+        "Gimli",
+        "Legolas",
+        "Diorama"
+      ],
+      "curationNotes": "Prancha bloco 3: galeria do mesmo diorama Gimli/Legolas."
+    },
+    "1-jbBy-aC2cadbd07X4u-Hl3XWf0lKY4NI": {
+      "sourceTitle": "Solo Leveling",
+      "category": "animes",
+      "subcategory": "solo-leveling",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Sung Jinwoo",
+      "variantName": "Lanca Azul Base Sombras",
+      "modelGroup": "sung-jinwoo-lanca-azul-base-sombras",
+      "tags": [
+        "Solo Leveling",
+        "Sung Jinwoo",
+        "Lanca Azul",
+        "Sombras"
+      ],
+      "curationNotes": "Prancha bloco 3: Sung Jinwoo #1 com lanca azul; modelo distinto do item 02."
+    },
+    "1tk84rWVshBXvay6DlkBmBkIMrLhlkMob": {
+      "sourceTitle": "Solo Leveling",
+      "category": "animes",
+      "subcategory": "solo-leveling",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Sung Jinwoo",
+      "variantName": "Chamas Roxas Base Sombras",
+      "modelGroup": "sung-jinwoo-chamas-roxas-base-sombras",
+      "tags": [
+        "Solo Leveling",
+        "Sung Jinwoo",
+        "Chamas Roxas",
+        "Sombras"
+      ],
+      "curationNotes": "Prancha bloco 3: Sung Jinwoo #2 com chamas roxas; modelo distinto."
+    },
+    "1lxm5O0-HmmtJdVmMyoNL7U1TLMtU9nyZ": {
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Boba Fett",
+      "variantName": "Turnaround Rifle",
+      "modelGroup": "boba-fett-turnaround-rifle",
+      "tags": [
+        "Star Wars",
+        "Boba Fett",
+        "Rifle",
+        "Turnaround"
+      ],
+      "curationNotes": "Prancha bloco 3: Boba Fett #1 turnaround/rifle; modelo distinto."
+    },
+    "1SiuDeKmqUzOvGbi78f1TuQfaEeJ9SnhO": {
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Boba Fett",
+      "variantName": "Base Trono e Armadura",
+      "modelGroup": "boba-fett-base-trono-armadura",
+      "tags": [
+        "Star Wars",
+        "Boba Fett",
+        "Base Trono",
+        "Armadura"
+      ],
+      "curationNotes": "Prancha bloco 3: Boba Fett #2 com base/trono; modelo distinto do turnaround."
+    },
+    "1ApqKYJazFOifCToHmPeS133bLv7gDih": {
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Mandalorian e Grogu",
+      "characterNames": [
+        "Mandalorian",
+        "Grogu"
+      ],
+      "variantName": "Diorama Ca?ador",
+      "modelGroup": "mandalorian-e-grogu-diorama-cacador",
+      "modelKind": "diorama",
+      "tags": [
+        "Star Wars",
+        "Mandalorian",
+        "Grogu",
+        "Diorama"
+      ],
+      "curationNotes": "Prancha bloco 3: Mandalorian #1 e diorama com Grogu/outros elementos; distinto do busto."
+    },
+    "1UCF7eSN2ojRxT3CVuSijY88tFFWm1rR6": {
+      "sourceTitle": "Star Wars",
+      "category": "filmes",
+      "subcategory": "star-wars",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Mandalorian",
+      "variantName": "Busto Eastman",
+      "modelGroup": "mandalorian-busto-eastman",
+      "tags": [
+        "Star Wars",
+        "Mandalorian",
+        "Busto",
+        "Eastman"
+      ],
+      "curationNotes": "Prancha bloco 3: Mandalorian #2 e busto; modelo distinto do diorama."
+    },
+    "15fe_GR3gocTXbtajdSigBcZrXyrFNoJK": {
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Ken Masters",
+      "variantName": "Hadouken Fogo",
+      "modelGroup": "ken-masters-hadouken-fogo",
+      "tags": [
+        "Street Fighter",
+        "Ken Masters",
+        "Hadouken",
+        "Fogo"
+      ],
+      "curationNotes": "Prancha bloco 3: Ken #1 com golpe de fogo; modelo distinto."
+    },
+    "16nQfu8LeLBUh82HUg4NbiSLLwYS_lAq7": {
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Ken Masters",
+      "variantName": "Gi Vermelho Base Rocha",
+      "modelGroup": "ken-masters-gi-vermelho-base-rocha",
+      "tags": [
+        "Street Fighter",
+        "Ken Masters",
+        "Gi Vermelho"
+      ],
+      "curationNotes": "Prancha bloco 3: Ken #2 normalizado para Ken Masters; mesmo modelo do item Ken Masters #2."
+    },
+    "1UmqmFTkdC-shL5ay0XvxCJ9hQ_XqbJ-B": {
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Ryu",
+      "variantName": "Gi Branco Base Rocha",
+      "modelGroup": "ryu-gi-branco-base-rocha",
+      "tags": [
+        "Street Fighter",
+        "Ryu",
+        "Gi Branco"
+      ],
+      "curationNotes": "Prancha bloco 3: estava como Ken Masters, mas imagem mostra Ryu de gi branco."
+    },
+    "1DLij59byOhUs1ITdzswY4qSMhglA7Ljw": {
+      "sourceTitle": "Tartaruga Ninja",
+      "category": "animes",
+      "subcategory": "tartaruga-ninja",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Tartarugas Ninja",
+      "characterNames": [
+        "Leonardo",
+        "Raphael",
+        "Donatello",
+        "Michelangelo"
+      ],
+      "variantName": "Diorama Predio Urbano",
+      "modelGroup": "tartarugas-ninja-diorama-predio-urbano",
+      "modelKind": "diorama",
+      "tags": [
+        "Tartaruga Ninja",
+        "TMNT",
+        "Leonardo",
+        "Raphael",
+        "Donatello",
+        "Michelangelo",
+        "Diorama"
+      ],
+      "curationNotes": "Prancha bloco 3: Diorama #1 em predio urbano; modelo distinto do item 02."
+    },
+    "1mTBbD9Ek9RDFpEH9XpIGsd6leNaf5kCp": {
+      "sourceTitle": "Tartaruga Ninja",
+      "category": "animes",
+      "subcategory": "tartaruga-ninja",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Tartarugas Ninja",
+      "characterNames": [
+        "Leonardo",
+        "Raphael",
+        "Donatello",
+        "Michelangelo"
+      ],
+      "variantName": "Diorama Base Cano",
+      "modelGroup": "tartarugas-ninja-diorama-base-cano",
+      "modelKind": "diorama",
+      "tags": [
+        "Tartaruga Ninja",
+        "TMNT",
+        "Leonardo",
+        "Raphael",
+        "Donatello",
+        "Michelangelo",
+        "Diorama",
+        "Cano"
+      ],
+      "curationNotes": "Prancha bloco 3: Diorama #2 em base com cano; modelo distinto do item 01."
     }
   },
   "visualApprovals": {
@@ -10186,6 +10617,96 @@
       "approvalType": "split_variants",
       "reviewedAt": "2026-06-02",
       "notes": "Item 01 corrigido para Yuji Itadori/Sukuna; item 02 permanece Tinker Bell."
+    },
+    "Popeye|Popeye|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Popeye separado em pose em pe/base rocha e barco com espinafre."
+    },
+    "Quarteto Fantastico|Galactus|galactus-classico-mao-estendida": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo Galactus classico, usar como galeria."
+    },
+    "Quarteto Fantastico|Galactus|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Grupo antigo normalizado para modelGroup Galactus classico."
+    },
+    "Quarteto Fantastico|Quarteto|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Quarteto separado/corrigido para Surfista Prateado solo e diorama Quarteto Fantastico e Galactus."
+    },
+    "Resident Evil|Leon|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Leon normalizado para Leon Kennedy e separado em dois modelos distintos."
+    },
+    "Senhor dos Aneis|Azog|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Azog separado em dois modelos distintos."
+    },
+    "Senhor dos Aneis|Gimli e Legolas|gimli-e-legolas-diorama-duplo-machado": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo diorama Gimli/Legolas; manter como galeria."
+    },
+    "Senhor dos Aneis|Gimli|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Gimli normalizado para diorama Gimli e Legolas."
+    },
+    "Solo Leveling|Sung Jinwoo|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Sung Jinwoo separado em lanca azul e chamas roxas."
+    },
+    "Star Wars|Boba Fett|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Boba Fett separado em turnaround/rifle e base trono/armadura."
+    },
+    "Star Wars|Mandalorian|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mandalorian separado em diorama com Grogu e busto Eastman."
+    },
+    "Street Fighter|Ken Masters|ken-masters-gi-vermelho-base-rocha": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo Ken Masters de gi vermelho em apresentacoes semelhantes; manter como galeria quando agrupado."
+    },
+    "Street Fighter|Ken|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Ken normalizado para Ken Masters e separado entre Hadouken fogo e gi vermelho."
+    },
+    "Street Fighter|Ken Masters|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Grupo Ken Masters corrigido: item 01 e Ryu, item 02 e Ken Masters gi vermelho."
+    },
+    "Tartaruga Ninja|Diorama|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Diorama TMNT separado em predio urbano e base com cano; personagem normalizado para Tartarugas Ninja."
     }
   }
 }
