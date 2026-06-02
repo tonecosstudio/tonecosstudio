@@ -113,6 +113,117 @@
       "mediaType": "game",
       "curationConfidence": "high"
     },
+    "1eQVqHFUt4Dq6-QOUR3cOV5z3_US5PwS2": {
+      "characterName": "Shao Kahn",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "variantName": "Base Martelo e Dragao",
+      "modelGroup": "shao-kahn-base-martelo-e-dragao",
+      "tags": [
+        "Shao Kahn",
+        "Mortal Kombat"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 025 item 01: Shao Kahn com martelo e base com elemento de dragao; corrigir grupo generico Mortal Kombat."
+    },
+    "1gM2CcXRpHeGAoUhjcCpxQ4ve8e87nshE": {
+      "characterName": "Sub-Zero",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "variantName": "Fatality Coluna e Cranio",
+      "modelGroup": "sub-zero-fatality-coluna-e-cranio",
+      "tags": [
+        "Sub-Zero",
+        "Mortal Kombat",
+        "Fatality"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 025 item 02: Sub-Zero segurando coluna e cranio em cena de fatality; modelo proprio."
+    },
+    "1a9GSgwBZsY9OXX48RWUCXZxlSjwHCpi0": {
+      "characterName": "Mileena e Kitana e Scorpion e Sub-Zero",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "variantName": "Kit Quatro Personagens",
+      "modelGroup": "mileena-e-kitana-e-scorpion-e-sub-zero-kit-quatro-personagens",
+      "tags": [
+        "Mileena",
+        "Kitana",
+        "Scorpion",
+        "Sub-Zero",
+        "Mortal Kombat",
+        "Kit"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 025 item 03: kit com quatro personagens de Mortal Kombat; mover para diorama/kit e taguear todos."
+    },
+    "1DAveXXRsGu6qHh-uTvd8AOCZusehlKQD": {
+      "characterName": "Raiden",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "variantName": "Armadura Dourada",
+      "modelGroup": "raiden-armadura-dourada",
+      "tags": [
+        "Raiden",
+        "Mortal Kombat"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 025 item 04: Raiden com chapeu e armadura dourada; corrigir grupo generico."
+    },
+    "1TDEJv9vgDoDql0mdVLK34Fq5zuhiW1WT": {
+      "characterName": "Mileena",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "variantName": "Mastro e Cabeca",
+      "modelGroup": "mileena-mastro-e-cabeca",
+      "tags": [
+        "Mileena",
+        "Mortal Kombat"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 025 item 05: Mileena em pose com mastro e cabeca na base; variante distinta."
+    },
+    "1iuWrqUiP7Wcxr6RWqiPLnxtwhxejKqCp": {
+      "characterName": "Mileena",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "variantName": "Adaga Erguida",
+      "modelGroup": "mileena-adaga-erguida",
+      "tags": [
+        "Mileena",
+        "Mortal Kombat"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 025 item 06: Mileena com adaga erguida e base com espinhos; variante separada."
+    },
+    "16Xak77WZlxB-4uZyXL87EuN299sRLVWc": {
+      "characterName": "Sub-Zero",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "variantName": "Exploded View",
+      "modelGroup": "sub-zero-exploded-view",
+      "tags": [
+        "Sub-Zero",
+        "Mortal Kombat",
+        "Exploded View"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 025 item 07: Sub-Zero exibido em pecas separadas para montagem; modelo distinto do fatality."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
