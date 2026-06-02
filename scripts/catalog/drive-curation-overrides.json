@@ -276,11 +276,21 @@
     },
     "1SJFYiDaadmM2GTuKe8kJFSHogbXrADQf": {
       "characterName": "Homem-Areia",
-      "sourceTitle": "Homem Aranha",
+      "sourceTitle": "Homem-Aranha",
       "category": "franquias",
-      "subcategory": "homem-aranha",
+      "subcategory": "marvel-homem-aranha",
       "mediaType": "franchise",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Base Redemoinho de Areia",
+      "modelGroup": "homem-areia-base-redemoinho-areia",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Homem-Areia",
+        "Sandman",
+        "Base Redemoinho"
+      ],
+      "curationNotes": "Prancha atual: item 02 e Homem-Areia em base/redemoinho de areia; modelo distinto do item 01."
     },
     "1EwkIrItQKBVQSY4T0PVntdw7HiXtjZyB": {
       "characterName": "Puri-Puri Prisoner",
@@ -4702,7 +4712,17 @@
       "category": "jogos",
       "subcategory": "elden-ring",
       "mediaType": "game",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Sem Armadura Asas",
+      "modelGroup": "malenia-sem-armadura-asas",
+      "tags": [
+        "Elden Ring",
+        "Malenia",
+        "Blade of Miquella",
+        "Asas",
+        "Sem Armadura"
+      ],
+      "curationNotes": "Prancha atual: item 02 e variante separada de Malenia com asas e sem armadura."
     },
     "15fNVPOWZFDH8OIsHoYViRCI36-L-78Yu": {
       "characterName": "Kratos",
@@ -4718,7 +4738,16 @@
       "category": "jogos",
       "subcategory": "metal-gear",
       "mediaType": "game",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Rifle Base Quadrada",
+      "modelGroup": "solid-snake-rifle-base-quadrada",
+      "tags": [
+        "Metal Gear",
+        "Solid Snake",
+        "Rifle",
+        "Base Quadrada"
+      ],
+      "curationNotes": "Prancha atual: item 01 e Solid Snake em base quadrada; modelo distinto do item 02."
     },
     "1ouYKPZDpfOXZVZo49sHzb5TBbaXrhwp2": {
       "characterName": "Raiden",
@@ -5069,7 +5098,16 @@
       "category": "jogos",
       "subcategory": "final-fantasy-vii",
       "mediaType": "game",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Asa Unica Base Chamas",
+      "modelGroup": "sephiroth-asa-unica-base-chamas",
+      "tags": [
+        "Final Fantasy VII",
+        "Sephiroth",
+        "Asa Unica",
+        "Base Chamas"
+      ],
+      "curationNotes": "Prancha atual: itens 01 e 02 representam o mesmo modelo Sephiroth com asa unica e base de chamas em render/apresentacao diferente."
     },
     "1MewQlERP7sC92Kp4a3OeMjJiRMsAc7E3": {
       "characterName": "Ghost",
@@ -9144,6 +9182,254 @@
         "Torneio do Poder"
       ],
       "curationNotes": "Prancha 101 item 02 estava como Super, mas mostra Jiren e Hit."
+    },
+    "1AxT8sBdgbjJ8lcg7ss-oOnifaTkzQtwT": {
+      "sourceTitle": "Elden Ring",
+      "category": "jogos",
+      "subcategory": "elden-ring",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Malenia",
+      "variantName": "Armadura Base Energia",
+      "modelGroup": "malenia-armadura-base-energia",
+      "tags": [
+        "Elden Ring",
+        "Malenia",
+        "Blade of Miquella",
+        "Armadura",
+        "Base Energia"
+      ],
+      "curationNotes": "Prancha atual: Malenia #1 e #2 sao modelos diferentes; item 01 com armadura e base de energia."
+    },
+    "10ZzeAh9KByIDd43fNQszNSxoQnYJOh5m": {
+      "sourceTitle": "Rocky",
+      "category": "filmes",
+      "subcategory": "rocky",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Rocky Balboa",
+      "variantName": "Traje Preto Blitway",
+      "modelGroup": "rocky-balboa-traje-preto-blitway",
+      "tags": [
+        "Rocky",
+        "Rocky Balboa",
+        "Blitway",
+        "Traje Preto",
+        "Filmes"
+      ],
+      "curationNotes": "Prancha atual: item 01 e Rocky em traje preto; modelo distinto do item 02."
+    },
+    "1IUNFglBlKidUeHvz1U3cRg3LdjjcAiDF": {
+      "sourceTitle": "Rocky",
+      "category": "filmes",
+      "subcategory": "rocky",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Rocky Balboa",
+      "variantName": "Punhos Erguidos V6",
+      "modelGroup": "rocky-balboa-punhos-erguidos-v6",
+      "tags": [
+        "Rocky",
+        "Rocky Balboa",
+        "Punhos Erguidos",
+        "V6",
+        "Filmes"
+      ],
+      "curationNotes": "Prancha atual: item 02 e Rocky com punhos erguidos; modelo distinto do item 01."
+    },
+    "1Z65MrdX5dKlCZCIs8pTmavASIReJvNbz": {
+      "sourceTitle": "Final Fantasy VII",
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Sephiroth",
+      "variantName": "Asa Unica Base Chamas",
+      "modelGroup": "sephiroth-asa-unica-base-chamas",
+      "tags": [
+        "Final Fantasy VII",
+        "Sephiroth",
+        "Asa Unica",
+        "Base Chamas"
+      ],
+      "curationNotes": "Prancha atual: galeria do mesmo modelo Sephiroth com asa unica e base de chamas."
+    },
+    "1eBFZJC__vlW3Gby0XCuswEYPxjrM9Lrr": {
+      "sourceTitle": "Game of Thrones",
+      "category": "series",
+      "subcategory": "game-of-thrones",
+      "mediaType": "series",
+      "curationConfidence": "high",
+      "characterName": "Rei da Noite",
+      "variantName": "Busto",
+      "modelGroup": "rei-da-noite-busto",
+      "tags": [
+        "Game of Thrones",
+        "Rei da Noite",
+        "Night King",
+        "Busto"
+      ],
+      "curationNotes": "Prancha atual: item 01 e busto do Rei da Noite; modelo distinto do item 02."
+    },
+    "1tzPzYU5j0yrITto8ACqfXM6GpREGF5jZ": {
+      "sourceTitle": "Game of Thrones",
+      "category": "series",
+      "subcategory": "game-of-thrones",
+      "mediaType": "series",
+      "curationConfidence": "high",
+      "characterName": "Rei da Noite",
+      "variantName": "Diorama Batalha",
+      "modelGroup": "rei-da-noite-diorama-batalha",
+      "modelKind": "diorama",
+      "tags": [
+        "Game of Thrones",
+        "Rei da Noite",
+        "Night King",
+        "Diorama",
+        "Batalha"
+      ],
+      "curationNotes": "Prancha atual: item 02 e diorama corpo inteiro do Rei da Noite; modelo distinto do busto."
+    },
+    "1btyCvFYIfT2Ov6OCl4nPA4pocCXn4hdB": {
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "marvel-homem-aranha",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Homem-Areia",
+      "variantName": "Com Homem-Aranha Capturado",
+      "modelGroup": "homem-areia-com-homem-aranha-capturado",
+      "modelKind": "diorama",
+      "characterNames": [
+        "Homem-Areia",
+        "Homem-Aranha"
+      ],
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Homem-Areia",
+        "Sandman",
+        "Diorama"
+      ],
+      "curationNotes": "Prancha atual: item 01 mostra Homem-Areia com Homem-Aranha capturado; modelo distinto do item 02."
+    },
+    "1Csk78Xees2MV4fSNU31v5Z6H8eOfnt_d": {
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Thanos",
+      "variantName": "Manopla do Infinito Corrida",
+      "modelGroup": "thanos-manopla-infinito-corrida",
+      "tags": [
+        "Marvel",
+        "Thanos",
+        "Manopla do Infinito",
+        "Corrida"
+      ],
+      "curationNotes": "Prancha atual: itens 01 e 02 parecem o mesmo Thanos em corrida/manopla, usados como galeria."
+    },
+    "1eRccgKZOPiAhviqUaXys8EIpUmdPCGqF": {
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "curationConfidence": "high",
+      "characterName": "Thanos",
+      "variantName": "Manopla do Infinito Corrida",
+      "modelGroup": "thanos-manopla-infinito-corrida",
+      "tags": [
+        "Marvel",
+        "Thanos",
+        "Manopla do Infinito",
+        "Corrida"
+      ],
+      "curationNotes": "Prancha atual: galeria do mesmo Thanos em corrida/manopla."
+    },
+    "1yZkQ5mx_QdtsqOrLz0iPr-93yEeRc5Eb": {
+      "sourceTitle": "Metal Gear",
+      "category": "jogos",
+      "subcategory": "metal-gear",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Solid Snake",
+      "variantName": "Rifle Base Octogonal",
+      "modelGroup": "solid-snake-rifle-base-octogonal",
+      "tags": [
+        "Metal Gear",
+        "Solid Snake",
+        "Rifle",
+        "Base Octogonal"
+      ],
+      "curationNotes": "Prancha atual: item 02 e Solid Snake segurando rifle em base octogonal; modelo distinto do item 01."
+    },
+    "11uZ7kn_UukVLmqa4_IKRS-HOskdsfa-h": {
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Nightwolf",
+      "variantName": "Machado Verde",
+      "modelGroup": "nightwolf-machado-verde",
+      "tags": [
+        "Mortal Kombat",
+        "Nightwolf",
+        "Machado Verde"
+      ],
+      "curationNotes": "Prancha atual: item 01 corrige Nightwolff para Nightwolf; modelo com machado verde."
+    },
+    "1H767IA4h6MT8dyI0mY7N2f9EbqPTJrPp": {
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Nightwolf",
+      "variantName": "Machado Base Rocha",
+      "modelGroup": "nightwolf-machado-base-rocha",
+      "tags": [
+        "Mortal Kombat",
+        "Nightwolf",
+        "Machado",
+        "Base Rocha"
+      ],
+      "curationNotes": "Prancha atual: item 02 corrige Nightwolff para Nightwolf; modelo distinto com base rochosa."
+    },
+    "10ip6Yn-DWHSquFJC6atmGhOt-UihbtSp": {
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Sektor",
+      "variantName": "Pose Classica Laranja",
+      "modelGroup": "sektor-pose-classica-laranja",
+      "tags": [
+        "Mortal Kombat",
+        "Sektor",
+        "Cyber Ninja",
+        "Pose Classica"
+      ],
+      "curationNotes": "Prancha atual: item 01 corrige Sekor para Sektor; modelo classico laranja."
+    },
+    "11--XY7-KQo8QaNNgr4SlohG8eyXAnNuZ": {
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "subcategory": "mortal-kombat",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "characterName": "Sektor",
+      "variantName": "Cyber Ninja Base Emblema",
+      "modelGroup": "sektor-cyber-ninja-base-emblema",
+      "tags": [
+        "Mortal Kombat",
+        "Sektor",
+        "Cyber Ninja",
+        "Base Emblema"
+      ],
+      "curationNotes": "Prancha atual: item 02 corrige Sekor para Sektor; modelo distinto com base/emblema."
     }
   },
   "visualApprovals": {
@@ -9464,6 +9750,72 @@
       "approvalType": "split_variants",
       "reviewedAt": "2026-06-02",
       "notes": "O item semelhante foi corrigido para Naruto; o Gotenks com fantasmas fica como modelo unico."
+    },
+    "Elden Ring|Malenia|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Par Malenia separado em dois modelGroups: armadura/base energia e sem armadura/asas."
+    },
+    "Filmes e Series|Rocky Balboa|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Rocky Balboa separado entre traje preto Blitway e punhos erguidos V6; sourceTitle normalizado para Rocky."
+    },
+    "Final Fantasy VII|Sephiroth|sephiroth-asa-unica-base-chamas": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo de Sephiroth com asa unica/base de chamas; manter item 02 como galeria."
+    },
+    "Final Fantasy Vii|Sephiroth|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Grupo antigo sem modelGroup foi normalizado para Final Fantasy VII e modelo Sephiroth asa unica/base chamas."
+    },
+    "Game of Thrones|Rei da Noite|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Rei da Noite separado em busto e diorama batalha."
+    },
+    "Homem-Aranha|Homem-Areia|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Homem-Areia separado em diorama com Homem-Aranha e base redemoinho."
+    },
+    "Marvel|Thanos|thanos-manopla-infinito-corrida": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo Thanos em corrida com manopla; manter item secundario como galeria."
+    },
+    "Marvel|Thanos Infinito|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Nome antigo Thanos Infinito normalizado para personagem Thanos e variante Manopla do Infinito Corrida."
+    },
+    "Metal Gear|Solid Snake|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Solid Snake separado em dois modelos de pose/base diferentes."
+    },
+    "Mortal Kombat|Nightwolff|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Nightwolff corrigido para Nightwolf e separado em dois modelos distintos."
+    },
+    "Mortal Kombat|Sekor|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Sekor corrigido para Sektor e separado em dois modelos distintos."
     }
   }
 }
