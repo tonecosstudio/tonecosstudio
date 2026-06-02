@@ -439,6 +439,111 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 027 item 06: busto/cabeca do endoesqueleto T-800 em vista de montagem; variante propria."
     },
+    "180J-aRmqy_aFNAy8WxOLg-ZFZXLBbq0K": {
+      "characterName": "Doutor Octopus",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Tentaculos Malix",
+      "modelGroup": "doutor-octopus-tentaculos-malix",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Doutor Octopus",
+        "Doctor Octopus"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 028 item 01: Doutor Octopus solo com tentaculos elevados; modelo separado dos dioramas."
+    },
+    "10htfao6tfNT7RkS9V9cQSDerb-aRS5ye": {
+      "characterName": "Doutor Octopus",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Casaco e Garras",
+      "modelGroup": "doutor-octopus-casaco-e-garras",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Doutor Octopus",
+        "Doctor Octopus"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 028 item 02: Doutor Octopus solo com casaco longo e garras mecanicas; variante propria."
+    },
+    "10Y1mCeqT6quWN9wD_MYCoxw276o2h5YZ": {
+      "characterName": "Homem-Aranha e Doutor Octopus",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Diorama Tentaculos",
+      "modelGroup": "homem-aranha-e-doutor-octopus-diorama-tentaculos",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Doutor Octopus",
+        "Doctor Octopus",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 028 item 03: Homem-Aranha em confronto com tentaculos do Doutor Octopus; mover para diorama com os dois personagens."
+    },
+    "10W57Cw0sYmcM-dokOMUaNmtNJoerNbd-": {
+      "characterName": "Homem-Aranha e Doutor Octopus",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Diorama No Way Home",
+      "modelGroup": "homem-aranha-e-doutor-octopus-diorama-no-way-home",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Doutor Octopus",
+        "Doctor Octopus",
+        "No Way Home",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 028 item 04: cena promocional Spider-Man No Way Home com Homem-Aranha e Doutor Octopus; diorama separado."
+    },
+    "10Ud-6yGuJBEYZ4buko28dKv0t-lFsaw4": {
+      "characterName": "Doutor Octopus",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Base Industrial",
+      "modelGroup": "doutor-octopus-base-industrial",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Doutor Octopus",
+        "Doctor Octopus"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 028 item 05: collage/render do Doutor Octopus em base industrial; mesma peca do item 06, usar como galeria."
+    },
+    "10PLgY640RNEidtRKQfMlAxzPLZelRYct": {
+      "characterName": "Doutor Octopus",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "subcategory": "homem-aranha",
+      "mediaType": "franchise",
+      "variantName": "Base Industrial",
+      "modelGroup": "doutor-octopus-base-industrial",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Doutor Octopus",
+        "Doctor Octopus"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 028 item 06: render final do mesmo Doutor Octopus em base industrial do item 05; consolidar como galeria."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
@@ -5302,6 +5407,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 021: Storm 1.png e Tempestade 1.1 sao o mesmo modelo Wicked; Storm vira alias/tag e imagem de galeria."
+    },
+    "Homem-Aranha|Doutor Octopus|doutor-octopus-base-industrial": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 028 itens 05 e 06 mostram o mesmo Doutor Octopus em base industrial; manter como modelo unico com galeria."
     }
   }
 }
