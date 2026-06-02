@@ -162,6 +162,7 @@ const TITLE_CASE_UPPER_WORDS = new Map(
     "3dxm": "3DXM",
     chibistl: "ChibiSTL",
     kame: "Kame",
+    kof: "KOF",
     lafigures: "LAfigures",
     motu: "MOTU",
     nsfw: "NSFW",

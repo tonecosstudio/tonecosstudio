@@ -526,18 +526,18 @@ async function exportItem(item, index, total) {
         try {
           const existing = await fs.readFile(existingAsset);
           if (isImage(existing)) {
-            const movedPath = await moveOrReuseFile(existingAsset, localPath, sha256(existing));
-            const movedRelativePath = path.relative(process.cwd(), movedPath);
-            console.log(`[${index + 1}/${total}] moved ${movedRelativePath}`);
+            const copiedPath = await copyOrReuseFile(existingAsset, localPath, sha256(existing));
+            const copiedRelativePath = path.relative(process.cwd(), copiedPath);
+            console.log(`[${index + 1}/${total}] copied ${copiedRelativePath}`);
             return {
               ...item,
               planIndex: index,
               exportStatus: "exported",
-              localPath: movedRelativePath,
+              localPath: copiedRelativePath,
               plannedLocalPath: relativePath,
               bytes: existing.length,
               sha256: sha256(existing),
-              source: "moved-existing-manifest",
+              source: "copied-existing-manifest",
               sourceFile: path.relative(process.cwd(), existingAsset),
               error: null,
             };

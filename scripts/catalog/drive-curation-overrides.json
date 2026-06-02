@@ -15462,6 +15462,199 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem verificada: Ellie Williams sentada tocando violao; remove nome generico Download."
+    },
+    "1CyoV75GcKZ6kOyi1qQhFZDb7OKP-7Qz0": {
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "sourceTitle": "Dragon Ball",
+      "characterName": "Gogeta",
+      "variantName": "DBZ",
+      "modelGroup": "gogeta-dbz",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gogeta"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove DBZ do personagem; DBZ vira variante/tag."
+    },
+    "1CxMpqEpumQuw4XyYDKAHJ6Wjd63lQeU7": {
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "sourceTitle": "Dragon Ball",
+      "characterName": "Gohan",
+      "variantName": "DBZ",
+      "modelGroup": "gohan-dbz",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gohan"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove DBZ do personagem; DBZ vira variante/tag."
+    },
+    "1CKBg-jTQOSL6xqUwGFWN5eKcSBmMIGvm": {
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "sourceTitle": "DC",
+      "characterName": "Adao Negro e Doutor Destino",
+      "variantName": "Diorama",
+      "modelGroup": "adao-negro-e-doutor-destino-diorama",
+      "tags": [
+        "DC",
+        "Adao Negro",
+        "Doutor Destino",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Nome original traz dois personagens e sufixo DC; consolidado como diorama com Adao Negro e Doutor Destino."
+    },
+    "183bk433FXK8Fs9PkN5XfRF4Aca7AY9FX": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Athena Asamiya",
+      "modelGroup": "athena-asamiya",
+      "tags": [
+        "The King of Fighters",
+        "Athena Asamiya"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Normaliza Athena para nome completo da personagem em KOF."
+    },
+    "1L01-ofgheGqCSbNn8zf04BJ7oU3UbqvO": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Athena Asamiya",
+      "variantName": "KOF",
+      "modelGroup": "athena-asamiya-kof",
+      "tags": [
+        "The King of Fighters",
+        "Athena Asamiya"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove KOF do personagem; KOF permanece como fonte/tag."
+    },
+    "18H_fnR8Nz_WYsiyfJOqarLRCQm3y6ukc": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Blue Mary",
+      "modelGroup": "blue-mary",
+      "tags": [
+        "The King of Fighters",
+        "Blue Mary"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Mantem Blue Mary como personagem canonico."
+    },
+    "1L47930kp7UcTTvyMZcaCC_vDLJWsufAr": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Blue Mary",
+      "variantName": "KOF",
+      "modelGroup": "blue-mary-kof",
+      "tags": [
+        "The King of Fighters",
+        "Blue Mary"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove KOF do personagem; KOF permanece como fonte/tag."
+    },
+    "1AyhBC9Gw6kTf9gLqcvPnnOKGe2ROugLg": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Goro Daimon",
+      "modelGroup": "goro-daimon",
+      "tags": [
+        "The King of Fighters",
+        "Goro Daimon"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Corrige Goro the King para Goro Daimon, personagem de KOF."
+    },
+    "1L35V-YTKh7zFlELo_J00Ihesg0vhVsKf": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Kula Diamond",
+      "variantName": "KOF",
+      "modelGroup": "kula-diamond-kof",
+      "tags": [
+        "The King of Fighters",
+        "Kula Diamond"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Normaliza Kula para Kula Diamond e remove KOF do personagem."
+    },
+    "1L0c6qKFUMkb2fLzEw6VqQpMRA6lggoIr": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Mai Shiranui",
+      "variantName": "KOF",
+      "modelGroup": "mai-shiranui-kof",
+      "tags": [
+        "The King of Fighters",
+        "Mai Shiranui"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove KOF do personagem; KOF permanece como fonte/tag."
+    },
+    "18Ah416ymTGuE94xF-byXKYgB-hw7DQLU": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Mai Shiranui",
+      "modelGroup": "mai-shiranui",
+      "tags": [
+        "The King of Fighters",
+        "Mai Shiranui"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Corrige grafia Mai Shiranu para Mai Shiranui."
+    },
+    "1nl6cP83i906icwJ_qAVoAVWuNMIIwQC6": {
+      "category": "games",
+      "subcategory": "the-king-of-fighters",
+      "mediaType": "game",
+      "sourceTitle": "The King of Fighters",
+      "characterName": "Mai Shiranui",
+      "modelGroup": "mai-shiranui",
+      "tags": [
+        "The King of Fighters",
+        "Mai Shiranui"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Mantem Mai Shiranui como identidade canonica."
+    },
+    "1DG5x2XH3Gkgu5xbmqDN4FasF9xTrmF74": {
+      "category": "animes",
+      "subcategory": "demon-slayer",
+      "mediaType": "anime",
+      "sourceTitle": "Demon Slayer",
+      "characterName": "Gyutaro",
+      "modelGroup": "gyutaro",
+      "tags": [
+        "Demon Slayer",
+        "Gyutaro"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo estava dentro de Boku No Hero, mas o nome indica Gyutaro de Demon Slayer; mover para anime correto e remover sufixo do personagem."
     }
   },
   "visualApprovals": {
@@ -16132,6 +16325,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Diorama Wolverine e Deadpool em duas entradas equivalentes; manter como galeria do mesmo grupo."
+    },
+    "The King of Fighters|Mai Shiranui|mai-shiranui": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mai Shiranu e Mai Shiranui - The King of Fighters sao a mesma personagem/modelo apos normalizacao; manter como galeria."
     }
   }
 }
