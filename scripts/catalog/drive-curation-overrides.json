@@ -14765,6 +14765,204 @@
         "Diorama"
       ],
       "curationConfidence": "high"
+    },
+    "1CZV53ZTP2v82qSnvkmTKGq56YoWwhgri": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Gorr",
+      "modelGroup": "gorr",
+      "tags": [
+        "Marvel",
+        "Gorr",
+        "Vilao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove sufixo Marvel do nome publico; Marvel deve ficar como franquia/tag, nao como parte do personagem."
+    },
+    "1D0LgQ0RkwmzE_LCfEkKpXpOLRA31O0z2": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Homem-Aranha",
+      "subcategory": "homem-aranha",
+      "characterName": "Homem-Aranha e Mary Jane",
+      "variantName": "Diorama",
+      "modelGroup": "homem-aranha-e-mary-jane-diorama",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Mary Jane",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Nome original misturava Spiderman, Mary Jane, Marvel e Homem-Aranha; consolidado como diorama dos dois personagens."
+    },
+    "1CTMQnDiKcv38vJy0_dbCpaentC9S8N_6": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Red Sonja",
+      "variantName": "Versao 02",
+      "modelGroup": "red-sonja-versao-02",
+      "tags": [
+        "Marvel",
+        "Red Sonja"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Remove sufixo Marvel do nome publico e preserva numero como variante."
+    },
+    "1D0D-j78iyuJKLV6CC2CAIlMEm5aPE34K": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Red Sonja",
+      "modelGroup": "red-sonja",
+      "tags": [
+        "Marvel",
+        "Red Sonja"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Remove sufixo Marvel do nome publico; Marvel permanece como franquia/tag."
+    },
+    "1Cb7QMuo1BnWVkLm4Ih0QtG0iuM6V86LN": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Ronan",
+      "modelGroup": "ronan",
+      "tags": [
+        "Marvel",
+        "Ronan",
+        "Guardioes da Galaxia"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove sufixo Marvel do nome publico; Ronan e o personagem."
+    },
+    "1Cl_40fTesbe_82uEolsVnZWqESy7Zjyi": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Vingadores",
+      "subcategory": "vingadores",
+      "characterName": "Hulk",
+      "modelGroup": "hulk",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Hulk"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove sufixo Marvel do nome publico; Hulk fica dentro de Vingadores/Marvel."
+    },
+    "1CbSiNEa9jU2Z6N5j2rFoSIcQGb2TKkBh": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Vingadores",
+      "subcategory": "vingadores",
+      "characterName": "Mulher-Hulk e Demolidor",
+      "variantName": "Diorama",
+      "modelGroup": "mulher-hulk-e-demolidor-diorama",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Mulher-Hulk",
+        "Demolidor",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Nome original repetia She Hulk/Demolidor/Marvel; consolidado como diorama com os dois personagens."
+    },
+    "1BTaPCEHFo2XZjk04YyYQVomY8EnapARX": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Vingadores",
+      "subcategory": "vingadores",
+      "characterName": "Pantera Negra",
+      "modelGroup": "pantera-negra",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Pantera Negra"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove sufixo Marvel do nome publico; Marvel permanece como franquia/tag."
+    },
+    "1W9Lk5QTdUM8iQJ61m8tpBYOTp9pnWlWK": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Capita Marvel",
+      "variantName": "Versao 01",
+      "modelGroup": "capita-marvel-versao-01",
+      "tags": [
+        "Marvel",
+        "Capita Marvel"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Mantem personagem Capita Marvel como identidade; numero do arquivo vira variante publica."
+    },
+    "1Hy-G3B0-MbydaJ6fyi37rJtE1exC5VuF": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Capita Marvel",
+      "variantName": "Versao 02",
+      "modelGroup": "capita-marvel-versao-02",
+      "tags": [
+        "Marvel",
+        "Capita Marvel"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Mantem personagem Capita Marvel como identidade; numero do arquivo vira variante publica."
+    },
+    "1bliX_zKpxBE-2AzxgHSD2fAzOyoSa1PH": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Capita Marvel",
+      "variantName": "Versao 03",
+      "modelGroup": "capita-marvel-versao-03",
+      "tags": [
+        "Marvel",
+        "Capita Marvel"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Mantem personagem Capita Marvel como identidade; numero do arquivo vira variante publica."
+    },
+    "1IRMNqjzBmLNiD--mBH9QJ_vKYrLfHNWt": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Capita Marvel",
+      "variantName": "Versao 04",
+      "modelGroup": "capita-marvel-versao-04",
+      "tags": [
+        "Marvel",
+        "Capita Marvel"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Mantem personagem Capita Marvel como identidade; numero do arquivo vira variante publica."
+    },
+    "1AuZoAnBGYJ3693Hzhe05gKTXmZA1jpPG": {
+      "category": "franquias",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "subcategory": "marvel",
+      "characterName": "Capitao Marvel",
+      "modelGroup": "capitao-marvel",
+      "tags": [
+        "Marvel",
+        "Capitao Marvel"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Mantem Capitao Marvel como personagem distinto de Capita Marvel."
     }
   },
   "visualApprovals": {
