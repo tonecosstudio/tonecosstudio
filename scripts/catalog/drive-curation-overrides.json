@@ -1232,6 +1232,81 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 030 item 06: duplicata exata da imagem de colecao do item 05; manter em duplicatas, sem publicar como novo modelo."
     },
+    "1Ls0U1OTtpCTguziLLM6EraY3dmpYxuRo": {
+      "characterName": "Lion-O",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "Trono",
+      "modelGroup": "lion-o-trono",
+      "tags": [
+        "ThunderCats",
+        "Lion-O",
+        "Trono",
+        "Espada Justiceira"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 053 item 01: Lion-O sentado no trono; modelo de catalogo separado da colecao LAfigures."
+    },
+    "1JwLgPa4i0-TjYcrmycBCiKBpGopLY7Mi": {
+      "characterName": "Lion-O",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": true,
+      "variantName": "Colecao LAfigures Espada",
+      "modelGroup": "lion-o-colecao-lafigures-espada",
+      "tags": [
+        "ThunderCats",
+        "Lion-O",
+        "Colecao",
+        "LAfigures",
+        "Espada Justiceira"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 053 item 02: arte com logo ThunderCats do mesmo modelo LAfigures da colecao; usar como galeria/alternativa da peca de colecao."
+    },
+    "1vEfnJrGMpH8_Yo2p3gd9Ugzxc1PSVU7m": {
+      "characterName": "Lion-O",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": true,
+      "variantName": "Colecao LAfigures Espada",
+      "modelGroup": "lion-o-colecao-lafigures-espada",
+      "tags": [
+        "ThunderCats",
+        "Lion-O",
+        "Colecao",
+        "LAfigures",
+        "Espada Justiceira"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 053 item 03: imagem principal da colecao ThunderCats/LAfigures para Lion-O."
+    },
+    "1dA1fHAWdcb6RIPRs9TxqpujbElFcUuBg": {
+      "characterName": "Lion-O",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": true,
+      "variantName": "Colecao LAfigures Espada",
+      "modelGroup": "lion-o-colecao-lafigures-espada",
+      "tags": [
+        "ThunderCats",
+        "Lion-O",
+        "Colecao",
+        "LAfigures",
+        "Espada Justiceira"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 053 item 04: duplicata exata do item 03; manter em 90_DUPLICATAS, sem publicar como novo modelo."
+    },
     "1LzFXXQHPXdt5nY3We3-Y4AlAXhgsVdX2": {
       "characterName": "Panthro",
       "sourceTitle": "ThunderCats",
@@ -7652,6 +7727,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 054 itens 02 e 03 mostram o mesmo Anjo Special STL em render cinza e versao pintada; publicar como um modelo com galeria."
+    },
+    "ThunderCats|Lion-O|lion-o-colecao-lafigures-espada": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 053 itens 02 e 03 mostram o mesmo Lion-O LAfigures com espada; item 04 e duplicata exata do item 03 e fica fora da publicacao."
     }
   }
 }
