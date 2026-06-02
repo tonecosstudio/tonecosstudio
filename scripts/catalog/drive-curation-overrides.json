@@ -3076,6 +3076,60 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 058 item 03: mesmo modelo do item 01, em fundo cinza/render alternativo; manter como galeria."
     },
+    "1dIDoxHRsrwGLdzREcC1XMhre0jLJkyc5": {
+      "characterName": "Flash",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "variantName": "Barry Allen Base Relampagos",
+      "modelGroup": "flash-barry-allen-base-relampagos",
+      "tags": [
+        "DC",
+        "Flash",
+        "Barry Allen",
+        "Relampagos",
+        "Base Cenica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 059 item 01: Flash/Barry Allen corpo inteiro em base com relampagos; modelo separado do busto e de Jay Garrick."
+    },
+    "1ZwqQkaPf52MZdDXNJsWOd7aTPOCGmZuc": {
+      "characterName": "Flash",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "variantName": "Busto Hex3D",
+      "modelGroup": "flash-busto-hex3d",
+      "tags": [
+        "DC",
+        "Flash",
+        "Barry Allen",
+        "Busto",
+        "Hex3D"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 059 item 02: busto do Flash com marca Hex3D; tipo de produto separado do corpo inteiro."
+    },
+    "1Jse5Us-gvfXxpGiu2wat3BJZ4OyrFlDV": {
+      "characterName": "Jay Garrick",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "variantName": "Flash Classico Bracos Cruzados",
+      "modelGroup": "jay-garrick-flash-classico-bracos-cruzados",
+      "tags": [
+        "DC",
+        "Flash",
+        "Jay Garrick",
+        "Flash Classico",
+        "Era de Ouro"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 059 item 03: traje/classico com capacete identifica Jay Garrick, nao Barry Allen."
+    },
     "1E7N-KgeT8Rw0uX7rArD18uLstHC929Gq": {
       "characterName": "Kenpachi Zaraki",
       "sourceTitle": "Bleach",
