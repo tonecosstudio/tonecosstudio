@@ -1243,6 +1243,77 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 045 item 04: segundo angulo do mesmo modelo Fat Boo/Saga Boo; usar como imagem de galeria."
     },
+    "1v-Ru9GnBRVwjpe7hUfob1cpBfevp_q9R": {
+      "characterName": "Super Boo",
+      "sourceTitle": "Dragon Ball",
+      "category": "anime",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Flutuando Base Rochosa",
+      "modelGroup": "super-boo-flutuando-base-rochosa",
+      "tags": [
+        "Dragon Ball",
+        "Super Boo",
+        "Majin Boo",
+        "Base Rochosa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 047 item 01: Super Boo em pose flutuando sobre base rochosa cinza; produto separado dos modelos com base circular."
+    },
+    "1CuQutnSvzLAytB8WBydPY7TDsBVn5kwj": {
+      "characterName": "Super Boo",
+      "sourceTitle": "Dragon Ball",
+      "category": "anime",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Transcendent Studio Base Circular",
+      "modelGroup": "super-boo-transcendent-studio-base-circular",
+      "tags": [
+        "Dragon Ball",
+        "Super Boo",
+        "Majin Boo",
+        "Transcendent Studio",
+        "Base Circular"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 047 item 02: Super Boo Transcendent Studio em base circular preta/rosa; imagem principal do grupo com item 03 como galeria."
+    },
+    "1FzJ__hz_F5xdQrQK1auIpwzr_dyefKyA": {
+      "characterName": "Super Boo",
+      "sourceTitle": "Dragon Ball",
+      "category": "anime",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Transcendent Studio Base Circular",
+      "modelGroup": "super-boo-transcendent-studio-base-circular",
+      "tags": [
+        "Dragon Ball",
+        "Super Boo",
+        "Majin Boo",
+        "Transcendent Studio",
+        "Base Circular"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 047 item 03: segundo render/angulo do mesmo Super Boo Transcendent Studio em base circular; usar como galeria."
+    },
+    "14owoSj1eNE64JYj5967dNATIjvufzXuh": {
+      "characterName": "Super Boo",
+      "sourceTitle": "Dragon Ball",
+      "category": "anime",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Base Gramada Braco Cruzado",
+      "modelGroup": "super-boo-base-gramada-braco-cruzado",
+      "tags": [
+        "Dragon Ball",
+        "Super Boo",
+        "Majin Boo",
+        "Base Gramada",
+        "Braco Cruzado"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 047 item 04: Super Boo em pose de braco cruzado com base gramada; produto separado do Transcendent Studio e da pose flutuando."
+    },
     "1Eq0cpewgnwRPQC-jwwY1CemLlDU0T9Pt": {
       "characterName": "Jupiter",
       "sourceTitle": "Cybercops",
@@ -7196,6 +7267,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 045 itens 01 a 04 mostram o mesmo Fat Boo/Saga Boo em diferentes angulos/renders; publicar como um modelo com galeria."
+    },
+    "Dragon Ball|Super Boo|super-boo-transcendent-studio-base-circular": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 047 itens 02 e 03 mostram o mesmo Super Boo Transcendent Studio em base circular; publicar como um modelo com galeria."
     }
   }
 }
