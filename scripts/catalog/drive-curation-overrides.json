@@ -1717,6 +1717,248 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 040 item 05: Akuma CA3D Art em pe sobre base rochosa com colar de contas e torso exposto; nao e o mesmo modelo do item 01."
     },
+    "1TpdfAcuElGrWsZnqqsWgWZg68aC3HhZT": {
+      "characterName": "Groot",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Angry Groot",
+      "modelGroup": "groot-angry-groot",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Angry Groot"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Item nomeado como Angry Groot; movido de Vingadores para a linha correta de Guardioes da Galaxia."
+    },
+    "1BjfaTid9a6kN2jUa8vQGZPFFkMT2D6gd": {
+      "characterName": "Baby Groot",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Versao 01",
+      "modelGroup": "baby-groot-versao-01",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Baby Groot"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Baby Groot ja identificado pelo nome original; movido de Vingadores para Guardioes da Galaxia."
+    },
+    "174pblEFDASP_oTDCeuyChE9erkCYHKCS": {
+      "characterName": "Baby Groot",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Versao 02",
+      "modelGroup": "baby-groot-versao-02",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Baby Groot"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Baby Groot segunda versao ja identificada pelo nome original; mantida como produto separado ate revisao visual especifica."
+    },
+    "1z9a_RqxjHxcduLuIK8sUoXoLUH5p2Q_3": {
+      "characterName": "Groot e Rocket",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Busto",
+      "modelGroup": "groot-e-rocket-busto",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Rocket",
+        "Busto",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Busto multi-personagem Groot e Rocket; movido para dioramas da linha Guardioes da Galaxia."
+    },
+    "1p445ekrcls62XowpplOYzfiEw011mUTl": {
+      "characterName": "Drax",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Versao 01",
+      "modelGroup": "drax-versao-01",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Drax"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Drax ja identificado pelo nome original; movido de Vingadores para Guardioes da Galaxia."
+    },
+    "1A1C9m9yr7KE0eJ1Ku8yUo18hTUYvQ0cr": {
+      "characterName": "Groot Adolescente",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Versao 01",
+      "modelGroup": "groot-adolescente-versao-01",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Groot Adolescente"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Groot Adolescente ja identificado pelo nome original; movido de Vingadores para Guardioes da Galaxia."
+    },
+    "1-XScB9cHtppVdJcu6VsHbOtQQb6N4P_i": {
+      "characterName": "Groot",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Versao 01",
+      "modelGroup": "groot-versao-01",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Groot ja identificado pelo nome original; movido de Vingadores para Guardioes da Galaxia."
+    },
+    "1Jl6IKBjGgDYcQl15n_ru4c4PKQHNaarS": {
+      "characterName": "Groot",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Busto 01",
+      "modelGroup": "groot-busto-01",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Busto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Busto de Groot ja identificado pelo nome original; movido de Vingadores para Guardioes da Galaxia."
+    },
+    "1GHvclKadubESMsYFi4HbVARPLvAPIh-v": {
+      "characterName": "Rocket",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Gambody Armas",
+      "modelGroup": "rocket-gambody-armas",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Rocket",
+        "Gambody",
+        "Armas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 042 item 01: Rocket em base com armas, cartela Gambody; nao e item generico de Guardioes."
+    },
+    "1GHLwyTBe1tKemd51E7XchDUqeYtZY7E5": {
+      "characterName": "Gamora",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Gambody Espada",
+      "modelGroup": "gamora-gambody-espada",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Gamora",
+        "Gambody",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 042 item 02: Gamora em render cinza com espada e cartela Gambody; produto separado."
+    },
+    "1H-7xZXhVZX-UVGjCvC-L4GAV5I4r5GM2": {
+      "characterName": "Drax",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Pose de Ataque",
+      "modelGroup": "drax-pose-de-ataque",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Drax",
+        "Pose de Ataque"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 042 item 03: Drax em pose de ataque sobre base, produto separado do Drax simples."
+    },
+    "1GzltV-tevi-g_ngJaZAyNSBjNrMFLTIL": {
+      "characterName": "Groot",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Busto Gambody",
+      "modelGroup": "groot-busto-gambody",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Gambody",
+        "Busto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 042 item 04: busto de Groot com cartela Gambody; produto separado."
+    },
+    "1GwIOzRa0BRZA0QD62-fbOHc-LBgPsNOL": {
+      "characterName": "Baby Groot",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Tentaculos",
+      "modelGroup": "baby-groot-tentaculos",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Groot",
+        "Baby Groot",
+        "Tentaculos"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 042 item 05: Baby Groot com multiplos tentaculos/raizes; produto separado."
+    },
+    "1FmEsvF2UduekYgJC5afHFWrqL9-J4vO7": {
+      "characterName": "Rocket",
+      "sourceTitle": "Guardioes da Galaxia",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Diorama",
+      "modelGroup": "rocket-diorama",
+      "tags": [
+        "Marvel",
+        "Guardioes da Galaxia",
+        "Rocket",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Rocket Diorama ja identificado pelo nome original; movido de Vingadores para Guardioes da Galaxia."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",

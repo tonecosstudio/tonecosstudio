@@ -208,7 +208,7 @@ const DRIVE_FILE_OVERRIDES = {
     mediaType: "series",
   },
 };
-const MARVEL_SOURCE_TITLES = new Set(["homem aranha", "quarteto fantastico", "vingadores", "x men"]);
+const MARVEL_SOURCE_TITLES = new Set(["guardioes da galaxia", "homem aranha", "quarteto fantastico", "vingadores", "x men"]);
 const FRANCHISE_SOURCE_TITLES = new Set([...MARVEL_SOURCE_TITLES, "dc", "marvel"]);
 let driveFileOverrides = { ...DRIVE_FILE_OVERRIDES };
 
