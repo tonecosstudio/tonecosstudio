@@ -4507,6 +4507,116 @@
       "variantName": "Wicked Base Sentinela Energia Rosa",
       "modelGroup": "vampira-wicked-base-sentinela-energia-rosa",
       "curationNotes": "Item previamente identificado como Vampira; modelo Wicked com base de sentinela e energia rosa, distinto dos itens da prancha Vamira."
+    },
+    "1And3daJVPJFdXUv54sel37pt7h02Pk9L": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "He-Man",
+      "variantName": "LAfigures Escudo e Espada",
+      "modelGroup": "he-man-lafigures-escudo-e-espada",
+      "tags": [
+        "MOTU",
+        "Masters of the Universe"
+      ],
+      "curationNotes": "Prancha 022 item 01: He-Man classico com escudo, espada e base rochosa; modelo LAfigures distinto."
+    },
+    "1uofwiwLy_OUia7NhSjjqEm1PnNEFCKX9": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Rei Grayskull",
+      "variantName": "Arthur Barros Espada no Ombro",
+      "modelGroup": "rei-grayskull-arthur-barros-espada-no-ombro",
+      "tags": [
+        "King Grayskull",
+        "MOTU",
+        "Masters of the Universe"
+      ],
+      "curationNotes": "Prancha 022 item 02: personagem visualmente e Rei Grayskull/King Grayskull, nao He-Man; escultura Arthur Barros com espada no ombro."
+    },
+    "1jpKYw5dUdBpaTWPyqo0mt1gHHx7mCeJq": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "He-Man",
+      "variantName": "Classico Espada em Rocha",
+      "modelGroup": "he-man-classico-espada-em-rocha",
+      "tags": [
+        "MOTU",
+        "Masters of the Universe"
+      ],
+      "curationNotes": "Prancha 022 item 03: He-Man classico em pose de acao sobre rocha com espada; variante distinta."
+    },
+    "1Q-oAcoL4E74yyyI63ROkOpRYGcw8kz9G": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "He-Man e Gato de Batalha",
+      "variantName": "Diorama Zsculptors Rochedo",
+      "modelGroup": "he-man-e-gato-de-batalha-diorama-zsculptors-rochedo",
+      "tags": [
+        "He-Man",
+        "Gato de Batalha",
+        "Battle Cat",
+        "MOTU",
+        "Masters of the Universe"
+      ],
+      "curationNotes": "Prancha 022 item 04: diorama com He-Man montado no Gato de Batalha/Battle Cat; mover para dioramas e taguear os dois personagens."
+    },
+    "1QaE1UtIjshZ6baPKRWn8oKO8etw7alaU": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "He-Man",
+      "variantName": "Nacho CG Base Caveira",
+      "modelGroup": "he-man-nacho-cg-base-caveira",
+      "tags": [
+        "MOTU",
+        "Masters of the Universe"
+      ],
+      "curationNotes": "Prancha 022 item 05: He-Man com espada elevada sobre base de caveira; modelo Nacho CG distinto."
+    },
+    "13tqFAGopW17On5asziGrBMzxOgBPeuPt": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "He-Man",
+      "variantName": "ChibiSTL Espada Erguida",
+      "modelGroup": "he-man-chibistl-espada-erguida",
+      "tags": [
+        "Chibi",
+        "MOTU",
+        "Masters of the Universe"
+      ],
+      "curationNotes": "Prancha 022 item 06: He-Man em estilo chibi com espada erguida; variante distinta."
+    },
+    "1J77RbTnVCx-cPFHfNrr-pTJZV5uj9_AZ": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "He-Man",
+      "variantName": "3DXM Classico",
+      "modelGroup": "he-man-3dxm-classico",
+      "tags": [
+        "MOTU",
+        "Masters of the Universe"
+      ],
+      "curationNotes": "Prancha 022 item 07: He-Man classico 3DXM com espada e escudo; variante distinta do chibi e do modelo LAfigures."
     }
   },
   "visualApprovals": {

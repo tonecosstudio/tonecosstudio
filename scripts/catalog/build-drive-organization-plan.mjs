@@ -130,9 +130,12 @@ const TITLE_CASE_UPPER_WORDS = new Map(
   Object.entries({
     dbz: "DBZ",
     dc: "DC",
+    cg: "CG",
     hq: "HQ",
     it: "It",
     "3dmoon": "3DMoon",
+    "3dxm": "3DXM",
+    chibistl: "ChibiSTL",
     kame: "Kame",
     lafigures: "LAfigures",
     motu: "MOTU",
