@@ -667,20 +667,23 @@
       "curationNotes": "Prancha 026 item 07: Ranger Verde com Adaga Dragao; corrigir grupo generico Powerranger."
     },
     "1YrN2hWKkPG5TEGZwmeDuy9v7vNwyf-kI": {
-      "characterName": "Modelo Masculino Ajoelhado",
-      "sourceTitle": "Nao Identificado",
-      "category": "revisao",
-      "subcategory": "nao-identificado",
-      "mediaType": "other",
-      "variantName": "Corpo Muscular",
-      "modelGroup": "modelo-masculino-ajoelhado-corpo-muscular",
+      "characterName": "T-800",
+      "sourceTitle": "Exterminador do Futuro",
+      "category": "filmes",
+      "subcategory": "exterminador-do-futuro",
+      "mediaType": "movie",
+      "variantName": "Corpo Muscular Ajoelhado",
+      "modelGroup": "t-800-corpo-muscular-ajoelhado",
       "tags": [
-        "Nao Identificado",
-        "Needs Visual Review",
-        "needs-visual-review"
+        "Exterminador do Futuro",
+        "Terminator",
+        "T-800",
+        "Exterminador",
+        "Corpo Muscular",
+        "Pose Ajoelhada"
       ],
       "curationConfidence": "medium",
-      "curationNotes": "Prancha 027 item 01: imagem nao possui elementos visuais de Exterminador do Futuro; remover do personagem e manter para identificacao posterior."
+      "curationNotes": "Imagem no caminho Exterminador do Futuro; modelo masculino musculoso ajoelhado, classificado como T-800/Exterminador para catalogacao local."
     },
     "171Dm2eHkIzCv2rNR0fYvo4jWKjhd67DM": {
       "characterName": "T-800",
@@ -10508,6 +10511,47 @@
         "Dupla Pintura"
       ],
       "curationNotes": "Prancha final: X 23 #2 em pe com duas pinturas; modelo distinto."
+    },
+    "1aRmzmRHkjQhOU43fIwidckFRhIPppUAI": {
+      "characterName": "Monkey D Luffy",
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "excludeFromCatalog": true,
+      "exclusionReason": "Arte de etiqueta escolar, nao e modelo 3D/catalogavel.",
+      "curationConfidence": "high",
+      "curationNotes": "Imagem mostra etiqueta escolar com arte de One Piece; excluida do catalogo de modelos."
+    },
+    "1gMhuV3C3gfzT6njV0WFDN0u5lWmNzzvo": {
+      "excludeFromCatalog": true,
+      "exclusionReason": "Arquivo quebrado ou conteudo nao imagem no Drive original.",
+      "curationConfidence": "high",
+      "curationNotes": "Excluido do catalogo local: o conteudo baixado nao possui assinatura de imagem valida."
+    },
+    "1MakQ9N-nuKY3cBVRGJAVrKeCrXAI6R2h": {
+      "excludeFromCatalog": true,
+      "exclusionReason": "Arquivo quebrado ou conteudo nao imagem no Drive original.",
+      "curationConfidence": "high",
+      "curationNotes": "Excluido do catalogo local: o conteudo baixado nao possui assinatura de imagem valida."
+    },
+    "1jXOVRzD15vkuerywuR9C7fQuGpaPQrrF": {
+      "excludeFromCatalog": true,
+      "exclusionReason": "Arquivo quebrado ou conteudo nao imagem no Drive original.",
+      "curationConfidence": "high",
+      "curationNotes": "Excluido do catalogo local: o conteudo baixado nao possui assinatura de imagem valida."
+    },
+    "1Ak846faDsx3xog9R8nGdhU8PG8Hwla2t": {
+      "excludeFromCatalog": true,
+      "exclusionReason": "Arquivo quebrado ou conteudo nao imagem no Drive original.",
+      "curationConfidence": "high",
+      "curationNotes": "Excluido do catalogo local: o conteudo baixado nao possui assinatura de imagem valida."
+    },
+    "1ncOgK4H-xDLvQFjHinnbutfzm7exwdCG": {
+      "excludeFromCatalog": true,
+      "exclusionReason": "Arquivo quebrado ou conteudo nao imagem no Drive original.",
+      "curationConfidence": "high",
+      "curationNotes": "Excluido do catalogo local: o conteudo baixado nao possui assinatura de imagem valida."
     }
   },
   "visualApprovals": {

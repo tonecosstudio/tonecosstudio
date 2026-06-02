@@ -557,6 +557,10 @@ function normalizeMediaType(mediaType, category) {
 }
 
 function buildDestinationFolder({ status, originalGeneric, collection, category, categorySlug, sourceFolder, characterFolder, modelKind }) {
+  if (status === "excluded") {
+    return `00_EXCLUIDOS/${catalogCategoryFolder(category)}/${sourceFolder}/${characterFolder}`;
+  }
+
   if (status === "needs_review") {
     const reviewBase = `catalogo/nao-identificado/${catalogCategoryFolder(category)}/${sourceFolder}`;
     if (originalGeneric && characterFolder !== "Sem Nome") {
@@ -899,17 +903,19 @@ function classify(row) {
   const subcategory = row.subcategory || slugSegment(sourceTitle);
   const originalGeneric = isGenericName(row.originalName);
   const genericWithoutPathIdentity = originalGeneric && !characterName;
+  const excludeFromCatalog = Boolean(row.excludeFromCatalog);
   const needsReview =
-    genericWithoutPathIdentity ||
-    !characterName ||
-    REVIEW_CATEGORIES.has(normalizeComparable(category)) ||
-    (row.tags || []).some((tag) => String(tag).startsWith("needs-"));
+    !excludeFromCatalog &&
+    (genericWithoutPathIdentity ||
+      !characterName ||
+      REVIEW_CATEGORIES.has(normalizeComparable(category)) ||
+      (row.tags || []).some((tag) => String(tag).startsWith("needs-")));
 
   const categorySlug = slugSegment(category);
   const collection = row.collectionCandidate;
   const sourceFolder = catalogSourceFolder(category, sourceTitle);
 
-  let status = "ready_to_organize";
+  let status = excludeFromCatalog ? "excluded" : "ready_to_organize";
   if (needsReview) status = "needs_review";
 
   const variantName = inlineIdentity.variantName;
