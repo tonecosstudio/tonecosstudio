@@ -4919,13 +4919,21 @@
     },
     "1CreFZewMnAVwZhXroF6wfxzbIMmieEol": {
       "characterName": "Vegeta",
-      "variantName": "Super Saiyajin Aura",
-      "modelGroup": "vegeta-super-saiyajin-aura-dourada",
+      "variantName": "Super Saiyajin Base Azul",
+      "modelGroup": "vegeta-super-saiyajin-base-azul",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Vegeta",
+        "Super Saiyajin",
+        "Base Azul"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 062 item 03: Vegeta Super Saiyajin com efeito circular e base azul; produto separado dos itens 01 e 02."
     },
     "1P_3DxP-FUsL78BnPK2-KPA6QEqljebw1": {
       "characterName": "Baby Vegeta",
@@ -5079,13 +5087,22 @@
     },
     "1FmEv2D2Z0L63CLPISL0VGFhtzhejwce3": {
       "characterName": "Vegeta",
-      "variantName": "Super Saiyajin Aura",
-      "modelGroup": "vegeta-super-saiyajin-aura-dourada",
+      "variantName": "Kaioken Studio Ajoelhado",
+      "modelGroup": "vegeta-kaioken-studio-ajoelhado",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Vegeta",
+        "Super Saiyajin",
+        "Kaioken Studio",
+        "Ajoelhado"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 062 item 02: Vegeta ajoelhado da Kaioken Studio; produto separado do Vegeta em pe com aura."
     },
     "1DZaxAeYn5zg-lCJQJ_ZLz-VW8y15pQvU": {
       "characterName": "Vegeta",
@@ -5179,13 +5196,21 @@
     },
     "1IGXjWE03NOL5PA32Hk-C-_j1A2RxXfUl": {
       "characterName": "Vegeta",
-      "variantName": "Super Saiyajin Aura",
+      "variantName": "Super Saiyajin Aura Dourada",
       "modelGroup": "vegeta-super-saiyajin-aura-dourada",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Vegeta",
+        "Super Saiyajin",
+        "Aura Dourada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 062 item 01: Vegeta em pe com aura dourada e base rochosa; modelo proprio."
     },
     "1FHenDquA52DM_xfsHKZkt2gWNr9mFfCs": {
       "characterName": "Cyclops",
