@@ -1,5 +1,59 @@
 {
   "files": {
+    "1-s3pdwWnC2AAZe_U51V2OcfkzrVd7hY0": {
+      "characterName": "Tyrannosaurus Rex",
+      "sourceTitle": "Jurassic Park",
+      "category": "filmes",
+      "subcategory": "jurassic-park",
+      "mediaType": "movie",
+      "variantName": "Diorama Placa Jurassic Park",
+      "modelGroup": "tyrannosaurus-rex-diorama-placa-jurassic-park",
+      "tags": [
+        "Jurassic Park",
+        "Tyrannosaurus Rex",
+        "T-Rex",
+        "Dinossauro",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 063 item 01: T-Rex em diorama com placa Jurassic Park; nao manter como personagem generico Jurassic Park."
+    },
+    "1t8qXp43tgLMP5Kgjdc3mDqfT7PoDTyFZ": {
+      "characterName": "Indominus Rex",
+      "sourceTitle": "Jurassic Park",
+      "category": "filmes",
+      "subcategory": "jurassic-park",
+      "mediaType": "movie",
+      "variantName": "Rugido",
+      "modelGroup": "indominus-rex-rugido",
+      "tags": [
+        "Jurassic Park",
+        "Jurassic World",
+        "Indominus Rex",
+        "Dinossauro",
+        "Rugido"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 063 item 02: dinossauro de postura e espinhos semelhante ao Indominus Rex; produto separado dos itens 01 e 03."
+    },
+    "1eaBewirZ-5PYksmUB6UmTbASOPGyRezN": {
+      "characterName": "Velociraptor",
+      "sourceTitle": "Jurassic Park",
+      "category": "filmes",
+      "subcategory": "jurassic-park",
+      "mediaType": "movie",
+      "variantName": "Base de Exposicao",
+      "modelGroup": "velociraptor-base-de-exposicao",
+      "tags": [
+        "Jurassic Park",
+        "Velociraptor",
+        "Raptor",
+        "Dinossauro",
+        "Base de Exposicao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 063 item 03: velociraptor em base de exposicao; produto separado do T-Rex e do Indominus Rex."
+    },
     "1EEPX84sKslge65dbmjftrOdwhPRTJ1WE": {
       "characterName": "Ichigo Kurosaki",
       "sourceTitle": "Bleach",
