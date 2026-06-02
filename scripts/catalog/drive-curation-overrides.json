@@ -1627,6 +1627,96 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 039 item 05: Demolidor Panarello STL em traje vermelho com base de gargula; produto separado."
     },
+    "146288lUBrw-W92jxKum4l1k1rdnxRX70": {
+      "characterName": "Akuma",
+      "sourceTitle": "Street Fighter",
+      "category": "games",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "variantName": "CA3D Art Pose Dinamica",
+      "modelGroup": "akuma-ca3d-art-pose-dinamica",
+      "tags": [
+        "Street Fighter",
+        "Akuma",
+        "Gouki",
+        "CA3D Art",
+        "Pose Dinamica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 040 item 01: Akuma CA3D Art em pose dinamica sobre base, com contas grandes; produto separado."
+    },
+    "1L05djVJvRVXuhNpJT1VUO9eL1cpA9Fcj": {
+      "characterName": "Akuma",
+      "sourceTitle": "Street Fighter",
+      "category": "games",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "variantName": "Classico Base Circular",
+      "modelGroup": "akuma-classico-base-circular",
+      "tags": [
+        "Street Fighter",
+        "Akuma",
+        "Gouki",
+        "Classico",
+        "Base Circular"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 040 item 02: render cinza do Akuma classico em pe com bracos abertos sobre base circular; modelo diferente dos demais."
+    },
+    "1Ab0olS6V7UnqKY0BiO4j8vxr9LdWHj-m": {
+      "characterName": "Akuma",
+      "sourceTitle": "Street Fighter",
+      "category": "games",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "variantName": "Sentado",
+      "modelGroup": "akuma-sentado",
+      "tags": [
+        "Street Fighter",
+        "Akuma",
+        "Gouki",
+        "Sentado",
+        "Patreon"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 040 item 03: Akuma sentado em pose de meditacao/ataque, imagem Patreon; produto separado."
+    },
+    "11DpzdUKAYZLKd9GM3-gLre9aBVHDzzpL": {
+      "characterName": "Akuma",
+      "sourceTitle": "Street Fighter",
+      "category": "games",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "variantName": "Traje Preto Base Vermelha",
+      "modelGroup": "akuma-traje-preto-base-vermelha",
+      "tags": [
+        "Street Fighter",
+        "Akuma",
+        "Gouki",
+        "Traje Preto",
+        "Base Vermelha"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 040 item 04: Akuma em traje preto com detalhes vermelhos, vista frente e costas sobre base vermelha; produto separado."
+    },
+    "11EuwARHN7bY98HQaspX9210Ge0HQGufb": {
+      "characterName": "Akuma",
+      "sourceTitle": "Street Fighter",
+      "category": "games",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "variantName": "CA3D Art Colar de Contas",
+      "modelGroup": "akuma-ca3d-art-colar-de-contas",
+      "tags": [
+        "Street Fighter",
+        "Akuma",
+        "Gouki",
+        "CA3D Art",
+        "Colar de Contas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 040 item 05: Akuma CA3D Art em pe sobre base rochosa com colar de contas e torso exposto; nao e o mesmo modelo do item 01."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
