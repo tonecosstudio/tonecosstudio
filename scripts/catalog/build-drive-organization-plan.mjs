@@ -88,6 +88,7 @@ const DISPLAY_ALIASES = new Map(
     "homem areia": "Homem-Areia",
     "homem aranha": "Homem-Aranha",
     "i t": "It",
+    "ian mckellen": "Ian McKellen",
     "indiana jones": "Indiana Jones",
     jil: "Jill Valentine",
     "lion o": "Lion-O",

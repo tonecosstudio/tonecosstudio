@@ -3578,6 +3578,160 @@
       "variantName": "Base Hydra",
       "modelGroup": "capitao-america-base-hydra",
       "curationNotes": "Prancha 019 item 13: Capitao America em base com simbolo Hydra; variante distinta."
+    },
+    "1oHiMD_afy3lX4m8EUUFMltraxdDF-BJo": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Wicked Base Sentinela",
+      "modelGroup": "magneto-wicked-base-sentinela",
+      "curationNotes": "Prancha 019 X-Men/Magneto item 01: modelo Wicked/Next Term com base de sentinela e efeito hexagonal; variante distinta."
+    },
+    "1B4t4HqxyuEmpYu42Se9c3uieE-QiFkQS": {
+      "characterName": "Magneto e Irmandade dos Mutantes",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Diorama Equipe",
+      "modelGroup": "magneto-e-irmandade-dos-mutantes-diorama-equipe",
+      "curationNotes": "Prancha 019 item 02: diorama de equipe com Magneto e membros da Irmandade dos Mutantes; mover para dioramas."
+    },
+    "1M8mgECcbda0M5AZu2A7rxxP_WhtHZIyp": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Busto Francis Quintero",
+      "modelGroup": "magneto-busto-francis-quintero",
+      "curationNotes": "Prancha 019 item 03: busto colorido de Magneto por Francis Quintero; variante distinta."
+    },
+    "1Dt8G2PwdRxwr6lLYSA23g-NK4t-UcsZq": {
+      "characterName": "Charles Xavier e Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Diorama Cerebro",
+      "modelGroup": "charles-xavier-e-magneto-diorama-cerebro",
+      "curationNotes": "Prancha 019 item 04: imagem marcada como Magneto, mas mostra Charles Xavier com Magneto em diorama Cerebro; tambem e duplicata exata."
+    },
+    "1AZ0MNzj9C6gap5O6BvPa8y4cn8S3Zi27": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Base Metal Malix",
+      "modelGroup": "magneto-malix-base-metal",
+      "curationNotes": "Prancha 019 item 05: modelo Malix com base de metal/pecas; usar como imagem principal do grupo."
+    },
+    "1KnTdMjfxNaO1bEQOMzyIDuGIQUr2uesq": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Fan Art Base X-Men",
+      "modelGroup": "magneto-fan-art-base-x-men",
+      "curationNotes": "Prancha 019 item 06: Magneto fan art com base X-Men; variante distinta."
+    },
+    "16j-Zfnc4Ok0iIHD3UJ_Pf1ScklYnPWvM": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Base Metal Malix",
+      "modelGroup": "magneto-malix-base-metal",
+      "curationNotes": "Prancha 019 item 07: render/detalhe do mesmo modelo Malix com base de metal; usar como galeria."
+    },
+    "1v8GacSDoMmeUlp7eqBEX3kQESuS46QJ7": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Base Metal Malix",
+      "modelGroup": "magneto-malix-base-metal",
+      "curationNotes": "Prancha 019 item 08: close-up do mesmo modelo Malix com base de metal; usar como galeria."
+    },
+    "1s51S-Kz4y9p5ef8M6-qmvre8AdS3obCk": {
+      "characterName": "Magneto e Wolverine",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "medium",
+      "variantName": "Vitoria Sobre Wolverine",
+      "modelGroup": "magneto-e-wolverine-vitoria",
+      "curationNotes": "Prancha 019 item 09: diorama/foto de Magneto sobre Wolverine derrotado; mover para dioramas com os dois personagens."
+    },
+    "1Ugr5ZklxgU3CBisAKgPPR6nkO5h58QlI": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Ian McKellen",
+      "modelGroup": "magneto-ian-mckellen",
+      "curationNotes": "Prancha 019 item 10: Magneto versao Ian McKellen/filmes; variante distinta."
+    },
+    "15FNLnIDDSCXguXUgHj5nTwMYgpLsY5Tg": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Busto Malix",
+      "modelGroup": "magneto-busto-malix",
+      "curationNotes": "Prancha 019 item 11: busto Malix de Magneto; variante distinta do modelo de corpo inteiro."
+    },
+    "1uzI_RKeq-AcvMP-0MRnypTvwxC_ZU4dx": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Robo Derrotado",
+      "modelGroup": "magneto-robo-derrotado",
+      "curationNotes": "Prancha 019 item 12: Magneto sobre robo/armadura derrotada; personagem derrotado nao confirmado visualmente, manter como variante de Magneto."
+    },
+    "1Pn1LMiXwY9tLQdRZFP-IvPPIc8Xsw5Pj": {
+      "characterName": "Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Base Destrocos",
+      "modelGroup": "magneto-base-destrocos",
+      "curationNotes": "Prancha 019 item 13: Magneto em base de destrocos; variante distinta."
+    },
+    "1C6TwiK7aL4e4o9aJdYPrgoVUA0AKm4RM": {
+      "characterName": "Charles Xavier e Magneto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Diorama Cerebro",
+      "modelGroup": "charles-xavier-e-magneto-diorama-cerebro",
+      "curationNotes": "Corrige nome original Magento e Xavier para Charles Xavier e Magneto; duplicata exata do diorama Cerebro identificado na prancha 019."
     }
   },
   "visualApprovals": {
@@ -3694,6 +3848,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 019: itens 06 e 08 sao o mesmo modelo First Avenger com bandeira/escudo; item 08 entra como galeria/detalhes."
+    },
+    "X-Men|Magneto|magneto-malix-base-metal": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019: itens 05, 07 e 08 sao o mesmo modelo Malix com base de metal; itens 07 e 08 entram como galeria/detalhes."
     }
   }
 }
