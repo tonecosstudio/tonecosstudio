@@ -2742,10 +2742,19 @@
     "1LDL8lJBYKmMM3sUQp0DNQ9Y0XUOibccd": {
       "characterName": "Nami",
       "sourceTitle": "One Piece",
-      "category": "animes",
+      "category": "anime",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Uniforme Azul Base Circular",
+      "modelGroup": "nami-uniforme-azul-base-circular",
+      "tags": [
+        "One Piece",
+        "Nami",
+        "Uniforme Azul",
+        "Base Circular"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 049 item 01: Nami com uniforme azul e bastao sobre base circular; produto separado dos modelos Zaheh Studio."
     },
     "1lca4m2-gs3AC3t8rzHQXjUh66oF1dO6w": {
       "characterName": "Roronoa Zoro",
@@ -3417,26 +3426,55 @@
     "1-GQXb5sCYE6L1ZUG_eJEX-lPYb_4IhWT": {
       "characterName": "Nami",
       "sourceTitle": "One Piece",
-      "category": "animes",
+      "category": "anime",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "variantName": "Zaheh Studio NSFW",
+      "modelGroup": "nami-zaheh-studio-nsfw",
+      "tags": [
+        "One Piece",
+        "Nami",
+        "Zaheh Studio",
+        "NSFW"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 049 item 02: Nami Zaheh Studio em variante adulta/NSFW; manter separada e tagueada para filtro futuro."
     },
     "1-FYoOCmX_T6c8Xjbnt5HGzQjko5UgWXl": {
       "characterName": "Nami",
       "sourceTitle": "One Piece",
-      "category": "animes",
+      "category": "anime",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Zaheh Studio Roupa Azul",
+      "modelGroup": "nami-zaheh-studio-roupa-azul",
+      "tags": [
+        "One Piece",
+        "Nami",
+        "Zaheh Studio",
+        "Roupa Azul",
+        "Bastao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 049 item 03: angulo traseiro/lateral do modelo Nami Zaheh Studio com roupa azul; usar como galeria do item 04."
     },
     "1-FLXamfXiZclY0ZuqaAEG49br2QePBYw": {
       "characterName": "Nami",
       "sourceTitle": "One Piece",
-      "category": "animes",
+      "category": "anime",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Zaheh Studio Roupa Azul",
+      "modelGroup": "nami-zaheh-studio-roupa-azul",
+      "tags": [
+        "One Piece",
+        "Nami",
+        "Zaheh Studio",
+        "Roupa Azul",
+        "Bastao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 049 item 04: imagem frontal do mesmo modelo Nami Zaheh Studio com roupa azul e base; usar como principal/galeria do grupo."
     },
     "1fNEpMjTtZI5YVwW2nYY1IiX0gXfFu_B8": {
       "characterName": "Gol D. Roger",
@@ -7352,6 +7390,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 047 itens 02 e 03 mostram o mesmo Super Boo Transcendent Studio em base circular; publicar como um modelo com galeria."
+    },
+    "One Piece|Nami|nami-zaheh-studio-roupa-azul": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 049 itens 03 e 04 mostram o mesmo modelo Nami Zaheh Studio com roupa azul; publicar como um modelo com galeria."
     }
   }
 }
