@@ -643,6 +643,110 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 029 item 06: frente/costas do mesmo modelo Geralt base monstro do item 03; consolidar como galeria."
     },
+    "1Ibbvdkb6pj29PEBjdZHS4xbr-xJVjLJV": {
+      "characterName": "Cable",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Wicked Escudo e Explosoes",
+      "modelGroup": "cable-wicked-escudo-e-explosoes",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cable",
+        "X-Force"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 031 item 01: arte/close-up do Cable Wicked com escudo e explosoes; mesma peca do item 06, usar como galeria."
+    },
+    "1MBkgyTO_GeV0d913nruDHncXkmhcFzQ1": {
+      "characterName": "Cable",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "SpecialSTL Rifle",
+      "modelGroup": "cable-specialstl-rifle",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cable",
+        "X-Force"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 031 item 02: Cable solo SpecialSTL com rifle grande em base de rocha; variante propria."
+    },
+    "1U8lfBancV1ZXB_pW_uSJoSM3LHxTUw6s": {
+      "characterName": "Cable",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Canhao Pesado",
+      "modelGroup": "cable-canhao-pesado",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cable",
+        "X-Force"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 031 item 03: Cable pintado com canhao pesado em base mecanica; modelo distinto do SpecialSTL."
+    },
+    "12p6onlLugLl9H3BlCmhruUNUJGa1p7Gb": {
+      "characterName": "Cable e Deadpool",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Diorama Escadaria",
+      "modelGroup": "cable-e-deadpool-diorama-escadaria",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cable",
+        "Deadpool",
+        "X-Force",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 031 item 04: diorama com Cable e Deadpool em escadaria; mover para dioramas e taguear ambos."
+    },
+    "1G7irPYUYCostqMWCpbSsA0jBRaATyF3_": {
+      "characterName": "Cable",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Malix Rifle no Ombro",
+      "modelGroup": "cable-malix-rifle-no-ombro",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cable",
+        "X-Force"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 031 item 05: Cable Malix com rifle no ombro; variante solo distinta."
+    },
+    "1GnUdsqv10lW_sTh6x5NeqpAKE-mnxf_e": {
+      "characterName": "Cable",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Wicked Escudo e Explosoes",
+      "modelGroup": "cable-wicked-escudo-e-explosoes",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Cable",
+        "X-Force"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 031 item 06: render do mesmo Cable Wicked com escudo e explosoes do item 01; consolidar como galeria."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
@@ -5524,6 +5628,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 029 itens 03 e 06 mostram o mesmo Geralt em base com monstro; manter como modelo unico com galeria."
+    },
+    "X-Men|Cable|cable-wicked-escudo-e-explosoes": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 031 itens 01 e 06 mostram o mesmo Cable Wicked com escudo e explosoes; manter como modelo unico com galeria."
     }
   }
 }
