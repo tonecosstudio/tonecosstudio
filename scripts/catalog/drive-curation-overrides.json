@@ -3961,6 +3961,206 @@
       "variantName": "Pose Luta Base Fumaca",
       "modelGroup": "juri-pose-luta-base-fumaca",
       "curationNotes": "Prancha 020 item 09: escultura cinza de Juri em pose de luta sobre base de fumaca/rocha; variante distinta."
+    },
+    "12WI4UkTKaTSwj-Y1nx2fgn8a8ZzzcgGV": {
+      "characterName": "Wolverine e Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Wolverine",
+        "Justiceiro",
+        "Punisher"
+      ],
+      "variantName": "Diorama Confronto",
+      "modelGroup": "wolverine-e-justiceiro-diorama-confronto",
+      "curationNotes": "Consolidacao Justiceiro: diorama com Wolverine e Justiceiro; remove prefixo X do nome e centraliza em Marvel/dioramas."
+    },
+    "1RD9iwN3tE0VK_iKVfm3gWaUaPHOfwe1o": {
+      "characterName": "Wolverine e Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Wolverine",
+        "Justiceiro",
+        "Punisher"
+      ],
+      "variantName": "Diorama Confronto",
+      "modelGroup": "wolverine-e-justiceiro-diorama-confronto",
+      "curationNotes": "Consolidacao Justiceiro: mesma peca do diorama Wolverine e Justiceiro em outra imagem/arquivo; usar como galeria do modelo, nao produto separado."
+    },
+    "12EK0-8Iz6SrQ7mx9Ogt1JcIPrwmAjevq": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Chibi Taco e Pistola",
+      "modelGroup": "justiceiro-chibi-taco-e-pistola",
+      "curationNotes": "Prancha 020 Marvel/Justiceiro item 01: versao chibi com taco sobre o ombro e pistola; modelo distinto."
+    },
+    "11B2w3KOHK9Yia1k0F6JCBipjBFByQyh0": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Arsenal Machado e Rifle",
+      "modelGroup": "justiceiro-arsenal-machado-e-rifle",
+      "curationNotes": "Prancha 020 item 02: Justiceiro com machado e rifle sobre base com logo; variante distinta."
+    },
+    "1nrg8r5ugnTDzJoWXGqH0uMtfAw6hgvGb": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Sobretudo Rifle Base Vermelha",
+      "modelGroup": "justiceiro-sobretudo-rifle-base-vermelha",
+      "curationNotes": "Prancha 020 item 03: Justiceiro de sobretudo com rifle em base vermelha; variante distinta."
+    },
+    "12FZe5bPYC1ltXOa8QC73ANQuQVl0z-sH": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Traje Tatico Bastao e Pistola",
+      "modelGroup": "justiceiro-traje-tatico-bastao-e-pistola",
+      "curationNotes": "Prancha 020 item 04: traje tatico com bastao e pistola; variante distinta."
+    },
+    "1G-K999BN2C93fRctlNJD6MyYS898KGgY": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Sanix Sobretudo Base Urbana",
+      "modelGroup": "justiceiro-sanix-sobretudo-base-urbana",
+      "curationNotes": "Prancha 020 item 05: render Sanix com sobretudo e base urbana; variante distinta."
+    },
+    "1AZsuWr6y0dcsjILWqDYQ3MhzJTxx3Gxj": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Wicked Sobretudo Base Urbana",
+      "modelGroup": "justiceiro-wicked-sobretudo-base-urbana",
+      "curationNotes": "Prancha 020 item 06: arte Wicked com Justiceiro de sobretudo e base urbana; texto Daredevil e apenas referencia visual, personagem mantido como Justiceiro."
+    },
+    "1I7-z7Oqsj9Ep_9svZB_j3AxXqXjgJTRp": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Arsenal Pesado Base Caixas",
+      "modelGroup": "justiceiro-arsenal-pesado-base-caixas",
+      "curationNotes": "Prancha 020 item 07: Justiceiro com armamento pesado e base de caixas; variante distinta."
+    },
+    "1F5_YY69UGZn1LrY3tzkRaFK-K0-mrJmi": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Armadura Duas Armas",
+      "modelGroup": "justiceiro-armadura-duas-armas",
+      "curationNotes": "Prancha 020 item 08: imagem com frente e costas de modelo blindado com duas armas; modelo distinto, nao duplicata."
+    },
+    "10S2yC8tN2vQa0xbDDEu8QVVi-k09jN2j": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Pose Combate Base Rocha",
+      "modelGroup": "justiceiro-pose-combate-base-rocha",
+      "curationNotes": "Consolidacao Punisher: item originalmente em pasta Punisher; canonizado como Justiceiro com tag Punisher."
+    },
+    "1p158Ztjejxf0DhCHF4vzkpoDgcjZaXEj": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Poltrona com Busto",
+      "modelGroup": "justiceiro-poltrona-com-busto",
+      "curationNotes": "Consolidacao Punisher: Justiceiro sentado em poltrona com busto/referencia extra; variante distinta."
+    },
+    "1RqPBkRgtQzFqOmxrPHtU2pPiBXeogQes": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Wicked Base Arsenal",
+      "modelGroup": "justiceiro-wicked-base-arsenal",
+      "curationNotes": "Consolidacao Punisher: modelo Wicked escala 1/6 em pose dinamica sobre base com arsenal; variante distinta."
+    },
+    "1JFXIi3svc2n-aKx4GNvGK87b5Eh8YipY": {
+      "characterName": "Justiceiro",
+      "sourceTitle": "Marvel",
+      "category": "quadrinhos",
+      "subcategory": "marvel",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Punisher"
+      ],
+      "variantName": "Traje Preto Base Circular",
+      "modelGroup": "justiceiro-traje-preto-base-circular",
+      "curationNotes": "Consolidacao The Punisher: item canonizado para Justiceiro, mantendo Punisher como tag de busca."
     }
   },
   "visualApprovals": {
@@ -4089,6 +4289,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 020: itens 01 e 07 sao o mesmo modelo Wicked com energia rosa; item 01 entra como galeria/arte do item 07."
+    },
+    "Marvel|Wolverine e Justiceiro|wolverine-e-justiceiro-diorama-confronto": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Consolidacao Justiceiro: x Wolverine x Justiceiro e punisher 3 sao a mesma peca/diorama; manter como um modelo com galeria."
     }
   }
 }
