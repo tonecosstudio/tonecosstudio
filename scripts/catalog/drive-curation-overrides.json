@@ -3462,11 +3462,22 @@
     },
     "1EITGmC_8VH1DhcKgRg51vxOLiAdIReuU": {
       "characterName": "Eustass Kid",
+      "variantName": "Sekai May Term 9",
+      "modelGroup": "eustass-kid-sekai-may-term-9",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Eustass Kid",
+        "Kid",
+        "Sekai",
+        "May Term 9",
+        "Supernovas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 066 item 01: Eustass Kid Sekai May Term 9; produto separado dos itens 02 e 03."
     },
     "1QSTFyhP_jaESIyvqSdLjmXJUc5BdwHRh": {
       "characterName": "Borsalino",
@@ -3988,12 +3999,23 @@
       "curationConfidence": "medium"
     },
     "1O7zxZO9_v6fML75sfAHz-RyMmexEF2Fe": {
-      "characterName": "Eustass Kid",
+      "characterName": "Shanks",
+      "variantName": "Kaidan Haki do Rei",
+      "modelGroup": "shanks-kaidan-haki-do-rei",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Shanks",
+        "Akagami",
+        "Haki do Rei",
+        "Kaidan",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 066 item 02: imagem e Shanks com espada e Haki do Rei, nao Eustass Kid; corrigir personagem e pasta."
     },
     "1iv4VSc6qquVCFbOS6BgKH6a3BLJnfi3c": {
       "characterName": "Marco",
@@ -4829,12 +4851,23 @@
       "curationNotes": "Prancha 057 item 01: Ichigo em shihakusho com katana e base Special STLs; agrupar com item 02 como galeria/angulo."
     },
     "1QNM9b8JzlOttRA3Ma-8Bb8w1yw8kIdQp": {
-      "characterName": "Eustass Kid",
+      "characterName": "Eustass Kid e Jewelry Bonney",
+      "variantName": "Supernovas Diorama",
+      "modelGroup": "eustass-kid-e-jewelry-bonney-supernovas-diorama",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Eustass Kid",
+        "Jewelry Bonney",
+        "Supernovas",
+        "Diorama",
+        "Inkman"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 066 item 03: diorama Supernovas com Eustass Kid e Jewelry Bonney; manter como produto multi-personagem, nao pasta solo de Kid."
     },
     "1R9YwA1-1CIUwqKTowRwB2ICWf--pV2nj": {
       "characterName": "Luffy, Law e Eustass Kid",
