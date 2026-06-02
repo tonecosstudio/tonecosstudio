@@ -992,7 +992,8 @@ function withDuplicateGroups(rows) {
       row.size || "",
     ].join("|");
     const group = groups.get(key) || [];
-    const duplicateOf = group.length > 1 && group[0].id !== row.id ? group[0].id : null;
+    const explicitDuplicateOf = row.duplicateOf || row.exactDuplicateOf || null;
+    const duplicateOf = explicitDuplicateOf || (group.length > 1 && group[0].id !== row.id ? group[0].id : null);
     return {
       ...row,
       duplicateGroupKey: group.length > 1 ? key : null,
