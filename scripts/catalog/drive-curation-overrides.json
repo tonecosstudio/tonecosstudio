@@ -224,6 +224,119 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 025 item 07: Sub-Zero exibido em pecas separadas para montagem; modelo distinto do fatality."
     },
+    "1H8PnkYqTDAduKpUCeCV7SVilo7-StJBI": {
+      "characterName": "Ranger Vermelho",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "subcategory": "power-rangers",
+      "mediaType": "tv_series",
+      "variantName": "Espada",
+      "modelGroup": "ranger-vermelho-espada",
+      "tags": [
+        "Power Rangers",
+        "Ranger Vermelho",
+        "Red Ranger"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 026 item 01: Ranger Vermelho com espada; corrigir grupo generico Powerranger."
+    },
+    "1H8wZjyhjWRu6RJKed5wsD5p-Eyff0SyI": {
+      "characterName": "Ranger Rosa",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "subcategory": "power-rangers",
+      "mediaType": "tv_series",
+      "variantName": "Arco",
+      "modelGroup": "ranger-rosa-arco",
+      "tags": [
+        "Power Rangers",
+        "Ranger Rosa",
+        "Pink Ranger"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 026 item 02: Ranger Rosa com arco; personagem separado do set."
+    },
+    "1HAUOqi0hpZjWcI-i_DbIfd_njU6uikeS": {
+      "characterName": "Ranger Branco",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "subcategory": "power-rangers",
+      "mediaType": "tv_series",
+      "variantName": "Sabre",
+      "modelGroup": "ranger-branco-sabre",
+      "tags": [
+        "Power Rangers",
+        "Ranger Branco",
+        "White Ranger"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 026 item 03: Ranger Branco com sabre; corrigir grupo generico."
+    },
+    "1Gpdxbjt2j6NAtgZXwJrArckxiAErh-Bw": {
+      "characterName": "Ranger Azul",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "subcategory": "power-rangers",
+      "mediaType": "tv_series",
+      "variantName": "Lanca",
+      "modelGroup": "ranger-azul-lanca",
+      "tags": [
+        "Power Rangers",
+        "Ranger Azul",
+        "Blue Ranger"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 026 item 04: Ranger Azul com lanca; personagem separado do set."
+    },
+    "1GppxCh6DakhWTI3-mSO7sVQMKpVhzvxm": {
+      "characterName": "Ranger Amarelo",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "subcategory": "power-rangers",
+      "mediaType": "tv_series",
+      "variantName": "Adagas",
+      "modelGroup": "ranger-amarelo-adagas",
+      "tags": [
+        "Power Rangers",
+        "Ranger Amarelo",
+        "Yellow Ranger"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 026 item 05: Ranger Amarelo com adagas; corrigir grupo generico."
+    },
+    "1Gq9gj0Yfl6eN3Qi5Zab79hKqXlyVJJPg": {
+      "characterName": "Ranger Preto",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "subcategory": "power-rangers",
+      "mediaType": "tv_series",
+      "variantName": "Machado",
+      "modelGroup": "ranger-preto-machado",
+      "tags": [
+        "Power Rangers",
+        "Ranger Preto",
+        "Black Ranger"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 026 item 06: Ranger Preto com machado; personagem separado do set."
+    },
+    "1GrO4BSKJJmmFSr_0TJU2JLOTJB-G_G0Y": {
+      "characterName": "Ranger Verde",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "subcategory": "power-rangers",
+      "mediaType": "tv_series",
+      "variantName": "Adaga Dragao",
+      "modelGroup": "ranger-verde-adaga-dragao",
+      "tags": [
+        "Power Rangers",
+        "Ranger Verde",
+        "Green Ranger",
+        "Dragon Dagger"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 026 item 07: Ranger Verde com Adaga Dragao; corrigir grupo generico Powerranger."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
