@@ -3044,7 +3044,37 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Hyorinmaru Dragao de Gelo",
+      "modelGroup": "toshiro-hitsugaya-hyorinmaru-dragao-de-gelo",
+      "tags": [
+        "Bleach",
+        "Toshiro Hitsugaya",
+        "Hyorinmaru",
+        "Dragao de Gelo",
+        "Bankai",
+        "JHowmatt"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 058 item 01: Toshiro com Hyorinmaru/dragao de gelo e base de cristais; mesma peca do item 03 em render diferente."
+    },
+    "1kFj6se8-8j5OK8tVWbMlHDx4N-HZ8zpF": {
+      "characterName": "Toshiro Hitsugaya",
+      "sourceTitle": "Bleach",
+      "category": "animes",
+      "subcategory": "bleach",
+      "mediaType": "anime",
+      "variantName": "Hyorinmaru Dragao de Gelo",
+      "modelGroup": "toshiro-hitsugaya-hyorinmaru-dragao-de-gelo",
+      "tags": [
+        "Bleach",
+        "Toshiro Hitsugaya",
+        "Hyorinmaru",
+        "Dragao de Gelo",
+        "Bankai",
+        "JHowmatt"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 058 item 03: mesmo modelo do item 01, em fundo cinza/render alternativo; manter como galeria."
     },
     "1E7N-KgeT8Rw0uX7rArD18uLstHC929Gq": {
       "characterName": "Kenpachi Zaraki",
@@ -3682,12 +3712,21 @@
       "curationNotes": "Prancha 057 item 03: Ichigo em Bankai com Zangetsu grande, corrente e efeitos azuis; modelo separado dos itens 01/02."
     },
     "1EE_2h-CM97e1oALfSi6jNmf4NS6lhxfo": {
-      "characterName": "Toshiro Hitsugaya",
+      "characterName": "Kenpachi Zaraki e Yachiru Kusajishi",
       "sourceTitle": "Bleach",
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "variantName": "Diorama Kenpachi e Yachiru",
+      "modelGroup": "kenpachi-zaraki-e-yachiru-kusajishi-diorama",
+      "tags": [
+        "Bleach",
+        "Kenpachi Zaraki",
+        "Yachiru Kusajishi",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 058 item 02: imagem mostra Kenpachi Zaraki com Yachiru Kusajishi, nao Toshiro Hitsugaya."
     },
     "1H4u8ql0xxzR8rnVsB3v3cwl25quoAzV3": {
       "characterName": "Kenpachi Zaraki",
@@ -7740,6 +7779,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 057 itens 01 e 02: mesmo Ichigo em shihakusho com katana/base Special STLs; usar como galeria."
+    },
+    "Bleach|Toshiro Hitsugaya|toshiro-hitsugaya-hyorinmaru-dragao-de-gelo": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 058 itens 01 e 03: mesmo Toshiro com Hyorinmaru/dragao de gelo em renders diferentes; usar como galeria."
     },
     "DC|Batman|batman-trono-cranio": {
       "status": "approved",
