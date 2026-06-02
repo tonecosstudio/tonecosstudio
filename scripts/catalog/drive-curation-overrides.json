@@ -4161,6 +4161,99 @@
       "variantName": "Traje Preto Base Circular",
       "modelGroup": "justiceiro-traje-preto-base-circular",
       "curationNotes": "Consolidacao The Punisher: item canonizado para Justiceiro, mantendo Punisher como tag de busca."
+    },
+    "1xf5ryEqd_UsDvZGGvshWCAycNn5XmFvH": {
+      "characterName": "Gambit",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Wicked Energia Cinetica",
+      "modelGroup": "gambit-wicked-energia-cinetica",
+      "curationNotes": "Prancha 021 X-Men/Gambit item 01: modelo Wicked com energia cinetica rosa e base tecnologica; variante distinta."
+    },
+    "1MQYn-viiPDohQ3obQGRwGGGJosTtToFr": {
+      "characterName": "Gambit",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Malix Base Circular",
+      "modelGroup": "gambit-malix-base-circular",
+      "curationNotes": "Prancha 021 item 02: render Malix 3D Design com cajado e carta; variante distinta."
+    },
+    "1XgnMjLo_DkwI1q6swL9SIJWwEm1XXDIi": {
+      "characterName": "Gambit",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Pose Aerea Base Destrocos",
+      "modelGroup": "gambit-pose-aerea-base-destrocos",
+      "curationNotes": "Prancha 021 item 03: Gambit em pose aerea sobre destrocos, com cartas em movimento; variante distinta."
+    },
+    "12vLc9Iy-nbzRZK2Nzm2_YranBb8icUoP": {
+      "characterName": "Gambit",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Base Sentinela",
+      "modelGroup": "gambit-base-sentinela",
+      "curationNotes": "Prancha 021 item 04: Gambit em pose de ataque sobre cabeca de sentinela; variante distinta."
+    },
+    "1ReH8LsDOUNntQGmb_kWkvEcEHulx-y_8": {
+      "characterName": "Gambit",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "Mesa Cartas Energia Rosa",
+      "modelGroup": "gambit-mesa-cartas-energia-rosa",
+      "curationNotes": "Prancha 021 item 05: modelo fisico com cajado no ombro, mesa/base e energia rosa; variante distinta."
+    },
+    "1MS8-T6vQFzWBqh44UrqJYlDpgp5kfuHo": {
+      "characterName": "Gambit e Vampira",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "tags": [
+        "Rogue",
+        "Gambit",
+        "Vampira"
+      ],
+      "variantName": "Diorama Base Sentinela",
+      "modelGroup": "gambit-e-vampira-diorama-base-sentinela",
+      "curationNotes": "Prancha 021 item 06: diorama com Gambit e Vampira/Rogue sentados em base de sentinela; mover para dioramas e taguear ambos os personagens."
+    },
+    "1MIierM1TzXVLSLya8sWsdUHpQtbSiCrV": {
+      "characterName": "Gambit",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "SpecialSTL Energia Neon",
+      "modelGroup": "gambit-specialstl-energia-neon",
+      "curationNotes": "Prancha 021 item 07: arte SpecialSTL com energia neon azul/rosa e cartas gigantes; variante distinta."
+    },
+    "1CP03LIDn31YaXalBouzEmyC5G3H6RXmf": {
+      "characterName": "Gambit",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "variantName": "LAfigures Base Rocha",
+      "modelGroup": "gambit-lafigures-base-rocha",
+      "curationNotes": "Prancha 021 item 08: modelo LAfigures com carta em chamas e base de rocha; variante distinta do render Malix."
     }
   },
   "visualApprovals": {
