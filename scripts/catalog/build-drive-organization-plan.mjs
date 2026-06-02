@@ -135,6 +135,7 @@ const TITLE_CASE_UPPER_WORDS = new Map(
     kame: "Kame",
     motu: "MOTU",
     nsfw: "NSFW",
+    sf6: "SF6",
     ssj: "SSJ",
     xmen: "X-Men",
   }),

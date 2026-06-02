@@ -3853,6 +3853,114 @@
       "variantName": "Diorama Pose Heroica",
       "modelGroup": "jean-grey-e-cyclops-diorama-pose-heroica",
       "curationNotes": "Prancha 020 item 11: diorama fisico com Jean Grey sobre Cyclops; variante distinta do item 06."
+    },
+    "14JrhdoXHe-uj243eBkLX6gPXSwT46wes": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Traje Classico Perna Alta",
+      "modelGroup": "juri-traje-classico-perna-alta",
+      "curationNotes": "Prancha 020 Street Fighter/Juri item 01: Juri em traje classico roxo/branco com perna elevada; variante distinta."
+    },
+    "16lc-3HzJQNNFI7IafDhOYRT8Lz5x4Dp3": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Traje SF6 Perna Alta",
+      "modelGroup": "juri-sf6-perna-alta",
+      "curationNotes": "Prancha 020 item 02: Juri em traje Street Fighter 6 com perna elevada; variante distinta do traje classico."
+    },
+    "16Dh4sO9z_Zv5v3VhcSfvbole2JG1XWSz": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Chute Lateral Base Circular",
+      "modelGroup": "juri-chute-lateral-base-circular",
+      "curationNotes": "Prancha 020 item 03: Juri em chute lateral sobre base circular; variante distinta."
+    },
+    "15InNwTWQ9y8kdMpn1v-KtTvhdkHVuJ0o": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "tags": [
+        "nsfw"
+      ],
+      "variantName": "NSFW Pose Bola",
+      "modelGroup": "juri-nsfw-pose-bola",
+      "curationNotes": "Prancha 020 item 04: variante NSFW com pose junto a bola; manter marcada com tag nsfw para controle de visibilidade."
+    },
+    "170T-TLqzxfxNoczNlJtHx_wXvvkuRjcl": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Traje Classico Energia Roxa",
+      "modelGroup": "juri-traje-classico-energia-roxa",
+      "curationNotes": "Prancha 020 item 05: Juri em traje classico com efeito de energia roxa; variante distinta."
+    },
+    "14V8OY6Rtu9ZeltSO0VDqNh2P9t3_MKda": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Body Roxo Base Rocha",
+      "modelGroup": "juri-body-roxo-base-rocha",
+      "curationNotes": "Prancha 020 item 06: Juri em body roxo/preto sobre base de rocha; variante distinta."
+    },
+    "17Dsw7Eb-dlEhsQL6nzfaBuRviaCI0gac": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "tags": [
+        "nsfw"
+      ],
+      "variantName": "NSFW Pose Invertida",
+      "modelGroup": "juri-nsfw-pose-invertida",
+      "curationNotes": "Prancha 020 item 07: variante NSFW em pose invertida; manter marcada com tag nsfw para controle de visibilidade."
+    },
+    "13tnFR88TKdQWiFibzOylX9erCRSdEjm_": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "tags": [
+        "nsfw"
+      ],
+      "variantName": "NSFW Chute Neon",
+      "modelGroup": "juri-nsfw-chute-neon",
+      "curationNotes": "Prancha 020 item 08: variante NSFW em chute com fundo neon; manter marcada com tag nsfw para controle de visibilidade."
+    },
+    "11xIlNRmvY74gAJKRZD446F9li6_ihE7Y": {
+      "characterName": "Juri",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Pose Luta Base Fumaca",
+      "modelGroup": "juri-pose-luta-base-fumaca",
+      "curationNotes": "Prancha 020 item 09: escultura cinza de Juri em pose de luta sobre base de fumaca/rocha; variante distinta."
     }
   },
   "visualApprovals": {
