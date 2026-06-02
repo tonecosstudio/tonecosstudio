@@ -3264,7 +3264,17 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Ryujin Jakka em Pe",
+      "modelGroup": "genryusai-shigekuni-yamamoto-ryujin-jakka-em-pe",
+      "tags": [
+        "Bleach",
+        "Genryusai Shigekuni Yamamoto",
+        "Yamamoto",
+        "Ryujin Jakka",
+        "Fogo"
+      ],
+      "curationNotes": "Prancha 087 item 02: Yamamoto em pe com espada Ryujin Jakka e efeito de fogo; produto separado do item 01."
     },
     "1h4eatxWexzRKN0GKvIPQIvPxB_hpgFFw": {
       "characterName": "Muichiro Tokito",
@@ -3629,7 +3639,16 @@
       "category": "animes",
       "subcategory": "attack-on-titan",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Base Cilindrica",
+      "modelGroup": "titan-femea-base-cilindrica",
+      "tags": [
+        "Attack on Titan",
+        "Titan Femea",
+        "Annie Leonhart",
+        "Base Cilindrica"
+      ],
+      "curationNotes": "Prancha 087 item 01: Titan Femea em render cinza sobre base circular; produto separado do item 02."
     },
     "1FWrFbKQR-TBckomscRMjnOiKBgIARVJ_": {
       "characterName": "Titan de Ataque",
@@ -3653,7 +3672,17 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "curationConfidence": "high",
+      "variantName": "Traje Soul Society Arco",
+      "modelGroup": "uryu-ishida-traje-soul-society-arco",
+      "tags": [
+        "Bleach",
+        "Uryu Ishida",
+        "Quincy",
+        "Arco",
+        "Soul Society"
+      ],
+      "curationNotes": "Prancha 087 item 02: Uryu Ishida em traje escuro com arco; produto separado do item 01."
     },
     "1EDK6EzDR-xam5jzKaqltexK5v9VKSMb8": {
       "characterName": "Kisuke Urahara",
@@ -3938,7 +3967,17 @@
       "category": "filmes",
       "subcategory": "300",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Espartano Escudo",
+      "modelGroup": "rei-leonidas-espartano-escudo",
+      "tags": [
+        "300",
+        "Rei Leonidas",
+        "Leonidas",
+        "Espartano",
+        "Escudo"
+      ],
+      "curationNotes": "Prancha 087 item 02: composicao com angulos do mesmo Rei Leonidas/300 do item 01; usar como galeria."
     },
     "1In8NG6JHLpSX1h1aRuG6OLEqPhT2Y429": {
       "characterName": "Rei Leonidas",
@@ -3946,7 +3985,17 @@
       "category": "filmes",
       "subcategory": "300",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Espartano Escudo",
+      "modelGroup": "rei-leonidas-espartano-escudo",
+      "tags": [
+        "300",
+        "Rei Leonidas",
+        "Leonidas",
+        "Espartano",
+        "Escudo"
+      ],
+      "curationNotes": "Prancha 087 item 01: Rei Leonidas/300 com elmo, escudo e capa; mesma peca do item 02 em apresentacao diferente."
     },
     "1r-PFjFP6nuwvag0p3S-2uPtZnTl05Z8k": {
       "characterName": "Conan",
@@ -3962,7 +4011,16 @@
       "category": "filmes",
       "subcategory": "bruce-lee",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Chute Alto Dragao",
+      "modelGroup": "bruce-lee-chute-alto-dragao",
+      "tags": [
+        "Bruce Lee",
+        "Kung Fu",
+        "Chute Alto",
+        "Dragao"
+      ],
+      "curationNotes": "Prancha 087 item 01: Bruce Lee em chute alto sobre base de dragao; produto separado do item 02."
     },
     "10xKhBvSlQBW4h1xu-DYYJSakt-dwdbFS": {
       "characterName": "Godzilla e King Kong",
@@ -4083,7 +4141,17 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "curationConfidence": "high",
+      "variantName": "Trono de Fogo",
+      "modelGroup": "genryusai-shigekuni-yamamoto-trono-de-fogo",
+      "tags": [
+        "Bleach",
+        "Genryusai Shigekuni Yamamoto",
+        "Yamamoto",
+        "Fogo",
+        "Trono"
+      ],
+      "curationNotes": "Prancha 087 item 01: Yamamoto sentado cercado por chamas; produto separado do item 02."
     },
     "1O7zxZO9_v6fML75sfAHz-RyMmexEF2Fe": {
       "characterName": "Shanks",
@@ -4291,7 +4359,17 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Sekai Term 28 Quincy",
+      "modelGroup": "uryu-ishida-sekai-term-28-quincy",
+      "tags": [
+        "Bleach",
+        "Uryu Ishida",
+        "Quincy",
+        "Sekai",
+        "Term 28"
+      ],
+      "curationNotes": "Prancha 087 item 01: Uryu Ishida/Sekai Term 28 em traje branco Quincy com arco; produto separado do item 02."
     },
     "1-Iuxc7Y1hAKw6_T0kPCfZd2zY_d3e7_x": {
       "characterName": "Edward Newgate",
@@ -4994,7 +5072,16 @@
       "category": "filmes",
       "subcategory": "bruce-lee",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Dragao Modular",
+      "modelGroup": "bruce-lee-dragao-modular",
+      "tags": [
+        "Bruce Lee",
+        "Kung Fu",
+        "Dragao",
+        "Modular"
+      ],
+      "curationNotes": "Prancha 087 item 02: conjunto modular de Bruce Lee com dragao em multiplas composicoes; produto separado do item 01."
     },
     "1Fb6qmb_54jJOkmkgZ2-ei5yhjVXtNdXi": {
       "characterName": "Popeye",
@@ -8694,6 +8781,97 @@
         "Pose Combate"
       ],
       "curationNotes": "Prancha 078 item 03: Splinter em pose de combate com cajado e faixa em movimento; produto separado dos itens 01 e 02."
+    },
+    "1TfVBsRQfh3mVGBfPd_PFHBv4PnlHuXe4": {
+      "characterName": "Asterix e Obelix",
+      "sourceTitle": "Asterix e Obelix",
+      "category": "animes",
+      "subcategory": "asterix-e-obelix",
+      "mediaType": "animation",
+      "variantName": "Diorama Banquete",
+      "modelGroup": "asterix-e-obelix-diorama-banquete",
+      "tags": [
+        "Asterix e Obelix",
+        "Asterix",
+        "Obelix",
+        "Diorama",
+        "Banquete"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 087 item 01: diorama Asterix e Obelix com mesa/banquete; mesma peca do item 02 em outro angulo."
+    },
+    "1D4ovBjCNwzBERmLhWNjtxn8_M2Id1VlJ": {
+      "characterName": "Asterix e Obelix",
+      "sourceTitle": "Asterix e Obelix",
+      "category": "animes",
+      "subcategory": "asterix-e-obelix",
+      "mediaType": "animation",
+      "variantName": "Diorama Banquete",
+      "modelGroup": "asterix-e-obelix-diorama-banquete",
+      "tags": [
+        "Asterix e Obelix",
+        "Asterix",
+        "Obelix",
+        "Diorama",
+        "Banquete"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 087 item 02: mesmo diorama Asterix e Obelix do item 01 em foto de bancada; usar como galeria."
+    },
+    "1FZoKOg56xNw0S8GmVNPo4YtJRvBXTjKu": {
+      "characterName": "Titan Femea",
+      "sourceTitle": "Attack on Titan",
+      "category": "animes",
+      "subcategory": "attack-on-titan",
+      "mediaType": "anime",
+      "variantName": "Pose Combate Base Muralha",
+      "modelGroup": "titan-femea-pose-combate-base-muralha",
+      "tags": [
+        "Attack on Titan",
+        "Titan Femea",
+        "Annie Leonhart",
+        "Pose Combate",
+        "Muralha"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 087 item 02: Titan Femea colorida em pose de combate sobre base tematica; produto separado do item 01."
+    },
+    "1r1z6uVPbaK-m7zJkWi2Y2VP-FRiwAdGg": {
+      "characterName": "Walter White e Gustavo Fring e Jesse Pinkman",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "subcategory": "breaking-bad",
+      "mediaType": "series",
+      "variantName": "Chibi Los Pollos Hermanos",
+      "modelGroup": "walter-white-gustavo-fring-e-jesse-pinkman-chibi-los-pollos-hermanos",
+      "tags": [
+        "Breaking Bad",
+        "Walter White",
+        "Gustavo Fring",
+        "Jesse Pinkman",
+        "Chibi",
+        "Los Pollos Hermanos"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 087 item 01: conjunto chibi com Walter White, Gustavo Fring e Jesse Pinkman; nao manter como personagem generico Breaking Bad."
+    },
+    "1_-w7M5LB5aeB5BGWpwtGCJMWXM_utZmx": {
+      "characterName": "Walter White e Jesse Pinkman",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "subcategory": "breaking-bad",
+      "mediaType": "series",
+      "variantName": "Hazmat Laboratorio",
+      "modelGroup": "walter-white-e-jesse-pinkman-hazmat-laboratorio",
+      "tags": [
+        "Breaking Bad",
+        "Walter White",
+        "Jesse Pinkman",
+        "Hazmat",
+        "Laboratorio"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 087 item 02: Walter White e Jesse Pinkman em trajes hazmat sobre base de laboratorio; produto separado do item 01."
     }
   },
   "visualApprovals": {
@@ -8942,6 +9120,18 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 053 itens 02 e 03 mostram o mesmo Lion-O LAfigures com espada; item 04 e duplicata exata do item 03 e fica fora da publicacao."
+    },
+    "300|Rei Leonidas|rei-leonidas-espartano-escudo": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 087 itens 01 e 02 mostram o mesmo Rei Leonidas/300 em apresentacoes/angulos diferentes; usar como galeria."
+    },
+    "Asterix e Obelix|Asterix e Obelix|asterix-e-obelix-diorama-banquete": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 087 itens 01 e 02 mostram o mesmo diorama Asterix e Obelix/Banquete em fotos diferentes; usar como galeria."
     }
   }
 }
