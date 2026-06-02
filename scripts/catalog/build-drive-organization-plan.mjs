@@ -702,9 +702,9 @@ function inferTaxonomyFromPath(row) {
     if (second === "dc") {
       const sourceTitle = "DC";
       return {
-        category: "quadrinhos",
+        category: "franquias",
         subcategory: slugSegment(sourceTitle),
-        mediaType: "comic",
+        mediaType: "franchise",
         sourceTitle,
         pathCharacterName: canonicalDisplay(firstUsefulPart(folders, 2) || ""),
       };
@@ -722,9 +722,9 @@ function inferTaxonomyFromPath(row) {
         .sort((a, b) => a - b)[0] ?? -1;
       const sourceTitle = canonicalDisplay(sourceIndex >= 0 ? folders[sourceIndex] : "Marvel");
       return {
-        category: "quadrinhos",
+        category: "franquias",
         subcategory: slugSegment(sourceTitle),
-        mediaType: "comic",
+        mediaType: "franchise",
         sourceTitle,
         pathCharacterName: canonicalDisplay(
           sourceIndex >= 0 ? firstUsefulPartAfter(folders, sourceIndex) || "" : firstUsefulPart(folders, baseIndex) || "",
