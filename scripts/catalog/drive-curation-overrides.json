@@ -3130,6 +3130,62 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 059 item 03: traje/classico com capacete identifica Jay Garrick, nao Barry Allen."
     },
+    "1zUuNiPVeklF8hm-_udFU7KoXEoYgl9zR": {
+      "characterName": "Dante e Deadpool",
+      "sourceTitle": "Devil May Cry",
+      "category": "jogos",
+      "subcategory": "devil-may-cry",
+      "mediaType": "game",
+      "variantName": "Diorama Crossover CosplayStaticFigure",
+      "modelGroup": "dante-e-deadpool-diorama-crossover-cosplaystaticfigure",
+      "tags": [
+        "Devil May Cry",
+        "Dante",
+        "Deadpool",
+        "Marvel",
+        "Crossover",
+        "Diorama",
+        "CosplayStaticFigure"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 060 item 01: diorama crossover com Dante e Deadpool; catalogar com os dois personagens, nao como Dante simples."
+    },
+    "13i5AYaVNJGJW6ROJjwKIEo79Q8ez8vEd": {
+      "characterName": "Dante",
+      "sourceTitle": "Devil May Cry",
+      "category": "jogos",
+      "subcategory": "devil-may-cry",
+      "mediaType": "game",
+      "variantName": "Espada Base Redonda",
+      "modelGroup": "dante-espada-base-redonda",
+      "tags": [
+        "Devil May Cry",
+        "Dante",
+        "Espada",
+        "Base Redonda"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 060 item 02: Dante em pe com espada grande sobre base redonda; modelo separado dos itens 01 e 03."
+    },
+    "1mC2Cp-e2nN2Si31hRWvWbkVR2tF3VVkr": {
+      "characterName": "Dante",
+      "sourceTitle": "Devil May Cry",
+      "category": "jogos",
+      "subcategory": "devil-may-cry",
+      "mediaType": "game",
+      "variantName": "Base Rochosa Gunslinger",
+      "modelGroup": "dante-base-rochosa-gunslinger",
+      "tags": [
+        "Devil May Cry",
+        "Dante",
+        "Gunslinger",
+        "Espada",
+        "Pistolas",
+        "Base Rochosa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 060 item 03: Dante em base rochosa com variacoes de pose/armas; modelo separado do item 02."
+    },
     "1E7N-KgeT8Rw0uX7rArD18uLstHC929Gq": {
       "characterName": "Kenpachi Zaraki",
       "sourceTitle": "Bleach",
