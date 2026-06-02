@@ -1959,6 +1959,97 @@
       "curationConfidence": "high",
       "curationNotes": "Rocket Diorama ja identificado pelo nome original; movido de Vingadores para Guardioes da Galaxia."
     },
+    "1JQ4U0aA0QQuyap4yg9qxy4-zH7yP-6BN": {
+      "characterName": "Colossus",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Busto e Estatua",
+      "modelGroup": "colossus-busto-e-estatua",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Colossus",
+        "Busto",
+        "Estatua"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 043 item 01: composicao preto e branco com busto/estatua de Colossus; produto separado das pecas em pe."
+    },
+    "1EglKD-RJNC0eIdks26tapBKa4pUENoES": {
+      "characterName": "Colossus",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Gambody Classico",
+      "modelGroup": "colossus-gambody-classico",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Colossus",
+        "Gambody",
+        "Classico"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 043 item 02: Colossus classico em render cinza com vistas frente/costas e cartela Gambody; produto separado."
+    },
+    "1MHxV4GtNEnX0QgH_Ujh8Hd7MexYuJxGB": {
+      "characterName": "Colossus",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "CA3D Art Pose Dinamica",
+      "modelGroup": "colossus-ca3d-art-pose-dinamica",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Colossus",
+        "CA3D Art",
+        "Pose Dinamica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 043 item 03: Colossus em pose dinamica sobre base de combate, cartela CA3D Art; produto separado."
+    },
+    "1PmWKJprTEn41lfEG2RqDhn2IZv2nsd2x": {
+      "characterName": "Colossus e Wolverine",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Chibi Fastball",
+      "modelGroup": "colossus-e-wolverine-chibi-fastball",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Colossus",
+        "Wolverine",
+        "Chibi",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 043 item 04: Colossus chibi segurando Wolverine; multi-personagem, mover para dioramas."
+    },
+    "1nNwuqQTouU_es2CBk_cHnkXk5dZq9lcY": {
+      "characterName": "Colossus",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Malix3Design Arma",
+      "modelGroup": "colossus-malix3design-arma",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Colossus",
+        "Malix3Design",
+        "Arma"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 043 item 05: Colossus Malix3Design em pe com arma/objeto longo sobre base circular; produto separado."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
