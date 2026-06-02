@@ -2577,6 +2577,413 @@
       "mediaType": "comic",
       "curationConfidence": "high",
       "curationNotes": "Modelo distinto do Robin classico com capa dourada."
+    },
+    "19vqqo0ZpuqPl5wRPQhfiXih1xJgua7lH": {
+      "characterName": "Wolverine",
+      "variantName": "Classico Braco Erguido",
+      "modelGroup": "wolverine-classico-braco-erguido",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 01: Wolverine classico em pose de braco erguido."
+    },
+    "1_MiyVqw7EBo-SbB8SrjTnMNgQbczASnc": {
+      "characterName": "Wolverine",
+      "variantName": "Treino Capacete",
+      "modelGroup": "wolverine-treino-capacete",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 02: modelo distinto com capacete e traje curto."
+    },
+    "19f0iK9GPEtBBF37vQB0Ce8_wfegh9aQy": {
+      "characterName": "Wolverine e Jean Grey",
+      "variantName": "Fenix",
+      "modelGroup": "wolverine-e-jean-grey-fenix",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 03: diorama com Wolverine e Jean Grey/Fenix."
+    },
+    "1bU-ZLuS0puAavem0WDJIsWjdBTwTdSkF": {
+      "characterName": "Wolverine",
+      "variantName": "Classico Base 3DFigureprints",
+      "modelGroup": "wolverine-classico-base-3dfigureprints",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 04: modelo 3DFigureprints classico com base."
+    },
+    "19nosDeqKc22tP9DBmHEfCVE0dWg5x6iY": {
+      "characterName": "Wolverine",
+      "variantName": "Diorama Ninjas",
+      "modelGroup": "wolverine-diorama-ninjas",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 05: Wolverine sobre base com ninjas derrotados."
+    },
+    "1MBkjZn8AWFBh1g58ofvNAKvbb7Kp0tCy": {
+      "characterName": "Wolverine",
+      "variantName": "Caverna Batalha",
+      "modelGroup": "wolverine-caverna-batalha",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 06: modelo distinto em cena de caverna/batalha."
+    },
+    "1uletsKIGTdbMCAdxqxby5se1BuLNXqKV": {
+      "characterName": "Wolverine",
+      "variantName": "Traje Preto Base",
+      "modelGroup": "wolverine-traje-preto-base",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 07: Wolverine em traje preto sobre base."
+    },
+    "1D32bxl_LlYyrD0RvLBEsGkjPQsKCuzhi": {
+      "characterName": "Wolverine e Hulk",
+      "variantName": "Vitoria Sobre Hulk",
+      "modelGroup": "wolverine-e-hulk-vitoria",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 08: diorama com Wolverine sobre Hulk derrotado."
+    },
+    "1JaAZOitV_6Q9GKF_UZzxMej-QEKdsF31": {
+      "characterName": "Wolverine",
+      "variantName": "Base Maca",
+      "modelGroup": "wolverine-base-maca",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 09: modelo distinto em base de rocha com maca."
+    },
+    "1Hetz0-IX4pMYDBx3JbqlokRQss8E18rj": {
+      "characterName": "Wolverine",
+      "variantName": "Busto Sem Mascara",
+      "modelGroup": "wolverine-busto-sem-mascara",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 10: busto cinza sem mascara/capacete."
+    },
+    "1oHHvat6A7rbeP9oHBwaRvOt46zPaEZIa": {
+      "characterName": "Wolverine e Dente de Sabre",
+      "variantName": "Vitoria Sobre Dente de Sabre",
+      "modelGroup": "wolverine-e-dente-de-sabre-vitoria",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 11: diorama com Wolverine sobre Dente de Sabre derrotado."
+    },
+    "17YVC51KogxpoXqa9f8PXf4ns_Erg6bOm": {
+      "characterName": "Wolverine",
+      "variantName": "Classico Base Katana",
+      "modelGroup": "wolverine-classico-base-katana",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 12: Wolverine classico em base com katana e cabecas alternativas."
+    },
+    "1GsbPwEGrOHo0s0KHdKoX_KSIYWlTJ6sm": {
+      "characterName": "Wolverine e Dente de Sabre",
+      "variantName": "Diorama Luta",
+      "modelGroup": "wolverine-e-dente-de-sabre-luta",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 13: diorama de luta entre Wolverine e Dente de Sabre."
+    },
+    "1JTNH5ioCR1VOUm3HSfwq1gMr4hlMOYHX": {
+      "characterName": "Wolverine",
+      "variantName": "Uniforme Marrom Base Rocha",
+      "modelGroup": "wolverine-uniforme-marrom-base-rocha",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 14: Wolverine em uniforme marrom sobre rocha."
+    },
+    "1Cm4YTwT21k-251mB19S6pPkKQSySGjhb": {
+      "characterName": "Wolverine",
+      "variantName": "Busto Capacete",
+      "modelGroup": "wolverine-busto-capacete",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 15: busto com capacete; mesma familia dos itens 17 e 18."
+    },
+    "1DnA8v5pqJMC8bh3YjjOq18xeZ76MlMaE": {
+      "characterName": "Wolverine",
+      "variantName": "Escada Sentado",
+      "modelGroup": "wolverine-escada-sentado",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 16: duplicata exata relacionada ao modelo sentado na escada."
+    },
+    "1Vc2XGX2aOimi2rI4TCLLvXyu4blJBtO5": {
+      "characterName": "Wolverine",
+      "variantName": "Busto Capacete",
+      "modelGroup": "wolverine-busto-capacete",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 17: busto com capacete, angulo/arte alternativa."
+    },
+    "1BU0_KCeI0BwdBaYn-ieujtG2uS7vjlKa": {
+      "characterName": "Wolverine",
+      "variantName": "Busto Capacete",
+      "modelGroup": "wolverine-busto-capacete",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 18: busto com capacete, imagem de apresentacao."
+    },
+    "1MEpxYTCz3CtogofCUfKeozZd3mYB861A": {
+      "characterName": "Wolverine",
+      "variantName": "Logan Casual",
+      "modelGroup": "wolverine-logan-casual",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 19: Logan sem uniforme em pose casual."
+    },
+    "1ieak_eARA2rogd0luwcIeMy6QEdmJ5eC": {
+      "characterName": "Wolverine",
+      "variantName": "Escada Sentado",
+      "modelGroup": "wolverine-escada-sentado",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 20: folha de pecas do mesmo modelo sentado na escada."
+    },
+    "1IUgXz2_GoveTVAzGmHe88vKIN4BQybBV": {
+      "characterName": "Wolverine",
+      "variantName": "Old Man Logan",
+      "modelGroup": "wolverine-old-man-logan",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 21: variante Old Man Logan."
+    },
+    "1ANfkozSfBOwoHh5GNunH_BaFv1VJJFQe": {
+      "characterName": "Wolverine e Dente de Sabre",
+      "variantName": "Diorama Wicked",
+      "modelGroup": "wolverine-e-dente-de-sabre-wicked",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 22: diorama Wicked com Wolverine e Dente de Sabre."
+    },
+    "1WqT5GOvlHgafMVL4TwWAwF4QjDytLh3L": {
+      "characterName": "Wolverine",
+      "variantName": "Hugh Jackman",
+      "modelGroup": "wolverine-hugh-jackman",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 23: Wolverine inspirado em Hugh Jackman."
+    },
+    "1A73o4-fU9m3gm4peUL5eiiyoFLaO61CM": {
+      "characterName": "Wolverine",
+      "variantName": "Base X-Men Wicked",
+      "modelGroup": "wolverine-base-x-men-wicked",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 24: Wolverine solo em base X-Men Wicked."
+    },
+    "19u7GgwBs0XCqqr5f_RbFwSgYaHQThNlb": {
+      "characterName": "Wolverine",
+      "variantName": "Trono",
+      "modelGroup": "wolverine-trono",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 25: modelo distinto em base/trono."
+    },
+    "1DXePwa8kTus-uewwJMoQKeuGfaj9enuh": {
+      "characterName": "Wolverine",
+      "variantName": "Agachado Base Rocha",
+      "modelGroup": "wolverine-agachado-base-rocha",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 26: duplicata exata relacionada a pose agachada em base de rocha."
+    },
+    "19y7KnzagW3_1ZNb3ZDw9vMlSH2eiP57Q": {
+      "characterName": "Wolverine e Omega Red",
+      "variantName": "Diorama Neve",
+      "modelGroup": "wolverine-e-omega-red-diorama-neve",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 27: diorama com Wolverine e Omega Red."
+    },
+    "1et7uzz_w_11U039_pSvXGH3t5LCdatlP": {
+      "characterName": "Wolverine",
+      "variantName": "Sanix Base Industrial",
+      "modelGroup": "wolverine-sanix-base-industrial",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 28: modelo Sanix com base industrial, dois angulos na imagem."
+    },
+    "1IN2SQEgnNhgVEg-1E2GXX5SKTAprbGYI": {
+      "characterName": "Wolverine",
+      "variantName": "Retrato Hugh Jackman",
+      "modelGroup": "wolverine-retrato-hugh-jackman",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 29: retrato/close inspirado em Hugh Jackman."
+    },
+    "1BWKNKPENNtWJBWwJI-yK6XfHzt7XjPEX": {
+      "characterName": "Wolverine",
+      "variantName": "SS001 Agachado",
+      "modelGroup": "wolverine-ss001-agachado",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 30: escultura SS 001 em pose agachada."
+    },
+    "1npe0vYWtHVUiOYqfVb__M2YESpDCgm3K": {
+      "characterName": "Wolverine",
+      "variantName": "Agachado Base Rocha",
+      "modelGroup": "wolverine-agachado-base-rocha",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 31: Wolverine agachado em base de rocha."
+    },
+    "14aZcOMZ37hoNrf-hSJsSzqVLxI0lyWif": {
+      "characterName": "Wolverine",
+      "variantName": "Malix3D Sem Mascara",
+      "modelGroup": "wolverine-malix3d-sem-mascara",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 32: modelo Malix3D sem mascara."
+    },
+    "1A5t7rku4skeJwNF814IPdfje0B73BI4E": {
+      "characterName": "Wolverine",
+      "variantName": "Base Cranios",
+      "modelGroup": "wolverine-base-cranios",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 33: Wolverine sobre base com cranios."
+    },
+    "1AOtsMBdw8mnfbn4VxD-DprT0KjDLLYSz": {
+      "characterName": "Wolverine",
+      "variantName": "Base Industrial Dois Angulos",
+      "modelGroup": "wolverine-base-industrial-dois-angulos",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 34: apresentacao com dois angulos do modelo em base industrial."
+    },
+    "19llVnqT0EpDreXteCPivnbRI5IqeWg_3": {
+      "characterName": "Wolverine",
+      "variantName": "Ataque Tronco",
+      "modelGroup": "wolverine-ataque-tronco",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 35: Wolverine em ataque sobre tronco/base vertical."
+    },
+    "1KI0kOSwjQjeMxGqre46eaHNdWuQDKLWi": {
+      "characterName": "Wolverine",
+      "variantName": "Base Veiculo",
+      "modelGroup": "wolverine-base-veiculo",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 36: Wolverine sobre base de veiculo destruido."
+    },
+    "19dQzZdVORmcMDh9DV5d0-W2kyvzsW7ZZ": {
+      "characterName": "Wolverine",
+      "variantName": "Moto",
+      "modelGroup": "wolverine-moto",
+      "sourceTitle": "X-Men",
+      "category": "quadrinhos",
+      "subcategory": "x-men",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 37: Wolverine com moto."
     }
   },
   "visualApprovals": {
@@ -2639,6 +3046,24 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 018: mesmo Cyclops em escada com fogo; manter como galeria/angulo."
+    },
+    "X-Men|Wolverine|wolverine-busto-capacete": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019 itens 15, 17 e 18 mostram o mesmo busto do Wolverine com capacete; manter como galeria."
+    },
+    "X-Men|Wolverine|wolverine-escada-sentado": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019 itens 16 e 20 referenciam o mesmo modelo sentado na escada; item 16 permanece como duplicata exata."
+    },
+    "X-Men|Wolverine|wolverine-agachado-base-rocha": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019 itens 26 e 31 referenciam pose agachada em base de rocha; item 26 permanece como duplicata exata."
     }
   }
 }
