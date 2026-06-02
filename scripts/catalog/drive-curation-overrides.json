@@ -15050,15 +15050,15 @@
       "mediaType": "franchise",
       "sourceTitle": "X-Men",
       "characterName": "Deadpool",
-      "variantName": "Romell Chopraa Print",
-      "modelGroup": "deadpool-romell-chopraa-print",
+      "variantName": "Print Especial",
+      "modelGroup": "deadpool-print-especial",
       "tags": [
         "Marvel",
         "X-Men",
         "Deadpool"
       ],
       "curationConfidence": "medium",
-      "curationNotes": "Nome original e slug indicam Deadpool; remove texto tecnico/autor do personagem."
+      "curationNotes": "Nome original e slug indicam Deadpool; remove texto tecnico/autor do personagem e da variante publica."
     },
     "1aF7QSD9LmCGaeAuhavzjSWf87MEWVSYq": {
       "category": "franquias",
@@ -15102,6 +15102,165 @@
       "duplicateOf": "1Jfos5y944zXNcxsNigxKdeM_uFQHtXtL",
       "curationConfidence": "high",
       "curationNotes": "Duplicata exata do outro arquivo cyclope.jpg consolidado em Ciclope; manter somente uma copia publica."
+    },
+    "1G2OmpRtHtEonRtFTy7GzEYYDTcLQItKw": {
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "sourceTitle": "Senhor dos Aneis",
+      "characterName": "Sauron",
+      "variantName": "Armadura com Espada e Maca",
+      "modelGroup": "sauron-armadura-espada-maca",
+      "tags": [
+        "Senhor dos Aneis",
+        "Sauron",
+        "Vilao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Sauron com espada e maca; remove nome tecnico image_processing."
+    },
+    "1HtiNgNlgMpuQ7z6fuMXrOYmxBAxJujPc": {
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "sourceTitle": "DC",
+      "characterName": "Lobo",
+      "variantName": "Com Cachorro Clay",
+      "modelGroup": "lobo-com-cachorro-clay",
+      "tags": [
+        "DC",
+        "Lobo"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Lobo com cachorro em render clay; remove nome tecnico image_processing."
+    },
+    "1HwFJRgxPbcd0zxoa4vxvYuJS2SGFp88e": {
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "sourceTitle": "DC",
+      "characterName": "Lobo",
+      "variantName": "Armas Duplas Clay",
+      "modelGroup": "lobo-armas-duplas-clay",
+      "tags": [
+        "DC",
+        "Lobo"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Lobo com armas duplas em render clay; remove nome tecnico image_processing."
+    },
+    "1HxV7MA_AamcfBTshYOKKH6tBKAEgA4VE": {
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "sourceTitle": "DC",
+      "characterName": "Lobo",
+      "variantName": "Cabeca do Superman",
+      "modelGroup": "lobo-cabeca-do-superman",
+      "tags": [
+        "DC",
+        "Lobo",
+        "Superman"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Lobo segurando cabeca do Superman; remove nome tecnico image_processing."
+    },
+    "1G5L2TG8-Kjrrp4CLdM3YDT4KWkTOc0_Z": {
+      "category": "franquias",
+      "subcategory": "quarteto-fantastico",
+      "mediaType": "franchise",
+      "sourceTitle": "Quarteto Fantastico",
+      "characterName": "Coisa",
+      "variantName": "Duas Poses Special STLs",
+      "modelGroup": "coisa-duas-poses-special-stls",
+      "tags": [
+        "Marvel",
+        "Quarteto Fantastico",
+        "Coisa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Coisa em duas poses/alternativas Special STLs; remove nome tecnico image_processing."
+    },
+    "1G456dxialeoiBRgUshkl9cR65k20nfd0": {
+      "category": "franquias",
+      "subcategory": "quarteto-fantastico",
+      "mediaType": "franchise",
+      "sourceTitle": "Quarteto Fantastico",
+      "characterName": "Coisa",
+      "variantName": "Com Martelo Special STLs",
+      "modelGroup": "coisa-com-martelo-special-stls",
+      "tags": [
+        "Marvel",
+        "Quarteto Fantastico",
+        "Coisa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Coisa com martelo; remove nome tecnico image_processing."
+    },
+    "1MNhEFuP3hlJyWVi4PkLGKdE07ju0HW6y": {
+      "category": "franquias",
+      "subcategory": "vingadores",
+      "mediaType": "franchise",
+      "sourceTitle": "Vingadores",
+      "characterName": "Homem de Ferro",
+      "variantName": "Mark 85 Voo",
+      "modelGroup": "homem-de-ferro-mark-85-voo",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Homem de Ferro",
+        "Mark 85"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Iron Man Mark 85 em voo; remove nome tecnico image_processing."
+    },
+    "1G8GbUN4rYTq6sJ7PNwRiLSd9eUPhminD": {
+      "category": "franquias",
+      "subcategory": "vingadores",
+      "mediaType": "franchise",
+      "sourceTitle": "Vingadores",
+      "characterName": "Pantera Negra",
+      "variantName": "Com Pantera e Lanca",
+      "modelGroup": "pantera-negra-com-pantera-e-lanca",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Pantera Negra"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Pantera Negra com pantera e lanca; remove nome tecnico image_processing."
+    },
+    "1gxG58O1Cxy8Ib72OGMq_Efwo1K_T6D-6": {
+      "category": "franquias",
+      "subcategory": "vingadores",
+      "mediaType": "franchise",
+      "sourceTitle": "Vingadores",
+      "characterName": "Homem de Ferro",
+      "variantName": "Armadura Classica Base Tecnologica",
+      "modelGroup": "homem-de-ferro-armadura-classica-base-tecnologica",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Homem de Ferro"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Homem de Ferro em armadura classica sobre base tecnologica; remove nome tecnico image_processing."
+    },
+    "1ovVoUiOFjsJydhv7-Hun9pr4Lu-PPAu9": {
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "sourceTitle": "DC",
+      "characterName": "Batman",
+      "variantName": "Armadura Tactica",
+      "modelGroup": "batman-armadura-tactica",
+      "collectionCandidate": false,
+      "tags": [
+        "DC",
+        "Batman"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem estava na colecao Inimigos da Vizinhanca, mas foi verificada visualmente como Batman; mover para catalogo DC/Batman."
     }
   },
   "visualApprovals": {
