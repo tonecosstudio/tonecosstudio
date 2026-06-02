@@ -4617,6 +4617,123 @@
         "Masters of the Universe"
       ],
       "curationNotes": "Prancha 022 item 07: He-Man classico 3DXM com espada e escudo; variante distinta do chibi e do modelo LAfigures."
+    },
+    "1X-NId7hUT86GQL4spsZ_Ahsn1kCy8jhD": {
+      "characterName": "Mario e Planta Piranha",
+      "sourceTitle": "Super Mario",
+      "category": "jogos",
+      "subcategory": "super-mario",
+      "mediaType": "game",
+      "variantName": "Diorama Bloco Interrogacao",
+      "modelGroup": "mario-e-planta-piranha-diorama-bloco-interrogacao",
+      "tags": [
+        "Mario",
+        "Planta Piranha",
+        "Piranha Plant",
+        "Super Mario"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 023 item 01: diorama com Mario e Planta Piranha em cenario com tubo e blocos; nao e Mario solo."
+    },
+    "12KqnNGVnEegS7dd4mEmFOQtSwn_Em4HB": {
+      "characterName": "Baby Mario e Yoshi",
+      "sourceTitle": "Super Mario",
+      "category": "jogos",
+      "subcategory": "super-mario",
+      "mediaType": "game",
+      "variantName": "Diorama Ovos Coloridos",
+      "modelGroup": "baby-mario-e-yoshi-diorama-ovos-coloridos",
+      "tags": [
+        "Baby Mario",
+        "Yoshi",
+        "Super Mario"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 023 item 02: diorama com Baby Mario montado no Yoshi e ovos coloridos; mover para dioramas e taguear ambos."
+    },
+    "17rJka1L0dYKXN9zkYAlDB6dTOs8OSMsn": {
+      "characterName": "Bowser e Bowser Jr",
+      "sourceTitle": "Super Mario",
+      "category": "jogos",
+      "subcategory": "super-mario",
+      "mediaType": "game",
+      "variantName": "Diorama Videogame",
+      "modelGroup": "bowser-e-bowser-jr-diorama-videogame",
+      "tags": [
+        "Bowser",
+        "Bowser Jr",
+        "Super Mario"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 023 item 03: Bowser e Bowser Jr jogando videogame; corrigir de Mario para diorama dos dois personagens."
+    },
+    "1D8X9rDKkj_IJIFDN41dKo3j0DsBghTDL": {
+      "characterName": "Luigi",
+      "sourceTitle": "Super Mario",
+      "category": "jogos",
+      "subcategory": "super-mario",
+      "mediaType": "game",
+      "variantName": "Super Luigi VSTL",
+      "modelGroup": "luigi-super-luigi-vstl",
+      "tags": [
+        "Luigi",
+        "Super Luigi",
+        "Planta Piranha",
+        "Goomba",
+        "VSTL",
+        "Super Mario"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 023 item 04: imagem promocional Super Luigi com Goomba e Planta Piranha; personagem principal e Luigi, nao Mario."
+    },
+    "1iMzqHakIS28KgNs_tjx_-fKtlDp_oS-i": {
+      "characterName": "Mario",
+      "sourceTitle": "Super Mario",
+      "category": "jogos",
+      "subcategory": "super-mario",
+      "mediaType": "game",
+      "variantName": "Sentado",
+      "modelGroup": "mario-sentado",
+      "tags": [
+        "Super Mario"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 023 item 05: Mario sentado, modelo simples distinto das pecas em diorama."
+    },
+    "1xeRNqSoUerfbyJHg_J92cKx7Ywbg90QG": {
+      "characterName": "Mario e Yoshi",
+      "sourceTitle": "Super Mario",
+      "category": "jogos",
+      "subcategory": "super-mario",
+      "mediaType": "game",
+      "variantName": "Diorama Plataforma",
+      "modelGroup": "mario-e-yoshi-diorama-plataforma",
+      "tags": [
+        "Mario",
+        "Yoshi",
+        "Super Mario"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 023 item 06: Mario montado no Yoshi sobre plataforma; mover para dioramas e taguear ambos."
+    },
+    "1UQSTJDmFMy9gDtUAqjeFrTox5X7kjINy": {
+      "characterName": "Luigi",
+      "sourceTitle": "Super Mario",
+      "category": "jogos",
+      "subcategory": "super-mario",
+      "mediaType": "game",
+      "variantName": "Luigi Mansion 3 Poltergust",
+      "modelGroup": "luigi-luigis-mansion-3-poltergust",
+      "tags": [
+        "Luigi's Mansion",
+        "Luigi's Mansion 3",
+        "Poltergust",
+        "Polterpup",
+        "Fantasma",
+        "Super Mario"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 023 item 07: Luigi's Mansion 3 com Poltergust, fantasma e Polterpup; personagem principal e Luigi."
     }
   },
   "visualApprovals": {

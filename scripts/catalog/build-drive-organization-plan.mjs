@@ -143,6 +143,7 @@ const TITLE_CASE_UPPER_WORDS = new Map(
     sf6: "SF6",
     specialstl: "SpecialSTL",
     ssj: "SSJ",
+    vstl: "VSTL",
     xmen: "X-Men",
   }),
 );
