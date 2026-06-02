@@ -269,6 +269,63 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 055 item 03: Alita em traje preto de combate com espada; modelo separado do item 01."
     },
+    "1qf7AS-w6WpsvwWuDVtGZg5kxbFDlEfZR": {
+      "characterName": "Titan de Ataque",
+      "sourceTitle": "Attack on Titan",
+      "category": "animes",
+      "subcategory": "attack-on-titan",
+      "mediaType": "anime",
+      "variantName": "Eren Yeager Base Fumaca",
+      "modelGroup": "titan-de-ataque-eren-yeager-base-fumaca",
+      "tags": [
+        "Attack on Titan",
+        "Shingeki no Kyojin",
+        "Titan de Ataque",
+        "Eren Yeager",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 056 item 01: Titan de Ataque/Eren com personagem humano sobre o titan e base de fumaca; nao e personagem generico Attack on Titan."
+    },
+    "1Pz9UC6o9FuEQ3MMxCIbCQ0EV-vm5q1gw": {
+      "characterName": "Titan Encouracado",
+      "sourceTitle": "Attack on Titan",
+      "category": "animes",
+      "subcategory": "attack-on-titan",
+      "mediaType": "anime",
+      "variantName": "Reiner Braun com Mikasa",
+      "modelGroup": "titan-encouracado-reiner-braun-com-mikasa",
+      "tags": [
+        "Attack on Titan",
+        "Shingeki no Kyojin",
+        "Titan Encouracado",
+        "Reiner Braun",
+        "Mikasa Ackerman",
+        "Diorama",
+        "DiegoZ"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 056 item 02: Titan Encouracado/Reiner com Mikasa usando equipamento DMT; modelo separado dos itens do Titan de Ataque."
+    },
+    "11HsSpIIOugPyLRi3BnZaL8K3XArGVIIq": {
+      "characterName": "Titan de Ataque",
+      "sourceTitle": "Attack on Titan",
+      "category": "animes",
+      "subcategory": "attack-on-titan",
+      "mediaType": "anime",
+      "variantName": "Busto Eren Yeager",
+      "modelGroup": "titan-de-ataque-busto-eren-yeager",
+      "tags": [
+        "Attack on Titan",
+        "Shingeki no Kyojin",
+        "Titan de Ataque",
+        "Eren Yeager",
+        "Busto",
+        "DiegoZ"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 056 item 03: busto do Titan de Ataque com Eren dentro do peito; modelo separado do item 01."
+    },
     "1_ppwhOQbVXkptE3Tf4Lao286CbBjZWCR": {
       "characterName": "Leonardo",
       "sourceTitle": "Tartarugas Ninja",
