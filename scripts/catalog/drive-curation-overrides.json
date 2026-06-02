@@ -3259,12 +3259,40 @@
       "curationConfidence": "high"
     },
     "1F7F3pPifQQOIbtLuNoKhuMq4vGVb2JOd": {
-      "characterName": "Son Gohan",
+      "characterName": "Son Gohan Avo",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Sekai Term 34",
+      "modelGroup": "son-gohan-avo-sekai-term-34",
+      "tags": [
+        "Dragon Ball",
+        "Son Gohan Avo",
+        "Gohan Avo",
+        "Sekai",
+        "Term 34"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 061 item 02: representa Son Gohan Avo/Grandpa Gohan, nao Son Gohan filho do Goku."
+    },
+    "1ix27FCcgdzz_qfJVOBYmL7rzIbo3h0CG": {
+      "characterName": "Goku",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Crianca Roupa Chinesa",
+      "modelGroup": "goku-crianca-roupa-chinesa",
+      "tags": [
+        "Dragon Ball",
+        "Goku",
+        "Goku Crianca",
+        "Roupa Chinesa",
+        "Chibi"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 061 item 03: figura infantil com roupa chinesa e esfera no chapeu; nao e Son Gohan."
     },
     "1N4u1_JEu3R6Wfv8AOm96RAAgEvBIEtKy": {
       "characterName": "Alphonse Elric",
@@ -3466,12 +3494,22 @@
       "curationConfidence": "high"
     },
     "1XIcwIzC7G0efebIn_1iwQpMsjXMvvwAp": {
-      "characterName": "Son Gohan",
+      "characterName": "Janemba",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Super Janemba Carlos VP",
+      "modelGroup": "janemba-super-carlos-vp",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Janemba",
+        "Super Janemba",
+        "Carlos VP"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 061 item 01: imagem nao e Son Gohan; personagem e Janemba/Super Janemba com aura cristalina e marca Carlos VP."
     },
     "1HIodr--1ff3xZ6razHJXoK07kCLI21Yd": {
       "characterName": "Tinker Bell",
