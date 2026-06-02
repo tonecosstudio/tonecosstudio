@@ -3014,19 +3014,39 @@
     },
     "1g6dkJcHR9iy1RIUUmR-jExRdnvIsB2hC": {
       "characterName": "Smoker",
+      "variantName": "Efeitos de Fumaca",
+      "modelGroup": "smoker-efeitos-fumaca",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Smoker",
+        "Fumaca",
+        "Marine",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 051 item 01: Smoker com pose base/sem efeito colorido; manter como imagem do grupo Efeitos de Fumaca."
     },
     "1rKmJPYagwMWR2HP9IofFMHbNiNBb-R48": {
       "characterName": "Smoker",
+      "variantName": "Efeitos de Fumaca",
+      "modelGroup": "smoker-efeitos-fumaca",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Smoker",
+        "Fumaca",
+        "Marine",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 051 item 02: mesmo Smoker com efeito roxo nos bracos; galeria/variante do grupo Efeitos de Fumaca."
     },
     "1nRZPQL2P1zm5PfmAUxwgGKaTEtbsML7G": {
       "characterName": "Franky Shogun",
@@ -3373,19 +3393,39 @@
     },
     "1xQVtiOajDCD6DEOiSnFa8cAmacOxovAu": {
       "characterName": "Smoker",
+      "variantName": "Efeitos de Fumaca",
+      "modelGroup": "smoker-efeitos-fumaca",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "tags": [
+        "One Piece",
+        "Smoker",
+        "Fumaca",
+        "Marine",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 051 item 03: mesmo Smoker com efeito roxo amplo na base; galeria/variante do grupo Efeitos de Fumaca."
     },
     "10r8o0dT9Fed4G2fbfGNmFiA3QD-kaXZu": {
       "characterName": "Smoker",
+      "variantName": "Efeitos de Fumaca",
+      "modelGroup": "smoker-efeitos-fumaca",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "tags": [
+        "One Piece",
+        "Smoker",
+        "Fumaca",
+        "Marine",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 051 item 04: mesmo Smoker com esfera/efeito azul; galeria/variante do grupo Efeitos de Fumaca."
     },
     "1a3-YX3jo4rMYAbAO80q5wlrzWMt8ZWCV": {
       "characterName": "Sakazuki",
@@ -7442,6 +7482,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 050 itens 01 e 04 mostram o mesmo Zoro Komatsuna Yaiba com enquadramento equivalente; publicar como um modelo com galeria."
+    },
+    "One Piece|Smoker|smoker-efeitos-fumaca": {
+      "status": "approved",
+      "approvalType": "same_model_variant_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 051 itens 01 a 04 mostram o mesmo Smoker com variacoes de efeito/fumaca; publicar como um modelo com galeria."
     }
   }
 }
