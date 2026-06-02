@@ -544,6 +544,105 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 028 item 06: render final do mesmo Doutor Octopus em base industrial do item 05; consolidar como galeria."
     },
+    "1j8m1--wOrexKfwXI-AluTYOVkk0wCJDa": {
+      "characterName": "Geralt de Rivia",
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "variantName": "Busto Malix",
+      "modelGroup": "geralt-de-rivia-busto-malix",
+      "tags": [
+        "The Witcher",
+        "Geralt de Rivia",
+        "Geralt",
+        "Busto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 029 item 01: busto de Geralt de Rivia/Malix; mesma peca do item 05, usar como galeria."
+    },
+    "188lajIK_SF20CJz6VeidKeweBwQX2s1K": {
+      "characterName": "Geralt de Rivia",
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "variantName": "Sanix Trofeu",
+      "modelGroup": "geralt-de-rivia-sanix-trofeu",
+      "tags": [
+        "The Witcher",
+        "Geralt de Rivia",
+        "Geralt"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 029 item 02: Geralt com espada e trofeu/cabeca em base de criatura; modelo Sanix separado."
+    },
+    "1c-1FM01fPl5SKLuiamzaf24kaDCVF6Ly": {
+      "characterName": "Geralt de Rivia",
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "variantName": "Base Monstro",
+      "modelGroup": "geralt-de-rivia-base-monstro",
+      "tags": [
+        "The Witcher",
+        "Geralt de Rivia",
+        "Geralt"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 029 item 03: Geralt com espada em base com monstro abatido; mesma peca do item 06, usar como galeria."
+    },
+    "1niqcAOu_dXSVRCRxXfng-ZMhe1bOlCA-": {
+      "characterName": "Geralt de Rivia",
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "variantName": "Gambody Espada",
+      "modelGroup": "geralt-de-rivia-gambody-espada",
+      "tags": [
+        "The Witcher",
+        "Geralt de Rivia",
+        "Geralt",
+        "Gambody"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 029 item 04: Geralt modelo estatico Gambody com espada; variante separada."
+    },
+    "1NDaUfQu9iIhRuvrQ1O5ACy1tEX3T3ZvZ": {
+      "characterName": "Geralt de Rivia",
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "variantName": "Busto Malix",
+      "modelGroup": "geralt-de-rivia-busto-malix",
+      "tags": [
+        "The Witcher",
+        "Geralt de Rivia",
+        "Geralt",
+        "Busto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 029 item 05: close-up/render do mesmo busto de Geralt do item 01; consolidar como galeria."
+    },
+    "1vC1AzaxcqlqO9Dpb-czLZfKnI17aNFfx": {
+      "characterName": "Geralt de Rivia",
+      "sourceTitle": "The Witcher",
+      "category": "jogos",
+      "subcategory": "the-witcher",
+      "mediaType": "game",
+      "variantName": "Base Monstro",
+      "modelGroup": "geralt-de-rivia-base-monstro",
+      "tags": [
+        "The Witcher",
+        "Geralt de Rivia",
+        "Geralt"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 029 item 06: frente/costas do mesmo modelo Geralt base monstro do item 03; consolidar como galeria."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
@@ -5413,6 +5512,18 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 028 itens 05 e 06 mostram o mesmo Doutor Octopus em base industrial; manter como modelo unico com galeria."
+    },
+    "The Witcher|Geralt de Rivia|geralt-de-rivia-busto-malix": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 029 itens 01 e 05 mostram o mesmo busto de Geralt de Rivia; manter como modelo unico com galeria."
+    },
+    "The Witcher|Geralt de Rivia|geralt-de-rivia-base-monstro": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 029 itens 03 e 06 mostram o mesmo Geralt em base com monstro; manter como modelo unico com galeria."
     }
   }
 }
