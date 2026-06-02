@@ -11312,9 +11312,9 @@
       "variantName": "Classicos",
       "modelGroup": "fantasma-da-opera-classicos",
       "sourceTitle": "Terror",
-      "category": "filmes",
+      "category": "colecoes",
       "subcategory": "terror",
-      "mediaType": "movie",
+      "mediaType": "collection",
       "collectionCandidate": true,
       "tags": [
         "Terror",
@@ -11675,6 +11675,1113 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Mesmo nome/arquivo tambem aparece na pasta Gotenks-gogeta; manter identidade curada e deixar dedupe decidir se e duplicata exata ou variante."
+    },
+    "1uL1-JePnoxVnlA8gPtArkk54gHC6D-PV": {
+      "characterName": "Guts",
+      "variantName": "Berserker Armor Base Dragao",
+      "modelGroup": "guts-berserker-armor-base-dragao",
+      "sourceTitle": "Berserk",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "berserk",
+      "tags": [
+        "Berserk",
+        "Guts",
+        "Berserker Armor"
+      ],
+      "curationConfidence": "high"
+    },
+    "1DQc7oh-erF-yaJ_gG4jZP7gLxFpJT306": {
+      "characterName": "Android 17",
+      "variantName": "Pose Base Rochas",
+      "modelGroup": "android-17-pose-base-rochas",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Android 17"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Kc7e1YdbyIXeQoNNz5eLdc8tXRnEXJpr": {
+      "characterName": "Dabura",
+      "variantName": "Pose Classica",
+      "modelGroup": "dabura-pose-classica",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Dabura",
+        "Saga Majin"
+      ],
+      "curationConfidence": "high"
+    },
+    "1eKwEL3Cw9PJDatqLJppUnKt6p4iL4b25": {
+      "characterName": "Alphonse Elric",
+      "variantName": "Base Livros",
+      "modelGroup": "alphonse-elric-base-livros",
+      "sourceTitle": "Fullmetal Alchemist",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "fullmetal-alchemist",
+      "tags": [
+        "Fullmetal Alchemist",
+        "Alphonse Elric"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BXIiHu82c3TKC9Sqy_goBX1_QCW4t2k0": {
+      "characterName": "Katsuki Bakugo",
+      "variantName": "Pose Explosao",
+      "modelGroup": "katsuki-bakugo-pose-explosao",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "Katsuki Bakugo",
+        "Bakugo"
+      ],
+      "curationConfidence": "high"
+    },
+    "1C0vcYlsMdcdE-UA3GSaZHuf1dmkHGjIM": {
+      "characterName": "Endeavor",
+      "variantName": "Chamas",
+      "modelGroup": "endeavor-chamas",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "Endeavor"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Ta3TFKFQFouhpKz2zC0WStH_aEhvQbkX": {
+      "characterName": "Naruto Uzumaki e Gamakichi",
+      "variantName": "Diorama",
+      "modelGroup": "naruto-uzumaki-e-gamakichi-diorama",
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "naruto",
+      "tags": [
+        "Naruto",
+        "Naruto Uzumaki",
+        "Gamakichi",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JJ6uIMilZroafSPJKOctbCXNjlnLD-Yx": {
+      "characterName": "Naruto Uzumaki",
+      "variantName": "Modo Sabio",
+      "modelGroup": "naruto-uzumaki-modo-sabio",
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "naruto",
+      "tags": [
+        "Naruto",
+        "Naruto Uzumaki",
+        "Modo Sabio",
+        "Sennin"
+      ],
+      "curationConfidence": "high"
+    },
+    "1yInqF90iHzewDfFK6uhMHldqfceAF_9I": {
+      "characterName": "Ash e Pikachu e Charizard e Squirtle",
+      "variantName": "Diorama Grupo",
+      "modelGroup": "ash-pikachu-charizard-squirtle-diorama-grupo",
+      "sourceTitle": "Pokemon",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "pokemon",
+      "tags": [
+        "Pokemon",
+        "Ash",
+        "Pikachu",
+        "Charizard",
+        "Squirtle",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "17-vVxNnUZKAlAjc1EFh97FpGkpAZ556U": {
+      "characterName": "Rick Sanchez",
+      "variantName": "Diorama Portal",
+      "modelGroup": "rick-sanchez-diorama-portal",
+      "sourceTitle": "Rick e Morty",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "rick-e-morty",
+      "tags": [
+        "Rick e Morty",
+        "Rick Sanchez",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1KYrrFBPb6zGHPeb7C6PnpAB03o-vKEeP": {
+      "characterName": "Ace Duck",
+      "variantName": null,
+      "modelGroup": "ace-duck",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Ace Duck"
+      ],
+      "curationConfidence": "high"
+    },
+    "1KXvJYNCO9ru-BSVK8S_uYXZ-HHgRdTWK": {
+      "characterName": "April O'Neil",
+      "variantName": null,
+      "modelGroup": "april-oneil",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "April O'Neil"
+      ],
+      "curationConfidence": "high"
+    },
+    "1mTBbD9Ek9RDFpEH9XpIGsd6IeNaf5kCp": {
+      "characterName": "Leonardo e Donatello e Michelangelo e Raphael",
+      "variantName": "Diorama Esgoto",
+      "modelGroup": "tartarugas-ninja-diorama-esgoto",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Leonardo",
+        "Donatello",
+        "Michelangelo",
+        "Raphael",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1DLij59by0hUs1ITdzswY4qSMhglA7Ljw": {
+      "characterName": "Leonardo e Donatello e Michelangelo e Raphael",
+      "variantName": "Diorama Rooftop",
+      "modelGroup": "tartarugas-ninja-diorama-rooftop",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Leonardo",
+        "Donatello",
+        "Michelangelo",
+        "Raphael",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1KmAZC9XCZn6M_BOfhni5zxzbxWkTh_lR": {
+      "characterName": "Krang",
+      "variantName": null,
+      "modelGroup": "krang",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Krang"
+      ],
+      "curationConfidence": "high"
+    },
+    "1H45CQVobMVcbdRcRJ0zinRKhrNuFBjx_": {
+      "characterName": "Leonardo e Donatello e Michelangelo e Raphael",
+      "variantName": "Mini Chibi",
+      "modelGroup": "tartarugas-ninja-mini-chibi",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Leonardo",
+        "Donatello",
+        "Michelangelo",
+        "Raphael",
+        "Mini",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Ku1vBpztfvBA_VhnDx6ZleGYEUM85mLb": {
+      "characterName": "Raphael",
+      "variantName": "The Last Ronin",
+      "modelGroup": "raphael-the-last-ronin",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Raphael",
+        "The Last Ronin"
+      ],
+      "curationConfidence": "high"
+    },
+    "1KlO6tklWZFJI3F17ohcjmv3Hwx0AOYwC": {
+      "characterName": "Slash",
+      "variantName": "Chibi",
+      "modelGroup": "slash-chibi",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Slash",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Km0a-xL_0wXQbZAScxHIDKiPHWPyr7bh": {
+      "characterName": "Super Shredder",
+      "variantName": "Chibi",
+      "modelGroup": "super-shredder-chibi",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Super Shredder",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1KsUOCcPCIWBT6Jc6N8WVVZvEJuF9xWzK": {
+      "characterName": "Usagi Yojimbo",
+      "variantName": null,
+      "modelGroup": "usagi-yojimbo",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Usagi Yojimbo"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Kcy18F0tVVu11KavVmMry2ehzNrk4_kY": {
+      "characterName": "Zodi Scorpion",
+      "variantName": null,
+      "modelGroup": "zodi-scorpion",
+      "sourceTitle": "Tartarugas Ninja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "tartarugas-ninja",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Zodi Scorpion"
+      ],
+      "curationConfidence": "high"
+    },
+    "1mVMxX-ZY6ZdOixDmWnLeejLjsJHzgH62": {
+      "characterName": "ThunderCats",
+      "variantName": "Imagem de Colecao",
+      "modelGroup": "thundercats-imagem-colecao",
+      "sourceTitle": "ThunderCats",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "thundercats",
+      "tags": [
+        "ThunderCats",
+        "ThunderCats",
+        "Colecao"
+      ],
+      "excludeFromCatalog": true,
+      "curationNotes": "Imagem de grupo/cover; nao tratar como modelo individual do catalogo.",
+      "curationConfidence": "high"
+    },
+    "1GUYb7viGsfoBMd__1VcDW7MGaCQFc_vc": {
+      "characterName": "Van Helsing",
+      "variantName": "Cacador de Vampiros",
+      "modelGroup": "van-helsing-cacador-de-vampiros",
+      "sourceTitle": "Van Helsing",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "van-helsing",
+      "tags": [
+        "Van Helsing",
+        "Van Helsing"
+      ],
+      "curationConfidence": "high"
+    },
+    "1GIelQMaWnO5Xa4d0WT_5uOkBd0wgaXQk": {
+      "characterName": "Harry Potter",
+      "variantName": "Diorama Edwiges",
+      "modelGroup": "harry-potter-diorama-edwiges",
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "tags": [
+        "Harry Potter",
+        "Harry Potter",
+        "Edwiges",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Dflewvf0TCBhwoXLrbmhXaEN1takuf61": {
+      "characterName": "Tyrannosaurus Rex",
+      "variantName": "Diorama Jurassic Park",
+      "modelGroup": "tyrannosaurus-rex-diorama-jurassic-park",
+      "sourceTitle": "Jurassic Park",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "jurassic-park",
+      "tags": [
+        "Jurassic Park",
+        "Tyrannosaurus Rex",
+        "T-Rex",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JEgwq84Wzp-vrhd3vPJlM3-ylygL4ZmD": {
+      "characterName": "Michael Myers",
+      "variantName": "Diorama",
+      "modelGroup": "michael-myers-diorama",
+      "sourceTitle": "Michael Myers",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "michael-myers",
+      "tags": [
+        "Michael Myers",
+        "Michael Myers",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1rnqtFDSmhbHC08CexSgxuX79t8_MpJbf": {
+      "characterName": "Coringa",
+      "variantName": "Busto",
+      "modelGroup": "coringa-busto",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "19L3y0J597F0gZp_swbi8ZOJyCMC-tBBW": {
+      "characterName": "Lanterna Verde",
+      "variantName": "Versao 04",
+      "modelGroup": "lanterna-verde-versao-04",
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Lanterna Verde",
+        "Green Lantern"
+      ],
+      "curationConfidence": "high"
+    },
+    "1JFjkZ99ZNUcSchYySbWdAQwFNwgfn0W3": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Diorama Predio",
+      "modelGroup": "homem-aranha-diorama-predio",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "19VtPKHLRbSMs7x9m_UyCCFiZGn02KCUF": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Diorama Base Rochas",
+      "modelGroup": "homem-aranha-diorama-base-rochas",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "11BWDB3eS3Wg9hFzlw4DMpSkjg1jIXsB4": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Diorama Predio Modular",
+      "modelGroup": "homem-aranha-diorama-predio-modular",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1zRRtwQGCx1U2en8IL7f8_0IWDwf3ngoY": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Diorama Camera",
+      "modelGroup": "homem-aranha-diorama-camera",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1mqCb5f1dkbL5Fu6xIU0UeWUsatVnCWfq": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Diorama Base Vertical",
+      "modelGroup": "homem-aranha-diorama-base-vertical",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1g9HebOZutNdVeP3RbYnwVRYsDGflvXf7": {
+      "characterName": "Homem-Aranha e Duende Verde",
+      "variantName": "Diorama Confronto Versao 01",
+      "modelGroup": "homem-aranha-e-duende-verde-diorama-confronto-01",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Duende Verde",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1y8g15mFChGF3EnLCpM6RO8t9jtA12xNQ": {
+      "characterName": "Homem-Aranha e Duende Verde",
+      "variantName": "Diorama Confronto Versao 02",
+      "modelGroup": "homem-aranha-e-duende-verde-diorama-confronto-02",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Duende Verde",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "16ryNJBxtHsHXidCoDPMTSiZuo3wZH6sA": {
+      "characterName": "Duende Verde",
+      "variantName": "Diorama 01",
+      "modelGroup": "duende-verde-diorama-01",
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Homem-Aranha",
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Duende Verde",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1YYlcfbikdynxZR7_j8VtHHopEEH7Aeao": {
+      "characterName": "Vingadores",
+      "variantName": "Diorama Grupo",
+      "modelGroup": "vingadores-diorama-grupo",
+      "sourceTitle": "Vingadores",
+      "category": "franquias",
+      "mediaType": "franchise",
+      "subcategory": "vingadores",
+      "tags": [
+        "Vingadores",
+        "Marvel",
+        "Vingadores",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1jCsjxlr3n_Qho88WvcO_2KT3kyO0-0QW": {
+      "characterName": "Crash Bandicoot",
+      "variantName": "Diorama Aku Aku",
+      "modelGroup": "crash-bandicoot-diorama-aku-aku",
+      "sourceTitle": "Crash Bandicoot",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "crash-bandicoot",
+      "tags": [
+        "Crash Bandicoot",
+        "Crash Bandicoot",
+        "Aku Aku",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1CDbw0hZHFwanQpGkfhPLW2iZyiPJQZg2": {
+      "characterName": "Dante e Vergil e Nero",
+      "variantName": "Diorama Devil May Cry",
+      "modelGroup": "dante-vergil-nero-diorama-devil-may-cry",
+      "sourceTitle": "Devil May Cry",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "devil-may-cry",
+      "tags": [
+        "Devil May Cry",
+        "Dante",
+        "Vergil",
+        "Nero",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1C5sVTrkgt-hMxv3bZoWXJTkKTqUTJ7xj": {
+      "characterName": "Liliana Vess",
+      "variantName": "Busto",
+      "modelGroup": "liliana-vess-busto",
+      "sourceTitle": "Magic The Gathering",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "magic-the-gathering",
+      "tags": [
+        "Magic The Gathering",
+        "Liliana Vess",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1XaSK2b_TbTOJUA25B_lvtluNfOKBCEpa": {
+      "characterName": "Earthworm Jim",
+      "variantName": "Diorama 01",
+      "modelGroup": "earthworm-jim-diorama-01",
+      "sourceTitle": "Earthworm Jim",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "earthworm-jim",
+      "tags": [
+        "Earthworm Jim",
+        "Earthworm Jim",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1QeaxUGVDuSu2xdFBGlqKhiAFgbclAuUd": {
+      "characterName": "Earthworm Jim",
+      "variantName": "Diorama 02",
+      "modelGroup": "earthworm-jim-diorama-02",
+      "sourceTitle": "Earthworm Jim",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "earthworm-jim",
+      "tags": [
+        "Earthworm Jim",
+        "Earthworm Jim",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Co7WOPHdEXFk5u9Phf5tv4Td3vNPL8Dr": {
+      "characterName": "Thane Krios",
+      "variantName": "Busto",
+      "modelGroup": "thane-krios-busto",
+      "sourceTitle": "Mass Effect",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "mass-effect",
+      "tags": [
+        "Mass Effect",
+        "Thane Krios",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1AlCI2DNhPKSUVezAdx4KwQXxnofGlTJ0": {
+      "characterName": "Lara Croft",
+      "variantName": "Busto",
+      "modelGroup": "lara-croft-busto",
+      "sourceTitle": "Tomb Raider",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "tomb-raider",
+      "tags": [
+        "Tomb Raider",
+        "Lara Croft",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BQk-DY52Qxsd7lU2mvloXAs5hcpPiIha": {
+      "characterName": "Dorian Yates",
+      "variantName": null,
+      "modelGroup": "dorian-yates",
+      "sourceTitle": "Fisiculturistas",
+      "category": "outros",
+      "mediaType": "other",
+      "subcategory": "fisiculturistas",
+      "tags": [
+        "Fisiculturistas",
+        "Dorian Yates"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BNlWm_7551zDNLh0X5XwwDrNpThUwDN4": {
+      "characterName": "Jay Cutler",
+      "variantName": null,
+      "modelGroup": "jay-cutler",
+      "sourceTitle": "Fisiculturistas",
+      "category": "outros",
+      "mediaType": "other",
+      "subcategory": "fisiculturistas",
+      "tags": [
+        "Fisiculturistas",
+        "Jay Cutler"
+      ],
+      "curationConfidence": "high"
+    },
+    "1B-gkHCagZvSepH5ryzQvO-syGEAKnj5I": {
+      "characterName": "Ronnie Coleman",
+      "variantName": null,
+      "modelGroup": "ronnie-coleman",
+      "sourceTitle": "Fisiculturistas",
+      "category": "outros",
+      "mediaType": "other",
+      "subcategory": "fisiculturistas",
+      "tags": [
+        "Fisiculturistas",
+        "Ronnie Coleman"
+      ],
+      "curationConfidence": "high"
+    },
+    "1fSDOA3IilJaO6irA-XAWz6I2bXEdhpFh": {
+      "characterName": "Hector Salamanca",
+      "variantName": "Busto",
+      "modelGroup": "hector-salamanca-busto",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "breaking-bad",
+      "tags": [
+        "Breaking Bad",
+        "Hector Salamanca",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1IrZ_-XGhb_JOGqQ78hWruwJveQVwZH7F": {
+      "characterName": "Gustavo Fring",
+      "variantName": "Face Off Busto",
+      "modelGroup": "gustavo-fring-face-off-busto",
+      "sourceTitle": "Breaking Bad",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "breaking-bad",
+      "tags": [
+        "Breaking Bad",
+        "Gustavo Fring",
+        "Face Off",
+        "Busto"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BmC4Fh-6lCVEVGDtUjKSyYlleTBv51uY": {
+      "characterName": "Changeman",
+      "variantName": "Bustos Equipe",
+      "modelGroup": "changeman-bustos-equipe",
+      "sourceTitle": "Changeman",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "changeman",
+      "tags": [
+        "Changeman",
+        "Changeman",
+        "Bustos",
+        "Equipe"
+      ],
+      "curationConfidence": "high"
+    },
+    "1D0iCPFiDLxnU9TRiO91uWaqtdfvg41RK": {
+      "characterName": "Daemon Targaryen",
+      "variantName": "House of the Dragon",
+      "modelGroup": "daemon-targaryen-house-of-the-dragon",
+      "sourceTitle": "Game of Thrones",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "game-of-thrones",
+      "tags": [
+        "Game of Thrones",
+        "Daemon Targaryen",
+        "House of the Dragon"
+      ],
+      "curationConfidence": "high"
+    },
+    "1C2Ay7N_mg8IViAlQgJRkkwIT-hHwPDIo": {
+      "characterName": "Game of Thrones",
+      "variantName": "Chibi Grupo",
+      "modelGroup": "game-of-thrones-chibi-grupo",
+      "sourceTitle": "Game of Thrones",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "game-of-thrones",
+      "tags": [
+        "Game of Thrones",
+        "Game of Thrones",
+        "Chibi",
+        "Grupo"
+      ],
+      "curationConfidence": "high"
+    },
+    "1IelJXyQVZCrRApBDMvPuw0FIBmeyfQFf": {
+      "characterName": "Jaspion",
+      "variantName": "Em Pedra",
+      "modelGroup": "jaspion-em-pedra",
+      "sourceTitle": "Jaspion",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "jaspion",
+      "tags": [
+        "Jaspion",
+        "Jaspion"
+      ],
+      "curationConfidence": "high"
+    },
+    "1CU_pDE300Sf4U727F4tqci_sCGXj8xmu": {
+      "characterName": "Jiban",
+      "variantName": "Pose Classica",
+      "modelGroup": "jiban-pose-classica",
+      "sourceTitle": "Jiban",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "jiban",
+      "tags": [
+        "Jiban",
+        "Jiban"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BmT94PuxQh87xvTyMEykqds89tCYIYiD": {
+      "characterName": "Kamen Rider Black",
+      "variantName": null,
+      "modelGroup": "kamen-rider-black",
+      "sourceTitle": "Kamen Rider",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "kamen-rider",
+      "tags": [
+        "Kamen Rider",
+        "Kamen Rider Black"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BeCT21IDIhvMQTynh-LsBD2rPq2wrmoZ": {
+      "characterName": "Shadow Moon",
+      "variantName": null,
+      "modelGroup": "shadow-moon",
+      "sourceTitle": "Kamen Rider",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "kamen-rider",
+      "tags": [
+        "Kamen Rider",
+        "Shadow Moon"
+      ],
+      "curationConfidence": "high"
+    },
+    "1HgMQ9rQSWhUrNxno44yXccsSmPBThK9i": {
+      "characterName": "Ranger Verde",
+      "variantName": "Diorama",
+      "modelGroup": "ranger-verde-diorama",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "power-rangers",
+      "tags": [
+        "Power Rangers",
+        "Ranger Verde",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1oqN_amHtplXhWeC9PjXooT68Uq38Dcwu": {
+      "characterName": "Ranger Vermelho",
+      "variantName": "Diorama",
+      "modelGroup": "ranger-vermelho-diorama",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "power-rangers",
+      "tags": [
+        "Power Rangers",
+        "Ranger Vermelho",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Lj1TeTQ55BFcmZpm8Jx5c2-lez0MZp2_": {
+      "characterName": "Ranger Verde",
+      "variantName": null,
+      "modelGroup": "ranger-verde",
+      "sourceTitle": "Power Rangers",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "power-rangers",
+      "tags": [
+        "Power Rangers",
+        "Ranger Verde"
+      ],
+      "curationConfidence": "high"
+    },
+    "1HBrdJqXK1A_5KC9zBqNOhRcLgQ5syfTK": {
+      "characterName": "Raymond Reddington",
+      "variantName": null,
+      "modelGroup": "raymond-reddington",
+      "sourceTitle": "The Blacklist",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "the-blacklist",
+      "tags": [
+        "The Blacklist",
+        "Raymond Reddington"
+      ],
+      "curationConfidence": "high"
+    },
+    "1MUKE8XXgcBMUTdTHRIWG3BtEEzORzrRl": {
+      "characterName": "Dexter Morgan",
+      "variantName": "Diorama Cena do Crime",
+      "modelGroup": "dexter-morgan-diorama-cena-do-crime",
+      "sourceTitle": "Dexter",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "dexter",
+      "tags": [
+        "Dexter",
+        "Dexter Morgan",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1C4C9ScxfVF6901ClwxQmvrfO9aJhpBlj": {
+      "characterName": "Maozinha",
+      "variantName": "Familia Addams",
+      "modelGroup": "maozinha-familia-addams",
+      "sourceTitle": "Wandinha",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "wandinha",
+      "tags": [
+        "Wandinha",
+        "Maozinha",
+        "Familia Addams"
+      ],
+      "curationConfidence": "high"
+    },
+    "1c2F8XYmGO-sZbp5GJ0aGLmYPCAXNgure": {
+      "characterName": "A Mumia",
+      "variantName": "Classicos",
+      "modelGroup": "a-mumia-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "A Mumia",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1cEAkPAygVgF1P4R_h6hLdtDz53Hd2AQF": {
+      "characterName": "A Noiva de Frankenstein",
+      "variantName": "Classicos",
+      "modelGroup": "a-noiva-de-frankenstein-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "A Noiva de Frankenstein",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1cJT7fZuePMJjp0Fq-JkCOw-rikb98lPv": {
+      "characterName": "Dracula",
+      "variantName": "Classicos",
+      "modelGroup": "dracula-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "Dracula",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1cFlHKUEXFJBsgYhuAB8fXxE_YHOt5JUr": {
+      "characterName": "Frankenstein",
+      "variantName": "Classicos",
+      "modelGroup": "frankenstein-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "Frankenstein",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1cEfsmjxwScwI7n0FX5pzGDVlINRX9ZrZ": {
+      "characterName": "Frankenstein",
+      "variantName": "Classicos",
+      "modelGroup": "frankenstein-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "Frankenstein",
+        "Classicos"
+      ],
+      "curationConfidence": "high",
+      "duplicateOf": "1cFlHKUEXFJBsgYhuAB8fXxE_YHOt5JUr",
+      "curationNotes": "Duplicata visual do JPG da mesma peca classica; manter como referencia duplicada, nao como galeria publica."
+    },
+    "1cDwG0mbayu7OfPR-warT8hTg5TQNKgnU": {
+      "characterName": "Monstro da Lagoa Negra",
+      "variantName": "Classicos",
+      "modelGroup": "monstro-da-lagoa-negra-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "Monstro da Lagoa Negra",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1bvVc_bRRdCE4-5REajbushf7RN_gyuIJ": {
+      "characterName": "Homem Invisivel",
+      "variantName": "Classicos",
+      "modelGroup": "homem-invisivel-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "Homem Invisivel",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1c4IXFDDCvI_z9sauv4jCc8Hjx__cFISy": {
+      "characterName": "Lobisomem",
+      "variantName": "Classicos",
+      "modelGroup": "lobisomem-classicos",
+      "sourceTitle": "Terror",
+      "category": "colecoes",
+      "mediaType": "collection",
+      "subcategory": "terror",
+      "tags": [
+        "Terror",
+        "Lobisomem",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "132sGiJQUHiu8CI31WdfR5oH0DgfOU372": {
+      "characterName": "Rick e Morty",
+      "variantName": "Diorama Portal Versao 01",
+      "modelGroup": "rick-e-morty-diorama-portal-01",
+      "sourceTitle": "Rick e Morty",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "rick-e-morty",
+      "tags": [
+        "Rick e Morty",
+        "Rick Sanchez",
+        "Morty Smith",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
     }
   },
   "visualApprovals": {

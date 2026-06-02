@@ -113,6 +113,7 @@ const DISPLAY_ALIASES = new Map(
     "sreet fighter": "Street Fighter",
     "super girl": "Supergirl",
     superman: "Superman",
+    "tartaruga ninja": "Tartarugas Ninja",
     "the king of fighter": "The King of Fighters",
     thundercats: "ThunderCats",
     "tomb rader": "Tomb Raider",
