@@ -15655,6 +15655,22 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Arquivo estava dentro de Boku No Hero, mas o nome indica Gyutaro de Demon Slayer; mover para anime correto e remover sufixo do personagem."
+    },
+    "1BY4IAXQ_LGmSpcSkWISEEzEZhelCZ03E": {
+      "category": "animes",
+      "subcategory": "naruto",
+      "mediaType": "anime",
+      "sourceTitle": "Naruto",
+      "characterName": "Sasuke Uchiha",
+      "variantName": "The Last",
+      "modelGroup": "sasuke-uchiha-the-last",
+      "tags": [
+        "Naruto",
+        "Sasuke Uchiha",
+        "The Last"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Sasuke The Last e variante/versao visual; personagem publico deve ser Sasuke Uchiha."
     }
   },
   "visualApprovals": {

@@ -566,12 +566,20 @@ function catalogSourceFolder(category, sourceTitle) {
 
 function normalizeTaxonomyCategory(category, sourceTitle) {
   const normalizedCategory = normalizeComparable(category);
+  if (["anime", "animes", "desenho", "desenhos"].includes(normalizedCategory)) return "animes";
+  if (["jogo", "jogos", "game", "games"].includes(normalizedCategory)) return "jogos";
+  if (["filme", "filmes", "movie", "movies"].includes(normalizedCategory)) return "filmes";
+  if (["serie", "series", "tokusatsu"].includes(normalizedCategory)) return "series";
+  if (["franquia", "franquias", "franchise", "franchises", "universo", "universos"].includes(normalizedCategory)) return "franquias";
   if (
     FRANCHISE_SOURCE_TITLES.has(normalizeComparable(sourceTitle)) &&
     ["quadrinho", "quadrinhos", "comic", "comics", "hq"].includes(normalizedCategory)
   ) {
     return "franquias";
   }
+  if (["quadrinho", "quadrinhos", "comic", "comics", "hq"].includes(normalizedCategory)) return "quadrinhos";
+  if (["colecao", "colecoes"].includes(normalizedCategory)) return "colecoes";
+  if (["outro", "outros", "other", "others"].includes(normalizedCategory)) return "outros";
   return category;
 }
 
