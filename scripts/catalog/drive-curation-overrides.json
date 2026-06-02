@@ -2603,6 +2603,42 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-01",
       "notes": "Prancha 012 mostra o mesmo modelo Eddyworkshop com espada e escudo."
+    },
+    "Dragon Ball|Trunks|trunks-saga-cell": {
+      "status": "approved",
+      "approvalType": "same_model_variant_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 013: mesmo modelo Saga Cell com variacao de torso/bracos; manter como galeria/variante do mesmo grupo."
+    },
+    "Dragon Ball|Trunks|trunks-ssj-saga-cell": {
+      "status": "approved",
+      "approvalType": "same_model_variant_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 014: mesmo modelo Trunks SSJ Saga Cell com troca de jaqueta/cabeca; manter como galeria/variante."
+    },
+    "Dragon Ball|Vegeta|vegeta-bracos-cruzados": {
+      "status": "approved",
+      "approvalType": "same_model_variant_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 015: mesmo Vegeta de bracos cruzados com variacao normal/SSJ; manter como galeria/variante."
+    },
+    "Terror|Classicos Frankenstein|": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 016: mesmo modelo Frankenstein em formatos/imagens equivalentes; manter como galeria."
+    },
+    "Tomb Raider|Lara Croft|lara-croft-selva": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 017: mesmo modelo Lara Croft Selva em imagens equivalentes; manter como galeria."
+    },
+    "X-Men|Cyclops|cyclops-escada-fogo": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 018: mesmo Cyclops em escada com fogo; manter como galeria/angulo."
     }
   }
 }
