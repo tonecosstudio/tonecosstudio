@@ -3237,6 +3237,204 @@
       "mediaType": "comic",
       "curationConfidence": "high",
       "curationNotes": "Prancha 019 item 23: mesmo conjunto B3dserk inspirado em Superman The Movie do item 20."
+    },
+    "14lARjO-JB7CUrGhtYsOhuqh2zxzbyXpi": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Capa Base Caveira",
+      "modelGroup": "cammy-capa-base-caveira",
+      "curationNotes": "Prancha 019 Street Fighter/Cammy item 01: Cammy com capa e base de caveira/asa; variante distinta."
+    },
+    "17ML7THww3ZbD9VlqKpWV7drdjRl4HQcH": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Jaqueta Chute Alto",
+      "modelGroup": "cammy-jaqueta-chute-alto",
+      "curationNotes": "Prancha 019 item 02: mesmo modelo da Cammy de jaqueta com chute alto; usar como imagem principal do grupo."
+    },
+    "173NlTjzef1n8rozB0bMxgtpXSmn80RHw": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Jaqueta Saudacao",
+      "modelGroup": "cammy-jaqueta-saudacao",
+      "curationNotes": "Prancha 019 item 03: Cammy de jaqueta em pose de saudacao; variante distinta."
+    },
+    "17409sMznHZZQbaawD24AjcsOtLEBfKt8": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Classica Preta e Verde",
+      "modelGroup": "cammy-classica-preta-verde",
+      "curationNotes": "Prancha 019 item 04: uniforme classico em preto/verde, pose de costas; variante distinta."
+    },
+    "16O347PW-dvz4cw6lrZl0wPZpu23JI0uB": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Jaqueta Ponte",
+      "modelGroup": "cammy-jaqueta-ponte",
+      "curationNotes": "Prancha 019 item 05: Cammy de jaqueta com base/ponte; pose distinta."
+    },
+    "16QxEwXBMcG8tZLIioemad1PQze0A2q8r": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Vega Cosplay Ponte",
+      "modelGroup": "cammy-vega-cosplay-ponte",
+      "curationNotes": "Prancha 019 item 06: Cammy com mascara/garra em estilo Vega e base de ponte; variante distinta."
+    },
+    "11oOrNHJNcUijrVjnmXg1GHUET4fVD9DL": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Classica Model Sheet",
+      "modelGroup": "cammy-classica-model-sheet",
+      "curationNotes": "Prancha 019 item 07: folha/model sheet de Cammy classica; variante distinta."
+    },
+    "1rn1avPl8igjpyqROFDz4BDW6hujVSdpY": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Classica Chute",
+      "modelGroup": "cammy-classica-chute",
+      "curationNotes": "Prancha 019 item 08: foto de peca impressa em pose de chute; variante distinta."
+    },
+    "1TKQLxrcJ4iLhPQ9liixrzHIBcSYtN6Au": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Leotard Azul Base Redonda",
+      "modelGroup": "cammy-leotard-azul-base-redonda",
+      "curationNotes": "Prancha 019 item 09: Cammy em leotard azul com base redonda; variante distinta."
+    },
+    "13Jt3JWOsmCIACWcWMrJ9l_hdc8AnM616": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Biquini Volei",
+      "modelGroup": "cammy-biquini-volei",
+      "curationNotes": "Prancha 019 item 10: Cammy em biquini/pose de volei; variante distinta."
+    },
+    "13QuTifKUJvx-LTMckB3K3vQPEYusv9jk": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Leotard Azul Braco Erguido",
+      "modelGroup": "cammy-leotard-azul-braco-erguido",
+      "curationNotes": "Prancha 019 item 11: Cammy em leotard azul com braco erguido; variante distinta."
+    },
+    "15yHDQi4vDW89nex3lwNVFAn3Zl7IuzrZ": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Uniforme Azul Base Vermelha",
+      "modelGroup": "cammy-uniforme-azul-base-vermelha",
+      "curationNotes": "Prancha 019 item 12: Cammy em uniforme azul sobre base vermelha; variante distinta."
+    },
+    "16DxwCFZpUCnjkX-3y2WkXmHH0DAFRxXW": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Classica Base Redonda",
+      "modelGroup": "cammy-classica-base-redonda",
+      "curationNotes": "Prancha 019 item 13: Cammy classica em base redonda; variante distinta."
+    },
+    "14T5aq86JN11wFWM-d6DHgxM6P8OBiDRY": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Jaqueta Chute Alto",
+      "modelGroup": "cammy-jaqueta-chute-alto",
+      "curationNotes": "Prancha 019 item 14: close-up do mesmo modelo Cammy de jaqueta com chute alto; usar como galeria."
+    },
+    "14TkNrI8u1lE815OE7OPL-QhhfC1LtCLD": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Jaqueta Pose Costas",
+      "modelGroup": "cammy-jaqueta-pose-costas",
+      "curationNotes": "Prancha 019 item 15: Cammy de jaqueta em pose de costas/lateral; variante distinta."
+    },
+    "14dT7wu7gZC63guaGIWMairu0GJu09L5Q": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Classica Braco Erguido",
+      "modelGroup": "cammy-classica-braco-erguido",
+      "curationNotes": "Prancha 019 item 16: foto de peca impressa da Cammy classica com braco erguido; variante distinta."
+    },
+    "16XfduVroQS1RpJL_4j97zV5zwTDKl9bU": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Leotard Azul SpecialSTL",
+      "modelGroup": "cammy-leotard-azul-specialstl",
+      "curationNotes": "Prancha 019 item 17: Cammy em leotard azul SpecialSTL; variante distinta."
+    },
+    "17G3W4uJh1KMUpDYoUcfUVMcjLSvSyUhR": {
+      "characterName": "Cammy",
+      "sourceTitle": "Street Fighter",
+      "category": "jogos",
+      "subcategory": "street-fighter",
+      "mediaType": "game",
+      "curationConfidence": "high",
+      "variantName": "Biquini Verde Model Sheet",
+      "modelGroup": "cammy-biquini-verde-model-sheet",
+      "curationNotes": "Prancha 019 item 18: folha/model sheet de Cammy em biquini verde; variante distinta."
     }
   },
   "visualApprovals": {
@@ -3335,6 +3533,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 019 itens 20 e 23 mostram o mesmo conjunto B3dserk inspirado em Superman The Movie; manter como galeria."
+    },
+    "Street Fighter|Cammy|cammy-jaqueta-chute-alto": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019: itens 02 e 14 sao o mesmo modelo Cammy de jaqueta com chute alto; item 14 entra como galeria/close-up."
     }
   }
 }
