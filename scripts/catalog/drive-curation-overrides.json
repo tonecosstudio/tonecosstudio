@@ -15261,6 +15261,207 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem estava na colecao Inimigos da Vizinhanca, mas foi verificada visualmente como Batman; mover para catalogo DC/Batman."
+    },
+    "1IHG8pP-p_GL3Gl5maVyeNNp-Tetw9zkx": {
+      "category": "filmes",
+      "subcategory": "conan",
+      "mediaType": "movie",
+      "sourceTitle": "Conan",
+      "characterName": "Conan",
+      "variantName": "Barbaro",
+      "modelGroup": "conan-barbaro",
+      "tags": [
+        "Conan",
+        "Conan o Barbaro"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Nome tecnico gerou The Barbarian; personagem correto e Conan."
+    },
+    "1ItNPf1qz8SAjwN4rvBihtPeS5lRHRf5V": {
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "sourceTitle": "Senhor dos Aneis",
+      "characterName": "Rei Bruxo de Angmar",
+      "modelGroup": "rei-bruxo-de-angmar",
+      "tags": [
+        "Senhor dos Aneis",
+        "Rei Bruxo de Angmar",
+        "Nazgul"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Normaliza The Witch King of Angmar para Rei Bruxo de Angmar."
+    },
+    "1AdHa_9HCEVwGU1RB8o_QesSe00mEG379": {
+      "category": "franquias",
+      "subcategory": "dc",
+      "mediaType": "franchise",
+      "sourceTitle": "DC",
+      "characterName": "Batman",
+      "variantName": "The Batman",
+      "modelGroup": "batman-the-batman",
+      "tags": [
+        "DC",
+        "Batman",
+        "The Batman"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "The Batman e variante/filme; personagem publico deve ser Batman."
+    },
+    "1Mpe_Lr2b26mM2S5_7NV4lJ3Kbtu5qZhv": {
+      "category": "games",
+      "subcategory": "final-fantasy",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy",
+      "characterName": "Squall Leonhart",
+      "variantName": "Final Fantasy VIII",
+      "modelGroup": "squall-leonhart-final-fantasy-viii",
+      "tags": [
+        "Final Fantasy",
+        "Final Fantasy VIII",
+        "Squall Leonhart"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove From Final Fantasy VIII do nome do personagem; mantem como variante/tag."
+    },
+    "1Mrma_LAJ-vnxhpZDE6VrTGtdfZUr1cFB": {
+      "category": "games",
+      "subcategory": "final-fantasy",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy",
+      "characterName": "Tifa Lockhart",
+      "variantName": "Stand Final Fantasy VII",
+      "modelGroup": "tifa-lockhart-stand-final-fantasy-vii",
+      "tags": [
+        "Final Fantasy",
+        "Final Fantasy VII",
+        "Tifa Lockhart"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Corrige Lockart/From e separa Stand como variante."
+    },
+    "1MpfjV_rcRg-V9iA9XJprJuMWimZrBd5g": {
+      "category": "games",
+      "subcategory": "final-fantasy",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy",
+      "characterName": "Yuffie Kisaragi",
+      "variantName": "V2 Final Fantasy VII",
+      "modelGroup": "yuffie-kisaragi-v2-final-fantasy-vii",
+      "tags": [
+        "Final Fantasy",
+        "Final Fantasy VII",
+        "Yuffie Kisaragi"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove From do nome do personagem; V2/Final Fantasy VII viram variante/tag."
+    },
+    "19O-cfUNRTLWEnj2saSC5yq4oMNrfO22L": {
+      "category": "games",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "sourceTitle": "The Last of Us",
+      "characterName": "Joel Miller e Ellie Williams",
+      "variantName": "Diorama Infectados Clay",
+      "modelGroup": "joel-miller-e-ellie-williams-diorama-infectados",
+      "tags": [
+        "The Last of Us",
+        "Joel Miller",
+        "Ellie Williams",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada: Joel e Ellie em diorama com infectados; remove The Last generico."
+    },
+    "14OV2z6gQVGiLltIpFUKOGS6dt7ttdomF": {
+      "category": "games",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "sourceTitle": "The Last of Us",
+      "characterName": "Joel Miller e Ellie Williams",
+      "variantName": "Diorama Infectados Render",
+      "modelGroup": "joel-miller-e-ellie-williams-diorama-infectados",
+      "tags": [
+        "The Last of Us",
+        "Joel Miller",
+        "Ellie Williams",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada: render colorido do mesmo diorama Joel/Ellie com infectados."
+    },
+    "1ICoWiTrsctc_z4r1zy8n6ZFKOS-GgLGS": {
+      "category": "games",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "sourceTitle": "The Last of Us",
+      "characterName": "Joel Miller",
+      "variantName": "Fullsize Scale",
+      "modelGroup": "joel-miller-fullsize-scale",
+      "tags": [
+        "The Last of Us",
+        "Joel Miller"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada: Joel Miller solo em escala fullsize; remove The Last generico."
+    },
+    "15wUZAAV8BU6F51Inagno9B-uLsLVNbAH": {
+      "category": "series",
+      "subcategory": "the-walking-dead",
+      "mediaType": "series",
+      "sourceTitle": "The Walking Dead",
+      "characterName": "Negan",
+      "modelGroup": "negan",
+      "tags": [
+        "The Walking Dead",
+        "Negan"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada: Negan com Lucille e base I Am Negan; nao usar franquia como personagem."
+    },
+    "1J9jfR7w1lJQEegJGz4K6AZDubZgLbpD_": {
+      "category": "series",
+      "subcategory": "vikings",
+      "mediaType": "series",
+      "sourceTitle": "Vikings",
+      "characterName": "Floki",
+      "modelGroup": "floki",
+      "tags": [
+        "Vikings",
+        "Floki"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove prefixo The vindo do nome tecnico do arquivo."
+    },
+    "1JF-Paebc7V9x-V-1YiXnoJVWAXLwwfhF": {
+      "category": "series",
+      "subcategory": "vikings",
+      "mediaType": "series",
+      "sourceTitle": "Vikings",
+      "characterName": "Ragnar Lothbrock",
+      "modelGroup": "ragnar-lothbrock",
+      "tags": [
+        "Vikings",
+        "Ragnar Lothbrock"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Remove prefixo The vindo do nome tecnico do arquivo."
+    },
+    "1p8rDM76u43o8KxFBhR8k1SuhnTD4LsJm": {
+      "category": "games",
+      "subcategory": "the-last-of-us",
+      "mediaType": "game",
+      "sourceTitle": "The Last of Us",
+      "characterName": "Ellie Williams",
+      "variantName": "Tocando Violao Sentada",
+      "modelGroup": "ellie-williams-tocando-violao-sentada",
+      "tags": [
+        "The Last of Us",
+        "Ellie Williams",
+        "Violao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada: Ellie Williams sentada tocando violao; remove nome generico Download."
     }
   },
   "visualApprovals": {
