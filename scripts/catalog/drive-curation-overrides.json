@@ -3093,12 +3093,26 @@
       "curationConfidence": "high"
     },
     "1YD5wwNDZjP5lb7dmNdNgI91UBYAMjF1o": {
-      "characterName": "Gotenks",
-      "sourceTitle": "Dragon Ball",
+      "characterName": "Naruto",
+      "sourceTitle": "Naruto",
       "category": "animes",
-      "subcategory": "dragon-ball",
+      "subcategory": "naruto",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Modo Kurama Base Circular",
+      "modelGroup": "naruto-modo-kurama-base-circular",
+      "tags": [
+        "Naruto",
+        "Naruto Uzumaki",
+        "Modo Kurama",
+        "Rasenshuriken",
+        "Base Circular"
+      ],
+      "curationNotes": "Imagem identificada visualmente: estava em lote Gotenks, mas mostra Naruto Uzumaki em Modo Kurama com efeitos de energia.",
+      "characterNames": [
+        "Naruto"
+      ],
+      "modelKind": "character"
     },
     "1HO5bl4jUkrzDhwBGUJQZ49r5mJd0syTD": {
       "characterName": "Roronoa Zoro",
@@ -3624,12 +3638,27 @@
       "curationConfidence": "high"
     },
     "1F0L03YjegrJGjjIjkYp-p5mhaTQTUyVe": {
-      "characterName": "Gotenks",
+      "characterName": "Yamcha e Puar",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Yamcha",
+        "Puar"
+      ],
+      "variantName": "Diorama Base Rochas",
+      "modelGroup": "yamcha-e-puar-diorama-base-rochas",
+      "modelKind": "diorama",
+      "tags": [
+        "Dragon Ball",
+        "Yamcha",
+        "Puar",
+        "Diorama",
+        "Base Rochas"
+      ],
+      "curationNotes": "Prancha 099 item 01 estava como Gotenks, mas a imagem mostra Yamcha com Puar."
     },
     "1XIcwIzC7G0efebIn_1iwQpMsjXMvvwAp": {
       "characterName": "Janemba",
@@ -5448,7 +5477,21 @@
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Goku",
+        "Vegeta"
+      ],
+      "modelKind": "diorama",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Goku",
+        "Vegeta",
+        "Diorama",
+        "Batalha"
+      ],
+      "curationNotes": "Prancha 097 item 01: diorama Goku e Vegeta em combate; manter separado do item 02."
     },
     "1KIuBYYAdVDhd6OnGd02_7ZjJJvLCfqen": {
       "characterName": "Vegeta",
@@ -5501,14 +5544,28 @@
       "curationConfidence": "medium"
     },
     "1L3Jh0ehbspsnpPS6E0xM4u6eM2GU1Jdd": {
-      "characterName": "Goku e Vegeta",
-      "variantName": "Diorama Batalha",
-      "modelGroup": "goku-e-vegeta-diorama-batalha",
+      "characterName": "Vegeta e Trunks",
+      "variantName": "Diorama Batalha Energia",
+      "modelGroup": "vegeta-e-trunks-diorama-batalha-energia",
       "sourceTitle": "Dragon Ball",
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Vegeta",
+        "Trunks"
+      ],
+      "modelKind": "diorama",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Vegeta",
+        "Trunks",
+        "Diorama",
+        "Batalha Energia"
+      ],
+      "curationNotes": "Prancha 097 item 02: diorama Vegeta e Trunks com ataque de energia; nao e galeria do item 01."
     },
     "1IjPMqJpO0ONFD5XC8dh1fHDlVSGEFlaF": {
       "characterName": "Vegeta",
@@ -8956,6 +9013,137 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Prancha 115: Coringa/Joker na escada; os itens 01 e 02 sao o mesmo modelo em render e pintura final, usar como galeria."
+    },
+    "1L9mvf90ZkvcNm7F80An4QN4c82kvw2i8": {
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Broly e Gogeta",
+      "characterNames": [
+        "Broly",
+        "Gogeta"
+      ],
+      "variantName": "Diorama Batalha",
+      "modelGroup": "broly-e-gogeta-diorama-batalha",
+      "modelKind": "diorama",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Super",
+        "Broly",
+        "Gogeta",
+        "Diorama",
+        "Batalha"
+      ],
+      "curationNotes": "Prancha 095 item 01: diorama Broly com Gogeta; nao e galeria do item 02."
+    },
+    "1HR_vCC361vw99GaE6QhUy3FlXzvJEX4g": {
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Broly e Paragus",
+      "characterNames": [
+        "Broly",
+        "Paragus"
+      ],
+      "variantName": "Diorama Base Naves",
+      "modelGroup": "broly-e-paragus-diorama-base-naves",
+      "modelKind": "diorama",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Broly",
+        "Paragus",
+        "Diorama",
+        "Base Naves"
+      ],
+      "curationNotes": "Prancha 095 item 02: Broly com Paragus em base com naves; modelo distinto do item 01."
+    },
+    "1HYI1dkVmOR818dLshqGMG2lEpUE9Theh": {
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Cell",
+      "variantName": "Perfeito Base Escombros",
+      "modelGroup": "cell-perfeito-base-escombros",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Cell",
+        "Cell Perfeito",
+        "Base Escombros"
+      ],
+      "curationNotes": "Prancha 096 item 01: Cell Perfeito em base de escombros; modelo distinto do item 02."
+    },
+    "1HcsjC93g09EDgqySiiueCNE0CVgn9Hiz": {
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Cell",
+      "variantName": "Perfeito Pose Classica",
+      "modelGroup": "cell-perfeito-pose-classica",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Cell",
+        "Cell Perfeito",
+        "Pose Classica"
+      ],
+      "curationNotes": "Prancha 096 item 02: Cell Perfeito em pose classica; modelo distinto do item 01."
+    },
+    "1ExLUEht33ghRgXDjfwT0uOhjeOA52em3": {
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Beerus e Whis",
+      "characterNames": [
+        "Beerus",
+        "Whis"
+      ],
+      "variantName": "Diorama Base Dragon Ball Z",
+      "modelGroup": "beerus-e-whis-diorama-base-dragon-ball-z",
+      "modelKind": "diorama",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Super",
+        "Beerus",
+        "Whis",
+        "Diorama"
+      ],
+      "curationNotes": "Prancha 101 item 01 estava como Super, mas mostra Beerus e Whis."
+    },
+    "19HwDIOYb2b6_I2Z3X_lGlNashjsf9yRC": {
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Jiren e Hit",
+      "characterNames": [
+        "Jiren",
+        "Hit"
+      ],
+      "variantName": "Diorama Torneio do Poder",
+      "modelGroup": "jiren-e-hit-diorama-torneio-do-poder",
+      "modelKind": "diorama",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Super",
+        "Jiren",
+        "Hit",
+        "Diorama",
+        "Torneio do Poder"
+      ],
+      "curationNotes": "Prancha 101 item 02 estava como Super, mas mostra Jiren e Hit."
     }
   },
   "visualApprovals": {
@@ -9240,6 +9428,42 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 117 itens 01 e 02: mesma Mulher-Maravilha Jaqueta 3DMoonn em angulos diferentes; usar como galeria."
+    },
+    "Dragon Ball|Broly|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 095: itens 01 e 02 foram separados em dioramas distintos, removendo o agrupamento falso por personagem Broly."
+    },
+    "Dragon Ball|Cell|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 096: itens 01 e 02 sao modelos diferentes de Cell Perfeito e foram separados por modelGroup."
+    },
+    "Dragon Ball|Goku e Vegeta|goku-e-vegeta-diorama-batalha": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 097: item 02 foi corrigido para Vegeta e Trunks; item 01 permanece Goku e Vegeta."
+    },
+    "Dragon Ball|Gotenks|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 099: item 01 corrigido para Yamcha e Puar; item 02 separado como Gotenks com fantasmas."
+    },
+    "Dragon Ball|Super|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 101: os dois itens estavam agrupados por nome generico Super; foram corrigidos para Beerus e Whis e Jiren e Hit."
+    },
+    "Dragon Ball|Gotenks|gotenks-super-saiyajin-fantasmas-base-circular": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "O item semelhante foi corrigido para Naruto; o Gotenks com fantasmas fica como modelo unico."
     }
   }
 }
