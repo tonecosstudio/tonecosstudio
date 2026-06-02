@@ -975,6 +975,111 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 033 item 06: Psylocke saltando a partir de base circular/portal; pose e base diferentes do item 05."
     },
+    "1JwhzTuORcTZSYXpko8x-FT6AU1TPdNFa": {
+      "characterName": "Cheetara",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "Diorama Veiculo e Snarf",
+      "modelGroup": "cheetara-diorama-veiculo-e-snarf",
+      "tags": [
+        "ThunderCats",
+        "Cheetara",
+        "Snarf",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 030 item 01: Cheetara em peca de diorama com Snarf/veiculo; modelo de catalogo separado da colecao."
+    },
+    "1rfTW6iNWvs8iQkb2Y0yse9BDb_RlEXcT": {
+      "characterName": "Cheetara",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "Busto",
+      "modelGroup": "cheetara-busto",
+      "tags": [
+        "ThunderCats",
+        "Cheetara",
+        "Busto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 030 item 02: busto da Cheetara, peca separada dos modelos de corpo inteiro."
+    },
+    "1Lxlqz1AiYxxXfGEgRJ9LLH5dmh0OFJL9": {
+      "characterName": "Cheetara",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "Chibi SpecialSTL",
+      "modelGroup": "cheetara-chibi-specialstl",
+      "tags": [
+        "ThunderCats",
+        "Cheetara",
+        "Chibi"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 030 item 03: versao chibi SpecialSTL; variante propria."
+    },
+    "1LoIPMRsCZEnQJrjtSRRh7JS_B0AjzjDE": {
+      "characterName": "Cheetara",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "SpecialSTL Bastao",
+      "modelGroup": "cheetara-specialstl-bastao",
+      "tags": [
+        "ThunderCats",
+        "Cheetara",
+        "Bastao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 030 item 04: Cheetara SpecialSTL em corpo inteiro com bastao; modelo diferente da imagem da colecao LAfigures."
+    },
+    "1AyEzy7At9_6L69uc1kUtcdTaiLY9SHJH": {
+      "characterName": "Cheetara",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": true,
+      "variantName": "Colecao LAfigures Bastao",
+      "modelGroup": "cheetara-colecao-lafigures-bastao",
+      "tags": [
+        "ThunderCats",
+        "Cheetara",
+        "Colecao",
+        "Bastao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 030 item 05: imagem principal da colecao ThunderCats/LAfigures; manter como peca de colecao separada do catalogo geral."
+    },
+    "1dO_tolGmqU3jzMkE1v7HrC5EvVvqrToF": {
+      "characterName": "Cheetara",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": true,
+      "variantName": "Colecao LAfigures Bastao",
+      "modelGroup": "cheetara-colecao-lafigures-bastao",
+      "tags": [
+        "ThunderCats",
+        "Cheetara",
+        "Colecao",
+        "Bastao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 030 item 06: duplicata exata da imagem de colecao do item 05; manter em duplicatas, sem publicar como novo modelo."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",

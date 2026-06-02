@@ -794,6 +794,7 @@ async function readManifest(file) {
   return normalizeRows(JSON.parse(raw)).map((item) => {
     const id = item.id || item.fileId || item.file_id;
     const override = driveFileOverrides[id] || {};
+    const hasCollectionOverride = Object.prototype.hasOwnProperty.call(override, "collectionCandidate");
     const pathTaxonomy = inferTaxonomyFromPath(item);
     return {
       manifest: file,
@@ -812,9 +813,10 @@ async function readManifest(file) {
       sourceFolderName: item.sourceFolderName || item.source_folder_name || null,
       sourceDrivePath: item.sourceDrivePath || item.source_drive_path || null,
       pathCharacterName: pathTaxonomy.pathCharacterName || null,
-      collectionCandidate:
-        pathTaxonomy.collectionCandidate ||
-        Boolean(driveFileOverrides[id] && normalizeComparable(override.sourceTitle) === "thundercats"),
+      collectionCandidate: hasCollectionOverride
+        ? Boolean(override.collectionCandidate)
+        : pathTaxonomy.collectionCandidate ||
+          Boolean(driveFileOverrides[id] && normalizeComparable(override.sourceTitle) === "thundercats"),
       tags: item.tags || [],
       notes: item.notes || null,
       ...override,
