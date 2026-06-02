@@ -18,6 +18,10 @@ const VISUAL_REPORT_PATH = argValue(
   "visual-report",
   "catalog-assets/drive-curated-v12/_audit/visual-groups/visual-groups-report.json",
 );
+const CURATION_OVERRIDES_PATH = argValue(
+  "curation-overrides",
+  "scripts/catalog/drive-curation-overrides.json",
+);
 const OUT_PATH = argValue(
   "out",
   "catalog-assets/drive-curated-v12/_manifest/catalog-site-import-plan.json",
@@ -144,11 +148,35 @@ function buildVisualReviewIndex(report) {
   return byIdentity;
 }
 
+function buildVisualApprovalIndex(overrides) {
+  const byIdentity = new Map();
+  for (const [rawKey, approval] of Object.entries(overrides.visualApprovals || {})) {
+    const key = String(rawKey || "").trim();
+    if (!key) continue;
+    const normalizedPipeKey = key.includes("|")
+      ? key
+          .split("|")
+          .map((part) => normalizeComparable(part))
+          .join("|")
+      : null;
+    byIdentity.set(key, approval);
+    if (normalizedPipeKey) byIdentity.set(normalizedPipeKey, approval);
+    byIdentity.set(normalizeComparable(key), approval);
+  }
+  return byIdentity;
+}
+
 function getVisualReview(index, row) {
   return index.get(identityKey(row)) || index.get(identityTextKey(row)) || null;
 }
 
-function classifyVisualStatus(visualReview, variantItems) {
+function getVisualApproval(index, row) {
+  return index.get(identityKey(row)) || index.get(identityTextKey(row)) || null;
+}
+
+function classifyVisualStatus(visualReview, variantItems, visualApproval) {
+  if (visualApproval?.status === "approved") return "approved";
+  if (visualApproval?.status === "needs_visual_review") return "needs_visual_review";
   if (!visualReview) return "approved";
   if (visualReview.reviewType === "exact_duplicate_group") return "approved";
   if (visualReview.reviewType === "variant_candidate") return "approved";
@@ -156,7 +184,7 @@ function classifyVisualStatus(visualReview, variantItems) {
   return "needs_visual_review";
 }
 
-function buildPlan(items, visualIndex) {
+function buildPlan(items, visualIndex, visualApprovalIndex) {
   const byVariant = new Map();
   for (const item of items) {
     const group = byVariant.get(variantKey(item)) || [];
@@ -184,7 +212,8 @@ function buildPlan(items, visualIndex) {
     const primary = readyItems[0];
     const gallery = readyItems.slice(1);
     const visualReview = getVisualReview(visualIndex, primary);
-    const visualStatus = classifyVisualStatus(visualReview, readyItems);
+    const visualApproval = getVisualApproval(visualApprovalIndex, primary);
+    const visualStatus = classifyVisualStatus(visualReview, readyItems, visualApproval);
 
     models.push({
       identityKey: identityKey(primary),
@@ -204,6 +233,7 @@ function buildPlan(items, visualIndex) {
       importAction: visualStatus === "approved" ? "model_with_gallery" : "review_before_publish",
       visualStatus,
       visualReview,
+      visualApproval,
       primaryImage: {
         sourceFileId: primary.id,
         originalName: primary.originalName,
@@ -257,9 +287,11 @@ function summarize(plan) {
 async function main() {
   const manifest = JSON.parse(await fs.readFile(MANIFEST_PATH, "utf8"));
   const visualReport = JSON.parse(await fs.readFile(VISUAL_REPORT_PATH, "utf8"));
+  const curationOverrides = JSON.parse(await fs.readFile(CURATION_OVERRIDES_PATH, "utf8"));
   const items = readItems(manifest);
   const visualIndex = buildVisualReviewIndex(visualReport);
-  const plan = buildPlan(items, visualIndex);
+  const visualApprovalIndex = buildVisualApprovalIndex(curationOverrides);
+  const plan = buildPlan(items, visualIndex, visualApprovalIndex);
   const summary = summarize(plan);
 
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });

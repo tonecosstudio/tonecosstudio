@@ -625,6 +625,8 @@
     },
     "1UIbIlq0-isTtmrHl2u7DZ9mIUS3qUe2x": {
       "characterName": "Batman",
+      "variantName": "Trono Cranio",
+      "modelGroup": "batman-trono-cranio",
       "sourceTitle": "DC",
       "category": "quadrinhos",
       "subcategory": "dc",
@@ -1273,6 +1275,8 @@
     },
     "19X3IE_pszZYLHiJwktpIwiDpb7WkPOih": {
       "characterName": "Lara Croft",
+      "variantName": "Classica Pistolas",
+      "modelGroup": "lara-croft-classica-pistolas",
       "sourceTitle": "Tomb Raider",
       "category": "jogos",
       "subcategory": "tomb-raider",
@@ -1281,6 +1285,8 @@
     },
     "18ieNJEsz92GRU9w-KKjiIPa0kINF03yD": {
       "characterName": "Lara Croft",
+      "variantName": "Top Azul",
+      "modelGroup": "lara-croft-top-azul",
       "sourceTitle": "Tomb Raider",
       "category": "jogos",
       "subcategory": "tomb-raider",
@@ -1289,6 +1295,8 @@
     },
     "18pzMcvGbhkKHQtfksrtwc51WBP5Hdphn": {
       "characterName": "Lara Croft",
+      "variantName": "Aventureira",
+      "modelGroup": "lara-croft-aventureira",
       "sourceTitle": "Tomb Raider",
       "category": "jogos",
       "subcategory": "tomb-raider",
@@ -1297,6 +1305,8 @@
     },
     "19IkwocCB3vyto1Rp81LTjJM6Bj1Dp6RI": {
       "characterName": "Lara Croft",
+      "variantName": "Selva",
+      "modelGroup": "lara-croft-selva",
       "sourceTitle": "Tomb Raider",
       "category": "jogos",
       "subcategory": "tomb-raider",
@@ -1305,6 +1315,8 @@
     },
     "18hYyohB_2Epj9qZjvth-mdUb6h963I4N": {
       "characterName": "Lara Croft",
+      "variantName": "Selva",
+      "modelGroup": "lara-croft-selva",
       "sourceTitle": "Tomb Raider",
       "category": "jogos",
       "subcategory": "tomb-raider",
@@ -1313,6 +1325,8 @@
     },
     "18amuDvVVIRCp5xzvLH2UaI4pCFtGJ1c9": {
       "characterName": "Lara Croft",
+      "variantName": "Chibi",
+      "modelGroup": "lara-croft-chibi",
       "sourceTitle": "Tomb Raider",
       "category": "jogos",
       "subcategory": "tomb-raider",
@@ -1321,6 +1335,8 @@
     },
     "18ogdcPvOI7jvDFbFIejYHQuBjxI2HMKo": {
       "characterName": "Lara Croft",
+      "variantName": "Sobre Base",
+      "modelGroup": "lara-croft-sobre-base",
       "sourceTitle": "Tomb Raider",
       "category": "jogos",
       "subcategory": "tomb-raider",
@@ -1377,6 +1393,8 @@
     },
     "1aE0PUNmGTwzkKLP3sIFCQErPZQa4Csg4": {
       "characterName": "Cyclops",
+      "variantName": "Escada em Chamas",
+      "modelGroup": "cyclops-escada-fogo",
       "sourceTitle": "X-Men",
       "category": "quadrinhos",
       "subcategory": "x-men",
@@ -1385,6 +1403,8 @@
     },
     "1aDzFEq5_8w7W2CaDMC_z3gNHFlzxhTZ1": {
       "characterName": "Cyclops",
+      "variantName": "Base Sentinela",
+      "modelGroup": "cyclops-base-sentinela",
       "sourceTitle": "X-Men",
       "category": "quadrinhos",
       "subcategory": "x-men",
@@ -1994,16 +2014,6 @@
       "mediaType": "anime",
       "curationConfidence": "medium"
     },
-    "1aDzFEq5_8w7W2CaDMC_z3gNHFlzxhTZ1": {
-      "characterName": "Cyclops",
-      "variantName": "Base Sentinela",
-      "modelGroup": "cyclops-base-sentinela",
-      "sourceTitle": "X-Men",
-      "category": "quadrinhos",
-      "subcategory": "x-men",
-      "mediaType": "comic",
-      "curationConfidence": "high"
-    },
     "1FHenDquA52DM_xfsHKZkt2gWNr9mFfCs": {
       "characterName": "Cyclops",
       "variantName": "Gambody Saudacao",
@@ -2108,16 +2118,6 @@
       "characterName": "Cyclops",
       "variantName": "Sentinela Caido",
       "modelGroup": "cyclops-sentinela-caido",
-      "sourceTitle": "X-Men",
-      "category": "quadrinhos",
-      "subcategory": "x-men",
-      "mediaType": "comic",
-      "curationConfidence": "high"
-    },
-    "1aE0PUNmGTwzkKLP3sIFCQErPZQa4Csg4": {
-      "characterName": "Cyclops",
-      "variantName": "Escada em Chamas",
-      "modelGroup": "cyclops-escada-fogo",
       "sourceTitle": "X-Men",
       "category": "quadrinhos",
       "subcategory": "x-men",
@@ -2364,86 +2364,6 @@
       "mediaType": "comic",
       "curationConfidence": "medium"
     },
-    "1UIbIlq0-isTtmrHl2u7DZ9mIUS3qUe2x": {
-      "characterName": "Batman",
-      "variantName": "Trono Cranio",
-      "modelGroup": "batman-trono-cranio",
-      "sourceTitle": "DC",
-      "category": "quadrinhos",
-      "subcategory": "dc",
-      "mediaType": "comic",
-      "curationConfidence": "high"
-    },
-    "19X3IE_pszZYLHiJwktpIwiDpb7WkPOih": {
-      "characterName": "Lara Croft",
-      "variantName": "Classica Pistolas",
-      "modelGroup": "lara-croft-classica-pistolas",
-      "sourceTitle": "Tomb Raider",
-      "category": "jogos",
-      "subcategory": "tomb-raider",
-      "mediaType": "game",
-      "curationConfidence": "high"
-    },
-    "18ieNJEsz92GRU9w-KKjiIPa0kINF03yD": {
-      "characterName": "Lara Croft",
-      "variantName": "Top Azul",
-      "modelGroup": "lara-croft-top-azul",
-      "sourceTitle": "Tomb Raider",
-      "category": "jogos",
-      "subcategory": "tomb-raider",
-      "mediaType": "game",
-      "curationConfidence": "high"
-    },
-    "18pzMcvGbhkKHQtfksrtwc51WBP5Hdphn": {
-      "characterName": "Lara Croft",
-      "variantName": "Aventureira",
-      "modelGroup": "lara-croft-aventureira",
-      "sourceTitle": "Tomb Raider",
-      "category": "jogos",
-      "subcategory": "tomb-raider",
-      "mediaType": "game",
-      "curationConfidence": "high"
-    },
-    "19IkwocCB3vyto1Rp81LTjJM6Bj1Dp6RI": {
-      "characterName": "Lara Croft",
-      "variantName": "Selva",
-      "modelGroup": "lara-croft-selva",
-      "sourceTitle": "Tomb Raider",
-      "category": "jogos",
-      "subcategory": "tomb-raider",
-      "mediaType": "game",
-      "curationConfidence": "high"
-    },
-    "18hYyohB_2Epj9qZjvth-mdUb6h963I4N": {
-      "characterName": "Lara Croft",
-      "variantName": "Selva",
-      "modelGroup": "lara-croft-selva",
-      "sourceTitle": "Tomb Raider",
-      "category": "jogos",
-      "subcategory": "tomb-raider",
-      "mediaType": "game",
-      "curationConfidence": "high"
-    },
-    "18amuDvVVIRCp5xzvLH2UaI4pCFtGJ1c9": {
-      "characterName": "Lara Croft",
-      "variantName": "Chibi",
-      "modelGroup": "lara-croft-chibi",
-      "sourceTitle": "Tomb Raider",
-      "category": "jogos",
-      "subcategory": "tomb-raider",
-      "mediaType": "game",
-      "curationConfidence": "high"
-    },
-    "18ogdcPvOI7jvDFbFIejYHQuBjxI2HMKo": {
-      "characterName": "Lara Croft",
-      "variantName": "Sobre Base",
-      "modelGroup": "lara-croft-sobre-base",
-      "sourceTitle": "Tomb Raider",
-      "category": "jogos",
-      "subcategory": "tomb-raider",
-      "mediaType": "game",
-      "curationConfidence": "high"
-    },
     "1L5F7xz2cpyU9QaWfr2nnFCjv_pSQqdij": {
       "characterName": "Odin",
       "variantName": "Ragnarok",
@@ -2624,6 +2544,65 @@
       "mediaType": "comic",
       "curationConfidence": "high",
       "curationNotes": "Identificado visualmente como Caveira Vermelha."
+    },
+    "1X1CzX0qsc4qr246sNl54jd_yN6N7WYCI": {
+      "characterName": "Robin",
+      "variantName": "Classico Capa Dourada",
+      "modelGroup": "robin-classico-capa-dourada",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Mesmo modelo do arquivo robin-statue, mantido como galeria."
+    },
+    "1JsU-9kuaHxLR865AYCxDnOh7BKQ7F7iZ": {
+      "characterName": "Robin",
+      "variantName": "Classico Capa Dourada",
+      "modelGroup": "robin-classico-capa-dourada",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Mesmo modelo do arquivo robin(1), mantido como galeria."
+    },
+    "1ak77MY-kzJPuky9ZWSYqkXL9z4anaI1L": {
+      "characterName": "Robin",
+      "variantName": "Salto Capa Amarela",
+      "modelGroup": "robin-salto-capa-amarela",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Modelo distinto do Robin classico com capa dourada."
+    }
+  },
+  "visualApprovals": {
+    "DC|Robin|robin-classico-capa-dourada": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-01",
+      "notes": "Itens 1 e 3 da prancha 009 sao o mesmo modelo; usar como galeria/angulo."
+    },
+    "Bleach|Kenpachi Zaraki|": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-01",
+      "notes": "Prancha 010 mostra o mesmo modelo em imagens equivalentes."
+    },
+    "DC|Batman|batman-trono-cranio": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-01",
+      "notes": "Prancha 011 mostra o mesmo Batman no trono de cranio."
+    },
+    "DC|Mulher-Maravilha|mulher-maravilha-eddyworkshop-espada": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-01",
+      "notes": "Prancha 012 mostra o mesmo modelo Eddyworkshop com espada e escudo."
     }
   }
 }

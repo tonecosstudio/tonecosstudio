@@ -27,6 +27,7 @@ const INCLUDE_REVIEW = !argFlag("skip-review");
 const HASH_DEDUPE = !argFlag("no-hash-dedupe");
 const PRUNE = argFlag("prune");
 let existingAssetsById = new Map();
+let existingAssetIdsByPath = new Map();
 let directoryCaseQueue = Promise.resolve();
 
 const IMAGE_SIGNATURES = [
@@ -162,17 +163,23 @@ async function findSourceFile(item) {
 }
 
 async function loadExistingAssetsMap(manifestPath) {
-  if (!manifestPath) return new Map();
+  if (!manifestPath) return { byId: new Map(), idsByPath: new Map() };
   const manifest = await readJsonFile(manifestPath);
   const rows = manifest.items || [];
   const byId = new Map();
+  const idsByPath = new Map();
 
   for (const row of rows) {
     if (!row.id || !row.localPath || row.exportStatus === "error") continue;
-    byId.set(row.id, path.resolve(row.localPath));
+    const resolvedPath = path.resolve(row.localPath);
+    byId.set(row.id, resolvedPath);
+
+    const owners = idsByPath.get(resolvedPath) || new Set();
+    owners.add(row.id);
+    idsByPath.set(resolvedPath, owners);
   }
 
-  return byId;
+  return { byId, idsByPath };
 }
 
 async function loadOutputManifest() {
@@ -194,6 +201,12 @@ function isInsideOutDir(filePath) {
 function isExactDuplicatePath(filePath) {
   const relative = path.relative(path.resolve(OUT_DIR), path.resolve(filePath));
   return relative.split(path.sep).slice(0, 2).join("/") === "90_DUPLICATAS/exatas";
+}
+
+function existingPathBelongsToAnotherId(filePath, id) {
+  if (!id) return false;
+  const owners = existingAssetIdsByPath.get(path.resolve(filePath));
+  return Boolean(owners && !owners.has(id));
 }
 
 async function readSourceBytes(item) {
@@ -446,18 +459,20 @@ async function exportItem(item, index, total) {
 
       try {
         const existing = await fs.readFile(localPath);
-        console.log(`[${index + 1}/${total}] exists ${relativePath}`);
-        return {
-          ...item,
-          planIndex: index,
-          exportStatus: "already_exists",
-          localPath: relativePath,
-          plannedLocalPath: relativePath,
-          bytes: existing.length,
-          sha256: sha256(existing),
-          source: "existing",
-          error: null,
-        };
+        if (!existingPathBelongsToAnotherId(localPath, item.id)) {
+          console.log(`[${index + 1}/${total}] exists ${relativePath}`);
+          return {
+            ...item,
+            planIndex: index,
+            exportStatus: "already_exists",
+            localPath: relativePath,
+            plannedLocalPath: relativePath,
+            bytes: existing.length,
+            sha256: sha256(existing),
+            source: "existing",
+            error: null,
+          };
+        }
       } catch {
         // Missing file; export it below.
       }
@@ -711,7 +726,9 @@ async function pruneEmptyDirectories(rootDir = OUT_DIR) {
 async function main() {
   const plan = await readJsonFile(PLAN_PATH);
   const previousOutputRows = await loadOutputManifest();
-  existingAssetsById = await loadExistingAssetsMap(EXISTING_ASSETS_MANIFEST);
+  const existingAssets = await loadExistingAssetsMap(EXISTING_ASSETS_MANIFEST);
+  existingAssetsById = existingAssets.byId;
+  existingAssetIdsByPath = existingAssets.idsByPath;
   const plannedItems = (plan.items || []).filter(shouldExport);
   const items = Number.isFinite(LIMIT) && LIMIT > 0 ? plannedItems.slice(0, LIMIT) : plannedItems;
   const rows = await runPool(items, CONCURRENCY);
