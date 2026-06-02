@@ -3403,17 +3403,19 @@
       "category": "animes",
       "subcategory": "dragon-ball",
       "mediaType": "anime",
-      "variantName": "Sekai Term 34",
-      "modelGroup": "son-gohan-avo-sekai-term-34",
+      "variantName": "Nuvem Voadora Sekai",
+      "modelGroup": "son-gohan-avo-nuvem-voadora-sekai",
       "tags": [
         "Dragon Ball",
         "Son Gohan Avo",
         "Gohan Avo",
+        "Grandpa Gohan",
+        "Nuvem Voadora",
         "Sekai",
-        "Term 34"
+        "Junho Term 34"
       ],
       "curationConfidence": "high",
-      "curationNotes": "Prancha 061 item 02: representa Son Gohan Avo/Grandpa Gohan, nao Son Gohan filho do Goku."
+      "curationNotes": "Prancha 061 item 02: representa Son Gohan Avo/Grandpa Gohan na Nuvem Voadora, nao Son Gohan filho do Goku; card Sekai Junho Term 34 mantido em tag interna."
     },
     "1ix27FCcgdzz_qfJVOBYmL7rzIbo3h0CG": {
       "characterName": "Goku",
@@ -3516,15 +3518,17 @@
       "subcategory": "one-piece",
       "mediaType": "anime",
       "curationConfidence": "high",
-      "variantName": "Sekai Term 12",
-      "modelGroup": "donquixote-doflamingo-sekai-term-12",
+      "variantName": "Casaco Rosa Sekai",
+      "modelGroup": "donquixote-doflamingo-casaco-rosa-sekai",
       "tags": [
         "One Piece",
         "Donquixote Doflamingo",
         "Doflamingo",
-        "Sekai Term 12"
+        "Casaco Rosa",
+        "Sekai",
+        "Agosto Term 12"
       ],
-      "curationNotes": "Prancha bloco 2: item 01 e Doflamingo; item 02 nao e o mesmo personagem."
+      "curationNotes": "Prancha bloco 2: item 01 e Doflamingo com casaco rosa; item 02 nao e o mesmo personagem; card Sekai Agosto Term 12 mantido em tag interna."
     },
     "109tWrnKw70xEr6Yo_qpuqkbnZI0XfW1N": {
       "characterName": "Edward Newgate",
@@ -3566,8 +3570,8 @@
     },
     "1EITGmC_8VH1DhcKgRg51vxOLiAdIReuU": {
       "characterName": "Eustass Kid",
-      "variantName": "Sekai May Term 9",
-      "modelGroup": "eustass-kid-sekai-may-term-9",
+      "variantName": "Casaco Vermelho Sekai",
+      "modelGroup": "eustass-kid-casaco-vermelho-sekai",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
@@ -3576,12 +3580,13 @@
         "One Piece",
         "Eustass Kid",
         "Kid",
+        "Casaco Vermelho",
         "Sekai",
-        "May Term 9",
+        "Maio Term 9",
         "Supernovas"
       ],
       "curationConfidence": "high",
-      "curationNotes": "Prancha 066 item 01: Eustass Kid Sekai May Term 9; produto separado dos itens 02 e 03."
+      "curationNotes": "Prancha 066 item 01: Eustass Kid com casaco vermelho; card Sekai Maio Term 9 mantido em tag interna; produto separado dos itens 02 e 03."
     },
     "1QSTFyhP_jaESIyvqSdLjmXJUc5BdwHRh": {
       "characterName": "Borsalino",
@@ -3826,8 +3831,8 @@
     },
     "1RKtJwufbeVTMCDm4TtZrXHhOjfNzFknH": {
       "characterName": "Jill Valentine",
-      "variantName": "Figura em Pe V3D",
-      "modelGroup": "jill-valentine-figura-em-pe-v3d",
+      "variantName": "Corpo Inteiro Pistola V3D",
+      "modelGroup": "jill-valentine-corpo-inteiro-pistola-v3d",
       "sourceTitle": "Resident Evil",
       "category": "jogos",
       "subcategory": "resident-evil",
@@ -3835,12 +3840,12 @@
       "tags": [
         "Resident Evil",
         "Jill Valentine",
-        "Figura em Pe",
+        "Corpo Inteiro",
         "V3D",
         "Pistola"
       ],
       "curationConfidence": "high",
-      "curationNotes": "Prancha 069 item 02: Jill Valentine em pe com pistola, produto separado do busto do item 01."
+      "curationNotes": "Prancha 069 item 02: Jill Valentine de corpo inteiro com pistola, produto separado do busto do item 01."
     },
     "14itl0_GMPl8QeL6xY9Tr_acW2cMNlvV6": {
       "characterName": "Leon Kennedy",
@@ -3932,8 +3937,8 @@
     },
     "1Vb1EwNg-uaGiIMfIk7CWZPL616DiwPIb": {
       "characterName": "Roronoa Zoro",
-      "variantName": "November Tori 3",
-      "modelGroup": "roronoa-zoro-november-tori-3",
+      "variantName": "Tres Espadas Tori",
+      "modelGroup": "roronoa-zoro-tres-espadas-tori",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
@@ -3941,12 +3946,13 @@
       "tags": [
         "One Piece",
         "Roronoa Zoro",
-        "November Tori 3",
-        "Espadas",
-        "Diorama"
+        "Zoro",
+        "Tres Espadas",
+        "Tori",
+        "Novembro Term 3"
       ],
       "curationConfidence": "high",
-      "curationNotes": "Prancha 050 item 02: diorama Zoro November Tori 3 com golpe de espada; produto separado dos outros Zoro."
+      "curationNotes": "Prancha 050 item 03: Zoro em pose dinamica com tres espadas; card Tori Novembro Term 3 mantido em tag interna."
     },
     "1FthM13oOCoAVGUckWFGySRuhLb5lRkrM": {
       "characterName": "Monkey D. Luffy",
@@ -4020,8 +4026,8 @@
     },
     "1lxQg-8wM1OuvBEh7lORSipOhtzcdxLxr": {
       "characterName": "Trafalgar Law",
-      "variantName": "Sekai March Term 7",
-      "modelGroup": "trafalgar-law-sekai-march-term-7",
+      "variantName": "Casaco Preto Sekai",
+      "modelGroup": "trafalgar-law-casaco-preto-sekai",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
@@ -4029,13 +4035,14 @@
       "tags": [
         "One Piece",
         "Trafalgar Law",
+        "Law",
+        "Casaco Preto",
         "Sekai",
-        "March Term 7",
-        "Espada",
+        "Marco Term 7",
         "Supernovas"
       ],
       "curationConfidence": "high",
-      "curationNotes": "Prancha 067 item 03: Trafalgar Law Sekai March Term 7; produto separado dos itens 01 e 02."
+      "curationNotes": "Prancha 067 item 03: Trafalgar Law com casaco preto e espada; card Sekai Marco Term 7 mantido em tag interna; produto separado dos itens 01 e 02."
     },
     "1H3GNt547XpvAQOCJy4qHQLYuyT7CLjDs": {
       "characterName": "Gardevoir",
