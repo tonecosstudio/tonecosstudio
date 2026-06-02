@@ -1080,6 +1080,89 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 030 item 06: duplicata exata da imagem de colecao do item 05; manter em duplicatas, sem publicar como novo modelo."
     },
+    "1Eq0cpewgnwRPQC-jwwY1CemLlDU0T9Pt": {
+      "characterName": "Jupiter",
+      "sourceTitle": "Cybercops",
+      "category": "series",
+      "subcategory": "cybercops",
+      "mediaType": "series",
+      "variantName": "Armadura Principal",
+      "modelGroup": "jupiter-armadura-principal",
+      "tags": [
+        "Cybercops",
+        "Jupiter",
+        "Tokusatsu"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 034 item 01: Cybercop com armadura vermelho/laranja e duas armas; identificado como Jupiter pela equipe principal, revisar se aparecer referencia melhor."
+    },
+    "1EqNKe1NDZ62P7y8PnoS3cPw4ba_c8_S5": {
+      "characterName": "Saturno",
+      "sourceTitle": "Cybercops",
+      "category": "series",
+      "subcategory": "cybercops",
+      "mediaType": "series",
+      "variantName": "Armadura Cinza",
+      "modelGroup": "saturno-armadura-cinza",
+      "tags": [
+        "Cybercops",
+        "Saturno",
+        "Saturn",
+        "Tokusatsu"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 034 item 02: Cybercop cinza/prata com discos Police nos ombros; Saturno."
+    },
+    "1Eqy3DLukU1IgON-TdyAVF-yfgyhDKWrW": {
+      "characterName": "Mercurio",
+      "sourceTitle": "Cybercops",
+      "category": "series",
+      "subcategory": "cybercops",
+      "mediaType": "series",
+      "variantName": "Armadura Azul",
+      "modelGroup": "mercurio-armadura-azul",
+      "tags": [
+        "Cybercops",
+        "Mercurio",
+        "Mercury",
+        "Tokusatsu"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 034 item 03: Cybercop azul com arma longa; Mercurio."
+    },
+    "1EsBlh_aaa9Xq-vQCDk7jiHGQW__dVJTZ": {
+      "characterName": "Marte",
+      "sourceTitle": "Cybercops",
+      "category": "series",
+      "subcategory": "cybercops",
+      "mediaType": "series",
+      "variantName": "Armadura Verde",
+      "modelGroup": "marte-armadura-verde",
+      "tags": [
+        "Cybercops",
+        "Marte",
+        "Mars",
+        "Tokusatsu"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 034 item 04: Cybercop verde com canhao, imagem marcada como Marte."
+    },
+    "1EsK-5N5VhQksfvAmb59vtRtuy5fd1atw": {
+      "characterName": "Lucifer",
+      "sourceTitle": "Cybercops",
+      "category": "series",
+      "subcategory": "cybercops",
+      "mediaType": "series",
+      "variantName": "Armadura Vermelha",
+      "modelGroup": "lucifer-armadura-vermelha",
+      "tags": [
+        "Cybercops",
+        "Lucifer",
+        "Tokusatsu"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 034 item 05: Cybercop vermelho/branco com capacete de chifre e marca PToku Project; Lucifer."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
