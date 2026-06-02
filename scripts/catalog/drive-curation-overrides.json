@@ -2050,6 +2050,98 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 043 item 05: Colossus Malix3Design em pe com arma/objeto longo sobre base circular; produto separado."
     },
+    "1uypmuuycBKzFGeMbefcX9_eSzmwyR4nS": {
+      "characterName": "Fera",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Pose Dinamica Base Rochosa",
+      "modelGroup": "fera-pose-dinamica-base-rochosa",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Fera",
+        "Beast",
+        "Pose Dinamica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 044 item 01: Fera saltando sobre base rochosa colorida; produto separado."
+    },
+    "10F_aZjQMGT8Z7qwtoyWtF1H0dvh4UWaZ": {
+      "characterName": "Fera",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Sentado Sofa",
+      "modelGroup": "fera-sentado-sofa",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Fera",
+        "Beast",
+        "Sentado",
+        "Sofa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 044 item 02: Fera sentado/agachado sobre base em formato de sofa/estrutura vermelha; produto separado."
+    },
+    "1Xm36v5dANsfSMUoVXjXCAsPFgxaBF9Xf": {
+      "characterName": "Fera",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Malix3Design Classico",
+      "modelGroup": "fera-malix3design-classico",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Fera",
+        "Beast",
+        "Malix3Design",
+        "Classico"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 044 item 03: Fera Malix3Design em traje amarelo com busto/detalhe e estatua completa; produto separado."
+    },
+    "13IoaQOonmRmmA0dmi18uo5vApxuYZ6bF": {
+      "characterName": "Fera",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Estrutura Vermelha",
+      "modelGroup": "fera-estrutura-vermelha",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Fera",
+        "Beast",
+        "Estrutura Vermelha"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 044 item 04: Fera pendurado/atacando em estrutura vermelha vertical; produto separado."
+    },
+    "1s5CMVYMUpka7tgHrAexhfPPYKFuhAaOO": {
+      "characterName": "Fera",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Busto",
+      "modelGroup": "fera-busto",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Fera",
+        "Beast",
+        "Busto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 044 item 05: busto azul do Fera sobre pequena base; produto separado."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
