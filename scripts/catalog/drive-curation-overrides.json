@@ -3435,12 +3435,22 @@
     },
     "109tWrnKw70xEr6Yo_qpuqkbnZI0XfW1N": {
       "characterName": "Edward Newgate",
-      "variantName": "Barba Branca",
+      "variantName": "Terno Branco Ryoshi",
+      "modelGroup": "edward-newgate-terno-branco-ryoshi",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Edward Newgate",
+        "Barba Branca",
+        "Whitebeard",
+        "Ryoshi",
+        "Terno Branco"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 065 item 01: Edward Newgate/Barba Branca com terno branco Ryoshi; produto separado dos itens 02 e 03."
     },
     "1Aw8tu38SMsVIEjn12JTaDgWZFjrJW4JU": {
       "characterName": "Trafalgar Law",
@@ -4149,12 +4159,22 @@
     },
     "1--6VytaeUMbyq63bHGcMd0lgoHMskPLg": {
       "characterName": "Edward Newgate",
-      "variantName": "Barba Branca",
+      "variantName": "Trono Energia Azul",
+      "modelGroup": "edward-newgate-trono-energia-azul",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Edward Newgate",
+        "Barba Branca",
+        "Whitebeard",
+        "Trono",
+        "Energia Azul"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 065 item 02: Barba Branca sentado em trono/base com energia azul; produto separado do terno branco e da pose com naginata."
     },
     "1-K7s2eku5s3aRlaAxA3L_-XJariD5QYE": {
       "characterName": "Uryu Ishida",
@@ -4166,12 +4186,22 @@
     },
     "1-Iuxc7Y1hAKw6_T0kPCfZd2zY_d3e7_x": {
       "characterName": "Edward Newgate",
-      "variantName": "Barba Branca",
+      "variantName": "Naginata Battle Pose",
+      "modelGroup": "edward-newgate-naginata-battle-pose",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Edward Newgate",
+        "Barba Branca",
+        "Whitebeard",
+        "Naginata",
+        "Battle Pose"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 065 item 03: Barba Branca com naginata em pose de combate; produto separado dos itens 01 e 02."
     },
     "1-ITe2GtHFBJZVvyDokIL1KAvrScKBaqt": {
       "characterName": "Cavendish",
