@@ -1256,6 +1256,96 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 035 item 05: busto/torso de Cell Perfeito Lucas Perez Z sobre pedestal Red Ribbon; tipo de produto separado do corpo inteiro."
     },
+    "1G_Yt6vdHLexyhfac14LvqiBhHHRA9Zzj": {
+      "characterName": "Gogeta",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Super Saiyajin Base Dragon Ball Z",
+      "modelGroup": "gogeta-super-saiyajin-base-dragon-ball-z",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gogeta",
+        "Super Saiyajin"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 036 item 01: Gogeta Super Saiyajin em base Dragon Ball Z; nao e diorama com Gotenks."
+    },
+    "1J9eCnTPiEAP2CMbyowxumWis3bQ7YfWh": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Lucas Perez Z Base Circular",
+      "modelGroup": "gotenks-lucas-perez-z-base-circular",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gotenks",
+        "Lucas Perez Z"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 036 item 02: Gotenks Lucas Perez Z em pose de vitoria sobre base circular; produto separado."
+    },
+    "1FJorrsHI1GALKGz3N70v2lPG0p0ERwFs": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Super Saiyajin 3 Pose Vitoria",
+      "modelGroup": "gotenks-super-saiyajin-3-pose-vitoria",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gotenks",
+        "Super Saiyajin 3",
+        "Carlos VP"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 036 item 03: Gotenks Super Saiyajin 3 em pose de vitoria com arte Carlos VP; produto separado dos demais Gotenks."
+    },
+    "1bTH74rM6Mo8T6HeU3EDs8AmmExordGEs": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Super Saiyajin Fantasmas Base Circular",
+      "modelGroup": "gotenks-super-saiyajin-fantasmas-base-circular",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gotenks",
+        "Super Saiyajin",
+        "Fantasmas",
+        "Ghost Kamikaze"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 036 item 04: Gotenks Super Saiyajin com fantasmas em volta sobre base circular preta; nao e Gogeta e nao e a mesma peca dos itens 02/03/05."
+    },
+    "1j7mTPFPYCbR8ctNcAPByftzZTdqHzIwG": {
+      "characterName": "Gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "subcategory": "dragon-ball",
+      "mediaType": "anime",
+      "variantName": "Super Saiyajin Ghost Kamikaze Sentado",
+      "modelGroup": "gotenks-super-saiyajin-ghost-kamikaze-sentado",
+      "tags": [
+        "Dragon Ball",
+        "Dragon Ball Z",
+        "Gotenks",
+        "Super Saiyajin",
+        "Fantasmas",
+        "Ghost Kamikaze"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 036 item 05: Gotenks Super Saiyajin sentado com multiplos fantasmas Ghost Kamikaze; produto separado do item 04."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
