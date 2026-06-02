@@ -3489,7 +3489,16 @@
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Soul King Energia Verde",
+      "modelGroup": "brook-soul-king-energia-verde",
+      "tags": [
+        "One Piece",
+        "Brook",
+        "Soul King",
+        "Energia Verde"
+      ],
+      "curationNotes": "Prancha bloco 2: Brook #2 Soul King com efeito verde; modelo distinto do item 01."
     },
     "1jrDG1xibjw9-utPuEbtCp3pTzq4VNo0T": {
       "characterName": "Donquixote Doflamingo",
@@ -3497,7 +3506,16 @@
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Sekai Term 12",
+      "modelGroup": "donquixote-doflamingo-sekai-term-12",
+      "tags": [
+        "One Piece",
+        "Donquixote Doflamingo",
+        "Doflamingo",
+        "Sekai Term 12"
+      ],
+      "curationNotes": "Prancha bloco 2: item 01 e Doflamingo; item 02 nao e o mesmo personagem."
     },
     "109tWrnKw70xEr6Yo_qpuqkbnZI0XfW1N": {
       "characterName": "Edward Newgate",
@@ -3958,12 +3976,22 @@
       "curationConfidence": "high"
     },
     "1vV_zdsugOvM1kK9HHYizDJOp8YeS4rd_": {
-      "characterName": "Donquixote Doflamingo",
+      "characterName": "Charlotte Katakuri",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Sekai Term 13 Tridente",
+      "modelGroup": "charlotte-katakuri-sekai-term-13-tridente",
+      "tags": [
+        "One Piece",
+        "Charlotte Katakuri",
+        "Katakuri",
+        "Tridente",
+        "Sekai Term 13"
+      ],
+      "curationNotes": "Prancha bloco 2: estava como Doflamingo, mas a imagem mostra Charlotte Katakuri com tridente."
     },
     "1cbH3j0pg7I71GJy_Men9aY0LPt04izjh": {
       "characterName": "Dracule Mihawk",
@@ -4249,7 +4277,16 @@
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "medium"
+      "curationConfidence": "high",
+      "variantName": "Fenix Asa Aberta",
+      "modelGroup": "marco-fenix-asa-aberta",
+      "tags": [
+        "One Piece",
+        "Marco",
+        "Fenix",
+        "Asa Aberta"
+      ],
+      "curationNotes": "Prancha bloco 2: Marco #1 e #2 sao o mesmo modelo em render/foto."
     },
     "1BNEh6ubFt-D8uEOVUlGyqZij0dbNFqpy": {
       "characterName": "Yamato",
@@ -4475,7 +4512,16 @@
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "variantName": "Capa Sombra Sekai",
+      "modelGroup": "shanks-capa-sombra-sekai",
+      "tags": [
+        "One Piece",
+        "Shanks",
+        "Capa",
+        "Sekai"
+      ],
+      "curationNotes": "Prancha bloco 2: galeria do mesmo Shanks com capa/sombra."
     },
     "1-GaW1SXdouWSeq9JXQQ-2tUc6xRlHVRz": {
       "characterName": "Crocodile",
@@ -9430,6 +9476,258 @@
         "Base Emblema"
       ],
       "curationNotes": "Prancha atual: item 02 corrige Sekor para Sektor; modelo distinto com base/emblema."
+    },
+    "1BPWNCy2h_qpKMi3NSi-JKhvoLV6vLc2u": {
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "subcategory": "naruto",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Kakashi",
+      "variantName": "Com Pakkun",
+      "modelGroup": "kakashi-com-pakkun",
+      "tags": [
+        "Naruto",
+        "Kakashi",
+        "Pakkun"
+      ],
+      "curationNotes": "Prancha bloco 2: Kakashi #1 com Pakkun; modelo distinto do Susanoo."
+    },
+    "1jzlZa_vQswQEs8RJ7Z2froahszCxalbl": {
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "subcategory": "naruto",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Kakashi",
+      "variantName": "Susanoo Base Nuvens",
+      "modelGroup": "kakashi-susanoo-base-nuvens",
+      "tags": [
+        "Naruto",
+        "Kakashi",
+        "Susanoo",
+        "Base Nuvens"
+      ],
+      "curationNotes": "Prancha bloco 2: Kakashi #2 com Susanoo/base nuvens; modelo distinto do item 01."
+    },
+    "18UeO57G5tRsuaR8LwSowD-MFHx4aE6fH": {
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "subcategory": "naruto",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Madara",
+      "variantName": "Com Kurama",
+      "modelGroup": "madara-com-kurama",
+      "tags": [
+        "Naruto",
+        "Madara",
+        "Kurama"
+      ],
+      "curationNotes": "Prancha bloco 2: Madara #1 com Kurama; modelo distinto do item 02."
+    },
+    "1omFmlykVKF64Fj9CMKgPonDOrBS8__oQ": {
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "subcategory": "naruto",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Madara",
+      "variantName": "Gunbai Base Rocha",
+      "modelGroup": "madara-gunbai-base-rocha",
+      "tags": [
+        "Naruto",
+        "Madara",
+        "Gunbai",
+        "Base Rocha"
+      ],
+      "curationNotes": "Prancha bloco 2: Madara #2 em pe com gunbai; modelo distinto do item 01."
+    },
+    "1BlkcUtAV6ndJe5fwScVdru_z-NVBxRmc": {
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Brook",
+      "variantName": "Espada Base Vermelha",
+      "modelGroup": "brook-espada-base-vermelha",
+      "tags": [
+        "One Piece",
+        "Brook",
+        "Espada",
+        "Base Vermelha"
+      ],
+      "curationNotes": "Prancha bloco 2: Brook #1 com espada/base vermelha; modelo distinto do item 02."
+    },
+    "17-6IAdc0jfuUr2q2e1fe4vk1jFeBzhXI": {
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Kaido",
+      "variantName": "Forma Humana Kanabo",
+      "modelGroup": "kaido-forma-humana-kanabo",
+      "tags": [
+        "One Piece",
+        "Kaido",
+        "Kanabo",
+        "Forma Humana"
+      ],
+      "curationNotes": "Prancha bloco 2: Kaido #1 em forma humana com kanabo; modelo distinto do item 02."
+    },
+    "17uWgjtXaXVu6e6jwJedrp5_HJGj6UhF": {
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Kaido",
+      "variantName": "Busto Imperador",
+      "modelGroup": "kaido-busto-imperador",
+      "tags": [
+        "One Piece",
+        "Kaido",
+        "Busto",
+        "Imperador"
+      ],
+      "curationNotes": "Prancha bloco 2: Kaido #2 busto/torso de imperador; modelo distinto do item 01."
+    },
+    "1ThWEiLeqAjEChu57WwuKzDyfB0ctlJv5": {
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Marco",
+      "variantName": "Fenix Asa Aberta",
+      "modelGroup": "marco-fenix-asa-aberta",
+      "tags": [
+        "One Piece",
+        "Marco",
+        "Fenix",
+        "Asa Aberta"
+      ],
+      "curationNotes": "Prancha bloco 2: galeria do mesmo Marco Fenix asa aberta."
+    },
+    "1_WCnScLlb1aomLoROKX3Ie4xA4fIS3eu": {
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Shanks",
+      "variantName": "Capa Sombra Sekai",
+      "modelGroup": "shanks-capa-sombra-sekai",
+      "tags": [
+        "One Piece",
+        "Shanks",
+        "Capa",
+        "Sekai"
+      ],
+      "curationNotes": "Prancha bloco 2: Shanks #1 e #2 parecem o mesmo modelo em render/foto."
+    },
+    "18-7qArX9yxnI-Z9LOUWOLegairhMvRaM": {
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Yamato",
+      "variantName": "Sekai Term 18",
+      "modelGroup": "yamato-sekai-term-18",
+      "tags": [
+        "One Piece",
+        "Yamato",
+        "Sekai Term 18"
+      ],
+      "curationNotes": "Prancha bloco 2: Yamato #1 em pose estatica; modelo distinto do item 02."
+    },
+    "1BNEb6ubFt-D8uEOVUIGyqZij0dbNFqpy": {
+      "sourceTitle": "One Piece",
+      "category": "animes",
+      "subcategory": "one-piece",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Yamato",
+      "variantName": "Ataque Energia Circular",
+      "modelGroup": "yamato-ataque-energia-circular",
+      "tags": [
+        "One Piece",
+        "Yamato",
+        "Ataque",
+        "Energia Circular"
+      ],
+      "curationNotes": "Prancha bloco 2: Yamato #2 em ataque com efeito circular; modelo distinto do item 01."
+    },
+    "1An6aqbxzViUoOGNBB_hh_eTfEnHYW2s": {
+      "sourceTitle": "Overlord",
+      "category": "animes",
+      "subcategory": "overlord",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Albedo",
+      "variantName": "Sentada Asas",
+      "modelGroup": "albedo-sentada-asas",
+      "tags": [
+        "Overlord",
+        "Albedo",
+        "Sentada",
+        "Asas"
+      ],
+      "curationNotes": "Prancha bloco 2: Albedo #1 sentada com asas; modelo distinto do item 02."
+    },
+    "1D9tpe5PhxDQn7X_VOK6ktPRa_nWW2y93": {
+      "sourceTitle": "Overlord",
+      "category": "animes",
+      "subcategory": "overlord",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Albedo",
+      "variantName": "Armadura Machado",
+      "modelGroup": "albedo-armadura-machado",
+      "tags": [
+        "Overlord",
+        "Albedo",
+        "Armadura",
+        "Machado"
+      ],
+      "curationNotes": "Prancha bloco 2: Albedo #2 de armadura com machado; modelo distinto do item 01."
+    },
+    "1Hlodr--1ff3xZ6raZHJXoK07kCLI21Yd": {
+      "sourceTitle": "Jujutsu Kaisen",
+      "category": "animes",
+      "subcategory": "jujutsu-kaisen",
+      "mediaType": "anime",
+      "curationConfidence": "high",
+      "characterName": "Yuji Itadori",
+      "variantName": "Sukuna Marcado",
+      "modelGroup": "yuji-itadori-sukuna-marcado",
+      "tags": [
+        "Jujutsu Kaisen",
+        "Yuji Itadori",
+        "Sukuna",
+        "Marcado"
+      ],
+      "curationNotes": "Prancha bloco 2: estava como Tinker Bell, mas mostra Yuji Itadori/Sukuna."
+    },
+    "1lAhOUyAT3lhYVJWrISvP1c9bp6Jm-5V": {
+      "sourceTitle": "Peter Pan",
+      "category": "filmes",
+      "subcategory": "peter-pan",
+      "mediaType": "movie",
+      "curationConfidence": "high",
+      "characterName": "Tinker Bell",
+      "variantName": "Base Ornamental",
+      "modelGroup": "tinker-bell-base-ornamental",
+      "tags": [
+        "Peter Pan",
+        "Tinker Bell",
+        "Sininho",
+        "Base Ornamental"
+      ],
+      "curationNotes": "Prancha bloco 2: Tinker Bell correta; separada do item 01 corrigido para Jujutsu Kaisen."
     }
   },
   "visualApprovals": {
@@ -9816,6 +10114,78 @@
       "approvalType": "split_variants",
       "reviewedAt": "2026-06-02",
       "notes": "Sekor corrigido para Sektor e separado em dois modelos distintos."
+    },
+    "Naruto|Kakashi|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Kakashi separado entre modelo com Pakkun e modelo Susanoo/base nuvens."
+    },
+    "Naruto|Madara|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Madara separado entre modelo com Kurama e pose em pe com gunbai."
+    },
+    "One Piece|Brook|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Brook separado em espada/base vermelha e Soul King energia verde."
+    },
+    "One Piece|Donquixote Doflamingo|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Item 02 corrigido para Charlotte Katakuri; item 01 permanece Doflamingo."
+    },
+    "One Piece|Kaido|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Kaido separado entre forma humana com kanabo e busto/torso de imperador."
+    },
+    "One Piece|Marco|marco-fenix-asa-aberta": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo Marco Fenix asa aberta em apresentacoes diferentes; usar como galeria."
+    },
+    "One Piece|Marco|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Grupo antigo normalizado para modelGroup Marco Fenix asa aberta."
+    },
+    "One Piece|Shanks|shanks-capa-sombra-sekai": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mesmo modelo Shanks com capa/sombra em render/foto; usar como galeria."
+    },
+    "One Piece|Shanks|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Grupo antigo normalizado para modelGroup Shanks capa sombra Sekai."
+    },
+    "One Piece|Yamato|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Yamato separado entre Sekai Term 18 e ataque com energia circular."
+    },
+    "Overlord|Albedo|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Albedo separado em sentada/asas e armadura/machado."
+    },
+    "Peter Pan|Tinker Bell|": {
+      "status": "approved",
+      "approvalType": "split_variants",
+      "reviewedAt": "2026-06-02",
+      "notes": "Item 01 corrigido para Yuji Itadori/Sukuna; item 02 permanece Tinker Bell."
     }
   }
 }
