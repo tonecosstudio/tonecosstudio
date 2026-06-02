@@ -1439,6 +1439,101 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 037 item 05: Piccolo 3Dfigureprints.com em pose de ataque com imagem de detalhe e modelo completo; produto separado."
     },
+    "1ApS5m08MSonEKna16r3tvLmMaUgyqJA8": {
+      "characterName": "Esqueleto",
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "variantName": "LAfigures Base Espinhos",
+      "modelGroup": "esqueleto-lafigures-base-espinhos",
+      "tags": [
+        "He-Man",
+        "MOTU",
+        "Masters of the Universe",
+        "Esqueleto",
+        "LAfigures"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 038 item 01: Esqueleto LAfigures com cajado e base rochosa de espinhos; produto separado."
+    },
+    "1EIOQJMlDAVIaYruLJW7YYFiLnfYiiZCj": {
+      "characterName": "Esqueleto",
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "variantName": "Dex Serpente",
+      "modelGroup": "esqueleto-dex-serpente",
+      "tags": [
+        "He-Man",
+        "MOTU",
+        "Masters of the Universe",
+        "Esqueleto",
+        "Dex",
+        "Serpente"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 038 item 02: Esqueleto Dex com cajado e serpente na base; produto separado."
+    },
+    "10XMPbAACEKVuS3FE94QsHHDGjEnC9vWw": {
+      "characterName": "Esqueleto",
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "variantName": "Cajado Erguido Render Cinza",
+      "modelGroup": "esqueleto-cajado-erguido-render-cinza",
+      "tags": [
+        "He-Man",
+        "MOTU",
+        "Masters of the Universe",
+        "Esqueleto",
+        "Render",
+        "Cajado"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 038 item 03: render cinza do Esqueleto com cajado erguido sobre base rochosa; pose/base diferente do item Dex."
+    },
+    "1lcb_S0Yhhf_4Qytb1yixLCzPpkeCWuNK": {
+      "characterName": "Esqueleto",
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "variantName": "Armadura Sombria Base Serpente",
+      "modelGroup": "esqueleto-armadura-sombria-base-serpente",
+      "tags": [
+        "He-Man",
+        "MOTU",
+        "Masters of the Universe",
+        "Esqueleto",
+        "Armadura Sombria",
+        "Serpente"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 038 item 04: Esqueleto em armadura sombria com olhos vermelhos, cajado longo e base de serpente; produto separado."
+    },
+    "1YHXDtKU15kqT2rldgs7RMOJ17Sep8D6P": {
+      "characterName": "Esqueleto e Panthor",
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "subcategory": "he-man",
+      "mediaType": "anime",
+      "variantName": "Z Sculptors Montaria",
+      "modelGroup": "esqueleto-e-panthor-z-sculptors-montaria",
+      "tags": [
+        "He-Man",
+        "MOTU",
+        "Masters of the Universe",
+        "Esqueleto",
+        "Panthor",
+        "Z Sculptors",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 038 item 05: Esqueleto montado no Panthor em base rochosa; mover para dioramas/multi-personagem em vez de Esqueleto simples."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
