@@ -862,6 +862,119 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 032 item 06: Magia SpecialSTL sobre destrocos de Sentinela; pose parecida com item 02, mas escultura/base diferentes."
     },
+    "1MOn4k3NIMPACnx63TQbjST9QB1PHZ6C1": {
+      "characterName": "Psylocke",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Malix Sentinela Lanca",
+      "modelGroup": "psylocke-malix-sentinela-lanca",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Psylocke",
+        "Betsy Braddock",
+        "Kwannon",
+        "Sentinela"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 033 item 01: Psylocke Malix com duas laminas sobre destrocos de Sentinela; modelo proprio."
+    },
+    "1CGajp7ZcWObp-1FZLQrz_2UVaKhPCR6S": {
+      "characterName": "Psylocke",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "LAfigures Rocha Espada",
+      "modelGroup": "psylocke-lafigures-rocha-espada",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Psylocke",
+        "Betsy Braddock",
+        "Kwannon"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 033 item 02: Psylocke LAfigures com joelho sobre rocha, katana e faca psiquica; variante separada."
+    },
+    "12iEAlPeXcq8LQalY-7hfWzZrb-mpfgQd": {
+      "characterName": "Psylocke",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Katana Classica",
+      "modelGroup": "psylocke-katana-classica",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Psylocke",
+        "Betsy Braddock",
+        "Kwannon",
+        "Katana"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 033 item 03: Psylocke em pe com katana e energia roxa; modelo distinto dos itens 02, 05 e 06."
+    },
+    "1MNb4uY6_aKI1hJkjoghj1jjXbcjKsxW-": {
+      "characterName": "Psylocke",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Prototipo Branco Rocha",
+      "modelGroup": "psylocke-prototipo-branco-rocha",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Psylocke",
+        "Betsy Braddock",
+        "Kwannon",
+        "Katana"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 033 item 04: render/prototipo branco ajoelhado com katana em rocha; variante propria."
+    },
+    "1JTFHKdCK7w5HCwyoJTd-iiSfethH0byq": {
+      "characterName": "Psylocke",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Base Oriental Energia",
+      "modelGroup": "psylocke-base-oriental-energia",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Psylocke",
+        "Betsy Braddock",
+        "Kwannon",
+        "Energia Psiquica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 033 item 05: Psylocke em pose de ataque com lamina psiquica e base oriental; modelo separado do item 06."
+    },
+    "1WkOMCXsRn1lelhS5RZrxSuHWDoLzfs5L": {
+      "characterName": "Psylocke",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "variantName": "Salto Portal",
+      "modelGroup": "psylocke-salto-portal",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Psylocke",
+        "Betsy Braddock",
+        "Kwannon",
+        "Energia Psiquica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 033 item 06: Psylocke saltando a partir de base circular/portal; pose e base diferentes do item 05."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
