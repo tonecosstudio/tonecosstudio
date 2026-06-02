@@ -4488,21 +4488,59 @@
       "mediaType": "game",
       "curationConfidence": "medium"
     },
-    "12MlQDxbR5Hakfp9epKCc9IxVsVW0dxfk": {
+    "12GL1o72OG_O2V0jpJJ-D9kVLHsW2VB4O": {
       "characterName": "Arthur Morgan",
+      "variantName": "Cavalo Empinado Previa Colorida",
+      "modelGroup": "arthur-morgan-cavalo-empinado-previa-colorida",
       "sourceTitle": "Red Dead Redemption",
       "category": "jogos",
       "subcategory": "red-dead-redemption",
       "mediaType": "game",
-      "curationConfidence": "medium"
+      "tags": [
+        "Red Dead Redemption",
+        "Arthur Morgan",
+        "Cavalo",
+        "Previa Colorida",
+        "Western"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 068 item 01: Arthur Morgan montado em cavalo empinado, render de previa colorida; mesmo modelo do item 03, usar como galeria."
+    },
+    "12MlQDxbR5Hakfp9epKCc9IxVsVW0dxfk": {
+      "characterName": "Arthur Morgan",
+      "variantName": "Cavalo Empinado Previa Colorida",
+      "modelGroup": "arthur-morgan-cavalo-empinado-previa-colorida",
+      "sourceTitle": "Red Dead Redemption",
+      "category": "jogos",
+      "subcategory": "red-dead-redemption",
+      "mediaType": "game",
+      "tags": [
+        "Red Dead Redemption",
+        "Arthur Morgan",
+        "Cavalo",
+        "Previa Colorida",
+        "Western"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 068 item 03: mesma imagem/modelo do item 01 em proporcao diferente; manter como galeria do grupo cavalo empinado previa colorida."
     },
     "1G9uIzLAl0WgVgRwd3FLGFg7EtnT6BiJq": {
       "characterName": "Arthur Morgan",
+      "variantName": "Cavalo Clay Preview",
+      "modelGroup": "arthur-morgan-cavalo-clay-preview",
       "sourceTitle": "Red Dead Redemption",
       "category": "jogos",
       "subcategory": "red-dead-redemption",
       "mediaType": "game",
-      "curationConfidence": "medium"
+      "tags": [
+        "Red Dead Redemption",
+        "Arthur Morgan",
+        "Cavalo",
+        "Clay",
+        "Western"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Prancha 068 item 02: Arthur Morgan montado em cavalo em preview clay; produto separado do grupo WIP colorido dos itens 01 e 03."
     },
     "19X3IE_pszZYLHiJwktpIwiDpb7WkPOih": {
       "characterName": "Lara Croft",
@@ -8116,6 +8154,12 @@
     }
   },
   "visualApprovals": {
+    "Red Dead Redemption|Arthur Morgan|arthur-morgan-cavalo-empinado-previa-colorida": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 068 itens 01 e 03: mesma imagem/modelo Arthur Morgan no cavalo empinado; usar como galeria."
+    },
     "DC|Robin|robin-classico-capa-dourada": {
       "status": "approved",
       "approvalType": "same_model_gallery",
