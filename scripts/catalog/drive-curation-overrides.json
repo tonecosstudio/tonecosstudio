@@ -10657,6 +10657,1024 @@
       "duplicateOf": "12WdvMIXDiezmfsn4U7QQCxphENcc4a9J",
       "curationConfidence": "high",
       "curationNotes": "Duplicata exata por hash de Harry Potter - Harry Potter; mantida fora do modelo principal."
+    },
+    "1Yt1HlgNz_bMSwWmuXhhAMf2-jxI7AZiu": {
+      "characterName": "Vegeta",
+      "variantName": "Armadura Classica Ryoshi",
+      "modelGroup": "vegeta-armadura-classica-ryoshi",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Vegeta",
+        "Armadura Classica",
+        "Ryoshi"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Corrigido de Dads: imagem mostra Vegeta com armadura classica."
+    },
+    "1AWMy-1QXH8l4BrtByjhskYnj3TUXW_2h": {
+      "characterName": "Daphne Blake",
+      "variantName": "Chibi",
+      "modelGroup": "daphne-blake-chibi",
+      "sourceTitle": "Scooby-Doo",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "scooby-doo",
+      "tags": [
+        "Scooby-Doo",
+        "Daphne Blake",
+        "Daphne",
+        "Chibi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1ZieY7UBnJKx5wSJPo3PIa_WdVXkSEDyS": {
+      "characterName": "Freeza",
+      "variantName": "Primeira Forma Armadura",
+      "modelGroup": "freeza-primeira-forma-armadura",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Freeza",
+        "Primeira Forma",
+        "Armadura"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Vow2NoZss95e-HiHbM6Q1TDUgZi_W7gA": {
+      "characterName": "Kakashi",
+      "variantName": "Chidori Base Gk",
+      "modelGroup": "kakashi-chidori-base-gk",
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "naruto",
+      "tags": [
+        "Naruto",
+        "Kakashi",
+        "Chidori",
+        "Base GK"
+      ],
+      "curationConfidence": "high"
+    },
+    "1a7DrQCGZoxu1aaWbouqcF-5QDYVAVSQZ": {
+      "characterName": "Referencia Nao Catalogavel",
+      "sourceTitle": "Catalogo",
+      "category": "revisao",
+      "mediaType": "other",
+      "excludeFromCatalog": true,
+      "exclusionReason": "Foto/referencia real, nao e modelo 3D catalogavel.",
+      "curationConfidence": "high",
+      "curationNotes": "Imagem mostra foto real de pessoa em ambiente interno; removida do catalogo de modelos."
+    },
+    "1_DJBDYOd8qBJMihRdUFTijrYcdkFy0nh": {
+      "characterName": "Sektor",
+      "variantName": "MK3 Classico",
+      "modelGroup": "sektor-mk3-classico",
+      "sourceTitle": "Mortal Kombat",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "mortal-kombat",
+      "tags": [
+        "Mortal Kombat",
+        "Sektor",
+        "MK3",
+        "Cyborg"
+      ],
+      "curationConfidence": "high"
+    },
+    "1QOVsAuQ2RM1NCuBGj-r89fNP3iCAK2Re": {
+      "characterName": "Wolverine",
+      "variantName": "Pose Ataque Rochas",
+      "modelGroup": "wolverine-pose-ataque-rochas",
+      "sourceTitle": "X-Men",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "x-men",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Wolverine",
+        "Logan",
+        "Pose Ataque"
+      ],
+      "curationConfidence": "high"
+    },
+    "1h04R3yzwqH0x0lSaT7-dl2SPitSwojCM": {
+      "characterName": "Zeca Urubu",
+      "variantName": "Base Dinheiro",
+      "modelGroup": "zeca-urubu-base-dinheiro",
+      "sourceTitle": "Pica-Pau",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "pica-pau",
+      "tags": [
+        "Pica-Pau",
+        "Zeca Urubu",
+        "Base Dinheiro"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BVaqFuoCiZfYLx-gRrQjBe1qIicfwCNw": {
+      "characterName": "Denji",
+      "variantName": "Chainsaw Man Transformado",
+      "modelGroup": "denji-chainsaw-man-transformado",
+      "sourceTitle": "Chainsaw Man",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "chainsaw-man",
+      "tags": [
+        "Chainsaw Man",
+        "Denji",
+        "Transformado"
+      ],
+      "curationConfidence": "high"
+    },
+    "12sU5baJ8VRpXX-EaSegvMSZCWk0RKb0l": {
+      "characterName": "Super Boo Vs Gotenks",
+      "modelGroup": "super-boo-vs-gotenks",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Super Boo",
+        "Gotenks",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1E1rln1e91rhqkeA8CFzBzL9uDXYQshvX": {
+      "characterName": "Freeza",
+      "variantName": "Primeira Forma Armadura",
+      "modelGroup": "freeza-primeira-forma-armadura",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Freeza",
+        "Primeira Forma",
+        "Armadura"
+      ],
+      "curationConfidence": "high"
+    },
+    "1zP1EL10uBhx-w24CH6P7DQXTjE7jbp-o": {
+      "characterName": "Gotenks",
+      "variantName": "Base Dragon Ball",
+      "modelGroup": "gotenks-base-dragon-ball",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Gotenks",
+        "Base Dragon Ball"
+      ],
+      "curationConfidence": "high"
+    },
+    "1r1tYHgwK-dMZrYjWHLtf8X1cmN0AN2PE": {
+      "characterName": "Whis",
+      "variantName": "Cajado",
+      "modelGroup": "whis-cajado",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Whis",
+        "Cajado"
+      ],
+      "curationConfidence": "high"
+    },
+    "1C9X6LN9DmtH099WN-qLqjTSRJcsZkv2A": {
+      "characterName": "Beerus",
+      "variantName": "Busto Tres Angulos",
+      "modelGroup": "beerus-busto-tres-angulos",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Beerus",
+        "Bills",
+        "Busto",
+        "Tres Angulos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1wZqaukWQ6Jezsi-BbZkqkV7VvxJViZ3O": {
+      "characterName": "Goku",
+      "variantName": "Crianca Shenlong",
+      "modelGroup": "goku-crianca-shenlong",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Goku",
+        "Goku Crianca",
+        "Shenlong"
+      ],
+      "curationConfidence": "high"
+    },
+    "1nTyz9WND5dNjp84yqi_uQUBXSJ1Km_cg": {
+      "characterName": "Goten e Trunks",
+      "variantName": "Super Saiyajin Dupla",
+      "modelGroup": "goten-e-trunks-super-saiyajin-dupla",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Goten",
+        "Trunks",
+        "Super Saiyajin",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1jGhZNLEeS9nNIQpDqJpACA4GtnR6kXeM": {
+      "characterName": "Gohan",
+      "variantName": "Super Saiyajin Busto e Corpo",
+      "modelGroup": "gohan-super-saiyajin-busto-e-corpo",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Gohan",
+        "Super Saiyajin",
+        "Busto",
+        "Corpo Inteiro"
+      ],
+      "curationConfidence": "high"
+    },
+    "1C0lBHCZ4Oa0iydc5KoFYenkQoZwIyrf5": {
+      "characterName": "All Might",
+      "variantName": "Pose Heroica",
+      "modelGroup": "all-might-pose-heroica",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "All Might",
+        "Toshinori Yagi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1tRXe0KIrXGtOsExBPA_XTk8uM1U6x3X6": {
+      "characterName": "Camie Utsushimi",
+      "variantName": "Uniforme Preto",
+      "modelGroup": "camie-utsushimi-uniforme-preto",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "Camie Utsushimi"
+      ],
+      "curationConfidence": "high"
+    },
+    "11CsOtg1ZPvtnhWpjcoMY0it2Vt7f_VdQ": {
+      "characterName": "Ochaco Uraraka",
+      "variantName": "Uniforme Escolar",
+      "modelGroup": "ochaco-uraraka-uniforme-escolar",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "Ochaco Uraraka",
+        "Uraraka"
+      ],
+      "curationConfidence": "high"
+    },
+    "1H5AFsQqrHPHfB-Zee9b5KkzHOQPfT8xw": {
+      "characterName": "Kakashi",
+      "variantName": "Chidori Base Gk",
+      "modelGroup": "kakashi-chidori-base-gk",
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "naruto",
+      "tags": [
+        "Naruto",
+        "Kakashi",
+        "Chidori",
+        "Base GK"
+      ],
+      "curationConfidence": "high"
+    },
+    "1I6j_G9BDWwWouUf_lWZapmtGVTfHvJBx": {
+      "characterName": "Ash e Pikachu",
+      "variantName": "Base Pokemon",
+      "modelGroup": "ash-e-pikachu-base-pokemon",
+      "sourceTitle": "Pokemon",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "pokemon",
+      "tags": [
+        "Pokemon",
+        "Ash",
+        "Pikachu",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BUrvMe-JphlTvsKiSCaRjTyxlyoxopj6": {
+      "characterName": "Shiryu",
+      "variantName": "Armadura de Libra",
+      "modelGroup": "shiryu-armadura-de-libra",
+      "sourceTitle": "Saint Seiya",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "saint-seiya",
+      "tags": [
+        "Saint Seiya",
+        "Shiryu",
+        "Libra",
+        "Armadura de Libra"
+      ],
+      "curationConfidence": "high"
+    },
+    "1hy5mtTy1xsbBRzbFJnyxpTRMgG4JPw1E": {
+      "characterName": "Regulus de Leao",
+      "variantName": "Armadura de Ouro",
+      "modelGroup": "regulus-de-leao-armadura-de-ouro",
+      "sourceTitle": "Saint Seiya",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "saint-seiya",
+      "tags": [
+        "Saint Seiya",
+        "Regulus de Leao",
+        "Armadura de Ouro"
+      ],
+      "curationConfidence": "high"
+    },
+    "1qntapRTWZS6KvZ_2JWB4tiQLQRLCTRQz": {
+      "characterName": "Coringa",
+      "variantName": "Enfermeiro",
+      "modelGroup": "coringa-enfermeiro",
+      "sourceTitle": "DC",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Enfermeiro"
+      ],
+      "curationConfidence": "high"
+    },
+    "18ytZZ7wPwSFGIcb7wZKAANWmBl-vboT7": {
+      "characterName": "Batman Que Ri",
+      "variantName": "Busto Samurai",
+      "modelGroup": "batman-que-ri-busto-samurai",
+      "sourceTitle": "DC",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Batman Que Ri",
+        "The Batman Who Laughs",
+        "Busto",
+        "Samurai"
+      ],
+      "curationConfidence": "medium"
+    },
+    "1o0PplnlK99RgG0ILjSwepXvhNSGhdfNH": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Base Predio",
+      "modelGroup": "homem-aranha-base-predio",
+      "sourceTitle": "Homem-Aranha",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Base Predio"
+      ],
+      "curationConfidence": "high"
+    },
+    "1-1EA4jaM10y5x6gxwskbAejbG3iFD4zV": {
+      "characterName": "Venom",
+      "variantName": "Pose Agachada",
+      "modelGroup": "venom-pose-agachada",
+      "sourceTitle": "Homem-Aranha",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Venom",
+        "Simbionte"
+      ],
+      "curationConfidence": "high"
+    },
+    "1FGAScHCvJAh-xDNHmCl-HTwYxaKpYH3N": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Dupla Pose Agachada",
+      "modelGroup": "homem-aranha-dupla-pose-agachada",
+      "sourceTitle": "Homem-Aranha",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Dupla"
+      ],
+      "curationConfidence": "medium"
+    },
+    "1545tue8JL_g_V2TiqkDUMhW3negpjTrT": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Pose Dinamica Base Rocha",
+      "modelGroup": "homem-aranha-pose-dinamica-base-rocha",
+      "sourceTitle": "Homem-Aranha",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Pose Dinamica"
+      ],
+      "curationConfidence": "high"
+    },
+    "1_UeK4pJHxpaP5HoZjF1nGpDD_CcMH7nQ": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Simbionte Branco Tentaculos",
+      "modelGroup": "homem-aranha-simbionte-branco-tentaculos",
+      "sourceTitle": "Homem-Aranha",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Simbionte",
+        "Tentaculos"
+      ],
+      "curationConfidence": "medium"
+    },
+    "1_LuzrjkMqRPNUHCBHW_pDj-K0TN2vPBC": {
+      "characterName": "Venom e Homem-Aranha",
+      "variantName": "Diorama Confronto",
+      "modelGroup": "venom-e-homem-aranha-diorama-confronto",
+      "sourceTitle": "Homem-Aranha",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Venom",
+        "Spider-Man",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "14DXK6p4HsIALWXmgUT9xPsybkcI9XONC": {
+      "characterName": "Homem-Aranha",
+      "variantName": "Pose Dinamica Base Ruinas",
+      "modelGroup": "homem-aranha-pose-dinamica-base-ruinas",
+      "sourceTitle": "Homem-Aranha",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "homem-aranha",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Pose Dinamica"
+      ],
+      "curationConfidence": "medium"
+    },
+    "1FAuSfI_SGHrgnRX47_722RX42NaaD_-z": {
+      "characterName": "Hulk",
+      "variantName": "Venomizado",
+      "modelGroup": "hulk-venomizado",
+      "sourceTitle": "Vingadores",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "vingadores",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Hulk",
+        "Venom",
+        "Venomizado"
+      ],
+      "curationConfidence": "high"
+    },
+    "1pQCsN4SnZloBaMA1PRDLoM1muSc_qFw_": {
+      "characterName": "Gaviao Arqueiro",
+      "variantName": "Arco Base Vingadores",
+      "modelGroup": "gaviao-arqueiro-arco-base-vingadores",
+      "sourceTitle": "Vingadores",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "vingadores",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Gaviao Arqueiro",
+        "Hawkeye"
+      ],
+      "curationConfidence": "high"
+    },
+    "1OVo6plRBxPDAEq8efGYI2DmU8wMCetJ4": {
+      "characterName": "Wanda Maximoff",
+      "variantName": "Feiticeira Escarlate",
+      "modelGroup": "wanda-maximoff-feiticeira-escarlate",
+      "sourceTitle": "Vingadores",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "vingadores",
+      "tags": [
+        "Marvel",
+        "Vingadores",
+        "Wanda Maximoff",
+        "Feiticeira Escarlate",
+        "Scarlet Witch"
+      ],
+      "curationConfidence": "high"
+    },
+    "1YJ53VClePVD7iGkSTYsr0oZw9onn_4Ff": {
+      "characterName": "Orc Guerreiro",
+      "variantName": "Machado Neve",
+      "modelGroup": "orc-guerreiro-machado-neve",
+      "sourceTitle": "Warcraft",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "warcraft",
+      "tags": [
+        "Warcraft",
+        "Orc Guerreiro",
+        "Orc",
+        "Machado"
+      ],
+      "curationConfidence": "high"
+    },
+    "1B-95WKhhFYMPSNkMMcLuFHvPHAmgyvoZ": {
+      "characterName": "Daenerys e Drogon",
+      "variantName": "Queen of Dragons",
+      "modelGroup": "daenerys-e-drogon-queen-of-dragons",
+      "sourceTitle": "Game of Thrones",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "game-of-thrones",
+      "tags": [
+        "Game of Thrones",
+        "Daenerys",
+        "Drogon",
+        "Queen of Dragons",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1kTHytZcQZNidnSxKgAmL2GYdQJm6-zxh": {
+      "characterName": "Demogorgon",
+      "variantName": "Diorama Base Floresta",
+      "modelGroup": "demogorgon-diorama-base-floresta",
+      "sourceTitle": "Stranger Things",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "stranger-things",
+      "tags": [
+        "Stranger Things",
+        "Demogorgon",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "10_iwu5Uh1BzfduL_BV3uYLD6v3ugd4Wx": {
+      "characterName": "Demogorgon",
+      "variantName": "Diorama Pose Agachada",
+      "modelGroup": "demogorgon-diorama-pose-agachada",
+      "sourceTitle": "Stranger Things",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "stranger-things",
+      "tags": [
+        "Stranger Things",
+        "Demogorgon",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1uQfEGoeKNPHlVJHV5RZWIyQ1mqxMBfiD": {
+      "characterName": "Lagertha",
+      "variantName": "Escudo e Espada",
+      "modelGroup": "lagertha-escudo-e-espada",
+      "sourceTitle": "Vikings",
+      "category": "series",
+      "mediaType": "series",
+      "subcategory": "vikings",
+      "tags": [
+        "Vikings",
+        "Lagertha",
+        "Escudo",
+        "Espada"
+      ],
+      "curationConfidence": "high"
+    },
+    "1c6VjH-1NSpQ9YtRuYiz4_901UWJVs62W": {
+      "characterName": "Fantasma da Opera",
+      "variantName": "Classicos",
+      "modelGroup": "fantasma-da-opera-classicos",
+      "sourceTitle": "Terror",
+      "category": "filmes",
+      "subcategory": "terror",
+      "mediaType": "movie",
+      "collectionCandidate": true,
+      "tags": [
+        "Terror",
+        "Fantasma da Opera",
+        "Classicos"
+      ],
+      "curationConfidence": "high"
+    },
+    "1A_LXMDkSxu_4iD-JiUXbCAudaTnTXl_s": {
+      "characterName": "Tao Pai Pai",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Tao Pai Pai"
+      ],
+      "curationConfidence": "high"
+    },
+    "15btsfg0jgJXBmZgPuQpGNuCBgsj1Z50j": {
+      "characterName": "Batgirl",
+      "sourceTitle": "DC",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "dc",
+      "tags": [
+        "DC",
+        "Batgirl",
+        "Barbara Gordon"
+      ],
+      "curationConfidence": "high"
+    },
+    "1ofVNc2fcs6Qb4k3O_fkRhCNNQ851sI6s": {
+      "characterName": "Black Cat",
+      "variantName": "Diorama",
+      "modelGroup": "black-cat-diorama",
+      "sourceTitle": "Marvel",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "marvel",
+      "tags": [
+        "Marvel",
+        "Black Cat",
+        "Felicia Hardy",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1_KGta_IoKjHYrnu8QGrYObEuyKmkH8c8": {
+      "characterName": "X-23",
+      "sourceTitle": "X-Men",
+      "category": "Franquias",
+      "mediaType": "franchise",
+      "subcategory": "x-men",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "X-23",
+        "Laura Kinney"
+      ],
+      "curationConfidence": "high"
+    },
+    "1K17Jawj7HZkFd78BPLG_21XeENITxuwv": {
+      "characterName": "Ada Wong",
+      "sourceTitle": "Resident Evil",
+      "category": "jogos",
+      "mediaType": "game",
+      "subcategory": "resident-evil",
+      "tags": [
+        "Resident Evil",
+        "Ada Wong"
+      ],
+      "curationConfidence": "high"
+    },
+    "1UIhlc48XSWNaHopIwQErYlpNZb7-wgkX": {
+      "characterName": "Fell Beast",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "senhor-dos-aneis",
+      "tags": [
+        "Senhor dos Aneis",
+        "Fell Beast",
+        "Nazgul"
+      ],
+      "curationConfidence": "high"
+    },
+    "1ZX4lyo8auHD5IKdJjq9FyyHyEzEVK-Fr": {
+      "characterName": "Freeza",
+      "variantName": "Nave Espacial Black Tower",
+      "modelGroup": "freeza-nave-espacial-black-tower",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Freeza",
+        "Nave Espacial",
+        "Black Tower Collectibles"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Corrigido de Freezadd: modelo mostra Freeza na nave/pod da Black Tower Collectibles."
+    },
+    "1vnoB7qwiMPUWA31LSQmJk6qUJsooN2dM": {
+      "characterName": "Bob Esponja",
+      "variantName": "Pose Classica",
+      "modelGroup": "bob-esponja-pose-classica",
+      "sourceTitle": "Bob Esponja",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "bob-esponja",
+      "tags": [
+        "Bob Esponja",
+        "SpongeBob SquarePants",
+        "Nickelodeon"
+      ],
+      "curationConfidence": "high"
+    },
+    "1U0hD9akPUiHMkJSP6uDMzwoFeMN4tonF": {
+      "characterName": "Ryuk",
+      "variantName": null,
+      "modelGroup": null,
+      "sourceTitle": "Death Note",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "death-note",
+      "tags": [
+        "Death Note",
+        "Ryuk"
+      ],
+      "curationConfidence": "high"
+    },
+    "1Cp8mC5YxDQb75WT2FaqCMq4F4p3hj25E": {
+      "characterName": "Broly",
+      "variantName": "DBZ",
+      "modelGroup": "broly-dbz",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Broly",
+        "DBZ"
+      ],
+      "curationConfidence": "high"
+    },
+    "1CyP5_-4QShypYrSJ6PZnYuVW7paiPhB4": {
+      "characterName": "Broly Vs Vegito",
+      "variantName": "Fanmade DBZ",
+      "modelGroup": "broly-vs-vegito-fanmade-dbz",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Broly",
+        "Vegito",
+        "Vegeto",
+        "Diorama",
+        "Fanmade"
+      ],
+      "curationConfidence": "high"
+    },
+    "1PLL2HXRpkdXWvPlWvu1VyUVI8k-195NP": {
+      "characterName": "Goku Vs Broly",
+      "variantName": null,
+      "modelGroup": "goku-vs-broly",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Goku",
+        "Broly",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1DBkjb5fJ7f0UcLN5OR5OxALTQ7ijSL5H": {
+      "characterName": "Freeza",
+      "variantName": "Nave Espacial Black Tower",
+      "modelGroup": "freeza-nave-espacial-black-tower",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Freeza",
+        "Nave Espacial",
+        "Black Tower Collectibles"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Corrigido de Freezadd: modelo mostra Freeza na nave/pod da Black Tower Collectibles."
+    },
+    "1N4fE5Yvsv8LJ9il39hksZMF0D9YF7d3l": {
+      "characterName": "Freeza",
+      "variantName": "Forma Final Energia Special STL",
+      "modelGroup": "freeza-forma-final-energia-special-stl",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Freeza",
+        "Forma Final",
+        "Energia",
+        "Special STL"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Corrigido de Frieza: modelo mostra Freeza forma final com efeito de energia."
+    },
+    "1p9cYoRDzVaeqOQY6DPHaERtEJ7ycfCpq": {
+      "characterName": "All Might",
+      "variantName": "Versao 01",
+      "modelGroup": "all-might-versao-01",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "All Might",
+        "Toshinori Yagi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1PvoTllgMTqfedNO812Vw43XW5H1l-sIZ": {
+      "characterName": "All Might",
+      "variantName": "Versao 02",
+      "modelGroup": "all-might-versao-02",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "All Might",
+        "Toshinori Yagi"
+      ],
+      "curationConfidence": "high"
+    },
+    "1B3L5yS2mDgTpG0Ddaxz6WzmofyAteYQ_": {
+      "characterName": "All Might",
+      "variantName": "Versao 03",
+      "modelGroup": "all-might-versao-03",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "All Might",
+        "Toshinori Yagi"
+      ],
+      "curationConfidence": "high"
+    },
+    "12XlAkrOO1Xh8QnHi4wZ6Tf5DhoyGrJrr": {
+      "characterName": "Midoriya e Eri",
+      "variantName": null,
+      "modelGroup": "midoriya-e-eri",
+      "sourceTitle": "My Hero Academia",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "my-hero-academia",
+      "tags": [
+        "My Hero Academia",
+        "Midoriya",
+        "Deku",
+        "Eri",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1TNK0kJEcvrCt2BGXZzpnaAPRb7DRKAAp": {
+      "characterName": "Naruto e Neji",
+      "variantName": "Diorama",
+      "modelGroup": "naruto-e-neji-diorama",
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "naruto",
+      "tags": [
+        "Naruto",
+        "Naruto Uzumaki",
+        "Neji",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1BZ8Pwob1D_cn9vyc5L8Y63wMZ_Rw8A8Q": {
+      "characterName": "Hashirama e Madara",
+      "variantName": null,
+      "modelGroup": "hashirama-e-madara",
+      "sourceTitle": "Naruto",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "naruto",
+      "tags": [
+        "Naruto",
+        "Hashirama",
+        "Madara",
+        "Diorama"
+      ],
+      "curationConfidence": "high"
+    },
+    "1CGG0J5FFYn-HXIECAo8ur4P27t6nR4MU": {
+      "characterName": "Diane",
+      "variantName": null,
+      "modelGroup": null,
+      "sourceTitle": "Os Sete Pecados Capitais",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "os-sete-pecados-capitais",
+      "tags": [
+        "Os Sete Pecados Capitais",
+        "Diane"
+      ],
+      "curationConfidence": "high"
+    },
+    "1VI_7my-Jd6vPGYqfedzzOsyimxeMBzna": {
+      "characterName": "Jessie",
+      "variantName": "Equipe Rocket",
+      "modelGroup": "jessie-equipe-rocket",
+      "sourceTitle": "Pokemon",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "pokemon",
+      "tags": [
+        "Pokemon",
+        "Jessie",
+        "Equipe Rocket",
+        "Team Rocket"
+      ],
+      "curationConfidence": "high"
+    },
+    "1PtKtO_wW3QJR5u-33BqcvE3M2BujZx9C": {
+      "characterName": "Broly Vs Vegito",
+      "variantName": "Fanmade DBZ",
+      "modelGroup": "broly-vs-vegito-fanmade-dbz",
+      "sourceTitle": "Dragon Ball",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "dragon-ball",
+      "tags": [
+        "Dragon Ball",
+        "Broly",
+        "Vegito",
+        "Vegeto",
+        "Diorama",
+        "Fanmade"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Mesmo nome/arquivo tambem aparece na pasta Gotenks-gogeta; manter identidade curada e deixar dedupe decidir se e duplicata exata ou variante."
     }
   },
   "visualApprovals": {
@@ -11283,6 +12301,14 @@
       "approvalType": "split_variants",
       "reviewedAt": "2026-06-02",
       "notes": "X 23 normalizado para X-23 e separado em ataque dinamico e em pe/dupla pintura."
+    },
+    "Dragon Ball|Tao Pai Pai|": {
+      "status": "approved",
+      "curationNotes": "Grafias Tao Pai Pai/Tao Paipai consolidadas; itens tratados como galeria do mesmo modelo."
+    },
+    "Senhor dos Aneis|Fell Beast|": {
+      "status": "approved",
+      "curationNotes": "Grafias Fell Beast/Fellbeast consolidadas; itens tratados como galeria do mesmo modelo."
     }
   }
 }

@@ -837,6 +837,7 @@ function inferFromName(row) {
     .trim();
 
   if (row.characterName && !isGenericName(row.characterName)) {
+    if (row.overrideApplied) return canonicalDisplay(row.characterName);
     return cleanIdentityCandidate(row.characterName, row) || row.characterName;
   }
   const baseCandidate = cleanIdentityCandidate(base, row);

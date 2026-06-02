@@ -449,6 +449,33 @@ async function exportItem(item, index, total) {
   try {
     await ensureDirectoryPathCase(path.dirname(localPath));
     if (!FORCE) {
+      if (item.status === "duplicate_candidate" && item.duplicateOf) {
+        const keeperAsset = existingAssetsById.get(item.duplicateOf);
+        if (keeperAsset && isInsideOutDir(keeperAsset)) {
+          try {
+            const existing = await fs.readFile(keeperAsset);
+            if (isImage(existing)) {
+              const keeperRelativePath = path.relative(process.cwd(), keeperAsset);
+              console.log(`[${index + 1}/${total}] duplicate ${keeperRelativePath}`);
+              return {
+                ...item,
+                planIndex: index,
+                exportStatus: "duplicate_reference",
+                localPath: keeperRelativePath,
+                plannedLocalPath: relativePath,
+                bytes: existing.length,
+                sha256: sha256(existing),
+                source: "duplicate-reference",
+                sourceFile: null,
+                error: null,
+              };
+            }
+          } catch {
+            // Fall back to normal export when the keeper asset is not materialized yet.
+          }
+        }
+      }
+
       const existingAsset = item.id ? existingAssetsById.get(item.id) : null;
       if (
         existingAsset &&
