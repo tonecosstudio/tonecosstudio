@@ -1534,6 +1534,99 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 038 item 05: Esqueleto montado no Panthor em base rochosa; mover para dioramas/multi-personagem em vez de Esqueleto simples."
     },
+    "1Ta_Bohf96Z5ihD_GxCp5Ld5UCTP5PTye": {
+      "characterName": "Demolidor e Rei do Crime",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Wicked Confronto",
+      "modelGroup": "demolidor-e-rei-do-crime-wicked-confronto",
+      "tags": [
+        "Marvel",
+        "Demolidor",
+        "Daredevil",
+        "Rei do Crime",
+        "Kingpin",
+        "Wicked",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 039 item 01: diorama Wicked com Demolidor atacando Rei do Crime/Kingpin em base de igreja; nao e variacao do Demolidor simples."
+    },
+    "11Eo7VkTuJBls775XvxUiYyBhPGv9FIR5": {
+      "characterName": "Demolidor",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Escalada Parede de Tijolos",
+      "modelGroup": "demolidor-escalada-parede-tijolos",
+      "tags": [
+        "Marvel",
+        "Demolidor",
+        "Daredevil",
+        "Parede",
+        "Bastao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 039 item 02: Demolidor em traje vermelho escalando parede de tijolos com bastao/cabo; produto separado."
+    },
+    "1ZKw2x-4PrU4inITnrD6AZ14erJPRqoXa": {
+      "characterName": "Demolidor",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Traje Preto Base Tijolos",
+      "modelGroup": "demolidor-traje-preto-base-tijolos",
+      "tags": [
+        "Marvel",
+        "Demolidor",
+        "Daredevil",
+        "Traje Preto",
+        "Serie"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 039 item 03: Demolidor em traje preto/vermelho estilo serie sobre base de tijolos; modelo diferente dos demais."
+    },
+    "1ZTJw-9rW-DN8cmg-OzFH-JW3pj0iK-gj": {
+      "characterName": "Demolidor",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Hells Kitchen Wicked",
+      "modelGroup": "demolidor-hells-kitchen-wicked",
+      "tags": [
+        "Marvel",
+        "Demolidor",
+        "Daredevil",
+        "Hells Kitchen",
+        "Wicked",
+        "Traje Preto"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 039 item 04: peca Wicked The Daredevil of Hells Kitchen com uniforme escuro e base/fachada; produto separado do traje preto em base de tijolos."
+    },
+    "1N_KdD8_5wMdhdf2qDeesSYT5U_ffj_Xf": {
+      "characterName": "Demolidor",
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "subcategory": "marvel",
+      "mediaType": "franchise",
+      "variantName": "Panarello Gargula",
+      "modelGroup": "demolidor-panarello-gargula",
+      "tags": [
+        "Marvel",
+        "Demolidor",
+        "Daredevil",
+        "Panarello STL",
+        "Gargula"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 039 item 05: Demolidor Panarello STL em traje vermelho com base de gargula; produto separado."
+    },
     "1ZF0IC5p5cJJcHff4ADfoA3rLMkytfMZ9": {
       "characterName": "Mulher-Maravilha",
       "variantName": "Espada e Escudo",
