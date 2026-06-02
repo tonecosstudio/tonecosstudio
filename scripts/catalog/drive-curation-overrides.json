@@ -14963,6 +14963,145 @@
       ],
       "curationConfidence": "medium",
       "curationNotes": "Mantem Capitao Marvel como personagem distinto de Capita Marvel."
+    },
+    "1MHk7ncFMH2JjdmAP6PDT_WM-PrP0FzgB": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Juggernaut",
+      "variantName": "Action Pose",
+      "modelGroup": "juggernaut-action-pose",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Juggernaut"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Action Pose e variante; personagem deve continuar na pasta Juggernaut."
+    },
+    "1MD1JwJGzGZn5xYDlaua076oDW6kEYhAj": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Juggernaut",
+      "variantName": "Em Pe",
+      "modelGroup": "juggernaut-em-pe",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Juggernaut"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Em pe e variante; personagem deve continuar na pasta Juggernaut."
+    },
+    "1aNIxVUGIUYUlqI_UgP-DKdrKKa6J8v9w": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Gambit",
+      "variantName": "Special STLs Versao 03",
+      "modelGroup": "gambit-special-stls-versao-03",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Gambit"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Arquivo generico image_processing dentro da pasta Gambit; identidade herdada da pasta."
+    },
+    "1aLy5s2k8IAPDsX9gfkVzPBZh5CL_9LB6": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Gambit",
+      "variantName": "Special STLs Versao 07",
+      "modelGroup": "gambit-special-stls-versao-07",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Gambit"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Gambit com cajado e energia; remove nome tecnico image_processing."
+    },
+    "1-fS4QxP6Is1MM2KqD9VtTcAn4vHAH_LS": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Deadpool",
+      "variantName": "Versao 01",
+      "modelGroup": "deadpool-versao-01",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Deadpool"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Arquivo generico image_processing dentro da pasta Deadpool; identidade herdada da pasta."
+    },
+    "1JPcUjjY4BAUMXh3Z2yp1DRqc0mIS_Hpi": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Deadpool",
+      "variantName": "Romell Chopraa Print",
+      "modelGroup": "deadpool-romell-chopraa-print",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Deadpool"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Nome original e slug indicam Deadpool; remove texto tecnico/autor do personagem."
+    },
+    "1aF7QSD9LmCGaeAuhavzjSWf87MEWVSYq": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Psylocke e Ciclope",
+      "variantName": "Diorama Special STLs",
+      "modelGroup": "psylocke-e-ciclope-diorama-special-stls",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Psylocke",
+        "Ciclope",
+        "Diorama"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Imagem verificada: diorama com personagem feminina de energia psi e Ciclope; classificado como Psylocke e Ciclope."
+    },
+    "1IoIITrGqatjudWGpRWZ4HYq9037BvCHm": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Emma Frost",
+      "modelGroup": "emma-frost",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Emma Frost"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Arquivo em X-Men com nome Emma; consolidado como Emma Frost para evitar pasta generica."
+    },
+    "1ZUaHNxNXCK7QA5r3bJHHznara-HeJk54": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Ciclope",
+      "duplicateOf": "1Jfos5y944zXNcxsNigxKdeM_uFQHtXtL",
+      "curationConfidence": "high",
+      "curationNotes": "Duplicata exata do outro arquivo cyclope.jpg consolidado em Ciclope; manter somente uma copia publica."
     }
   },
   "visualApprovals": {
@@ -15597,6 +15736,42 @@
     "Senhor dos Aneis|Fell Beast|": {
       "status": "approved",
       "curationNotes": "Grafias Fell Beast/Fellbeast consolidadas; itens tratados como galeria do mesmo modelo."
+    },
+    "X-Men|Ciclope|cyclops-escada-fogo": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Duas imagens do mesmo Ciclope em escada/base com fogo; manter como galeria do mesmo modelo."
+    },
+    "X-Men|Dente de Sabre|": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Arquivos consolidados de Dente de Sabre/Sabretooth representam imagens/versoes equivalentes do mesmo personagem neste lote; manter agrupado para galeria/revisao futura fina."
+    },
+    "X-Men|Ciclope|cyclops-gambody-saudacao": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "PNG e JPG do mesmo modelo Gambody de Ciclope saudando; manter como galeria."
+    },
+    "X-Men|Emma Frost Fenix|": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Emma Fenix e Emma Frost Forca Fenix sao o mesmo conceito/personagem; manter como galeria do mesmo modelo."
+    },
+    "X-Men|Senhor Sinistro|": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Mr Sinister e Sr. Sinistro sao a mesma identidade; manter imagens como galeria apos normalizacao do nome."
+    },
+    "X-Men|Wolverine e Deadpool|": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Diorama Wolverine e Deadpool em duas entradas equivalentes; manter como galeria do mesmo grupo."
     }
   }
 }
