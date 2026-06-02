@@ -4437,13 +4437,60 @@
       "mediaType": "movie",
       "curationConfidence": "medium"
     },
-    "1l3q_wAiS1qDfBk28orqxsYe3DMXSfwtW": {
+    "1LMxgladCnMYJjm4PxKqM4dLYG3O6jLyB": {
       "characterName": "Legolas",
+      "variantName": "Special STLs Base Rocha",
+      "modelGroup": "legolas-special-stls-base-rocha",
       "sourceTitle": "Senhor dos Aneis",
       "category": "filmes",
       "subcategory": "senhor-dos-aneis",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "tags": [
+        "Senhor dos Aneis",
+        "The Lord of the Rings",
+        "Legolas",
+        "Special STLs",
+        "Arco"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 070 item 01: Legolas solo Special STLs com arco e base de rocha; produto separado dos itens 02 e 03."
+    },
+    "1OfjVLDR9g-ssRZNNmSbOYhesT-mjmU3y": {
+      "characterName": "Legolas",
+      "variantName": "Arqueiro na Rocha",
+      "modelGroup": "legolas-arqueiro-na-rocha",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "tags": [
+        "Senhor dos Aneis",
+        "The Lord of the Rings",
+        "Legolas",
+        "Arqueiro",
+        "Arco"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 070 item 02: Legolas solo em pose de arqueiro sobre rocha; produto separado dos itens 01 e 03."
+    },
+    "1l3q_wAiS1qDfBk28orqxsYe3DMXSfwtW": {
+      "characterName": "Legolas e Gimli",
+      "variantName": "Diorama Nom Nom Figures",
+      "modelGroup": "legolas-e-gimli-diorama-nom-nom-figures",
+      "sourceTitle": "Senhor dos Aneis",
+      "category": "filmes",
+      "subcategory": "senhor-dos-aneis",
+      "mediaType": "movie",
+      "tags": [
+        "Senhor dos Aneis",
+        "The Lord of the Rings",
+        "Legolas",
+        "Gimli",
+        "Diorama",
+        "Nom Nom Figures"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 070 item 03: diorama com Legolas e Gimli; mover para produto multi-personagem em dioramas, nao manter como Legolas solo."
     },
     "1tHPOVS_kdGHrPqGXa5wZ4l4LpNhQYvCj": {
       "characterName": "Din Djarin",
