@@ -3671,6 +3671,60 @@
       "mediaType": "game",
       "curationConfidence": "high"
     },
+    "1lKFOgPHPqMD1xmZSkHHDiWF-t_oTxc6u": {
+      "characterName": "Jill Valentine",
+      "variantName": "Busto V3D",
+      "modelGroup": "jill-valentine-busto-v3d",
+      "sourceTitle": "Resident Evil",
+      "category": "jogos",
+      "subcategory": "resident-evil",
+      "mediaType": "game",
+      "tags": [
+        "Resident Evil",
+        "Jill Valentine",
+        "Busto",
+        "V3D",
+        "Pistola"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 069 item 01: busto de Jill Valentine loira com pistola e base V3D; corrigido de personagem generico Resident Evil."
+    },
+    "1RKtJwufbeVTMCDm4TtZrXHhOjfNzFknH": {
+      "characterName": "Jill Valentine",
+      "variantName": "Figura em Pe V3D",
+      "modelGroup": "jill-valentine-figura-em-pe-v3d",
+      "sourceTitle": "Resident Evil",
+      "category": "jogos",
+      "subcategory": "resident-evil",
+      "mediaType": "game",
+      "tags": [
+        "Resident Evil",
+        "Jill Valentine",
+        "Figura em Pe",
+        "V3D",
+        "Pistola"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 069 item 02: Jill Valentine em pe com pistola, produto separado do busto do item 01."
+    },
+    "14itl0_GMPl8QeL6xY9Tr_acW2cMNlvV6": {
+      "characterName": "Leon Kennedy",
+      "variantName": "RPD Model Sheet",
+      "modelGroup": "leon-kennedy-rpd-model-sheet",
+      "sourceTitle": "Resident Evil",
+      "category": "jogos",
+      "subcategory": "resident-evil",
+      "mediaType": "game",
+      "tags": [
+        "Resident Evil",
+        "Leon Kennedy",
+        "RPD",
+        "Model Sheet",
+        "Pistola"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 069 item 03: Leon Kennedy com uniforme RPD em model sheet de multiplos angulos; corrigido de personagem generico Resident Evil."
+    },
     "1UIbIlq0-isTtmrHl2u7DZ9mIUS3qUe2x": {
       "characterName": "Batman",
       "variantName": "Trono Cranio",
