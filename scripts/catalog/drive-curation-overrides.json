@@ -6,8 +6,17 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
+      "variantName": "Shihakusho Katana Special STLs",
+      "modelGroup": "ichigo-kurosaki-shihakusho-katana-special-stls",
+      "tags": [
+        "Bleach",
+        "Ichigo Kurosaki",
+        "Shihakusho",
+        "Katana",
+        "Special STLs"
+      ],
       "curationConfidence": "high",
-      "curationNotes": "Identificado visualmente na folha needs-review-001."
+      "curationNotes": "Prancha 057 item 02: mesma peca do item 01 em imagem menor/alternativa; manter como galeria do modelo Special STLs."
     },
     "1GUIxzqN8AcoKt2RUJlxK9JiwvPAZP0Q4": {
       "characterName": "Michael Myers",
@@ -3659,7 +3668,18 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Bankai Zangetsu Corrente",
+      "modelGroup": "ichigo-kurosaki-bankai-zangetsu-corrente",
+      "tags": [
+        "Bleach",
+        "Ichigo Kurosaki",
+        "Bankai",
+        "Zangetsu",
+        "Corrente",
+        "Efeitos Azuis"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 057 item 03: Ichigo em Bankai com Zangetsu grande, corrente e efeitos azuis; modelo separado dos itens 01/02."
     },
     "1EE_2h-CM97e1oALfSi6jNmf4NS6lhxfo": {
       "characterName": "Toshiro Hitsugaya",
@@ -4494,7 +4514,17 @@
       "category": "animes",
       "subcategory": "bleach",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "variantName": "Shihakusho Katana Special STLs",
+      "modelGroup": "ichigo-kurosaki-shihakusho-katana-special-stls",
+      "tags": [
+        "Bleach",
+        "Ichigo Kurosaki",
+        "Shihakusho",
+        "Katana",
+        "Special STLs"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 057 item 01: Ichigo em shihakusho com katana e base Special STLs; agrupar com item 02 como galeria/angulo."
     },
     "1QNM9b8JzlOttRA3Ma-8Bb8w1yw8kIdQp": {
       "characterName": "Eustass Kid",
@@ -7704,6 +7734,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-01",
       "notes": "Prancha 010 mostra o mesmo modelo em imagens equivalentes."
+    },
+    "Bleach|Ichigo Kurosaki|ichigo-kurosaki-shihakusho-katana-special-stls": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 057 itens 01 e 02: mesmo Ichigo em shihakusho com katana/base Special STLs; usar como galeria."
     },
     "DC|Batman|batman-trono-cranio": {
       "status": "approved",
