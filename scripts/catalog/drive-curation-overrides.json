@@ -15671,6 +15671,166 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Sasuke The Last e variante/versao visual; personagem publico deve ser Sasuke Uchiha."
+    },
+    "12Eu1ZRgEDyAFOgw7IzIDy9aXoEoNFQx4": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Juggernaut",
+      "variantName": "Versao 10",
+      "modelGroup": "juggernaut-versao-10",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Juggernaut"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "1hY-vkO33ymdhAKAFZkb9bficr9bzSw0Y": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Juggernaut",
+      "variantName": "Versao 05",
+      "modelGroup": "juggernaut-versao-05",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Juggernaut"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "1DQZyyqQ_WfKxfrvCEr33hugTb3nyvHtw": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Equipe X-Men",
+      "variantName": "Versao 11",
+      "modelGroup": "equipe-x-men-versao-11",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Grupo"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "16j4pJ7rfBiPPRQh62JskLneChQV_Gw7I": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Noturno",
+      "variantName": "Versao 12",
+      "modelGroup": "noturno-versao-12",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Noturno"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "1b7rHzRGrXhT4d5jvBvuMzzUuyzvyWgup": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Jubileu",
+      "variantName": "Versao 15",
+      "modelGroup": "jubileu-versao-15",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Jubileu"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "1qcrJ0f-K_YftKEt-Tss4vRfV9bLIADwf": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Mistica",
+      "variantName": "Versao 19",
+      "modelGroup": "mistica-versao-19",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Mistica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "1d98IzV6OI3-noeUxvj6QZPXXTZVFfovG": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Omega Red",
+      "variantName": "Versao 22",
+      "modelGroup": "omega-red-versao-22",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Omega Red"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "1vs1wXU61FsiwQT_Jwv6xOMCdschzy3Ro": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Homem de Gelo",
+      "variantName": "Versao 23",
+      "modelGroup": "homem-de-gelo-versao-23",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Homem de Gelo"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "1NwSREQFRSK1PbcXljcBCK7ashuaM1zMj": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Senhor Sinistro",
+      "variantName": "Versao 03",
+      "modelGroup": "senhor-sinistro-versao-03",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Senhor Sinistro"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "11QHhsnojMUx28TdAb4g286HcU6RcmIWL": {
+      "category": "franquias",
+      "subcategory": "x-men",
+      "mediaType": "franchise",
+      "sourceTitle": "X-Men",
+      "characterName": "Senhor Sinistro",
+      "variantName": "Versao 10",
+      "modelGroup": "senhor-sinistro-versao-10",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Senhor Sinistro"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
     }
   },
   "visualApprovals": {
