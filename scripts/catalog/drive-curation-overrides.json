@@ -105,6 +105,86 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 052 item 04: diorama com Joel Miller e Ellie Williams; produto multi-personagem separado."
     },
+    "1MRWwFRj6dV0k5xjU-r2wF9zm50y29ZP4": {
+      "characterName": "Anjo",
+      "variantName": "Malix Classico Azul",
+      "modelGroup": "anjo-malix-classico-azul",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel/x-men",
+      "mediaType": "franchise",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Anjo",
+        "Angel",
+        "Malix",
+        "Classico Azul",
+        "Asas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 054 item 01: Anjo/Angel em uniforme azul classico, modelo Malix 3D Design; produto separado dos Special STL."
+    },
+    "125DGyCpWGjCatQLWtZrS4ZWVhIVjKO2z": {
+      "characterName": "Anjo",
+      "variantName": "Special STL Uniforme Vermelho",
+      "modelGroup": "anjo-special-stl-uniforme-vermelho",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel/x-men",
+      "mediaType": "franchise",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Anjo",
+        "Angel",
+        "Special STL",
+        "Uniforme Vermelho",
+        "Asas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 054 item 02: Anjo Special STL em render cinza; item 03 e a versao pintada do mesmo modelo."
+    },
+    "1KQKgFhxxopIGr9P4w2w883r5NSyrQxIL": {
+      "characterName": "Anjo",
+      "variantName": "Special STL Uniforme Vermelho",
+      "modelGroup": "anjo-special-stl-uniforme-vermelho",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel/x-men",
+      "mediaType": "franchise",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Anjo",
+        "Angel",
+        "Special STL",
+        "Uniforme Vermelho",
+        "Asas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 054 item 03: Anjo Special STL em uniforme vermelho pintado; galeria do item 02."
+    },
+    "1KQ3cFv9BdShdpIbiYh39jVN9mcC0pWjm": {
+      "characterName": "Anjo",
+      "variantName": "Special STL Base Nuvem",
+      "modelGroup": "anjo-special-stl-base-nuvem",
+      "sourceTitle": "X-Men",
+      "category": "franquias",
+      "subcategory": "marvel/x-men",
+      "mediaType": "franchise",
+      "tags": [
+        "Marvel",
+        "X-Men",
+        "Anjo",
+        "Angel",
+        "Special STL",
+        "Base Nuvem",
+        "Asas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 054 item 04: Anjo Special STL em base de nuvem e pose distinta; produto separado do uniforme vermelho."
+    },
     "10SZmfCjwZ9nCxhP5OxJUeo7n_oIZywWa": {
       "characterName": "Ciri",
       "sourceTitle": "The Witcher",
@@ -7566,6 +7646,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 052 itens 01 e 02 mostram a mesma Ellie Williams em roupa de inverno com rifle; publicar como um modelo com galeria."
+    },
+    "X-Men|Anjo|anjo-special-stl-uniforme-vermelho": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 054 itens 02 e 03 mostram o mesmo Anjo Special STL em render cinza e versao pintada; publicar como um modelo com galeria."
     }
   }
 }
