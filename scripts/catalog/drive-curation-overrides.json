@@ -1080,6 +1080,97 @@
       "curationConfidence": "high",
       "curationNotes": "Prancha 030 item 06: duplicata exata da imagem de colecao do item 05; manter em duplicatas, sem publicar como novo modelo."
     },
+    "1LzFXXQHPXdt5nY3We3-Y4AlAXhgsVdX2": {
+      "characterName": "Panthro",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "Pose Combate Base Rochosa",
+      "modelGroup": "panthro-pose-combate-base-rochosa",
+      "tags": [
+        "ThunderCats",
+        "Panthro",
+        "Pose Combate",
+        "Base Rochosa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 041 item 01: Panthro em pose de combate sobre base rochosa; modelo de catalogo separado da colecao LAfigures."
+    },
+    "1Lzkn6ioFMsTzOPxGcD81mNXiMvSMx_3y": {
+      "characterName": "Panthro",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "Base Azul",
+      "modelGroup": "panthro-base-azul",
+      "tags": [
+        "ThunderCats",
+        "Panthro",
+        "Base Azul"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 041 item 02: Panthro em base azul/rocha com pose diferente; modelo de catalogo separado."
+    },
+    "1Lsa3bYdm7k36jF2RyNP7f2p7mZaZlQzu": {
+      "characterName": "Panthro",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": false,
+      "variantName": "Chibi CA3D Art",
+      "modelGroup": "panthro-chibi-ca3d-art",
+      "tags": [
+        "ThunderCats",
+        "Panthro",
+        "Chibi",
+        "CA3D Art"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 041 item 03: versao chibi do Panthro com cartela CA3D Art; produto separado dos modelos realistas."
+    },
+    "1B8Bg1dP_3Ej27tuYcRVFKjV0dZU-n0aY": {
+      "characterName": "Panthro",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": true,
+      "variantName": "Colecao LAfigures Nunchaku",
+      "modelGroup": "panthro-colecao-lafigures-nunchaku",
+      "tags": [
+        "ThunderCats",
+        "Panthro",
+        "Colecao",
+        "LAfigures",
+        "Nunchaku"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 041 item 04: imagem principal da colecao ThunderCats/LAfigures para Panthro; manter como peca de colecao separada do catalogo geral."
+    },
+    "1d5ohkxt3gMWSyVwHNLOic5_yh7RAGNlG": {
+      "characterName": "Panthro",
+      "sourceTitle": "ThunderCats",
+      "category": "anime",
+      "subcategory": "thundercats",
+      "mediaType": "anime",
+      "collectionCandidate": true,
+      "variantName": "Colecao LAfigures Nunchaku",
+      "modelGroup": "panthro-colecao-lafigures-nunchaku",
+      "tags": [
+        "ThunderCats",
+        "Panthro",
+        "Colecao",
+        "LAfigures",
+        "Nunchaku"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 041 item 05: duplicata exata da imagem de colecao do item 04; manter em duplicatas, sem publicar como novo modelo."
+    },
     "1Eq0cpewgnwRPQC-jwwY1CemLlDU0T9Pt": {
       "characterName": "Jupiter",
       "sourceTitle": "Cybercops",
