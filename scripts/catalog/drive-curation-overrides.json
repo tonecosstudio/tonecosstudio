@@ -2984,6 +2984,259 @@
       "mediaType": "comic",
       "curationConfidence": "high",
       "curationNotes": "Prancha 019 item 37: Wolverine com moto."
+    },
+    "1JknZ0esnRXUd435TWlCp2hMcxApretdP": {
+      "characterName": "Superman",
+      "variantName": "Voo Base Explosao",
+      "modelGroup": "superman-voo-base-explosao",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 01: Superman em voo sobre base com explosao."
+    },
+    "1FFCzVN_9siwsAHa-kXvj2QwpSgZyVmzT": {
+      "characterName": "Superman",
+      "variantName": "Zez Studios Base Capsula",
+      "modelGroup": "superman-zez-base-capsula",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 02: Superman Zez Studios sobre base/capsula."
+    },
+    "1f7vOIeeRxuLI-kcoJzqVYxKsFhnCXIpZ": {
+      "characterName": "Superman",
+      "variantName": "Clark Kent Casual",
+      "modelGroup": "superman-clark-kent-casual",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 03: versao Clark Kent em roupa social/casual."
+    },
+    "1qOtulP2u9i5gLCC2_3QSk25oAjE_Pz5e": {
+      "characterName": "Cyborg Superman",
+      "variantName": "B3dserk",
+      "modelGroup": "cyborg-superman-b3dserk",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 04: imagem mostra Cyborg Superman, nao Superman comum."
+    },
+    "1QzzhbNp3lcerGSJSwAFavURdn94HI5wS": {
+      "characterName": "Superman",
+      "variantName": "Death Metal",
+      "modelGroup": "superman-death-metal",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 05: Superman estilo Death Metal sobre base com cranios."
+    },
+    "1AA_mTXQR87Fk2AYCOc50ZU5okQ9NxReH": {
+      "characterName": "Superman",
+      "variantName": "Classico Base Redonda",
+      "modelGroup": "superman-classico-base-redonda",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 06: Superman classico em estatua com base redonda."
+    },
+    "1lEtQvA0knmdgJf0JPZP0iiuXaiBTVvU9": {
+      "characterName": "Superman",
+      "variantName": "Val-Zod Base Fogo",
+      "modelGroup": "superman-val-zod-base-fogo",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 07: variante Val-Zod em base com fogo."
+    },
+    "1mu_eq9_tf1RpwRZGF0zed78BjGTmN3Bt": {
+      "characterName": "Superman",
+      "variantName": "Busto Zumbi",
+      "modelGroup": "superman-busto-zumbi",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 08: busto zumbi/horror do Superman."
+    },
+    "1HtG8xrkNJgtSbPWzmhSgsbRRHQ34qlV8": {
+      "characterName": "Superman",
+      "variantName": "Classico Base Cristal",
+      "modelGroup": "superman-classico-base-cristal",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 09: mesmo Superman classico em base de cristal do item 16."
+    },
+    "1JmGxVuk_FOg6KDrN0uKZ8ObI5rnPHFJl": {
+      "characterName": "Superman",
+      "variantName": "Traje Preto",
+      "modelGroup": "superman-traje-preto",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 10: Superman em traje preto."
+    },
+    "1JkVkhOXjWii2GtuVNsAMX7Nj__7ehf7u": {
+      "characterName": "Superman",
+      "variantName": "Classico Base Bloco",
+      "modelGroup": "superman-classico-base-bloco",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 11: Superman classico em base retangular/bloco."
+    },
+    "1-9Wjks4U1ikoFgv_nfutqwRky5TmHiTi": {
+      "characterName": "Superman",
+      "variantName": "Base Capsula EW",
+      "modelGroup": "superman-base-capsula-ew",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 12: Superman em base com capsula/elementos mecanicos."
+    },
+    "1v_F5sOX1n_DcoZ0kcOFE-A_aTIhP5Ycd": {
+      "characterName": "Superman",
+      "variantName": "Reino do Amanha Cranios",
+      "modelGroup": "superman-reino-do-amanha-cranios",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 13: mesmo modelo Reino do Amanha com cranios do item 19."
+    },
+    "1piiexguZK-UEEJSVGBq2Rcfk0iTLYzxB": {
+      "characterName": "Superman",
+      "variantName": "Prateado Capa Escudo",
+      "modelGroup": "superman-prateado-capa-escudo",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 14: estatua prateada com capa e escudo/base."
+    },
+    "1MqTqgOVuZDELEpK7PMWgIRohpT2AeQtY": {
+      "characterName": "Superman",
+      "variantName": "Monumento Anjos",
+      "modelGroup": "superman-monumento-anjos",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 15: Superman em base monumental com anjos."
+    },
+    "1vq8qPqLq_6rs1wuYZA-4x2nS2f6eQeL_": {
+      "characterName": "Superman",
+      "variantName": "Classico Base Cristal",
+      "modelGroup": "superman-classico-base-cristal",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 16: mesmo modelo classico em base de cristal do item 09."
+    },
+    "1NqnccrpZ9eZJrSfcfm0mHG2JNrDLgsjL": {
+      "characterName": "Superman",
+      "variantName": "Gambody Base Rocha",
+      "modelGroup": "superman-gambody-base-rocha",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 17: render Gambody com base de rocha."
+    },
+    "1pqTXuLJcnuGXu0zHkBA5C1imj4ySRJ2g": {
+      "characterName": "Superman",
+      "variantName": "Pouso Base Metal",
+      "modelGroup": "superman-pouso-base-metal",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 18: Superman em pose de pouso sobre base metalica."
+    },
+    "1jOkCEi4-ZrANInT-DGi3J3kX0Erb6QkO": {
+      "characterName": "Superman",
+      "variantName": "Reino do Amanha Cranios",
+      "modelGroup": "superman-reino-do-amanha-cranios",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 19: mesma peca Reino do Amanha com cranios do item 13."
+    },
+    "1BTDq0Dm0pBPkc0zvnDP7jssnDu5Y3A3A": {
+      "characterName": "Superman",
+      "variantName": "B3dserk Filme Classico",
+      "modelGroup": "superman-b3dserk-filme-classico",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 20: pacote B3dserk inspirado em Superman The Movie; mesmo conjunto do item 23."
+    },
+    "1BLFdU62a0LkdIKaU91fE7drzU3XqVO2x": {
+      "characterName": "Superman",
+      "variantName": "Beyond Base Cidade",
+      "modelGroup": "superman-beyond-base-cidade",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 21: Superman Beyond sobre base de cidade."
+    },
+    "1lM-zwYAxBfUrc_CUS5xBnWbbanKlfzIc": {
+      "characterName": "Superman",
+      "variantName": "Classico Capa Vento",
+      "modelGroup": "superman-classico-capa-vento",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 22: Superman classico com capa em movimento."
+    },
+    "172Fnpvc3SzVoARFL_gzohwd1F4MM7S6G": {
+      "characterName": "Superman",
+      "variantName": "B3dserk Filme Classico",
+      "modelGroup": "superman-b3dserk-filme-classico",
+      "sourceTitle": "DC",
+      "category": "quadrinhos",
+      "subcategory": "dc",
+      "mediaType": "comic",
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 019 item 23: mesmo conjunto B3dserk inspirado em Superman The Movie do item 20."
     }
   },
   "visualApprovals": {
@@ -3064,6 +3317,24 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Prancha 019 itens 26 e 31 referenciam pose agachada em base de rocha; item 26 permanece como duplicata exata."
+    },
+    "DC|Superman|superman-classico-base-cristal": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019 itens 09 e 16 mostram o mesmo Superman classico em base de cristal; manter como galeria/angulo."
+    },
+    "DC|Superman|superman-reino-do-amanha-cranios": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019 itens 13 e 19 mostram o mesmo modelo Reino do Amanha com cranios; manter como galeria/angulo."
+    },
+    "DC|Superman|superman-b3dserk-filme-classico": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-02",
+      "notes": "Prancha 019 itens 20 e 23 mostram o mesmo conjunto B3dserk inspirado em Superman The Movie; manter como galeria."
     }
   }
 }
