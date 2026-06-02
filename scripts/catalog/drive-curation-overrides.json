@@ -3454,11 +3454,22 @@
     },
     "1Aw8tu38SMsVIEjn12JTaDgWZFjrJW4JU": {
       "characterName": "Trafalgar Law",
+      "variantName": "Casaco Amarelo Ryoshi",
+      "modelGroup": "trafalgar-law-casaco-amarelo-ryoshi",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Trafalgar Law",
+        "Ryoshi",
+        "Casaco Amarelo",
+        "Espada",
+        "Supernovas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 067 item 01: Trafalgar Law com casaco amarelo e espada; produto separado dos itens 02 e 03."
     },
     "1EITGmC_8VH1DhcKgRg51vxOLiAdIReuU": {
       "characterName": "Eustass Kid",
@@ -3759,11 +3770,22 @@
     },
     "1OLBpSYNslw6ZAEueoJqpZ0IWSshMbwlx": {
       "characterName": "Trafalgar Law",
+      "variantName": "Base de Exposicao Lago",
+      "modelGroup": "trafalgar-law-base-de-exposicao-lago",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Trafalgar Law",
+        "Base de Exposicao",
+        "Lago",
+        "Espada",
+        "Supernovas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 067 item 02: Trafalgar Law em base de exposicao com fundo de lago; produto separado dos itens 01 e 03."
     },
     "16bCVwzaCgu3DCwi-fOm9mhzUikKLIeue": {
       "characterName": "Nico Robin",
@@ -3799,11 +3821,22 @@
     },
     "1lxQg-8wM1OuvBEh7lORSipOhtzcdxLxr": {
       "characterName": "Trafalgar Law",
+      "variantName": "Sekai March Term 7",
+      "modelGroup": "trafalgar-law-sekai-march-term-7",
       "sourceTitle": "One Piece",
       "category": "animes",
       "subcategory": "one-piece",
       "mediaType": "anime",
-      "curationConfidence": "high"
+      "tags": [
+        "One Piece",
+        "Trafalgar Law",
+        "Sekai",
+        "March Term 7",
+        "Espada",
+        "Supernovas"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Prancha 067 item 03: Trafalgar Law Sekai March Term 7; produto separado dos itens 01 e 02."
     },
     "1H3GNt547XpvAQOCJy4qHQLYuyT7CLjDs": {
       "characterName": "Gardevoir",
