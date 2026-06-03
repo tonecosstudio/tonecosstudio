@@ -132,6 +132,38 @@ def load_catalog_hash_index(root: Path) -> dict[str, dict[str, str]]:
     return {}
 
 
+def load_applied_identities(root: Path, manifest_path: Path) -> dict[str, set[str]]:
+    sources: set[str] = set()
+    message_ids: set[str] = set()
+    hashes: set[str] = set()
+
+    for record in read_jsonl(manifest_path):
+        name = record.get("source_name") or record.get("source")
+        if name:
+            sources.add(source_name(str(name)))
+        message_id = record.get("message_id") or parse_message_id(str(name or ""))
+        if message_id:
+            message_ids.add(str(message_id))
+        digest = record.get("sha256") or record.get("hash") or record.get("original_sha256")
+        if digest:
+            hashes.add(str(digest).strip().lower())
+
+    duplicates = root / CONTROL_DIR / "duplicados.csv"
+    if duplicates.exists():
+        for row in read_csv(duplicates):
+            name = row.get("source") or row.get("source_name")
+            if name:
+                sources.add(source_name(str(name)))
+            message_id = row.get("message_id") or parse_message_id(str(name or ""))
+            if message_id:
+                message_ids.add(str(message_id))
+            digest = row.get("sha256") or row.get("hash") or row.get("original_sha256")
+            if digest:
+                hashes.add(str(digest).strip().lower())
+
+    return {"sources": sources, "message_ids": message_ids, "hashes": hashes}
+
+
 def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open("r", newline="", encoding="utf-8-sig") as file:
         return list(csv.DictReader(file))
@@ -275,11 +307,15 @@ def apply_batches(args: argparse.Namespace) -> int:
     manifest_path = (args.manifest or control_path(root, CATALOG_MANIFEST)).resolve()
     downloader_manifest = read_downloader_manifest(root)
     existing_keys = load_manifest_keys(manifest_path)
+    applied = load_applied_identities(root, manifest_path)
+    catalog_hashes = {} if args.no_hash_index else load_catalog_hash_index(root)
 
     stats = {
         "rows": 0,
         "copied": 0,
         "already_exists": 0,
+        "already_cataloged_source": 0,
+        "duplicate_catalog_hash": 0,
         "missing": 0,
         "empty": 0,
         "incomplete": 0,
@@ -312,12 +348,22 @@ def apply_batches(args: argparse.Namespace) -> int:
                 stats["empty"] += 1
                 continue
 
+            message_id = parse_message_id(source.name)
+            if source.name in applied["sources"] or (message_id and message_id in applied["message_ids"]):
+                stats["already_cataloged_source"] += 1
+                continue
+
             destination = destination_for_row(root, row).resolve()
             if not str(destination).lower().startswith(str(catalog_root).lower()):
                 stats["conflicts"] += 1
                 continue
 
             digest = sha256(source)
+            possible = catalog_hashes.get(str(size)) if catalog_hashes else None
+            if digest in applied["hashes"] or (possible and digest in possible):
+                stats["duplicate_catalog_hash"] += 1
+                continue
+
             status = "copied"
             if destination.exists():
                 if not args.overwrite:
@@ -400,6 +446,7 @@ def parse_args() -> argparse.Namespace:
     apply_parser.add_argument("--manifest", type=Path, help="Catalog manifest JSONL path.")
     apply_parser.add_argument("--dry-run", action="store_true", help="Report what would happen without copying.")
     apply_parser.add_argument("--overwrite", action="store_true", help="Overwrite destination files.")
+    apply_parser.add_argument("--no-hash-index", action="store_true", help="Do not use catalog_hash_index.json.")
     apply_parser.add_argument(
         "--allow-incomplete",
         action="store_true",
