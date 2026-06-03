@@ -16856,6 +16856,226 @@
         "Catwoman"
       ],
       "curationNotes": "Cat Woman normalizada para Mulher-Gato, evitando pasta duplicada com os demais itens ja em portugues."
+    },
+    "1rPHhoxMxn8wkE3gRq7IEbOCCXTw8JKBE": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Coringa",
+      "variantName": "Animado",
+      "modelGroup": "coringa-animado",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Animado"
+      ],
+      "curationNotes": "Joker Animado normalizado como variante do Coringa, mantendo Joker como alias de busca."
+    },
+    "1rar7dJlQx-jbPJyo2znZ4vkHxOFKeU69": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Coringa",
+      "variantName": "Arkham",
+      "modelGroup": "coringa-arkham",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Arkham"
+      ],
+      "curationNotes": "Joker Arkham normalizado como variante do Coringa."
+    },
+    "1rp0pz0Z6iwG_dihdXBNRE9N8-K4HT5Cx": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Coringa",
+      "variantName": "Jared Leto",
+      "modelGroup": "coringa-jared-leto",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Jared Leto",
+        "Esquadrao Suicida"
+      ],
+      "curationNotes": "Joker Jared normalizado para Coringa - Jared Leto."
+    },
+    "1IF6sUXz_YKChwJjhtw2tyWl2jHjGtBAl": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Coringa",
+      "variantName": "Enfermeiro",
+      "modelGroup": "coringa-enfermeiro",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Enfermeiro",
+        "Nurse"
+      ],
+      "curationNotes": "Joker Nurse normalizado para Coringa Enfermeiro, sem criar personagem separado."
+    },
+    "1rTPrnQVUlv6VN2KnEY80QsnsmdqQJIwG": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Coringa",
+      "variantName": "Cesar Romero",
+      "modelGroup": "coringa-cesar-romero",
+      "tags": [
+        "DC",
+        "Coringa",
+        "Joker",
+        "Cesar Romero",
+        "Classico"
+      ],
+      "curationNotes": "Joker Romero normalizado para Coringa - Cesar Romero."
+    },
+    "1Jri5vix8u6UndV2u0UOuNBCAhiLPLUAu": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Lanterna Verde Jessica Cruz",
+      "variantName": "Estatua Classica",
+      "modelGroup": "lanterna-verde-jessica-cruz-estatua-classica",
+      "tags": [
+        "DC",
+        "Lanterna Verde",
+        "Jessica Cruz",
+        "Green Lantern"
+      ],
+      "curationNotes": "Green Lantern Jessica Cruz traduzido para nome publico em portugues, mantendo alias em ingles nas tags."
+    },
+    "1oU0kYOpCkavPKlXBYgBmmRzKwkatqCg5": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Capuz Vermelho",
+      "variantName": "Classico",
+      "modelGroup": "capuz-vermelho-classico",
+      "tags": [
+        "DC",
+        "Capuz Vermelho",
+        "Red Hood",
+        "Jason Todd"
+      ],
+      "curationNotes": "Red Hood normalizado para Capuz Vermelho, mantendo alias em ingles."
+    },
+    "1B6l8mWFbM68zdNX8hpSLCmqVMAkGdkzQ": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Espantalho",
+      "variantName": "Batman Vilao",
+      "modelGroup": "espantalho-batman-vilao",
+      "tags": [
+        "DC",
+        "Espantalho",
+        "Scarecrow",
+        "Batman",
+        "Vilao"
+      ],
+      "curationNotes": "Scarecrow Batman normalizado para Espantalho; Batman fica como contexto/tag, nao parte do nome."
+    },
+    "1BTm8LHdKMQJaAKklky9MU0cl0uDOxiSk": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Arlequina",
+      "variantName": "Margot Robbie",
+      "modelGroup": "arlequina-margot-robbie",
+      "tags": [
+        "DC",
+        "Arlequina",
+        "Harley Quinn",
+        "Margot Robbie",
+        "Esquadrao Suicida"
+      ],
+      "curationNotes": "Harley Quin Margot Robbie normalizado para Arlequina - Margot Robbie."
+    },
+    "1JcgqoWubpGbN8zyOVwHsX_XC1AJ5OiiU": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Mulher-Maravilha",
+      "variantName": "Rainha Halloween",
+      "modelGroup": "mulher-maravilha-rainha-halloween",
+      "tags": [
+        "DC",
+        "Mulher-Maravilha",
+        "Wonder Woman",
+        "Queen",
+        "Halloween"
+      ],
+      "curationNotes": "Queen Wonder Woman Halloween normalizado como variante da Mulher-Maravilha."
+    },
+    "1e6JsIiv-yNvyv9z04fW1e89CrUquHP7D": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Liga da Justica",
+      "variantName": "Diorama Grupo",
+      "modelGroup": "liga-da-justica-diorama-grupo",
+      "modelKind": "diorama",
+      "tags": [
+        "DC",
+        "Liga da Justica",
+        "Justice League",
+        "Diorama",
+        "Grupo"
+      ],
+      "curationNotes": "Liga - Diorama normalizado para Liga da Justica como grupo/diorama, nao personagem isolado."
+    },
+    "1paiidP8E01lYSXm5fx6k8L4_zmVwx2WB": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman e Homem de Ferro",
+      "characterNames": [
+        "Batman",
+        "Homem de Ferro"
+      ],
+      "variantName": "Crossover",
+      "modelGroup": "batman-e-homem-de-ferro-crossover",
+      "modelKind": "diorama",
+      "tags": [
+        "DC",
+        "Marvel",
+        "Batman",
+        "Homem de Ferro",
+        "Iron Man",
+        "Crossover",
+        "Diorama"
+      ],
+      "curationNotes": "Batman x Iron Man normalizado em portugues e marcado como crossover multi-franquia."
     }
   },
   "visualApprovals": {
@@ -17544,6 +17764,12 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-03",
       "notes": "Batman Thomas Wayne contem duas imagens/angulos da mesma variante; manter agrupado como galeria."
+    },
+    "DC|Coringa|coringa-enfermeiro": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-03",
+      "notes": "Coringa Enfermeiro contem duas imagens/angulos da mesma variante; manter agrupado como galeria."
     }
   }
 }
