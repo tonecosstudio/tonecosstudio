@@ -12275,20 +12275,26 @@
       "curationConfidence": "high"
     },
     "1jCsjxlr3n_Qho88WvcO_2KT3kyO0-0QW": {
-      "characterName": "Crash Bandicoot",
+      "characterName": "Crash Bandicoot e Aku Aku",
       "variantName": "Diorama Aku Aku",
-      "modelGroup": "crash-bandicoot-diorama-aku-aku",
+      "modelGroup": "crash-bandicoot-e-aku-aku-diorama",
       "sourceTitle": "Crash Bandicoot",
       "category": "jogos",
       "mediaType": "game",
       "subcategory": "crash-bandicoot",
       "tags": [
         "Crash Bandicoot",
-        "Crash Bandicoot",
+        "Crash",
         "Aku Aku",
         "Diorama"
       ],
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Crash Bandicoot",
+        "Aku Aku"
+      ],
+      "modelKind": "diorama",
+      "curationNotes": "Imagem verificada visualmente: diorama com Crash Bandicoot e Aku Aku; manter em dioramas e taguear os dois."
     },
     "1CDbw0hZHFwanQpGkfhPLW2iZyiPJQZg2": {
       "characterName": "Dante e Vergil e Nero",
@@ -12338,19 +12344,25 @@
       "curationConfidence": "high"
     },
     "1QeaxUGVDuSu2xdFBGlqKhiAFgbclAuUd": {
-      "characterName": "Earthworm Jim",
-      "variantName": "Diorama 02",
-      "modelGroup": "earthworm-jim-diorama-02",
+      "characterName": "Earthworm Jim e Personagens Secundarios",
+      "variantName": "Diorama Well Done",
+      "modelGroup": "earthworm-jim-e-personagens-secundarios-diorama-well-done",
       "sourceTitle": "Earthworm Jim",
       "category": "jogos",
       "mediaType": "game",
       "subcategory": "earthworm-jim",
       "tags": [
         "Earthworm Jim",
-        "Earthworm Jim",
-        "Diorama"
+        "Jim",
+        "Diorama",
+        "Well Done"
       ],
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Earthworm Jim"
+      ],
+      "modelKind": "diorama",
+      "curationNotes": "Imagem verificada visualmente: diorama com Earthworm Jim e personagens/elementos secundarios; mover para dioramas da franquia."
     },
     "1Co7WOPHdEXFk5u9Phf5tv4Td3vNPL8Dr": {
       "characterName": "Thane Krios",
@@ -15973,6 +15985,39 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem verificada visualmente: personagem mascarado generico de La Casa de Papel; nao ha rosto para identificar um personagem especifico."
+    },
+    "1tGKiROTi5HSlmibC5JOH92Zi3eRpg10k": {
+      "category": "jogos",
+      "subcategory": "crash-bandicoot",
+      "mediaType": "game",
+      "sourceTitle": "Crash Bandicoot",
+      "characterName": "Crash Bandicoot",
+      "variantName": "Pose Classica Base Circular",
+      "modelGroup": "crash-bandicoot-pose-classica-base-circular",
+      "tags": [
+        "Crash Bandicoot",
+        "Crash",
+        "Pose Classica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Crash Bandicoot solo; consolidado com a franquia correta em vez de fonte generica Crash."
+    },
+    "1w4XbLFTRpZ_ey-9c1gSDCH293cx38bLH": {
+      "category": "jogos",
+      "subcategory": "earthworm-jim",
+      "mediaType": "game",
+      "sourceTitle": "Earthworm Jim",
+      "characterName": "Earthworm Jim",
+      "variantName": "Pose Classica com Blaster",
+      "modelGroup": "earthworm-jim-pose-classica-com-blaster",
+      "tags": [
+        "Earthworm Jim",
+        "Jim",
+        "Blaster",
+        "Pose Classica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Earthworm Jim solo; consolidado com a franquia correta em vez de fonte generica Jim."
     }
   },
   "visualApprovals": {
