@@ -958,7 +958,7 @@ function classify(row) {
   const variantName = inlineIdentity.variantName;
   const modelGroup = row.modelGroup || row.model_group || null;
   const characterNames = splitCharacterNames(characterName);
-  const modelKind = inferModelKind(characterName, variantName, modelGroup);
+  const modelKind = row.modelKind || row.model_kind || inferModelKind(characterName, variantName, modelGroup);
   const primaryCharacterName = modelKind === "diorama" ? characterName : characterNames[0] || characterName;
   const characterFolder = displaySegment(primaryCharacterName, "Sem Nome");
   const modelFolder = modelFolderName(primaryCharacterName, variantName, modelGroup, modelKind);

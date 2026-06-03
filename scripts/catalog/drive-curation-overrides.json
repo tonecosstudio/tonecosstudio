@@ -12487,20 +12487,31 @@
       "curationConfidence": "high"
     },
     "1C2Ay7N_mg8IViAlQgJRkkwIT-hHwPDIo": {
-      "characterName": "Game of Thrones",
+      "characterName": "Elenco Game of Thrones",
       "variantName": "Grupo Chibi",
-      "modelGroup": "game-of-thrones-grupo-chibi",
+      "modelGroup": "elenco-game-of-thrones-grupo-chibi",
       "sourceTitle": "Game of Thrones",
       "category": "series",
       "mediaType": "series",
       "subcategory": "game-of-thrones",
       "tags": [
         "Game of Thrones",
-        "Game of Thrones",
+        "Jon Snow",
+        "Daenerys Targaryen",
+        "Tyrion Lannister",
+        "Rei da Noite",
         "Chibi",
         "Grupo"
       ],
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Jon Snow",
+        "Daenerys Targaryen",
+        "Tyrion Lannister",
+        "Rei da Noite"
+      ],
+      "modelKind": "diorama",
+      "curationNotes": "Imagem verificada visualmente: conjunto chibi de multiplos personagens de Game of Thrones; corrigido para grupo/elenco em vez de personagem generico."
     },
     "1IelJXyQVZCrRApBDMvPuw0FIBmeyfQFf": {
       "characterName": "Jaspion",
@@ -15831,6 +15842,137 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Arquivo com nome generico X-Men foi classificado pela subpasta de origem; numero do arquivo vira versao publica, nao tag interna de galeria."
+    },
+    "12mOWxJYtzMbhaJa8biQZIoFkwzvx4jPx": {
+      "category": "filmes",
+      "subcategory": "planeta-dos-macacos",
+      "mediaType": "movie",
+      "sourceTitle": "Planeta dos Macacos",
+      "characterName": "Diorama Planeta dos Macacos",
+      "characterNames": [
+        "Planeta dos Macacos"
+      ],
+      "variantName": "Grupo a Cavalo",
+      "modelGroup": "diorama-planeta-dos-macacos-grupo-a-cavalo",
+      "modelKind": "diorama",
+      "tags": [
+        "Planeta dos Macacos",
+        "Diorama",
+        "Grupo",
+        "Cavalo"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: grupo de personagens de Planeta dos Macacos em diorama a cavalo; nao catalogar como personagem individual."
+    },
+    "1ohw7AcyJiVXFfEu-8HV9DbkUKn4j7NBL": {
+      "category": "filmes",
+      "subcategory": "transformers",
+      "mediaType": "movie",
+      "sourceTitle": "Transformers",
+      "characterName": "Bumblebee",
+      "variantName": "Base com Destrocos",
+      "modelGroup": "bumblebee-base-com-destrocos",
+      "tags": [
+        "Transformers",
+        "Bumblebee",
+        "Autobot"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: personagem Bumblebee em base com destrocos; remove nome generico Transformers."
+    },
+    "1d1HjnfHPRZs4jp1i3fdeMi3k-2u-DOHN": {
+      "category": "franquias",
+      "subcategory": "marvel-quarteto-fantastico",
+      "mediaType": "franchise",
+      "sourceTitle": "Quarteto Fantastico",
+      "characterName": "Quarteto Fantastico",
+      "characterNames": [
+        "Senhor Fantastico",
+        "Mulher Invisivel",
+        "Tocha Humana",
+        "Coisa"
+      ],
+      "variantName": "Diorama Equipe",
+      "modelGroup": "quarteto-fantastico-diorama-equipe",
+      "modelKind": "diorama",
+      "tags": [
+        "Marvel",
+        "Quarteto Fantastico",
+        "Senhor Fantastico",
+        "Mulher Invisivel",
+        "Tocha Humana",
+        "Coisa",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: diorama da equipe do Quarteto Fantastico; manter como produto multi-personagem, nao como personagem simples."
+    },
+    "1E0oUQiIVs92MJeM8MF1919c6XOzSdYl6": {
+      "category": "jogos",
+      "subcategory": "dark-souls",
+      "mediaType": "game",
+      "sourceTitle": "Dark Souls",
+      "characterName": "Solaire de Astora",
+      "variantName": "Praise the Sun",
+      "modelGroup": "solaire-de-astora-praise-the-sun",
+      "tags": [
+        "Dark Souls",
+        "Solaire de Astora",
+        "Praise the Sun"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Solaire de Astora na pose Praise the Sun; remove nome generico Dark Souls."
+    },
+    "17WVtNIDwvAHZdu_8jSFrUaz-BuF3V5Kw": {
+      "category": "jogos",
+      "subcategory": "dark-souls",
+      "mediaType": "game",
+      "sourceTitle": "Dark Souls",
+      "characterName": "Solaire de Astora",
+      "variantName": "Chibi Praise the Sun",
+      "modelGroup": "solaire-de-astora-chibi-praise-the-sun",
+      "tags": [
+        "Dark Souls",
+        "Solaire de Astora",
+        "Chibi",
+        "Praise the Sun"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: versao chibi do Solaire de Astora; modelo separado da estatua em pose classica."
+    },
+    "1AQly4eZFGANPIuVU0qEw1BVt9fM3y-Am": {
+      "category": "series",
+      "subcategory": "la-casa-de-papel",
+      "mediaType": "series",
+      "sourceTitle": "La Casa de Papel",
+      "characterName": "Berlim",
+      "variantName": "Macacao Vermelho Mascara Dali",
+      "modelGroup": "berlim-macacao-vermelho-mascara-dali",
+      "tags": [
+        "La Casa de Papel",
+        "Berlim",
+        "Mascara Dali",
+        "Macacao Vermelho"
+      ],
+      "curationConfidence": "medium",
+      "curationNotes": "Imagem verificada visualmente: personagem em macacao vermelho com mascara Dali e rosto semelhante a Berlim; manter confianca media por depender da escultura facial."
+    },
+    "1BPRKeqwdzic0UGaO6bM__0C3-aNKqFI9": {
+      "category": "series",
+      "subcategory": "la-casa-de-papel",
+      "mediaType": "series",
+      "sourceTitle": "La Casa de Papel",
+      "characterName": "Assaltante Mascarado",
+      "variantName": "Mascara Dali Dinheiro",
+      "modelGroup": "assaltante-mascarado-mascara-dali-dinheiro",
+      "tags": [
+        "La Casa de Papel",
+        "Assaltante Mascarado",
+        "Mascara Dali",
+        "Dinheiro"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: personagem mascarado generico de La Casa de Papel; nao ha rosto para identificar um personagem especifico."
     }
   },
   "visualApprovals": {
