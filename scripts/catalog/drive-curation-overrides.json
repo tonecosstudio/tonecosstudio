@@ -16487,6 +16487,84 @@
         "Diorama"
       ],
       "curationNotes": "Imagem mostra Voldemort acompanhado por Nagini; corrigido de personagem isolado para diorama/personagens associados."
+    },
+    "1BkBu3FVYXVBaaFlNO5xezhzJV965lZf_": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "he-man",
+      "curationConfidence": "high",
+      "characterName": "Maligna",
+      "variantName": "LAfigures Cajado",
+      "modelGroup": "maligna-lafigures-cajado",
+      "tags": [
+        "He-Man",
+        "Maligna",
+        "Evil-Lyn",
+        "MOTU",
+        "Masters of the Universe",
+        "Cajado"
+      ],
+      "curationNotes": "Arquivo EVIL LYN normalizado para Maligna; Evil-Lyn permanece como alias de busca."
+    },
+    "1Aq1Z5SzXFSj_YKqPq69eNBgrbv-7up2U": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "he-man",
+      "curationConfidence": "high",
+      "characterName": "Gato de Batalha",
+      "variantName": "LAfigures Armadura",
+      "modelGroup": "gato-de-batalha-lafigures-armadura",
+      "tags": [
+        "He-Man",
+        "Gato de Batalha",
+        "Battle Cat",
+        "MOTU",
+        "Masters of the Universe",
+        "LAfigures"
+      ],
+      "curationNotes": "Arquivo GATO DE BATALHA - MOTU normalizado removendo MOTU do nome publico; franquia e alias ficam em tags."
+    },
+    "1Ashhr61YqvT63hJsO2_rf9qkbEBks319": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "he-man",
+      "curationConfidence": "high",
+      "characterName": "Mentor",
+      "variantName": "Man-At-Arms LAfigures Maca",
+      "modelGroup": "mentor-man-at-arms-lafigures-maca",
+      "tags": [
+        "He-Man",
+        "Mentor",
+        "Man-At-Arms",
+        "Duncan",
+        "MOTU",
+        "Masters of the Universe",
+        "LAfigures"
+      ],
+      "curationNotes": "Arquivo MAN AT ARMS - MOTU identificado como Mentor/Man-At-Arms; MOTU removido do nome publico e mantido em tags."
+    },
+    "1AxnAqM8zeMcxzZ5XIzOzQIehmqkb5HUx": {
+      "sourceTitle": "He-Man",
+      "category": "animes",
+      "mediaType": "anime",
+      "subcategory": "he-man",
+      "curationConfidence": "high",
+      "characterName": "She-Ra",
+      "variantName": "LAfigures Espada",
+      "modelGroup": "she-ra-lafigures-espada",
+      "tags": [
+        "He-Man",
+        "She-Ra",
+        "She Ra",
+        "Princesa Adora",
+        "MOTU",
+        "Masters of the Universe",
+        "LAfigures"
+      ],
+      "curationNotes": "Arquivo SHE-RA - MOTU normalizado para She-Ra; MOTU deixa de compor o nome do personagem."
     }
   },
   "visualApprovals": {
