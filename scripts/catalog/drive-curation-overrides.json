@@ -5238,12 +5238,29 @@
       "curationConfidence": "medium"
     },
     "1b1r0LmLjon1THbSm3bJqHdeaGhSPqPJ3": {
-      "characterName": "Harry Potter e Voldemort",
       "sourceTitle": "Harry Potter",
       "category": "filmes",
-      "subcategory": "harry-potter",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Harry Potter e Voldemort",
+      "characterNames": [
+        "Harry Potter",
+        "Lord Voldemort"
+      ],
+      "variantName": "Com Edwiges e Nagini",
+      "modelGroup": "harry-potter-e-voldemort-com-edwiges-e-nagini",
+      "modelKind": "diorama",
+      "tags": [
+        "Harry Potter",
+        "Lord Voldemort",
+        "Voldemort",
+        "Edwiges",
+        "Hedwig",
+        "Nagini",
+        "Diorama"
+      ],
+      "curationNotes": "Diorama Wicked com Harry Potter, Voldemort, Edwiges e Nagini; arquivo original era photo sem nome descritivo."
     },
     "1Mc4WDmRmKrrb4wuGIihxatkmT15ZJV3B": {
       "characterName": "Nazgul",
@@ -12056,20 +12073,23 @@
       "curationConfidence": "high"
     },
     "1GIelQMaWnO5Xa4d0WT_5uOkBd0wgaXQk": {
-      "characterName": "Harry Potter",
-      "variantName": "Diorama Edwiges",
-      "modelGroup": "harry-potter-diorama-edwiges",
       "sourceTitle": "Harry Potter",
       "category": "filmes",
       "mediaType": "movie",
       "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Harry Potter",
+      "variantName": "Com Edwiges e Mala",
+      "modelGroup": "harry-potter-com-edwiges-e-mala",
+      "modelKind": "character_diorama",
       "tags": [
         "Harry Potter",
-        "Harry Potter",
         "Edwiges",
+        "Hedwig",
+        "Mala",
         "Diorama"
       ],
-      "curationConfidence": "high"
+      "curationNotes": "Harry Potter com Edwiges, mala e base cenario; nome anterior Diorama Edwiges refinado para descrever a versao."
     },
     "1Dflewvf0TCBhwoXLrbmhXaEN1takuf61": {
       "characterName": "Tyrannosaurus Rex",
@@ -14161,20 +14181,28 @@
       "curationConfidence": "high"
     },
     "1IapLPMJGqcyKJsjqt98uKUTBQaTXq__t": {
-      "characterName": "Lord Voldemort e Nagini",
-      "variantName": "Diorama",
-      "modelGroup": "lord-voldemort-e-nagini-diorama",
       "sourceTitle": "Harry Potter",
       "category": "filmes",
       "mediaType": "movie",
       "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Lord Voldemort e Nagini",
+      "characterNames": [
+        "Lord Voldemort",
+        "Nagini"
+      ],
+      "variantName": "Gambody",
+      "modelGroup": "lord-voldemort-e-nagini-gambody",
+      "modelKind": "diorama",
       "tags": [
         "Harry Potter",
         "Lord Voldemort",
+        "Voldemort",
         "Nagini",
+        "Gambody",
         "Diorama"
       ],
-      "curationConfidence": "high"
+      "curationNotes": "Diorama de Lord Voldemort com Nagini em prancha Gambody; manter separado da versao Wicked por ser outro modelo."
     },
     "1JdyBAl-zDgZ3v1Xz8dKuAY-agRQDGkrx": {
       "characterName": "Capuz Vermelho e os Foragidos",
@@ -16305,6 +16333,160 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem verificada visualmente: arquivo chamado superman mostra Homem-Aranha em coluna; corrige nome publico e mantem na fonte Homem-Aranha."
+    },
+    "12WdvMIXDiezmfsn4U7QQCxphENcc4a9J": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Harry Potter",
+      "variantName": "Grifinoria Livro",
+      "modelGroup": "harry-potter-grifinoria-livro",
+      "tags": [
+        "Harry Potter",
+        "Grifinoria",
+        "Gryffindor",
+        "Livro",
+        "Varinha"
+      ],
+      "curationNotes": "Harry Potter com uniforme da Grifinoria, varinha e base de livro; manter como variacao individual do personagem."
+    },
+    "1IaNWxagTjrOnImTExFUEu2AEuZmowsrT": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Harry Potter",
+      "variantName": "Jaqueta Casual Varinha",
+      "modelGroup": "harry-potter-jaqueta-casual-varinha",
+      "tags": [
+        "Harry Potter",
+        "Varinha",
+        "Jaqueta"
+      ],
+      "curationNotes": "Harry Potter em roupa casual apontando varinha; manter separado das versoes com Edwiges e uniforme."
+    },
+    "1usCOw-3BVcVNDMKIZbpt8-lO5RXRbI61": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Harry Potter",
+      "variantName": "Com Edwiges",
+      "modelGroup": "harry-potter-com-edwiges",
+      "tags": [
+        "Harry Potter",
+        "Edwiges",
+        "Hedwig",
+        "Varinha"
+      ],
+      "curationNotes": "Harry Potter com Edwiges no ombro; manter como variacao propria para futura galeria/comparacao."
+    },
+    "18k6Wi0HHoysdRgLeAKLNdgHt8FSjhUdr": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Hagrid e Harry Potter",
+      "characterNames": [
+        "Hagrid",
+        "Harry Potter"
+      ],
+      "variantName": "Motocicleta com Sidecar",
+      "modelGroup": "hagrid-e-harry-potter-motocicleta-com-sidecar",
+      "modelKind": "diorama",
+      "tags": [
+        "Harry Potter",
+        "Hagrid",
+        "Motocicleta",
+        "Sidecar",
+        "Diorama"
+      ],
+      "curationNotes": "Imagem mostra Hagrid pilotando motocicleta com Harry Potter no sidecar; corrigido de Harry Potter generico para diorama com dois personagens."
+    },
+    "1LnS6hcflnlmLi3BjoHcQm5L8tIWteecX": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Hermione Granger",
+      "variantName": "Uniforme Hogwarts Livro",
+      "modelGroup": "hermione-granger-uniforme-hogwarts-livro",
+      "tags": [
+        "Harry Potter",
+        "Hermione Granger",
+        "Hermione",
+        "Hogwarts",
+        "Livro",
+        "Varinha"
+      ],
+      "curationNotes": "Arquivo Hermione normalizado para nome completo da personagem, com uniforme escolar, livro e varinha."
+    },
+    "1Llko6mhqmCAd7_Gg_z3cjgEaMx-yQLI8": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Hermione Granger",
+      "variantName": "Versao Adulta Vassoura",
+      "modelGroup": "hermione-granger-versao-adulta-vassoura",
+      "tags": [
+        "Harry Potter",
+        "Hermione Granger",
+        "Hermione",
+        "Vassoura",
+        "Versao Adulta"
+      ],
+      "curationNotes": "Arquivo Hermione Adult representa uma variacao adulta da Hermione; manter na mesma pasta da personagem, nao como personagem separado."
+    },
+    "1L_ZVrBl4LB1X0SLGItQMeo7Gn6gn3fdY": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Remo Lupin",
+      "variantName": "Lobisomem",
+      "modelGroup": "remo-lupin-lobisomem",
+      "tags": [
+        "Harry Potter",
+        "Remo Lupin",
+        "Lupin",
+        "Lobisomem",
+        "Werewolf"
+      ],
+      "curationNotes": "Arquivo Lupin werewolf normalizado para Remo Lupin com variacao Lobisomem."
+    },
+    "12URdWqOTsyXA-rlUJ09ZD5jU9O-z2DaM": {
+      "sourceTitle": "Harry Potter",
+      "category": "filmes",
+      "mediaType": "movie",
+      "subcategory": "harry-potter",
+      "curationConfidence": "high",
+      "characterName": "Lord Voldemort e Nagini",
+      "characterNames": [
+        "Lord Voldemort",
+        "Nagini"
+      ],
+      "variantName": "Slytherin House Wicked",
+      "modelGroup": "lord-voldemort-e-nagini-slytherin-house-wicked",
+      "modelKind": "diorama",
+      "tags": [
+        "Harry Potter",
+        "Lord Voldemort",
+        "Voldemort",
+        "Nagini",
+        "Sonserina",
+        "Slytherin",
+        "Diorama"
+      ],
+      "curationNotes": "Imagem mostra Voldemort acompanhado por Nagini; corrigido de personagem isolado para diorama/personagens associados."
     }
   },
   "visualApprovals": {
