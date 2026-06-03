@@ -11381,20 +11381,23 @@
       "curationConfidence": "high"
     },
     "1ofVNc2fcs6Qb4k3O_fkRhCNNQ851sI6s": {
-      "characterName": "Black Cat",
-      "variantName": "Diorama",
-      "modelGroup": "black-cat-diorama",
       "sourceTitle": "Marvel",
-      "category": "Franquias",
-      "mediaType": "franchise",
+      "category": "franquias",
+      "mediaType": "comics",
       "subcategory": "marvel",
+      "curationConfidence": "high",
+      "characterName": "Gata Negra",
+      "variantName": "Diorama",
+      "modelGroup": "gata-negra-diorama",
+      "modelKind": "character_diorama",
       "tags": [
         "Marvel",
+        "Gata Negra",
         "Black Cat",
         "Felicia Hardy",
         "Diorama"
       ],
-      "curationConfidence": "high"
+      "curationNotes": "Blackcat Diorama normalizado para Gata Negra Diorama, consolidando a personagem em portugues."
     },
     "1_KGta_IoKjHYrnu8QGrYObEuyKmkH8c8": {
       "characterName": "X-23",
@@ -17076,6 +17079,118 @@
         "Diorama"
       ],
       "curationNotes": "Batman x Iron Man normalizado em portugues e marcado como crossover multi-franquia."
+    },
+    "1JX3Wf4MLfrZ_uujIdB8xMwGssn88aaI2": {
+      "sourceTitle": "Marvel",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "marvel",
+      "curationConfidence": "high",
+      "characterName": "Gata Negra",
+      "variantName": "Estatua Versao 06",
+      "modelGroup": "gata-negra-estatua-versao-06",
+      "tags": [
+        "Marvel",
+        "Gata Negra",
+        "Black Cat",
+        "Felicia Hardy"
+      ],
+      "curationNotes": "Black Cat normalizada para Gata Negra; alias em ingles mantido nas tags."
+    },
+    "1wpxuFkiBXpkfDyHg7E1U3FOHe1SfoJpc": {
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "marvel-homem-aranha",
+      "curationConfidence": "high",
+      "characterName": "Escorpiao",
+      "variantName": "Diorama 02",
+      "modelGroup": "escorpiao-diorama-02",
+      "modelKind": "character_diorama",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Escorpiao",
+        "Scorpion",
+        "Mac Gargan",
+        "Diorama"
+      ],
+      "curationNotes": "Scorpion Diorama 2 normalizado para Escorpiao, vilao do Homem-Aranha."
+    },
+    "1xMGqyKje5FktjGLDpIZ6ne61I1YuL5va": {
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "marvel-homem-aranha",
+      "curationConfidence": "high",
+      "characterName": "Escorpiao",
+      "variantName": "Diorama",
+      "modelGroup": "escorpiao-diorama",
+      "modelKind": "character_diorama",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Escorpiao",
+        "Scorpion",
+        "Mac Gargan",
+        "Diorama"
+      ],
+      "curationNotes": "Scorpion Diorama normalizado para Escorpiao, mantendo Scorpion como alias."
+    },
+    "1OTqPCpJ9CsjwxTZp73S5PKK40ZUUZRQm": {
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "marvel-homem-aranha",
+      "curationConfidence": "high",
+      "characterName": "Garota-Aranha",
+      "variantName": "Classica",
+      "modelGroup": "garota-aranha-classica",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Garota-Aranha",
+        "Spider Girl"
+      ],
+      "curationNotes": "Spider Girl normalizada para Garota-Aranha; nome em ingles mantido como tag."
+    },
+    "1JPRwqhQ4aeLZb4eyF7MZV6IezexbnpGc": {
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "marvel-homem-aranha",
+      "curationConfidence": "high",
+      "characterName": "Mulher-Aranha",
+      "variantName": "Estatua Versao 06",
+      "modelGroup": "mulher-aranha-estatua-versao-06",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Mulher-Aranha",
+        "Spider Woman",
+        "Jessica Drew"
+      ],
+      "curationNotes": "Spider Woman normalizada para Mulher-Aranha."
+    },
+    "1wHd2Czy8ABC24aoFNu0bcOgIbyNrWH7b": {
+      "sourceTitle": "Homem-Aranha",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "marvel-homem-aranha",
+      "curationConfidence": "high",
+      "characterName": "Gwen-Aranha",
+      "variantName": "Diorama",
+      "modelGroup": "gwen-aranha-diorama",
+      "modelKind": "character_diorama",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Gwen-Aranha",
+        "Spider-Gwen",
+        "Ghost-Spider",
+        "Diorama"
+      ],
+      "curationNotes": "Spider-Gwen normalizada para Gwen-Aranha, mantendo aliases Spider-Gwen/Ghost-Spider em tags."
     }
   },
   "visualApprovals": {
