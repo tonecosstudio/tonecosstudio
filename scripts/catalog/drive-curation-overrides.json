@@ -3115,22 +3115,21 @@
       "curationConfidence": "high"
     },
     "1YD5wwNDZjP5lb7dmNdNgI91UBYAMjF1o": {
-      "characterName": "Naruto",
+      "characterName": "Naruto Uzumaki",
       "sourceTitle": "Naruto",
       "category": "animes",
       "subcategory": "naruto",
       "mediaType": "anime",
       "curationConfidence": "high",
-      "variantName": "Modo Kurama Base Circular",
-      "modelGroup": "naruto-modo-kurama-base-circular",
+      "variantName": "Modo Kurama Rasengan",
+      "modelGroup": "naruto-uzumaki-modo-kurama-rasengan",
       "tags": [
         "Naruto",
         "Naruto Uzumaki",
         "Modo Kurama",
-        "Rasenshuriken",
-        "Base Circular"
+        "Rasengan"
       ],
-      "curationNotes": "Imagem identificada visualmente: estava em lote Gotenks, mas mostra Naruto Uzumaki em Modo Kurama com efeitos de energia.",
+      "curationNotes": "Imagem verificada visualmente: Naruto Uzumaki em modo Kurama com efeito Rasengan; troca nome generico Naruto pelo personagem correto.",
       "characterNames": [
         "Naruto"
       ],
@@ -4154,7 +4153,22 @@
       "category": "filmes",
       "subcategory": "godzilla-e-king-kong",
       "mediaType": "movie",
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Godzilla",
+        "King Kong"
+      ],
+      "variantName": "Diorama Porta-Avioes",
+      "modelGroup": "godzilla-e-king-kong-diorama-porta-avioes",
+      "modelKind": "diorama",
+      "tags": [
+        "Godzilla",
+        "King Kong",
+        "Godzilla e King Kong",
+        "Diorama",
+        "Porta-Avioes"
+      ],
+      "curationNotes": "Imagem verificada visualmente: confronto Godzilla e King Kong sobre porta-avioes; adiciona variante publica para evitar nome generico sem contexto."
     },
     "1IG4zdyud7pU6TNoTBoiIchHbI9HlfdwI": {
       "characterName": "John Wick",
@@ -12804,9 +12818,9 @@
       "curationConfidence": "high"
     },
     "132sGiJQUHiu8CI31WdfR5oH0DgfOU372": {
-      "characterName": "Rick e Morty",
-      "variantName": "Diorama Portal Versao 01",
-      "modelGroup": "rick-e-morty-diorama-portal-01",
+      "characterName": "Rick Sanchez e Morty Smith",
+      "variantName": "Diorama Portal",
+      "modelGroup": "rick-sanchez-e-morty-smith-diorama-portal",
       "sourceTitle": "Rick e Morty",
       "category": "animes",
       "mediaType": "anime",
@@ -12815,9 +12829,16 @@
         "Rick e Morty",
         "Rick Sanchez",
         "Morty Smith",
+        "Portal",
         "Diorama"
       ],
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Rick Sanchez",
+        "Morty Smith"
+      ],
+      "modelKind": "diorama",
+      "curationNotes": "Imagem verificada visualmente: diorama com Rick Sanchez e Morty Smith atravessando portal; nao catalogar como personagem generico da serie."
     },
     "1IVltNuCSsKfxYrXPEeEASp66syq0Cu7F": {
       "characterName": "Afro Samurai",
