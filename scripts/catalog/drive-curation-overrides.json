@@ -12468,20 +12468,30 @@
       "curationConfidence": "high"
     },
     "1BmC4Fh-6lCVEVGDtUjKSyYlleTBv51uY": {
-      "characterName": "Changeman",
+      "characterName": "Esquadrao Changeman",
       "variantName": "Bustos Equipe",
-      "modelGroup": "changeman-bustos-equipe",
+      "modelGroup": "esquadrao-changeman-bustos-equipe",
       "sourceTitle": "Changeman",
       "category": "series",
       "mediaType": "series",
       "subcategory": "changeman",
       "tags": [
         "Changeman",
-        "Changeman",
+        "Esquadrao Changeman",
         "Bustos",
-        "Equipe"
+        "Equipe",
+        "Tokusatsu"
       ],
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "characterNames": [
+        "Change Dragon",
+        "Change Griffin",
+        "Change Pegasus",
+        "Change Mermaid",
+        "Change Phoenix"
+      ],
+      "modelKind": "diorama",
+      "curationNotes": "Imagem verificada visualmente: conjunto de bustos da equipe Changeman; nao catalogar como personagem individual."
     },
     "1D0iCPFiDLxnU9TRiO91uWaqtdfvg41RK": {
       "characterName": "Daemon Targaryen",
@@ -16018,6 +16028,75 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem verificada visualmente: Earthworm Jim solo; consolidado com a franquia correta em vez de fonte generica Jim."
+    },
+    "1jfIdmfmpS6Ozmq2xCyasdPACH1sE1UJG": {
+      "category": "jogos",
+      "subcategory": "the-legend-of-zelda",
+      "mediaType": "game",
+      "sourceTitle": "The Legend of Zelda",
+      "characterName": "Link",
+      "variantName": "Gambody Escudo e Espada",
+      "modelGroup": "link-gambody-escudo-e-espada",
+      "tags": [
+        "The Legend of Zelda",
+        "Zelda",
+        "Link",
+        "Escudo",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: personagem Link; corrige fonte/personagem generico Zelda."
+    },
+    "1AZFUhV_OWrkxe1VHW97OIscAzY1jBJQj": {
+      "category": "jogos",
+      "subcategory": "the-legend-of-zelda",
+      "mediaType": "game",
+      "sourceTitle": "The Legend of Zelda",
+      "characterName": "Link",
+      "variantName": "Pose de Combate Base Roxa",
+      "modelGroup": "link-pose-de-combate-base-roxa",
+      "tags": [
+        "The Legend of Zelda",
+        "Zelda",
+        "Link",
+        "Escudo",
+        "Espada"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Link em pose de combate; corrige nome publico Zelda para personagem correto."
+    },
+    "1Qo9ABq4ygH2AOYx5S8PWPE7loO5SS_85": {
+      "category": "jogos",
+      "subcategory": "sekiro-shadows-die-twice",
+      "mediaType": "game",
+      "sourceTitle": "Sekiro: Shadows Die Twice",
+      "characterName": "Wolf",
+      "variantName": "Gambody Katana",
+      "modelGroup": "wolf-gambody-katana",
+      "tags": [
+        "Sekiro",
+        "Sekiro: Shadows Die Twice",
+        "Wolf",
+        "Katana"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: protagonista Wolf de Sekiro; separa personagem da franquia."
+    },
+    "1IOdQ8Q-CfJC6ek0xdfYUC4qo3vboTg70": {
+      "category": "series",
+      "subcategory": "kamen-rider-black",
+      "mediaType": "series",
+      "sourceTitle": "Kamen Rider Black",
+      "characterName": "Kamen Rider Black",
+      "variantName": "Pose Classica",
+      "modelGroup": "kamen-rider-black-pose-classica",
+      "tags": [
+        "Kamen Rider",
+        "Kamen Rider Black",
+        "Tokusatsu"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Kamen Rider Black; corrige fonte generica Kamen Rider."
     }
   },
   "visualApprovals": {
