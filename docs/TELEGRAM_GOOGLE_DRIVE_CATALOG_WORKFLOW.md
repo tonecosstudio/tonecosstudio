@@ -134,6 +134,12 @@ No repositorio `ordax`, existe o script:
 scripts/catalog/telegram_catalog_sync.py
 ```
 
+Se o outro PC nao tiver o repositorio aberto, use a copia sincronizada no Drive:
+
+```text
+telegram-2370335738-images/catalogo/_controle/tools/telegram_catalog_sync.py
+```
+
 Ele trabalha com a pasta local do Telegram e nunca move imagens da raiz.
 
 Gerar CSV de pendentes:
@@ -163,20 +169,57 @@ Aplicar lote significa:
 
 Se o CSV estiver incompleto, o script pula as linhas sem destino para evitar jogar tudo em pastas genericas.
 
+## Etapa Zero: Preservar o Catalogo Ja Existente
+
+Antes de criar novos lotes, trate tudo que ja esta em `catalogo/` como catalogo existente.
+
+Nao recatalogar imagens que ja estao em `catalogo/`.
+
+Obrigatorio antes de gerar `pendentes.csv`:
+
+1. Recriar/validar o indice de hash do catalogo atual.
+2. Verificar os `lote_*.csv` ja existentes.
+3. Verificar `catalog_manifest.jsonl`, se existir.
+4. Verificar `duplicados.csv`, se existir.
+5. So depois gerar novo `pendentes.csv`.
+
+Se o arquivo existir no `catalogo/` com o mesmo `sha256`, ele nao deve ser copiado de novo. Ele deve ser tratado como `already_cataloged` ou `duplicate_exact`, conforme o caso.
+
+Se houver imagens catalogadas sem manifesto, crie um manifesto retroativo comparando:
+
+```text
+raiz Telegram por sha256 -> catalogo por sha256
+```
+
+O manifesto retroativo deve registrar:
+
+```text
+source_name
+message_id
+source_path
+catalog_relpath
+size
+sha256
+status=already_cataloged
+```
+
+Somente imagens da raiz que nao aparecem por `source_name`, `message_id` ou `sha256` devem entrar em novo lote.
+
 ## Fluxo Recomendado para o Outro PC
 
 1. Confirmar que o Google Drive terminou de sincronizar a pasta.
 2. Confirmar que a raiz Telegram tem os arquivos originais.
 3. Nao mover nada da raiz.
-4. Rodar `pending` para listar imagens ainda nao catalogadas.
-5. Separar um lote pequeno de trabalho, preferencialmente 50 a 200 imagens.
-6. Preencher o CSV do lote.
-7. Rodar `apply --dry-run`.
-8. Se nao houver conflito, rodar `apply`.
-9. Conferir visualmente a pasta `catalogo/`.
-10. Atualizar `catalog_hash_index.json` quando o lote for grande.
-11. Se configurado, converter as copias catalogadas para WebP e subir para Supabase staging.
-12. Nunca publicar direto no catalogo publico.
+4. Rodar a Etapa Zero para preservar o catalogo ja existente.
+5. Rodar `pending` para listar somente imagens ainda nao catalogadas.
+6. Separar um lote pequeno de trabalho, preferencialmente 50 a 200 imagens.
+7. Preencher o CSV do lote.
+8. Rodar `apply --dry-run`.
+9. Se nao houver conflito, rodar `apply`.
+10. Conferir visualmente a pasta `catalogo/`.
+11. Atualizar `catalog_hash_index.json` quando o lote for grande.
+12. Se configurado, converter as copias catalogadas para WebP e subir para Supabase staging.
+13. Nunca publicar direto no catalogo publico.
 
 ## Supabase
 
@@ -266,6 +309,8 @@ Agora a regra e:
 - duplicada visual/provavel: mesmo personagem/modelo, mas hash diferente;
 - nunca resolver duplicidade movendo arquivo da raiz;
 - registrar duplicidade em CSV/manifesto.
+- se a imagem ja existe em `catalogo/`, nao copiar novamente;
+- se a imagem ja existe em `_duplicados/`, nao usar como modelo principal sem revisao.
 
 ## O que Deve Voltar para o PC Principal
 
@@ -293,6 +338,8 @@ Nao precisa voltar:
 
 - A raiz Telegram esta intacta?
 - O Google Drive terminou a sincronizacao?
+- O catalogo existente foi indexado por hash antes de gerar novos pendentes?
+- As imagens ja existentes em `catalogo/` foram preservadas, sem recopia?
 - O CSV tem `source`, `category`, `franchise`, `folder` e `filename` preenchidos?
 - O lote foi testado com `--dry-run`?
 - Nao ha conflito de destino?
@@ -307,7 +354,11 @@ Use este texto ao iniciar o outro Codex:
 ```text
 Voce esta ajudando a organizar o catalogo de imagens do Ordax.
 
-Leia o documento docs/TELEGRAM_GOOGLE_DRIVE_CATALOG_WORKFLOW.md.
+Leia este documento inteiro antes de agir:
+telegram-2370335738-images/catalogo/_controle/TELEGRAM_GOOGLE_DRIVE_CATALOG_WORKFLOW.md
+
+Se tambem houver repositorio local, leia:
+docs/TELEGRAM_GOOGLE_DRIVE_CATALOG_WORKFLOW.md
 
 Pasta Google Drive sincronizada:
 https://drive.google.com/drive/folders/16s8SEHpoSN-EZnxouljMBgURO_bim-FP
@@ -317,7 +368,15 @@ Nunca mover, renomear ou apagar imagens da raiz telegram-2370335738-images.
 Sempre trabalhar por copia.
 
 Objetivo:
-Classificar imagens do Telegram, criar/preencher CSVs de lote, aplicar somente por copia em catalogo/, manter manifestos com source_name/message_id/sha256/catalog_relpath e, quando configurado, preparar upload WebP para Supabase staging.
+Classificar imagens do Telegram, preservar o catalogo ja existente, criar/preencher CSVs de lote, aplicar somente por copia em catalogo/, manter manifestos com source_name/message_id/sha256/catalog_relpath e, quando configurado, preparar upload WebP para Supabase staging.
+
+Antes de criar qualquer novo lote:
+1. Indexe o catalogo atual por sha256.
+2. Leia lote_*.csv, duplicados.csv e catalog_manifest.jsonl.
+3. Gere ou complete um manifesto retroativo para imagens que ja estao em catalogo/.
+4. Gere pendentes somente para imagens da raiz que ainda nao existem por source_name/message_id/sha256.
+
+Nao copie de novo imagem que ja existe em catalogo/.
 
 Antes de aplicar qualquer lote, rode dry-run.
 Antes de publicar qualquer coisa no site, manter status hidden/review.
