@@ -12565,17 +12565,19 @@
     },
     "1BmT94PuxQh87xvTyMEykqds89tCYIYiD": {
       "characterName": "Kamen Rider Black",
-      "variantName": null,
-      "modelGroup": "kamen-rider-black",
-      "sourceTitle": "Kamen Rider",
+      "variantName": "Base Rocha",
+      "modelGroup": "kamen-rider-black-base-rocha",
+      "sourceTitle": "Kamen Rider Black",
       "category": "series",
       "mediaType": "series",
-      "subcategory": "kamen-rider",
+      "subcategory": "kamen-rider-black",
       "tags": [
         "Kamen Rider",
-        "Kamen Rider Black"
+        "Kamen Rider Black",
+        "Tokusatsu"
       ],
-      "curationConfidence": "high"
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Kamen Rider Black em base rochosa; consolidado com a fonte especifica."
     },
     "1BeCT21IDIhvMQTynh-LsBD2rPq2wrmoZ": {
       "characterName": "Shadow Moon",
@@ -16097,6 +16099,85 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem verificada visualmente: Kamen Rider Black; corrige fonte generica Kamen Rider."
+    },
+    "1AV7f2KyB_iGIHnNshkagccWX9LEx_S9A": {
+      "category": "animes",
+      "subcategory": "tartarugas-ninja",
+      "mediaType": "anime",
+      "sourceTitle": "Tartarugas Ninja",
+      "characterName": "Bebop e Rocksteady",
+      "characterNames": [
+        "Bebop",
+        "Rocksteady"
+      ],
+      "variantName": "Dupla Viloes",
+      "modelGroup": "bebop-e-rocksteady-dupla-viloes",
+      "modelKind": "diorama",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Bebop",
+        "Rocksteady",
+        "Viloes"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: dupla Bebop e Rocksteady; corrige nome generico Tartarugas Ninja."
+    },
+    "1AVzfINvV_5zNzY9XOUAtsY6LcjJvB9wD": {
+      "category": "animes",
+      "subcategory": "tartarugas-ninja",
+      "mediaType": "anime",
+      "sourceTitle": "Tartarugas Ninja",
+      "characterName": "Armaggon",
+      "variantName": "Pose Musculosa",
+      "modelGroup": "armaggon-pose-musculosa",
+      "tags": [
+        "Tartarugas Ninja",
+        "TMNT",
+        "Armaggon",
+        "Vilao"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: vilao tubarao Armaggon; corrige nome generico Tartarugas Ninja."
+    },
+    "1ZmGnXdc1wmqpe8yW84LpZX-h4dxEVIiK": {
+      "category": "jogos",
+      "subcategory": "the-legend-of-zelda",
+      "mediaType": "game",
+      "sourceTitle": "The Legend of Zelda",
+      "characterName": "Link e Loftwing",
+      "characterNames": [
+        "Link",
+        "Loftwing"
+      ],
+      "variantName": "Diorama Loftwing",
+      "modelGroup": "link-e-loftwing-diorama",
+      "modelKind": "diorama",
+      "tags": [
+        "The Legend of Zelda",
+        "Zelda",
+        "Link",
+        "Loftwing",
+        "Diorama"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Link montado no Loftwing; consolidado na fonte The Legend of Zelda."
+    },
+    "1JLZMCHPskHa39Qs-02U-OZsXyadX83Jn": {
+      "category": "franquias",
+      "subcategory": "marvel-hulk",
+      "mediaType": "franchise",
+      "sourceTitle": "Marvel",
+      "characterName": "Hulk",
+      "variantName": "Gladiador de Guerra",
+      "modelGroup": "hulk-gladiador-de-guerra",
+      "tags": [
+        "Marvel",
+        "Hulk",
+        "Gladiador"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Hulk; corrigido de fonte DC para Marvel."
     }
   },
   "visualApprovals": {
