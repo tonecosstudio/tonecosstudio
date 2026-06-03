@@ -16178,6 +16178,75 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem verificada visualmente: Hulk; corrigido de fonte DC para Marvel."
+    },
+    "1MiqsBduMueQlo37pQ6QH4m2NLwm48nau": {
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy VII",
+      "characterName": "Cloud Strife",
+      "variantName": "Espada Buster",
+      "modelGroup": "cloud-strife-espada-buster",
+      "tags": [
+        "Final Fantasy VII",
+        "Final Fantasy",
+        "Cloud Strife",
+        "Cloud",
+        "Espada Buster"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Cloud Strife de Final Fantasy VII; consolidado da fonte generica Final Fantasy."
+    },
+    "1MbjbxWp2eXSHok1jVMZ8snMOzcryf9Se": {
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy VII",
+      "characterName": "Tifa Lockhart",
+      "variantName": "Pose Classica",
+      "modelGroup": "tifa-lockhart-pose-classica",
+      "tags": [
+        "Final Fantasy VII",
+        "Final Fantasy",
+        "Tifa Lockhart",
+        "Tifa"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Tifa Lockhart de Final Fantasy VII; consolidado da fonte generica Final Fantasy."
+    },
+    "1MbgiJ17Hh4a-MxkL4dsEgUzPo5NPRVpm": {
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy VII",
+      "characterName": "Sephiroth",
+      "variantName": "Asa Unica",
+      "modelGroup": "sephiroth-asa-unica",
+      "tags": [
+        "Final Fantasy VII",
+        "Final Fantasy",
+        "Sephiroth",
+        "Asa Unica"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Sephiroth de Final Fantasy VII; consolidado da fonte generica Final Fantasy."
+    },
+    "1Mca2V_ohSxoEfEwSBSi_KFzvU6AI3iAV": {
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy VII",
+      "characterName": "Jessie Rasberry",
+      "variantName": "Pose Pistola",
+      "modelGroup": "jessie-rasberry-pose-pistola",
+      "tags": [
+        "Final Fantasy VII",
+        "Final Fantasy",
+        "Jessie Rasberry",
+        "Jessie"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Jessie Rasberry de Final Fantasy VII; diferencia de Jessie de Pokemon/Toy Story e consolida a fonte."
     }
   },
   "visualApprovals": {
