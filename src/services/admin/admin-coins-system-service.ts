@@ -6,6 +6,11 @@ interface CoinTransactionSummaryRow {
   user_id: string;
 }
 
+interface UserCoinBalanceSummaryRow {
+  balance: number;
+  user_id: string;
+}
+
 export interface AdminCoinTransactionRow {
   id: string;
   amount: number;
@@ -53,6 +58,12 @@ export interface AdminCoinsPricingConfig {
 }
 
 export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
+  const { data: allBalances, error: balancesError } = await adminCoinsGateway
+    .from("user_coins")
+    .select("balance, user_id");
+
+  if (balancesError) throw balancesError;
+
   const { data: allTransactions, error: transactionsError } = await adminCoinsGateway
     .from("coin_transactions")
     .select("amount, transaction_type, user_id");
@@ -60,17 +71,27 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
   if (transactionsError) throw transactionsError;
 
   let totalEarned = 0;
-  let totalSpent = 0;
-  const userSet = new Set<string>();
+  let grossSpent = 0;
+  let totalRefunded = 0;
+  const balanceRows = (allBalances as UserCoinBalanceSummaryRow[] | null) ?? [];
+  const totalBalance = balanceRows.reduce((sum, row) => sum + row.balance, 0);
 
   ((allTransactions as CoinTransactionSummaryRow[] | null) ?? []).forEach((transaction) => {
-    userSet.add(transaction.user_id);
-    if (transaction.amount >= 0) {
+    if (transaction.transaction_type === "spend") {
+      grossSpent += Math.abs(transaction.amount);
+      return;
+    }
+
+    if (transaction.transaction_type === "refund") {
+      totalRefunded += Math.abs(transaction.amount);
+      return;
+    }
+
+    if (transaction.amount > 0) {
       totalEarned += transaction.amount;
-    } else {
-      totalSpent += Math.abs(transaction.amount);
     }
   });
+  const totalSpent = Math.max(grossSpent - totalRefunded, 0);
 
   const { data: transactions, error: recentTransactionsError } = await adminCoinsGateway
     .from("coin_transactions")
@@ -97,10 +118,10 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
   if (purchasesError) throw purchasesError;
 
   return {
-    totalBalance: totalEarned - totalSpent,
+    totalBalance,
     totalEarned,
     totalSpent,
-    totalUsers: userSet.size,
+    totalUsers: balanceRows.length,
     transactions: (transactions ?? []) as AdminCoinTransactionRow[],
     packages: (packages ?? []) as AdminCoinPackageRow[],
     totalPurchases: purchaseCount ?? 0,

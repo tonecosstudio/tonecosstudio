@@ -31,19 +31,6 @@ type PurchaseCoinsRpcResult = {
   transaction_id?: string | null;
 };
 
-interface PurchaseCoinsRpcClient {
-  rpc(
-    fn: "purchase_character_with_coins",
-    args: { p_user_id: string; p_character_id: string; p_coins_amount: number }
-  ): Promise<{ data: PurchaseCoinsRpcResult | PurchaseCoinsRpcResult[] | null; error: { message: string } | null }>;
-  rpc(
-    fn: "purchase_collection_with_coins",
-    args: { p_user_id: string; p_collection_id: string; p_coins_amount: number }
-  ): Promise<{ data: PurchaseCoinsRpcResult | PurchaseCoinsRpcResult[] | null; error: { message: string } | null }>;
-}
-
-const purchaseCoinsRpc = supabase as unknown as PurchaseCoinsRpcClient;
-
 function firstPurchaseRpcResult(data: PurchaseCoinsRpcResult | PurchaseCoinsRpcResult[] | null) {
   return Array.isArray(data) ? data[0] : data;
 }
@@ -56,8 +43,6 @@ export interface PurchaseCollectionParams {
   user_id: UserId;
   /** ID da coleção */
   collection_id: string;
-  /** Quantidade de coins (para validação) */
-  coins_amount: CoinsAmount;
 }
 
 /**
@@ -115,8 +100,7 @@ export interface PurchaseValidation {
  *   const handlePurchase = () => {
  *     purchaseCharacter.mutate({
  *       user_id: user.id,
- *       character_id: character.id,
- *       coins_amount: character.price
+ *       character_id: character.id
  *     });
  *   };
  *
@@ -139,35 +123,30 @@ export function usePurchaseCharacter() {
     mutationFn: async (
       params: PurchaseCharacterParams
     ): Promise<PurchaseWithCoinsResponse> => {
-      const { user_id, character_id, coins_amount } = params;
+      const { user_id, character_id } = params;
       await assertCurrentUserId(user_id);
 
       // Chamar função RPC que faz compra atômica
-      const { data, error } = await purchaseCoinsRpc.rpc('purchase_character_with_coins', {
+      const { data, error } = await supabase.rpc('purchase_character_with_coins', {
         p_user_id: user_id,
         p_character_id: character_id,
-        p_coins_amount: coins_amount,
       });
 
       if (error) {
         throw new Error(error.message);
       }
 
-      // Buscar novo saldo
-      const { data: balanceData } = await supabase
-        .from('user_coins')
-        .select('balance')
-        .eq('user_id', user_id)
-        .single();
-
       const result = firstPurchaseRpcResult(data);
+      if (!result?.success) {
+        throw new Error(result?.message ?? 'Compra de personagem nao retornou resultado.');
+      }
 
       return {
-        success: true,
-        message: result?.message ?? 'Personagem adquirido com sucesso!',
-        new_balance: balanceData?.balance || 0,
+        success: result.success,
+        message: result.message,
+        new_balance: result.new_balance,
         item_id: character_id,
-        transaction_id: result?.transaction_id || '',
+        transaction_id: result.transaction_id || '',
       };
     },
     onSuccess: (data, variables) => {
@@ -227,8 +206,7 @@ export function usePurchaseCharacter() {
  *   const handlePurchase = () => {
  *     purchaseCollection.mutate({
  *       user_id: user.id,
- *       collection_id: collection.id,
- *       coins_amount: collection.price
+ *       collection_id: collection.id
  *     });
  *   };
  *
@@ -248,35 +226,30 @@ export function usePurchaseCollection() {
     mutationFn: async (
       params: PurchaseCollectionParams
     ): Promise<PurchaseWithCoinsResponse> => {
-      const { user_id, collection_id, coins_amount } = params;
+      const { user_id, collection_id } = params;
       await assertCurrentUserId(user_id);
 
       // Chamar função RPC (assumindo que existe)
-      const { data, error } = await purchaseCoinsRpc.rpc('purchase_collection_with_coins', {
+      const { data, error } = await supabase.rpc('purchase_collection_with_coins', {
         p_user_id: user_id,
         p_collection_id: collection_id,
-        p_coins_amount: coins_amount,
       });
 
       if (error) {
         throw new Error(error.message);
       }
 
-      // Buscar novo saldo
-      const { data: balanceData } = await supabase
-        .from('user_coins')
-        .select('balance')
-        .eq('user_id', user_id)
-        .single();
-
       const result = firstPurchaseRpcResult(data);
+      if (!result?.success) {
+        throw new Error(result?.message ?? 'Compra de colecao nao retornou resultado.');
+      }
 
       return {
-        success: true,
-        message: result?.message ?? 'Coleção adquirida com sucesso!',
-        new_balance: balanceData?.balance || 0,
+        success: result.success,
+        message: result.message,
+        new_balance: result.new_balance,
         item_id: collection_id,
-        transaction_id: result?.transaction_id || '',
+        transaction_id: result.transaction_id || '',
       };
     },
     onSuccess: (data, variables) => {
@@ -485,8 +458,7 @@ export function useRefundPurchase() {
  *     purchase.mutate({
  *       userId: user.id,
  *       itemId: item.id,
- *       itemType: 'type' in item ? 'character' : 'collection',
- *       price: item.price
+ *       itemType: 'type' in item ? 'character' : 'collection'
  *     });
  *   };
  *
@@ -503,21 +475,18 @@ export function usePurchaseItem() {
       userId: UserId;
       itemId: string;
       itemType: 'character' | 'collection';
-      price: CoinsAmount;
     }) => {
-      const { userId, itemId, itemType, price } = params;
+      const { userId, itemId, itemType } = params;
 
       if (itemType === 'character') {
         return purchaseCharacter.mutateAsync({
           user_id: userId,
           character_id: itemId,
-          coins_amount: price,
         });
       } else {
         return purchaseCollection.mutateAsync({
           user_id: userId,
           collection_id: itemId,
-          coins_amount: price,
         });
       }
     },

@@ -36,9 +36,9 @@ export type ContextualPricingHistoryUpdate = Database['public']['Tables']['prici
  * Contextos de usuário disponíveis para cálculo de preço
  */
 export type UserContext = 
-  | 'subscription_chosen'      // Assinante com coleção escolhida (desconto aplicado)
-  | 'subscription_not_chosen'  // Assinante sem coleção escolhida (multiplicador aplicado)
-  | 'non_subscriber';          // Não assinante (multiplicador aplicado)
+  | 'subscribed_chosen'      // Assinante com coleção escolhida (desconto aplicado)
+  | 'subscribed_not_chosen'  // Assinante sem coleção escolhida (multiplicador aplicado)
+  | 'no_subscription';       // Não assinante (multiplicador aplicado)
 
 /**
  * Tipos de coleção disponíveis
@@ -172,9 +172,9 @@ export interface CollectionLimitInfo extends CollectionLimitValidation {
  * Constantes de contexto de usuário
  */
 export const USER_CONTEXTS = {
-  SUBSCRIPTION_CHOSEN: 'subscription_chosen' as UserContext,
-  SUBSCRIPTION_NOT_CHOSEN: 'subscription_not_chosen' as UserContext,
-  NON_SUBSCRIBER: 'non_subscriber' as UserContext,
+  SUBSCRIBED_CHOSEN: 'subscribed_chosen' as UserContext,
+  SUBSCRIBED_NOT_CHOSEN: 'subscribed_not_chosen' as UserContext,
+  NO_SUBSCRIPTION: 'no_subscription' as UserContext,
 } as const;
 
 /**

@@ -5,29 +5,11 @@ type RpcError = {
   message: string;
 };
 
-type RpcResult<T> = Promise<{
-  data: T | null;
-  error: RpcError | null;
-}>;
-
 type InitializeCoinBalanceResponse = {
   success: boolean;
   balance: CoinsAmount;
   transaction_id: string | null;
 };
-
-interface CoinMutationRpcClient {
-  rpc(
-    fn: "initialize_current_user_coin_balance",
-    args: { p_initial_amount: CoinsAmount; p_description: string | null }
-  ): RpcResult<InitializeCoinBalanceResponse>;
-  rpc(
-    fn: "refund_coin_purchase_for_current_user",
-    args: { p_item_id: string; p_item_type: "character" | "collection"; p_reason: string }
-  ): RpcResult<PurchaseWithCoinsResponse>;
-}
-
-const coinMutationRpc = supabase as unknown as CoinMutationRpcClient;
 
 function unwrapRpcData<T>(data: T | null, error: RpcError | null, fallback: string): T {
   if (error) {
@@ -45,7 +27,7 @@ export async function initializeCurrentUserCoinBalanceRpc(input: {
   initialAmount: CoinsAmount;
   description: string;
 }): Promise<InitializeCoinBalanceResponse> {
-  const { data, error } = await coinMutationRpc.rpc("initialize_current_user_coin_balance", {
+  const { data, error } = await supabase.rpc("initialize_current_user_coin_balance", {
     p_initial_amount: input.initialAmount,
     p_description: input.description,
   });
@@ -58,7 +40,7 @@ export async function refundCoinPurchaseForCurrentUserRpc(input: {
   itemType: "character" | "collection";
   reason: string;
 }): Promise<PurchaseWithCoinsResponse> {
-  const { data, error } = await coinMutationRpc.rpc("refund_coin_purchase_for_current_user", {
+  const { data, error } = await supabase.rpc("refund_coin_purchase_for_current_user", {
     p_item_id: input.itemId,
     p_item_type: input.itemType,
     p_reason: input.reason,

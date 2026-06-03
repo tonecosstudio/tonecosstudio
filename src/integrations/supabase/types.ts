@@ -2916,6 +2916,44 @@ export type Database = {
           },
         ]
       }
+      user_characters: {
+        Row: {
+          acquired_at: string
+          acquisition_type: string
+          character_id: string
+          created_at: string
+          id: string
+          price_paid: number | null
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          acquisition_type?: string
+          character_id: string
+          created_at?: string
+          id?: string
+          price_paid?: number | null
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          acquisition_type?: string
+          character_id?: string
+          created_at?: string
+          id?: string
+          price_paid?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_characters_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "collection_characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_coins: {
         Row: {
           balance: number
@@ -2945,6 +2983,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_collections: {
+        Row: {
+          acquired_at: string
+          acquisition_type: string
+          collection_id: string
+          created_at: string
+          id: string
+          price_paid: number | null
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          acquisition_type?: string
+          collection_id: string
+          created_at?: string
+          id?: string
+          price_paid?: number | null
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          acquisition_type?: string
+          collection_id?: string
+          created_at?: string
+          id?: string
+          price_paid?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_collections_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_notification_settings: {
         Row: {
@@ -3237,13 +3313,41 @@ export type Database = {
         Args: { p_notification_id: string }
         Returns: undefined
       }
+      initialize_current_user_coin_balance: {
+        Args: { p_description: string | null; p_initial_amount: number }
+        Returns: {
+          balance: number
+          success: boolean
+          transaction_id: string | null
+        }
+      }
       purchase_character_with_coins: {
         Args: { p_character_id: string; p_user_id: string }
         Returns: {
           message: string
           new_balance: number
           success: boolean
+          transaction_id: string
         }[]
+      }
+      purchase_collection_with_coins: {
+        Args: { p_collection_id: string; p_user_id: string }
+        Returns: {
+          message: string
+          new_balance: number
+          success: boolean
+          transaction_id: string
+        }[]
+      }
+      refund_coin_purchase_for_current_user: {
+        Args: { p_item_id: string; p_item_type: string; p_reason: string }
+        Returns: {
+          item_id: string
+          message: string
+          new_balance: number
+          success: boolean
+          transaction_id: string
+        }
       }
       reopen_monthly_sales: { Args: never; Returns: undefined }
       search_unified_orders: {

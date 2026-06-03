@@ -98,20 +98,20 @@ export interface CoinsPackage {
   id: string;
   /** Nome do pacote (ex: "Starter", "Premium") */
   name: string;
-  /** Descrição do pacote */
-  description?: string | null;
   /** Quantidade base de coins */
-  coins_amount: CoinsAmount;
+  amount: CoinsAmount;
   /** Coins bônus */
-  bonus_coins: CoinsAmount;
-  /** Total de coins (amount + bonus) */
-  total_coins: CoinsAmount;
+  bonus: CoinsAmount;
   /** Preço em reais */
   price_brl: number;
   /** Pacote está ativo? */
   is_active: boolean;
-  /** Ordem de exibição */
-  display_order: number;
+  /** Pacote destacado como popular? */
+  is_popular: boolean;
+  /** Pacote destacado como melhor valor? */
+  is_best_value: boolean;
+  /** Ordem de exibicao */
+  sort_order: number;
   /** Data de criação */
   created_at: string;
   /** Data de atualização */
@@ -324,8 +324,6 @@ export interface PurchaseCharacterParams {
   user_id: UserId;
   /** ID do personagem */
   character_id: string;
-  /** Quantidade de coins (para validação) */
-  coins_amount: CoinsAmount;
 }
 
 /**

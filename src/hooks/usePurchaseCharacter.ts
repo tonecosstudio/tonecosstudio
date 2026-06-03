@@ -35,22 +35,6 @@ export interface PurchaseCharacterResponse {
   };
 }
 
-type QueryError = { message: string } | null;
-
-interface UserCharactersSupabaseClient {
-  from(table: "user_characters"): {
-    select(columns: "id"): {
-      eq(column: "user_id", value: string): {
-        eq(column: "character_id", value: string): {
-          single(): PromiseLike<{ data: { id: string } | null; error: QueryError }>;
-        };
-      };
-    };
-  };
-}
-
-const userCharactersSupabase = supabase as unknown as UserCharactersSupabaseClient;
-
 // =====================================================
 // MUTATIONS
 // =====================================================
@@ -167,18 +151,52 @@ export async function validatePurchase(
   }
 
   // Verificar se já possui
-  const { data: existingCharacter } = await userCharactersSupabase
+  const { data: existingCharacter, error: existingCharacterError } = await supabase
     .from("user_characters")
     .select("id")
     .eq("user_id", userId)
     .eq("character_id", characterId)
-    .single();
+    .maybeSingle();
+
+  if (existingCharacterError) {
+    throw existingCharacterError;
+  }
 
   if (existingCharacter) {
     return {
       canPurchase: false,
       reason: "Você já possui este personagem",
     };
+  }
+
+  const { data: collectionCharacter, error: collectionCharacterError } = await supabase
+    .from("collection_characters")
+    .select("collection_id")
+    .eq("id", characterId)
+    .maybeSingle();
+
+  if (collectionCharacterError) {
+    throw collectionCharacterError;
+  }
+
+  if (collectionCharacter?.collection_id) {
+    const { data: existingCollection, error: existingCollectionError } = await supabase
+      .from("user_collections")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("collection_id", collectionCharacter.collection_id)
+      .maybeSingle();
+
+    if (existingCollectionError) {
+      throw existingCollectionError;
+    }
+
+    if (existingCollection) {
+      return {
+        canPurchase: false,
+        reason: "VocÃª jÃ¡ possui esta coleÃ§Ã£o",
+      };
+    }
   }
 
   return { canPurchase: true };
