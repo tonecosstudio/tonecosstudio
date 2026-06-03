@@ -1,0 +1,4 @@
+Leia e siga o arquivo:
+telegram-2370335738-images/catalogo/_controle/TELEGRAM_GOOGLE_DRIVE_CATALOG_WORKFLOW.md
+
+Execute o fluxo descrito nele. Antes de criar novos lotes, preserve o catalogo existente: indexe por sha256, leia os lote_*.csv, duplicados.csv e catalog_manifest.jsonl, e nao copie de novo imagem que ja existe em catalogo/. Nunca mover, renomear ou apagar imagens da raiz telegram-2370335738-images.
