@@ -15360,20 +15360,21 @@
       "curationNotes": "Remove From Final Fantasy VIII do nome do personagem; mantem como variante/tag."
     },
     "1Mrma_LAJ-vnxhpZDE6VrTGtdfZUr1cFB": {
-      "category": "games",
-      "subcategory": "final-fantasy",
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
       "mediaType": "game",
-      "sourceTitle": "Final Fantasy",
+      "sourceTitle": "Final Fantasy VII",
       "characterName": "Tifa Lockhart",
       "variantName": "Stand Final Fantasy VII",
       "modelGroup": "tifa-lockhart-stand-final-fantasy-vii",
       "tags": [
-        "Final Fantasy",
         "Final Fantasy VII",
-        "Tifa Lockhart"
+        "Final Fantasy",
+        "Tifa Lockhart",
+        "Tifa"
       ],
       "curationConfidence": "high",
-      "curationNotes": "Corrige Lockart/From e separa Stand como variante."
+      "curationNotes": "Imagem verificada visualmente: Tifa Lockhart de Final Fantasy VII; consolidado da fonte generica Final Fantasy."
     },
     "1MpfjV_rcRg-V9iA9XJprJuMWimZrBd5g": {
       "category": "games",
@@ -16247,6 +16248,42 @@
       ],
       "curationConfidence": "high",
       "curationNotes": "Imagem verificada visualmente: Jessie Rasberry de Final Fantasy VII; diferencia de Jessie de Pokemon/Toy Story e consolida a fonte."
+    },
+    "1MbZUEHzB7g8FtIyt8iVtC0OQwKKgUgVv": {
+      "category": "jogos",
+      "subcategory": "final-fantasy-vii",
+      "mediaType": "game",
+      "sourceTitle": "Final Fantasy VII",
+      "characterName": "Cloud Strife",
+      "variantName": "Base Rochosa Espada Buster",
+      "modelGroup": "cloud-strife-base-rochosa-espada-buster",
+      "tags": [
+        "Final Fantasy VII",
+        "Final Fantasy",
+        "Cloud Strife",
+        "Cloud",
+        "Espada Buster"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: Cloud Strife de Final Fantasy VII em base rochosa; consolidado da fonte generica Final Fantasy."
+    },
+    "1Ad-Boop27uw6J9Df-nBCLUAlxDD01s9L": {
+      "category": "franquias",
+      "subcategory": "marvel-homem-aranha",
+      "mediaType": "franchise",
+      "sourceTitle": "Homem-Aranha",
+      "characterName": "Homem-Aranha",
+      "variantName": "Diorama Coluna Classica",
+      "modelGroup": "homem-aranha-diorama-coluna-classica",
+      "tags": [
+        "Marvel",
+        "Homem-Aranha",
+        "Spider-Man",
+        "Diorama",
+        "Coluna"
+      ],
+      "curationConfidence": "high",
+      "curationNotes": "Imagem verificada visualmente: arquivo chamado superman mostra Homem-Aranha em coluna; corrige nome publico e mantem na fonte Homem-Aranha."
     }
   },
   "visualApprovals": {
