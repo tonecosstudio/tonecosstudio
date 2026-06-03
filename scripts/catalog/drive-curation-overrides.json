@@ -16565,6 +16565,297 @@
         "LAfigures"
       ],
       "curationNotes": "Arquivo SHE-RA - MOTU normalizado para She-Ra; MOTU deixa de compor o nome do personagem."
+    },
+    "1RgO-7A30S82h0nZHm_ctukS1XuGVXVa9": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Armadura",
+      "modelGroup": "batman-armadura",
+      "tags": [
+        "DC",
+        "Batman",
+        "Armadura"
+      ],
+      "curationNotes": "Arquivo batman armadura normalizado como variacao do Batman, nao personagem separado."
+    },
+    "1MQ1cLUvXAY-TiwisGM12Jjq9PFZptecH": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Batman Begins",
+      "modelGroup": "batman-begins",
+      "tags": [
+        "DC",
+        "Batman",
+        "Batman Begins",
+        "Cavaleiro das Trevas"
+      ],
+      "curationNotes": "Batman Begins e uma versao do Batman; manter na pasta Batman com variante propria."
+    },
+    "19_0ns030cRNDc4FP0vYLpB7WSXuuQK2d": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Chibi",
+      "modelGroup": "batman-chibi",
+      "tags": [
+        "DC",
+        "Batman",
+        "Chibi"
+      ],
+      "curationNotes": "Arquivo batman chib normalizado como variante Chibi do Batman."
+    },
+    "1JnQe72DwRxMoJY-8FoEjWhyQJngdq69b": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Dark Crusader Diorama",
+      "modelGroup": "batman-dark-crusader-diorama",
+      "modelKind": "character_diorama",
+      "tags": [
+        "DC",
+        "Batman",
+        "Dark Crusader",
+        "Diorama"
+      ],
+      "curationNotes": "Batman Dark Crusader e uma versao/diorama do Batman; consolidado na pasta do personagem."
+    },
+    "1yceioZ4OYafRXERGb4Bvct8rmdy3Zesn": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Dark Knight",
+      "modelGroup": "batman-dark-knight",
+      "tags": [
+        "DC",
+        "Batman",
+        "Dark Knight",
+        "Cavaleiro das Trevas"
+      ],
+      "curationNotes": "Batman Dark Knight normalizado como variacao do Batman."
+    },
+    "1YRZOXdff01r070iDV2z22DWkXGC6OFnk": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman e Familia",
+      "characterNames": [
+        "Batman",
+        "Familia Batman"
+      ],
+      "variantName": "Chibi",
+      "modelGroup": "batman-e-familia-chibi",
+      "modelKind": "diorama",
+      "tags": [
+        "DC",
+        "Batman",
+        "Familia Batman",
+        "Robin",
+        "Batgirl",
+        "Red Hood",
+        "Diorama",
+        "Chibi"
+      ],
+      "curationNotes": "Imagem mostra Batman com membros da Bat-Familia em estilo chibi; manter como diorama/grupo, nao personagem Batman Familia."
+    },
+    "1o97vfAQIWLa8Qp_5-Ama3cHcSz-9Sp67": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Red Death Busto",
+      "modelGroup": "batman-red-death-busto",
+      "tags": [
+        "DC",
+        "Batman",
+        "Red Death",
+        "Dark Knights",
+        "Busto"
+      ],
+      "curationNotes": "Imagem e busto Batman Red Death; corrigido de Batman Flash para variacao do Batman."
+    },
+    "1JjnKGlZlzi77PxehFXxdiDxSTNaBtlkY": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Gargula",
+      "modelGroup": "batman-gargula",
+      "tags": [
+        "DC",
+        "Batman",
+        "Gargula",
+        "Gargoyle"
+      ],
+      "curationNotes": "Batman Gargoyle normalizado como variante Gargula do Batman."
+    },
+    "1JsFhxW2av_ARL1O5AO9cEO2vYc1qRvXm": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Arkham Origins Diorama",
+      "modelGroup": "batman-arkham-origins-diorama",
+      "modelKind": "character_diorama",
+      "tags": [
+        "DC",
+        "Batman",
+        "Arkham Origins",
+        "Diorama"
+      ],
+      "curationNotes": "Batman Origins normalizado como variacao Arkham Origins do Batman."
+    },
+    "1R3Jwpm6in2ISvoVXNOZtXWRznRsiuDWD": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Thomas Wayne",
+      "modelGroup": "batman-thomas-wayne",
+      "tags": [
+        "DC",
+        "Batman",
+        "Thomas Wayne",
+        "Flashpoint"
+      ],
+      "curationNotes": "Arquivo com erro Wayneo normalizado para variante Thomas Wayne do Batman."
+    },
+    "1yn4kEBdDSrtKVfHKAo8TizDL97id9DG3": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Trono Diorama",
+      "modelGroup": "batman-trono-diorama",
+      "modelKind": "character_diorama",
+      "tags": [
+        "DC",
+        "Batman",
+        "Trono",
+        "Diorama"
+      ],
+      "curationNotes": "Batman Trono consolidado como diorama/variante dentro da pasta Batman."
+    },
+    "1IA7tR6uy78v2TYaJ9KT9otu8-kdjmTFT": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Zack Snyder",
+      "modelGroup": "batman-zack-snyder",
+      "tags": [
+        "DC",
+        "Batman",
+        "Zack Snyder"
+      ],
+      "curationNotes": "Batman Zack Snyder normalizado como variacao do Batman."
+    },
+    "1pNHCrFcGp2dx8ZIVIjdH3EsKeIkj17TR": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Grim Knight",
+      "modelGroup": "batman-grim-knight",
+      "tags": [
+        "DC",
+        "Batman",
+        "Grim Knight",
+        "Dark Knights"
+      ],
+      "curationNotes": "Arquivo batmandd identificado visualmente como Batman Grim Knight; corrigido para variante do Batman."
+    },
+    "1ZpQRUdD2eq9P3tRLm5wj1EZgAQ6YYDXH": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman",
+      "variantName": "Bat-Sinal",
+      "modelGroup": "batman-bat-sinal",
+      "modelKind": "character_diorama",
+      "tags": [
+        "DC",
+        "Batman",
+        "Bat-Sinal",
+        "Bat Signal",
+        "Diorama"
+      ],
+      "curationNotes": "Imagem tem apenas Batman com Bat-Sinal; manter como diorama/variante do Batman, nao multi-personagem."
+    },
+    "1eRrlPdbSPid-7pT-EW6HcI_tYNU_JmAC": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Batman e Coringa",
+      "characterNames": [
+        "Batman",
+        "Coringa"
+      ],
+      "variantName": "Busto",
+      "modelGroup": "batman-e-coringa-busto",
+      "modelKind": "diorama",
+      "tags": [
+        "DC",
+        "Batman",
+        "Coringa",
+        "Joker",
+        "Busto",
+        "Diorama"
+      ],
+      "curationNotes": "Arquivo x Batman x Coringa Busto normalizado removendo prefixo tecnico X e explicitando os dois personagens."
+    },
+    "1c8jXHF0TwSxRtEOAipjPB7TAYLF83wrK": {
+      "sourceTitle": "DC",
+      "category": "franquias",
+      "mediaType": "comics",
+      "subcategory": "dc",
+      "curationConfidence": "high",
+      "characterName": "Mulher-Gato",
+      "variantName": "Classica",
+      "modelGroup": "mulher-gato-classica",
+      "tags": [
+        "DC",
+        "Mulher-Gato",
+        "Cat Woman",
+        "Catwoman"
+      ],
+      "curationNotes": "Cat Woman normalizada para Mulher-Gato, evitando pasta duplicada com os demais itens ja em portugues."
     }
   },
   "visualApprovals": {
@@ -17241,6 +17532,18 @@
       "approvalType": "same_model_gallery",
       "reviewedAt": "2026-06-02",
       "notes": "Mai Shiranu e Mai Shiranui - The King of Fighters sao a mesma personagem/modelo apos normalizacao; manter como galeria."
+    },
+    "DC|Batman|batman-gargula": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-03",
+      "notes": "Batman Gargula contem duas imagens/angulos do mesmo modelo; manter agrupado como galeria da variante."
+    },
+    "DC|Batman|batman-thomas-wayne": {
+      "status": "approved",
+      "approvalType": "same_model_gallery",
+      "reviewedAt": "2026-06-03",
+      "notes": "Batman Thomas Wayne contem duas imagens/angulos da mesma variante; manter agrupado como galeria."
     }
   }
 }
