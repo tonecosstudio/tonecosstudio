@@ -31,6 +31,25 @@ BEGIN
     RAISE EXCEPTION 'Invalid item_id' USING ERRCODE = '22023';
   END IF;
 
+  INSERT INTO public.user_coins (
+    user_id,
+    balance,
+    total_earned,
+    total_spent
+  )
+  VALUES (
+    v_user_id,
+    0,
+    0,
+    0
+  )
+  ON CONFLICT (user_id) DO NOTHING;
+
+  PERFORM 1
+  FROM public.user_coins
+  WHERE user_id = v_user_id
+  FOR UPDATE;
+
   IF v_item_type = 'character' THEN
     SELECT uc.price_paid, cc.collection_id
     INTO v_refund_amount, v_character_collection_id

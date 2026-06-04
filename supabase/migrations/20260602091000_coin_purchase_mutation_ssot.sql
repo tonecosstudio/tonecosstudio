@@ -267,6 +267,25 @@ BEGIN
     RAISE EXCEPTION 'character not found' USING ERRCODE = 'P0002';
   END IF;
 
+  INSERT INTO public.user_coins (
+    user_id,
+    balance,
+    total_earned,
+    total_spent
+  )
+  VALUES (
+    p_user_id,
+    0,
+    0,
+    0
+  )
+  ON CONFLICT (user_id) DO NOTHING;
+
+  PERFORM 1
+  FROM public.user_coins
+  WHERE user_id = p_user_id
+  FOR UPDATE;
+
   SELECT
     cc.id,
     cc.collection_id,
@@ -371,6 +390,25 @@ BEGIN
   IF p_collection_id IS NULL THEN
     RAISE EXCEPTION 'collection not found' USING ERRCODE = 'P0002';
   END IF;
+
+  INSERT INTO public.user_coins (
+    user_id,
+    balance,
+    total_earned,
+    total_spent
+  )
+  VALUES (
+    p_user_id,
+    0,
+    0,
+    0
+  )
+  ON CONFLICT (user_id) DO NOTHING;
+
+  PERFORM 1
+  FROM public.user_coins
+  WHERE user_id = p_user_id
+  FOR UPDATE;
 
   IF NOT EXISTS (
     SELECT 1
