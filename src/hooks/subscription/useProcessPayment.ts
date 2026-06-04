@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { subscriptionKeys } from './useSubscription';
 import { coinsBalanceKeys } from '../coins/useCoinsBalance';
+import { invalidateCoinsTransactions } from '../coins/useCoinsTransactions';
 import type {
   ProcessSubscriptionPaymentParams,
   ProcessPaymentResponse,
@@ -147,6 +148,7 @@ export function useProcessSubscriptionPayment() {
       queryClient.invalidateQueries({
         queryKey: coinsBalanceKeys.all,
       });
+      invalidateCoinsTransactions(queryClient);
 
       toast({
         title: 'Pagamento aprovado!',
@@ -230,6 +232,7 @@ export function useAdminAddSubscriptionCoins() {
       queryClient.invalidateQueries({
         queryKey: coinsBalanceKeys.user(variables.user_id),
       });
+      invalidateCoinsTransactions(queryClient);
 
       toast({
         title: 'Coins adicionados!',

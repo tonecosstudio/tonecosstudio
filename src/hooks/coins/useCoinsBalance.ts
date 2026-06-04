@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
 import { initializeCurrentUserCoinBalanceRpc } from '@/services/coins-mutations-service';
+import { invalidateCoinsTransactions } from './useCoinsTransactions';
 import type {
   CoinsBalanceResponse,
   CoinsAmount,
@@ -260,6 +261,7 @@ export function useInitializeBalance() {
       queryClient.invalidateQueries({
         queryKey: coinsBalanceKeys.user(variables.userId),
       });
+      invalidateCoinsTransactions(queryClient);
       
       toast({
         title: 'Saldo inicializado!',

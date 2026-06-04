@@ -34,7 +34,6 @@ export {
   usePurchaseCharacter,
   usePurchaseCollection,
   useRefundPurchase,
-  useValidatePurchase,
   usePurchaseItem,
 } from "./usePurchaseWithCoins";
 

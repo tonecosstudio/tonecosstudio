@@ -7,7 +7,7 @@
  * @module hooks/coins/useCoinsTransactions
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
 import { summarizeCoinLedger } from '@/lib/coins-ledger';
@@ -80,6 +80,15 @@ const CACHE_CONFIG = {
   /** Tempo que dados ficam em cache (5 minutos) */
   CACHE_TIME: 5 * 60 * 1000,
 };
+
+export function invalidateCoinsTransactions(queryClient: QueryClient) {
+  queryClient.invalidateQueries({
+    queryKey: coinsTransactionsKeys.all,
+  });
+  queryClient.invalidateQueries({
+    queryKey: ["coin-transactions"],
+  });
+}
 
 type CoinTransactionRow = {
   id: string;
