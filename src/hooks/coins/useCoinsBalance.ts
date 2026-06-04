@@ -257,10 +257,7 @@ export function useInitializeBalance() {
       });
     },
     onSuccess: (data, variables) => {
-      // Invalida cache do saldo
-      queryClient.invalidateQueries({
-        queryKey: coinsBalanceKeys.user(variables.userId),
-      });
+      invalidateCoinsBalance(queryClient, variables.userId);
       invalidateCoinsTransactions(queryClient);
       
       toast({

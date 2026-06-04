@@ -65,6 +65,9 @@ function mapSubscriptionPaymentRpcError(message: string | undefined): string {
   if (value.includes("INVALID_PAYMENT_AMOUNT")) return "Valor de pagamento invalido";
   if (value.includes("INVALID_PAYMENT_METHOD")) return "Metodo de pagamento invalido";
   if (value.includes("INVALID_EXTERNAL_REFERENCE")) return "Referencia externa invalida";
+  if (value.includes("DUPLICATE_SUBSCRIPTION_PAYMENT")) {
+    return "Pagamento ja processado para esta referencia";
+  }
   if (value.includes("INVALID_SUBSCRIPTION_STATUS")) return "Status da assinatura invalido";
   if (value.includes("SUBSCRIPTION_CREDITS_NOT_CONFIGURED")) {
     return "Creditos da assinatura nao configurados";
