@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { summarizeCoinLedger } from "@/lib/coins-ledger";
 
 export interface CreditsDashboardMetrics {
   coins: {
@@ -51,21 +52,13 @@ export async function fetchCreditsDashboardMetrics(): Promise<CreditsDashboardMe
   if (totalSubsResult.error) throw totalSubsResult.error;
   if (coinUsersResult.error) throw coinUsersResult.error;
 
-  let totalCredits = 0;
-  let totalDebits = 0;
-  (coinsResult.data || []).forEach((tx) => {
-    if (tx.amount >= 0) {
-      totalCredits += tx.amount;
-    } else {
-      totalDebits += Math.abs(tx.amount);
-    }
-  });
+  const coinSummary = summarizeCoinLedger(coinsResult.data || []);
 
   return {
     coins: {
-      total: totalCredits - totalDebits,
-      credits: totalCredits,
-      debits: totalDebits,
+      total: coinSummary.netBalance,
+      credits: coinSummary.totalEarned,
+      debits: coinSummary.totalSpent,
     },
     cycles: {
       active: cyclesResult.count || 0,

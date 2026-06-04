@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
 import { initializeCurrentUserCoinBalanceRpc } from '@/services/coins-mutations-service';
 import type {
+  CoinsBalanceResponse,
   CoinsAmount,
   UserId,
 } from '@/types/coins';
@@ -37,6 +38,10 @@ const CACHE_CONFIG = {
   CACHE_TIME: 5 * 60 * 1000,
 };
 
+interface UseCoinsBalanceOptions {
+  enabled?: boolean;
+}
+
 // ============================================================================
 // HOOK PRINCIPAL
 // ============================================================================
@@ -58,10 +63,12 @@ const CACHE_CONFIG = {
  * }
  * ```
  */
-export function useCoinsBalance(userId?: UserId | null) {
+export function useCoinsBalance(userId?: UserId | null, options: UseCoinsBalanceOptions = {}) {
+  const { enabled = true } = options;
+
   return useQuery({
     queryKey: userId ? coinsBalanceKeys.user(userId) : coinsBalanceKeys.all,
-    queryFn: async (): Promise<{ balance: number; last_updated: string }> => {
+    queryFn: async (): Promise<CoinsBalanceResponse> => {
       // Se userId não foi fornecido, busca usuário logado
       let targetUserId = userId;
       
@@ -74,7 +81,7 @@ export function useCoinsBalance(userId?: UserId | null) {
       // Busca saldo de coins
       const { data, error } = await supabase
         .from('user_coins')
-        .select('balance, updated_at')
+        .select('balance, total_earned, total_spent, updated_at')
         .eq('user_id', targetUserId)
         .maybeSingle();
       
@@ -84,18 +91,28 @@ export function useCoinsBalance(userId?: UserId | null) {
       
       // Se usuário não tem registro de coins, retorna saldo zero
       if (!data) {
+        const now = new Date().toISOString();
+
         return {
+          user_id: targetUserId,
           balance: 0,
-          last_updated: new Date().toISOString(),
+          total_earned: 0,
+          total_spent: 0,
+          last_updated: now,
+          updated_at: now,
         };
       }
       
       return {
+        user_id: targetUserId,
         balance: data.balance,
+        total_earned: data.total_earned,
+        total_spent: data.total_spent,
         last_updated: data.updated_at,
+        updated_at: data.updated_at,
       };
     },
-    enabled: true,
+    enabled,
     staleTime: CACHE_CONFIG.STALE_TIME,
     gcTime: CACHE_CONFIG.CACHE_TIME,
     retry: 2,
@@ -300,15 +317,17 @@ export function updateCoinsBalanceCache(
   userId: UserId,
   newBalance: CoinsAmount
 ) {
-  queryClient.setQueryData<{ balance: number; last_updated: string }>(
+  queryClient.setQueryData<CoinsBalanceResponse>(
     coinsBalanceKeys.user(userId),
     (old) => {
       if (!old) return old;
+      const now = new Date().toISOString();
       
       return {
         ...old,
         balance: newBalance,
-        last_updated: new Date().toISOString(),
+        last_updated: now,
+        updated_at: now,
       };
     }
   );

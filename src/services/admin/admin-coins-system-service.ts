@@ -1,4 +1,5 @@
 import { adminCoinsGateway } from "@/services/admin/admin-coins-gateway";
+import { summarizeCoinLedger } from "@/lib/coins-ledger";
 
 interface CoinTransactionSummaryRow {
   amount: number;
@@ -70,28 +71,11 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
 
   if (transactionsError) throw transactionsError;
 
-  let totalEarned = 0;
-  let grossSpent = 0;
-  let totalRefunded = 0;
   const balanceRows = (allBalances as UserCoinBalanceSummaryRow[] | null) ?? [];
   const totalBalance = balanceRows.reduce((sum, row) => sum + row.balance, 0);
-
-  ((allTransactions as CoinTransactionSummaryRow[] | null) ?? []).forEach((transaction) => {
-    if (transaction.transaction_type === "spend") {
-      grossSpent += Math.abs(transaction.amount);
-      return;
-    }
-
-    if (transaction.transaction_type === "refund") {
-      totalRefunded += Math.abs(transaction.amount);
-      return;
-    }
-
-    if (transaction.amount > 0) {
-      totalEarned += transaction.amount;
-    }
-  });
-  const totalSpent = Math.max(grossSpent - totalRefunded, 0);
+  const ledgerSummary = summarizeCoinLedger(
+    (allTransactions as CoinTransactionSummaryRow[] | null) ?? []
+  );
 
   const { data: transactions, error: recentTransactionsError } = await adminCoinsGateway
     .from("coin_transactions")
@@ -119,8 +103,8 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
 
   return {
     totalBalance,
-    totalEarned,
-    totalSpent,
+    totalEarned: ledgerSummary.totalEarned,
+    totalSpent: ledgerSummary.totalSpent,
     totalUsers: balanceRows.length,
     transactions: (transactions ?? []) as AdminCoinTransactionRow[],
     packages: (packages ?? []) as AdminCoinPackageRow[],

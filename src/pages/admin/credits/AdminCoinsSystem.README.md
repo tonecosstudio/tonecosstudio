@@ -87,7 +87,7 @@ const { data: packages } = await supabase
   .from("coin_packages")
   .select("*")
   .eq("is_active", true)
-  .order("coins_amount", { ascending: true });
+  .order("amount", { ascending: true });
 
 // Personagens adquiridos com coins
 const { data: purchases } = await supabase

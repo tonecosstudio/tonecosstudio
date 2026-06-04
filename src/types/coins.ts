@@ -38,6 +38,10 @@ export interface CoinsBalance {
   user_id: UserId;
   /** Saldo atual em coins */
   balance: CoinsAmount;
+  /** Total earned credits, excluding refunds */
+  total_earned: CoinsAmount;
+  /** Net spent credits after refunds */
+  total_spent: CoinsAmount;
   /** Última atualização do saldo */
   updated_at: string;
 }
@@ -354,10 +358,18 @@ export interface GetCharacterPriceParams {
  * Resposta de saldo de coins
  */
 export interface CoinsBalanceResponse {
+  /** User id for this balance */
+  user_id: UserId;
   /** Saldo atual */
   balance: CoinsAmount;
+  /** Total earned credits, excluding refunds */
+  total_earned: CoinsAmount;
+  /** Net spent credits after refunds */
+  total_spent: CoinsAmount;
   /** Última atualização */
   last_updated: string;
+  /** Database updated_at timestamp */
+  updated_at: string;
 }
 
 /**

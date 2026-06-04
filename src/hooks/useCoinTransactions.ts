@@ -1,63 +1,43 @@
 /**
- * Hook para gerenciar histórico de transações de coins
- * 
- * Busca e exibe transações de coins do usuário
- * 
- * Spec: contextual-pricing-system
- * Task: 5.8 (Sistema de Coins - Transactions)
+ * Compatibility wrapper for coin transaction history.
+ *
+ * New code should import from "@/hooks/coins". This module keeps the legacy
+ * names while using the same ledger semantics as the canonical coin system.
  */
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { assertCurrentUserId } from "@/services/auth/current-user";
-import { PriceInCoins } from "@/types/contextual-pricing";
+import { summarizeCoinLedger } from "@/lib/coins-ledger";
+import type { CoinsAmount, UserId } from "@/types/coins";
 
-// =====================================================
-// TYPES
-// =====================================================
-
-export type TransactionType = 
-  | "purchase"              // Compra de pacote de coins
-  | "spend"                 // Gasto em personagem
-  | "refund"                // Reembolso
-  | "bonus"                 // Bônus/presente
-  | "subscription_credit"   // Crédito de assinatura mensal
-  | "adjustment";           // Ajuste manual do admin
+export type TransactionType =
+  | "purchase"
+  | "spend"
+  | "refund"
+  | "bonus"
+  | "subscription_credit"
+  | "adjustment";
 
 export interface CoinTransaction {
   id: string;
-  user_id: string;
-  amount: PriceInCoins;
+  user_id: UserId;
+  amount: CoinsAmount;
   transaction_type: TransactionType;
-  reference_id?: string;
-  reference_type?: string;
+  reference_id?: string | null;
+  reference_type?: string | null;
   description: string;
   metadata?: Record<string, unknown> | null;
   created_at: string;
 }
 
-// =====================================================
-// QUERY KEYS
-// =====================================================
-
 export const coinTransactionsKeys = {
   all: ["coin-transactions"] as const,
-  list: (userId: string, limit?: number) => 
+  list: (userId: UserId, limit?: number) =>
     [...coinTransactionsKeys.all, "list", userId, limit || "all"] as const,
 };
 
-// =====================================================
-// QUERIES
-// =====================================================
-
-/**
- * Hook para buscar histórico de transações de coins
- * 
- * @param userId - ID do usuário
- * @param limit - Limite de transações (padrão: 50)
- * @returns Lista de transações ordenadas por data (DESC)
- */
-export function useCoinTransactions(userId?: string | null, limit: number = 50) {
+export function useCoinTransactions(userId?: UserId | null, limit: number = 50) {
   return useQuery({
     queryKey: userId ? coinTransactionsKeys.list(userId, limit) : ["coin-transactions", "anonymous"],
     queryFn: async () => {
@@ -79,66 +59,44 @@ export function useCoinTransactions(userId?: string | null, limit: number = 50) 
       return (data || []) as CoinTransaction[];
     },
     enabled: !!userId,
-    staleTime: 1 * 60 * 1000, // 1 minuto
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 }
 
-/**
- * Hook para calcular total gasto em coins
- * 
- * @param userId - ID do usuário
- * @returns Total de coins gastos (valor absoluto)
- */
-export function useTotalCoinsSpent(userId?: string | null) {
+export function useTotalCoinsSpent(userId?: UserId | null) {
   const { data: transactions } = useCoinTransactions(userId);
 
   if (!transactions) {
     return 0;
   }
 
-  return transactions
-    .filter((t) => t.amount < 0) // Apenas transações negativas (gastos)
-    .reduce((total, t) => total + Math.abs(t.amount), 0);
+  return summarizeCoinLedger(transactions).totalSpent;
 }
 
-/**
- * Hook para calcular total de coins adquiridos
- * 
- * @param userId - ID do usuário
- * @returns Total de coins adquiridos
- */
-export function useTotalCoinsEarned(userId?: string | null) {
+export function useTotalCoinsEarned(userId?: UserId | null) {
   const { data: transactions } = useCoinTransactions(userId);
 
   if (!transactions) {
     return 0;
   }
 
-  return transactions
-    .filter((t) => t.amount > 0) // Apenas transações positivas (ganhos)
-    .reduce((total, t) => total + t.amount, 0);
+  return summarizeCoinLedger(transactions).totalEarned;
 }
 
-/**
- * Formata tipo de transação para exibição
- */
 export function formatTransactionType(type: TransactionType): string {
   const labels: Record<TransactionType, string> = {
     purchase: "Compra de Coins",
     spend: "Compra de Personagem",
     refund: "Reembolso",
-    bonus: "Bônus",
-    subscription_credit: "Crédito de Assinatura",
+    bonus: "Bonus",
+    subscription_credit: "Credito de Assinatura",
     adjustment: "Ajuste Manual",
   };
 
   return labels[type] || type;
 }
 
-/**
- * Retorna cor baseada no tipo de transação
- */
 export function getTransactionColor(amount: number): string {
   return amount >= 0 ? "text-green-600" : "text-red-600";
 }

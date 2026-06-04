@@ -10,6 +10,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { assertCurrentUserId, requireAuthenticatedUserId } from '@/services/auth/current-user';
+import { summarizeCoinLedger } from '@/lib/coins-ledger';
 import { CoinsTransactionType } from '@/types/coins';
 import type {
   CoinsTransaction,
@@ -404,21 +405,12 @@ export function useTransactionStats(
       const transactions = ((data || []) as CoinTransactionRow[]).map(toCoinsTransaction);
 
       // Calcular estatísticas
-      let totalReceived = 0;
-      let totalSpent = 0;
-
-      transactions.forEach((tx) => {
-        if (tx.amount > 0) {
-          totalReceived += tx.amount;
-        } else {
-          totalSpent += Math.abs(tx.amount);
-        }
-      });
+      const summary = summarizeCoinLedger(transactions);
 
       return {
-        total_received: totalReceived,
-        total_spent: totalSpent,
-        net_balance: totalReceived - totalSpent,
+        total_received: summary.totalEarned,
+        total_spent: summary.totalSpent,
+        net_balance: summary.netBalance,
         transaction_count: transactions.length,
         last_transaction: transactions[0] || undefined,
       };
