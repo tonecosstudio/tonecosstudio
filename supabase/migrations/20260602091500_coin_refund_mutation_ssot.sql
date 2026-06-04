@@ -38,6 +38,7 @@ BEGIN
     JOIN public.collection_characters cc ON cc.id = uc.character_id
     WHERE uc.user_id = v_user_id
       AND uc.character_id = v_reference_uuid
+      AND uc.acquisition_type = 'coin_purchase'
     FOR UPDATE OF uc;
 
     IF NOT FOUND THEN
@@ -55,13 +56,15 @@ BEGIN
 
     DELETE FROM public.user_characters
     WHERE user_id = v_user_id
-      AND character_id = v_reference_uuid;
+      AND character_id = v_reference_uuid
+      AND acquisition_type = 'coin_purchase';
   ELSE
     SELECT price_paid
     INTO v_refund_amount
     FROM public.user_collections
     WHERE user_id = v_user_id
       AND collection_id = v_reference_uuid
+      AND acquisition_type = 'coin_purchase'
     FOR UPDATE;
 
     IF NOT FOUND THEN
@@ -70,7 +73,8 @@ BEGIN
 
     DELETE FROM public.user_collections
     WHERE user_id = v_user_id
-      AND collection_id = v_reference_uuid;
+      AND collection_id = v_reference_uuid
+      AND acquisition_type = 'coin_purchase';
   END IF;
 
   IF COALESCE(v_refund_amount, 0) <= 0 THEN

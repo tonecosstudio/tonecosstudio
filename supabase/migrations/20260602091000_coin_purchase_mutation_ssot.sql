@@ -54,6 +54,23 @@ ALTER TABLE public.user_characters
 CREATE UNIQUE INDEX IF NOT EXISTS user_characters_user_id_character_id_key
   ON public.user_characters(user_id, character_id);
 
+ALTER TABLE public.user_characters
+  DROP CONSTRAINT IF EXISTS user_characters_acquisition_type_valid,
+  DROP CONSTRAINT IF EXISTS user_characters_price_paid_non_negative,
+  ADD CONSTRAINT user_characters_acquisition_type_valid
+    CHECK (
+      acquisition_type IS NOT NULL
+      AND acquisition_type IN (
+        'coin_purchase',
+        'subscription',
+        'gift',
+        'admin_grant',
+        'promotion'
+      )
+    ) NOT VALID,
+  ADD CONSTRAINT user_characters_price_paid_non_negative
+    CHECK (price_paid IS NULL OR price_paid >= 0) NOT VALID;
+
 CREATE TABLE IF NOT EXISTS public.user_collections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -74,6 +91,23 @@ ALTER TABLE public.user_collections
 
 CREATE UNIQUE INDEX IF NOT EXISTS user_collections_user_id_collection_id_key
   ON public.user_collections(user_id, collection_id);
+
+ALTER TABLE public.user_collections
+  DROP CONSTRAINT IF EXISTS user_collections_acquisition_type_valid,
+  DROP CONSTRAINT IF EXISTS user_collections_price_paid_non_negative,
+  ADD CONSTRAINT user_collections_acquisition_type_valid
+    CHECK (
+      acquisition_type IS NOT NULL
+      AND acquisition_type IN (
+        'coin_purchase',
+        'subscription',
+        'gift',
+        'admin_grant',
+        'promotion'
+      )
+    ) NOT VALID,
+  ADD CONSTRAINT user_collections_price_paid_non_negative
+    CHECK (price_paid IS NULL OR price_paid >= 0) NOT VALID;
 
 ALTER TABLE public.user_characters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_collections ENABLE ROW LEVEL SECURITY;
