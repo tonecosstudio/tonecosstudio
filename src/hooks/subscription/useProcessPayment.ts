@@ -11,7 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { subscriptionKeys } from './useSubscription';
-import { coinsBalanceKeys } from '../coins/useCoinsBalance';
+import { coinsBalanceKeys, invalidateCoinsBalance } from '../coins/useCoinsBalance';
 import { invalidateCoinsTransactions } from '../coins/useCoinsTransactions';
 import type {
   ProcessSubscriptionPaymentParams,
@@ -229,9 +229,7 @@ export function useAdminAddSubscriptionCoins() {
       return { success: true, amount };
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: coinsBalanceKeys.user(variables.user_id),
-      });
+      invalidateCoinsBalance(queryClient, variables.user_id);
       invalidateCoinsTransactions(queryClient);
 
       toast({

@@ -294,13 +294,13 @@ export function invalidateCoinsBalance(
   queryClient: ReturnType<typeof useQueryClient>,
   userId?: UserId
 ) {
+  queryClient.invalidateQueries({
+    queryKey: coinsBalanceKeys.all,
+  });
+
   if (userId) {
     queryClient.invalidateQueries({
       queryKey: coinsBalanceKeys.user(userId),
-    });
-  } else {
-    queryClient.invalidateQueries({
-      queryKey: coinsBalanceKeys.all,
     });
   }
 }

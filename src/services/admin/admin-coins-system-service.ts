@@ -97,7 +97,7 @@ export async function fetchAdminCoinsStats(): Promise<AdminCoinsStats> {
     .from("coin_transactions")
     .select("*", { count: "exact", head: true })
     .eq("transaction_type", "spend")
-    .eq("reference_type", "character_purchase");
+    .in("reference_type", ["character_purchase", "collection_purchase"]);
 
   if (purchasesError) throw purchasesError;
 
