@@ -215,26 +215,26 @@ export function useBalanceAfterPurchase(
 // ============================================================================
 
 /**
- * Hook para inicializar saldo de coins de um usuário
+ * Hook para criar o registro de saldo de coins de um usuario
  * 
- * Usado quando usuário se cadastra ou faz primeira compra
+ * Usado quando o usuario ainda nao tem linha em user_coins.
+ * Creditos positivos devem passar por admin_add_coins_to_user.
  * 
- * @returns Mutation para inicializar saldo
+ * @returns Mutation para criar saldo zero
  * 
  * @example
  * ```tsx
- * function WelcomeBonus() {
+ * function EnsureCoinBalance() {
  *   const initBalance = useInitializeBalance();
  *   
  *   const handleClaim = () => {
  *     initBalance.mutate({
  *       userId: user.id,
- *       initialAmount: 1000,
- *       description: 'Bônus de boas-vindas'
+ *       description: 'Bootstrap de saldo'
  *     });
  *   };
  *   
- *   return <button onClick={handleClaim}>Resgatar 1000 coins</button>;
+ *   return <button onClick={handleClaim}>Preparar saldo</button>;
  * }
  * ```
  */
@@ -245,14 +245,12 @@ export function useInitializeBalance() {
   return useMutation({
     mutationFn: async (params: {
       userId: UserId;
-      initialAmount: CoinsAmount;
-      description: string;
+      description?: string | null;
     }) => {
-      const { userId, initialAmount, description } = params;
+      const { userId, description } = params;
       await assertCurrentUserId(userId);
 
       return initializeCurrentUserCoinBalanceRpc({
-        initialAmount,
         description,
       });
     },
@@ -261,8 +259,8 @@ export function useInitializeBalance() {
       invalidateCoinsTransactions(queryClient);
       
       toast({
-        title: 'Saldo inicializado!',
-        description: `Você recebeu ${data.balance} coins.`,
+        title: 'Saldo preparado!',
+        description: `Saldo atual: ${data.balance} coins.`,
       });
     },
     onError: (error: Error) => {

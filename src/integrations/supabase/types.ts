@@ -3326,7 +3326,10 @@ export type Database = {
         Returns: undefined
       }
       initialize_current_user_coin_balance: {
-        Args: { p_description: string | null; p_initial_amount: number }
+        Args: {
+          p_description?: string | null
+          p_initial_amount?: number | null
+        }
         Returns: {
           balance: number
           success: boolean

@@ -24,12 +24,11 @@ function unwrapRpcData<T>(data: T | null, error: RpcError | null, fallback: stri
 }
 
 export async function initializeCurrentUserCoinBalanceRpc(input: {
-  initialAmount: CoinsAmount;
-  description: string;
-}): Promise<InitializeCoinBalanceResponse> {
+  description?: string | null;
+} = {}): Promise<InitializeCoinBalanceResponse> {
   const { data, error } = await supabase.rpc("initialize_current_user_coin_balance", {
-    p_initial_amount: input.initialAmount,
-    p_description: input.description,
+    p_initial_amount: 0,
+    p_description: input.description ?? null,
   });
 
   return unwrapRpcData(data, error, "Coin balance initialization did not return data");
