@@ -307,7 +307,7 @@ export default function AdminCoinsSystem() {
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">Total de Compras</p>
                     <p className="text-2xl font-bold">{stats?.totalPurchases || 0}</p>
-                    <p className="text-xs text-muted-foreground">Personagens adquiridos</p>
+                    <p className="text-xs text-muted-foreground">Personagens e colecoes adquiridos</p>
                   </div>
                 </div>
               </CardContent>

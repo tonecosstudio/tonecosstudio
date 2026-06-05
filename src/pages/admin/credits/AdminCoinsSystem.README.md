@@ -89,11 +89,12 @@ const { data: packages } = await supabase
   .eq("is_active", true)
   .order("amount", { ascending: true });
 
-// Personagens adquiridos com coins
+// Personagens e colecoes adquiridos com coins
 const { data: purchases } = await supabase
-  .from("user_characters")
+  .from("coin_transactions")
   .select("*")
-  .eq("acquisition_type", "coins");
+  .eq("transaction_type", "spend")
+  .in("reference_type", ["character_purchase", "collection_purchase"]);
 ```
 
 ## 📋 Regras de Negócio
