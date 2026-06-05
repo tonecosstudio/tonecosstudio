@@ -534,6 +534,7 @@ export type Database = {
       coin_transactions: {
         Row: {
           amount: number
+          balance_after: number | null
           created_at: string
           description: string
           id: string
@@ -545,6 +546,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          balance_after?: number | null
           created_at?: string
           description?: string
           id?: string
@@ -556,6 +558,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          balance_after?: number | null
           created_at?: string
           description?: string
           id?: string
@@ -3194,15 +3197,24 @@ export type Database = {
       }
     }
     Functions: {
-      add_coins_to_user: {
+      admin_add_coins_to_user: {
         Args: {
           p_amount: number
-          p_description?: string
-          p_reference_id?: string
-          p_reference_type?: string
+          p_description?: string | null
+          p_reference_id?: string | null
+          p_reference_type?: string | null
           p_user_id: string
         }
-        Returns: undefined
+        Returns: Json
+      }
+      admin_process_subscription_payment: {
+        Args: {
+          p_amount: number
+          p_external_reference?: string | null
+          p_payment_method: string
+          p_subscription_id: string
+        }
+        Returns: Json
       }
       admin_list_users: {
         Args: never

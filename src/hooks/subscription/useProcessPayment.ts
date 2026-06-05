@@ -21,23 +21,7 @@ import type {
 } from '@/types/subscription';
 import type { CoinsAmount } from '@/types/coins';
 
-type RpcError = { message?: string } | null;
-
-interface SubscriptionPaymentRpcClient {
-  rpc(functionName: "admin_process_subscription_payment", args: {
-    p_subscription_id: string;
-    p_amount: number;
-    p_payment_method: string;
-    p_external_reference: string;
-  }): PromiseLike<{ data: unknown; error: RpcError }>;
-  rpc(functionName: "admin_add_coins_to_user", args: {
-    p_user_id: string;
-    p_amount: number;
-    p_description: string;
-    p_reference_id: string | null;
-    p_reference_type: string;
-  }): PromiseLike<{ data: unknown; error: RpcError }>;
-}
+type QueryError = { message?: string } | null;
 
 type ProcessSubscriptionPaymentRpcResult = ProcessPaymentResponse;
 
@@ -48,14 +32,32 @@ interface SubscriptionPaymentsQueryClient {
         order(
           column: "created_at",
           options: { ascending: boolean }
-        ): PromiseLike<{ data: SubscriptionPayment[] | null; error: RpcError }>;
+        ): PromiseLike<{ data: SubscriptionPayment[] | null; error: QueryError }>;
       };
     };
   };
 }
 
-const subscriptionPaymentRpc = supabase as unknown as SubscriptionPaymentRpcClient;
 const subscriptionPaymentsQuery = supabase as unknown as SubscriptionPaymentsQueryClient;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toProcessSubscriptionPaymentResponse(data: unknown): ProcessSubscriptionPaymentRpcResult {
+  if (
+    !isRecord(data) ||
+    typeof data.success !== "boolean" ||
+    !isRecord(data.payment) ||
+    typeof data.coins_credited !== "number" ||
+    typeof data.new_balance !== "number" ||
+    typeof data.message !== "string"
+  ) {
+    throw new Error("Resposta invalida ao processar pagamento");
+  }
+
+  return data as unknown as ProcessSubscriptionPaymentRpcResult;
+}
 
 function mapSubscriptionPaymentRpcError(message: string | undefined): string {
   const value = message ?? "";
@@ -132,7 +134,7 @@ export function useProcessSubscriptionPayment() {
     ): Promise<ProcessPaymentResponse> => {
       const { subscription_id, amount, payment_method, external_reference } = params;
 
-      const { data, error } = await subscriptionPaymentRpc.rpc(
+      const { data, error } = await supabase.rpc(
         "admin_process_subscription_payment",
         {
           p_subscription_id: subscription_id,
@@ -146,7 +148,7 @@ export function useProcessSubscriptionPayment() {
         throw new Error(mapSubscriptionPaymentRpcError(error.message));
       }
 
-      return data as ProcessSubscriptionPaymentRpcResult;
+      return toProcessSubscriptionPaymentResponse(data);
     },
     onSuccess: (data) => {
       // Invalida caches
@@ -222,7 +224,7 @@ export function useAdminAddSubscriptionCoins() {
         throw new Error('Não autenticado');
       }
 
-      const { error: coinsError } = await subscriptionPaymentRpc.rpc("admin_add_coins_to_user", {
+      const { error: coinsError } = await supabase.rpc("admin_add_coins_to_user", {
         p_user_id: user_id,
         p_amount: amount,
         p_description: `Ajuste manual: ${reason}`,
