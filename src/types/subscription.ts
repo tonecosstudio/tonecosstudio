@@ -256,7 +256,7 @@ export interface ProcessSubscriptionPaymentParams {
   /** Método de pagamento */
   payment_method: string;
   /** Referência externa (ID do gateway) */
-  external_reference?: string;
+  external_reference: string;
 }
 
 /**

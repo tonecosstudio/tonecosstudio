@@ -28,7 +28,7 @@ interface SubscriptionPaymentRpcClient {
     p_subscription_id: string;
     p_amount: number;
     p_payment_method: string;
-    p_external_reference: string | null;
+    p_external_reference: string;
   }): PromiseLike<{ data: unknown; error: RpcError }>;
   rpc(functionName: "admin_add_coins_to_user", args: {
     p_user_id: string;
@@ -64,6 +64,7 @@ function mapSubscriptionPaymentRpcError(message: string | undefined): string {
   if (value.includes("SUBSCRIPTION_NOT_FOUND")) return "Assinatura nao encontrada";
   if (value.includes("INVALID_PAYMENT_AMOUNT")) return "Valor de pagamento invalido";
   if (value.includes("INVALID_PAYMENT_METHOD")) return "Metodo de pagamento invalido";
+  if (value.includes("EXTERNAL_REFERENCE_REQUIRED")) return "Referencia externa obrigatoria";
   if (value.includes("INVALID_EXTERNAL_REFERENCE")) return "Referencia externa invalida";
   if (value.includes("DUPLICATE_SUBSCRIPTION_PAYMENT")) {
     return "Pagamento ja processado para esta referencia";
@@ -75,6 +76,10 @@ function mapSubscriptionPaymentRpcError(message: string | undefined): string {
   if (value.includes("USER_NOT_FOUND")) return "Usuario nao encontrado";
   if (value.includes("INVALID_COINS_AMOUNT")) return "Quantidade de coins invalida";
   if (value.includes("COINS_DESCRIPTION_REQUIRED")) return "Motivo obrigatorio";
+  if (value.includes("COINS_REFERENCE_ID_REQUIRED")) return "Referencia de credito obrigatoria";
+  if (value.includes("DUPLICATE_COIN_CREDIT_REFERENCE")) {
+    return "Credito de coins ja processado para esta referencia";
+  }
 
   return value || "Erro ao processar pagamento";
 }
@@ -133,7 +138,7 @@ export function useProcessSubscriptionPayment() {
           p_subscription_id: subscription_id,
           p_amount: amount,
           p_payment_method: payment_method,
-          p_external_reference: external_reference ?? null,
+          p_external_reference: external_reference,
         },
       );
 
