@@ -381,6 +381,7 @@ async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
     return [];
   }
 
+  const { data, error } = await query;
   if (error) throw error;
 
   return ((data ?? []) as CatalogModelDetailsDbRow[])

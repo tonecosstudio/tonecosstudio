@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getCatalogModelDetails,
   listCatalogModels,
   listRecentLandingModels,
   type CatalogModelFilters,
@@ -298,5 +299,48 @@ describe("catalog models service", () => {
       thumbnailUrl: "https://cdn.example.com/stitch-nsfw.webp",
       content_rating: "nsfw",
     });
+  });
+
+  it("builds fallback gallery images from sibling models when gallery table is disabled", async () => {
+    const detailQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+        },
+      ],
+      error: null,
+    });
+    const siblingsQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-2",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+        },
+      ],
+      error: null,
+    });
+
+    mocks.from
+      .mockReturnValueOnce({ select: vi.fn(() => detailQuery) })
+      .mockReturnValueOnce({ select: vi.fn(() => siblingsQuery) });
+
+    const result = await getCatalogModelDetails("model-1");
+
+    expect(result?.galleryImages).toHaveLength(2);
+    expect(result?.galleryImages?.map((image) => image.id)).toEqual([
+      "model-1",
+      "model-2",
+    ]);
   });
 });
