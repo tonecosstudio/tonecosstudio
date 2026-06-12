@@ -218,6 +218,12 @@ export default function ModelDetails() {
   const seoDescription = model
     ? `Veja detalhes do modelo ${title}. Estatueta artesanal da Tonecos Studios.`
     : "Veja detalhes do modelo. Estatueta artesanal da Tonecos Studios.";
+  const headlineTitle = displayName;
+  const subtitleParts = uniqueStrings([
+    sourceTitle,
+    variantName,
+    mediaLabel && mediaLabel !== sourceTitle ? mediaLabel : null,
+  ]);
 
   const galleryItems = useMemo(() => {
     if (!model) return [];
@@ -271,9 +277,33 @@ export default function ModelDetails() {
     [mediaLabel, model?.category, model?.subcategory, sourceTitle],
   );
 
+  const hiddenTagKeys = useMemo(
+    () =>
+      new Set(
+        uniqueStrings([
+          displayName,
+          sourceTitle,
+          mediaLabel,
+          model?.category,
+          model?.subcategory,
+          variantName,
+        ]).map((value) => normalizeCatalogTag(value)),
+      ),
+    [
+      displayName,
+      mediaLabel,
+      model?.category,
+      model?.subcategory,
+      sourceTitle,
+      variantName,
+    ],
+  );
   const tags = useMemo(
-    () => uniqueStrings(getCatalogPublicTags(model, 8)),
-    [model],
+    () =>
+      uniqueStrings(getCatalogPublicTags(model, 12))
+        .filter((tag) => !hiddenTagKeys.has(normalizeCatalogTag(tag)))
+        .slice(0, 5),
+    [hiddenTagKeys, model],
   );
   const sensitivity =
     activeGalleryItem?.sensitivity ?? getCatalogSensitivity(model);
@@ -511,9 +541,14 @@ export default function ModelDetails() {
                   )}
                 </div>
 
-                <h1 className="text-3xl md:text-5xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] mb-2 font-mono drop-shadow-[0_0_10px_hsl(var(--gold-accent))]">
-                  {title}
+                <h1 className="mb-2 font-mono text-3xl font-bold uppercase tracking-tight text-[hsl(var(--gold-accent))] drop-shadow-[0_0_10px_hsl(var(--gold-accent))] md:text-5xl">
+                  {headlineTitle}
                 </h1>
+                {subtitleParts.length > 0 && (
+                  <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.28em] text-[hsl(var(--muted-foreground))]">
+                    {subtitleParts.join(" • ")}
+                  </p>
+                )}
 
                 {metaChips.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -555,7 +590,7 @@ export default function ModelDetails() {
                   displayedName={displayName}
                   sourceTitle={sourceTitle}
                   detailPath={detailsPath}
-                  triggerLabel="Reportar nome incorreto"
+                  triggerLabel="Corrigir nome"
                   triggerVariant="outline"
                   triggerClassName="border-[hsl(var(--gold-accent)/0.35)] bg-[hsl(var(--gold-accent)/0.06)] font-mono uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.12)]"
                 />
@@ -595,7 +630,7 @@ export default function ModelDetails() {
               {/* Tags */}
               {tags.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-mono uppercase tracking-widest text-[hsl(var(--muted-foreground))] mb-3 flex items-center gap-2">
+                  <h3 className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-[hsl(var(--muted-foreground))]">
                     <Layers className="w-3 h-3" />
                     Tags
                   </h3>
@@ -660,7 +695,7 @@ export default function ModelDetails() {
                   )}
                 </div>
                 <p className="mb-4 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">
-                  Disponibilidade e variacoes confirmadas no atendimento.
+                  Consulte disponibilidade e variacoes no atendimento.
                 </p>
 
                 <div className="flex flex-col gap-3">
