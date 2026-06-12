@@ -403,7 +403,7 @@ function SubscriptionCTA() {
                 },
                 {
                   icon: Gift,
-                  title: "Acesso ao Catálogo",
+                  title: "Acesso ao Universo",
                   desc: "Personagens exclusivos",
                 },
               ].map((benefit, i) => {
@@ -619,7 +619,7 @@ export default function CollectionsArcade() {
                 </div>
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-bold uppercase tracking-tight">
-                    Catálogo Exclusivo
+                    Universo Exclusivo
                   </h2>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono mt-1">
                     Personagens avulsos organizados por categoria

@@ -402,7 +402,7 @@ export default function CollectionsShowcase() {
                   variant="outline"
                   className="border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-[0.15em] text-xs h-11 px-8 rounded-none"
                 >
-                  VER CATÁLOGO
+                  VER UNIVERSO
                 </Button>
               </div>
             </div>

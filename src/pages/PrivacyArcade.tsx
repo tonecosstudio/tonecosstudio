@@ -75,9 +75,9 @@ export default function PrivacyArcade() {
 
       <ArcadeCTA
         badge="Voltar"
-        title="EXPLORAR CATÁLOGO"
+        title="EXPLORAR UNIVERSO"
         description="Conheça nossas peças artesanais"
-        primaryAction={{ label: "VER CATÁLOGO", href: PUBLIC_ROUTES.catalog }}
+        primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog }}
         secondaryAction={{ label: "INÍCIO", href: PUBLIC_ROUTES.home }}
       />
     </Page>

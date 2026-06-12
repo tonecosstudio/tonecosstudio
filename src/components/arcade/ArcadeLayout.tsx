@@ -134,7 +134,7 @@ export function AnimatedGridBg({ scrollY = 0 }: { scrollY?: number }) {
 
 const navLinks = [
   { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
-  { to: PUBLIC_ROUTES.catalog, label: "CATÁLOGO" },
+  { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
   { to: PUBLIC_ROUTES.collections, label: "COLEÇÕES" },
   { to: PUBLIC_ROUTES.plans, label: "PLANOS" },
 ];

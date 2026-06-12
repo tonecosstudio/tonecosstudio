@@ -17,6 +17,7 @@ import {
   AUTH_ROUTES,
   PUBLIC_ROUTES,
   adminPaymentDetailsPath,
+  catalogModelDetailsPath,
 } from "@/config/routes";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────────────
@@ -93,6 +94,17 @@ function LegacyAdminPaymentRedirect() {
   );
 }
 
+function LegacyCatalogRedirect() {
+  const { id } = useParams<{ id?: string }>();
+
+  return (
+    <Navigate
+      to={id ? catalogModelDetailsPath(id) : PUBLIC_ROUTES.catalog}
+      replace
+    />
+  );
+}
+
 function AppContent() {
   useSentry();
   useAuthProfileSync();
@@ -116,6 +128,8 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.migrateOrder} element={<RequireAuth><MigratePedido /></RequireAuth>} />
             <Route path={PUBLIC_ROUTES.catalog} element={<CatalogArcade />} />
             <Route path={PUBLIC_ROUTES.catalogDetails} element={<ModelDetails />} />
+            <Route path={PUBLIC_ROUTES.legacyCatalog} element={<Navigate to={PUBLIC_ROUTES.catalog} replace />} />
+            <Route path={PUBLIC_ROUTES.legacyCatalogDetails} element={<LegacyCatalogRedirect />} />
             <Route path={PUBLIC_ROUTES.about} element={<AboutArcade />} />
             <Route path={PUBLIC_ROUTES.plans} element={<PlansArcade />} />
             <Route path={PUBLIC_ROUTES.collections} element={<CollectionsShowcase />} />

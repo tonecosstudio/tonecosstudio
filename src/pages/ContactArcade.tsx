@@ -190,7 +190,7 @@ export default function ContactArcade() {
         badge="Explore"
         title="VOLTAR AO ARSENAL"
         description="Confira nosso catalogo e colecoes disponiveis."
-        primaryAction={{ label: "VER CATALOGO", href: PUBLIC_ROUTES.catalog }}
+        primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog }}
         secondaryAction={{ label: "VER COLECOES", href: PUBLIC_ROUTES.collections }}
       />
     </Page>

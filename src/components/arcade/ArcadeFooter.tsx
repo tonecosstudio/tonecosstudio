@@ -13,7 +13,7 @@ import { buildSafeMailtoHref, buildSafeWhatsAppHref } from "@/lib/security/safe-
 
 const navLinks = [
   { to: PUBLIC_ROUTES.home, label: "Início" },
-  { to: PUBLIC_ROUTES.catalog, label: "Catálogo" },
+  { to: PUBLIC_ROUTES.catalog, label: "Universo" },
   { to: PUBLIC_ROUTES.collections, label: "Coleções" },
   { to: PUBLIC_ROUTES.plans, label: "Planos" },
   { to: PUBLIC_ROUTES.about, label: "Sobre" },

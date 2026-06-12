@@ -448,7 +448,7 @@ export default function CharacterDetailsArcade() {
               <DetailStat
                 icon={Shield}
                 label="Tipo"
-                value={character.is_catalog ? "Catálogo" : "Coleção"}
+                value={character.is_catalog ? "Universo" : "Coleção"}
               />
             </div>
 

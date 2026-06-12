@@ -48,6 +48,7 @@ import {
 } from "@/hooks/admin/useCatalogCuration";
 import { useToast } from "@/hooks/use-toast";
 import { getCatalogPublicTags } from "@/lib/catalog-utils";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 type PublishForm = {
   name: string;
@@ -563,7 +564,7 @@ export function CatalogCurationContent() {
           </Button>
           <Button type="button" variant="outline" size="sm" asChild>
             <a
-              href="/catalogo?preview=staging"
+              href={`${PUBLIC_ROUTES.catalog}?preview=staging`}
               target="_blank"
               rel="noreferrer"
             >

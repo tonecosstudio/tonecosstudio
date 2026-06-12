@@ -21,7 +21,7 @@ describe("route helpers", () => {
     expect(collectionCharacterDetailsPath("my collection", "char/1")).toBe(
       "/colecoes/my%20collection/char%2F1"
     );
-    expect(catalogModelDetailsPath("model/1")).toBe("/catalogo/model%2F1");
+    expect(catalogModelDetailsPath("model/1")).toBe("/universo/model%2F1");
     expect(subscribeCollectionPath("my collection")).toBe("/colecoes/my%20collection/assinar");
     expect(publicProfilePath("collector/user")).toBe("/collector/collector%2Fuser");
   });

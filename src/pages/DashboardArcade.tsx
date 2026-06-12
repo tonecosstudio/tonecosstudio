@@ -171,7 +171,7 @@ export default function DashboardArcade() {
           <ArcadeSectionTitle>Ações Rápidas</ArcadeSectionTitle>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Catálogo", href: PUBLIC_ROUTES.catalog, icon: <Crosshair className="w-5 h-5" /> },
+              { label: "Universo", href: PUBLIC_ROUTES.catalog, icon: <Crosshair className="w-5 h-5" /> },
               { label: "Wishlist", href: AUTH_ROUTES.wishlist, icon: <Heart className="w-5 h-5" /> },
               { label: "Coleções", href: PUBLIC_ROUTES.collections, icon: <Star className="w-5 h-5" /> },
               { label: "Perfil", href: AUTH_ROUTES.profile, icon: <Trophy className="w-5 h-5" /> },

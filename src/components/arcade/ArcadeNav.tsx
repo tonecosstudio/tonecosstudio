@@ -13,7 +13,7 @@ import { ADMIN_ROUTES, AUTH_ROUTES, PUBLIC_ROUTES } from "@/config/routes";
 
 const navLinks = [
   { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
-  { to: PUBLIC_ROUTES.catalog, label: "CATÁLOGO" },
+  { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
   { to: PUBLIC_ROUTES.collections, label: "COLEÇÕES" },
   { to: PUBLIC_ROUTES.plans, label: "PLANOS" },
 ];

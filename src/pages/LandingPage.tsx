@@ -339,7 +339,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-3 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] hover:border-[hsl(var(--gold-accent)/0.6)] font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 transition-all"
             >
               <Eye className="w-5 h-5" />
-              VER CATÁLOGO
+              VER UNIVERSO
             </button>
           </div>
 
@@ -449,7 +449,7 @@ export default function LandingPage() {
                 onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                 className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
               >
-                VER CATÁLOGO COMPLETO
+                VER UNIVERSO COMPLETO
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>

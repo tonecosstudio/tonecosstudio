@@ -95,7 +95,7 @@ export default function AboutArcade() {
                 </h3>
               </div>
               <ul className="space-y-3">
-                {["Catálogo digital organizado", "Sistema de pedidos personalizado", "Timeline com fotos em tempo real", "Comunicação direta e transparente", "Garantia de qualidade e suporte"].map((item) => (
+                {["Universo digital organizado", "Sistema de pedidos personalizado", "Timeline com fotos em tempo real", "Comunicação direta e transparente", "Garantia de qualidade e suporte"].map((item) => (
                   <li key={item} className="flex items-start gap-2 font-mono text-xs text-[hsl(0,0%,50%)] tracking-wider">
                     <div className="mt-1.5 w-1.5 h-1.5 bg-[hsl(var(--gold-accent))] shrink-0" />
                     {item}
@@ -212,7 +212,7 @@ export default function AboutArcade() {
         badge="Pronto para começar?"
         title="MISSÃO DISPONÍVEL"
         description="Explore nosso catálogo e solicite um orçamento personalizado."
-        primaryAction={{ label: "VER CATÁLOGO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
+        primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog, icon: <ArrowRight className="w-4 h-4" /> }}
         secondaryAction={{ label: "FAZER ORÇAMENTO", href: "/orcamento/carrinho" }}
       />
     </Page>

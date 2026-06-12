@@ -24,7 +24,7 @@ export default function TermsArcade() {
       num: "02",
       title: "Descrição do Serviço",
       icon: <FileText className="w-4 h-4" />,
-      content: "Catálogo de colecionáveis • Sistema de orçamentos • Assinaturas mensais • Perfil de colecionador • Sistema de suporte",
+      content: "Universo de colecionáveis • Sistema de orçamentos • Assinaturas mensais • Perfil de colecionador • Sistema de suporte",
     },
     {
       num: "03",
@@ -137,9 +137,9 @@ export default function TermsArcade() {
 
       <ArcadeCTA
         badge="Voltar"
-        title="EXPLORAR CATÁLOGO"
+        title="EXPLORAR UNIVERSO"
         description="Conheça nossas peças artesanais"
-        primaryAction={{ label: "VER CATÁLOGO", href: PUBLIC_ROUTES.catalog }}
+        primaryAction={{ label: "VER UNIVERSO", href: PUBLIC_ROUTES.catalog }}
         secondaryAction={{ label: "INÍCIO", href: PUBLIC_ROUTES.home }}
       />
     </Page>

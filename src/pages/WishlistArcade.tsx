@@ -324,7 +324,7 @@ export default function WishlistArcade() {
         badge="Explorar"
         title="ENCONTRE NOVOS ITENS"
         description="Descubra modelos incríveis no catálogo"
-        primaryAction={{ label: "CATÁLOGO", href: PUBLIC_ROUTES.catalog }}
+        primaryAction={{ label: "UNIVERSO", href: PUBLIC_ROUTES.catalog }}
       />
     </Page>
   );
