@@ -187,6 +187,12 @@ describe("catalog models service", () => {
           image_path: "freeza-1-2-173050.webp",
           canonical_identity_key: "dragon-ball:freeza:freeza-1",
         },
+        {
+          ...modelRow,
+          id: "model-3",
+          image_path: "freeza-3-1-173487.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
       ],
       error: null,
     });
@@ -208,8 +214,9 @@ describe("catalog models service", () => {
       },
     });
 
-    expect(result.rows).toHaveLength(1);
+    expect(result.rows).toHaveLength(2);
     expect(result.rows[0]?.id).toBe("model-1");
+    expect(result.rows[1]?.id).toBe("model-3");
   });
 
   it("expands public tag aliases and drops internal tags before filtering", async () => {

@@ -216,8 +216,8 @@ function getCatalogModelGroupKey(row: {
   id: string;
 }) {
   return (
-    normalizeGroupKey(row.canonical_identity_key) ||
     getDerivedImageGroupKey(row.image_path) ||
+    normalizeGroupKey(row.canonical_identity_key) ||
     row.id
   );
 }
@@ -360,18 +360,33 @@ async function applyNsfwGalleryPreviews(
   });
 }
 
-async function listSiblingModelsByIdentity(identityKey: string, excludeId: string) {
-  const { data, error } = await catalogModelsGateway
+async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
+  const targetKey = getCatalogModelGroupKey(model);
+  if (!targetKey) return [];
+
+  let query = catalogModelsGateway
     .from("models")
     .select(CATALOG_MODEL_DETAILS_SELECT)
-    .eq("canonical_identity_key", identityKey)
+    .eq("is_active", true)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
     .order("created_at", { ascending: true });
+
+  if (model.source_title && model.character_name) {
+    query = query
+      .eq("source_title", model.source_title)
+      .eq("character_name", model.character_name);
+  } else if (model.canonical_identity_key) {
+    query = query.eq("canonical_identity_key", model.canonical_identity_key);
+  } else {
+    return [];
+  }
 
   if (error) throw error;
 
   return ((data ?? []) as CatalogModelDetailsDbRow[])
     .map(mapCatalogModelDetails)
-    .filter((row) => row.id !== excludeId);
+    .filter((row) => row.id !== model.id)
+    .filter((row) => getCatalogModelGroupKey(row) === targetKey);
 }
 
 function scoreByPreferenceTags(
@@ -560,14 +575,8 @@ export async function getCatalogModelDetails(modelId: string) {
 
   const model = mapCatalogModelDetails(data as CatalogModelDetailsDbRow);
   model.galleryImages = await listModelGalleryImages(model.id);
-  if (
-    model.galleryImages.length === 0 &&
-    model.canonical_identity_key
-  ) {
-    const siblings = await listSiblingModelsByIdentity(
-      model.canonical_identity_key,
-      model.id,
-    );
+  if (model.galleryImages.length === 0) {
+    const siblings = await listSiblingModelsByIdentity(model);
     if (siblings.length > 0) {
       model.galleryImages = buildSiblingGalleryImages(model, [
         model,
