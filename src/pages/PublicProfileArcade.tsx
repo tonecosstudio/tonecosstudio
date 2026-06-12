@@ -225,7 +225,12 @@ export default function PublicProfileArcade() {
                       <p className="truncate font-mono text-xs text-[hsl(0,0%,80%)]">
                         {model?.id ? (
                           <Link
-                            to={catalogModelDetailsPath(model.id)}
+                            to={catalogModelDetailsPath(
+                              model.id,
+                              [model.character_name || model.name, model.variant_name]
+                                .filter(Boolean)
+                                .join(" "),
+                            )}
                             className="hover:text-[hsl(var(--gold-accent))]"
                           >
                             {characterName}

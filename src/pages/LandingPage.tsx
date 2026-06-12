@@ -410,7 +410,16 @@ export default function LandingPage() {
                 return (
                   <div
                     key={m.id}
-                    onClick={() => navigate(catalogModelDetailsPath(m.id))}
+                    onClick={() =>
+                      navigate(
+                        catalogModelDetailsPath(
+                          m.id,
+                          [m.character_name || m.name, m.variant_name]
+                            .filter(Boolean)
+                            .join(" "),
+                        ),
+                      )
+                    }
                     className="group cursor-pointer"
                   >
                     <ArcadeCard>

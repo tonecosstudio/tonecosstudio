@@ -290,7 +290,12 @@ export default function WishlistArcade() {
                             <Link
                               to={
                                 model?.id
-                                  ? catalogModelDetailsPath(model.id)
+                                  ? catalogModelDetailsPath(
+                                      model.id,
+                                      [model.character_name || model.name, model.variant_name]
+                                        .filter(Boolean)
+                                        .join(" "),
+                                    )
                                   : PUBLIC_ROUTES.catalog
                               }
                               className="flex items-center gap-1 px-3 py-1.5 border border-[hsl(0,0%,18%)] text-[hsl(0,0%,50%)] hover:text-[hsl(var(--gold-accent))] hover:border-[hsl(var(--gold-accent)/0.3)] font-mono text-[9px] uppercase tracking-wider transition-all"

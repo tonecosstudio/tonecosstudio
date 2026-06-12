@@ -276,7 +276,7 @@ function mapCollectionModel(
     image_url:
       model.thumbnail_url ||
       getPublicStorageUrl(model.image_bucket, model.image_path),
-    detail_url: catalogModelDetailsPath(model.id),
+    detail_url: catalogModelDetailsPath(model.id, model.name),
     release_order: index + 1,
     release_month: null,
     release_date: null,

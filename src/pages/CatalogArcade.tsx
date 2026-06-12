@@ -628,7 +628,12 @@ function ModelArcadeCard({
   const variantLabel = model.variant_type
     ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type
     : null;
-  const detailsPath = catalogModelDetailsPath(model.id);
+  const detailsPath = catalogModelDetailsPath(
+    model.id,
+    [model.character_name || model.name, model.variant_name]
+      .filter(Boolean)
+      .join(" "),
+  );
   const fixedCashPrice =
     model.price_mode === "fixed" &&
     typeof model.price_standalone_override === "number" &&

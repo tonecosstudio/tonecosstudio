@@ -33,7 +33,11 @@ import {
   normalizeCatalogTag,
 } from "@/lib/catalog-utils";
 import { useModelDetails } from "@/hooks/catalog/useModelDetails";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import {
+  PUBLIC_ROUTES,
+  catalogModelDetailsPath,
+  resolveCatalogModelIdFromParam,
+} from "@/config/routes";
 import { formatCurrency } from "@/lib/utils";
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
@@ -150,9 +154,10 @@ export default function ModelDetails() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const modelId = id ? resolveCatalogModelIdFromParam(id) : undefined;
 
   // ─── Fetch model ────────────────────────────────────────────
-  const { data: model, isLoading } = useModelDetails(id);
+  const { data: model, isLoading } = useModelDetails(modelId);
 
   // ─── Likes ──────────────────────────────────────────────────
   const likesQuery = useLikedModelIdsQuery(user?.id);
@@ -256,7 +261,12 @@ export default function ModelDetails() {
   const sensitivity =
     activeGalleryItem?.sensitivity ?? getCatalogSensitivity(model);
   const detailsPath = model?.id
-    ? `/universo/${encodeURIComponent(model.id)}`
+    ? catalogModelDetailsPath(
+        model.id,
+        [model.character_name || model.name, model.variant_name]
+          .filter(Boolean)
+          .join(" "),
+      )
     : PUBLIC_ROUTES.catalog;
   const taxonomyRows = [
     model?.character_name

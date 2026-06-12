@@ -9,6 +9,7 @@ import {
   isSafeInAppPath,
   paymentDetailsPath,
   publicProfilePath,
+  resolveCatalogModelIdFromParam,
   subscribeCollectionPath,
 } from "./routes";
 
@@ -22,8 +23,27 @@ describe("route helpers", () => {
       "/colecoes/my%20collection/char%2F1"
     );
     expect(catalogModelDetailsPath("model/1")).toBe("/universo/model%2F1");
+    expect(
+      catalogModelDetailsPath(
+        "43e97b32-c0af-4b88-a49d-1d454f077b46",
+        "Androide 18"
+      )
+    ).toBe(
+      "/universo/androide-18-43e97b32-c0af-4b88-a49d-1d454f077b46"
+    );
     expect(subscribeCollectionPath("my collection")).toBe("/colecoes/my%20collection/assinar");
     expect(publicProfilePath("collector/user")).toBe("/collector/collector%2Fuser");
+  });
+
+  it("extracts model ids from friendly universe detail params", () => {
+    expect(
+      resolveCatalogModelIdFromParam(
+        "androide-18-43e97b32-c0af-4b88-a49d-1d454f077b46"
+      )
+    ).toBe("43e97b32-c0af-4b88-a49d-1d454f077b46");
+    expect(
+      resolveCatalogModelIdFromParam("43e97b32-c0af-4b88-a49d-1d454f077b46")
+    ).toBe("43e97b32-c0af-4b88-a49d-1d454f077b46");
   });
 
   it("accepts only bounded internal action paths", () => {

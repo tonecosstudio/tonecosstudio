@@ -18,6 +18,7 @@ import {
   PUBLIC_ROUTES,
   adminPaymentDetailsPath,
   catalogModelDetailsPath,
+  resolveCatalogModelIdFromParam,
 } from "@/config/routes";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────────────
@@ -99,7 +100,7 @@ function LegacyCatalogRedirect() {
 
   return (
     <Navigate
-      to={id ? catalogModelDetailsPath(id) : PUBLIC_ROUTES.catalog}
+      to={id ? catalogModelDetailsPath(resolveCatalogModelIdFromParam(id)) : PUBLIC_ROUTES.catalog}
       replace
     />
   );

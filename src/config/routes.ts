@@ -176,8 +176,42 @@ export function characterDetailsPath(characterId: string) {
   return PUBLIC_ROUTES.characterDetails.replace(":characterId", encodeURIComponent(characterId));
 }
 
-export function catalogModelDetailsPath(modelId: string) {
-  return PUBLIC_ROUTES.catalogDetails.replace(":id", encodeURIComponent(modelId));
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+function slugifyPathSegment(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+export function resolveCatalogModelIdFromParam(routeParam: string) {
+  const decodedParam = decodeURIComponent(routeParam);
+  if (isUuid(decodedParam)) return decodedParam;
+
+  const match = decodedParam.match(
+    /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+  );
+  return match ? match[1] : decodedParam;
+}
+
+export function catalogModelDetailsPath(
+  modelId: string,
+  slugSource?: string | null,
+) {
+  const safeId = encodeURIComponent(modelId);
+  if (!isUuid(modelId)) {
+    return PUBLIC_ROUTES.catalogDetails.replace(":id", safeId);
+  }
+
+  const slug = slugifyPathSegment(slugSource ?? "");
+  const routeParam = slug ? `${slug}-${modelId}` : modelId;
+  return PUBLIC_ROUTES.catalogDetails.replace(":id", encodeURIComponent(routeParam));
 }
 
 export function subscribeCollectionPath(slug: string) {
