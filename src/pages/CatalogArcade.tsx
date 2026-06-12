@@ -3,7 +3,7 @@
  * Preserva toda a lógica de busca, filtros e likes do catálogo original.
  */
 
-import { useMemo, useState, useEffect } from "react";
+import { Fragment, useMemo, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/lib/roles";
@@ -76,6 +76,19 @@ const VARIANT_TYPE_LABELS: Record<string, string> = {
   variant: "Versao",
   other: "Outro",
 };
+
+function buildVisiblePageIndexes(currentPage: number, hasNext: boolean) {
+  const knownLastPage = currentPage + (hasNext ? 1 : 0);
+  const windowStart = Math.max(0, currentPage - 2);
+  const windowEnd = Math.min(knownLastPage, currentPage + 1);
+  const pages = new Set<number>([0]);
+
+  for (let pageIndex = windowStart; pageIndex <= windowEnd; pageIndex += 1) {
+    pages.add(pageIndex);
+  }
+
+  return Array.from(pages).sort((left, right) => left - right);
+}
 
 // ─── MAIN ────────────────────────────────────────────────────────────
 
@@ -261,6 +274,10 @@ export default function CatalogArcade() {
     variantType,
     tagsCSV,
   ].filter(Boolean).length;
+  const visiblePageIndexes = useMemo(
+    () => buildVisiblePageIndexes(page, hasNext),
+    [page, hasNext],
+  );
   const showPersonalizedSuggestions =
     user && catalogMode === "public" && !needle && activeFilterCount === 0;
 
@@ -562,7 +579,7 @@ export default function CatalogArcade() {
 
         {/* Pagination */}
         {rows.length > 0 && (
-          <div className="flex items-center justify-center gap-4 mt-10 font-mono text-xs">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-2 font-mono text-xs">
             <button
               disabled={page === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -570,9 +587,31 @@ export default function CatalogArcade() {
             >
               <ChevronLeft className="w-4 h-4" /> PREV
             </button>
-            <span className="text-[hsl(var(--gold-accent))] tracking-[0.3em]">
-              {String(page + 1).padStart(2, "0")}
-            </span>
+            {visiblePageIndexes.map((pageIndex, index) => {
+              const previousPageIndex = visiblePageIndexes[index - 1];
+              const showGap =
+                typeof previousPageIndex === "number" &&
+                pageIndex - previousPageIndex > 1;
+
+              return (
+                <Fragment key={pageIndex}>
+                  {showGap && (
+                    <span className="px-2 text-[hsl(0,0%,38%)]">...</span>
+                  )}
+                  <button
+                    onClick={() => setPage(pageIndex)}
+                    disabled={pageIndex === page}
+                    className={`min-w-10 border px-3 py-2 tracking-[0.3em] transition-all ${
+                      pageIndex === page
+                        ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.14)] text-[hsl(var(--gold-accent))]"
+                        : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,50%)] hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))]"
+                    }`}
+                  >
+                    {String(pageIndex + 1).padStart(2, "0")}
+                  </button>
+                </Fragment>
+              );
+            })}
             <button
               disabled={!hasNext || modelsQuery.isFetching}
               onClick={() => setPage((p) => p + 1)}
