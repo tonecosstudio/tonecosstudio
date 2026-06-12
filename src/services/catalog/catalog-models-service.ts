@@ -193,6 +193,16 @@ function normalizeGroupKey(value: string | null | undefined) {
   return String(value || "").trim().toLowerCase();
 }
 
+function getCharacterIdentityGroupKey(row: {
+  source_title?: string | null;
+  character_name?: string | null;
+}) {
+  const sourceTitle = normalizeGroupKey(row.source_title);
+  const characterName = normalizeGroupKey(row.character_name);
+  if (!sourceTitle || !characterName) return "";
+  return `${sourceTitle}::${characterName}`;
+}
+
 function getDerivedImageGroupKey(path: string | null | undefined) {
   if (!path) return "";
   const normalizedPath = String(path).trim().toLowerCase();
@@ -222,11 +232,27 @@ function getCatalogModelGroupKey(row: {
   );
 }
 
-function groupCatalogModels<T extends CatalogModelRow>(rows: T[]) {
+function getPublicCatalogModelGroupKey(row: {
+  source_title?: string | null;
+  character_name?: string | null;
+  canonical_identity_key?: string | null;
+  image_path?: string | null;
+  id: string;
+}) {
+  return getCharacterIdentityGroupKey(row) || getCatalogModelGroupKey(row);
+}
+
+function groupCatalogModels<T extends CatalogModelRow>(
+  rows: T[],
+  mode: "public" | "asset" = "public",
+) {
   const groups = new Map<string, T[]>();
 
   for (const row of rows) {
-    const key = getCatalogModelGroupKey(row);
+    const key =
+      mode === "public"
+        ? getPublicCatalogModelGroupKey(row)
+        : getCatalogModelGroupKey(row);
     const bucket = groups.get(key);
     if (bucket) bucket.push(row);
     else groups.set(key, [row]);
@@ -361,7 +387,8 @@ async function applyNsfwGalleryPreviews(
 }
 
 async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
-  const targetKey = getCatalogModelGroupKey(model);
+  const targetKey =
+    getCharacterIdentityGroupKey(model) || getCatalogModelGroupKey(model);
   if (!targetKey) return [];
 
   let query = catalogModelsGateway
@@ -387,7 +414,11 @@ async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
   return ((data ?? []) as CatalogModelDetailsDbRow[])
     .map(mapCatalogModelDetails)
     .filter((row) => row.id !== model.id)
-    .filter((row) => getCatalogModelGroupKey(row) === targetKey);
+    .filter(
+      (row) =>
+        (getCharacterIdentityGroupKey(row) || getCatalogModelGroupKey(row)) ===
+        targetKey,
+    );
 }
 
 function scoreByPreferenceTags(
@@ -506,7 +537,7 @@ export async function listCatalogModels(params: {
   if (error) throw error;
 
   const all = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
-  const grouped = stagingMode ? all : groupCatalogModels(all);
+  const grouped = stagingMode ? all : groupCatalogModels(all, "public");
   const hasNext = grouped.length > from + CATALOG_PAGE_SIZE;
   const pageRows = grouped.slice(from, from + CATALOG_PAGE_SIZE);
   const rows =
@@ -548,7 +579,7 @@ export async function listForYouCatalogModels(params: {
   if (error) throw error;
 
   const models = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
-  const groupedModels = groupCatalogModels(models);
+  const groupedModels = groupCatalogModels(models, "public");
   if (params.preferenceTags.size) {
     groupedModels.sort(
       (left, right) =>
@@ -611,5 +642,6 @@ export async function listRecentLandingModels(
   if (error) throw error;
   return groupCatalogModels(
     ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel),
+    "public",
   ).slice(0, limit);
 }

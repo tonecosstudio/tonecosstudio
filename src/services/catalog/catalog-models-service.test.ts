@@ -173,26 +173,32 @@ describe("catalog models service", () => {
     expect(query.overlaps).toHaveBeenCalledWith("tags", ["stitch", "disney"]);
   });
 
-  it("groups sibling images of the same model into one catalog card", async () => {
+  it("groups public catalog cards by obra e personagem", async () => {
     const query = createCatalogQuery({
       data: [
         {
           ...modelRow,
           id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
           image_path: "freeza-1-1-173049.webp",
           canonical_identity_key: "dragon-ball:freeza:freeza-1",
         },
         {
           ...modelRow,
           id: "model-2",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
           image_path: "freeza-1-2-173050.webp",
           canonical_identity_key: "dragon-ball:freeza:freeza-1",
         },
         {
           ...modelRow,
           id: "model-3",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
           image_path: "freeza-3-1-173487.webp",
-          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+          canonical_identity_key: "dragon-ball:freeza:freeza-3",
         },
       ],
       error: null,
@@ -215,9 +221,8 @@ describe("catalog models service", () => {
       },
     });
 
-    expect(result.rows).toHaveLength(2);
+    expect(result.rows).toHaveLength(1);
     expect(result.rows[0]?.id).toBe("model-1");
-    expect(result.rows[1]?.id).toBe("model-3");
   });
 
   it("expands public tag aliases and drops internal tags before filtering", async () => {
@@ -301,12 +306,14 @@ describe("catalog models service", () => {
     });
   });
 
-  it("builds fallback gallery images from sibling models when gallery table is disabled", async () => {
+  it("builds fallback gallery images from all published variants of the character when gallery table is disabled", async () => {
     const detailQuery = createCatalogQuery({
       data: [
         {
           ...modelRow,
           id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
           image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
@@ -318,14 +325,26 @@ describe("catalog models service", () => {
         {
           ...modelRow,
           id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
           image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
         {
           ...modelRow,
           id: "model-2",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
           image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
           canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-3",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-3",
         },
       ],
       error: null,
@@ -337,10 +356,11 @@ describe("catalog models service", () => {
 
     const result = await getCatalogModelDetails("model-1");
 
-    expect(result?.galleryImages).toHaveLength(2);
+    expect(result?.galleryImages).toHaveLength(3);
     expect(result?.galleryImages?.map((image) => image.id)).toEqual([
       "model-1",
       "model-2",
+      "model-3",
     ]);
   });
 });
