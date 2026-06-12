@@ -4,8 +4,8 @@
  * Página interna do modelo com estética arcade
  */
 
-import { useMemo, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -151,6 +151,7 @@ function ModelGalleryStrip({
 export default function ModelDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -302,6 +303,12 @@ export default function ModelDetails() {
     model?.price_mode === "fixed" &&
     typeof model.price_coins_override === "number" &&
     model.price_coins_override > 0;
+
+  useEffect(() => {
+    if (!model?.id) return;
+    if (!detailsPath || detailsPath === location.pathname) return;
+    navigate(detailsPath, { replace: true });
+  }, [detailsPath, location.pathname, model?.id, navigate]);
 
   // ─── Loading ────────────────────────────────────────────────
   if (isLoading) {
