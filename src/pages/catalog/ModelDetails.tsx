@@ -255,7 +255,9 @@ export default function ModelDetails() {
   const tags = getCatalogPublicTags(model, 14);
   const sensitivity =
     activeGalleryItem?.sensitivity ?? getCatalogSensitivity(model);
-  const detailsPath = `/universo/${encodeURIComponent(model.id)}`;
+  const detailsPath = model?.id
+    ? `/universo/${encodeURIComponent(model.id)}`
+    : PUBLIC_ROUTES.catalog;
   const taxonomyRows = [
     model?.character_name
       ? {
