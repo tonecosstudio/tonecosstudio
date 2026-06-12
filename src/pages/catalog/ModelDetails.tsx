@@ -377,12 +377,12 @@ export default function ModelDetails() {
         />
       </div>
 
-      <div className="min-h-screen bg-[hsl(var(--background))] py-8 md:py-12">
+      <div className="min-h-screen bg-[#080808] bg-[radial-gradient(circle_at_top,rgba(245,179,1,0.08),transparent_32%),linear-gradient(180deg,#090909_0%,#050505_100%)] py-8 text-[hsl(var(--foreground))] md:py-12">
         <div className="container max-w-6xl mx-auto px-4">
           {/* Back Button */}
           <Button
             onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-            className="mb-6 inline-flex border border-[hsl(var(--gold-accent)/0.45)] bg-[hsl(var(--card)/0.82)] font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_16px_hsl(var(--gold-accent)/0.12)] hover:bg-[hsl(var(--gold-accent)/0.12)] hover:text-[hsl(var(--gold-accent))]"
+            className="mb-6 inline-flex border border-[hsl(var(--gold-accent)/0.45)] bg-[#111111] font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_16px_hsl(var(--gold-accent)/0.12)] hover:bg-[hsl(var(--gold-accent)/0.12)] hover:text-[hsl(var(--gold-accent))]"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar ao Universo
@@ -398,7 +398,7 @@ export default function ModelDetails() {
                   clipPath: "polygon(0 0, 100% 0, 100% 92%, 90% 100%, 0 100%)",
                 }}
               >
-                <div className="relative aspect-[3/4] w-full bg-[hsl(var(--muted))] overflow-hidden">
+                <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#0b0b0b]">
                   {imageUrl ? (
                     <img
                       src={imageUrl}
@@ -410,14 +410,14 @@ export default function ModelDetails() {
                       fetchPriority="high"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[hsl(var(--background))]">
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[#080808]">
                       <Package className="w-32 h-32 text-[hsl(var(--gold-accent))]" />
                     </div>
                   )}
 
                   {sensitivity.shouldBlur && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-[hsl(var(--background)/0.58)] px-6 text-center backdrop-blur-sm">
-                      <div className="border border-[hsl(var(--gold-accent)/0.45)] bg-[hsl(var(--background)/0.92)] px-4 py-3 font-mono uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_24px_hsl(var(--gold-accent)/0.18)]">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#080808]/70 px-6 text-center backdrop-blur-sm">
+                      <div className="border border-[hsl(var(--gold-accent)/0.45)] bg-[#111111]/95 px-4 py-3 font-mono uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_24px_hsl(var(--gold-accent)/0.18)]">
                         <div className="mb-1 flex items-center justify-center gap-2 text-xs font-bold">
                           <EyeOff className="h-4 w-4" />
                           {sensitivity.label}
@@ -461,7 +461,7 @@ export default function ModelDetails() {
               {/* Like Button */}
               <button
                 type="button"
-                className="absolute right-4 top-4 z-20 inline-flex h-12 w-12 items-center justify-center rounded-sm border-2 border-[hsl(var(--gold-accent))] bg-[hsl(var(--background)/0.9)] text-[hsl(var(--foreground))] shadow-[0_0_15px_hsl(var(--gold-accent)/0.3)] backdrop-blur-sm transition-all duration-300 hover:bg-[hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_25px_hsl(var(--gold-accent)/0.5)]"
+                className="absolute right-4 top-4 z-20 inline-flex h-12 w-12 items-center justify-center rounded-sm border-2 border-[hsl(var(--gold-accent))] bg-[#111111]/95 text-[hsl(var(--gold-accent))] shadow-[0_0_15px_hsl(var(--gold-accent)/0.3)] backdrop-blur-sm transition-all duration-300 hover:bg-[hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_25px_hsl(var(--gold-accent)/0.5)]"
                 onClick={onToggleLike}
                 aria-pressed={isLiked}
                 aria-label={
@@ -517,7 +517,7 @@ export default function ModelDetails() {
                       ) : (
                         <span
                           key={`${chip.label}-${chip.value}`}
-                          className="inline-flex items-center border border-[hsl(var(--border))] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]"
+                          className="inline-flex items-center border border-[hsl(var(--gold-accent)/0.18)] bg-[#101010] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]"
                         >
                           {chip.value}
                         </span>
@@ -529,7 +529,7 @@ export default function ModelDetails() {
 
               {/* Description */}
               {model.description && (
-                <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-sm p-4">
+                <div className="rounded-sm border border-[hsl(var(--gold-accent)/0.18)] bg-[#101010] p-4">
                   <p className="text-[hsl(var(--muted-foreground))] text-sm leading-relaxed">
                     {model.description}
                   </p>
@@ -553,7 +553,7 @@ export default function ModelDetails() {
                   {taxonomyRows.map((row) => (
                     <div
                       key={row.label}
-                      className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3"
+                      className="border border-[hsl(var(--gold-accent)/0.16)] bg-[#101010] p-3"
                     >
                       <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         {row.label}
@@ -568,7 +568,7 @@ export default function ModelDetails() {
                         </Link>
                       ) : (
                         <p
-                          className="truncate text-sm font-semibold"
+                          className="truncate text-sm font-semibold text-[hsl(var(--foreground))]"
                           title={String(row.value)}
                         >
                           {row.value}
@@ -591,7 +591,7 @@ export default function ModelDetails() {
                       <Badge
                         key={t}
                         variant="outline"
-                        className="border-[hsl(var(--border))] p-0 font-mono text-xs uppercase tracking-wider transition-colors duration-300 hover:border-[hsl(var(--gold-accent))]"
+                        className="border-[hsl(var(--gold-accent)/0.18)] bg-[#101010] p-0 font-mono text-xs uppercase tracking-wider text-[hsl(var(--foreground))] transition-colors duration-300 hover:border-[hsl(var(--gold-accent))]"
                       >
                         <Link
                           to={catalogFilterPath("tag", t)}
@@ -608,7 +608,7 @@ export default function ModelDetails() {
               )}
 
               {/* Info Card */}
-              <div className="bg-[hsl(var(--card))] border-2 border-[hsl(var(--gold-accent)/0.3)] rounded-sm p-6">
+              <div className="rounded-sm border-2 border-[hsl(var(--gold-accent)/0.3)] bg-[#101010] p-6">
                 <h3 className="text-sm font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-3">
                   Modelo sob encomenda
                 </h3>
@@ -625,7 +625,7 @@ export default function ModelDetails() {
                     </div>
                   )}
                   {fixedCashPrice !== null ? (
-                    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--background)/0.6)] p-3">
+                    <div className="border border-[hsl(var(--gold-accent)/0.16)] bg-[#0d0d0d] p-3">
                       <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         Avulso
                       </p>
@@ -634,7 +634,7 @@ export default function ModelDetails() {
                       </p>
                     </div>
                   ) : (
-                    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--background)/0.6)] p-3 sm:col-span-2">
+                    <div className="border border-[hsl(var(--gold-accent)/0.16)] bg-[#0d0d0d] p-3 sm:col-span-2">
                       <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         <MessageCircle className="h-3 w-3" />
                         Preco do modelo
@@ -666,7 +666,7 @@ export default function ModelDetails() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-full border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-wider text-sm"
+                    className="w-full border-[hsl(var(--gold-accent)/0.5)] bg-transparent text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-wider text-sm"
                     asChild
                   >
                     <Link to={PUBLIC_ROUTES.plans}>Ver Planos</Link>
@@ -689,7 +689,7 @@ export default function ModelDetails() {
           </div>
 
           {/* Bottom CTA */}
-          <div className="mt-12 bg-gradient-to-r from-[hsl(var(--gold-accent)/0.1)] to-transparent border-l-4 border-[hsl(var(--gold-accent))] rounded-sm p-6">
+          <div className="mt-12 rounded-sm border-l-4 border-[hsl(var(--gold-accent))] bg-gradient-to-r from-[hsl(var(--gold-accent)/0.12)] to-[#101010] p-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-2">
