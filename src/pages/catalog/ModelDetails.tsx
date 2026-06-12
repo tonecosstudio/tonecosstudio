@@ -90,6 +90,17 @@ function uniqueGalleryItems(items: ModelGalleryItem[]) {
   });
 }
 
+function uniqueStrings(values: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  return values.filter((value): value is string => {
+    if (!value) return false;
+    const key = value.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function ModelGalleryStrip({
   images,
   activeImageUrl,
@@ -245,20 +256,25 @@ export default function ModelDetails() {
     galleryItems[0] ??
     null;
 
-  const metaChips = [
-    sourceTitle
-      ? {
-          label: "Obra",
-          value: sourceTitle,
-          href: catalogFilterPath("tag", sourceTitle),
-        }
-      : null,
-    mediaLabel ? { label: "Midia", value: mediaLabel } : null,
-    model?.category ? { label: "Categoria", value: model.category } : null,
-    model?.subcategory ? { label: "Linha", value: model.subcategory } : null,
-  ].filter(Boolean) as Array<{ label: string; value: string; href?: string }>;
+  const metaChips = useMemo(
+    () =>
+      uniqueStrings([
+        sourceTitle,
+        mediaLabel,
+        model?.category,
+        model?.subcategory,
+      ]).map((value) => ({
+        label: "Tag",
+        value,
+        href: catalogFilterPath("tag", value),
+      })),
+    [mediaLabel, model?.category, model?.subcategory, sourceTitle],
+  );
 
-  const tags = getCatalogPublicTags(model, 14);
+  const tags = useMemo(
+    () => uniqueStrings(getCatalogPublicTags(model, 8)),
+    [model],
+  );
   const sensitivity =
     activeGalleryItem?.sensitivity ?? getCatalogSensitivity(model);
   const detailsPath = model?.id
@@ -277,11 +293,6 @@ export default function ModelDetails() {
           href: catalogFilterPath("character", model.character_name),
         }
       : null,
-    { label: "Versao", value: variantName },
-    {
-      label: "Tipo",
-      value: variantLabel && variantLabel !== "Padrao" ? variantLabel : null,
-    },
     sourceTitle
       ? {
           label: "Obra",
@@ -289,7 +300,10 @@ export default function ModelDetails() {
           href: catalogFilterPath("tag", sourceTitle),
         }
       : null,
-    { label: "Midia", value: mediaLabel },
+    {
+      label: "Tipo",
+      value: variantLabel && variantLabel !== "Padrao" ? variantLabel : null,
+    },
   ].filter((row): row is { label: string; value: string; href?: string } =>
     Boolean(row?.value),
   );
@@ -446,9 +460,8 @@ export default function ModelDetails() {
               </div>
 
               <p className="mt-3 border-l-2 border-[hsl(var(--gold-accent)/0.45)] pl-3 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                Imagem de referencia do modelo
-                {sourceTitle ? ` - ${sourceTitle}` : ""}. Producao sob encomenda
-                com acabamento artesanal.
+                Imagem de referencia
+                {sourceTitle ? ` - ${sourceTitle}` : ""}.
               </p>
 
               <ModelGalleryStrip
@@ -608,7 +621,7 @@ export default function ModelDetails() {
               )}
 
               {/* Info Card */}
-              <div className="rounded-sm border-2 border-[hsl(var(--gold-accent)/0.3)] bg-[#101010] p-6">
+              <div className="rounded-sm border-2 border-[hsl(var(--gold-accent)/0.3)] bg-[#101010] p-5">
                 <h3 className="text-sm font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-3">
                   Modelo sob encomenda
                 </h3>
@@ -641,15 +654,13 @@ export default function ModelDetails() {
                       </p>
                       <p className="text-xl font-bold">Sob consulta</p>
                       <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                        Valor definido conforme escala, acabamento e lote.
+                        Valor definido por escala e acabamento.
                       </p>
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4 leading-relaxed">
-                  Item de catalogo para consulta e planejamento. A
-                  disponibilidade, escala, base e pintura podem variar conforme
-                  o projeto aprovado.
+                <p className="mb-4 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">
+                  Disponibilidade e variacoes confirmadas no atendimento.
                 </p>
 
                 <div className="flex flex-col gap-3">
@@ -688,27 +699,6 @@ export default function ModelDetails() {
             </div>
           </div>
 
-          {/* Bottom CTA */}
-          <div className="mt-12 rounded-sm border-l-4 border-[hsl(var(--gold-accent))] bg-gradient-to-r from-[hsl(var(--gold-accent)/0.12)] to-[#101010] p-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-2">
-                  Quer consultar esse modelo?
-                </h3>
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Use as tags e a obra para navegar por modelos relacionados, ou
-                  veja os planos para organizar sua proxima escolha.
-                </p>
-              </div>
-              <Button
-                size="lg"
-                className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm whitespace-nowrap"
-                asChild
-              >
-                <Link to={PUBLIC_ROUTES.plans}>Ver Planos</Link>
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </Page>
