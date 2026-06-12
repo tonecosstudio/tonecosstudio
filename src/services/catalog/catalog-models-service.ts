@@ -242,6 +242,40 @@ function getPublicCatalogModelGroupKey(row: {
   return getCharacterIdentityGroupKey(row) || getCatalogModelGroupKey(row);
 }
 
+function compareCatalogRowsByCanonicalSurface(
+  left: {
+    image_path?: string | null;
+    created_at?: string | null;
+    id: string;
+  },
+  right: {
+    image_path?: string | null;
+    created_at?: string | null;
+    id: string;
+  },
+) {
+  const byImagePath = String(left.image_path || "").localeCompare(
+    String(right.image_path || ""),
+  );
+  if (byImagePath !== 0) return byImagePath;
+
+  const byCreatedAt = String(left.created_at || "").localeCompare(
+    String(right.created_at || ""),
+  );
+  if (byCreatedAt !== 0) return byCreatedAt;
+
+  return left.id.localeCompare(right.id);
+}
+
+function pickCatalogGroupPrimary<T extends CatalogModelRow | CatalogModelDetailsRow>(
+  rows: T[],
+  mode: "public" | "asset" = "public",
+) {
+  if (rows.length <= 1) return rows[0];
+  if (mode === "asset") return rows[0];
+  return [...rows].sort(compareCatalogRowsByCanonicalSurface)[0];
+}
+
 function groupCatalogModels<T extends CatalogModelRow>(
   rows: T[],
   mode: "public" | "asset" = "public",
@@ -258,7 +292,9 @@ function groupCatalogModels<T extends CatalogModelRow>(
     else groups.set(key, [row]);
   }
 
-  return Array.from(groups.values()).map((group) => group[0]);
+  return Array.from(groups.values()).map(
+    (group) => pickCatalogGroupPrimary(group, mode) ?? group[0],
+  );
 }
 
 function buildSiblingGalleryImages(
@@ -606,17 +642,20 @@ export async function getCatalogModelDetails(modelId: string) {
   if (!data) return null;
 
   const model = mapCatalogModelDetails(data as CatalogModelDetailsDbRow);
-  model.galleryImages = await listModelGalleryImages(model.id);
-  if (model.galleryImages.length === 0) {
-    const siblings = await listSiblingModelsByIdentity(model);
-    if (siblings.length > 0) {
-      model.galleryImages = buildSiblingGalleryImages(model, [
-        model,
-        ...siblings,
+  const siblings = await listSiblingModelsByIdentity(model);
+  const siblingPool = [model, ...siblings];
+  const canonicalModel = pickCatalogGroupPrimary(siblingPool, "public") ?? model;
+
+  canonicalModel.galleryImages = await listModelGalleryImages(canonicalModel.id);
+  if (canonicalModel.galleryImages.length === 0) {
+    if (siblingPool.length > 1) {
+      canonicalModel.galleryImages = buildSiblingGalleryImages(canonicalModel, [
+        canonicalModel,
+        ...siblingPool.filter((sibling) => sibling.id !== canonicalModel.id),
       ]);
     }
   }
-  return model;
+  return canonicalModel;
 }
 
 export async function listRecentLandingModels(

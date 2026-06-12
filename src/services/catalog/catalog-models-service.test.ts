@@ -363,4 +363,56 @@ describe("catalog models service", () => {
       "model-3",
     ]);
   });
+
+  it("canonicalizes detail pages to one public row per obra e personagem", async () => {
+    const detailQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-3",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Versao 3",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-3",
+        },
+      ],
+      error: null,
+    });
+    const siblingsQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Versao 1",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-3",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Versao 3",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-3",
+        },
+      ],
+      error: null,
+    });
+
+    mocks.from
+      .mockReturnValueOnce({ select: vi.fn(() => detailQuery) })
+      .mockReturnValueOnce({ select: vi.fn(() => siblingsQuery) });
+
+    const result = await getCatalogModelDetails("model-3");
+
+    expect(result?.id).toBe("model-1");
+    expect(result?.galleryImages?.map((image) => image.id)).toEqual([
+      "model-1",
+      "model-3",
+    ]);
+  });
 });
