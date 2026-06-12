@@ -66,6 +66,7 @@ const professionalColumns = [
   "source_title",
   "source_type",
   "catalog_visibility",
+  "canonical_identity_key",
 ];
 
 const modelRow = {
@@ -89,16 +90,18 @@ const modelRow = {
   source_title: "Lilo & Stitch",
   source_type: "movie",
   catalog_visibility: "general",
+  canonical_identity_key: "stitch-base",
 };
 
 describe("catalog models service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
     mocks.from.mockReturnValue({ select: mocks.select });
     mocks.storageFrom.mockReturnValue({ getPublicUrl: mocks.getPublicUrl });
-    mocks.getPublicUrl.mockReturnValue({
-      data: { publicUrl: "https://cdn.example.com/stitch.webp" },
-    });
+    mocks.getPublicUrl.mockImplementation((filePath: string) => ({
+      data: { publicUrl: `https://cdn.example.com/${filePath}` },
+    }));
   });
 
   it("uses the canonical professional catalog projection and visibility filter", async () => {
@@ -169,6 +172,46 @@ describe("catalog models service", () => {
     expect(query.overlaps).toHaveBeenCalledWith("tags", ["stitch", "disney"]);
   });
 
+  it("groups sibling images of the same model into one catalog card", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          image_path: "freeza-1-1-173049.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-2",
+          image_path: "freeza-1-2-173050.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogModels({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "recent",
+      },
+    });
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]?.id).toBe("model-1");
+  });
+
   it("expands public tag aliases and drops internal tags before filtering", async () => {
     const query = createCatalogQuery({ data: [modelRow], error: null });
     mocks.select.mockReturnValue(query);
@@ -190,5 +233,63 @@ describe("catalog models service", () => {
       "filmes",
       "movie",
     ]);
+  });
+
+  it("uses an NSFW gallery variation as the blurred preview in NSFW mode", async () => {
+    vi.stubEnv("VITE_ENABLE_MODEL_GALLERY", "true");
+    const modelQuery = createCatalogQuery({
+      data: [{ ...modelRow, tags: ["stitch", "sensitive-has-variant"] }],
+      error: null,
+    });
+    const galleryQuery = createCatalogQuery({
+      data: [
+        {
+          id: "gallery-1",
+          model_id: "model-1",
+          source_drive_file_id: null,
+          storage_bucket: "models",
+          storage_path: "stitch-nsfw.webp",
+          thumbnail_url: null,
+          image_url: null,
+          alt_text: "Stitch NSFW variant",
+          metadata: { content_rating: "nsfw" },
+          sort_order: 1,
+          image_role: "variant_reference",
+        },
+      ],
+      error: null,
+    });
+    mocks.from
+      .mockReturnValueOnce({ select: vi.fn(() => modelQuery) })
+      .mockReturnValueOnce({ select: vi.fn(() => galleryQuery) });
+
+    const result = await listCatalogModels({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "nsfw",
+        sort: "recent",
+      },
+    });
+
+    expect(modelQuery.overlaps).toHaveBeenCalledWith("tags", [
+      "nsfw",
+      "sensitive-blur",
+      "sensitive-review",
+      "sensitive-has-variant",
+    ]);
+    expect(galleryQuery.in).toHaveBeenCalledWith("model_id", ["model-1"]);
+    expect(result.rows[0]).toMatchObject({
+      imageUrl: "https://cdn.example.com/stitch-nsfw.webp",
+      thumbnailUrl: "https://cdn.example.com/stitch-nsfw.webp",
+      content_rating: "nsfw",
+    });
   });
 });

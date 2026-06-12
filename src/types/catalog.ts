@@ -11,7 +11,9 @@ export type CatalogModelRow = {
   source_title?: string | null;
   source_type?: string | null;
   catalog_visibility?: "general" | "collection" | "both" | "hidden" | null;
+  canonical_identity_key?: string | null;
   tags: string[] | null;
+  content_rating?: string | null;
   image_bucket: string | null;
   image_path: string | null;
   thumbnail_url: string | null;
@@ -37,6 +39,7 @@ export type CatalogModelGalleryImage = {
   thumbnail_url: string | null;
   image_url: string | null;
   alt_text: string | null;
+  metadata?: Record<string, unknown> | null;
   sort_order: number;
   image_role:
     | "primary_reference"

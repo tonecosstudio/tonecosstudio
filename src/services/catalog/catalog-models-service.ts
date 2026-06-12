@@ -88,6 +88,7 @@ const CATALOG_MODEL_COLUMNS = [
   "source_title",
   "source_type",
   "catalog_visibility",
+  "canonical_identity_key",
 ];
 
 const CATALOG_MODEL_SELECT = CATALOG_MODEL_COLUMNS.join(",");
@@ -139,8 +140,9 @@ interface ModelGalleryGateway {
 
 const catalogModelsGateway = supabase as unknown as CatalogModelsGateway;
 const modelGalleryGateway = supabase as unknown as ModelGalleryGateway;
-const MODEL_GALLERY_ENABLED =
-  import.meta.env.VITE_ENABLE_MODEL_GALLERY === "true";
+function isModelGalleryEnabled() {
+  return import.meta.env.VITE_ENABLE_MODEL_GALLERY === "true";
+}
 
 function normalizeTags(tagsCSV: string) {
   return Array.from(
@@ -187,6 +189,77 @@ function mapCatalogModelDetails(
   };
 }
 
+function normalizeGroupKey(value: string | null | undefined) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getDerivedImageGroupKey(path: string | null | undefined) {
+  if (!path) return "";
+  const normalizedPath = String(path).trim().toLowerCase();
+  if (!normalizedPath) return "";
+
+  const segments = normalizedPath.split("/");
+  const fileName = segments.pop() || "";
+  const directory = segments.join("/");
+  const stem = fileName.replace(/\.[^.]+$/, "");
+  if (!stem) return "";
+
+  const withoutId = stem.replace(/-\d+$/, "");
+  const withoutAngle = withoutId.replace(/-\d+$/, "");
+  const key = withoutAngle || withoutId || stem;
+  return `${directory}/${key}`;
+}
+
+function getCatalogModelGroupKey(row: {
+  canonical_identity_key?: string | null;
+  image_path?: string | null;
+  id: string;
+}) {
+  return (
+    normalizeGroupKey(row.canonical_identity_key) ||
+    getDerivedImageGroupKey(row.image_path) ||
+    row.id
+  );
+}
+
+function groupCatalogModels<T extends CatalogModelRow>(rows: T[]) {
+  const groups = new Map<string, T[]>();
+
+  for (const row of rows) {
+    const key = getCatalogModelGroupKey(row);
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(row);
+    else groups.set(key, [row]);
+  }
+
+  return Array.from(groups.values()).map((group) => group[0]);
+}
+
+function buildSiblingGalleryImages(
+  primary: CatalogModelDetailsRow,
+  siblings: CatalogModelDetailsRow[],
+): CatalogModelGalleryImage[] {
+  return siblings
+    .filter((sibling) => sibling.imageUrl)
+    .map((sibling, index) => ({
+      id: sibling.id,
+      model_id: primary.id,
+      source_drive_file_id: null,
+      storage_bucket: sibling.image_bucket,
+      storage_path: sibling.image_path,
+      thumbnail_url: sibling.thumbnailUrl,
+      image_url: sibling.imageUrl,
+      alt_text: sibling.variant_name
+        ? `${primary.character_name || primary.name} - ${sibling.variant_name}`
+        : sibling.character_name || sibling.name,
+      metadata: null,
+      sort_order: index,
+      image_role: index === 0 ? "primary_reference" : "gallery",
+      imageUrl: sibling.imageUrl,
+      thumbnailUrl: sibling.thumbnailUrl,
+    }));
+}
+
 function mapModelGalleryImage(
   row: CatalogModelGalleryDbRow,
 ): CatalogModelGalleryImage {
@@ -211,7 +284,7 @@ function isMissingGalleryTableError(error: unknown) {
 }
 
 async function listModelGalleryImages(modelId: string) {
-  if (!MODEL_GALLERY_ENABLED) return [];
+  if (!isModelGalleryEnabled()) return [];
 
   const { data, error } = await modelGalleryGateway
     .from("model_gallery_images")
@@ -233,7 +306,7 @@ async function listModelGalleryImages(modelId: string) {
 
 async function listNsfwGalleryPreviews(modelIds: string[]) {
   if (modelIds.length === 0) return new Map<string, CatalogModelGalleryImage>();
-  if (!MODEL_GALLERY_ENABLED) {
+  if (!isModelGalleryEnabled()) {
     return new Map<string, CatalogModelGalleryImage>();
   }
 
@@ -287,6 +360,20 @@ async function applyNsfwGalleryPreviews(
   });
 }
 
+async function listSiblingModelsByIdentity(identityKey: string, excludeId: string) {
+  const { data, error } = await catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_DETAILS_SELECT)
+    .eq("canonical_identity_key", identityKey)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  return ((data ?? []) as CatalogModelDetailsDbRow[])
+    .map(mapCatalogModelDetails)
+    .filter((row) => row.id !== excludeId);
+}
+
 function scoreByPreferenceTags(
   model: CatalogModelRow,
   preferenceTags: Set<string>,
@@ -314,13 +401,13 @@ export async function listCatalogModels(params: {
 
   const { needle, page, filters } = params;
   const from = page * CATALOG_PAGE_SIZE;
-  const to = from + CATALOG_PAGE_SIZE;
+  const rawWindowSize = Math.max(CATALOG_PAGE_SIZE * (page + 1) * 4, 49);
   const stagingMode = filters.catalogMode === "staging";
 
   let query = catalogModelsGateway
     .from("models")
     .select(CATALOG_MODEL_SELECT)
-    .range(from, to);
+    .range(0, rawWindowSize);
 
   if (stagingMode) {
     query = query.contains("tags", ["catalog-staging"]);
@@ -403,8 +490,9 @@ export async function listCatalogModels(params: {
   if (error) throw error;
 
   const all = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
-  const hasNext = all.length > CATALOG_PAGE_SIZE;
-  const pageRows = hasNext ? all.slice(0, CATALOG_PAGE_SIZE) : all;
+  const grouped = stagingMode ? all : groupCatalogModels(all);
+  const hasNext = grouped.length > from + CATALOG_PAGE_SIZE;
+  const pageRows = grouped.slice(from, from + CATALOG_PAGE_SIZE);
   const rows =
     filters.contentMode === "nsfw"
       ? await applyNsfwGalleryPreviews(pageRows)
@@ -444,15 +532,16 @@ export async function listForYouCatalogModels(params: {
   if (error) throw error;
 
   const models = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
+  const groupedModels = groupCatalogModels(models);
   if (params.preferenceTags.size) {
-    models.sort(
+    groupedModels.sort(
       (left, right) =>
         scoreByPreferenceTags(right, params.preferenceTags) -
         scoreByPreferenceTags(left, params.preferenceTags),
     );
   }
 
-  return models;
+  return groupedModels;
 }
 
 export async function getCatalogModelDetails(modelId: string) {
@@ -471,6 +560,21 @@ export async function getCatalogModelDetails(modelId: string) {
 
   const model = mapCatalogModelDetails(data as CatalogModelDetailsDbRow);
   model.galleryImages = await listModelGalleryImages(model.id);
+  if (
+    model.galleryImages.length === 0 &&
+    model.canonical_identity_key
+  ) {
+    const siblings = await listSiblingModelsByIdentity(
+      model.canonical_identity_key,
+      model.id,
+    );
+    if (siblings.length > 0) {
+      model.galleryImages = buildSiblingGalleryImages(model, [
+        model,
+        ...siblings,
+      ]);
+    }
+  }
   return model;
 }
 
@@ -495,5 +599,7 @@ export async function listRecentLandingModels(
     );
 
   if (error) throw error;
-  return ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
+  return groupCatalogModels(
+    ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel),
+  ).slice(0, limit);
 }
