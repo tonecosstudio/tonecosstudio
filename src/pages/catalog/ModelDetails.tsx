@@ -381,9 +381,8 @@ export default function ModelDetails() {
         <div className="container max-w-6xl mx-auto px-4">
           {/* Back Button */}
           <Button
-            variant="ghost"
             onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-            className="mb-6 font-mono uppercase tracking-wider text-xs hover:text-[hsl(var(--gold-accent))]"
+            className="mb-6 inline-flex border border-[hsl(var(--gold-accent)/0.45)] bg-[hsl(var(--card)/0.82)] font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_16px_hsl(var(--gold-accent)/0.12)] hover:bg-[hsl(var(--gold-accent)/0.12)] hover:text-[hsl(var(--gold-accent))]"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar ao Universo
