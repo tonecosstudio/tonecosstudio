@@ -1,5 +1,5 @@
 /**
- * Catálogo Arcade — mesma estética gaming da página de coleções.
+ * Universo Arcade — mesma estética gaming da página de coleções.
  * Preserva toda a lógica de busca, filtros e likes do catálogo original.
  */
 
@@ -43,11 +43,13 @@ import {
   FloatingParticles,
   GlitchText,
 } from "@/components/arcade/ArcadeEffects";
+import { ReportModelNameDialog } from "@/components/catalog/ReportModelNameDialog";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { formatCurrency } from "@/lib/utils";
 import {
   getCatalogCharacterName,
   getCatalogPublicTags,
+  getCatalogSensitivity,
   getCatalogSourceName,
   getCatalogVersionName,
 } from "@/lib/catalog-utils";
@@ -139,14 +141,25 @@ export default function CatalogArcade() {
       setShowFilters(true);
   }, [searchParams]);
 
+  const wantsNsfwContent =
+    category === "nsfw" || /\b(?:nsfw|adulto|improprio)\b/i.test(tagsCSV);
+  const effectiveCategory = category === "nsfw" ? "" : category;
+  const effectiveTagsCSV =
+    category !== "nsfw" &&
+    wantsNsfwContent &&
+    !/\b(?:nsfw|adulto|improprio)\b/i.test(tagsCSV)
+      ? [tagsCSV, "nsfw"].filter(Boolean).join(",")
+      : tagsCSV;
+
   const modelsQuery = useCatalogModels(needle, page, {
     character,
     franchise,
-    category,
+    category: effectiveCategory,
     sourceType,
     variantType,
-    tagsCSV,
+    tagsCSV: effectiveTagsCSV,
     catalogMode,
+    contentMode: wantsNsfwContent ? "nsfw" : "general",
     sort,
   });
   const queryRows = modelsQuery.data?.rows;
@@ -230,10 +243,12 @@ export default function CatalogArcade() {
 
   const categories = [
     "animes",
+    "desenhos",
     "filmes",
     "series",
     "jogos",
     "quadrinhos",
+    "nsfw",
     "outros",
   ];
   const sourceTypes = Object.entries(SOURCE_TYPE_LABELS);
@@ -251,13 +266,13 @@ export default function CatalogArcade() {
 
   return (
     <Page
-      title="Catálogo | ORDAX Arsenal"
+      title="Universo | ORDAX Arsenal"
       description="Explore o catálogo completo de estatuetas artesanais. Produção sob encomenda com pintura artística."
       keywords={["catálogo", "estatuetas", "colecionáveis", "premium"]}
     >
       <ArcadeHero
         badge="Arsenal Completo"
-        title="CATÁLOGO"
+        title="UNIVERSO"
         subtitle=">> EXPLORE. ESCOLHA. COLECIONE."
       />
 
@@ -601,6 +616,7 @@ function ModelArcadeCard({
   const navigate = useNavigate();
   const imageUrl = model.thumbnailUrl ?? model.imageUrl;
   const displayTags = getCatalogPublicTags(model, 3);
+  const sensitivity = getCatalogSensitivity(model);
   const isStaging =
     !model.is_active || (model.tags ?? []).includes("catalog-staging");
   const characterName = getCatalogCharacterName(model);
@@ -612,6 +628,7 @@ function ModelArcadeCard({
   const variantLabel = model.variant_type
     ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type
     : null;
+  const detailsPath = catalogModelDetailsPath(model.id);
   const fixedCashPrice =
     model.price_mode === "fixed" &&
     typeof model.price_standalone_override === "number" &&
@@ -640,6 +657,8 @@ function ModelArcadeCard({
                 isStaging
                   ? "object-contain p-2 group-hover:scale-105"
                   : "object-cover group-hover:scale-110"
+              } ${
+                sensitivity.shouldBlur ? "scale-105 blur-xl" : ""
               }`}
               loading="lazy"
               decoding="async"
@@ -669,6 +688,15 @@ function ModelArcadeCard({
           {(mediaLabel || model.category) && (
             <div className="absolute top-2 left-2 z-10 font-mono text-[8px] text-[hsl(var(--gold-accent))] bg-[hsl(0,0%,5%)]/90 px-2 py-0.5 tracking-widest uppercase border border-[hsl(var(--gold-accent)/0.3)]">
               {mediaLabel || model.category}
+            </div>
+          )}
+
+          {sensitivity.shouldBlur && (
+            <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-[hsl(0,0%,5%)]/55 px-4 text-center backdrop-blur-sm">
+              <span className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.35)] bg-[hsl(0,0%,5%)]/90 px-3 py-2 font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent))]">
+                <EyeOff className="h-3.5 w-3.5" />
+                {sensitivity.label}
+              </span>
             </div>
           )}
 
@@ -760,11 +788,20 @@ function ModelArcadeCard({
 
           {/* CTA */}
           <button
-            onClick={() => navigate(catalogModelDetailsPath(model.id))}
+            onClick={() => navigate(detailsPath)}
             className="mt-auto flex items-center justify-center gap-1.5 w-full py-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono text-[9px] tracking-[0.15em] uppercase transition-all"
           >
             VER DETALHES <ArrowRight className="w-3 h-3" />
           </button>
+          <ReportModelNameDialog
+            modelId={model.id}
+            displayedName={characterName}
+            sourceTitle={sourceName}
+            detailPath={detailsPath}
+            triggerLabel="Reportar nome incorreto"
+            triggerVariant="ghost"
+            triggerClassName="mt-2 h-auto justify-center px-0 py-1 font-mono text-[8px] uppercase tracking-[0.15em] text-[hsl(0,0%,55%)] hover:bg-transparent hover:text-[hsl(var(--gold-accent))]"
+          />
         </div>
 
         {/* Power bar */}

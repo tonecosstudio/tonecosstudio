@@ -10,6 +10,7 @@ import { Page } from "@/components/layouts/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReportModelNameDialog } from "@/components/catalog/ReportModelNameDialog";
 import {
   ArrowLeft,
   Heart,
@@ -19,6 +20,7 @@ import {
   Layers,
   Coins,
   MessageCircle,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +29,7 @@ import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQue
 import {
   buildModelTitle,
   getCatalogPublicTags,
+  getCatalogSensitivity,
   normalizeCatalogTag,
 } from "@/lib/catalog-utils";
 import { useModelDetails } from "@/hooks/catalog/useModelDetails";
@@ -66,22 +69,33 @@ function catalogFilterPath(
   return `${PUBLIC_ROUTES.catalog}?${params.toString()}`;
 }
 
-function uniqueImages(urls: Array<string | null | undefined>) {
-  return Array.from(
-    new Set(urls.filter((url): url is string => Boolean(url?.trim()))),
-  );
+type ModelGalleryItem = {
+  key: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  altText: string;
+  sensitivity: ReturnType<typeof getCatalogSensitivity>;
+};
+
+function uniqueGalleryItems(items: ModelGalleryItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.imageUrl)) return false;
+    seen.add(item.imageUrl);
+    return true;
+  });
 }
 
 function ModelGalleryStrip({
   images,
-  activeImage,
+  activeImageUrl,
   label,
   onSelect,
 }: {
-  images: string[];
-  activeImage: string | null;
+  images: ModelGalleryItem[];
+  activeImageUrl: string | null;
   label: string;
-  onSelect: (image: string) => void;
+  onSelect: (image: ModelGalleryItem) => void;
 }) {
   if (images.length <= 1) return null;
 
@@ -92,11 +106,11 @@ function ModelGalleryStrip({
       </h2>
       <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
         {images.map((image, index) => {
-          const isActive = image === activeImage;
+          const isActive = image.imageUrl === activeImageUrl;
 
           return (
             <button
-              key={image}
+              key={image.key}
               type="button"
               onClick={() => onSelect(image)}
               className={`aspect-square overflow-hidden border bg-[hsl(var(--background))] transition-all ${
@@ -106,13 +120,22 @@ function ModelGalleryStrip({
               }`}
               aria-label={`Ver foto ${index + 1} de ${label}`}
             >
-              <img
-                src={image}
-                alt={`${label} - foto ${index + 1}`}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
+              <span className="relative block h-full w-full">
+                <img
+                  src={image.thumbnailUrl}
+                  alt={image.altText || `${label} - foto ${index + 1}`}
+                  className={`h-full w-full object-cover ${
+                    image.sensitivity.shouldBlur ? "scale-105 blur-md" : ""
+                  }`}
+                  loading="lazy"
+                  decoding="async"
+                />
+                {image.sensitivity.shouldBlur && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-[hsl(var(--background)/0.52)]">
+                    <EyeOff className="h-4 w-4 text-[hsl(var(--gold-accent))]" />
+                  </span>
+                )}
+              </span>
             </button>
           );
         })}
@@ -179,18 +202,42 @@ export default function ModelDetails() {
     ? `Veja detalhes do modelo ${title}. Estatueta artesanal da Tonecos Studios.`
     : "Veja detalhes do modelo. Estatueta artesanal da Tonecos Studios.";
 
-  const galleryUrls = useMemo(
-    () =>
-      uniqueImages([
-        model?.imageUrl,
-        ...(model?.galleryImages ?? []).map((image) => image.imageUrl),
-      ]),
-    [model?.galleryImages, model?.imageUrl],
-  );
+  const galleryItems = useMemo(() => {
+    if (!model) return [];
+
+    const items: ModelGalleryItem[] = [];
+    if (model.imageUrl) {
+      items.push({
+        key: `primary:${model.id}`,
+        imageUrl: model.imageUrl,
+        thumbnailUrl: model.thumbnailUrl ?? model.imageUrl,
+        altText: displayName,
+        sensitivity: getCatalogSensitivity(model),
+      });
+    }
+
+    for (const image of model.galleryImages ?? []) {
+      if (!image.imageUrl) continue;
+      items.push({
+        key: image.id,
+        imageUrl: image.imageUrl,
+        thumbnailUrl: image.thumbnailUrl ?? image.imageUrl,
+        altText: image.alt_text ?? displayName,
+        sensitivity: getCatalogSensitivity(image),
+      });
+    }
+
+    return uniqueGalleryItems(items);
+  }, [displayName, model]);
   const imageUrl =
-    selectedImage && galleryUrls.includes(selectedImage)
+    selectedImage &&
+    galleryItems.some((item) => item.imageUrl === selectedImage)
       ? selectedImage
-      : (galleryUrls[0] ?? null);
+      : (galleryItems[0]?.imageUrl ?? null);
+  const activeGalleryItem =
+    galleryItems.find((item) => item.imageUrl === imageUrl) ??
+    galleryItems[0] ??
+    null;
 
   const metaChips = [
     sourceTitle
@@ -206,6 +253,9 @@ export default function ModelDetails() {
   ].filter(Boolean) as Array<{ label: string; value: string; href?: string }>;
 
   const tags = getCatalogPublicTags(model, 14);
+  const sensitivity =
+    activeGalleryItem?.sensitivity ?? getCatalogSensitivity(model);
+  const detailsPath = `/universo/${encodeURIComponent(model.id)}`;
   const taxonomyRows = [
     model?.character_name
       ? {
@@ -282,7 +332,7 @@ export default function ModelDetails() {
               onClick={() => navigate(PUBLIC_ROUTES.catalog)}
               className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm"
             >
-              Voltar ao Catálogo
+              Voltar ao Universo
             </Button>
           </div>
         </div>
@@ -317,7 +367,7 @@ export default function ModelDetails() {
             className="mb-6 font-mono uppercase tracking-wider text-xs hover:text-[hsl(var(--gold-accent))]"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Catálogo
+            Voltar ao Universo
           </Button>
 
           {/* Main Content Grid */}
@@ -335,13 +385,29 @@ export default function ModelDetails() {
                     <img
                       src={imageUrl}
                       alt={displayName}
-                      className="h-full w-full object-contain p-4"
+                      className={`h-full w-full object-contain p-4 ${
+                        sensitivity.shouldBlur ? "scale-[1.03] blur-xl" : ""
+                      }`}
                       loading="eager"
                       fetchPriority="high"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--gold-accent)/0.2)] to-[hsl(var(--background))]">
                       <Package className="w-32 h-32 text-[hsl(var(--gold-accent))]" />
+                    </div>
+                  )}
+
+                  {sensitivity.shouldBlur && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-[hsl(var(--background)/0.58)] px-6 text-center backdrop-blur-sm">
+                      <div className="border border-[hsl(var(--gold-accent)/0.45)] bg-[hsl(var(--background)/0.92)] px-4 py-3 font-mono uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_24px_hsl(var(--gold-accent)/0.18)]">
+                        <div className="mb-1 flex items-center justify-center gap-2 text-xs font-bold">
+                          <EyeOff className="h-4 w-4" />
+                          {sensitivity.label}
+                        </div>
+                        <p className="max-w-xs text-[10px] leading-relaxed text-[hsl(var(--muted-foreground))]">
+                          Imagem borrada por classificacao de conteudo.
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -368,10 +434,10 @@ export default function ModelDetails() {
               </p>
 
               <ModelGalleryStrip
-                images={galleryUrls}
-                activeImage={imageUrl}
+                images={galleryItems}
+                activeImageUrl={imageUrl}
                 label={title}
-                onSelect={setSelectedImage}
+                onSelect={(image) => setSelectedImage(image.imageUrl)}
               />
 
               {/* Like Button */}
@@ -401,7 +467,7 @@ export default function ModelDetails() {
                 <div className="flex items-center gap-3 mb-3">
                   <Badge className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] font-mono uppercase tracking-wider px-3 py-1 text-xs border-2 border-[hsl(var(--foreground))]">
                     <Crown className="w-3 h-3 mr-1" />
-                    Catálogo
+                    Universo
                   </Badge>
                   {model.category && (
                     <Badge
@@ -451,6 +517,18 @@ export default function ModelDetails() {
                   </p>
                 </div>
               )}
+
+              <div className="flex flex-wrap gap-3">
+                <ReportModelNameDialog
+                  modelId={model.id}
+                  displayedName={displayName}
+                  sourceTitle={sourceTitle}
+                  detailPath={detailsPath}
+                  triggerLabel="Reportar nome incorreto"
+                  triggerVariant="outline"
+                  triggerClassName="border-[hsl(var(--gold-accent)/0.35)] bg-[hsl(var(--gold-accent)/0.06)] font-mono uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.12)]"
+                />
+              </div>
 
               {taxonomyRows.length > 0 && (
                 <div className="grid gap-2 sm:grid-cols-2">
