@@ -3,15 +3,27 @@ import {
   PUBLIC_CATALOG_VISIBILITIES,
 } from "@/config/catalog";
 import { supabase } from "@/integrations/supabase/client";
-import { getCatalogTagFilterValues } from "@/lib/catalog-utils";
+import { getCatalogStoragePublicUrl } from "@/lib/catalog-assets";
+import {
+  getCatalogSensitivity,
+  getCatalogTagFilterValues,
+} from "@/lib/catalog-utils";
 import type {
   CatalogModelDetailsRow,
   CatalogModelGalleryImage,
   CatalogModelRow,
 } from "@/types/catalog";
+import {
+  getMockCatalogModelDetails,
+  isWebpCatalogMockEnabled,
+  listMockCatalogModels,
+  listMockForYouCatalogModels,
+  listRecentMockCatalogModels,
+} from "./mock-webp-catalog";
 
 export type CatalogSort = "recent" | "az";
 export type CatalogMode = "public" | "staging";
+export type CatalogContentMode = "general" | "nsfw";
 
 export type CatalogSourceType =
   | "anime"
@@ -41,6 +53,7 @@ export type CatalogModelFilters = {
   variantType: string;
   tagsCSV: string;
   catalogMode: CatalogMode;
+  contentMode?: CatalogContentMode;
   sort: CatalogSort;
 };
 
@@ -114,6 +127,7 @@ interface ModelGalleryQuery extends PromiseLike<{
   error: unknown;
 }> {
   eq(column: string, value: string): ModelGalleryQuery;
+  in(column: string, values: readonly string[]): ModelGalleryQuery;
   order(column: string, options?: { ascending?: boolean }): ModelGalleryQuery;
 }
 
@@ -125,6 +139,8 @@ interface ModelGalleryGateway {
 
 const catalogModelsGateway = supabase as unknown as CatalogModelsGateway;
 const modelGalleryGateway = supabase as unknown as ModelGalleryGateway;
+const MODEL_GALLERY_ENABLED =
+  import.meta.env.VITE_ENABLE_MODEL_GALLERY === "true";
 
 function normalizeTags(tagsCSV: string) {
   return Array.from(
@@ -135,8 +151,7 @@ function normalizeTags(tagsCSV: string) {
 }
 
 function getPublicModelImageUrl(bucket: string | null, path: string | null) {
-  if (!bucket || !path) return null;
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  return getCatalogStoragePublicUrl(bucket, path);
 }
 
 function normalizeSearchValue(value: string) {
@@ -196,10 +211,12 @@ function isMissingGalleryTableError(error: unknown) {
 }
 
 async function listModelGalleryImages(modelId: string) {
+  if (!MODEL_GALLERY_ENABLED) return [];
+
   const { data, error } = await modelGalleryGateway
     .from("model_gallery_images")
     .select(
-      "id,model_id,source_drive_file_id,storage_bucket,storage_path,thumbnail_url,image_url,alt_text,sort_order,image_role",
+      "id,model_id,source_drive_file_id,storage_bucket,storage_path,thumbnail_url,image_url,alt_text,metadata,sort_order,image_role",
     )
     .eq("model_id", modelId)
     .order("sort_order", { ascending: true });
@@ -212,6 +229,62 @@ async function listModelGalleryImages(modelId: string) {
   return ((data ?? []) as CatalogModelGalleryDbRow[]).map(
     mapModelGalleryImage,
   );
+}
+
+async function listNsfwGalleryPreviews(modelIds: string[]) {
+  if (modelIds.length === 0) return new Map<string, CatalogModelGalleryImage>();
+  if (!MODEL_GALLERY_ENABLED) {
+    return new Map<string, CatalogModelGalleryImage>();
+  }
+
+  const { data, error } = await modelGalleryGateway
+    .from("model_gallery_images")
+    .select(
+      "id,model_id,source_drive_file_id,storage_bucket,storage_path,thumbnail_url,image_url,alt_text,metadata,sort_order,image_role",
+    )
+    .in("model_id", modelIds)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    if (isMissingGalleryTableError(error)) {
+      return new Map<string, CatalogModelGalleryImage>();
+    }
+    throw error;
+  }
+
+  const previews = new Map<string, CatalogModelGalleryImage>();
+  for (const image of ((data ?? []) as CatalogModelGalleryDbRow[]).map(
+    mapModelGalleryImage,
+  )) {
+    if (previews.has(image.model_id)) continue;
+    const sensitivity = getCatalogSensitivity(image);
+    if (
+      sensitivity.shouldBlur &&
+      sensitivity.level !== "age-ambiguous-review"
+    ) {
+      previews.set(image.model_id, image);
+    }
+  }
+
+  return previews;
+}
+
+async function applyNsfwGalleryPreviews(
+  models: CatalogModelRow[],
+): Promise<CatalogModelRow[]> {
+  const previews = await listNsfwGalleryPreviews(models.map((model) => model.id));
+  if (previews.size === 0) return models;
+
+  return models.map((model) => {
+    const preview = previews.get(model.id);
+    if (!preview?.imageUrl) return model;
+    return {
+      ...model,
+      imageUrl: preview.imageUrl,
+      thumbnailUrl: preview.thumbnailUrl ?? preview.imageUrl,
+      content_rating: "nsfw",
+    };
+  });
 }
 
 function scoreByPreferenceTags(
@@ -235,6 +308,10 @@ export async function listCatalogModels(params: {
   page: number;
   filters: CatalogModelFilters;
 }) {
+  if (isWebpCatalogMockEnabled()) {
+    return listMockCatalogModels(params);
+  }
+
   const { needle, page, filters } = params;
   const from = page * CATALOG_PAGE_SIZE;
   const to = from + CATALOG_PAGE_SIZE;
@@ -253,6 +330,22 @@ export async function listCatalogModels(params: {
 
   if (!stagingMode) {
     query = query.in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES);
+    if (filters.contentMode === "nsfw") {
+      query = query
+        .overlaps("tags", [
+          "nsfw",
+          "sensitive-blur",
+          "sensitive-review",
+          "sensitive-has-variant",
+        ])
+        .not("tags", "ov", "{age-ambiguous-review}");
+    } else {
+      query = query.not(
+        "tags",
+        "ov",
+        "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+      );
+    }
   }
 
   if (filters.sort === "az") {
@@ -311,7 +404,11 @@ export async function listCatalogModels(params: {
 
   const all = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
   const hasNext = all.length > CATALOG_PAGE_SIZE;
-  const rows = hasNext ? all.slice(0, CATALOG_PAGE_SIZE) : all;
+  const pageRows = hasNext ? all.slice(0, CATALOG_PAGE_SIZE) : all;
+  const rows =
+    filters.contentMode === "nsfw"
+      ? await applyNsfwGalleryPreviews(pageRows)
+      : pageRows;
 
   return { rows, hasNext };
 }
@@ -320,6 +417,10 @@ export async function listForYouCatalogModels(params: {
   excludedIds: string[];
   preferenceTags: Set<string>;
 }) {
+  if (isWebpCatalogMockEnabled()) {
+    return listMockForYouCatalogModels(params);
+  }
+
   const exclude = params.excludedIds.filter(Boolean).slice(0, 50);
 
   let query = catalogModelsGateway
@@ -328,7 +429,12 @@ export async function listForYouCatalogModels(params: {
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(8)
-    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES);
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
+    .not(
+      "tags",
+      "ov",
+      "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+    );
 
   if (exclude.length) {
     query = query.not("id", "in", formatPostgrestIdList(exclude));
@@ -350,6 +456,10 @@ export async function listForYouCatalogModels(params: {
 }
 
 export async function getCatalogModelDetails(modelId: string) {
+  if (isWebpCatalogMockEnabled()) {
+    return getMockCatalogModelDetails(modelId);
+  }
+
   const { data, error } = await catalogModelsGateway
     .from("models")
     .select(CATALOG_MODEL_DETAILS_SELECT)
@@ -367,13 +477,22 @@ export async function getCatalogModelDetails(modelId: string) {
 export async function listRecentLandingModels(
   limit = 6,
 ): Promise<CatalogModelRow[]> {
+  if (isWebpCatalogMockEnabled()) {
+    return listRecentMockCatalogModels(limit);
+  }
+
   const { data, error } = await catalogModelsGateway
     .from("models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(limit)
-    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES);
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
+    .not(
+      "tags",
+      "ov",
+      "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+    );
 
   if (error) throw error;
   return ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
