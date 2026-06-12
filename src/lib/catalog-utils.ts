@@ -18,6 +18,15 @@ export type CatalogDisplayModel = {
   thumbnail_url?: string | null;
 };
 
+const CATALOG_VARIANT_PHRASE_LABELS: Record<string, string> = {
+  "final form": "Forma Final",
+  throne: "No Trono",
+  "figura pair": "Dupla",
+  pair: "Dupla",
+  "mecha figura": "Mecha",
+  "wall figura": "Painel",
+};
+
 const INTERNAL_TAG_PREFIXES = catalogTagPolicy.internalTagPrefixes;
 const INTERNAL_TAGS = new Set(catalogTagPolicy.internalTags);
 const PUBLIC_TAG_ALIASES: Record<string, string> =
@@ -450,6 +459,56 @@ export function getCatalogCharacterName(
   return model?.character_name || model?.name || "Modelo";
 }
 
+function slugifyCatalogComparable(value: string | null | undefined): string {
+  return normalizeCatalogTag(value).replace(/\s+/g, "-");
+}
+
+function titleCaseWords(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function getCatalogVariantFallback(
+  model: CatalogDisplayModel | null | undefined,
+): string | null {
+  const storagePath = model?.storage_path || null;
+  if (!storagePath) return null;
+
+  const normalizedPath = storagePath.replaceAll("\\", "/").toLowerCase();
+  const fileName = normalizedPath.split("/").pop() || "";
+  const stem = fileName.replace(/\.[^.]+$/, "");
+  if (!stem) return null;
+
+  const withoutObjectId = stem.replace(/-\d+$/, "");
+  const withoutAngle = withoutObjectId.replace(/-\d+$/, "");
+  const productStem = withoutAngle || withoutObjectId || stem;
+  const characterSlug = slugifyCatalogComparable(getCatalogCharacterName(model));
+
+  let remainder = productStem;
+  if (characterSlug && remainder.startsWith(`${characterSlug}-`)) {
+    remainder = remainder.slice(characterSlug.length + 1);
+  } else if (characterSlug && remainder === characterSlug) {
+    remainder = "";
+  }
+
+  if (!remainder) return null;
+
+  const normalizedRemainder = remainder.replace(/-/g, " ").trim();
+  if (!normalizedRemainder) return null;
+
+  if (/^\d+$/.test(normalizedRemainder)) {
+    return `Versao ${normalizedRemainder}`;
+  }
+
+  const phraseLabel = CATALOG_VARIANT_PHRASE_LABELS[normalizedRemainder];
+  if (phraseLabel) return phraseLabel;
+
+  return titleCaseWords(normalizedRemainder);
+}
+
 export function getCatalogSourceName(
   model: CatalogDisplayModel | null | undefined,
 ): string | null {
@@ -459,7 +518,7 @@ export function getCatalogSourceName(
 export function getCatalogVersionName(
   model: CatalogDisplayModel | null | undefined,
 ): string | null {
-  return model?.variant_name || null;
+  return model?.variant_name || getCatalogVariantFallback(model);
 }
 
 export function buildModelTitle(

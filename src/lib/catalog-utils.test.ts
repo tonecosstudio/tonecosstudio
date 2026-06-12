@@ -4,6 +4,7 @@ import {
   getCatalogSensitivity,
   getCatalogPublicTags,
   getCatalogTagFilterValues,
+  getCatalogVersionName,
   isInternalCatalogTag,
   normalizeCatalogTag,
   normalizeCatalogTags,
@@ -207,5 +208,25 @@ describe("catalog utils", () => {
         metadata: { content_rating: "safe" },
       }),
     ).toMatchObject({ level: "standard", shouldBlur: false });
+  });
+
+  it("derives a fallback public variant name from the storage path", () => {
+    expect(
+      getCatalogVersionName({
+        name: "Freeza",
+        character_name: "Freeza",
+        storage_path:
+          "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-final-form-1-177691.webp",
+      }),
+    ).toBe("Forma Final");
+
+    expect(
+      getCatalogVersionName({
+        name: "Freeza",
+        character_name: "Freeza",
+        storage_path:
+          "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-4-173490.webp",
+      }),
+    ).toBe("Versao 3");
   });
 });
