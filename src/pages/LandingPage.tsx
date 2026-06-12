@@ -404,7 +404,7 @@ export default function LandingPage() {
             <ArcadeSectionTitle>Novos no Arsenal</ArcadeSectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               {models.map((m) => {
-                const imgUrl = m.imageUrl;
+                const imgUrl = m.thumbnailUrl ?? m.imageUrl;
                 const characterName = getCatalogCharacterName(m);
                 const sourceName = getCatalogSourceName(m);
                 return (
