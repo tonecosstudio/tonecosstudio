@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Package, Shapes } from "lucide-react";
@@ -24,13 +24,13 @@ import { getCatalogPublicTags, getCatalogSourceName } from "@/lib/catalog-utils"
 export default function CatalogCharacterArcade() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const [searchParams] = useSearchParams();
-  const [sortMode, setSortMode] = useState<"recent" | "az">("recent");
-  const [activeTag, setActiveTag] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const legacyCharacterName = searchParams.get("character")?.trim() ?? "";
   const legacySourceTitle = searchParams.get("source")?.trim() ?? "";
+  const sortMode = searchParams.get("sort") === "az" ? "az" : "recent";
+  const activeTag = searchParams.get("tag")?.trim() ?? "";
 
   const contextQuery = useQuery({
     queryKey: [
@@ -58,14 +58,20 @@ export default function CatalogCharacterArcade() {
 
   useEffect(() => {
     if (!legacyCharacterName || !slug || !contextQuery.data?.slug) return;
+    const nextSearch = new URLSearchParams(searchParams);
+    nextSearch.delete("character");
+    nextSearch.delete("source");
     navigate(
-      PUBLIC_ROUTES.catalogCharacter.replace(
-        ":slug",
-        encodeURIComponent(contextQuery.data.slug),
-      ),
+      {
+        pathname: PUBLIC_ROUTES.catalogCharacter.replace(
+          ":slug",
+          encodeURIComponent(contextQuery.data.slug),
+        ),
+        search: nextSearch.toString() ? `?${nextSearch.toString()}` : "",
+      },
       { replace: true },
     );
-  }, [contextQuery.data, legacyCharacterName, navigate, slug]);
+  }, [contextQuery.data, legacyCharacterName, navigate, searchParams, slug]);
 
   const modelsQuery = useQuery({
     queryKey: ["catalog-character-models", { characterName, sourceTitle }],
@@ -77,6 +83,15 @@ export default function CatalogCharacterArcade() {
     const tagSource = rows.flatMap((row) => getCatalogPublicTags(row, 6));
     return Array.from(new Set(tagSource)).slice(0, 8);
   }, [rows]);
+
+  useEffect(() => {
+    if (!activeTag) return;
+    if (availableTags.includes(activeTag)) return;
+    const nextSearch = new URLSearchParams(searchParams);
+    nextSearch.delete("tag");
+    setSearchParams(nextSearch, { replace: true });
+  }, [activeTag, availableTags, searchParams, setSearchParams]);
+
   const displayRows = useMemo(() => {
     const next = activeTag
       ? rows.filter((row) => getCatalogPublicTags(row, 8).includes(activeTag))
@@ -101,6 +116,23 @@ export default function CatalogCharacterArcade() {
     const tagSource = rows.flatMap((row) => getCatalogPublicTags(row, 4));
     return Array.from(new Set(tagSource)).slice(0, 6);
   }, [rows]);
+
+  const updateFilterParams = (next: {
+    sort?: "recent" | "az";
+    tag?: string;
+  }) => {
+    const nextSearch = new URLSearchParams(searchParams);
+    const nextSort = next.sort ?? sortMode;
+    const nextTag = next.tag ?? activeTag;
+
+    if (nextSort === "recent") nextSearch.delete("sort");
+    else nextSearch.set("sort", nextSort);
+
+    if (!nextTag) nextSearch.delete("tag");
+    else nextSearch.set("tag", nextTag);
+
+    setSearchParams(nextSearch, { replace: true });
+  };
 
   const handleToggleLike = async (modelId: string, isLiked: boolean) => {
     if (!user?.id) {
@@ -265,7 +297,7 @@ export default function CatalogCharacterArcade() {
             <div className="flex items-center gap-2 self-start">
               <button
                 type="button"
-                onClick={() => setSortMode("recent")}
+                onClick={() => updateFilterParams({ sort: "recent" })}
                 className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
                   sortMode === "recent"
                     ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
@@ -276,7 +308,7 @@ export default function CatalogCharacterArcade() {
               </button>
               <button
                 type="button"
-                onClick={() => setSortMode("az")}
+                onClick={() => updateFilterParams({ sort: "az" })}
                 className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
                   sortMode === "az"
                     ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
@@ -291,7 +323,7 @@ export default function CatalogCharacterArcade() {
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setActiveTag("")}
+                onClick={() => updateFilterParams({ tag: "" })}
                 className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
                   !activeTag
                     ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
@@ -304,7 +336,7 @@ export default function CatalogCharacterArcade() {
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => setActiveTag(tag)}
+                  onClick={() => updateFilterParams({ tag })}
                   className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
                     activeTag === tag
                       ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
@@ -361,7 +393,7 @@ export default function CatalogCharacterArcade() {
                     model={model}
                     isLiked={isLiked}
                     onToggleLike={() => handleToggleLike(model.id, isLiked)}
-                    onTagClick={setActiveTag}
+                    onTagClick={(tag) => updateFilterParams({ tag })}
                   />
                 );
               })}
