@@ -62,7 +62,6 @@ function TypewriterText({ text, delay = 0 }: { text: string; delay?: number }) {
     </span>
   );
 }
-
 // ─── PARALLAX GRID ───────────────────────────────────────────────────
 
 function ParallaxGrid({ scrollY }: { scrollY: number }) {
@@ -137,7 +136,7 @@ function FeaturedCollectionCard({
         className="relative overflow-hidden"
       >
         {/* Image */}
-        <div className="h-48 bg-[hsl(0,0%,8%)] overflow-hidden">
+        <div className="h-40 bg-[hsl(0,0%,8%)] overflow-hidden">
           {coverUrl ? (
             <img
               src={coverUrl}
@@ -155,10 +154,10 @@ function FeaturedCollectionCard({
         </div>
 
         {/* Info */}
-        <div className="p-5">
-          <div className="flex items-center justify-between mb-2">
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-3 mb-1.5">
             <h3
-              className="text-xl tracking-[0.1em] text-[hsl(0,0%,95%)] font-black"
+              className="text-lg tracking-[0.08em] text-[hsl(0,0%,95%)] font-black line-clamp-1"
               style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
             >
               {name}
@@ -168,7 +167,7 @@ function FeaturedCollectionCard({
             </span>
           </div>
           {description && (
-            <p className="text-[hsl(0,0%,40%)] font-mono text-[10px] line-clamp-2 tracking-wider">
+            <p className="text-[hsl(0,0%,40%)] font-mono text-[9px] line-clamp-2 tracking-wider">
               {description}
             </p>
           )}
@@ -181,9 +180,7 @@ function FeaturedCollectionCard({
       </div>
     </ArcadeCard>
   );
-// ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 }
-
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
@@ -324,11 +321,11 @@ export default function LandingPage() {
 
       {/* ═══ FEATURED COLLECTIONS ═══ */}
       {collections.length > 0 && (
-        <section className="relative py-20 px-6">
+        <section className="relative py-16 px-6">
           <FloatingParticles />
           <div className="max-w-6xl mx-auto">
             <ArcadeSectionTitle>Coleções em Destaque</ArcadeSectionTitle>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-5">
               {collections.map((c) => (
                 <FeaturedCollectionCard
                   key={c.id}
@@ -340,7 +337,7 @@ export default function LandingPage() {
                 />
               ))}
             </div>
-            <div className="text-center mt-8">
+            <div className="text-center mt-6">
               <button
                 onClick={() => navigate(PUBLIC_ROUTES.collections)}
                 className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
@@ -355,10 +352,10 @@ export default function LandingPage() {
 
       {/* ═══ RECENT CHARACTERS ═══ */}
       {models.length > 0 && (
-        <section className="relative py-16 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
+        <section className="relative py-14 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
           <div className="max-w-6xl mx-auto">
             <ArcadeSectionTitle>Personagens em Destaque</ArcadeSectionTitle>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
               {models.map((m) => {
                 const imgUrl = m.thumbnailUrl ?? m.imageUrl;
                 const characterName = m.character_name;
@@ -387,15 +384,15 @@ export default function LandingPage() {
                           </div>
                         )}
                       </div>
-                      <div className="p-3">
-                        <p className="font-mono text-[10px] text-[hsl(0,0%,70%)] line-clamp-1 tracking-wider uppercase">
+                      <div className="p-2.5">
+                        <p className="font-mono text-[9px] text-[hsl(0,0%,70%)] line-clamp-1 tracking-wider uppercase">
                           {characterName}
                         </p>
-                        <p className="mt-1 font-mono text-[8px] text-[hsl(var(--gold-accent)/0.75)] uppercase tracking-widest">
+                        <p className="mt-0.5 font-mono text-[8px] text-[hsl(var(--gold-accent)/0.75)] uppercase tracking-widest">
                           {m.model_count} {m.model_count === 1 ? "modelo" : "modelos"}
                         </p>
                         {sourceName && (
-                          <p className="font-mono text-[8px] text-[hsl(0,0%,30%)] mt-0.5">
+                          <p className="font-mono text-[7px] text-[hsl(0,0%,30%)] mt-0.5 line-clamp-1">
                             {sourceName}
                           </p>
                         )}
@@ -405,7 +402,7 @@ export default function LandingPage() {
                 );
               })}
             </div>
-            <div className="text-center mt-8">
+            <div className="text-center mt-6">
               <button
                 onClick={() => navigate(PUBLIC_ROUTES.catalog)}
                 className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.05)] font-mono uppercase tracking-[0.15em] text-[10px] h-10 px-8 transition-all"
