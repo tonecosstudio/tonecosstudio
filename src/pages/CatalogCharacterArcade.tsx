@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Package, Shapes } from "lucide-react";
@@ -25,6 +25,7 @@ export default function CatalogCharacterArcade() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
+  const [sortMode, setSortMode] = useState<"recent" | "az">("recent");
   const { toast } = useToast();
   const { user } = useAuth();
   const legacyCharacterName = searchParams.get("character")?.trim() ?? "";
@@ -71,6 +72,19 @@ export default function CatalogCharacterArcade() {
     enabled: Boolean(characterName),
   });
   const rows = modelsQuery.data ?? [];
+  const displayRows = useMemo(() => {
+    const next = [...rows];
+    if (sortMode === "az") {
+      next.sort((left, right) =>
+        (left.variant_name || left.name || left.character_name || "").localeCompare(
+          right.variant_name || right.name || right.character_name || "",
+          "pt-BR",
+        ),
+      );
+      return next;
+    }
+    return next;
+  }, [rows, sortMode]);
   const likesQuery = useLikedModelIdsQuery(user?.id);
   const likedIds = likesQuery.data ?? new Set<string>();
 
@@ -192,7 +206,7 @@ export default function CatalogCharacterArcade() {
             </div>
 
             <div className="flex flex-col justify-center gap-4 p-4 md:p-5">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
                     Personagem
@@ -239,7 +253,33 @@ export default function CatalogCharacterArcade() {
         </ArcadeCard>
 
         <div>
-          <ArcadeSectionTitle>Modelos</ArcadeSectionTitle>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <ArcadeSectionTitle>Modelos</ArcadeSectionTitle>
+            <div className="flex items-center gap-2 self-start">
+              <button
+                type="button"
+                onClick={() => setSortMode("recent")}
+                className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
+                  sortMode === "recent"
+                    ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
+                    : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,52%)] hover:border-[hsl(var(--gold-accent)/0.35)]"
+                }`}
+              >
+                Recentes
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortMode("az")}
+                className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
+                  sortMode === "az"
+                    ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
+                    : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,52%)] hover:border-[hsl(var(--gold-accent)/0.35)]"
+                }`}
+              >
+                A-Z
+              </button>
+            </div>
+          </div>
           {modelsQuery.isLoading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, index) => (
@@ -264,7 +304,7 @@ export default function CatalogCharacterArcade() {
             </ArcadeCard>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-              {rows.map((model) => {
+              {displayRows.map((model) => {
                 const isLiked = Boolean(user?.id) && likedIds.has(model.id);
                 return (
                   <UniverseModelCard

@@ -9,7 +9,6 @@ import {
   Tags,
 } from "lucide-react";
 import type { CatalogModelRow } from "@/types/catalog";
-import { ReportModelNameDialog } from "@/components/catalog/ReportModelNameDialog";
 import { ArcadeCard } from "@/components/arcade/ArcadeLayout";
 import { catalogModelDetailsPath } from "@/config/routes";
 import { formatCurrency } from "@/lib/utils";
@@ -17,7 +16,6 @@ import {
   getCatalogCharacterName,
   getCatalogPublicTags,
   getCatalogSensitivity,
-  getCatalogSourceName,
   getCatalogVersionName,
 } from "@/lib/catalog-utils";
 
@@ -62,8 +60,9 @@ export function UniverseModelCard({
   const isStaging =
     !model.is_active || (model.tags ?? []).includes("catalog-staging");
   const characterName = getCatalogCharacterName(model);
-  const sourceName = getCatalogSourceName(model);
   const versionName = getCatalogVersionName(model);
+  const cardTitle = versionName || characterName;
+  const showCharacterLine = cardTitle !== characterName;
   const mediaLabel = model.source_type
     ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type
     : null;
@@ -162,35 +161,14 @@ export function UniverseModelCard({
             to={detailsPath}
             className="block w-full text-left text-sm font-black leading-none tracking-wider transition-colors group-hover:text-[hsl(var(--gold-accent))]"
             style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-            title={characterName}
+            title={cardTitle}
             aria-label={`Abrir postagem de ${characterName}`}
           >
-            <span className="line-clamp-1">{characterName}</span>
+            <span className="line-clamp-2">{cardTitle}</span>
           </Link>
-          {(versionName || sourceName) && (
-            <div className="mb-1.5 mt-1 flex items-center gap-x-1 gap-y-0.5 font-mono text-[8px] tracking-wider">
-              {versionName && (
-                <span className="max-w-[50%] truncate text-[hsl(0,0%,40%)]">
-                  {versionName}
-                </span>
-              )}
-              {versionName && sourceName && (
-                <span className="text-[hsl(0,0%,28%)]">|</span>
-              )}
-              {sourceName && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onTagClick?.(sourceName);
-                  }}
-                  className="max-w-[45%] truncate uppercase text-[hsl(var(--gold-accent)/0.7)] underline-offset-2 transition-colors hover:text-[hsl(var(--gold-accent))] hover:underline"
-                  aria-label={`Filtrar por ${sourceName}`}
-                >
-                  {sourceName}
-                </button>
-              )}
+          {showCharacterLine && (
+            <div className="mb-1 mt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(0,0%,42%)]">
+              {characterName}
             </div>
           )}
 
@@ -237,17 +215,8 @@ export function UniverseModelCard({
             to={detailsPath}
             className="mt-auto flex w-full items-center justify-center gap-1.5 border border-[hsl(var(--gold-accent)/0.3)] py-1.5 font-mono text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] transition-all hover:bg-[hsl(var(--gold-accent)/0.1)]"
           >
-            VER DETALHES <ArrowRight className="h-3 w-3" />
+            ABRIR POST <ArrowRight className="h-3 w-3" />
           </Link>
-          <ReportModelNameDialog
-            modelId={model.id}
-            displayedName={characterName}
-            sourceTitle={sourceName}
-            detailPath={detailsPath}
-            triggerLabel="Reportar nome incorreto"
-            triggerVariant="ghost"
-            triggerClassName="mt-1.5 h-auto justify-center px-0 py-0.5 font-mono text-[8px] uppercase tracking-[0.15em] text-[hsl(0,0%,55%)] hover:bg-transparent hover:text-[hsl(var(--gold-accent))]"
-          />
         </div>
 
         <div className="relative h-[2px] overflow-hidden">
