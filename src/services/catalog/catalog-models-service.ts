@@ -197,6 +197,20 @@ function toCatalogSlug(value: string | null | undefined) {
   return normalizeGroupKey(value).replace(/\s+/g, "-");
 }
 
+const PRODUCT_FAMILY_SUFFIXES = [
+  "candy",
+  "frontal",
+  "lateral",
+  "traseira",
+  "costas",
+  "detalhe",
+  "close",
+  "front",
+  "side",
+  "rear",
+  "back",
+];
+
 function getCharacterIdentityGroupKey(row: {
   source_title?: string | null;
   character_name?: string | null;
@@ -220,8 +234,26 @@ function getDerivedImageGroupKey(path: string | null | undefined) {
 
   const withoutId = stem.replace(/-\d+$/, "");
   const withoutAngle = withoutId.replace(/-\d+$/, "");
-  const key = withoutAngle || withoutId || stem;
+  const key = normalizeProductFamilyStem(withoutAngle || withoutId || stem);
   return `${directory}/${key}`;
+}
+
+function normalizeProductFamilyStem(stem: string) {
+  let next = stem;
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+    for (const suffix of PRODUCT_FAMILY_SUFFIXES) {
+      const marker = `-${suffix}`;
+      if (next.endsWith(marker)) {
+        next = next.slice(0, -marker.length);
+        changed = true;
+      }
+    }
+  }
+
+  return next;
 }
 
 function getSpecificCanonicalIdentityKey(row: {
@@ -234,9 +266,10 @@ function getSpecificCanonicalIdentityKey(row: {
   const lastSegment = canonicalKey.split("|").pop() || "";
   const characterSlug = toCatalogSlug(row.character_name);
   if (!lastSegment) return "";
-  if (characterSlug && lastSegment === characterSlug) return "";
+  const normalizedSegment = normalizeProductFamilyStem(lastSegment);
+  if (characterSlug && normalizedSegment === characterSlug) return "";
 
-  return canonicalKey;
+  return canonicalKey.slice(0, -lastSegment.length) + normalizedSegment;
 }
 
 function getCatalogModelGroupKey(row: {

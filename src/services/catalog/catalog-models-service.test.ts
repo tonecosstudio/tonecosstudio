@@ -465,4 +465,52 @@ describe("catalog models service", () => {
     expect(result?.id).toBe("piccolo-base");
     expect(result?.galleryImages).toEqual([]);
   });
+
+  it("merges same product families when one variant is only an accessory suffix", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "android-21-base",
+          source_title: "Dragon Ball",
+          character_name: "Androide 21",
+          variant_name: "Android 21 Majin",
+          image_path:
+            "catalog-webp-final/display/anime/android/androide-21/android-21-majin-1-179072.webp",
+          canonical_identity_key: "display|anime|android|android-21-majin",
+        },
+        {
+          ...modelRow,
+          id: "android-21-candy",
+          source_title: "Dragon Ball",
+          character_name: "Androide 21",
+          variant_name: "Android 21 Majin Candy",
+          image_path:
+            "catalog-webp-final/display/anime/android/androide-21/android-21-majin-candy-1-179791.webp",
+          canonical_identity_key: "display|anime|android|android-21-majin-candy",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogModels({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "recent",
+      },
+    });
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]?.id).toBe("android-21-base");
+  });
 });
