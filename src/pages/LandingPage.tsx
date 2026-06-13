@@ -113,51 +113,6 @@ function StatCounter({
   );
 }
 
-// ─── MISSION CARD ────────────────────────────────────────────────────
-
-function MissionCard({
-  title,
-  description,
-  number,
-  icon: Icon,
-}: {
-  title: string;
-  description: string;
-  number: string;
-  icon: React.ElementType;
-}) {
-  return (
-    <ArcadeCard>
-      <div className="p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)]">
-            <span
-              className="text-[10px] text-[hsl(var(--gold-accent))] font-bold"
-              style={{ fontFamily: "'Press Start 2P', monospace" }}
-            >
-              {number}
-            </span>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <Icon className="h-5 w-5 text-[hsl(var(--gold-accent))]" />
-              <h3
-                className="text-2xl tracking-[0.1em] text-[hsl(0,0%,95%)]"
-                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-              >
-                {title}
-              </h3>
-            </div>
-            <p className="text-sm text-[hsl(0,0%,50%)] leading-relaxed font-mono tracking-wide">
-              {description}
-            </p>
-          </div>
-        </div>
-      </div>
-    </ArcadeCard>
-  );
-}
-
 // ─── FEATURED COLLECTION CARD ────────────────────────────────────────
 
 function FeaturedCollectionCard({
@@ -226,6 +181,7 @@ function FeaturedCollectionCard({
       </div>
     </ArcadeCard>
   );
+// ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 }
 
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
@@ -345,10 +301,10 @@ export default function LandingPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-3xl mx-auto">
-            <StatCounter value="150+" label="Modelos" icon={Trophy} />
-            <StatCounter value="100%" label="Artesanal" icon={Shield} />
-            <StatCounter value="12" label="Estágios" icon={Zap} />
-            <StatCounter value="∞" label="Detalhes" icon={Eye} />
+            <StatCounter value={String(characterCount)} label="Personagens" icon={Trophy} />
+            <StatCounter value={String(modelCount)} label="Modelos" icon={Shield} />
+            <StatCounter value="100%" label="Artesanal" icon={Zap} />
+            <StatCounter value="Sob Encomenda" label="Atendimento" icon={Eye} />
           </div>
         </div>
 
@@ -462,39 +418,6 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══ MISSION BRIEFING ═══ */}
-      <section className="relative py-20 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
-        <div className="max-w-5xl mx-auto">
-          <ArcadeSectionTitle>Mission Briefing</ArcadeSectionTitle>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <MissionCard
-              number="01"
-              title="ESCOLHA SUA PEÇA"
-              description="Navegue pelo arsenal de personagens e coleções. Cada modelo é único, produzido com resina de alta qualidade e pintura artística profissional."
-              icon={Crosshair}
-            />
-            <MissionCard
-              number="02"
-              title="ASSINE OU COMPRE"
-              description="Monte sua squad! Assine uma coleção para receber peças mensais ou compre avulso o personagem que quiser. Você no controle."
-              icon={Shield}
-            />
-            <MissionCard
-              number="03"
-              title="ACOMPANHE EM TEMPO REAL"
-              description="12 estágios de produção com fotos de cada etapa. Da impressão 3D até a pintura final — total transparência no processo."
-              icon={Eye}
-            />
-            <MissionCard
-              number="04"
-              title="RECEBA EM CASA"
-              description="Embalagem premium com proteção reforçada. Sua peça chega em segurança, pronta para entrar na coleção. Mission Complete!"
-              icon={Trophy}
-            />
-          </div>
-        </div>
-      </section>
 
       {/* ═══ CTA ═══ */}
       <ArcadeCTA
