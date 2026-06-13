@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CATALOG_CHARACTER_PRESENTATION_OVERRIDES } from "@/config/catalog-character-presentation";
 
 import {
   getCatalogModelDetails,
@@ -106,6 +107,9 @@ describe("catalog models service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
+    Object.keys(CATALOG_CHARACTER_PRESENTATION_OVERRIDES).forEach((key) => {
+      delete CATALOG_CHARACTER_PRESENTATION_OVERRIDES[key];
+    });
     mocks.from.mockReturnValue({ select: mocks.select });
     mocks.storageFrom.mockReturnValue({ getPublicUrl: mocks.getPublicUrl });
     mocks.getPublicUrl.mockImplementation((filePath: string) => ({
@@ -369,6 +373,67 @@ describe("catalog models service", () => {
     expect(result.rows[0]).toMatchObject({
       character_name: "Freeza",
       latest_model_id: "model-figure",
+    });
+  });
+
+  it("allows a manual character cover override", async () => {
+    CATALOG_CHARACTER_PRESENTATION_OVERRIDES["dragon ball::freeza"] = {
+      coverModelId: "model-close",
+    };
+
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-close",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          name: "Freeza Close",
+          variant_name: "Close",
+          variant_type: "variant",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-close-1.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-close",
+          created_at: "2026-06-10T10:00:00.000000+00:00",
+        },
+        {
+          ...modelRow,
+          id: "model-figure",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          name: "Freeza",
+          variant_name: null,
+          variant_type: "default",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+          created_at: "2026-06-09T10:00:00.000000+00:00",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "recent",
+      },
+    });
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({
+      character_name: "Freeza",
+      latest_model_id: "model-close",
     });
   });
 

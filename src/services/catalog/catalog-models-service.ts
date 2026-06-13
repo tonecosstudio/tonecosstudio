@@ -2,6 +2,7 @@ import {
   CATALOG_PAGE_SIZE,
   PUBLIC_CATALOG_VISIBILITIES,
 } from "@/config/catalog";
+import { getCatalogCharacterPresentationOverride } from "@/config/catalog-character-presentation";
 import { supabase } from "@/integrations/supabase/client";
 import { getCatalogStoragePublicUrl } from "@/lib/catalog-assets";
 import {
@@ -440,6 +441,16 @@ function scoreCharacterCoverCandidate(row: CatalogModelRow) {
 }
 
 function pickCharacterGroupCover(rows: CatalogModelRow[]) {
+  const first = rows[0];
+  const override = getCatalogCharacterPresentationOverride({
+    sourceTitle: first?.source_title,
+    characterName: first?.character_name,
+  });
+  if (override?.coverModelId) {
+    const forced = rows.find((row) => row.id === override.coverModelId);
+    if (forced) return forced;
+  }
+
   return [...rows].sort((left, right) => {
     const byScore =
       scoreCharacterCoverCandidate(right) - scoreCharacterCoverCandidate(left);
