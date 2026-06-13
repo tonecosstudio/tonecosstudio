@@ -4,7 +4,7 @@
  */
 
 import { Fragment, useMemo, useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/lib/roles";
 import { useToast } from "@/hooks/use-toast";
@@ -717,9 +717,8 @@ function ModelArcadeCard({
       >
         {/* Image */}
         <div className="relative aspect-[3/4] bg-[hsl(0,0%,9%)] overflow-hidden">
-          <button
-            type="button"
-            onClick={() => navigate(detailsPath)}
+          <Link
+            to={detailsPath}
             className="block h-full w-full text-left"
             aria-label={`Abrir postagem de ${characterName}`}
           >
@@ -742,7 +741,7 @@ function ModelArcadeCard({
                 <Crosshair className="w-10 h-10 text-[hsl(0,0%,15%)]" />
               </div>
             )}
-          </button>
+          </Link>
 
           {/* Like button */}
           <button
@@ -787,16 +786,15 @@ function ModelArcadeCard({
 
         {/* Info */}
         <div className="p-3 flex-1 flex flex-col">
-          <button
-            type="button"
-            onClick={() => navigate(detailsPath)}
+          <Link
+            to={detailsPath}
             className="mb-0.5 block w-full text-left text-sm font-black tracking-wider transition-colors group-hover:text-[hsl(var(--gold-accent))]"
             style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
             title={characterName}
             aria-label={`Abrir postagem de ${characterName}`}
           >
             <span className="line-clamp-1">{characterName}</span>
-          </button>
+          </Link>
           {(versionName || sourceName) && (
             <div className="mb-2 flex min-h-4 flex-wrap items-center gap-x-1.5 gap-y-1 font-mono text-[9px] tracking-wider">
               {versionName && (
@@ -866,12 +864,12 @@ function ModelArcadeCard({
           )}
 
           {/* CTA */}
-          <button
-            onClick={() => navigate(detailsPath)}
-            className="mt-auto flex items-center justify-center gap-1.5 w-full py-2 border border-[hsl(var(--gold-accent)/0.3)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono text-[9px] tracking-[0.15em] uppercase transition-all"
+          <Link
+            to={detailsPath}
+            className="mt-auto flex w-full items-center justify-center gap-1.5 border border-[hsl(var(--gold-accent)/0.3)] py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] transition-all hover:bg-[hsl(var(--gold-accent)/0.1)]"
           >
             VER DETALHES <ArrowRight className="w-3 h-3" />
-          </button>
+          </Link>
           <ReportModelNameDialog
             modelId={model.id}
             displayedName={characterName}
