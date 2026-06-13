@@ -1063,3 +1063,31 @@ export async function listRecentLandingCharacters(
   const models = await listRecentLandingModels(Math.max(limit * 6, 24));
   return groupCatalogCharacters(models, "recent").slice(0, limit);
 }
+
+export async function getPublicCatalogSummary() {
+  const { data, error } = await catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .eq("is_active", true)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
+    .not(
+      "tags",
+      "ov",
+      "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+    )
+    .order("created_at", { ascending: false })
+    .range(0, 999);
+
+  if (error) throw error;
+
+  const eligible = ((data ?? []) as CatalogModelDbRow[])
+    .map(mapCatalogModel)
+    .filter((row) => isPublicCatalogEligibleRow(row, "public"));
+  const groupedModels = groupCatalogModels(eligible, "public");
+  const groupedCharacters = groupCatalogCharacters(eligible, "recent");
+
+  return {
+    characterCount: groupedCharacters.length,
+    modelCount: groupedModels.length,
+  };
+}

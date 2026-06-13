@@ -23,6 +23,7 @@ import {
 } from "@/components/arcade/ArcadeEffects";
 import { useAuth } from "@/lib/auth";
 import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels";
+import { useLandingCatalogSummary } from "@/hooks/catalog/useLandingCatalogSummary";
 import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
 import {
   PUBLIC_ROUTES,
@@ -242,9 +243,12 @@ export default function LandingPage() {
 
   const collectionsQuery = useActiveCollectionPreviews(3);
   const modelsQuery = useLandingCatalogModels(6);
+  const summaryQuery = useLandingCatalogSummary();
 
   const collections = collectionsQuery.data || [];
   const models = modelsQuery.data || [];
+  const characterCount = summaryQuery.data?.characterCount ?? 0;
+  const modelCount = summaryQuery.data?.modelCount ?? 0;
 
   return (
     <Page

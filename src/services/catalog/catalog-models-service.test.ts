@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CATALOG_CHARACTER_PRESENTATION_OVERRIDES } from "@/config/catalog-character-presentation";
 
 import {
+  getPublicCatalogSummary,
   getCatalogModelDetails,
   getCatalogCharacterContextBySlug,
   listCatalogCharacters,
@@ -514,6 +515,49 @@ describe("catalog models service", () => {
       slug: "freeza-dragon-ball",
       characterName: "Freeza",
       sourceTitle: "Dragon Ball",
+    });
+  });
+
+  it("returns public catalog summary using the same grouped public rules", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-2",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-3",
+          source_title: "Dragon Ball",
+          character_name: "Goku",
+          image_path:
+            "catalog-webp-final/display/anime/sayajins/goku/goku-1-173490.webp",
+          canonical_identity_key: "dragon-ball:goku:goku-1",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const summary = await getPublicCatalogSummary();
+
+    expect(summary).toEqual({
+      characterCount: 2,
+      modelCount: 2,
     });
   });
 
