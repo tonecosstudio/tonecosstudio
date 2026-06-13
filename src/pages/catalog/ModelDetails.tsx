@@ -35,6 +35,7 @@ import {
 import { useModelDetails } from "@/hooks/catalog/useModelDetails";
 import {
   PUBLIC_ROUTES,
+  catalogCharacterPath,
   catalogModelDetailsPath,
   resolveCatalogModelIdFromParam,
 } from "@/config/routes";
@@ -99,6 +100,39 @@ function uniqueStrings(values: Array<string | null | undefined>) {
     seen.add(key);
     return true;
   });
+}
+
+function normalizeDescriptionText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getUsefulDescription(
+  description: string | null | undefined,
+  context: Array<string | null | undefined>,
+) {
+  if (!description) return null;
+
+  const trimmed = description.trim();
+  if (trimmed.length < 24) return null;
+
+  const normalizedDescription = normalizeDescriptionText(trimmed);
+  if (!normalizedDescription) return null;
+
+  const normalizedContext = uniqueStrings(context)
+    .map((value) => normalizeDescriptionText(value))
+    .filter(Boolean);
+
+  if (normalizedContext.some((value) => normalizedDescription === value)) {
+    return null;
+  }
+
+  return trimmed;
 }
 
 function ModelGalleryStrip({
@@ -302,8 +336,30 @@ export default function ModelDetails() {
     () =>
       uniqueStrings(getCatalogPublicTags(model, 12))
         .filter((tag) => !hiddenTagKeys.has(normalizeCatalogTag(tag)))
-        .slice(0, 5),
+        .slice(0, 4),
     [hiddenTagKeys, model],
+  );
+  const usefulDescription = useMemo(
+    () =>
+      getUsefulDescription(model?.description, [
+        displayName,
+        sourceTitle,
+        variantName,
+        mediaLabel,
+        model?.category,
+        model?.subcategory,
+        title,
+      ]),
+    [
+      displayName,
+      mediaLabel,
+      model?.category,
+      model?.description,
+      model?.subcategory,
+      sourceTitle,
+      title,
+      variantName,
+    ],
   );
   const sensitivity =
     activeGalleryItem?.sensitivity ?? getCatalogSensitivity(model);
@@ -315,6 +371,10 @@ export default function ModelDetails() {
           .join(" "),
       )
     : PUBLIC_ROUTES.catalog;
+  const characterPath =
+    model?.character_name
+      ? catalogCharacterPath(model.character_name, sourceTitle)
+      : PUBLIC_ROUTES.catalog;
   const taxonomyRows = [
     model?.character_name
       ? {
@@ -330,10 +390,6 @@ export default function ModelDetails() {
           href: catalogFilterPath("tag", sourceTitle),
         }
       : null,
-    {
-      label: "Tipo",
-      value: variantLabel && variantLabel !== "Padrao" ? variantLabel : null,
-    },
   ].filter((row): row is { label: string; value: string; href?: string } =>
     Boolean(row?.value),
   );
@@ -423,14 +479,36 @@ export default function ModelDetails() {
 
       <div className="min-h-screen bg-[#080808] bg-[radial-gradient(circle_at_top,rgba(245,179,1,0.08),transparent_32%),linear-gradient(180deg,#090909_0%,#050505_100%)] py-8 text-[hsl(var(--foreground))] md:py-12">
         <div className="container max-w-6xl mx-auto px-4">
-          {/* Back Button */}
-          <Button
-            onClick={() => navigate(PUBLIC_ROUTES.catalog)}
-            className="mb-6 inline-flex border border-[hsl(var(--gold-accent)/0.45)] bg-[#111111] font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_16px_hsl(var(--gold-accent)/0.12)] hover:bg-[hsl(var(--gold-accent)/0.12)] hover:text-[hsl(var(--gold-accent))]"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Universo
-          </Button>
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <Button
+              onClick={() => navigate(characterPath)}
+              className="inline-flex border border-[hsl(var(--gold-accent)/0.45)] bg-[#111111] font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))] shadow-[0_0_16px_hsl(var(--gold-accent)/0.12)] hover:bg-[hsl(var(--gold-accent)/0.12)] hover:text-[hsl(var(--gold-accent))]"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {model?.character_name ? "Voltar ao Personagem" : "Voltar ao Universo"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => navigate(PUBLIC_ROUTES.catalog)}
+              className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(0,0%,58%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
+            >
+              Universo
+            </button>
+            {model?.character_name && (
+              <>
+                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(0,0%,28%)]">
+                  /
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate(characterPath)}
+                  className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(0,0%,58%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
+                >
+                  {model.character_name}
+                </button>
+              </>
+            )}
+          </div>
 
           {/* Main Content Grid */}
           <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr]">
@@ -576,10 +654,10 @@ export default function ModelDetails() {
               </div>
 
               {/* Description */}
-              {model.description && (
+              {usefulDescription && (
                 <div className="rounded-sm border border-[hsl(var(--gold-accent)/0.18)] bg-[#101010] p-4">
                   <p className="text-[hsl(var(--muted-foreground))] text-sm leading-relaxed">
-                    {model.description}
+                    {usefulDescription}
                   </p>
                 </div>
               )}
@@ -597,30 +675,30 @@ export default function ModelDetails() {
               </div>
 
               {taxonomyRows.length > 0 && (
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 border border-[hsl(var(--gold-accent)/0.16)] bg-[#101010] px-4 py-3">
                   {taxonomyRows.map((row) => (
                     <div
                       key={row.label}
-                      className="border border-[hsl(var(--gold-accent)/0.16)] bg-[#101010] p-3"
+                      className="flex min-w-0 items-baseline gap-2 text-sm"
                     >
-                      <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         {row.label}
-                      </p>
+                      </span>
                       {row.href ? (
                         <Link
                           to={row.href}
-                          className="block truncate text-sm font-semibold text-[hsl(var(--gold-accent))] underline-offset-2 hover:underline"
+                          className="truncate font-semibold text-[hsl(var(--gold-accent))] underline-offset-2 hover:underline"
                           title={String(row.value)}
                         >
                           {row.value}
                         </Link>
                       ) : (
-                        <p
-                          className="truncate text-sm font-semibold text-[hsl(var(--foreground))]"
+                        <span
+                          className="truncate font-semibold text-[hsl(var(--foreground))]"
                           title={String(row.value)}
                         >
                           {row.value}
-                        </p>
+                        </span>
                       )}
                     </div>
                   ))}
@@ -657,8 +735,8 @@ export default function ModelDetails() {
 
               {/* Info Card */}
               <div className="rounded-sm border-2 border-[hsl(var(--gold-accent)/0.3)] bg-[#101010] p-5">
-                <h3 className="text-sm font-bold uppercase tracking-wider font-mono text-[hsl(var(--gold-accent))] mb-3">
-                  Modelo sob encomenda
+                <h3 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-[hsl(var(--gold-accent))]">
+                  Sob encomenda
                 </h3>
                 <div className="mb-4 grid gap-3 sm:grid-cols-2">
                   {hasFixedCoinPrice && (
@@ -685,52 +763,18 @@ export default function ModelDetails() {
                     <div className="border border-[hsl(var(--gold-accent)/0.16)] bg-[#0d0d0d] p-3 sm:col-span-2">
                       <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                         <MessageCircle className="h-3 w-3" />
-                        Preco do modelo
+                        Preco
                       </p>
                       <p className="text-xl font-bold">Sob consulta</p>
-                      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                        Valor definido por escala e acabamento.
-                      </p>
                     </div>
                   )}
                 </div>
-                <p className="mb-4 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">
-                  Consulte disponibilidade e variacoes no atendimento.
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Disponibilidade e variacoes no atendimento.
                 </p>
 
-                <div className="flex flex-col gap-3">
-                  <Button
-                    size="lg"
-                    className="w-full bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--gold-accent)/0.9)] font-mono uppercase tracking-wider text-sm"
-                    asChild
-                  >
-                    <Link to={PUBLIC_ROUTES.collectionsArcade}>
-                      <Crown className="w-5 h-5 mr-2" />
-                      Ver Colecoes
-                    </Link>
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full border-[hsl(var(--gold-accent)/0.5)] bg-transparent text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)] font-mono uppercase tracking-wider text-sm"
-                    asChild
-                  >
-                    <Link to={PUBLIC_ROUTES.plans}>Ver Planos</Link>
-                  </Button>
-                </div>
               </div>
 
-              {/* Date Info */}
-              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                <span>Adicionado em</span>
-                <span className="text-[hsl(var(--gold-accent))]">
-                  {new Date(model.created_at).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
             </div>
           </div>
 
