@@ -26,13 +26,9 @@ import { useLandingCatalogModels } from "@/hooks/catalog/useLandingCatalogModels
 import { useActiveCollectionPreviews } from "@/hooks/collections/usePublicCollections";
 import {
   PUBLIC_ROUTES,
-  catalogModelDetailsPath,
+  catalogCharacterPath,
   collectionDetailsPath,
 } from "@/config/routes";
-import {
-  getCatalogCharacterName,
-  getCatalogSourceName,
-} from "@/lib/catalog-utils";
 
 // ─── TYPEWRITER ──────────────────────────────────────────────────────
 
@@ -405,19 +401,14 @@ export default function LandingPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               {models.map((m) => {
                 const imgUrl = m.thumbnailUrl ?? m.imageUrl;
-                const characterName = getCatalogCharacterName(m);
-                const sourceName = getCatalogSourceName(m);
+                const characterName = m.character_name;
+                const sourceName = m.source_title;
                 return (
                   <div
                     key={m.id}
                     onClick={() =>
                       navigate(
-                        catalogModelDetailsPath(
-                          m.id,
-                          [m.character_name || m.name, m.variant_name]
-                            .filter(Boolean)
-                            .join(" "),
-                        ),
+                        catalogCharacterPath(characterName, sourceName),
                       )
                     }
                     className="group cursor-pointer"
@@ -441,6 +432,9 @@ export default function LandingPage() {
                       <div className="p-3">
                         <p className="font-mono text-[10px] text-[hsl(0,0%,70%)] line-clamp-1 tracking-wider uppercase">
                           {characterName}
+                        </p>
+                        <p className="mt-1 font-mono text-[8px] text-[hsl(var(--gold-accent)/0.75)] uppercase tracking-widest">
+                          {m.model_count} {m.model_count === 1 ? "modelo" : "modelos"}
                         </p>
                         {sourceName && (
                           <p className="font-mono text-[8px] text-[hsl(0,0%,30%)] mt-0.5">

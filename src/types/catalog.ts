@@ -52,3 +52,19 @@ export type CatalogModelGalleryImage = {
   imageUrl: string | null;
   thumbnailUrl: string | null;
 };
+
+export type CatalogCharacterRow = {
+  id: string;
+  slug: string;
+  character_name: string;
+  source_title: string | null;
+  source_type: string | null;
+  category: string | null;
+  imageUrl: string | null;
+  thumbnailUrl: string | null;
+  latest_model_id: string;
+  latest_model_name: string;
+  model_count: number;
+  created_at: string;
+  tags: string[];
+};

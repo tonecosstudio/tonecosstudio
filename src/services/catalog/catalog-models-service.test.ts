@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getCatalogModelDetails,
+  listCatalogCharacters,
+  listCatalogCharacterModels,
   listCatalogModels,
   listRecentLandingModels,
   type CatalogModelFilters,
@@ -234,6 +236,113 @@ describe("catalog models service", () => {
     expect(result.rows).toHaveLength(2);
     expect(result.rows[0]?.id).toBe("model-1");
     expect(result.rows[1]?.id).toBe("model-3");
+  });
+
+  it("groups universo root cards by character identity", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-2",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-3",
+        },
+        {
+          ...modelRow,
+          id: "model-3",
+          source_title: "Dragon Ball",
+          character_name: "Goku",
+          image_path:
+            "catalog-webp-final/display/anime/sayajins/goku/goku-1-173490.webp",
+          canonical_identity_key: "dragon-ball:goku:goku-1",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "recent",
+      },
+    });
+
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toMatchObject({
+      character_name: "Freeza",
+      model_count: 2,
+    });
+    expect(result.rows[1]).toMatchObject({
+      character_name: "Goku",
+      model_count: 1,
+    });
+  });
+
+  it("lists character page models grouped by product", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-2",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-3",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-3",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const models = await listCatalogCharacterModels({
+      characterName: "Freeza",
+      sourceTitle: "Dragon Ball",
+    });
+
+    expect(models).toHaveLength(2);
+    expect(models[0]?.id).toBe("model-1");
+    expect(models[1]?.id).toBe("model-3");
   });
 
   it("expands public tag aliases and drops internal tags before filtering", async () => {

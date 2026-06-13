@@ -9,6 +9,7 @@ import {
   getCatalogTagFilterValues,
 } from "@/lib/catalog-utils";
 import type {
+  CatalogCharacterRow,
   CatalogModelDetailsRow,
   CatalogModelGalleryImage,
   CatalogModelRow,
@@ -189,6 +190,26 @@ function mapCatalogModelDetails(
     thumbnailUrl: row.thumbnail_url ?? imageUrl,
     galleryImages: [],
   };
+}
+
+function slugifyCatalogSegment(value: string | null | undefined) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function getCatalogCharacterIdentityKey(row: {
+  source_title?: string | null;
+  character_name?: string | null;
+}) {
+  const characterName = normalizeGroupKey(row.character_name);
+  if (!characterName) return "";
+  const sourceTitle = normalizeGroupKey(row.source_title);
+  return sourceTitle ? `${sourceTitle}::${characterName}` : characterName;
 }
 
 function isPublicFinalizedModelPath(path: string | null | undefined) {
@@ -380,6 +401,77 @@ function groupCatalogModels<T extends CatalogModelRow>(
   );
 }
 
+function pickCharacterGroupCover(rows: CatalogModelRow[]) {
+  return [...rows].sort((left, right) => {
+    const byCreatedAt = String(right.created_at || "").localeCompare(
+      String(left.created_at || ""),
+    );
+    if (byCreatedAt !== 0) return byCreatedAt;
+    return left.id.localeCompare(right.id);
+  })[0];
+}
+
+function mapCatalogCharacterGroup(rows: CatalogModelRow[]): CatalogCharacterRow | null {
+  if (rows.length === 0) return null;
+  const cover = pickCharacterGroupCover(rows);
+  const characterName = String(cover.character_name || cover.name || "").trim();
+  if (!characterName) return null;
+
+  return {
+    id: getCatalogCharacterIdentityKey(cover) || cover.id,
+    slug: slugifyCatalogSegment([characterName, cover.source_title].filter(Boolean).join(" ")) || slugifyCatalogSegment(characterName) || cover.id,
+    character_name: characterName,
+    source_title: cover.source_title ?? cover.franchise ?? null,
+    source_type: cover.source_type ?? null,
+    category: cover.category ?? null,
+    imageUrl: cover.imageUrl,
+    thumbnailUrl: cover.thumbnailUrl,
+    latest_model_id: cover.id,
+    latest_model_name: cover.name,
+    model_count: rows.length,
+    created_at: cover.created_at,
+    tags: Array.from(
+      new Set(
+        rows.flatMap((row) => row.tags ?? []).map((tag) => String(tag).trim()).filter(Boolean),
+      ),
+    ),
+  };
+}
+
+function groupCatalogCharacters(
+  rows: CatalogModelRow[],
+  sort: CatalogSort,
+) {
+  const groups = new Map<string, CatalogModelRow[]>();
+
+  for (const row of rows) {
+    const key = getCatalogCharacterIdentityKey(row) || row.id;
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(row);
+    else groups.set(key, [row]);
+  }
+
+  const characters = Array.from(groups.values())
+    .map(mapCatalogCharacterGroup)
+    .filter((row): row is CatalogCharacterRow => Boolean(row));
+
+  if (sort === "az") {
+    characters.sort((left, right) => {
+      const byCharacter = left.character_name.localeCompare(right.character_name, "pt-BR");
+      if (byCharacter !== 0) return byCharacter;
+      return String(left.source_title || "").localeCompare(String(right.source_title || ""), "pt-BR");
+    });
+  } else {
+    characters.sort((left, right) => {
+      const byCreatedAt = String(right.created_at || "").localeCompare(String(left.created_at || ""));
+      if (byCreatedAt !== 0) return byCreatedAt;
+      return left.character_name.localeCompare(right.character_name, "pt-BR");
+    });
+  }
+
+  return characters;
+}
+
 function buildSiblingGalleryImages(
   primary: CatalogModelDetailsRow,
   siblings: CatalogModelDetailsRow[],
@@ -559,6 +651,93 @@ function formatPostgrestIdList(ids: string[]) {
   return `(${ids.map((id) => `"${String(id).replace(/"/g, '""')}"`).join(",")})`;
 }
 
+function applyCatalogListingFilters(
+  query: CatalogModelsQuery<CatalogModelDetailsDbRow>,
+  needle: string,
+  filters: CatalogModelFilters,
+) {
+  let next = query;
+  const normalizedNeedle = normalizeSearchValue(needle);
+  if (normalizedNeedle) {
+    const patterns = buildWordStartPatterns(normalizedNeedle);
+    const searchFields = [
+      "name",
+      "character_name",
+      "variant_name",
+      "source_title",
+      "franchise",
+      "category",
+      "subcategory",
+    ]
+      .flatMap((field) => patterns.map((pattern) => `${field}.ilike.${pattern}`))
+      .join(",");
+    next = next.or(searchFields);
+  }
+
+  const franchise = normalizeSearchValue(filters.franchise ?? "");
+  if (franchise) {
+    const pattern = `%${franchise}%`;
+    next = next.or(`source_title.ilike.${pattern},franchise.ilike.${pattern}`);
+  }
+
+  const character = normalizeSearchValue(filters.character ?? "");
+  if (character) {
+    const pattern = `%${character}%`;
+    next = next.or(`character_name.ilike.${pattern},name.ilike.${pattern}`);
+  }
+
+  const category = (filters.category ?? "").trim();
+  if (category) next = next.eq("category", category);
+
+  const sourceType = (filters.sourceType ?? "").trim();
+  if (sourceType) next = next.eq("source_type", sourceType);
+
+  const variantType = (filters.variantType ?? "").trim();
+  if (variantType) next = next.eq("variant_type", variantType);
+
+  const tags = normalizeTags(filters.tagsCSV ?? "");
+  if (tags.length) next = next.overlaps("tags", tags);
+
+  return next;
+}
+
+export async function listCatalogCharacters(params: {
+  needle: string;
+  page: number;
+  filters: CatalogModelFilters;
+}) {
+  const { needle, page, filters } = params;
+  const from = page * CATALOG_PAGE_SIZE;
+  const rawWindowSize = Math.max(CATALOG_PAGE_SIZE * (page + 1) * 12, 199);
+
+  let query = catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .eq("is_active", true)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
+    .not(
+      "tags",
+      "ov",
+      "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+    )
+    .order("created_at", { ascending: false })
+    .range(0, rawWindowSize);
+
+  query = applyCatalogListingFilters(query, needle, filters);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const eligible = ((data ?? []) as CatalogModelDbRow[])
+    .map(mapCatalogModel)
+    .filter((row) => isPublicCatalogEligibleRow(row, "public"));
+  const groupedCharacters = groupCatalogCharacters(eligible, filters.sort);
+  const hasNext = groupedCharacters.length > from + CATALOG_PAGE_SIZE;
+  const rows = groupedCharacters.slice(from, from + CATALOG_PAGE_SIZE);
+
+  return { rows, hasNext };
+}
+
 export async function listCatalogModels(params: {
   needle: string;
   page: number;
@@ -610,50 +789,7 @@ export async function listCatalogModels(params: {
     query = query.order("created_at", { ascending: false });
   }
 
-  const normalizedNeedle = normalizeSearchValue(needle);
-  if (normalizedNeedle) {
-    const patterns = buildWordStartPatterns(normalizedNeedle);
-    const searchFields = [
-      "name",
-      "character_name",
-      "variant_name",
-      "source_title",
-      "franchise",
-      "category",
-      "subcategory",
-    ]
-      .flatMap((field) =>
-        patterns.map((pattern) => `${field}.ilike.${pattern}`),
-      )
-      .join(",");
-    query = query.or(searchFields);
-  }
-
-  const franchise = normalizeSearchValue(filters.franchise ?? "");
-  if (franchise) {
-    const pattern = `%${franchise}%`;
-    query = query.or(
-      `source_title.ilike.${pattern},franchise.ilike.${pattern}`,
-    );
-  }
-
-  const character = normalizeSearchValue(filters.character ?? "");
-  if (character) {
-    const pattern = `%${character}%`;
-    query = query.or(`character_name.ilike.${pattern},name.ilike.${pattern}`);
-  }
-
-  const category = (filters.category ?? "").trim();
-  if (category) query = query.eq("category", category);
-
-  const sourceType = (filters.sourceType ?? "").trim();
-  if (sourceType) query = query.eq("source_type", sourceType);
-
-  const variantType = (filters.variantType ?? "").trim();
-  if (variantType) query = query.eq("variant_type", variantType);
-
-  const tags = normalizeTags(filters.tagsCSV ?? "");
-  if (tags.length) query = query.overlaps("tags", tags);
+  query = applyCatalogListingFilters(query, needle, filters);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -671,6 +807,52 @@ export async function listCatalogModels(params: {
       : pageRows;
 
   return { rows, hasNext };
+}
+
+export async function listCatalogCharacterModels(params: {
+  characterName: string;
+  sourceTitle?: string | null;
+}) {
+  const characterName = params.characterName.trim();
+  if (!characterName) return [];
+  const normalizedCharacterName = normalizeGroupKey(characterName);
+  const normalizedSourceTitle = normalizeGroupKey(params.sourceTitle);
+  const rawWindowSize = 400;
+  const characterPattern = `%${normalizeSearchValue(characterName)}%`;
+
+  let query = catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .eq("is_active", true)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
+    .not(
+      "tags",
+      "ov",
+      "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+    )
+    .order("created_at", { ascending: false })
+    .or(`character_name.ilike.${characterPattern},name.ilike.${characterPattern}`)
+    .range(0, rawWindowSize - 1);
+
+  if (params.sourceTitle?.trim()) {
+    query = query.eq("source_title", params.sourceTitle.trim());
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return groupCatalogModels(
+    ((data ?? []) as CatalogModelDbRow[])
+      .map(mapCatalogModel)
+      .filter((row) => isPublicCatalogEligibleRow(row, "public"))
+      .filter(
+        (row) =>
+          normalizeGroupKey(row.character_name) === normalizedCharacterName &&
+          (!normalizedSourceTitle ||
+            normalizeGroupKey(row.source_title) === normalizedSourceTitle),
+      ),
+    "public",
+  );
 }
 
 export async function listForYouCatalogModels(params: {
@@ -783,4 +965,11 @@ export async function listRecentLandingModels(
       .filter((row) => isPublicCatalogEligibleRow(row, "public")),
     "public",
   ).slice(0, limit);
+}
+
+export async function listRecentLandingCharacters(
+  limit = 6,
+): Promise<CatalogCharacterRow[]> {
+  const models = await listRecentLandingModels(Math.max(limit * 6, 24));
+  return groupCatalogCharacters(models, "recent").slice(0, limit);
 }

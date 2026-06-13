@@ -24,6 +24,7 @@ import {
 // ─── Lazy-loaded pages ───────────────────────────────────────────────
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const CatalogArcade = lazy(() => import("./pages/CatalogArcade"));
+const CatalogCharacterArcade = lazy(() => import("./pages/CatalogCharacterArcade"));
 const ModelDetails = lazy(() => import("./pages/catalog/ModelDetails"));
 const AboutArcade = lazy(() => import("./pages/AboutArcade"));
 const PlansArcade = lazy(() => import("./pages/PlansArcade"));
@@ -128,6 +129,7 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
             <Route path={PUBLIC_ROUTES.migrateOrder} element={<RequireAuth><MigratePedido /></RequireAuth>} />
             <Route path={PUBLIC_ROUTES.catalog} element={<CatalogArcade />} />
+            <Route path={PUBLIC_ROUTES.catalogCharacter} element={<CatalogCharacterArcade />} />
             <Route path={PUBLIC_ROUTES.catalogDetails} element={<ModelDetails />} />
             <Route path={PUBLIC_ROUTES.legacyCatalog} element={<Navigate to={PUBLIC_ROUTES.catalog} replace />} />
             <Route path={PUBLIC_ROUTES.legacyCatalogDetails} element={<LegacyCatalogRedirect />} />

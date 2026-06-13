@@ -1,58 +1,35 @@
-/**
- * Universo Arcade — mesma estética gaming da página de coleções.
- * Preserva toda a lógica de busca, filtros e likes do catálogo original.
- */
-
-import { Fragment, useMemo, useState, useEffect } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "@/lib/auth";
-import { useIsAdmin } from "@/lib/roles";
-import { useToast } from "@/hooks/use-toast";
-import { likeModel, unlikeModel } from "@/lib/model-likes";
 import {
-  Search,
-  X,
-  SlidersHorizontal,
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Heart,
-  ArrowRight,
   Crosshair,
-  Coins,
   Eye,
-  EyeOff,
+  Package,
+  Search,
+  SlidersHorizontal,
   Tags,
+  Users,
+  X,
 } from "lucide-react";
-
-import type { ModelRow } from "@/pages/catalog/catalogTypes";
-import {
-  useCatalogModels,
-  type CatalogSort,
-} from "@/hooks/catalog/useCatalogModels";
-import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
-import { useProfileQuery } from "@/pages/catalog/hooks/useProfileQuery";
-import { useForYouModels } from "@/hooks/catalog/useForYouModels";
+import { useAuth } from "@/lib/auth";
+import { useIsAdmin } from "@/lib/roles";
 import { Page } from "@/components/layouts/Page";
 import {
-  ArcadeHero,
-  ArcadeSectionTitle,
   ArcadeCard,
   ArcadeCTA,
+  ArcadeHero,
+  ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import {
   FloatingParticles,
   GlitchText,
 } from "@/components/arcade/ArcadeEffects";
-import { ReportModelNameDialog } from "@/components/catalog/ReportModelNameDialog";
-import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
-import { formatCurrency } from "@/lib/utils";
-import {
-  getCatalogCharacterName,
-  getCatalogPublicTags,
-  getCatalogSensitivity,
-  getCatalogSourceName,
-  getCatalogVersionName,
-} from "@/lib/catalog-utils";
+import { PUBLIC_ROUTES, catalogCharacterPath } from "@/config/routes";
+import { useCatalogCharacters, type CatalogSort } from "@/hooks/catalog/useCatalogCharacters";
+import type { CatalogCharacterRow } from "@/types/catalog";
+import { getCatalogPublicTags } from "@/lib/catalog-utils";
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   anime: "Anime",
@@ -63,17 +40,6 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   comic: "HQ",
   tokusatsu: "Tokusatsu",
   original: "Original",
-  other: "Outro",
-};
-
-const VARIANT_TYPE_LABELS: Record<string, string> = {
-  default: "Padrao",
-  form: "Forma",
-  costume: "Roupa",
-  pose: "Pose",
-  scale: "Escala",
-  edition: "Edicao",
-  variant: "Versao",
   other: "Outro",
 };
 
@@ -96,10 +62,7 @@ function parseCatalogPageParam(value: string | null) {
   return Math.floor(pageNumber) - 1;
 }
 
-// ─── MAIN ────────────────────────────────────────────────────────────
-
 export default function CatalogArcade() {
-  const { toast } = useToast();
   const { user } = useAuth();
   const isAdminQuery = useIsAdmin(user?.id);
   const navigate = useNavigate();
@@ -123,8 +86,8 @@ export default function CatalogArcade() {
   const [showFilters, setShowFilters] = useState(
     Boolean(
       searchParams.get("tag") ||
-      searchParams.get("franchise") ||
-      searchParams.get("character"),
+        searchParams.get("franchise") ||
+        searchParams.get("character"),
     ),
   );
 
@@ -160,8 +123,9 @@ export default function CatalogArcade() {
     setCharacter(urlCharacter);
     setQ(urlQuery);
     setPage(urlPage);
-    if (urlTag || urlFranchise || urlCharacter || urlQuery)
+    if (urlTag || urlFranchise || urlCharacter || urlQuery) {
       setShowFilters(true);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -186,7 +150,7 @@ export default function CatalogArcade() {
       ? [tagsCSV, "nsfw"].filter(Boolean).join(",")
       : tagsCSV;
 
-  const modelsQuery = useCatalogModels(needle, page, {
+  const charactersQuery = useCatalogCharacters(needle, page, {
     character,
     franchise,
     category: effectiveCategory,
@@ -197,46 +161,15 @@ export default function CatalogArcade() {
     contentMode: wantsNsfwContent ? "nsfw" : "general",
     sort,
   });
-  const queryRows = modelsQuery.data?.rows;
-  const rows = useMemo(() => queryRows ?? [], [queryRows]);
-  const hasNext = modelsQuery.data?.hasNext ?? false;
-
-  const likesQuery = useLikedModelIdsQuery(user?.id);
-  const likedIds = likesQuery.data ?? new Set<string>();
-
-  const profileQuery = useProfileQuery(user?.id);
-  const forYouQuery = useForYouModels({
-    userId: user?.id,
-    needle,
-    likedIds,
-    profilePreferenceTags: profileQuery.data?.preference_tags,
-    profileLoading: profileQuery.isLoading,
-  });
-  const forYouRows = useMemo(() => {
-    const visibleIds = new Set(rows.map((row) => row.id));
-    return (forYouQuery.data ?? []).filter(
-      (model) => !visibleIds.has(model.id),
-    );
-  }, [forYouQuery.data, rows]);
-
-  const getIsLiked = (id: string) => Boolean(user?.id) && likedIds.has(id);
-
-  const handleToggleLike = async (m: ModelRow, isLiked: boolean) => {
-    if (!user?.id) {
-      toast({
-        title: "Entre para favoritar",
-        description: "Faça login para salvar seus modelos preferidos.",
-      });
-      return;
-    }
-    try {
-      if (isLiked) await unlikeModel(user.id, m.id);
-      else await likeModel(user.id, m.id);
-      await likesQuery.refetch();
-    } catch {
-      toast({ title: "Erro ao favoritar", variant: "destructive" });
-    }
-  };
+  const rows = useMemo(() => charactersQuery.data?.rows ?? [], [charactersQuery.data?.rows]);
+  const hasNext = charactersQuery.data?.hasNext ?? false;
+  const visibleCatalogStats = useMemo(
+    () => ({
+      characters: rows.length,
+      models: rows.reduce((total, row) => total + row.model_count, 0),
+    }),
+    [rows],
+  );
 
   const handleTagFilter = (tag: string) => {
     const next = new URLSearchParams(searchParams);
@@ -289,7 +222,6 @@ export default function CatalogArcade() {
     "outros",
   ];
   const sourceTypes = Object.entries(SOURCE_TYPE_LABELS);
-  const variantTypes = Object.entries(VARIANT_TYPE_LABELS);
   const activeFilterCount = [
     character,
     franchise,
@@ -302,39 +234,48 @@ export default function CatalogArcade() {
     () => buildVisiblePageIndexes(page, hasNext),
     [page, hasNext],
   );
-  const showPersonalizedSuggestions =
-    user && catalogMode === "public" && !needle && activeFilterCount === 0;
 
   return (
     <Page
       title="Universo | ORDAX Arsenal"
-      description="Explore o catálogo completo de estatuetas artesanais. Produção sob encomenda com pintura artística."
-      keywords={["catálogo", "estatuetas", "colecionáveis", "premium"]}
+      description="Explore o universo de personagens e navegue pelos modelos de cada um."
+      keywords={["universo", "personagens", "estatuetas", "colecionáveis", "premium"]}
     >
       <ArcadeHero
         badge="Arsenal Completo"
         title="UNIVERSO"
-        subtitle=">> EXPLORE. ESCOLHA. COLECIONE."
+        subtitle=">> PERSONAGENS. MODELOS. COLECOES."
+        stats={[
+          {
+            value: visibleCatalogStats.characters,
+            label:
+              visibleCatalogStats.characters === 1
+                ? "Personagem"
+                : "Personagens",
+          },
+          {
+            value: visibleCatalogStats.models,
+            label: visibleCatalogStats.models === 1 ? "Modelo" : "Modelos",
+          },
+        ]}
       />
 
-      {/* ═══ SEARCH & FILTERS ═══ */}
-      <section className="max-w-7xl mx-auto px-4 md:px-6 -mt-4 relative z-10">
-        {/* Search bar */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(0,0%,40%)]" />
+      <section className="relative z-10 mx-auto -mt-4 max-w-7xl px-4 md:px-6">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(0,0%,40%)]" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar personagem, versao ou franquia..."
-              className="w-full h-12 pl-11 pr-10 bg-[hsl(0,0%,7%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-sm tracking-wider placeholder:text-[hsl(0,0%,30%)] focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none transition-colors"
+              placeholder="Buscar personagem ou obra..."
+              className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-11 pr-10 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
             />
             {q && (
               <button
                 onClick={() => setQ("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(0,0%,40%)] hover:text-[hsl(var(--gold-accent))]"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
@@ -343,67 +284,66 @@ export default function CatalogArcade() {
             onClick={() => setShowFilters(!showFilters)}
             aria-label={showFilters ? "Fechar filtros" : "Abrir filtros"}
             aria-pressed={showFilters}
-            className={`h-12 px-4 border font-mono text-xs tracking-wider uppercase transition-all flex items-center gap-2 ${
+            className={`flex h-12 items-center gap-2 border px-4 font-mono text-xs uppercase tracking-wider transition-all ${
               showFilters
-                ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.1)]"
+                ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.1)] text-[hsl(var(--gold-accent))]"
                 : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,50%)] hover:border-[hsl(var(--gold-accent)/0.4)]"
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="h-4 w-4" />
             <span className="hidden sm:inline">Filtros</span>
           </button>
         </div>
 
-        {/* Filters panel */}
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 p-4 border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] animate-fade-in">
+          <div className="mb-6 grid grid-cols-2 gap-3 border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,6%)] p-4 animate-fade-in md:grid-cols-3 lg:grid-cols-5">
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+              <label className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent)/0.6)]">
                 Personagem
               </label>
               <input
                 value={character}
                 onChange={(e) => setCharacter(e.target.value)}
-                placeholder="Ex: Goku"
-                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+                placeholder="Ex: Freeza"
+                className="h-10 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] px-3 font-mono text-xs text-[hsl(0,0%,90%)] focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+              <label className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent)/0.6)]">
                 Obra
               </label>
               <input
                 value={franchise}
                 onChange={(e) => setFranchise(e.target.value)}
                 placeholder="Ex: Dragon Ball"
-                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+                className="h-10 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] px-3 font-mono text-xs text-[hsl(0,0%,90%)] focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+              <label className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent)/0.6)]">
                 Categoria
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+                className="h-10 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] px-3 font-mono text-xs text-[hsl(0,0%,90%)] focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               >
                 <option value="">Todas</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {categories.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+              <label className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent)/0.6)]">
                 Midia
               </label>
               <select
                 value={sourceType}
                 onChange={(e) => setSourceType(e.target.value)}
-                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+                className="h-10 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] px-3 font-mono text-xs text-[hsl(0,0%,90%)] focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               >
                 <option value="">Todas</option>
                 {sourceTypes.map(([value, label]) => (
@@ -414,68 +354,48 @@ export default function CatalogArcade() {
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
-                Tipo
-              </label>
-              <select
-                value={variantType}
-                onChange={(e) => setVariantType(e.target.value)}
-                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
-              >
-                <option value="">Todos</option>
-                {variantTypes.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+              <label className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent)/0.6)]">
                 Tags
               </label>
               <input
                 value={tagsCSV}
                 onChange={(e) => setTagsCSV(e.target.value)}
-                placeholder="chibi, dark"
-                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+                placeholder="sayajin, freeza"
+                className="h-10 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] px-3 font-mono text-xs text-[hsl(0,0%,90%)] focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[hsl(var(--gold-accent)/0.6)] tracking-widest uppercase mb-2">
+              <label className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent)/0.6)]">
                 Ordenar
               </label>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as CatalogSort)}
-                className="w-full h-10 px-3 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,15%)] text-[hsl(0,0%,90%)] font-mono text-xs focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
+                className="h-10 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,8%)] px-3 font-mono text-xs text-[hsl(0,0%,90%)] focus:border-[hsl(var(--gold-accent)/0.5)] focus:outline-none"
               >
                 <option value="recent">Recentes</option>
-                <option value="az">A–Z</option>
+                <option value="az">A-Z</option>
               </select>
             </div>
 
             {activeFilterCount > 0 && (
               <button
-                onClick={() => {
-                  clearCatalogFilters();
-                }}
-                className="col-span-2 md:col-span-3 lg:col-span-6 text-[hsl(var(--gold-accent)/0.6)] hover:text-[hsl(var(--gold-accent))] font-mono text-[10px] tracking-widest uppercase transition-colors"
+                onClick={clearCatalogFilters}
+                className="col-span-2 text-[hsl(var(--gold-accent)/0.6)] transition-colors hover:text-[hsl(var(--gold-accent))] font-mono text-[10px] uppercase tracking-widest md:col-span-3 lg:col-span-5"
               >
-                ✕ Limpar Filtros
+                Limpar Filtros
               </button>
             )}
           </div>
         )}
 
-        {/* Status bar */}
-        <div className="mb-6 flex flex-col gap-3 font-mono text-[10px] text-[hsl(0,0%,40%)] tracking-wider sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-3 font-mono text-[10px] tracking-wider text-[hsl(0,0%,40%)] sm:flex-row sm:items-center sm:justify-between">
           <span>
             {catalogMode === "staging"
               ? "Conferencia staging"
               : needle
                 ? `Resultados: "${needle}"`
-                : "Catalogo geral"}{" "}
+                : "Indice geral"}{" "}
             • Pagina {page + 1}
             {activeFilterCount ? ` • ${activeFilterCount} filtros` : ""}
           </span>
@@ -490,11 +410,7 @@ export default function CatalogArcade() {
                     : "text-[hsl(var(--gold-accent)/0.65)] hover:text-[hsl(var(--gold-accent))]"
                 }`}
               >
-                {catalogMode === "staging" ? (
-                  <EyeOff className="h-3.5 w-3.5" />
-                ) : (
-                  <Eye className="h-3.5 w-3.5" />
-                )}
+                <Eye className="h-3.5 w-3.5" />
                 {catalogMode === "staging"
                   ? "Sair da conferencia"
                   : "Conferir staging"}
@@ -503,84 +419,49 @@ export default function CatalogArcade() {
             <button
               type="button"
               onClick={() => navigate(PUBLIC_ROUTES.collections)}
-              className="hidden text-[hsl(var(--gold-accent)/0.65)] hover:text-[hsl(var(--gold-accent))] uppercase sm:inline"
+              className="hidden text-[hsl(var(--gold-accent)/0.65)] uppercase hover:text-[hsl(var(--gold-accent))] sm:inline"
             >
               Colecoes ativas
             </button>
           </div>
         </div>
-
-        {wantsStagingPreview &&
-          !canPreviewStaging &&
-          !isAdminQuery.isLoading && (
-            <div className="mb-6 border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-red-300">
-              O modo de conferencia exige login administrativo.
-            </div>
-          )}
-
-        {catalogMode === "staging" && (
-          <div className="mb-6 border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(var(--gold-accent)/0.08)] px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))]">
-            Modo conferencia: estes modelos estao inativos no catalogo publico e
-            servem para revisar nome, imagem, tags e categoria antes de
-            publicar.
-          </div>
-        )}
       </section>
 
-      {/* ═══ FOR YOU SECTION ═══ */}
-      {showPersonalizedSuggestions && forYouRows.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 md:px-6 mb-12">
-          <ArcadeSectionTitle>Para Você</ArcadeSectionTitle>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {forYouRows.slice(0, 6).map((m) => (
-              <ModelArcadeCard
-                key={m.id}
-                model={m}
-                isLiked={getIsLiked(m.id)}
-                onToggleLike={() => handleToggleLike(m, getIsLiked(m.id))}
-                onTagClick={handleTagFilter}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <section className="relative z-10 mx-auto max-w-7xl px-4 pb-12 md:px-6">
+        <ArcadeSectionTitle>Personagens</ArcadeSectionTitle>
 
-      {/* ═══ MAIN GRID ═══ */}
-      <section className="max-w-7xl mx-auto px-4 md:px-6 pb-12 relative z-10">
-        <ArcadeSectionTitle>Arsenal</ArcadeSectionTitle>
-
-        {modelsQuery.isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
+        {charactersQuery.isLoading ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            {Array.from({ length: 12 }).map((_, index) => (
               <div
-                key={i}
-                className="aspect-[3/4] bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] animate-pulse"
+                key={index}
+                className="aspect-[3/4] animate-pulse border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,8%)]"
               />
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-24 border border-dashed border-[hsl(0,0%,15%)] relative overflow-hidden">
+          <div className="relative overflow-hidden border border-dashed border-[hsl(0,0%,15%)] py-24 text-center">
             <FloatingParticles />
             <div className="relative z-10">
-              <Crosshair className="w-16 h-16 mx-auto mb-4 text-[hsl(var(--gold-accent)/0.3)]" />
+              <Crosshair className="mx-auto mb-4 h-16 w-16 text-[hsl(var(--gold-accent)/0.3)]" />
               <h2
-                className="text-3xl font-black tracking-[0.2em] mb-3"
+                className="mb-3 text-3xl font-black tracking-[0.2em]"
                 style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
               >
-                <GlitchText text="NO TARGETS" />
+                <GlitchText text="NO CHARACTERS" />
               </h2>
               <p
-                className="text-[hsl(0,0%,40%)] font-mono text-[9px] tracking-[0.15em] mb-6"
+                className="mb-6 font-mono text-[9px] tracking-[0.15em] text-[hsl(0,0%,40%)]"
                 style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
                 {needle
                   ? `Nenhum resultado para "${needle}"`
-                  : "Nenhum modelo encontrado."}
+                  : "Nenhum personagem encontrado."}
               </p>
               {needle && (
                 <button
                   onClick={() => setQ("")}
-                  className="font-mono text-xs text-[hsl(var(--gold-accent))] border border-[hsl(var(--gold-accent)/0.3)] px-6 py-2 hover:bg-[hsl(var(--gold-accent)/0.1)] transition-colors tracking-widest uppercase"
+                  className="border border-[hsl(var(--gold-accent)/0.3)] px-6 py-2 font-mono text-xs uppercase tracking-widest text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.1)]"
                 >
                   Limpar Busca
                 </button>
@@ -588,28 +469,25 @@ export default function CatalogArcade() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {rows.map((m) => (
-              <ModelArcadeCard
-                key={m.id}
-                model={m}
-                isLiked={getIsLiked(m.id)}
-                onToggleLike={() => handleToggleLike(m, getIsLiked(m.id))}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            {rows.map((row) => (
+              <CatalogCharacterCard
+                key={row.id}
+                characterRow={row}
                 onTagClick={handleTagFilter}
               />
             ))}
           </div>
         )}
 
-        {/* Pagination */}
         {rows.length > 0 && (
           <div className="mt-10 flex flex-wrap items-center justify-center gap-2 font-mono text-xs">
             <button
               disabled={page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="flex items-center gap-2 px-4 py-2 border border-[hsl(0,0%,15%)] text-[hsl(0,0%,50%)] hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] disabled:opacity-30 disabled:cursor-not-allowed transition-all tracking-widest uppercase"
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+              className="flex items-center gap-2 border border-[hsl(0,0%,15%)] px-4 py-2 uppercase tracking-widest text-[hsl(0,0%,50%)] transition-all hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-30"
             >
-              <ChevronLeft className="w-4 h-4" /> PREV
+              <ChevronLeft className="h-4 w-4" /> PREV
             </button>
             {visiblePageIndexes.map((pageIndex, index) => {
               const previousPageIndex = visiblePageIndexes[index - 1];
@@ -637,24 +515,24 @@ export default function CatalogArcade() {
               );
             })}
             <button
-              disabled={!hasNext || modelsQuery.isFetching}
-              onClick={() => setPage((p) => p + 1)}
-              className="flex items-center gap-2 px-4 py-2 border border-[hsl(0,0%,15%)] text-[hsl(0,0%,50%)] hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] disabled:opacity-30 disabled:cursor-not-allowed transition-all tracking-widest uppercase"
+              disabled={!hasNext || charactersQuery.isFetching}
+              onClick={() => setPage((current) => current + 1)}
+              className="flex items-center gap-2 border border-[hsl(0,0%,15%)] px-4 py-2 uppercase tracking-widest text-[hsl(0,0%,50%)] transition-all hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-30"
             >
-              NEXT <ChevronRight className="w-4 h-4" />
+              NEXT <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         )}
       </section>
 
       <ArcadeCTA
-        badge="Colecionáveis Sob Encomenda"
-        title="EXPLORE AS COLEÇÕES"
-        description="Veja as coleções disponíveis e escolha seus personagens favoritos."
+        badge="Navegacao Organizada"
+        title="MODELOS POR PERSONAGEM"
+        description="O universo principal agora agrupa os personagens. Dentro de cada pagina voce encontra todos os modelos publicados."
         primaryAction={{
-          label: "VER COLEÇÕES",
+          label: "VER COLECOES",
           href: PUBLIC_ROUTES.collections,
-          icon: <ArrowRight className="w-4 h-4" />,
+          icon: <ArrowRight className="h-4 w-4" />,
         }}
         secondaryAction={{ label: "VER PLANOS", href: PUBLIC_ROUTES.plans }}
       />
@@ -662,227 +540,149 @@ export default function CatalogArcade() {
   );
 }
 
-// ─── MODEL CARD ──────────────────────────────────────────────────────
-
-function ModelArcadeCard({
-  model,
-  isLiked,
-  onToggleLike,
+function CatalogCharacterCard({
+  characterRow,
   onTagClick,
 }: {
-  model: ModelRow;
-  isLiked: boolean;
-  onToggleLike: () => void;
+  characterRow: CatalogCharacterRow;
   onTagClick?: (tag: string) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const navigate = useNavigate();
-  const imageUrl = model.thumbnailUrl ?? model.imageUrl;
-  const displayTags = getCatalogPublicTags(model, 3);
-  const sensitivity = getCatalogSensitivity(model);
-  const isStaging =
-    !model.is_active || (model.tags ?? []).includes("catalog-staging");
-  const characterName = getCatalogCharacterName(model);
-  const sourceName = getCatalogSourceName(model);
-  const versionName = getCatalogVersionName(model);
-  const mediaLabel = model.source_type
-    ? SOURCE_TYPE_LABELS[model.source_type] || model.source_type
-    : null;
-  const variantLabel = model.variant_type
-    ? VARIANT_TYPE_LABELS[model.variant_type] || model.variant_type
-    : null;
-  const detailsPath = catalogModelDetailsPath(
-    model.id,
-    [model.character_name || model.name, model.variant_name]
-      .filter(Boolean)
-      .join(" "),
+  const detailPath = catalogCharacterPath(
+    characterRow.character_name,
+    characterRow.source_title,
   );
-  const fixedCashPrice =
-    model.price_mode === "fixed" &&
-    typeof model.price_standalone_override === "number" &&
-    model.price_standalone_override > 0
-      ? model.price_standalone_override
-      : null;
-  const hasFixedCoinPrice =
-    model.price_mode === "fixed" &&
-    typeof model.price_coins_override === "number" &&
-    model.price_coins_override > 0;
+  const displayTags = getCatalogPublicTags(
+    {
+      id: characterRow.latest_model_id,
+      name: characterRow.latest_model_name,
+      franchise: characterRow.source_title,
+      category: characterRow.category,
+      subcategory: null,
+      is_active: true,
+      character_name: characterRow.character_name,
+      variant_name: null,
+      variant_type: null,
+      source_title: characterRow.source_title,
+      source_type: characterRow.source_type,
+      catalog_visibility: "general",
+      canonical_identity_key: null,
+      duplicate_status: "unique",
+      duplicate_of_model_id: null,
+      tags: characterRow.tags,
+      content_rating: null,
+      image_bucket: null,
+      image_path: null,
+      thumbnail_url: null,
+      price_mode: null,
+      price_standalone_override: null,
+      price_coins_override: null,
+      imageUrl: characterRow.imageUrl,
+      thumbnailUrl: characterRow.thumbnailUrl,
+      created_at: characterRow.created_at,
+    },
+    3,
+  );
+  const sourceLabel = characterRow.source_type
+    ? SOURCE_TYPE_LABELS[characterRow.source_type] || characterRow.source_type
+    : null;
 
   return (
     <ArcadeCard>
       <div
-        className="flex flex-col h-full"
+        className="flex h-full flex-col"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Image */}
-        <div className="relative aspect-[3/4] bg-[hsl(0,0%,9%)] overflow-hidden">
+        <div className="relative aspect-[3/4] overflow-hidden bg-[hsl(0,0%,9%)]">
           <Link
-            to={detailsPath}
-            className="block h-full w-full text-left"
-            aria-label={`Abrir postagem de ${characterName}`}
+            to={detailPath}
+            className="block h-full w-full"
+            aria-label={`Abrir pagina de ${characterRow.character_name}`}
           >
-            {imageUrl ? (
+            {characterRow.thumbnailUrl || characterRow.imageUrl ? (
               <img
-                src={imageUrl}
-                alt={characterName}
-                className={`h-full w-full opacity-80 transition-all duration-700 group-hover:opacity-100 ${
-                  isStaging
-                    ? "object-contain p-2 group-hover:scale-105"
-                    : "object-cover group-hover:scale-110"
-                } ${
-                  sensitivity.shouldBlur ? "scale-105 blur-xl" : ""
-                }`}
+                src={characterRow.thumbnailUrl ?? characterRow.imageUrl ?? ""}
+                alt={characterRow.character_name}
+                className="h-full w-full object-cover opacity-80 transition-all duration-700 group-hover:scale-110 group-hover:opacity-100"
                 loading="lazy"
                 decoding="async"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <Crosshair className="w-10 h-10 text-[hsl(0,0%,15%)]" />
+              <div className="flex h-full items-center justify-center">
+                <Package className="h-12 w-12 text-[hsl(0,0%,18%)]" />
               </div>
             )}
           </Link>
-
-          {/* Like button */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              onToggleLike();
-            }}
-            className={`absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center border transition-all ${
-              isLiked
-                ? "bg-[hsl(0,70%,50%)/0.2] border-[hsl(0,70%,50%)/0.5] text-[hsl(0,70%,60%)]"
-                : "bg-[hsl(0,0%,5%)]/70 border-[hsl(0,0%,20%)] text-[hsl(0,0%,40%)] hover:text-[hsl(0,70%,60%)]"
-            }`}
-          >
-            <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-current" : ""}`} />
-          </button>
-
-          {/* Category badge */}
-          {(mediaLabel || model.category) && (
-            <div className="absolute top-2 left-2 z-10 font-mono text-[8px] text-[hsl(var(--gold-accent))] bg-[hsl(0,0%,5%)]/90 px-2 py-0.5 tracking-widest uppercase border border-[hsl(var(--gold-accent)/0.3)]">
-              {mediaLabel || model.category}
+          {sourceLabel && (
+            <div className="absolute left-2 top-2 z-10 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,5%)]/90 px-2 py-0.5 font-mono text-[8px] uppercase tracking-widest text-[hsl(var(--gold-accent))]">
+              {sourceLabel}
             </div>
           )}
-
-          {sensitivity.shouldBlur && (
-            <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-[hsl(0,0%,5%)]/55 px-4 text-center backdrop-blur-sm">
-              <span className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.35)] bg-[hsl(0,0%,5%)]/90 px-3 py-2 font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--gold-accent))]">
-                <EyeOff className="h-3.5 w-3.5" />
-                {sensitivity.label}
-              </span>
-            </div>
-          )}
-
-          {isStaging && (
-            <div className="absolute bottom-2 left-2 z-10 border border-red-500/40 bg-red-500/15 px-2 py-0.5 font-mono text-[8px] uppercase tracking-widest text-red-300">
-              Conferencia
-            </div>
-          )}
-
-          {/* Bottom gradient */}
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[hsl(0,0%,7%)] to-transparent" />
         </div>
 
-        {/* Info */}
-        <div className="p-3 flex-1 flex flex-col">
+        <div className="flex flex-1 flex-col p-2.5">
           <Link
-            to={detailsPath}
-            className="mb-0.5 block w-full text-left text-sm font-black tracking-wider transition-colors group-hover:text-[hsl(var(--gold-accent))]"
+            to={detailPath}
+            className="block text-left text-sm font-black leading-none tracking-wider transition-colors group-hover:text-[hsl(var(--gold-accent))]"
             style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-            title={characterName}
-            aria-label={`Abrir postagem de ${characterName}`}
+            title={characterRow.character_name}
           >
-            <span className="line-clamp-1">{characterName}</span>
+            <span className="line-clamp-1">{characterRow.character_name}</span>
           </Link>
-          {(versionName || sourceName) && (
-            <div className="mb-2 flex min-h-4 flex-wrap items-center gap-x-1.5 gap-y-1 font-mono text-[9px] tracking-wider">
-              {versionName && (
-                <span className="max-w-full truncate text-[hsl(0,0%,40%)]">
-                  {versionName}
+
+          {(characterRow.source_title || characterRow.category) && (
+            <div className="mb-1.5 mt-1 flex items-center gap-x-1 font-mono text-[8px] tracking-wider">
+              {characterRow.source_title && (
+                <span className="max-w-[60%] truncate uppercase text-[hsl(var(--gold-accent)/0.7)]">
+                  {characterRow.source_title}
                 </span>
               )}
-              {versionName && sourceName && (
+              {characterRow.source_title && characterRow.category && (
                 <span className="text-[hsl(0,0%,28%)]">|</span>
               )}
-              {sourceName && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onTagClick?.(sourceName);
-                  }}
-                  className="max-w-full truncate uppercase text-[hsl(var(--gold-accent)/0.7)] underline-offset-2 transition-colors hover:text-[hsl(var(--gold-accent))] hover:underline"
-                  aria-label={`Filtrar por ${sourceName}`}
-                >
-                  {sourceName}
-                </button>
+              {characterRow.category && (
+                <span className="truncate text-[hsl(0,0%,40%)]">
+                  {characterRow.category}
+                </span>
               )}
             </div>
           )}
 
-          {variantLabel && variantLabel !== "Padrao" && (
-            <div className="mb-2 w-fit border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,55%)]">
-              {variantLabel}
-            </div>
-          )}
-
-          <div className="mb-3 flex min-h-6 flex-wrap items-center gap-1.5">
-            {hasFixedCoinPrice && (
-              <span className="inline-flex items-center gap-1 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.08)] px-1.5 py-0.5 font-mono text-[8px] font-bold text-[hsl(var(--gold-accent))]">
-                <Coins className="h-3 w-3" />
-                {model.price_coins_override}
-              </span>
-            )}
-            {fixedCashPrice !== null ? (
-              <span className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] font-bold text-[hsl(0,0%,85%)]">
-                {formatCurrency(fixedCashPrice / 100)}
-              </span>
-            ) : (
-              <span className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,48%)]">
-                Sob consulta
-              </span>
-            )}
+          <div className="mb-2 flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.08)] px-1.5 py-0.5 font-mono text-[8px] font-bold text-[hsl(var(--gold-accent))]">
+              <Users className="h-3 w-3" />
+              {characterRow.model_count} {characterRow.model_count === 1 ? "modelo" : "modelos"}
+            </span>
           </div>
 
           {displayTags.length > 0 && (
-            <div className="mb-3 flex min-h-6 flex-wrap items-center gap-1.5">
-              {displayTags.map((tag) => (
+            <div className="mb-2 flex items-center gap-1 overflow-hidden whitespace-nowrap">
+              {displayTags.slice(0, 3).map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => onTagClick?.(tag)}
-                  className="inline-flex items-center gap-1 border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,50%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))]"
+                  className="inline-flex min-w-0 max-w-[31%] shrink items-center gap-1 border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[hsl(0,0%,50%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))]"
                   aria-label={`Filtrar tag ${tag}`}
                 >
-                  <Tags className="h-2.5 w-2.5" />
-                  {tag}
+                  <Tags className="h-2.5 w-2.5 shrink-0" />
+                  <span className="truncate">{tag}</span>
                 </button>
               ))}
             </div>
           )}
 
-          {/* CTA */}
           <Link
-            to={detailsPath}
-            className="mt-auto flex w-full items-center justify-center gap-1.5 border border-[hsl(var(--gold-accent)/0.3)] py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] transition-all hover:bg-[hsl(var(--gold-accent)/0.1)]"
+            to={detailPath}
+            className="mt-auto flex w-full items-center justify-center gap-1.5 border border-[hsl(var(--gold-accent)/0.3)] py-1.5 font-mono text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--gold-accent))] transition-all hover:bg-[hsl(var(--gold-accent)/0.1)]"
           >
-            VER DETALHES <ArrowRight className="w-3 h-3" />
+            VER MODELOS <ArrowRight className="h-3 w-3" />
           </Link>
-          <ReportModelNameDialog
-            modelId={model.id}
-            displayedName={characterName}
-            sourceTitle={sourceName}
-            detailPath={detailsPath}
-            triggerLabel="Reportar nome incorreto"
-            triggerVariant="ghost"
-            triggerClassName="mt-2 h-auto justify-center px-0 py-1 font-mono text-[8px] uppercase tracking-[0.15em] text-[hsl(0,0%,55%)] hover:bg-transparent hover:text-[hsl(var(--gold-accent))]"
-          />
         </div>
 
-        {/* Power bar */}
-        <div className="h-[2px] relative overflow-hidden">
+        <div className="relative h-[2px] overflow-hidden">
           <div className="absolute inset-0 bg-[hsl(0,0%,10%)]" />
           <div
             className="absolute inset-y-0 left-0 bg-gradient-to-r from-[hsl(var(--gold-accent))] to-[hsl(var(--gold-accent)/0.5)] transition-all duration-700 ease-out"

@@ -3,6 +3,7 @@ export const PUBLIC_ROUTES = {
   landing: "/landing",
   migrateOrder: "/migrar-pedido",
   catalog: "/universo",
+  catalogCharacter: "/universo/personagem/:slug",
   catalogDetails: "/universo/:id",
   legacyCatalog: "/catalogo",
   legacyCatalogDetails: "/catalogo/:id",
@@ -212,6 +213,26 @@ export function catalogModelDetailsPath(
   const slug = slugifyPathSegment(slugSource ?? "");
   const routeParam = slug ? `${slug}-${modelId}` : modelId;
   return PUBLIC_ROUTES.catalogDetails.replace(":id", encodeURIComponent(routeParam));
+}
+
+export function catalogCharacterPath(
+  characterName: string,
+  sourceTitle?: string | null,
+) {
+  const baseSlug = slugifyPathSegment(
+    [characterName, sourceTitle].filter(Boolean).join(" "),
+  );
+  const searchParams = new URLSearchParams();
+  searchParams.set("character", characterName);
+  if (sourceTitle?.trim()) {
+    searchParams.set("source", sourceTitle.trim());
+  }
+
+  const path = PUBLIC_ROUTES.catalogCharacter.replace(
+    ":slug",
+    encodeURIComponent(baseSlug || slugifyPathSegment(characterName) || "personagem"),
+  );
+  return `${path}?${searchParams.toString()}`;
 }
 
 export function subscribeCollectionPath(slug: string) {
