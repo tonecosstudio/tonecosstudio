@@ -301,6 +301,77 @@ describe("catalog models service", () => {
     });
   });
 
+  it("prefers a representative public figure as the character cover", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-close",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          name: "Freeza Close",
+          variant_name: "Close",
+          variant_type: "variant",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-close-1.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-close",
+          created_at: "2026-06-10T10:00:00.000000+00:00",
+        },
+        {
+          ...modelRow,
+          id: "model-bust",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          name: "Busto Freeza",
+          variant_name: "Busto",
+          variant_type: "variant",
+          tags: ["freeza", "busto"],
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/busto-freeza-1.webp",
+          canonical_identity_key: "dragon-ball:freeza:busto-freeza",
+          created_at: "2026-06-11T10:00:00.000000+00:00",
+        },
+        {
+          ...modelRow,
+          id: "model-figure",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          name: "Freeza",
+          variant_name: null,
+          variant_type: "default",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+          created_at: "2026-06-09T10:00:00.000000+00:00",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "recent",
+      },
+    });
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({
+      character_name: "Freeza",
+      latest_model_id: "model-figure",
+    });
+  });
+
   it("lists character page models grouped by product", async () => {
     const query = createCatalogQuery({
       data: [

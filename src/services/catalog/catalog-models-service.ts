@@ -401,8 +401,50 @@ function groupCatalogModels<T extends CatalogModelRow>(
   );
 }
 
+function scoreCharacterCoverCandidate(row: CatalogModelRow) {
+  const name = normalizeGroupKey(row.name);
+  const variantName = normalizeGroupKey(row.variant_name);
+  const tags = (row.tags ?? []).map((tag) => normalizeGroupKey(tag));
+  const sensitivity = getCatalogSensitivity(row);
+
+  let score = 0;
+
+  if (!sensitivity.shouldBlur) score += 100;
+  if (row.variant_type === "default") score += 35;
+  if (!variantName) score += 18;
+  if (row.image_path?.includes("/display/")) score += 10;
+
+  if (name.includes("busto") || variantName.includes("busto") || tags.includes("busto")) {
+    score -= 40;
+  }
+
+  if (
+    name.includes("close") ||
+    name.includes("detalhe") ||
+    variantName.includes("close") ||
+    variantName.includes("detalhe")
+  ) {
+    score -= 25;
+  }
+
+  if (
+    name.includes("traseira") ||
+    name.includes("costas") ||
+    variantName.includes("traseira") ||
+    variantName.includes("costas")
+  ) {
+    score -= 30;
+  }
+
+  return score;
+}
+
 function pickCharacterGroupCover(rows: CatalogModelRow[]) {
   return [...rows].sort((left, right) => {
+    const byScore =
+      scoreCharacterCoverCandidate(right) - scoreCharacterCoverCandidate(left);
+    if (byScore !== 0) return byScore;
+
     const byCreatedAt = String(right.created_at || "").localeCompare(
       String(left.created_at || ""),
     );
