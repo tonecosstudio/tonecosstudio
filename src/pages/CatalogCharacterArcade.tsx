@@ -26,6 +26,7 @@ export default function CatalogCharacterArcade() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const [sortMode, setSortMode] = useState<"recent" | "az">("recent");
+  const [activeTag, setActiveTag] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
   const legacyCharacterName = searchParams.get("character")?.trim() ?? "";
@@ -72,8 +73,14 @@ export default function CatalogCharacterArcade() {
     enabled: Boolean(characterName),
   });
   const rows = modelsQuery.data ?? [];
+  const availableTags = useMemo(() => {
+    const tagSource = rows.flatMap((row) => getCatalogPublicTags(row, 6));
+    return Array.from(new Set(tagSource)).slice(0, 8);
+  }, [rows]);
   const displayRows = useMemo(() => {
-    const next = [...rows];
+    const next = activeTag
+      ? rows.filter((row) => getCatalogPublicTags(row, 8).includes(activeTag))
+      : [...rows];
     if (sortMode === "az") {
       next.sort((left, right) =>
         (left.variant_name || left.name || left.character_name || "").localeCompare(
@@ -84,7 +91,7 @@ export default function CatalogCharacterArcade() {
       return next;
     }
     return next;
-  }, [rows, sortMode]);
+  }, [activeTag, rows, sortMode]);
   const likesQuery = useLikedModelIdsQuery(user?.id);
   const likedIds = likesQuery.data ?? new Set<string>();
 
@@ -280,6 +287,35 @@ export default function CatalogCharacterArcade() {
               </button>
             </div>
           </div>
+          {availableTags.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTag("")}
+                className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
+                  !activeTag
+                    ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
+                    : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,52%)] hover:border-[hsl(var(--gold-accent)/0.35)]"
+                }`}
+              >
+                Todos
+              </button>
+              {availableTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setActiveTag(tag)}
+                  className={`border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors ${
+                    activeTag === tag
+                      ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
+                      : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,52%)] hover:border-[hsl(var(--gold-accent)/0.35)]"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
           {modelsQuery.isLoading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, index) => (
@@ -302,6 +338,19 @@ export default function CatalogCharacterArcade() {
                 Este personagem ainda nao tem modelos publicos disponiveis.
               </p>
             </ArcadeCard>
+          ) : displayRows.length === 0 ? (
+            <ArcadeCard hover={false} className="p-8 text-center">
+              <Shapes className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
+              <h2
+                className="text-2xl font-black uppercase tracking-[0.08em]"
+                style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+              >
+                Nenhum modelo nessa tag
+              </h2>
+              <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,45%)]">
+                Ajuste o filtro para ver outras variacoes deste personagem.
+              </p>
+            </ArcadeCard>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
               {displayRows.map((model) => {
@@ -312,6 +361,7 @@ export default function CatalogCharacterArcade() {
                     model={model}
                     isLiked={isLiked}
                     onToggleLike={() => handleToggleLike(model.id, isLiked)}
+                    onTagClick={setActiveTag}
                   />
                 );
               })}
