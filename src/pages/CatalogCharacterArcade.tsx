@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Package, Shapes, Sparkles } from "lucide-react";
+import { ArrowLeft, Package, Shapes } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
@@ -172,10 +172,10 @@ export default function CatalogCharacterArcade() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-12 md:px-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-20 lg:self-start">
-          <ArcadeCard hover={false} className="overflow-hidden">
-            <div className="aspect-[4/5] bg-[hsl(0,0%,8%)]">
+      <section className="mx-auto max-w-7xl px-4 pb-12 md:px-6">
+        <ArcadeCard hover={false} className="mb-6 overflow-hidden">
+          <div className="grid gap-0 md:grid-cols-[140px_minmax(0,1fr)]">
+            <div className="aspect-[4/5] bg-[hsl(0,0%,8%)] md:aspect-auto">
               {coverImageUrl ? (
                 <img
                   src={coverImageUrl}
@@ -190,48 +190,53 @@ export default function CatalogCharacterArcade() {
                 </div>
               )}
             </div>
-            <div className="space-y-4 p-4">
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
-                  Personagem
-                </p>
-                <p
-                  className="mt-1 text-2xl font-black uppercase tracking-[0.06em]"
-                  style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
-                >
-                  {characterName}
-                </p>
-              </div>
-              {sourceName && (
+
+            <div className="flex flex-col justify-center gap-4 p-4 md:p-5">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
-                    Obra
+                    Personagem
                   </p>
-                  <p className="mt-1 text-sm uppercase tracking-[0.12em] text-[hsl(0,0%,82%)]">
-                    {sourceName}
+                  <p
+                    className="mt-1 text-2xl font-black uppercase tracking-[0.06em]"
+                    style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+                  >
+                    {characterName}
                   </p>
                 </div>
-              )}
-              {topTags.length > 0 && (
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
-                    Tags
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {topTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-[hsl(0,0%,55%)]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+
+                {sourceName && (
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
+                      Obra
+                    </p>
+                    <p className="mt-1 text-sm uppercase tracking-[0.12em] text-[hsl(0,0%,82%)]">
+                      {sourceName}
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
+
+                {topTags.length > 0 && (
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
+                      Tags principais
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {topTags.slice(0, 5).map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-[hsl(0,0%,55%)]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </ArcadeCard>
-        </aside>
+          </div>
+        </ArcadeCard>
 
         <div>
           <ArcadeSectionTitle>Modelos</ArcadeSectionTitle>
@@ -273,17 +278,6 @@ export default function CatalogCharacterArcade() {
             </div>
           )}
         </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-14 md:px-6">
-        <ArcadeCard hover={false} className="px-5 py-4">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-4 w-4 text-[hsl(var(--gold-accent))]" />
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,58%)]">
-              O universo principal agora organiza a navegacao por personagem. Os modelos ficam aqui.
-            </p>
-          </div>
-        </ArcadeCard>
       </section>
     </Page>
   );
