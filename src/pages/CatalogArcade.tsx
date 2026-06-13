@@ -90,6 +90,12 @@ function buildVisiblePageIndexes(currentPage: number, hasNext: boolean) {
   return Array.from(pages).sort((left, right) => left - right);
 }
 
+function parseCatalogPageParam(value: string | null) {
+  const pageNumber = Number(value);
+  if (!Number.isFinite(pageNumber) || pageNumber <= 1) return 0;
+  return Math.floor(pageNumber) - 1;
+}
+
 // ─── MAIN ────────────────────────────────────────────────────────────
 
 export default function CatalogArcade() {
@@ -100,7 +106,9 @@ export default function CatalogArcade() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(() =>
+    parseCatalogPageParam(searchParams.get("page")),
+  );
   const [character, setCharacter] = useState(
     searchParams.get("character") ?? "",
   );
@@ -145,14 +153,28 @@ export default function CatalogArcade() {
     const urlFranchise = searchParams.get("franchise") ?? "";
     const urlCharacter = searchParams.get("character") ?? "";
     const urlQuery = searchParams.get("q") ?? "";
+    const urlPage = parseCatalogPageParam(searchParams.get("page"));
 
     setTagsCSV(urlTag);
     setFranchise(urlFranchise);
     setCharacter(urlCharacter);
     setQ(urlQuery);
+    setPage(urlPage);
     if (urlTag || urlFranchise || urlCharacter || urlQuery)
       setShowFilters(true);
   }, [searchParams]);
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (page > 0) next.set("page", String(page + 1));
+    else next.delete("page");
+
+    const currentQuery = searchParams.toString();
+    const nextQuery = next.toString();
+    if (nextQuery !== currentQuery) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [page, searchParams, setSearchParams]);
 
   const wantsNsfwContent =
     category === "nsfw" || /\b(?:nsfw|adulto|improprio)\b/i.test(tagsCSV);
@@ -222,6 +244,7 @@ export default function CatalogArcade() {
     next.delete("franchise");
     next.delete("character");
     next.delete("q");
+    next.delete("page");
     setSearchParams(next);
     setTagsCSV(tag);
     setFranchise("");
@@ -236,6 +259,7 @@ export default function CatalogArcade() {
     next.delete("franchise");
     next.delete("character");
     next.delete("q");
+    next.delete("page");
     setSearchParams(next);
     setCharacter("");
     setFranchise("");
