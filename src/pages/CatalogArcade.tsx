@@ -527,8 +527,8 @@ export default function CatalogArcade() {
 
       <ArcadeCTA
         badge="Navegacao Organizada"
-        title="MODELOS POR PERSONAGEM"
-        description="O universo principal agora agrupa os personagens. Dentro de cada pagina voce encontra todos os modelos publicados."
+        title="PERSONAGENS PRIMEIRO"
+        description="O universo principal agora abre por personagem. Dentro de cada pagina ficam os modelos, variacoes e grupos publicados."
         primaryAction={{
           label: "VER COLECOES",
           href: PUBLIC_ROUTES.collections,

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Crosshair,
@@ -393,25 +393,23 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══ RECENT MODELS ═══ */}
+      {/* ═══ RECENT CHARACTERS ═══ */}
       {models.length > 0 && (
         <section className="relative py-16 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
           <div className="max-w-6xl mx-auto">
-            <ArcadeSectionTitle>Novos no Arsenal</ArcadeSectionTitle>
+            <ArcadeSectionTitle>Personagens em Destaque</ArcadeSectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               {models.map((m) => {
                 const imgUrl = m.thumbnailUrl ?? m.imageUrl;
                 const characterName = m.character_name;
                 const sourceName = m.source_title;
+                const detailPath = catalogCharacterPath(characterName, sourceName);
                 return (
-                  <div
+                  <Link
                     key={m.id}
-                    onClick={() =>
-                      navigate(
-                        catalogCharacterPath(characterName, sourceName),
-                      )
-                    }
-                    className="group cursor-pointer"
+                    to={detailPath}
+                    className="group block"
+                    aria-label={`Abrir pagina de ${characterName}`}
                   >
                     <ArcadeCard>
                       <div className="aspect-square bg-[hsl(0,0%,8%)] overflow-hidden">
@@ -443,7 +441,7 @@ export default function LandingPage() {
                         )}
                       </div>
                     </ArcadeCard>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
