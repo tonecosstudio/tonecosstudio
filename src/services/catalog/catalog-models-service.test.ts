@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getCatalogModelDetails,
+  getCatalogCharacterContextBySlug,
   listCatalogCharacters,
   listCatalogCharacterModels,
   listCatalogModels,
@@ -343,6 +344,41 @@ describe("catalog models service", () => {
     expect(models).toHaveLength(2);
     expect(models[0]?.id).toBe("model-1");
     expect(models[1]?.id).toBe("model-3");
+  });
+
+  it("resolves a clean character slug back to character context", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-1",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-2",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-3",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const context = await getCatalogCharacterContextBySlug("freeza-dragon-ball");
+
+    expect(context).toEqual({
+      slug: "freeza-dragon-ball",
+      characterName: "Freeza",
+      sourceTitle: "Dragon Ball",
+    });
   });
 
   it("expands public tag aliases and drops internal tags before filtering", async () => {

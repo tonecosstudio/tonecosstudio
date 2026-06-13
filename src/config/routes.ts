@@ -222,17 +222,10 @@ export function catalogCharacterPath(
   const baseSlug = slugifyPathSegment(
     [characterName, sourceTitle].filter(Boolean).join(" "),
   );
-  const searchParams = new URLSearchParams();
-  searchParams.set("character", characterName);
-  if (sourceTitle?.trim()) {
-    searchParams.set("source", sourceTitle.trim());
-  }
-
-  const path = PUBLIC_ROUTES.catalogCharacter.replace(
+  return PUBLIC_ROUTES.catalogCharacter.replace(
     ":slug",
     encodeURIComponent(baseSlug || slugifyPathSegment(characterName) || "personagem"),
   );
-  return `${path}?${searchParams.toString()}`;
 }
 
 export function subscribeCollectionPath(slug: string) {

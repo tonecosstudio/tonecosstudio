@@ -33,7 +33,7 @@ describe("route helpers", () => {
       "/universo/androide-18-43e97b32-c0af-4b88-a49d-1d454f077b46"
     );
     expect(catalogCharacterPath("Freeza", "Dragon Ball")).toBe(
-      "/universo/personagem/freeza-dragon-ball?character=Freeza&source=Dragon+Ball"
+      "/universo/personagem/freeza-dragon-ball"
     );
     expect(subscribeCollectionPath("my collection")).toBe("/colecoes/my%20collection/assinar");
     expect(publicProfilePath("collector/user")).toBe("/collector/collector%2Fuser");

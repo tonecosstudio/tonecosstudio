@@ -855,6 +855,43 @@ export async function listCatalogCharacterModels(params: {
   );
 }
 
+export async function getCatalogCharacterContextBySlug(slug: string) {
+  const normalizedSlug = normalizeGroupKey(decodeURIComponent(slug));
+  if (!normalizedSlug) return null;
+
+  let query = catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .eq("is_active", true)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
+    .not(
+      "tags",
+      "ov",
+      "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+    )
+    .order("created_at", { ascending: false })
+    .range(0, 999);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const eligible = ((data ?? []) as CatalogModelDbRow[])
+    .map(mapCatalogModel)
+    .filter((row) => isPublicCatalogEligibleRow(row, "public"));
+  const groupedCharacters = groupCatalogCharacters(eligible, "recent");
+
+  const match = groupedCharacters.find(
+    (row) => normalizeGroupKey(row.slug) === normalizedSlug,
+  );
+
+  if (!match) return null;
+  return {
+    slug: match.slug,
+    characterName: match.character_name,
+    sourceTitle: match.source_title ?? null,
+  };
+}
+
 export async function listForYouCatalogModels(params: {
   excludedIds: string[];
   preferenceTags: Set<string>;

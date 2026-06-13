@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Package, Shapes, Sparkles } from "lucide-react";
 import { Page } from "@/components/layouts/Page";
@@ -15,7 +15,10 @@ import { useToast } from "@/hooks/use-toast";
 import { likeModel, unlikeModel } from "@/lib/model-likes";
 import { useLikedModelIdsQuery } from "@/pages/catalog/hooks/useLikedModelIdsQuery";
 import { UniverseModelCard } from "@/components/catalog/UniverseModelCard";
-import { listCatalogCharacterModels } from "@/services/catalog/catalog-models-service";
+import {
+  getCatalogCharacterContextBySlug,
+  listCatalogCharacterModels,
+} from "@/services/catalog/catalog-models-service";
 import { getCatalogPublicTags, getCatalogSourceName } from "@/lib/catalog-utils";
 
 export default function CatalogCharacterArcade() {
@@ -24,8 +27,43 @@ export default function CatalogCharacterArcade() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
-  const characterName = searchParams.get("character")?.trim() ?? "";
-  const sourceTitle = searchParams.get("source")?.trim() ?? "";
+  const legacyCharacterName = searchParams.get("character")?.trim() ?? "";
+  const legacySourceTitle = searchParams.get("source")?.trim() ?? "";
+
+  const contextQuery = useQuery({
+    queryKey: [
+      "catalog-character-context",
+      slug ?? "",
+      legacyCharacterName,
+      legacySourceTitle,
+    ],
+    queryFn: async () => {
+      if (legacyCharacterName) {
+        return {
+          slug: slug ?? "",
+          characterName: legacyCharacterName,
+          sourceTitle: legacySourceTitle || null,
+        };
+      }
+      if (!slug) return null;
+      return getCatalogCharacterContextBySlug(slug);
+    },
+    enabled: Boolean(slug || legacyCharacterName),
+  });
+
+  const characterName = contextQuery.data?.characterName ?? "";
+  const sourceTitle = contextQuery.data?.sourceTitle ?? "";
+
+  useEffect(() => {
+    if (!legacyCharacterName || !slug || !contextQuery.data?.slug) return;
+    navigate(
+      PUBLIC_ROUTES.catalogCharacter.replace(
+        ":slug",
+        encodeURIComponent(contextQuery.data.slug),
+      ),
+      { replace: true },
+    );
+  }, [contextQuery.data, legacyCharacterName, navigate, slug]);
 
   const modelsQuery = useQuery({
     queryKey: ["catalog-character-models", { characterName, sourceTitle }],
@@ -47,7 +85,7 @@ export default function CatalogCharacterArcade() {
     if (!user?.id) {
       toast({
         title: "Entre para favoritar",
-        description: "Faça login para salvar seus modelos preferidos.",
+        description: "Faca login para salvar seus modelos preferidos.",
       });
       return;
     }
@@ -60,17 +98,35 @@ export default function CatalogCharacterArcade() {
     }
   };
 
+  if (contextQuery.isLoading) {
+    return (
+      <Page title="Carregando personagem" description="Carregando pagina de personagem.">
+        <section className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-4">
+          <div className="text-center">
+            <Package className="mx-auto mb-4 h-14 w-14 animate-pulse text-[hsl(0,0%,25%)]" />
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,45%)]">
+              Carregando personagem...
+            </p>
+          </div>
+        </section>
+      </Page>
+    );
+  }
+
   if (!characterName) {
     return (
-      <Page title="Personagem não encontrado" description="Link de personagem inválido.">
+      <Page title="Personagem nao encontrado" description="Link de personagem invalido.">
         <section className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-4">
           <div className="text-center">
             <Package className="mx-auto mb-4 h-14 w-14 text-[hsl(0,0%,25%)]" />
-            <h1 className="text-3xl font-black uppercase tracking-[0.08em]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
-              Personagem inválido
+            <h1
+              className="text-3xl font-black uppercase tracking-[0.08em]"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
+              Personagem invalido
             </h1>
             <p className="mt-3 text-sm text-[hsl(var(--muted-foreground))]">
-              O link não trouxe contexto suficiente para abrir a página do personagem.
+              O link nao trouxe contexto suficiente para abrir a pagina do personagem.
             </p>
             <button
               onClick={() => navigate(PUBLIC_ROUTES.catalog)}
@@ -139,7 +195,10 @@ export default function CatalogCharacterArcade() {
                 <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent)/0.75)]">
                   Personagem
                 </p>
-                <p className="mt-1 text-2xl font-black uppercase tracking-[0.06em]" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>
+                <p
+                  className="mt-1 text-2xl font-black uppercase tracking-[0.06em]"
+                  style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+                >
                   {characterName}
                 </p>
               </div>
@@ -195,7 +254,7 @@ export default function CatalogCharacterArcade() {
                 Nenhum modelo encontrado
               </h2>
               <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,45%)]">
-                Este personagem ainda não tem modelos públicos disponíveis.
+                Este personagem ainda nao tem modelos publicos disponiveis.
               </p>
             </ArcadeCard>
           ) : (
@@ -221,7 +280,7 @@ export default function CatalogCharacterArcade() {
           <div className="flex items-center gap-3">
             <Sparkles className="h-4 w-4 text-[hsl(var(--gold-accent))]" />
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,58%)]">
-              O universo principal agora organiza a navegação por personagem. Os modelos ficam aqui.
+              O universo principal agora organiza a navegacao por personagem. Os modelos ficam aqui.
             </p>
           </div>
         </ArcadeCard>
