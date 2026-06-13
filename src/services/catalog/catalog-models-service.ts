@@ -193,6 +193,10 @@ function normalizeGroupKey(value: string | null | undefined) {
   return String(value || "").trim().toLowerCase();
 }
 
+function toCatalogSlug(value: string | null | undefined) {
+  return normalizeGroupKey(value).replace(/\s+/g, "-");
+}
+
 function getCharacterIdentityGroupKey(row: {
   source_title?: string | null;
   character_name?: string | null;
@@ -220,14 +224,32 @@ function getDerivedImageGroupKey(path: string | null | undefined) {
   return `${directory}/${key}`;
 }
 
+function getSpecificCanonicalIdentityKey(row: {
+  canonical_identity_key?: string | null;
+  character_name?: string | null;
+}) {
+  const canonicalKey = normalizeGroupKey(row.canonical_identity_key);
+  if (!canonicalKey) return "";
+
+  const lastSegment = canonicalKey.split("|").pop() || "";
+  const characterSlug = toCatalogSlug(row.character_name);
+  if (!lastSegment) return "";
+  if (characterSlug && lastSegment === characterSlug) return "";
+
+  return canonicalKey;
+}
+
 function getCatalogModelGroupKey(row: {
+  source_title?: string | null;
+  character_name?: string | null;
   canonical_identity_key?: string | null;
   image_path?: string | null;
   id: string;
 }) {
   return (
+    getSpecificCanonicalIdentityKey(row) ||
     getDerivedImageGroupKey(row.image_path) ||
-    normalizeGroupKey(row.canonical_identity_key) ||
+    getCharacterIdentityGroupKey(row) ||
     row.id
   );
 }
@@ -239,7 +261,7 @@ function getPublicCatalogModelGroupKey(row: {
   image_path?: string | null;
   id: string;
 }) {
-  return getCharacterIdentityGroupKey(row) || getCatalogModelGroupKey(row);
+  return getCatalogModelGroupKey(row);
 }
 
 function compareCatalogRowsByCanonicalSurface(
@@ -423,9 +445,10 @@ async function applyNsfwGalleryPreviews(
 }
 
 async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
-  const targetKey =
-    getCharacterIdentityGroupKey(model) || getCatalogModelGroupKey(model);
+  const targetKey = getPublicCatalogModelGroupKey(model);
   if (!targetKey) return [];
+
+  const canonicalKey = getSpecificCanonicalIdentityKey(model);
 
   let query = catalogModelsGateway
     .from("models")
@@ -434,7 +457,9 @@ async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
     .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
     .order("created_at", { ascending: true });
 
-  if (model.source_title && model.character_name) {
+  if (canonicalKey) {
+    query = query.eq("canonical_identity_key", canonicalKey);
+  } else if (model.source_title && model.character_name) {
     query = query
       .eq("source_title", model.source_title)
       .eq("character_name", model.character_name);
@@ -451,9 +476,7 @@ async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
     .map(mapCatalogModelDetails)
     .filter((row) => row.id !== model.id)
     .filter(
-      (row) =>
-        (getCharacterIdentityGroupKey(row) || getCatalogModelGroupKey(row)) ===
-        targetKey,
+      (row) => getPublicCatalogModelGroupKey(row) === targetKey,
     );
 }
 

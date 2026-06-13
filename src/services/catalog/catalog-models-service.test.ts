@@ -173,7 +173,7 @@ describe("catalog models service", () => {
     expect(query.overlaps).toHaveBeenCalledWith("tags", ["stitch", "disney"]);
   });
 
-  it("groups public catalog cards by obra e personagem", async () => {
+  it("groups public catalog cards by product identity instead of only character", async () => {
     const query = createCatalogQuery({
       data: [
         {
@@ -221,8 +221,9 @@ describe("catalog models service", () => {
       },
     });
 
-    expect(result.rows).toHaveLength(1);
+    expect(result.rows).toHaveLength(2);
     expect(result.rows[0]?.id).toBe("model-1");
+    expect(result.rows[1]?.id).toBe("model-3");
   });
 
   it("expands public tag aliases and drops internal tags before filtering", async () => {
@@ -306,7 +307,7 @@ describe("catalog models service", () => {
     });
   });
 
-  it("builds fallback gallery images from all published variants of the character when gallery table is disabled", async () => {
+  it("builds fallback gallery images only from the same published product group when gallery table is disabled", async () => {
     const detailQuery = createCatalogQuery({
       data: [
         {
@@ -356,25 +357,24 @@ describe("catalog models service", () => {
 
     const result = await getCatalogModelDetails("model-1");
 
-    expect(result?.galleryImages).toHaveLength(3);
+    expect(result?.galleryImages).toHaveLength(2);
     expect(result?.galleryImages?.map((image) => image.id)).toEqual([
       "model-1",
       "model-2",
-      "model-3",
     ]);
   });
 
-  it("canonicalizes detail pages to one public row per obra e personagem", async () => {
+  it("canonicalizes detail pages to one public row per product group", async () => {
     const detailQuery = createCatalogQuery({
       data: [
         {
           ...modelRow,
-          id: "model-3",
+          id: "model-2",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          variant_name: "Versao 3",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
-          canonical_identity_key: "display|anime|raca-do-freeza|freeza-3",
+          variant_name: "Versao 1",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
       ],
       error: null,
@@ -392,12 +392,12 @@ describe("catalog models service", () => {
         },
         {
           ...modelRow,
-          id: "model-3",
+          id: "model-2",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          variant_name: "Versao 3",
-          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
-          canonical_identity_key: "display|anime|raca-do-freeza|freeza-3",
+          variant_name: "Versao 1",
+          image_path: "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
         },
       ],
       error: null,
@@ -407,12 +407,62 @@ describe("catalog models service", () => {
       .mockReturnValueOnce({ select: vi.fn(() => detailQuery) })
       .mockReturnValueOnce({ select: vi.fn(() => siblingsQuery) });
 
-    const result = await getCatalogModelDetails("model-3");
+    const result = await getCatalogModelDetails("model-2");
 
     expect(result?.id).toBe("model-1");
     expect(result?.galleryImages?.map((image) => image.id)).toEqual([
       "model-1",
-      "model-3",
+      "model-2",
     ]);
+  });
+
+  it("does not merge broad character buckets with distinct canonical product identities", async () => {
+    const detailQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "piccolo-base",
+          source_title: "Dragon Ball",
+          character_name: "Piccolo",
+          image_path:
+            "catalog-webp-final/display/anime/namekusei/piccolo/piccolo-1-172153.webp",
+          canonical_identity_key: "display|anime|namekusei|piccolo",
+        },
+      ],
+      error: null,
+    });
+    const siblingsQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "piccolo-base",
+          source_title: "Dragon Ball",
+          character_name: "Piccolo",
+          image_path:
+            "catalog-webp-final/display/anime/namekusei/piccolo/piccolo-1-172153.webp",
+          canonical_identity_key: "display|anime|namekusei|piccolo",
+        },
+        {
+          ...modelRow,
+          id: "piccolo-figure-1",
+          source_title: "Dragon Ball",
+          character_name: "Piccolo",
+          variant_name: "Figura",
+          image_path:
+            "catalog-webp-final/display/anime/namekusei/piccolo/piccolo-figura-74-120008.webp",
+          canonical_identity_key: "display|anime|namekusei|piccolo-figura",
+        },
+      ],
+      error: null,
+    });
+
+    mocks.from
+      .mockReturnValueOnce({ select: vi.fn(() => detailQuery) })
+      .mockReturnValueOnce({ select: vi.fn(() => siblingsQuery) });
+
+    const result = await getCatalogModelDetails("piccolo-base");
+
+    expect(result?.id).toBe("piccolo-base");
+    expect(result?.galleryImages).toEqual([]);
   });
 });

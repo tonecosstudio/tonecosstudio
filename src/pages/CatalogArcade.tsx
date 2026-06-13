@@ -717,25 +717,32 @@ function ModelArcadeCard({
       >
         {/* Image */}
         <div className="relative aspect-[3/4] bg-[hsl(0,0%,9%)] overflow-hidden">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={characterName}
-              className={`h-full w-full opacity-80 transition-all duration-700 group-hover:opacity-100 ${
-                isStaging
-                  ? "object-contain p-2 group-hover:scale-105"
-                  : "object-cover group-hover:scale-110"
-              } ${
-                sensitivity.shouldBlur ? "scale-105 blur-xl" : ""
-              }`}
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Crosshair className="w-10 h-10 text-[hsl(0,0%,15%)]" />
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => navigate(detailsPath)}
+            className="block h-full w-full text-left"
+            aria-label={`Abrir postagem de ${characterName}`}
+          >
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={characterName}
+                className={`h-full w-full opacity-80 transition-all duration-700 group-hover:opacity-100 ${
+                  isStaging
+                    ? "object-contain p-2 group-hover:scale-105"
+                    : "object-cover group-hover:scale-110"
+                } ${
+                  sensitivity.shouldBlur ? "scale-105 blur-xl" : ""
+                }`}
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Crosshair className="w-10 h-10 text-[hsl(0,0%,15%)]" />
+              </div>
+            )}
+          </button>
 
           {/* Like button */}
           <button
@@ -780,12 +787,16 @@ function ModelArcadeCard({
 
         {/* Info */}
         <div className="p-3 flex-1 flex flex-col">
-          <h3
-            className="text-sm font-black tracking-wider mb-0.5 line-clamp-1 group-hover:text-[hsl(var(--gold-accent))] transition-colors"
+          <button
+            type="button"
+            onClick={() => navigate(detailsPath)}
+            className="mb-0.5 block w-full text-left text-sm font-black tracking-wider transition-colors group-hover:text-[hsl(var(--gold-accent))]"
             style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            title={characterName}
+            aria-label={`Abrir postagem de ${characterName}`}
           >
-            {characterName}
-          </h3>
+            <span className="line-clamp-1">{characterName}</span>
+          </button>
           {(versionName || sourceName) && (
             <div className="mb-2 flex min-h-4 flex-wrap items-center gap-x-1.5 gap-y-1 font-mono text-[9px] tracking-wider">
               {versionName && (
