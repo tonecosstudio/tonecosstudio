@@ -89,6 +89,8 @@ const CATALOG_MODEL_COLUMNS = [
   "source_type",
   "catalog_visibility",
   "canonical_identity_key",
+  "duplicate_status",
+  "duplicate_of_model_id",
 ];
 
 const CATALOG_MODEL_SELECT = CATALOG_MODEL_COLUMNS.join(",");
@@ -187,6 +189,32 @@ function mapCatalogModelDetails(
     thumbnailUrl: row.thumbnail_url ?? imageUrl,
     galleryImages: [],
   };
+}
+
+function isPublicFinalizedModelPath(path: string | null | undefined) {
+  return String(path || "").startsWith("catalog-webp-final/display/");
+}
+
+function isMarkedDuplicate(row: {
+  duplicate_status?: string | null;
+  duplicate_of_model_id?: string | null;
+}) {
+  return (
+    normalizeGroupKey(row.duplicate_status) !== "unique" &&
+    Boolean(row.duplicate_of_model_id)
+  );
+}
+
+function isPublicCatalogEligibleRow(
+  row: {
+    image_path?: string | null;
+    duplicate_status?: string | null;
+    duplicate_of_model_id?: string | null;
+  },
+  mode: CatalogMode = "public",
+) {
+  if (mode === "staging") return true;
+  return isPublicFinalizedModelPath(row.image_path) && !isMarkedDuplicate(row);
 }
 
 function normalizeGroupKey(value: string | null | undefined) {
@@ -478,6 +506,7 @@ async function applyNsfwGalleryPreviews(
 }
 
 async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
+  if (!isPublicCatalogEligibleRow(model)) return [];
   const targetKey = getPublicCatalogModelGroupKey(model);
   if (!targetKey) return [];
 
@@ -507,6 +536,7 @@ async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
 
   return ((data ?? []) as CatalogModelDetailsDbRow[])
     .map(mapCatalogModelDetails)
+    .filter((row) => isPublicCatalogEligibleRow(row))
     .filter((row) => row.id !== model.id)
     .filter(
       (row) => getPublicCatalogModelGroupKey(row) === targetKey,
@@ -629,7 +659,10 @@ export async function listCatalogModels(params: {
   if (error) throw error;
 
   const all = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
-  const grouped = stagingMode ? all : groupCatalogModels(all, "public");
+  const eligible = all.filter((row) =>
+    isPublicCatalogEligibleRow(row, stagingMode ? "staging" : "public"),
+  );
+  const grouped = stagingMode ? eligible : groupCatalogModels(eligible, "public");
   const hasNext = grouped.length > from + CATALOG_PAGE_SIZE;
   const pageRows = grouped.slice(from, from + CATALOG_PAGE_SIZE);
   const rows =
@@ -671,7 +704,10 @@ export async function listForYouCatalogModels(params: {
   if (error) throw error;
 
   const models = ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel);
-  const groupedModels = groupCatalogModels(models, "public");
+  const groupedModels = groupCatalogModels(
+    models.filter((row) => isPublicCatalogEligibleRow(row, "public")),
+    "public",
+  );
   if (params.preferenceTags.size) {
     groupedModels.sort(
       (left, right) =>
@@ -698,6 +734,12 @@ export async function getCatalogModelDetails(modelId: string) {
   if (!data) return null;
 
   const model = mapCatalogModelDetails(data as CatalogModelDetailsDbRow);
+  if (!isPublicCatalogEligibleRow(model)) {
+    if (model.duplicate_of_model_id && model.duplicate_of_model_id !== model.id) {
+      return getCatalogModelDetails(model.duplicate_of_model_id);
+    }
+    return null;
+  }
   const siblings = await listSiblingModelsByIdentity(model);
   const siblingPool = [model, ...siblings];
   const canonicalModel = pickCatalogGroupPrimary(siblingPool, "public") ?? model;
@@ -736,7 +778,9 @@ export async function listRecentLandingModels(
 
   if (error) throw error;
   return groupCatalogModels(
-    ((data ?? []) as CatalogModelDbRow[]).map(mapCatalogModel),
+    ((data ?? []) as CatalogModelDbRow[])
+      .map(mapCatalogModel)
+      .filter((row) => isPublicCatalogEligibleRow(row, "public")),
     "public",
   ).slice(0, limit);
 }

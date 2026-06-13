@@ -12,6 +12,8 @@ export type CatalogModelRow = {
   source_type?: string | null;
   catalog_visibility?: "general" | "collection" | "both" | "hidden" | null;
   canonical_identity_key?: string | null;
+  duplicate_status?: string | null;
+  duplicate_of_model_id?: string | null;
   tags: string[] | null;
   content_rating?: string | null;
   image_bucket: string | null;

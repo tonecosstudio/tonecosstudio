@@ -68,6 +68,8 @@ const professionalColumns = [
   "source_type",
   "catalog_visibility",
   "canonical_identity_key",
+  "duplicate_status",
+  "duplicate_of_model_id",
 ];
 
 const modelRow = {
@@ -79,7 +81,8 @@ const modelRow = {
   tags: ["stitch"],
   is_active: true,
   image_bucket: "models",
-  image_path: "stitch.webp",
+  image_path:
+    "catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
   thumbnail_url: null,
   created_at: "2026-05-29T23:29:39.375424+00:00",
   price_mode: "consultation",
@@ -92,6 +95,8 @@ const modelRow = {
   source_type: "movie",
   catalog_visibility: "general",
   canonical_identity_key: "stitch-base",
+  duplicate_status: "unique",
+  duplicate_of_model_id: null,
 };
 
 describe("catalog models service", () => {
@@ -124,8 +129,10 @@ describe("catalog models service", () => {
     ]);
     expect(models[0]).toMatchObject({
       id: "model-1",
-      imageUrl: "https://cdn.example.com/stitch.webp",
-      thumbnailUrl: "https://cdn.example.com/stitch.webp",
+      imageUrl:
+        "https://cdn.example.com/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
+      thumbnailUrl:
+        "https://cdn.example.com/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
     });
   });
 
@@ -181,7 +188,8 @@ describe("catalog models service", () => {
           id: "model-1",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          image_path: "freeza-1-1-173049.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
           canonical_identity_key: "dragon-ball:freeza:freeza-1",
         },
         {
@@ -189,7 +197,8 @@ describe("catalog models service", () => {
           id: "model-2",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          image_path: "freeza-1-2-173050.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-2-173050.webp",
           canonical_identity_key: "dragon-ball:freeza:freeza-1",
         },
         {
@@ -197,7 +206,8 @@ describe("catalog models service", () => {
           id: "model-3",
           source_title: "Dragon Ball",
           character_name: "Freeza",
-          image_path: "freeza-3-1-173487.webp",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-3-1-173487.webp",
           canonical_identity_key: "dragon-ball:freeza:freeza-3",
         },
       ],
@@ -512,5 +522,171 @@ describe("catalog models service", () => {
 
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]?.id).toBe("android-21-base");
+  });
+
+  it("hides rows marked as duplicates from the public catalog", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "freeza-primary",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Versao 1",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+          duplicate_status: "unique",
+          duplicate_of_model_id: null,
+        },
+        {
+          ...modelRow,
+          id: "freeza-duplicate",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Forma Final",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-final-form-1-177691.webp",
+          canonical_identity_key:
+            "display|anime|raca-do-freeza|freeza-final-form",
+          duplicate_status: "identity_duplicate",
+          duplicate_of_model_id: "freeza-primary",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogModels({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "recent",
+      },
+    });
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]?.id).toBe("freeza-primary");
+  });
+
+  it("hides staging and import asset paths from the public catalog", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "published-final",
+          image_path: "catalog-webp-final/display/anime/sayajins/goku/goku-1.webp",
+          duplicate_status: "unique",
+          duplicate_of_model_id: null,
+        },
+        {
+          ...modelRow,
+          id: "staging-row",
+          image_path: "catalog-staging/animes/dragon-ball/goku.webp",
+          duplicate_status: "unique",
+          duplicate_of_model_id: null,
+        },
+        {
+          ...modelRow,
+          id: "import-row",
+          image_path: "catalog-import/catalogo-raiz-genericos/optimized/goku.webp",
+          duplicate_status: "unique",
+          duplicate_of_model_id: null,
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogModels({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "recent",
+      },
+    });
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]?.id).toBe("published-final");
+  });
+
+  it("redirects duplicate detail rows to the primary published model", async () => {
+    const detailQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "freeza-duplicate",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Forma Final",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-final-form-1-177691.webp",
+          canonical_identity_key:
+            "display|anime|raca-do-freeza|freeza-final-form",
+          duplicate_status: "identity_duplicate",
+          duplicate_of_model_id: "freeza-primary",
+        },
+      ],
+      error: null,
+    });
+    const primaryDetailQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "freeza-primary",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Versao 1",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+          duplicate_status: "unique",
+          duplicate_of_model_id: null,
+        },
+      ],
+      error: null,
+    });
+    const siblingsQuery = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "freeza-primary",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          variant_name: "Versao 1",
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "display|anime|raca-do-freeza|freeza-1",
+          duplicate_status: "unique",
+          duplicate_of_model_id: null,
+        },
+      ],
+      error: null,
+    });
+
+    mocks.from
+      .mockReturnValueOnce({ select: vi.fn(() => detailQuery) })
+      .mockReturnValueOnce({ select: vi.fn(() => primaryDetailQuery) })
+      .mockReturnValueOnce({ select: vi.fn(() => siblingsQuery) });
+
+    const result = await getCatalogModelDetails("freeza-duplicate");
+
+    expect(result?.id).toBe("freeza-primary");
   });
 });
