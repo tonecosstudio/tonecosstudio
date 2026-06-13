@@ -156,6 +156,18 @@ const OBJECT_LIKE_TAGS = new Set([
   ...Object.keys(PUBLIC_OBJECT_TAG_ALIASES),
   ...PUBLIC_PRODUCT_TYPE_TAGS,
 ]);
+const FREEZA_FORCE_PUBLIC_TAGS = new Set([
+  "zarbon",
+  "dodoria",
+  "cui",
+]);
+const GINYU_FORCE_MEMBER_PUBLIC_TAGS = new Set([
+  "capitao-ginyu",
+  "guldo",
+  "jeice",
+  "burter",
+  "recoome",
+]);
 
 export type CatalogSensitivityLevel =
   | "standard"
@@ -411,6 +423,37 @@ function publicConceptTags(values: Array<string | null | undefined>): string[] {
   );
 }
 
+function enrichDragonBallPublicTags(tags: string[]): string[] {
+  const next = uniqueInOrder(tags);
+  const add = (value: string) => {
+    if (!next.includes(value)) next.push(value);
+  };
+  const replaceTag = (from: string, replacements: string[]) => {
+    const index = next.indexOf(from);
+    if (index === -1) return;
+    next.splice(index, 1, ...replacements.filter(Boolean));
+  };
+
+  if (next.some((tag) => FREEZA_FORCE_PUBLIC_TAGS.has(tag))) {
+    add("freeza");
+  }
+
+  if (next.some((tag) => GINYU_FORCE_MEMBER_PUBLIC_TAGS.has(tag))) {
+    add("forca ginyu");
+    add("ginyu");
+  }
+
+  if (next.includes("oozaru vegeta")) {
+    replaceTag("oozaru vegeta", ["vegeta", "oozaru"]);
+  }
+
+  if (next.includes("oozaru-vegeta")) {
+    replaceTag("oozaru-vegeta", ["vegeta", "oozaru"]);
+  }
+
+  return uniqueInOrder(next.filter(isPublicCatalogTag));
+}
+
 function hasConceptTag(
   model: CatalogDisplayModel,
   concepts: Set<string>,
@@ -583,7 +626,9 @@ export function getCatalogPublicTags(
         ...typeTags,
       ];
 
-  return uniqueInOrder(candidates.filter(isPublicCatalogTag)).slice(0, limit);
+  return enrichDragonBallPublicTags(
+    uniqueInOrder(candidates.filter(isPublicCatalogTag)),
+  ).slice(0, limit);
 }
 
 export function getCatalogSensitivity(

@@ -74,7 +74,7 @@ describe("catalog utils", () => {
         category: "animes",
         tags: ["source-dragon-ball-z", "price-consultation", "zarbon"],
       }),
-    ).toEqual(["anime", "zarbon", "dragon ball z"]);
+    ).toEqual(["anime", "zarbon", "dragon ball z", "freeza"]);
 
     expect(
       getCatalogPublicTags({
@@ -86,6 +86,33 @@ describe("catalog utils", () => {
         tags: ["desenhos-animacao", "bebop", "tartarugas ninja"],
       }),
     ).toEqual(["desenhos", "bebop", "tartarugas ninja"]);
+  });
+
+  it("preserves Dragon Ball group tags and base character tags", () => {
+    expect(
+      getCatalogPublicTags({
+        name: "Recoome",
+        character_name: "Recoome",
+        source_title: "Dragon Ball Z",
+        source_type: "anime",
+        category: "animes",
+        tags: ["recoome", "forca-ginyu", "ginyu"],
+      }),
+    ).toEqual(["anime", "recoome", "forca ginyu", "ginyu", "dragon ball z"]);
+
+    const oozaruVegetaTags = getCatalogPublicTags({
+      name: "Oozaru Vegeta",
+      character_name: "Oozaru Vegeta",
+      source_title: "Dragon Ball Z",
+      source_type: "anime",
+      category: "animes",
+      tags: ["oozaru-vegeta", "sayajins"],
+    });
+
+    expect(oozaruVegetaTags).toContain("vegeta");
+    expect(oozaruVegetaTags).toContain("oozaru");
+    expect(oozaruVegetaTags).not.toContain("oozaru vegeta");
+    expect(oozaruVegetaTags).not.toContain("oozaru-vegeta");
   });
 
   it("breaks object title phrases into public concept tags", () => {
