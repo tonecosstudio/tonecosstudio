@@ -4,8 +4,11 @@ export const PUBLIC_ROUTES = {
   migrateOrder: "/migrar-pedido",
   catalog: "/universo",
   catalogModels: "/modelos",
+  catalogUniverseTheme: "/universo/:themeKey",
+  catalogUniverseFranchise: "/universo/:themeKey/:franchiseKey",
+  catalogUniverseCharacter: "/universo/:themeKey/:franchiseKey/:characterSlug",
   catalogCharacter: "/universo/personagem/:slug",
-  catalogDetails: "/universo/:id",
+  catalogDetails: "/modelos/:id",
   legacyCatalog: "/catalogo",
   legacyCatalogDetails: "/catalogo/:id",
   about: "/sobre",
@@ -229,6 +232,27 @@ export function catalogCharacterPath(
     ":slug",
     encodeURIComponent(baseSlug || slugifyPathSegment(characterName) || "personagem"),
   );
+}
+
+export function catalogUniverseThemePath(themeKey: string) {
+  return PUBLIC_ROUTES.catalogUniverseTheme.replace(":themeKey", encodeURIComponent(themeKey));
+}
+
+export function catalogUniverseFranchisePath(themeKey: string, franchiseKey: string) {
+  return PUBLIC_ROUTES.catalogUniverseFranchise
+    .replace(":themeKey", encodeURIComponent(themeKey))
+    .replace(":franchiseKey", encodeURIComponent(franchiseKey));
+}
+
+export function catalogUniverseCharacterPath(
+  themeKey: string,
+  franchiseKey: string,
+  characterSlug: string,
+) {
+  return PUBLIC_ROUTES.catalogUniverseCharacter
+    .replace(":themeKey", encodeURIComponent(themeKey))
+    .replace(":franchiseKey", encodeURIComponent(franchiseKey))
+    .replace(":characterSlug", encodeURIComponent(characterSlug));
 }
 
 export function subscribeCollectionPath(slug: string) {

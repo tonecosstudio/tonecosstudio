@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   ChevronRight,
@@ -21,6 +21,9 @@ import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import {
   PUBLIC_ROUTES,
   catalogModelDetailsPath,
+  catalogUniverseCharacterPath,
+  catalogUniverseFranchisePath,
+  catalogUniverseThemePath,
 } from "@/config/routes";
 import {
   listCatalogCharacterModels,
@@ -194,19 +197,72 @@ function buildUniversePath(params: {
   franchiseKey?: string | null;
   characterSlug?: string | null;
 }) {
-  const search = new URLSearchParams();
-  if (params.themeKey) search.set("tema", params.themeKey);
-  if (params.franchiseKey) search.set("obra", params.franchiseKey);
-  if (params.characterSlug) search.set("personagem", params.characterSlug);
-  const query = search.toString();
-  return query ? `${PUBLIC_ROUTES.catalog}?${query}` : PUBLIC_ROUTES.catalog;
+  if (params.themeKey && params.franchiseKey && params.characterSlug) {
+    return catalogUniverseCharacterPath(
+      params.themeKey,
+      params.franchiseKey,
+      params.characterSlug,
+    );
+  }
+
+  if (params.themeKey && params.franchiseKey) {
+    return catalogUniverseFranchisePath(params.themeKey, params.franchiseKey);
+  }
+
+  if (params.themeKey) {
+    return catalogUniverseThemePath(params.themeKey);
+  }
+
+  return PUBLIC_ROUTES.catalog;
+}
+
+function isUuidLikePathParam(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 export default function CatalogArcade() {
+  const navigate = useNavigate();
+  const { themeKey = "", franchiseKey = "", characterSlug = "" } = useParams<{
+    themeKey?: string;
+    franchiseKey?: string;
+    characterSlug?: string;
+  }>();
   const [searchParams] = useSearchParams();
-  const activeTheme = searchParams.get("tema")?.trim().toLowerCase() ?? "";
-  const activeFranchise = searchParams.get("obra")?.trim().toLowerCase() ?? "";
-  const activeCharacter = searchParams.get("personagem")?.trim().toLowerCase() ?? "";
+  const legacyTheme = searchParams.get("tema")?.trim().toLowerCase() ?? "";
+  const legacyFranchise = searchParams.get("obra")?.trim().toLowerCase() ?? "";
+  const legacyCharacter = searchParams.get("personagem")?.trim().toLowerCase() ?? "";
+
+  const activeTheme = (themeKey || legacyTheme).trim().toLowerCase();
+  const activeFranchise = (franchiseKey || legacyFranchise).trim().toLowerCase();
+  const activeCharacter = (characterSlug || legacyCharacter).trim().toLowerCase();
+  const hasLegacyQuery = Boolean(legacyTheme || legacyFranchise || legacyCharacter);
+
+  useEffect(() => {
+    if (!hasLegacyQuery) return;
+    navigate(
+      buildUniversePath({
+        themeKey: legacyTheme || activeTheme || null,
+        franchiseKey: legacyFranchise || activeFranchise || null,
+        characterSlug: legacyCharacter || activeCharacter || null,
+      }),
+      { replace: true },
+    );
+  }, [
+    activeCharacter,
+    activeFranchise,
+    activeTheme,
+    hasLegacyQuery,
+    legacyCharacter,
+    legacyFranchise,
+    legacyTheme,
+    navigate,
+  ]);
+
+  if (activeTheme && isUuidLikePathParam(activeTheme) && !activeFranchise && !activeCharacter) {
+    return <Navigate to={catalogModelDetailsPath(activeTheme)} replace />;
+  }
 
   const universeQuery = useQuery({
     queryKey: ["catalog-universe-index"],

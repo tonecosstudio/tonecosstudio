@@ -135,6 +135,9 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
             <Route path={PUBLIC_ROUTES.migrateOrder} element={<RequireAuth><MigratePedido /></RequireAuth>} />
             <Route path={PUBLIC_ROUTES.catalog} element={<CatalogArcade />} />
+            <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<CatalogArcade />} />
+            <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<CatalogArcade />} />
+            <Route path={PUBLIC_ROUTES.catalogUniverseCharacter} element={<CatalogArcade />} />
             <Route path={PUBLIC_ROUTES.catalogModels} element={<CatalogModelsArcade />} />
             <Route path={PUBLIC_ROUTES.catalogCharacter} element={<CatalogCharacterArcade />} />
             <Route path={PUBLIC_ROUTES.catalogDetails} element={<ModelDetails />} />
