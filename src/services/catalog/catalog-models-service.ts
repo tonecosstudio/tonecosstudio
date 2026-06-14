@@ -307,7 +307,15 @@ function getUniverseThemeFromRow(row: {
   if (category === "filmes") return { key: "filmes", label: "Filmes" };
   if (category === "series") return { key: "series", label: "Series" };
   if (category === "jogos") return { key: "games", label: "Games" };
-  if (category === "desenhos") return { key: "desenhos", label: "Desenhos" };
+  if (
+    category === "desenhos" ||
+    category === "desenho" ||
+    category === "animacao" ||
+    category === "desenho animacao" ||
+    category === "desenhos animacao"
+  ) {
+    return { key: "desenho-animacao", label: "Desenho/Animacao" };
+  }
 
   return { key: "outros", label: "Outros" };
 }
@@ -345,6 +353,9 @@ const CHARACTER_WRAPPER_PREFIXES = [/^busto\s+/i, /^painel\s+/i, /^conjunto\s+/i
 const CHARACTER_PRESENTATION_BLOCKLIST = new Set([
   "anime",
   "desenhos",
+  "desenho-animacao",
+  "desenho",
+  "animacao",
   "filme",
   "serie",
   "game",
