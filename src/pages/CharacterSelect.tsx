@@ -1,478 +1,384 @@
-/**
- * Metal Slug-style Character Select Screen
- *
- * Arcade aesthetic with military typography, CRT scanlines,
- * neon accents and pixel-art inspired UI elements.
- */
-
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
-  type CharacterSelectCharacter,
-  type CharacterSelectCollection,
-  useCollectionsWithCharacters,
-} from "@/hooks/collections/usePublicCollections";
-import { Page } from "@/components/layouts/Page";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Swords,
-  Shield,
-  Crown,
-  Sparkles,
+  Crosshair,
+  Search,
+  Tags,
+  Trophy,
   Users,
-  ArrowRight,
-  Zap,
-  Star,
+  X,
 } from "lucide-react";
-import { PUBLIC_ROUTES, collectionDetailsPath } from "@/config/routes";
+import { Page } from "@/components/layouts/Page";
+import {
+  ArcadeCard,
+  ArcadeHero,
+  ArcadeSectionTitle,
+} from "@/components/arcade/ArcadeLayout";
+import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
+import {
+  PUBLIC_ROUTES,
+  catalogCharacterPath,
+} from "@/config/routes";
+import {
+  useCatalogCharacters,
+  type CatalogSort,
+} from "@/hooks/catalog/useCatalogCharacters";
+import type { CatalogCharacterRow } from "@/types/catalog";
+import { getCatalogPublicTags } from "@/lib/catalog-utils";
 
-// ─── Types ───────────────────────────────────────────────────
-type Character = CharacterSelectCharacter;
-type Collection = CharacterSelectCollection;
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  anime: "Anime",
+  manga: "Manga",
+  movie: "Filme",
+  series: "Serie",
+  game: "Game",
+  comic: "HQ",
+  tokusatsu: "Tokusatsu",
+  original: "Original",
+  other: "Outro",
+};
 
-// ─── Character Slot Component ────────────────────────────────
-function CharacterSlot({
-  character,
-  isSelected,
-  index,
-  onClick,
-}: {
-  character: Character;
-  isSelected: boolean;
-  index: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        relative group flex flex-col items-center transition-all duration-300
-        ${isSelected ? "scale-110 z-20" : "scale-95 opacity-70 hover:opacity-100 hover:scale-100"}
-      `}
-    >
-      {/* Selection Arrow */}
-      {isSelected && (
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 animate-bounce z-30">
-          <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-t-[14px] border-l-transparent border-r-transparent border-t-[hsl(var(--gold-accent))]" />
-        </div>
-      )}
+function buildVisiblePageIndexes(currentPage: number, hasNext: boolean) {
+  const knownLastPage = currentPage + (hasNext ? 1 : 0);
+  const windowStart = Math.max(0, currentPage - 2);
+  const windowEnd = Math.min(knownLastPage, currentPage + 1);
+  const pages = new Set<number>([0]);
 
-      {/* Character Frame */}
-      <div
-        className={`
-          relative w-28 h-36 sm:w-36 sm:h-44 md:w-40 md:h-52 rounded-sm overflow-hidden
-          border-2 transition-all duration-300
-          ${
-            isSelected
-              ? "border-[hsl(var(--gold-accent))] shadow-[0_0_20px_hsl(var(--gold-accent)/0.5),inset_0_0_20px_hsl(var(--gold-accent)/0.1)]"
-              : "border-[hsl(var(--border))] hover:border-[hsl(var(--gold-accent)/0.5)]"
-          }
-        `}
-        style={{
-          clipPath: "polygon(0 0, 100% 0, 100% 85%, 90% 100%, 0 100%)",
-        }}
-      >
-        {/* Character Image */}
-        {character.image_url ? (
-          <img
-            src={character.image_url}
-            alt={character.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="w-full h-full bg-[hsl(var(--muted))] flex items-center justify-center">
-            <Swords className="w-10 h-10 text-[hsl(var(--muted-foreground))]" />
-          </div>
-        )}
+  for (let pageIndex = windowStart; pageIndex <= windowEnd; pageIndex += 1) {
+    pages.add(pageIndex);
+  }
 
-        {/* Scanline overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-20"
-          style={{
-            background:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 0% / 0.3) 2px, hsl(0 0% 0% / 0.3) 4px)",
-          }}
-        />
-
-        {/* Glow overlay on select */}
-        {isSelected && (
-          <div className="absolute inset-0 bg-[hsl(var(--gold-accent)/0.15)] pointer-events-none" />
-        )}
-
-        {/* Status indicator */}
-        {character.status === "upcoming" && (
-          <div className="absolute top-2 right-2">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
-          </div>
-        )}
-
-        {/* Number tag */}
-        <div className="absolute bottom-0 left-0 bg-[hsl(var(--foreground)/0.85)] text-[hsl(var(--background))] px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider">
-          #{String(index + 1).padStart(2, "0")}
-        </div>
-      </div>
-
-      {/* Character Name */}
-      <div
-        className={`
-          mt-2 px-3 py-1 text-xs sm:text-sm font-bold uppercase tracking-widest text-center
-          transition-all duration-300 font-mono
-          ${
-            isSelected
-              ? "text-[hsl(var(--gold-accent))] drop-shadow-[0_0_6px_hsl(var(--gold-accent)/0.5)]"
-              : "text-[hsl(var(--muted-foreground))]"
-          }
-        `}
-      >
-        {character.name}
-      </div>
-    </button>
-  );
+  return Array.from(pages).sort((left, right) => left - right);
 }
 
-// ─── Collection Section ──────────────────────────────────────
-function CollectionSection({ collection }: { collection: Collection }) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const characters = [...(collection.collection_characters || [])].sort(
-    (a, b) => a.release_order - b.release_order
-  );
-  const selected = characters[selectedIdx] || null;
+function parsePageParam(value: string | null) {
+  const pageNumber = Number(value);
+  if (!Number.isFinite(pageNumber) || pageNumber <= 1) return 0;
+  return Math.floor(pageNumber) - 1;
+}
 
-  const navigate = useCallback((dir: -1 | 1) => {
-    setSelectedIdx((prev) => {
-      const next = prev + dir;
-      if (next < 0) return characters.length - 1;
-      if (next >= characters.length) return 0;
-      return next;
-    });
-  }, [characters.length]);
-
-  // Keyboard nav
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") navigate(-1);
-      if (e.key === "ArrowRight") navigate(1);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [navigate]);
-
-  if (characters.length === 0) return null;
+function CharacterDirectoryCard({ row }: { row: CatalogCharacterRow }) {
+  const imageUrl = row.thumbnailUrl ?? row.imageUrl;
+  const path = catalogCharacterPath(row.character_name, row.source_title);
+  const displayTags = row.tags.slice(0, 2);
+  const sourceLabel = row.source_type
+    ? SOURCE_TYPE_LABELS[row.source_type] || row.source_type
+    : null;
 
   return (
-    <section className="relative py-12 md:py-16">
-      {/* Collection Header */}
-      <div className="container max-w-7xl mx-auto px-4 mb-8">
-        <div className="flex items-center gap-4">
-          {/* Military-style corner bracket */}
-          <div className="hidden sm:flex items-center gap-2">
-            <div className="w-6 h-6 border-l-2 border-t-2 border-[hsl(var(--gold-accent))]" />
-          </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-tight">
-                {collection.name}
-              </h2>
-              <Badge
-                className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] font-mono text-[10px] tracking-wider uppercase"
-              >
-                <Star className="w-3 h-3 mr-1" />
-                {characters.length} chars
-              </Badge>
+    <ArcadeCard>
+      <div className="flex h-full flex-col">
+        <Link
+          to={path}
+          className="relative block aspect-[4/5] overflow-hidden bg-[hsl(0,0%,9%)]"
+          aria-label={`Abrir pagina de ${row.character_name}`}
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={row.character_name}
+              className="h-full w-full object-cover opacity-85 transition-transform duration-500 hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Crosshair className="h-10 w-10 text-[hsl(0,0%,18%)]" />
             </div>
-            {collection.description && (
-              <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 max-w-xl font-mono">
-                {collection.description}
-              </p>
-            )}
-          </div>
-          <div className="hidden sm:flex items-center gap-2 ml-auto">
-            <div className="w-6 h-6 border-r-2 border-t-2 border-[hsl(var(--gold-accent))]" />
-          </div>
-        </div>
-      </div>
-
-      {/* Character Select Area */}
-      <div className="container max-w-7xl mx-auto px-4">
-        <div className="relative">
-          {/* Navigation Arrows */}
-          {characters.length > 1 && (
-            <>
-              <button
-                onClick={() => navigate(-1)}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-[hsl(var(--foreground)/0.8)] text-[hsl(var(--background))] hover:bg-[hsl(var(--gold-accent))] transition-colors rounded-sm"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                onClick={() => navigate(1)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-[hsl(var(--foreground)/0.8)] text-[hsl(var(--background))] hover:bg-[hsl(var(--gold-accent))] transition-colors rounded-sm"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
           )}
 
-          {/* Characters Row */}
-          <div
-            ref={scrollRef}
-            className="flex items-end justify-center gap-3 sm:gap-5 md:gap-6 px-14 py-4 overflow-x-auto scrollbar-hide"
+          <div className="absolute left-2 top-2 border border-[hsl(var(--gold-accent)/0.28)] bg-[hsl(0,0%,5%)]/92 px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))]">
+            {sourceLabel || row.category || "Personagem"}
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[hsl(0,0%,6%)] to-transparent" />
+        </Link>
+
+        <div className="flex flex-1 flex-col p-3">
+          <Link
+            to={path}
+            className="text-lg font-black uppercase leading-none tracking-[0.06em] text-[hsl(0,0%,96%)] transition-colors hover:text-[hsl(var(--gold-accent))]"
+            style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
           >
-            {characters.map((char, i) => (
-              <CharacterSlot
-                key={char.id}
-                character={char}
-                isSelected={i === selectedIdx}
-                index={i}
-                onClick={() => setSelectedIdx(i)}
-              />
-            ))}
+            {row.character_name}
+          </Link>
+
+          {row.source_title && (
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(0,0%,48%)]">
+              {row.source_title}
+            </p>
+          )}
+
+          <div className="mt-3 flex items-center gap-2">
+            <span className="inline-flex items-center border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(0,0%,72%)]">
+              {row.model_count} {row.model_count === 1 ? "modelo" : "modelos"}
+            </span>
           </div>
-        </div>
 
-        {/* Selected Character Info Panel */}
-        {selected && (
-          <div className="mt-8 max-w-2xl mx-auto">
-            <div
-              className="relative border border-[hsl(var(--border))] bg-[hsl(var(--card))] rounded-sm p-6 overflow-hidden"
-              style={{
-                clipPath:
-                  "polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))",
-              }}
-            >
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-[hsl(var(--gold-accent))]" />
-              <div className="absolute top-0 right-5 w-4 h-4 border-r-2 border-t-2 border-[hsl(var(--gold-accent))]" />
-              <div className="absolute bottom-0 left-5 w-4 h-4 border-l-2 border-b-2 border-[hsl(var(--gold-accent))]" />
-              <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-[hsl(var(--gold-accent))]" />
-
-              {/* Scanline */}
-              <div
-                className="absolute inset-0 pointer-events-none opacity-[0.04]"
-                style={{
-                  background:
-                    "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 50% / 0.4) 2px, hsl(0 0% 50% / 0.4) 4px)",
-                }}
-              />
-
-              <div className="relative z-10 flex flex-col sm:flex-row items-start gap-5">
-                {/* Mini portrait */}
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-sm overflow-hidden border border-[hsl(var(--border))] flex-shrink-0 bg-[hsl(var(--muted))]">
-                  {selected.image_url ? (
-                    <img
-                      src={selected.image_url}
-                      alt={selected.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Shield className="w-8 h-8 text-[hsl(var(--muted-foreground))]" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl sm:text-2xl font-bold uppercase tracking-tight">
-                      {selected.name}
-                    </h3>
-                    <Badge
-                      variant="outline"
-                      className="font-mono text-[10px] uppercase tracking-wider border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))]"
-                    >
-                      {selected.status === "released"
-                        ? "Disponível"
-                        : selected.status === "revealed"
-                          ? "Revelado"
-                          : "Em breve"}
-                    </Badge>
-                  </div>
-
-                  {selected.description && (
-                    <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4 font-mono leading-relaxed line-clamp-3">
-                      {selected.description}
-                    </p>
-                  )}
-
-                  {/* Stats bar */}
-                  <div className="flex items-center gap-6 text-xs font-mono text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                    <span className="flex items-center gap-1">
-                      <Zap className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
-                      #{String(selectedIdx + 1).padStart(2, "0")} / {String(characters.length).padStart(2, "0")}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Crown className="w-3 h-3 text-[hsl(var(--gold-accent))]" />
-                      {collection.name}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action */}
-                <div className="flex-shrink-0 self-center">
-                  <Button
-                    asChild
-                    size="sm"
-                    className="bg-[hsl(var(--gold-accent))] text-[hsl(var(--foreground))] hover:brightness-110 font-mono uppercase tracking-wider text-xs rounded-sm"
-                  >
-                    <Link to={collectionDetailsPath(collection.slug)}>
-                      Ver Coleção
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
+          {displayTags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {displayTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex min-w-0 items-center gap-1 border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,5%)] px-2 py-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(0,0%,52%)]"
+                >
+                  <Tags className="h-2.5 w-2.5 shrink-0" />
+                  <span className="truncate">{tag}</span>
+                </span>
+              ))}
             </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
+          )}
 
-// ─── Loading Skeleton ────────────────────────────────────────
-function LoadingSkeleton() {
-  return (
-    <div className="container max-w-7xl mx-auto px-4 py-16 space-y-16">
-      {[1, 2].map((i) => (
-        <div key={i} className="space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <div className="flex justify-center gap-6">
-            {[1, 2, 3, 4].map((j) => (
-              <Skeleton key={j} className="w-40 h-52 rounded-sm" />
-            ))}
-          </div>
+          <Link
+            to={path}
+            className="mt-auto flex items-center gap-2 pt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))] transition-colors hover:text-[hsl(var(--gold-accent)/0.82)]"
+          >
+            Abrir personagem
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
-      ))}
-    </div>
+      </div>
+    </ArcadeCard>
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────
 export default function CharacterSelect() {
-  const { data: collections, isLoading } = useCollectionsWithCharacters();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
+  const [page, setPage] = useState(() => parsePageParam(searchParams.get("page")));
+  const [franchise, setFranchise] = useState(searchParams.get("franchise") ?? "");
+  const [sort, setSort] = useState<CatalogSort>(
+    searchParams.get("sort") === "az" ? "az" : "recent",
+  );
+
+  const needle = useMemo(() => q.trim(), [q]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [needle, franchise, sort]);
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (page > 0) next.set("page", String(page + 1));
+    else next.delete("page");
+
+    const nextSort = sort === "recent" ? null : sort;
+    if (nextSort) next.set("sort", nextSort);
+    else next.delete("sort");
+
+    if (needle) next.set("q", needle);
+    else next.delete("q");
+
+    if (franchise.trim()) next.set("franchise", franchise.trim());
+    else next.delete("franchise");
+
+    const currentQuery = searchParams.toString();
+    const nextQuery = next.toString();
+    if (nextQuery !== currentQuery) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [franchise, needle, page, searchParams, setSearchParams, sort]);
+
+  const charactersQuery = useCatalogCharacters(needle, page, {
+    character: "",
+    franchise,
+    category: "",
+    sourceType: "",
+    variantType: "",
+    tagsCSV: "",
+    catalogMode: "public",
+    contentMode: "general",
+    sort,
+  });
+
+  const rows = charactersQuery.data?.rows ?? [];
+  const hasNext = charactersQuery.data?.hasNext ?? false;
+  const visiblePageIndexes = useMemo(
+    () => buildVisiblePageIndexes(page, hasNext),
+    [page, hasNext],
+  );
+
+  const stats = useMemo(
+    () => ({
+      characters: rows.length,
+      models: rows.reduce((total, row) => total + row.model_count, 0),
+    }),
+    [rows],
+  );
+
+  const clearFilters = () => {
+    setQ("");
+    setFranchise("");
+    setSort("recent");
+    setPage(0);
+    setSearchParams(new URLSearchParams(), { replace: true });
+  };
 
   return (
     <Page
-      title="Selecionar Personagem - Arcade Select"
-      description="Escolha seu personagem favorito no estilo arcade clássico. Explore coleções exclusivas de personagens artesanais."
-      keywords={["personagens", "coleção", "arcade", "seleção"]}
+      title="Personagens | ORDAX"
+      description="Diretorio publico de personagens com acesso rapido aos modelos de cada um."
+      keywords={["personagens", "universo", "catalogo", "modelos", "ordax"]}
     >
-      <div className="min-h-screen bg-[hsl(var(--background))] relative overflow-hidden">
-        {/* Global Scanlines */}
-        <div
-          className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]"
-          style={{
-            background:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(0 0% 50% / 0.5) 2px, hsl(0 0% 50% / 0.5) 4px)",
-          }}
-        />
+      <ArcadeHero
+        badge="Diretorio Publico"
+        title="PERSONAGENS"
+        subtitle=">> ENCONTRE O PERSONAGEM. ABRA A PAGINA. NAVEGUE PELOS MODELOS."
+        stats={[
+          { value: stats.characters, label: stats.characters === 1 ? "Personagem" : "Personagens" },
+          { value: stats.models, label: stats.models === 1 ? "Modelo" : "Modelos" },
+        ]}
+      />
 
-        {/* Hero Header */}
-        <section className="relative py-16 md:py-24 overflow-hidden">
-          {/* Background grid pattern */}
-          <div
-            className="absolute inset-0 opacity-[0.04] pointer-events-none"
-            style={{
-              backgroundImage:
-                "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
+      <section className="relative z-10 mx-auto -mt-4 max-w-7xl px-4 md:px-6">
+        <FloatingParticles />
+
+        <div className="mb-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_180px]">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(0,0%,40%)]" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar personagem..."
+              className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-11 pr-10 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
+            />
+            {q && (
+              <button
+                onClick={() => setQ("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(0,0%,40%)] hover:text-[hsl(var(--gold-accent))]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <input
+            value={franchise}
+            onChange={(e) => setFranchise(e.target.value)}
+            placeholder="Filtrar obra"
+            className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-4 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
           />
 
-          <div className="container max-w-7xl mx-auto px-4 relative z-10">
-            <div className="text-center space-y-4">
-              {/* Top decoration */}
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="h-px w-12 bg-[hsl(var(--gold-accent))]" />
-                <Sparkles className="w-5 h-5 text-[hsl(var(--gold-accent))] animate-pulse" />
-                <div className="h-px w-12 bg-[hsl(var(--gold-accent))]" />
-              </div>
-
-              <h1
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight"
-                style={{
-                  textShadow: "0 0 40px hsl(var(--gold-accent) / 0.2)",
-                }}
-              >
-                <span className="text-[hsl(var(--gold-accent))]">Select</span>{" "}
-                <span className="text-[hsl(var(--foreground))]">Your</span>{" "}
-                <span className="text-[hsl(var(--gold-accent))]">Character</span>
-              </h1>
-
-              <p className="font-mono text-sm sm:text-base text-[hsl(var(--muted-foreground))] uppercase tracking-[0.2em]">
-                <Users className="w-4 h-4 inline mr-2" />
-                {collections?.reduce((acc, c) => acc + (c.collection_characters?.length || 0), 0) || 0}{" "}
-                personagens disponíveis
-              </p>
-
-              {/* Keyboard hint */}
-              <div className="flex items-center justify-center gap-2 text-xs font-mono text-[hsl(var(--muted-foreground)/0.6)] mt-4">
-                <kbd className="px-2 py-1 border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--muted))]">
-                  ←
-                </kbd>
-                <kbd className="px-2 py-1 border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--muted))]">
-                  →
-                </kbd>
-                <span className="ml-1">para navegar</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Collections */}
-        {isLoading ? (
-          <LoadingSkeleton />
-        ) : collections && collections.length > 0 ? (
-          <div className="space-y-4 pb-20">
-            {collections.map((collection) => (
-              <CollectionSection key={collection.id} collection={collection} />
-            ))}
-          </div>
-        ) : (
-          <div className="container max-w-7xl mx-auto px-4 py-20 text-center">
-            <Swords className="w-16 h-16 text-[hsl(var(--muted-foreground))] mx-auto mb-4" />
-            <h2 className="text-2xl font-bold uppercase mb-2">Nenhuma coleção disponível</h2>
-            <p className="text-[hsl(var(--muted-foreground))] font-mono text-sm">
-              Novas coleções em breve. Fique ligado!
-            </p>
-          </div>
-        )}
-
-        {/* Bottom HUD bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[hsl(var(--card)/0.95)] backdrop-blur-sm border-t border-[hsl(var(--border))]">
-          <div className="container max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-4 text-xs font-mono text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-              <span className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                Online
-              </span>
-              <span>{collections?.length || 0} coleções</span>
-            </div>
-
-            <Button
-              asChild
-              size="sm"
-              variant="outline"
-              className="font-mono text-xs uppercase tracking-wider rounded-sm border-[hsl(var(--gold-accent)/0.5)] text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.1)]"
-            >
-              <Link to={PUBLIC_ROUTES.collections}>
-                Ver Todas Coleções
-                <ArrowRight className="w-3 h-3 ml-2" />
-              </Link>
-            </Button>
-          </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value === "az" ? "az" : "recent")}
+            className="h-12 w-full border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] px-4 font-mono text-sm tracking-wider text-[hsl(0,0%,90%)] transition-colors focus:border-[hsl(var(--gold-accent)/0.6)] focus:outline-none"
+          >
+            <option value="recent">Mais recentes</option>
+            <option value="az">A-Z</option>
+          </select>
         </div>
-      </div>
+
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,6%)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,60%)]">
+            <Users className="h-3.5 w-3.5" />
+            {stats.characters} personagens visiveis
+          </span>
+          <span className="inline-flex items-center gap-2 border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,6%)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,60%)]">
+            <Trophy className="h-3.5 w-3.5" />
+            {stats.models} modelos nesta pagina
+          </span>
+          {(q || franchise || sort !== "recent") && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.28)] bg-[hsl(var(--gold-accent)/0.08)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.14)]"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+
+        <ArcadeSectionTitle>Diretorio de personagens</ArcadeSectionTitle>
+
+        {charactersQuery.isLoading ? (
+          <ArcadeCard hover={false} className="p-8 text-center">
+            <Users className="mx-auto mb-4 h-12 w-12 animate-pulse text-[hsl(0,0%,22%)]" />
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,45%)]">
+              Carregando personagens...
+            </p>
+          </ArcadeCard>
+        ) : rows.length === 0 ? (
+          <ArcadeCard hover={false} className="p-8 text-center">
+            <Users className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
+            <h2
+              className="text-3xl font-black uppercase tracking-[0.08em]"
+              style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+            >
+              Nenhum personagem encontrado
+            </h2>
+            <p className="mt-3 text-sm text-[hsl(var(--muted-foreground))]">
+              Ajuste a busca ou remova os filtros ativos.
+            </p>
+          </ArcadeCard>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+              {rows.map((row) => (
+                <CharacterDirectoryCard key={row.id} row={row} />
+              ))}
+            </div>
+
+            <div className="mt-8 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setPage((current) => Math.max(current - 1, 0))}
+                disabled={page === 0}
+                className="flex h-10 w-10 items-center justify-center border border-[hsl(0,0%,15%)] text-[hsl(0,0%,55%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="Pagina anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {visiblePageIndexes.map((pageIndex, index) => {
+                const previous = visiblePageIndexes[index - 1];
+                const shouldInsertGap =
+                  previous !== undefined && pageIndex - previous > 1;
+
+                return (
+                  <div key={pageIndex} className="flex items-center gap-2">
+                    {shouldInsertGap && (
+                      <span className="px-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,35%)]">
+                        ...
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setPage(pageIndex)}
+                      className={`min-w-[42px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors ${
+                        page === pageIndex
+                          ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.1)] text-[hsl(var(--gold-accent))]"
+                          : "border-[hsl(0,0%,15%)] text-[hsl(0,0%,55%)] hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))]"
+                      }`}
+                    >
+                      {String(pageIndex + 1).padStart(2, "0")}
+                    </button>
+                  </div>
+                );
+              })}
+
+              <button
+                onClick={() => hasNext && setPage((current) => current + 1)}
+                disabled={!hasNext}
+                className="flex h-10 w-10 items-center justify-center border border-[hsl(0,0%,15%)] text-[hsl(0,0%,55%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.4)] hover:text-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="Proxima pagina"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-8 text-center">
+              <Link
+                to={PUBLIC_ROUTES.catalog}
+                className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.08)]"
+              >
+                Abrir universo completo
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </>
+        )}
+      </section>
     </Page>
   );
 }

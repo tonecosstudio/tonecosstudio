@@ -15,6 +15,7 @@ import {
   ADMIN_REDIRECTS,
   ADMIN_ROUTES,
   AUTH_ROUTES,
+  PUBLIC_COLLECTIONS_ENABLED,
   PUBLIC_ROUTES,
   adminPaymentDetailsPath,
   catalogModelDetailsPath,
@@ -107,6 +108,10 @@ function LegacyCatalogRedirect() {
   );
 }
 
+function CollectionsLaunchRedirect() {
+  return <Navigate to={PUBLIC_ROUTES.catalog} replace />;
+}
+
 function AppContent() {
   useSentry();
   useAuthProfileSync();
@@ -134,39 +139,112 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.legacyCatalog} element={<Navigate to={PUBLIC_ROUTES.catalog} replace />} />
             <Route path={PUBLIC_ROUTES.legacyCatalogDetails} element={<LegacyCatalogRedirect />} />
             <Route path={PUBLIC_ROUTES.about} element={<AboutArcade />} />
-            <Route path={PUBLIC_ROUTES.plans} element={<PlansArcade />} />
-            <Route path={PUBLIC_ROUTES.collections} element={<CollectionsShowcase />} />
-            <Route path={PUBLIC_ROUTES.collectionsArcade} element={<CollectionsArcade />} />
-            <Route path={PUBLIC_ROUTES.collectionCharacterDetails} element={<CharacterDetails />} />
-            <Route path={PUBLIC_ROUTES.characterDetails} element={<CharacterDetails />} />
-            <Route path={PUBLIC_ROUTES.characterSelect} element={<CharacterSelect />} />
-            <Route path={PUBLIC_ROUTES.collectionDetails} element={<CollectionDetailsArcade />} />
-            <Route path={PUBLIC_ROUTES.buyCharacter} element={<BuyCharacter />} />
+            <Route
+              path={PUBLIC_ROUTES.plans}
+              element={PUBLIC_COLLECTIONS_ENABLED ? <PlansArcade /> : <CollectionsLaunchRedirect />}
+            />
+            <Route
+              path={PUBLIC_ROUTES.collections}
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsShowcase /> : <CollectionsLaunchRedirect />
+              }
+            />
+            <Route
+              path={PUBLIC_ROUTES.collectionsArcade}
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? <CollectionsArcade /> : <CollectionsLaunchRedirect />
+              }
+            />
+            <Route
+              path={PUBLIC_ROUTES.collectionCharacterDetails}
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <CollectionsLaunchRedirect />
+              }
+            />
+            <Route
+              path={PUBLIC_ROUTES.characterDetails}
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? <CharacterDetails /> : <CollectionsLaunchRedirect />
+              }
+            />
+            <Route
+              path={PUBLIC_ROUTES.characterSelect}
+              element={<CharacterSelect />}
+            />
+            <Route
+              path={PUBLIC_ROUTES.collectionDetails}
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? <CollectionDetailsArcade /> : <CollectionsLaunchRedirect />
+              }
+            />
+            <Route
+              path={PUBLIC_ROUTES.buyCharacter}
+              element={PUBLIC_COLLECTIONS_ENABLED ? <BuyCharacter /> : <CollectionsLaunchRedirect />}
+            />
             <Route path={PUBLIC_ROUTES.terms} element={<TermsArcade />} />
             <Route path={PUBLIC_ROUTES.privacy} element={<PrivacyArcade />} />
             <Route path={PUBLIC_ROUTES.contact} element={<ContactArcade />} />
             <Route path={PUBLIC_ROUTES.login} element={<LoginArcade />} />
             <Route path={PUBLIC_ROUTES.publicProfile} element={<PublicProfileArcade />} />
-            <Route path={PUBLIC_ROUTES.preLaunch} element={<PreLaunchArcade />} />
+            <Route
+              path={PUBLIC_ROUTES.preLaunch}
+              element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <CollectionsLaunchRedirect />}
+            />
 
             {/* Auth-required */}
             <Route path={AUTH_ROUTES.profile} element={<RequireAuth><ProfileArcade /></RequireAuth>} />
             <Route path={AUTH_ROUTES.support} element={<Navigate to={`${AUTH_ROUTES.profile}?section=support`} replace />} />
             <Route path={AUTH_ROUTES.payments} element={<RequireAuth><MyPaymentsArcade /></RequireAuth>} />
             <Route path={AUTH_ROUTES.paymentDetails} element={<RequireAuth><PaymentDetails /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.subscribeCollection} element={<RequireAuth><SubscribeCollection /></RequireAuth>} />
+            <Route
+              path={AUTH_ROUTES.subscribeCollection}
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? (
+                  <RequireAuth><SubscribeCollection /></RequireAuth>
+                ) : (
+                  <CollectionsLaunchRedirect />
+                )
+              }
+            />
             <Route path={AUTH_ROUTES.wishlist} element={<RequireAuth><WishlistArcade /></RequireAuth>} />
             <Route path={AUTH_ROUTES.dashboard} element={<RequireAuth><DashboardArcade /></RequireAuth>} />
             <Route path={AUTH_ROUTES.notifications} element={<RequireAuth><NotificationsArcade /></RequireAuth>} />
             <Route path={AUTH_ROUTES.orderProgress} element={<RequireAuth><CustomerOrderProgressPage /></RequireAuth>} />
             <Route path={AUTH_ROUTES.groups} element={<RequireAuth><GroupsArcade /></RequireAuth>} />
             <Route path={AUTH_ROUTES.groupDetails} element={<RequireAuth><MemberGroupDetailsPage /></RequireAuth>} />
-            <Route path={AUTH_ROUTES.subscriberDashboard} element={<RequireAuth><SubscriberDashboardArcade /></RequireAuth>} />
+            <Route
+              path={AUTH_ROUTES.subscriberDashboard}
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? (
+                  <RequireAuth><SubscriberDashboardArcade /></RequireAuth>
+                ) : (
+                  <CollectionsLaunchRedirect />
+                )
+              }
+            />
             <Route path={AUTH_ROUTES.coinsPurchase} element={<RequireAuth><CoinsPurchaseArcade /></RequireAuth>} />
 
             {/* Redirects de compatibilidade */}
-            <Route path="/assinaturas" element={<Navigate to={AUTH_ROUTES.subscriberDashboard} replace />} />
-            <Route path="/planos-assinatura" element={<Navigate to={PUBLIC_ROUTES.plans} replace />} />
+            <Route
+              path="/assinaturas"
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? (
+                  <Navigate to={AUTH_ROUTES.subscriberDashboard} replace />
+                ) : (
+                  <CollectionsLaunchRedirect />
+                )
+              }
+            />
+            <Route
+              path="/planos-assinatura"
+              element={
+                PUBLIC_COLLECTIONS_ENABLED ? (
+                  <Navigate to={PUBLIC_ROUTES.plans} replace />
+                ) : (
+                  <CollectionsLaunchRedirect />
+                )
+              }
+            />
 
             {/* Admin */}
             <Route path={ADMIN_ROUTES.home} element={<RequireAdmin><AdminHome /></RequireAdmin>} />
