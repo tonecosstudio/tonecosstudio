@@ -21,6 +21,43 @@ import {
 } from "@/services/catalog/catalog-models-service";
 import { getCatalogPublicTags, getCatalogSourceName } from "@/lib/catalog-utils";
 
+type CharacterPageModelKind = "direct" | "wrapped" | "composite";
+
+function normalizeCharacterPageText(value: string | null | undefined) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function getCharacterPageModelKind(
+  rawCharacterName: string | null | undefined,
+  characterName: string,
+): CharacterPageModelKind {
+  const raw = String(rawCharacterName || "").trim();
+  const normalizedRaw = normalizeCharacterPageText(raw);
+  const normalizedCharacter = normalizeCharacterPageText(characterName);
+
+  if (!normalizedRaw || normalizedRaw === normalizedCharacter) return "direct";
+  if (
+    /^busto\b/i.test(raw) ||
+    /^painel\b/i.test(raw)
+  ) {
+    return "wrapped";
+  }
+  if (
+    /^conjunto\b/i.test(raw) ||
+    /\bvs\b/i.test(raw) ||
+    /,/.test(raw) ||
+    /\se\s/i.test(normalizedRaw)
+  ) {
+    return "composite";
+  }
+  return "direct";
+}
+
 export default function CatalogCharacterArcade() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
@@ -92,7 +129,7 @@ export default function CatalogCharacterArcade() {
     setSearchParams(nextSearch, { replace: true });
   }, [activeTag, availableTags, searchParams, setSearchParams]);
 
-  const displayRows = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const next = activeTag
       ? rows.filter((row) => getCatalogPublicTags(row, 8).includes(activeTag))
       : [...rows];
@@ -107,6 +144,23 @@ export default function CatalogCharacterArcade() {
     }
     return next;
   }, [activeTag, rows, sortMode]);
+  const groupedDisplayRows = useMemo(() => {
+    const primary: typeof filteredRows = [];
+    const related: typeof filteredRows = [];
+
+    for (const row of filteredRows) {
+      const kind = getCharacterPageModelKind(row.character_name, characterName);
+      if (kind === "composite") related.push(row);
+      else primary.push(row);
+    }
+
+    return {
+      primary,
+      related,
+      primaryCount: primary.length,
+      relatedCount: related.length,
+    };
+  }, [characterName, filteredRows]);
   const likesQuery = useLikedModelIdsQuery(user?.id);
   const likedIds = likesQuery.data ?? new Set<string>();
 
@@ -319,6 +373,18 @@ export default function CatalogCharacterArcade() {
               </button>
             </div>
           </div>
+          {(groupedDisplayRows.primaryCount > 0 || groupedDisplayRows.relatedCount > 0) && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,6%)] px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(0,0%,60%)]">
+                {groupedDisplayRows.primaryCount} diretos
+              </span>
+              {groupedDisplayRows.relatedCount > 0 && (
+                <span className="inline-flex items-center border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(var(--gold-accent)/0.08)] px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--gold-accent))]">
+                  {groupedDisplayRows.relatedCount} participacoes
+                </span>
+              )}
+            </div>
+          )}
           {availableTags.length > 0 && (
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <button
@@ -370,7 +436,7 @@ export default function CatalogCharacterArcade() {
                 Este personagem ainda nao tem modelos publicos disponiveis.
               </p>
             </ArcadeCard>
-          ) : displayRows.length === 0 ? (
+          ) : filteredRows.length === 0 ? (
             <ArcadeCard hover={false} className="p-8 text-center">
               <Shapes className="mx-auto mb-4 h-12 w-12 text-[hsl(0,0%,22%)]" />
               <h2
@@ -384,19 +450,56 @@ export default function CatalogCharacterArcade() {
               </p>
             </ArcadeCard>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-              {displayRows.map((model) => {
-                const isLiked = Boolean(user?.id) && likedIds.has(model.id);
-                return (
-                  <UniverseModelCard
-                    key={model.id}
-                    model={model}
-                    isLiked={isLiked}
-                    onToggleLike={() => handleToggleLike(model.id, isLiked)}
-                    onTagClick={(tag) => updateFilterParams({ tag })}
-                  />
-                );
-              })}
+            <div className="space-y-8">
+              {groupedDisplayRows.primaryCount > 0 && (
+                <div>
+                  {groupedDisplayRows.relatedCount > 0 && (
+                    <div className="mb-3">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(0,0%,45%)]">
+                        Modelos do personagem
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                    {groupedDisplayRows.primary.map((model) => {
+                      const isLiked = Boolean(user?.id) && likedIds.has(model.id);
+                      return (
+                        <UniverseModelCard
+                          key={model.id}
+                          model={model}
+                          isLiked={isLiked}
+                          onToggleLike={() => handleToggleLike(model.id, isLiked)}
+                          onTagClick={(tag) => updateFilterParams({ tag })}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {groupedDisplayRows.relatedCount > 0 && (
+                <div>
+                  <div className="mb-3">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--gold-accent)/0.82)]">
+                      Participacoes, conjuntos e confrontos
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                    {groupedDisplayRows.related.map((model) => {
+                      const isLiked = Boolean(user?.id) && likedIds.has(model.id);
+                      return (
+                        <UniverseModelCard
+                          key={model.id}
+                          model={model}
+                          isLiked={isLiked}
+                          onToggleLike={() => handleToggleLike(model.id, isLiked)}
+                          onTagClick={(tag) => updateFilterParams({ tag })}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
