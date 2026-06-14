@@ -36,6 +36,24 @@ export const CATALOG_CHARACTER_PRESENTATION_OVERRIDES: Record<
   "dragon ball::zarbon": {
     coverModelId: "dac08925-e4fe-4750-b0c3-0dda727ec648",
   },
+  "dragon ball::bulma": {
+    coverModelId: "e85f9c27-1b9d-407a-97eb-4af0960daf04",
+  },
+  "dragon ball::lunch": {
+    coverModelId: "fc2febf7-aa71-4bfd-8183-cf8542945fee",
+  },
+  "dragon ball::kuririn": {
+    coverModelId: "b29b3fce-873e-478d-b07e-9572739ab295",
+  },
+  "dragon ball::shenlong": {
+    coverModelId: "5f0aab0c-6ce2-4e93-954a-d76f0ef7af63",
+  },
+  "dragon ball::gogeta": {
+    coverModelId: "cd385b05-44bc-4fc0-8038-6e763ebd16a8",
+  },
+  "dragon ball::gogeta ssj4": {
+    coverModelId: "1cecb6a6-3009-4a9a-a11b-98ac8cd0a2ef",
+  },
 };
 
 function normalizePresentationKeyPart(value: string | null | undefined) {
