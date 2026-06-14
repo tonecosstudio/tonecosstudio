@@ -2,6 +2,11 @@ export type CatalogCharacterPresentationOverride = {
   coverModelId?: string;
 };
 
+export type CatalogCharacterPresentationAliasOverride = {
+  key: string;
+  label?: string;
+};
+
 export const CATALOG_CHARACTER_PRESENTATION_OVERRIDES: Record<
   string,
   CatalogCharacterPresentationOverride
@@ -56,6 +61,44 @@ export const CATALOG_CHARACTER_PRESENTATION_OVERRIDES: Record<
   },
 };
 
+export const CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES: Record<
+  string,
+  CatalogCharacterPresentationAliasOverride[]
+> = {
+  "dragon ball::busto freeza": [{ key: "freeza", label: "Freeza" }],
+  "dragon ball::busto goku": [{ key: "goku", label: "Goku" }],
+  "dragon ball::busto goku super saiyajin": [{ key: "goku", label: "Goku" }],
+  "dragon ball::busto piccolo": [{ key: "piccolo", label: "Piccolo" }],
+  "dragon ball::busto vegeta": [{ key: "vegeta", label: "Vegeta" }],
+  "dragon ball::busto trunks": [{ key: "trunks", label: "Trunks" }],
+  "dragon ball::busto gohan": [{ key: "gohan", label: "Gohan" }],
+  "dragon ball::busto androide 18": [
+    { key: "androide 18", label: "Androide 18" },
+  ],
+  "dragon ball::painel shenlong": [{ key: "shenlong", label: "Shenlong" }],
+  "dragon ball::painel goku e vegeta": [
+    { key: "goku", label: "Goku" },
+    { key: "vegeta", label: "Vegeta" },
+  ],
+  "dragon ball::trunks vs cell": [
+    { key: "trunks", label: "Trunks" },
+    { key: "cell", label: "Cell" },
+  ],
+  "dragon ball::broly vs goku": [
+    { key: "broly", label: "Broly" },
+    { key: "goku", label: "Goku" },
+  ],
+  "dragon ball::goku vs freeza": [
+    { key: "goku", label: "Goku" },
+    { key: "freeza", label: "Freeza" },
+  ],
+  "dragon ball::conjunto bulma, goku e shenlong": [
+    { key: "bulma", label: "Bulma" },
+    { key: "goku", label: "Goku" },
+    { key: "shenlong", label: "Shenlong" },
+  ],
+};
+
 function normalizePresentationKeyPart(value: string | null | undefined) {
   return String(value || "").trim().toLowerCase();
 }
@@ -76,4 +119,14 @@ export function getCatalogCharacterPresentationOverride(params: {
 }) {
   const key = getCatalogCharacterPresentationKey(params);
   return key ? CATALOG_CHARACTER_PRESENTATION_OVERRIDES[key] ?? null : null;
+}
+
+export function getCatalogCharacterPresentationAliasOverride(params: {
+  sourceTitle?: string | null;
+  characterName?: string | null;
+}) {
+  const key = getCatalogCharacterPresentationKey(params);
+  return key
+    ? CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES[key] ?? null
+    : null;
 }

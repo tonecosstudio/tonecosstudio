@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CATALOG_CHARACTER_PRESENTATION_OVERRIDES } from "@/config/catalog-character-presentation";
+import {
+  CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES,
+  CATALOG_CHARACTER_PRESENTATION_OVERRIDES,
+} from "@/config/catalog-character-presentation";
 
 import {
   getPublicCatalogSummary,
@@ -110,6 +113,9 @@ describe("catalog models service", () => {
     vi.unstubAllEnvs();
     Object.keys(CATALOG_CHARACTER_PRESENTATION_OVERRIDES).forEach((key) => {
       delete CATALOG_CHARACTER_PRESENTATION_OVERRIDES[key];
+    });
+    Object.keys(CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES).forEach((key) => {
+      delete CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES[key];
     });
     mocks.from.mockReturnValue({ select: mocks.select });
     mocks.storageFrom.mockReturnValue({ getPublicUrl: mocks.getPublicUrl });
@@ -585,6 +591,52 @@ describe("catalog models service", () => {
 
     expect(models).toHaveLength(2);
     expect(models.map((row) => row.id)).toEqual(["model-freeza", "model-versus"]);
+  });
+
+  it("allows manual alias overrides for composite character rows", async () => {
+    CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES["dragon ball::painel goku e vegeta"] = [
+      { key: "goku", label: "Goku" },
+      { key: "vegeta", label: "Vegeta" },
+    ];
+
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-painel",
+          source_title: "Dragon Ball",
+          character_name: "Painel Goku e Vegeta",
+          tags: ["painel"],
+          image_path:
+            "catalog-webp-final/display/anime/sayajins/goku/painel-goku-e-vegeta-1.webp",
+          canonical_identity_key: "dragon-ball:goku-vegeta:painel-goku-e-vegeta",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "az",
+      },
+    });
+
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows.map((row) => row.character_name)).toEqual([
+      "Goku",
+      "Vegeta",
+    ]);
   });
 
   it("resolves a clean character slug back to character context", async () => {

@@ -2,7 +2,10 @@ import {
   CATALOG_PAGE_SIZE,
   PUBLIC_CATALOG_VISIBILITIES,
 } from "@/config/catalog";
-import { getCatalogCharacterPresentationOverride } from "@/config/catalog-character-presentation";
+import {
+  getCatalogCharacterPresentationAliasOverride,
+  getCatalogCharacterPresentationOverride,
+} from "@/config/catalog-character-presentation";
 import { supabase } from "@/integrations/supabase/client";
 import { getCatalogStoragePublicUrl } from "@/lib/catalog-assets";
 import {
@@ -358,6 +361,17 @@ function deriveCharacterPresentationAliases(row: CatalogModelRow): CharacterPres
     if (aliases.has(normalized)) return;
     aliases.set(normalized, preferredLabel?.trim() || titleCaseCatalogWords(normalized));
   };
+
+  const aliasOverride = getCatalogCharacterPresentationAliasOverride({
+    sourceTitle: row.source_title,
+    characterName: row.character_name,
+  });
+  if (aliasOverride?.length) {
+    for (const alias of aliasOverride) {
+      pushAlias(alias.key, alias.label || alias.key);
+    }
+    return Array.from(aliases.entries()).map(([key, label]) => ({ key, label }));
+  }
 
   const rawCharacterName = String(row.character_name || "").trim();
   const strippedCharacter = stripCharacterPresentationWrappers(rawCharacterName);
