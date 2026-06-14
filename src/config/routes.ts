@@ -3,6 +3,7 @@ export const PUBLIC_ROUTES = {
   landing: "/landing",
   migrateOrder: "/migrar-pedido",
   catalog: "/universo",
+  catalogModels: "/modelos",
   catalogCharacter: "/universo/personagem/:slug",
   catalogDetails: "/universo/:id",
   legacyCatalog: "/catalogo",
@@ -23,6 +24,8 @@ export const PUBLIC_ROUTES = {
   publicProfile: "/collector/:username",
   preLaunch: "/pre-lancamento",
 } as const;
+
+export const PUBLIC_COLLECTIONS_ENABLED = false;
 
 export const AUTH_ROUTES = {
   profile: "/perfil",

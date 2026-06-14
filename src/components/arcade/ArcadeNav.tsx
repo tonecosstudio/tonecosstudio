@@ -20,6 +20,7 @@ const navLinks = [
   { to: PUBLIC_ROUTES.home, label: "INICIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
   { to: PUBLIC_ROUTES.characterSelect, label: "PERSONAGENS" },
+  { to: PUBLIC_ROUTES.catalogModels, label: "MODELOS" },
 ];
 
 if (PUBLIC_COLLECTIONS_ENABLED) {

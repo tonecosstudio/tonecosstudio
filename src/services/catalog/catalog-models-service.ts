@@ -63,6 +63,28 @@ export type CatalogModelFilters = {
   sort: CatalogSort;
 };
 
+export type CatalogUniverseThemeRow = {
+  key: string;
+  label: string;
+  imageUrl: string | null;
+  thumbnailUrl: string | null;
+  characterCount: number;
+  modelCount: number;
+  franchiseCount: number;
+};
+
+export type CatalogUniverseFranchiseRow = {
+  key: string;
+  label: string;
+  themeKey: string;
+  themeLabel: string;
+  imageUrl: string | null;
+  thumbnailUrl: string | null;
+  characterCount: number;
+  modelCount: number;
+  sourceTitle: string | null;
+};
+
 type CatalogModelDbRow = Omit<CatalogModelRow, "imageUrl" | "thumbnailUrl">;
 type CatalogModelDetailsDbRow = Omit<
   CatalogModelDetailsRow,
@@ -249,6 +271,52 @@ function normalizeGroupKey(value: string | null | undefined) {
 
 function toCatalogSlug(value: string | null | undefined) {
   return normalizeGroupKey(value).replace(/\s+/g, "-");
+}
+
+function getUniverseThemeFromRow(row: {
+  source_title?: string | null;
+  franchise?: string | null;
+  source_type?: string | null;
+  category?: string | null;
+  tags?: string[] | null;
+}) {
+  const sourceTitle = normalizeGroupKey(row.source_title);
+  const franchise = normalizeGroupKey(row.franchise);
+  const combined = [sourceTitle, franchise, ...(row.tags ?? []).map(normalizeGroupKey)].join(" ");
+
+  if (/\bmarvel\b/.test(combined)) {
+    return { key: "marvel", label: "Marvel" };
+  }
+
+  if (/\bdc\b/.test(combined) || /\bdc-comics\b/.test(combined)) {
+    return { key: "dc", label: "DC" };
+  }
+
+  const sourceType = normalizeGroupKey(row.source_type);
+  if (sourceType === "anime") return { key: "anime", label: "Anime" };
+  if (sourceType === "manga") return { key: "manga", label: "Manga" };
+  if (sourceType === "movie") return { key: "filmes", label: "Filmes" };
+  if (sourceType === "series") return { key: "series", label: "Series" };
+  if (sourceType === "game") return { key: "games", label: "Games" };
+  if (sourceType === "comic") return { key: "quadrinhos", label: "Quadrinhos" };
+  if (sourceType === "tokusatsu") return { key: "tokusatsu", label: "Tokusatsu" };
+  if (sourceType === "original") return { key: "originais", label: "Originais" };
+
+  const category = normalizeGroupKey(row.category);
+  if (category === "quadrinhos") return { key: "quadrinhos", label: "Quadrinhos" };
+  if (category === "filmes") return { key: "filmes", label: "Filmes" };
+  if (category === "series") return { key: "series", label: "Series" };
+  if (category === "jogos") return { key: "games", label: "Games" };
+  if (category === "desenhos") return { key: "desenhos", label: "Desenhos" };
+
+  return { key: "outros", label: "Outros" };
+}
+
+function getUniverseFranchiseLabel(row: {
+  source_title?: string | null;
+  franchise?: string | null;
+}, fallback: string) {
+  return String(row.source_title || row.franchise || fallback).trim() || fallback;
 }
 
 function titleCaseCatalogWords(value: string) {
@@ -980,6 +1048,91 @@ export async function listCatalogCharacters(params: {
   const rows = groupedCharacters.slice(from, from + CATALOG_PAGE_SIZE);
 
   return { rows, hasNext };
+}
+
+export async function listCatalogUniverseIndex() {
+  const query = catalogModelsGateway
+    .from("models")
+    .select(CATALOG_MODEL_SELECT)
+    .eq("is_active", true)
+    .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
+    .not(
+      "tags",
+      "ov",
+      "{nsfw,sensitive-blur,sensitive-review,age-ambiguous-review}",
+    )
+    .order("created_at", { ascending: false })
+    .range(0, 999);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const eligible = ((data ?? []) as CatalogModelDbRow[])
+    .map(mapCatalogModel)
+    .filter((row) => isPublicCatalogEligibleRow(row, "public"));
+  const characters = groupCatalogCharacters(eligible, "recent");
+
+  const themeMap = new Map<
+    string,
+    CatalogUniverseThemeRow & { franchiseKeys: Set<string> }
+  >();
+  const franchiseMap = new Map<string, CatalogUniverseFranchiseRow>();
+
+  for (const row of characters) {
+    const theme = getUniverseThemeFromRow(row);
+    const franchiseLabel = getUniverseFranchiseLabel(row, theme.label);
+    const franchiseKey = slugifyCatalogSegment(franchiseLabel) || theme.key;
+
+    const existingTheme = themeMap.get(theme.key);
+    if (existingTheme) {
+      existingTheme.characterCount += 1;
+      existingTheme.modelCount += row.model_count;
+      existingTheme.franchiseKeys.add(franchiseKey);
+    } else {
+      themeMap.set(theme.key, {
+        key: theme.key,
+        label: theme.label,
+        imageUrl: row.imageUrl,
+        thumbnailUrl: row.thumbnailUrl,
+        characterCount: 1,
+        modelCount: row.model_count,
+        franchiseCount: 0,
+        franchiseKeys: new Set([franchiseKey]),
+      });
+    }
+
+    const fullFranchiseKey = `${theme.key}::${franchiseKey}`;
+    const existingFranchise = franchiseMap.get(fullFranchiseKey);
+    if (existingFranchise) {
+      existingFranchise.characterCount += 1;
+      existingFranchise.modelCount += row.model_count;
+    } else {
+      franchiseMap.set(fullFranchiseKey, {
+        key: franchiseKey,
+        label: franchiseLabel,
+        themeKey: theme.key,
+        themeLabel: theme.label,
+        imageUrl: row.imageUrl,
+        thumbnailUrl: row.thumbnailUrl,
+        characterCount: 1,
+        modelCount: row.model_count,
+        sourceTitle: row.source_title,
+      });
+    }
+  }
+
+  const themes = Array.from(themeMap.values())
+    .map(({ franchiseKeys, ...theme }) => ({
+      ...theme,
+      franchiseCount: franchiseKeys.size,
+    }))
+    .sort((left, right) => right.modelCount - left.modelCount);
+
+  const franchises = Array.from(franchiseMap.values()).sort(
+    (left, right) => right.modelCount - left.modelCount,
+  );
+
+  return { themes, franchises, characters };
 }
 
 export async function listCatalogModels(params: {
