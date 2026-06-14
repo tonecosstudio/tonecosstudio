@@ -726,6 +726,56 @@ describe("catalog models service", () => {
     ]);
   });
 
+  it("allows manual alias overrides for multi-character GT sets", async () => {
+    CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES[
+      "dragon ball::conjunto saiyajins dragon ball gt"
+    ] = [
+      { key: "goku", label: "Goku" },
+      { key: "vegeta", label: "Vegeta" },
+      { key: "gogeta", label: "Gogeta" },
+    ];
+
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "gt-set-model",
+          name: "Conjunto Saiyajins Dragon Ball GT",
+          franchise: "Dragon Ball",
+          tags: ["goku", "vegeta", "gogeta", "dragon ball gt"],
+          source_title: "Dragon Ball",
+          character_name: "Conjunto Saiyajins Dragon Ball GT",
+          image_path:
+            "catalog-webp-final/display/anime/sayajins/conjunto-sayajins-gt/conjunto-sayajins-gt-115991.webp",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "az",
+      },
+    });
+
+    expect(result.rows.map((row) => row.character_name)).toEqual([
+      "Gogeta",
+      "Goku",
+      "Vegeta",
+    ]);
+  });
+
   it("resolves a clean character slug back to character context", async () => {
     const query = createCatalogQuery({
       data: [

@@ -115,6 +115,11 @@ export const CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES: Record<
     { key: "goku", label: "Goku" },
     { key: "shenlong", label: "Shenlong" },
   ],
+  "dragon ball::conjunto saiyajins dragon ball gt": [
+    { key: "goku", label: "Goku" },
+    { key: "vegeta", label: "Vegeta" },
+    { key: "gogeta", label: "Gogeta" },
+  ],
   "dragon ball::goku e chi chi": [
     { key: "goku", label: "Goku" },
     { key: "chi chi", label: "Chi Chi" },
