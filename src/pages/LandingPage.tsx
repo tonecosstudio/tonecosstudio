@@ -217,7 +217,7 @@ export default function LandingPage() {
       ]}
     >
       {/* ═══ HERO ═══ */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative min-h-[88svh] flex flex-col items-center justify-center overflow-hidden">
         <ParallaxGrid scrollY={scrollY} />
         <FloatingParticles />
 
@@ -231,20 +231,20 @@ export default function LandingPage() {
 
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-2 mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-2 mb-6 animate-fade-in">
             <div className="w-2 h-2 bg-[hsl(var(--gold-accent))] rounded-full animate-pulse" />
             <span
               className="text-[9px] text-[hsl(var(--gold-accent))] tracking-[0.3em] uppercase"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
-              Mission Active • Squad Online
+              Catalogo Publico Ativo
             </span>
           </div>
 
           {/* Title */}
-          <h1 className="mb-6">
+          <h1 className="mb-5">
             <span
-              className="block text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black tracking-[0.15em] leading-none"
+              className="block text-6xl sm:text-8xl md:text-9xl lg:text-[9rem] font-black tracking-[0.15em] leading-none"
               style={{
                 fontFamily: "'Bebas Neue', Impact, sans-serif",
                 textShadow: "0 0 60px hsl(var(--gold-accent) / 0.15)",
@@ -261,7 +261,7 @@ export default function LandingPage() {
           </h1>
 
           {/* Typewriter */}
-          <div className="h-8 mb-10">
+          <div className="h-8 mb-8">
             <p
               className="text-[9px] sm:text-[10px] text-[hsl(0,0%,45%)] tracking-wider"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
@@ -274,7 +274,7 @@ export default function LandingPage() {
           </div>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <button
               onClick={() => navigate(PUBLIC_ROUTES.collections)}
               className="group inline-flex items-center gap-3 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.15em] text-sm h-14 px-10 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all"
