@@ -16,7 +16,7 @@ import {
   PUBLIC_ROUTES,
 } from "@/config/routes";
 
-const navLinks = [
+const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INICIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
   { to: PUBLIC_ROUTES.characterSelect, label: "PERSONAGENS" },
@@ -27,7 +27,7 @@ if (PUBLIC_COLLECTIONS_ENABLED) {
   navLinks.splice(2, 0, { to: PUBLIC_ROUTES.collections, label: "COLECOES" });
 }
 
-const authNavLinks = [
+const authNavLinks: Array<{ to: string; label: string }> = [
   { to: AUTH_ROUTES.profile, label: "CONTA" },
 ];
 
@@ -40,7 +40,13 @@ export function ArcadeNav() {
   const userBalance = balanceData?.balance ?? 0;
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === PUBLIC_ROUTES.home) {
+      return location.pathname === path;
+    }
+
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   const linkClass = (path: string) =>
     `text-[10px] tracking-[0.2em] uppercase transition-colors font-mono ${
@@ -141,7 +147,7 @@ export function ArcadeNav() {
               onClick={() => setMobileOpen(false)}
               className={`block py-2 ${linkClass(AUTH_ROUTES.notifications)}`}
             >
-              ?? NOTIFICA??ES
+              NOTIFICACOES
             </Link>
           )}
           {isAdmin && (
