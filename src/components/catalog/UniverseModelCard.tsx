@@ -47,11 +47,13 @@ export function UniverseModelCard({
   isLiked,
   onToggleLike,
   onTagClick,
+  contextBadge,
 }: {
   model: CatalogModelRow;
   isLiked: boolean;
   onToggleLike: () => void;
   onTagClick?: (tag: string) => void;
+  contextBadge?: string | null;
 }) {
   const [hovered, setHovered] = useState(false);
   const imageUrl = model.thumbnailUrl ?? model.imageUrl;
@@ -135,6 +137,12 @@ export function UniverseModelCard({
           {(mediaLabel || model.category) && (
             <div className="absolute left-2 top-2 z-10 border border-[hsl(var(--gold-accent)/0.3)] bg-[hsl(0,0%,5%)]/90 px-2 py-0.5 font-mono text-[8px] uppercase tracking-widest text-[hsl(var(--gold-accent))]">
               {mediaLabel || model.category}
+            </div>
+          )}
+
+          {contextBadge && (
+            <div className="absolute bottom-2 right-2 z-10 border border-[hsl(var(--gold-accent)/0.28)] bg-[hsl(0,0%,5%)]/92 px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--gold-accent))]">
+              {contextBadge}
             </div>
           )}
 

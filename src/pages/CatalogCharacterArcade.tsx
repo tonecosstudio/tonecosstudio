@@ -58,6 +58,21 @@ function getCharacterPageModelKind(
   return "direct";
 }
 
+function getCharacterPageContextBadge(
+  rawCharacterName: string | null | undefined,
+): string | null {
+  const raw = String(rawCharacterName || "").trim();
+  if (!raw) return null;
+  if (/^busto\b/i.test(raw)) return "Busto";
+  if (/^painel\b/i.test(raw)) return "Painel";
+  if (/^conjunto\b/i.test(raw)) return "Conjunto";
+  if (/\bvs\b/i.test(raw)) return "Confronto";
+  if (/,/.test(raw) || /\se\s/i.test(normalizeCharacterPageText(raw))) {
+    return "Participacao";
+  }
+  return null;
+}
+
 export default function CatalogCharacterArcade() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
@@ -470,6 +485,7 @@ export default function CatalogCharacterArcade() {
                           isLiked={isLiked}
                           onToggleLike={() => handleToggleLike(model.id, isLiked)}
                           onTagClick={(tag) => updateFilterParams({ tag })}
+                          contextBadge={getCharacterPageContextBadge(model.character_name)}
                         />
                       );
                     })}
@@ -494,6 +510,7 @@ export default function CatalogCharacterArcade() {
                           isLiked={isLiked}
                           onToggleLike={() => handleToggleLike(model.id, isLiked)}
                           onTagClick={(tag) => updateFilterParams({ tag })}
+                          contextBadge={getCharacterPageContextBadge(model.character_name)}
                         />
                       );
                     })}
