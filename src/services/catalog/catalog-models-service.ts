@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCatalogStoragePublicUrl } from "@/lib/catalog-assets";
 import {
   getCatalogSensitivity,
+  getCatalogPublicTags,
   getCatalogTagFilterValues,
 } from "@/lib/catalog-utils";
 import type {
@@ -247,6 +248,14 @@ function toCatalogSlug(value: string | null | undefined) {
   return normalizeGroupKey(value).replace(/\s+/g, "-");
 }
 
+function titleCaseCatalogWords(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 const PRODUCT_FAMILY_SUFFIXES = [
   "candy",
   "frontal",
@@ -260,6 +269,152 @@ const PRODUCT_FAMILY_SUFFIXES = [
   "rear",
   "back",
 ];
+
+const CHARACTER_WRAPPER_PREFIXES = [/^busto\s+/i, /^painel\s+/i, /^conjunto\s+/i];
+const CHARACTER_PRESENTATION_BLOCKLIST = new Set([
+  "anime",
+  "desenhos",
+  "filme",
+  "serie",
+  "game",
+  "quadrinhos",
+  "android",
+  "androids",
+  "sayajins",
+  "saiyajins",
+  "raca-do-freeza",
+  "raca do freeza",
+  "forca-ginyu",
+  "forca ginyu",
+  "ginyu",
+  "tropa do orgulho",
+  "deuses",
+  "majins",
+  "terraqueo",
+  "namekusei",
+  "viloes",
+  "criaturas",
+  "conjuntos",
+  "robos",
+  "painel",
+  "busto",
+  "conjunto",
+  "nsfw",
+  "mascara",
+  "figura",
+  "miniatura",
+  "dupla",
+  "diorama",
+  "modelo",
+  "modelos",
+]);
+
+type CharacterPresentationAlias = {
+  key: string;
+  label: string;
+};
+
+function stripCharacterPresentationWrappers(value: string) {
+  let next = value.trim();
+  for (const pattern of CHARACTER_WRAPPER_PREFIXES) {
+    next = next.replace(pattern, "");
+  }
+  return next.trim();
+}
+
+function splitCharacterPresentationCandidates(value: string) {
+  return value
+    .split(/\s+(?:vs|versus|x|e)\s+|,/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function isCharacterPresentationAliasCandidate(
+  value: string,
+  sourceTitle: string | null | undefined,
+) {
+  const normalized = normalizeGroupKey(value);
+  if (!normalized) return false;
+  if (CHARACTER_PRESENTATION_BLOCKLIST.has(normalized)) return false;
+  if (/^(?:busto|painel|conjunto)(?:\s|-)/.test(normalized)) return false;
+
+  const normalizedSource = normalizeGroupKey(sourceTitle);
+  const normalizedSourceSlug = toCatalogSlug(sourceTitle);
+  const normalizedValueSlug = toCatalogSlug(value);
+  if (normalizedSource && normalized === normalizedSource) return false;
+  if (normalizedSource && normalized.includes(normalizedSource)) return false;
+  if (normalizedSourceSlug && normalizedValueSlug === normalizedSourceSlug) {
+    return false;
+  }
+
+  return true;
+}
+
+function deriveCharacterPresentationAliases(row: CatalogModelRow): CharacterPresentationAlias[] {
+  const aliases = new Map<string, string>();
+  const pushAlias = (rawValue: string | null | undefined, preferredLabel?: string) => {
+    const normalized = normalizeGroupKey(rawValue);
+    if (!isCharacterPresentationAliasCandidate(normalized, row.source_title)) return;
+    if (aliases.has(normalized)) return;
+    aliases.set(normalized, preferredLabel?.trim() || titleCaseCatalogWords(normalized));
+  };
+
+  const rawCharacterName = String(row.character_name || "").trim();
+  const strippedCharacter = stripCharacterPresentationWrappers(rawCharacterName);
+  const splitCharacterParts = splitCharacterPresentationCandidates(strippedCharacter);
+  const isOperationalCharacterName =
+    strippedCharacter !== rawCharacterName || splitCharacterParts.length > 1;
+
+  if (isOperationalCharacterName) {
+    for (const tag of getCatalogPublicTags(row, 12)) {
+      pushAlias(tag, titleCaseCatalogWords(tag));
+    }
+  }
+
+  if (splitCharacterParts.length > 1) {
+    for (const part of splitCharacterParts) {
+      pushAlias(part, part);
+    }
+  } else if (strippedCharacter) {
+    const shouldUseWholeName =
+      aliases.size === 0 ||
+      normalizeGroupKey(row.character_name) === normalizeGroupKey(strippedCharacter);
+    if (shouldUseWholeName) {
+      pushAlias(strippedCharacter, strippedCharacter);
+    } else {
+      for (const part of splitCharacterPresentationCandidates(strippedCharacter)) {
+        pushAlias(part, part);
+      }
+    }
+  }
+
+  if (aliases.size === 0 && row.character_name) {
+    pushAlias(row.character_name, String(row.character_name).trim());
+  }
+
+  return Array.from(aliases.entries()).map(([key, label]) => ({ key, label }));
+}
+
+function matchesCharacterPresentationAlias(
+  row: CatalogModelRow,
+  normalizedCharacterName: string,
+) {
+  return deriveCharacterPresentationAliases(row).some(
+    (alias) => alias.key === normalizedCharacterName,
+  );
+}
+
+function getCatalogCharacterPresentationIdentityKey(
+  sourceTitle: string | null | undefined,
+  characterName: string | null | undefined,
+) {
+  const normalizedCharacter = normalizeGroupKey(characterName);
+  if (!normalizedCharacter) return "";
+  const normalizedSource = normalizeGroupKey(sourceTitle);
+  return normalizedSource
+    ? `${normalizedSource}::${normalizedCharacter}`
+    : normalizedCharacter;
+}
 
 function getCharacterIdentityGroupKey(row: {
   source_title?: string | null;
@@ -464,14 +619,21 @@ function pickCharacterGroupCover(rows: CatalogModelRow[]) {
   })[0];
 }
 
-function mapCatalogCharacterGroup(rows: CatalogModelRow[]): CatalogCharacterRow | null {
+function mapCatalogCharacterGroup(
+  rows: CatalogModelRow[],
+  alias: CharacterPresentationAlias,
+): CatalogCharacterRow | null {
   if (rows.length === 0) return null;
   const cover = pickCharacterGroupCover(rows);
-  const characterName = String(cover.character_name || cover.name || "").trim();
+  const characterName = alias.label.trim();
   if (!characterName) return null;
 
   return {
-    id: getCatalogCharacterIdentityKey(cover) || cover.id,
+    id:
+      getCatalogCharacterPresentationIdentityKey(
+        cover.source_title,
+        alias.key,
+      ) || cover.id,
     slug: slugifyCatalogSegment([characterName, cover.source_title].filter(Boolean).join(" ")) || slugifyCatalogSegment(characterName) || cover.id,
     character_name: characterName,
     source_title: cover.source_title ?? cover.franchise ?? null,
@@ -495,17 +657,32 @@ function groupCatalogCharacters(
   rows: CatalogModelRow[],
   sort: CatalogSort,
 ) {
-  const groups = new Map<string, CatalogModelRow[]>();
+  const groups = new Map<
+    string,
+    { alias: CharacterPresentationAlias; rows: CatalogModelRow[] }
+  >();
 
   for (const row of rows) {
-    const key = getCatalogCharacterIdentityKey(row) || row.id;
-    const bucket = groups.get(key);
-    if (bucket) bucket.push(row);
-    else groups.set(key, [row]);
+    const aliases = deriveCharacterPresentationAliases(row);
+    if (aliases.length === 0) continue;
+
+    for (const alias of aliases) {
+      const key =
+        getCatalogCharacterPresentationIdentityKey(
+          row.source_title,
+          alias.key,
+        ) || row.id;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.rows.push(row);
+      } else {
+        groups.set(key, { alias, rows: [row] });
+      }
+    }
   }
 
   const characters = Array.from(groups.values())
-    .map(mapCatalogCharacterGroup)
+    .map((group) => mapCatalogCharacterGroup(group.rows, group.alias))
     .filter((row): row is CatalogCharacterRow => Boolean(row));
 
   if (sort === "az") {
@@ -900,7 +1077,7 @@ export async function listCatalogCharacterModels(params: {
       .filter((row) => isPublicCatalogEligibleRow(row, "public"))
       .filter(
         (row) =>
-          normalizeGroupKey(row.character_name) === normalizedCharacterName &&
+          matchesCharacterPresentationAlias(row, normalizedCharacterName) &&
           (!normalizedSourceTitle ||
             normalizeGroupKey(row.source_title) === normalizedSourceTitle),
       ),

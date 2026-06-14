@@ -306,6 +306,73 @@ describe("catalog models service", () => {
     });
   });
 
+  it("normalizes wrapper-based public character groups", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-freeza",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          tags: ["freeza"],
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-busto-freeza",
+          source_title: "Dragon Ball",
+          character_name: "Busto Freeza",
+          name: "Busto Freeza",
+          tags: ["freeza", "busto"],
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/busto-freeza-1.webp",
+          canonical_identity_key: "dragon-ball:freeza:busto-freeza",
+        },
+        {
+          ...modelRow,
+          id: "model-painel-shenlong",
+          source_title: "Dragon Ball",
+          character_name: "Painel Shenlong",
+          name: "Painel Shenlong",
+          tags: ["shenlong", "painel"],
+          image_path:
+            "catalog-webp-final/display/anime/criaturas/shenlong/painel-shenlong-113314.webp",
+          canonical_identity_key: "dragon-ball:shenlong:painel-shenlong",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "az",
+      },
+    });
+
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toMatchObject({
+      character_name: "Freeza",
+      model_count: 2,
+    });
+    expect(result.rows[1]).toMatchObject({
+      character_name: "Shenlong",
+      model_count: 1,
+    });
+  });
+
   it("prefers a representative public figure as the character cover", async () => {
     const query = createCatalogQuery({
       data: [
@@ -481,6 +548,43 @@ describe("catalog models service", () => {
     expect(models).toHaveLength(2);
     expect(models[0]?.id).toBe("model-1");
     expect(models[1]?.id).toBe("model-3");
+  });
+
+  it("includes shared confrontation models on the relevant character page", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-freeza",
+          source_title: "Dragon Ball",
+          character_name: "Freeza",
+          tags: ["freeza"],
+          image_path:
+            "catalog-webp-final/display/anime/raca-do-freeza/freeza/freeza-1-1-173049.webp",
+          canonical_identity_key: "dragon-ball:freeza:freeza-1",
+        },
+        {
+          ...modelRow,
+          id: "model-versus",
+          source_title: "Dragon Ball",
+          character_name: "Goku vs Freeza",
+          tags: ["goku", "freeza", "confronto"],
+          image_path:
+            "catalog-webp-final/display/anime/conjuntos/goku-vs-freeza/goku-vs-freeza-112208.webp",
+          canonical_identity_key: "dragon-ball:goku-vs-freeza:goku-vs-freeza",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const models = await listCatalogCharacterModels({
+      characterName: "Freeza",
+      sourceTitle: "Dragon Ball",
+    });
+
+    expect(models).toHaveLength(2);
+    expect(models.map((row) => row.id)).toEqual(["model-freeza", "model-versus"]);
   });
 
   it("resolves a clean character slug back to character context", async () => {
