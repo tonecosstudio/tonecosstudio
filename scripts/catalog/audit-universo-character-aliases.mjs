@@ -30,6 +30,52 @@ function normalizeTag(value) {
     .toLowerCase();
 }
 
+function loadAliasOverrideKeys() {
+  const filePath = path.join(
+    process.cwd(),
+    "src",
+    "config",
+    "catalog-character-presentation.ts",
+  );
+
+  if (!fs.existsSync(filePath)) return new Set();
+
+  const content = fs.readFileSync(filePath, "utf8");
+  const marker = "export const CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES";
+  const markerIndex = content.indexOf(marker);
+  if (markerIndex === -1) return new Set();
+
+  const objectStart = content.indexOf("{", markerIndex);
+  if (objectStart === -1) return new Set();
+
+  let depth = 0;
+  let objectEnd = -1;
+  for (let index = objectStart; index < content.length; index += 1) {
+    const char = content[index];
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        objectEnd = index;
+        break;
+      }
+    }
+  }
+
+  if (objectEnd === -1) return new Set();
+
+  const objectLiteral = content.slice(objectStart, objectEnd + 1);
+  const keys = new Set();
+  const regex = /"([^"]+::[^"]+)":/g;
+  let match;
+
+  while ((match = regex.exec(objectLiteral))) {
+    keys.add(normalizeTag(match[1]));
+  }
+
+  return keys;
+}
+
 const GENERIC_TAGS = new Set([
   "anime",
   "busto",
@@ -95,8 +141,13 @@ function suggestAliases(row) {
   return aliases;
 }
 
+function getAliasOverrideLookupKey(row) {
+  return normalizeTag(`${row.source_title || ""}::${row.character_name || ""}`);
+}
+
 async function main() {
   loadEnvFile(path.join(process.cwd(), ".env.local"));
+  const aliasOverrideKeys = loadAliasOverrideKeys();
 
   const url = process.env.VITE_SUPABASE_URL;
   const key =
@@ -136,6 +187,9 @@ async function main() {
       character_name: row.character_name,
       variant_name: row.variant_name,
       image_path: row.image_path,
+      covered_by_alias_override: aliasOverrideKeys.has(
+        getAliasOverrideLookupKey(row),
+      ),
       suggested_aliases: suggestAliases(row),
       tags: Array.isArray(row.tags) ? row.tags : [],
     }))
@@ -143,7 +197,23 @@ async function main() {
       String(left.character_name).localeCompare(String(right.character_name), "pt-BR"),
     );
 
-  console.log(JSON.stringify({ total_rows: rows.length, flagged }, null, 2));
+  const covered = flagged.filter((row) => row.covered_by_alias_override);
+  const uncovered = flagged.filter((row) => !row.covered_by_alias_override);
+
+  console.log(
+    JSON.stringify(
+      {
+        total_rows: rows.length,
+        flagged_total: flagged.length,
+        covered_by_alias_override: covered.length,
+        uncovered_total: uncovered.length,
+        uncovered,
+        covered,
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 main().catch((error) => {
