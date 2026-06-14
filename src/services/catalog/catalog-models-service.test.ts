@@ -639,6 +639,93 @@ describe("catalog models service", () => {
     ]);
   });
 
+  it("allows manual alias overrides for paired character rows", async () => {
+    CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES["dragon ball::goku e chi chi"] = [
+      { key: "goku", label: "Goku" },
+      { key: "chi chi", label: "Chi Chi" },
+    ];
+
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "model-pair",
+          source_title: "Dragon Ball",
+          character_name: "Goku e Chi Chi",
+          tags: ["goku", "chi-chi", "conjunto"],
+          image_path:
+            "catalog-webp-final/display/anime/conjuntos/goku-e-chi-chi/goku-e-chi-chi-181460.webp",
+          canonical_identity_key: "dragon-ball:goku-e-chi-chi:goku-e-chi-chi",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "az",
+      },
+    });
+
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows.map((row) => row.character_name)).toEqual([
+      "Chi Chi",
+      "Goku",
+    ]);
+  });
+
+  it("allows manual alias overrides for support companion rows", async () => {
+    const query = createCatalogQuery({
+      data: [
+        {
+          ...modelRow,
+          id: "yamcha-puar-model",
+          name: "Yamcha e Puar",
+          franchise: "Dragon Ball",
+          tags: ["yamcha", "puar"],
+          source_title: "Dragon Ball",
+          character_name: "Yamcha e Puar",
+          image_path:
+            "catalog-webp-final/display/anime/terraqueo/yamcha-e-puar/yamcha-e-puar-figura-112919.webp",
+        },
+      ],
+      error: null,
+    });
+    mocks.select.mockReturnValue(query);
+
+    const result = await listCatalogCharacters({
+      needle: "",
+      page: 0,
+      filters: {
+        character: "",
+        franchise: "",
+        category: "",
+        sourceType: "",
+        variantType: "",
+        tagsCSV: "",
+        catalogMode: "public",
+        contentMode: "general",
+        sort: "az",
+      },
+    });
+
+    expect(result.rows.map((row) => row.character_name)).toEqual([
+      "Puar",
+      "Yamcha",
+    ]);
+  });
+
   it("resolves a clean character slug back to character context", async () => {
     const query = createCatalogQuery({
       data: [

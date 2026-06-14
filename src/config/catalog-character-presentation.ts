@@ -72,9 +72,22 @@ export const CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES: Record<
   "dragon ball::busto vegeta": [{ key: "vegeta", label: "Vegeta" }],
   "dragon ball::busto trunks": [{ key: "trunks", label: "Trunks" }],
   "dragon ball::busto gohan": [{ key: "gohan", label: "Gohan" }],
+  "dragon ball::busto androide 17": [
+    { key: "androide 17", label: "Androide 17" },
+  ],
   "dragon ball::busto androide 18": [
     { key: "androide 18", label: "Androide 18" },
   ],
+  "dragon ball::busto burter": [{ key: "burter", label: "Burter" }],
+  "dragon ball::busto capitao ginyu": [
+    { key: "capitao ginyu", label: "Capitao Ginyu" },
+  ],
+  "dragon ball::busto guldo": [{ key: "guldo", label: "Guldo" }],
+  "dragon ball::busto majin boo": [
+    { key: "majin boo", label: "Majin Boo" },
+  ],
+  "dragon ball::busto nappa": [{ key: "nappa", label: "Nappa" }],
+  "dragon ball::busto recoome": [{ key: "recoome", label: "Recoome" }],
   "dragon ball::painel shenlong": [{ key: "shenlong", label: "Shenlong" }],
   "dragon ball::painel goku e vegeta": [
     { key: "goku", label: "Goku" },
@@ -92,10 +105,34 @@ export const CATALOG_CHARACTER_PRESENTATION_ALIAS_OVERRIDES: Record<
     { key: "goku", label: "Goku" },
     { key: "freeza", label: "Freeza" },
   ],
+  "dragon ball::cell, majin boo e freeza": [
+    { key: "cell", label: "Cell" },
+    { key: "majin boo", label: "Majin Boo" },
+    { key: "freeza", label: "Freeza" },
+  ],
   "dragon ball::conjunto bulma, goku e shenlong": [
     { key: "bulma", label: "Bulma" },
     { key: "goku", label: "Goku" },
     { key: "shenlong", label: "Shenlong" },
+  ],
+  "dragon ball::goku e chi chi": [
+    { key: "goku", label: "Goku" },
+    { key: "chi chi", label: "Chi Chi" },
+  ],
+  "dragon ball::goku e kuririn": [
+    { key: "goku", label: "Goku" },
+    { key: "kuririn", label: "Kuririn" },
+  ],
+  "dragon ball::gohan e androides": [
+    { key: "gohan", label: "Gohan" },
+  ],
+  "dragon ball::yamcha e puar": [
+    { key: "yamcha", label: "Yamcha" },
+    { key: "puar", label: "Puar" },
+  ],
+  "dragon ball::vegetto e majin boo": [
+    { key: "vegetto", label: "Vegetto" },
+    { key: "majin boo", label: "Majin Boo" },
   ],
 };
 
