@@ -314,7 +314,7 @@ function getUniverseThemeFromRow(row: {
     category === "desenho animacao" ||
     category === "desenhos animacao"
   ) {
-    return { key: "desenho-animacao", label: "Desenho/Animacao" };
+    return { key: "desenho-animacao", label: "Desenho/Animação" };
   }
 
   return { key: "outros", label: "Outros" };
