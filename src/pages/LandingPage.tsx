@@ -6,7 +6,6 @@ import {
   Zap,
   Eye,
   Trophy,
-  ChevronDown,
   Gamepad2,
   Star,
 } from "lucide-react";
@@ -93,17 +92,17 @@ function StatCounter({
 }) {
   return (
     <div className="text-center group">
-      <div className="w-16 h-16 mx-auto mb-3 border-2 border-[hsl(var(--gold-accent)/0.4)] bg-[hsl(var(--gold-accent)/0.03)] flex items-center justify-center group-hover:border-[hsl(var(--gold-accent))] group-hover:bg-[hsl(var(--gold-accent)/0.08)] group-hover:shadow-[0_0_20px_hsl(var(--gold-accent)/0.15)] transition-all duration-500">
-        <Icon className="h-7 w-7 text-[hsl(var(--gold-accent))]" />
+      <div className="w-14 h-14 mx-auto mb-2.5 border border-[hsl(var(--gold-accent)/0.35)] bg-[hsl(var(--gold-accent)/0.03)] flex items-center justify-center group-hover:border-[hsl(var(--gold-accent))] group-hover:bg-[hsl(var(--gold-accent)/0.08)] group-hover:shadow-[0_0_20px_hsl(var(--gold-accent)/0.15)] transition-all duration-500">
+        <Icon className="h-6 w-6 text-[hsl(var(--gold-accent))]" />
       </div>
       <p
-        className="text-3xl tracking-wider text-[hsl(0,0%,95%)] font-black"
+        className="text-2xl sm:text-3xl tracking-[0.08em] text-[hsl(0,0%,95%)] font-black"
         style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
       >
         {value}
       </p>
       <p
-        className="text-[8px] text-[hsl(0,0%,40%)] mt-1 uppercase tracking-[0.3em]"
+        className="text-[7px] text-[hsl(0,0%,40%)] mt-1 uppercase tracking-[0.25em]"
         style={{ fontFamily: "'Press Start 2P', monospace" }}
       >
         {label}
@@ -256,7 +255,7 @@ export default function LandingPage() {
               className="block text-[10px] sm:text-xs text-[hsl(var(--gold-accent))] tracking-[0.5em] mt-4 uppercase"
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
-              Collectibles Arsenal
+              Universo de Personagens
             </span>
           </h1>
 
@@ -267,7 +266,7 @@ export default function LandingPage() {
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               <TypewriterText
-                text=">> PEÇAS PREMIUM ARTESANAIS. FEITAS À MÃO. SOB ENCOMENDA."
+                text=">> PERSONAGENS, MODELOS E VARIACOES SOB ENCOMENDA."
                 delay={800}
               />
             </p>
@@ -283,7 +282,7 @@ export default function LandingPage() {
                 className="w-5 h-5 group-hover:animate-spin"
                 style={{ animationDuration: "3s" }}
               />
-              EXPLORAR COLEÇÕES
+              VER COLECOES
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
@@ -297,31 +296,19 @@ export default function LandingPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-6 max-w-3xl mx-auto">
             <StatCounter value={String(characterCount)} label="Personagens" icon={Trophy} />
             <StatCounter value={String(modelCount)} label="Modelos" icon={Shield} />
             <StatCounter value="100%" label="Artesanal" icon={Zap} />
             <StatCounter value="Sob Encomenda" label="Atendimento" icon={Eye} />
           </div>
         </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-[bounce_2s_ease-in-out_infinite]">
-          <span
-            className="text-[7px] text-[hsl(0,0%,30%)] tracking-widest"
-            style={{ fontFamily: "'Press Start 2P', monospace" }}
-          >
-            SCROLL
-          </span>
-          <ChevronDown className="h-4 w-4 text-[hsl(0,0%,30%)]" />
-        </div>
-
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
 
       {/* ═══ FEATURED COLLECTIONS ═══ */}
       {collections.length > 0 && (
-        <section className="relative py-16 px-6">
+        <section className="relative py-14 px-6">
           <FloatingParticles />
           <div className="max-w-6xl mx-auto">
             <ArcadeSectionTitle>Coleções em Destaque</ArcadeSectionTitle>
@@ -352,7 +339,7 @@ export default function LandingPage() {
 
       {/* ═══ RECENT CHARACTERS ═══ */}
       {models.length > 0 && (
-        <section className="relative py-14 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
+        <section className="relative py-12 px-6 border-t border-[hsl(var(--gold-accent)/0.08)]">
           <div className="max-w-6xl mx-auto">
             <ArcadeSectionTitle>Personagens em Destaque</ArcadeSectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
@@ -476,3 +463,4 @@ export default function LandingPage() {
     </Page>
   );
 }
+
