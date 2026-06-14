@@ -154,6 +154,18 @@ function isOperationalCharacterName(value) {
   );
 }
 
+function getOperationalCharacterKind(value) {
+  const text = String(value || "").trim();
+  if (!text) return "direct";
+  if (/^busto\b/i.test(text)) return "wrapped-single";
+  if (/^painel\b/i.test(text)) return "wrapped-single";
+  if (/^conjunto\b/i.test(text)) return "composite-multi";
+  if (/\bvs\b/i.test(text)) return "composite-multi";
+  if (/,/.test(text)) return "composite-multi";
+  if (/\se\s/i.test(text)) return "composite-multi";
+  return "direct";
+}
+
 function stripCharacterPresentationWrappers(value) {
   let next = String(value || "").trim();
   for (const pattern of CHARACTER_WRAPPER_PREFIXES) {
@@ -294,6 +306,9 @@ async function main() {
           character_key: alias.key,
           character_label: alias.label,
           model_count: 0,
+          direct_model_count: 0,
+          wrapped_single_count: 0,
+          composite_multi_count: 0,
           raw_character_names: new Set(),
           variant_names: new Set(),
           sample_paths: [],
@@ -303,6 +318,10 @@ async function main() {
 
       const group = grouped.get(groupKey);
       group.model_count += 1;
+      const kind = getOperationalCharacterKind(row.character_name);
+      if (kind === "direct") group.direct_model_count += 1;
+      if (kind === "wrapped-single") group.wrapped_single_count += 1;
+      if (kind === "composite-multi") group.composite_multi_count += 1;
       if (row.character_name) group.raw_character_names.add(row.character_name);
       if (row.variant_name) group.variant_names.add(row.variant_name);
       if (
@@ -323,6 +342,9 @@ async function main() {
       character_key: group.character_key,
       character_label: group.character_label,
       model_count: group.model_count,
+      direct_model_count: group.direct_model_count,
+      wrapped_single_count: group.wrapped_single_count,
+      composite_multi_count: group.composite_multi_count,
       raw_character_name_count: group.raw_character_names.size,
       variant_name_count: group.variant_names.size,
       raw_character_names: Array.from(group.raw_character_names).sort((a, b) =>
@@ -345,7 +367,9 @@ async function main() {
 
   const suspicious = summary.filter(
     (group) =>
-      group.operational_raw_names.length > 0 || group.raw_character_name_count > 3,
+      group.composite_multi_count > 0 ||
+      group.operational_raw_names.length > 0 ||
+      group.raw_character_name_count > 3,
   );
 
   console.log(
