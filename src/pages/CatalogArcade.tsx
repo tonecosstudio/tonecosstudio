@@ -222,6 +222,64 @@ function isUuidLikePathParam(value: string) {
   );
 }
 
+function normalizeUniverseKey(value: string | null | undefined) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function slugifyUniverseSegment(value: string | null | undefined) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getUniverseThemeKeyForCharacter(row: CatalogCharacterRow) {
+  const combined = [row.source_title, row.category, ...(row.tags ?? [])]
+    .map(normalizeUniverseKey)
+    .join(" ");
+
+  if (/\bmarvel\b/.test(combined)) return "marvel";
+  if (/\bdc\b/.test(combined) || /\bdc-comics\b/.test(combined)) return "dc";
+
+  const sourceType = normalizeUniverseKey(row.source_type);
+  if (sourceType === "anime") return "anime";
+  if (sourceType === "manga") return "manga";
+  if (sourceType === "movie") return "filmes";
+  if (sourceType === "series") return "series";
+  if (sourceType === "game") return "games";
+  if (sourceType === "comic") return "quadrinhos";
+  if (sourceType === "tokusatsu") return "tokusatsu";
+  if (sourceType === "original") return "originais";
+
+  const category = normalizeUniverseKey(row.category);
+  if (category === "quadrinhos") return "quadrinhos";
+  if (category === "filmes") return "filmes";
+  if (category === "series") return "series";
+  if (category === "jogos") return "games";
+  if (
+    category === "desenhos" ||
+    category === "desenho" ||
+    category === "animacao" ||
+    category === "desenho animacao" ||
+    category === "desenhos animacao"
+  ) {
+    return "desenho-animacao";
+  }
+
+  return "outros";
+}
+
+function getUniverseFranchiseKeyForCharacter(
+  row: CatalogCharacterRow,
+  fallbackThemeKey: string,
+) {
+  return (
+    slugifyUniverseSegment(row.source_title || "") || fallbackThemeKey
+  );
+}
+
 export default function CatalogArcade() {
   const navigate = useNavigate();
   const { themeKey = "", franchiseKey = "", characterSlug = "" } = useParams<{
@@ -297,9 +355,16 @@ export default function CatalogArcade() {
   const visibleCharacters = useMemo(() => {
     if (!activeTheme || !activeFranchise || !currentFranchise) return [];
     return characters.filter(
-      (row) =>
-        String(row.source_title || "").trim().toLowerCase() ===
-        currentFranchise.label.trim().toLowerCase(),
+      (row) => {
+        const rowThemeKey = getUniverseThemeKeyForCharacter(row);
+        if (rowThemeKey !== activeTheme) return false;
+
+        const rowFranchiseKey = getUniverseFranchiseKeyForCharacter(
+          row,
+          rowThemeKey,
+        );
+        return rowFranchiseKey === currentFranchise.key;
+      },
     );
   }, [activeFranchise, activeTheme, characters, currentFranchise]);
 
