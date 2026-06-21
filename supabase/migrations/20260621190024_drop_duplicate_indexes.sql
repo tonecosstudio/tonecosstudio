@@ -1,0 +1,2 @@
+drop index if exists public.idx_manual_payments_payment_method;
+drop index if exists public.idx_subscription_deliveries_subscription_order;
