@@ -1,8 +1,9 @@
 /// <reference lib="deno.window" />
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
 import { EmailService, getEmailConfig, textToHtml } from "../_shared/email.ts";
-import { assertAdmin, getClaims, getServiceClient } from "../_shared/supabase.ts";
+import { getClaims, getServiceClient } from "../_shared/supabase.ts";
 import { validateOrReject, type Schema } from "../_shared/validation.ts";
 
 type OrderType = "subscription" | "standalone_purchase";
@@ -19,7 +20,12 @@ const VERIFY_PAYMENT_SCHEMA: Schema = {
   orderId: { type: "uuid", required: true },
   orderType: { type: "string", required: true, maxLength: 40, trim: true },
   approved: { type: "boolean", required: true },
-  rejectionReason: { type: "string", maxLength: 500, trim: true, rejectHtml: true },
+  rejectionReason: {
+    type: "string",
+    maxLength: 500,
+    trim: true,
+    rejectHtml: true,
+  },
   notes: { type: "string", maxLength: 1000, trim: true, rejectHtml: true },
 };
 
@@ -28,7 +34,10 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   return value ?? null;
 }
 
-async function shouldSendPaymentEmail(service: any, userId: string): Promise<boolean> {
+async function shouldSendPaymentEmail(
+  service: any,
+  userId: string,
+): Promise<boolean> {
   const { data, error } = await service
     .from("notification_preferences")
     .select("payment_emails")
@@ -66,8 +75,14 @@ async function createUserPaymentNotification(
   }
 }
 
-async function sendPaymentEmail(to: string, subject: string, message: string): Promise<void> {
-  const emailService = new EmailService(getEmailConfig({ fromName: "ORDAX Pagamentos" }));
+async function sendPaymentEmail(
+  to: string,
+  subject: string,
+  message: string,
+): Promise<void> {
+  const emailService = new EmailService(
+    getEmailConfig({ fromName: "ORDAX Pagamentos" }),
+  );
   await emailService.sendEmail({
     to,
     subject,
@@ -76,12 +91,15 @@ async function sendPaymentEmail(to: string, subject: string, message: string): P
 }
 
 function mapSubscriptionPaymentRpcError(message: string): string {
-  if (message.includes("SUBSCRIPTION_NOT_FOUND")) return "Assinatura nao encontrada";
-  if (message.includes("INVALID_SUBSCRIPTION_STATUS")) return "Status da assinatura invalido para verificacao";
+  if (message.includes("SUBSCRIPTION_NOT_FOUND"))
+    return "Assinatura nao encontrada";
+  if (message.includes("INVALID_SUBSCRIPTION_STATUS"))
+    return "Status da assinatura invalido para verificacao";
   if (message.includes("rejection reason") || message.includes("REJECTION")) {
     return "Motivo de rejeicao invalido";
   }
-  if (message.includes("ADMIN_USER_ID_REQUIRED")) return "Administrador nao identificado";
+  if (message.includes("ADMIN_USER_ID_REQUIRED"))
+    return "Administrador nao identificado";
   return "Erro ao verificar pagamento da assinatura";
 }
 
@@ -100,7 +118,8 @@ async function notifyCustomer(
   if (orderType === "standalone_purchase") {
     const { data: purchase, error } = await service
       .from("standalone_purchases")
-      .select(`
+      .select(
+        `
         id,
         user_id,
         total_amount,
@@ -109,12 +128,16 @@ async function notifyCustomer(
           email,
           full_name
         )
-      `)
+      `,
+      )
       .eq("id", orderId)
       .single();
 
     if (error || !purchase) {
-      console.error("Error fetching standalone purchase for notification:", error);
+      console.error(
+        "Error fetching standalone purchase for notification:",
+        error,
+      );
       return;
     }
 
@@ -127,7 +150,8 @@ async function notifyCustomer(
   } else {
     const { data: subscription, error } = await service
       .from("subscriptions")
-      .select(`
+      .select(
+        `
         id,
         user_id,
         plan_type,
@@ -136,7 +160,8 @@ async function notifyCustomer(
           email,
           full_name
         )
-      `)
+      `,
+      )
       .eq("id", orderId)
       .single();
 
@@ -162,7 +187,14 @@ async function notifyCustomer(
     ? `Ola ${customerName || "Cliente"},\n\nSeu pagamento foi aprovado com sucesso.\n\nDetalhes do pedido:\n${orderDetails}\n\nSeu pedido esta sendo processado e voce recebera atualizacoes em breve.`
     : `Ola ${customerName || "Cliente"},\n\nSeu comprovante de pagamento foi rejeitado.\n\nDetalhes do pedido:\n${orderDetails}\n\nMotivo da rejeicao:\n${rejectionReason || "Comprovante invalido ou ilegivel"}\n\nEnvie um novo comprovante valido pelo seu painel.`;
 
-  await createUserPaymentNotification(service, userId, orderId, orderType, approved, message);
+  await createUserPaymentNotification(
+    service,
+    userId,
+    orderId,
+    orderType,
+    approved,
+    message,
+  );
 
   if (!customerEmail) {
     console.error("Customer email not found for payment notification");
@@ -206,7 +238,9 @@ async function approvePayment(
     } else if (purchase.status === "awaiting_balance") {
       voucherType = "balance";
     } else {
-      throw new Error(`Status invalido para aprovacao de pagamento: ${purchase.status}`);
+      throw new Error(
+        `Status invalido para aprovacao de pagamento: ${purchase.status}`,
+      );
     }
 
     const { data: updatedPurchase, error: updateError } = await adminClient.rpc(
@@ -227,7 +261,7 @@ async function approvePayment(
     return updatedPurchase;
   }
 
-  const { data: updatedSubscription, error: updateError } = await adminClient.rpc(
+  const { data: updatedSubscription, error: updateError } = await service.rpc(
     "admin_verify_subscription_payment_voucher",
     {
       p_subscription_id: orderId,
@@ -273,7 +307,9 @@ async function rejectPayment(
     } else if (purchase.status === "awaiting_balance") {
       voucherType = "balance";
     } else {
-      throw new Error(`Status invalido para rejeicao de pagamento: ${purchase.status}`);
+      throw new Error(
+        `Status invalido para rejeicao de pagamento: ${purchase.status}`,
+      );
     }
 
     const { data: updatedPurchase, error: updateError } = await adminClient.rpc(
@@ -295,7 +331,7 @@ async function rejectPayment(
     return updatedPurchase;
   }
 
-  const { data: updatedSubscription, error: updateError } = await adminClient.rpc(
+  const { data: updatedSubscription, error: updateError } = await service.rpc(
     "admin_verify_subscription_payment_voucher",
     {
       p_subscription_id: orderId,
@@ -319,7 +355,9 @@ serve(async (req: Request) => {
   if (opt) return opt;
 
   try {
-    const adminUser = await assertAdmin(req);
+    const adminUser = await assertRateLimitedAdmin(req, "admin-verify-payment");
+    if (adminUser.rateLimited) return adminUser.rateLimited;
+
     const { client: adminClient } = await getClaims(req);
     const service = getServiceClient();
     const rawBody = await req.json().catch(() => ({}));
@@ -330,16 +368,41 @@ serve(async (req: Request) => {
       validation.data as unknown as VerifyPaymentRequest;
 
     if (!["subscription", "standalone_purchase"].includes(orderType)) {
-      return json({ error: "orderType invalido. Use subscription ou standalone_purchase" }, 400);
+      return json(
+        {
+          error: "orderType invalido. Use subscription ou standalone_purchase",
+        },
+        400,
+      );
     }
 
     if (!approved && !rejectionReason) {
-      return json({ error: "rejectionReason e obrigatorio quando o pagamento e rejeitado" }, 400);
+      return json(
+        {
+          error: "rejectionReason e obrigatorio quando o pagamento e rejeitado",
+        },
+        400,
+      );
     }
 
     const result = approved
-      ? await approvePayment(service, adminClient, orderId, orderType, adminUser.userId, notes)
-      : await rejectPayment(service, adminClient, orderId, orderType, adminUser.userId, rejectionReason!, notes);
+      ? await approvePayment(
+          service,
+          adminClient,
+          orderId,
+          orderType,
+          adminUser.userId,
+          notes,
+        )
+      : await rejectPayment(
+          service,
+          adminClient,
+          orderId,
+          orderType,
+          adminUser.userId,
+          rejectionReason!,
+          notes,
+        );
 
     return json({
       success: true,
@@ -352,11 +415,19 @@ serve(async (req: Request) => {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error in admin-verify-payment:", msg);
     const status =
-      msg === "Unauthorized" ? 401 :
-      msg.startsWith("Forbidden") ? 403 :
-      msg.includes("obrigatorio") || msg.includes("inval") || msg.includes("cannot") ? 400 :
-      500;
-    return json({ error: status >= 500 ? "Internal server error" : msg }, status);
+      msg === "Unauthorized"
+        ? 401
+        : msg.startsWith("Forbidden")
+          ? 403
+          : msg.includes("obrigatorio") ||
+              msg.includes("inval") ||
+              msg.includes("cannot")
+            ? 400
+            : 500;
+    return json(
+      { error: status >= 500 ? "Internal server error" : msg },
+      status,
+    );
   }
 });
 

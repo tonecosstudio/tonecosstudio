@@ -6,7 +6,7 @@
  */
 
 import { getServiceClient } from "./supabase.ts";
-import { corsHeaders } from "./cors.ts";
+import { getCorsHeaders } from "./cors.ts";
 import { logRateLimitHit } from "./security-logger.ts";
 import { createEdgeLogger } from "./edge-logger.ts";
 
@@ -18,6 +18,8 @@ const log = createEdgeLogger("rate-limit");
 export const RATE_LIMITS = {
   // Auth endpoints: 5 requests per minute
   AUTH: { maxRequests: 5, windowSeconds: 60 },
+  // Admin/API mutations: authenticated, sensitive operations
+  ADMIN: { maxRequests: 20, windowSeconds: 60 },
   // Standard API: 30 requests per minute
   STANDARD: { maxRequests: 30, windowSeconds: 60 },
   // AI endpoints: 10 requests per minute (expensive operations)
@@ -35,10 +37,28 @@ export const RATE_LIMITS = {
  */
 function getClientIP(req: Request): string {
   return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
     req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-real-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
+  );
+}
+
+function unavailableResponse(req: Request): Response {
+  return new Response(
+    JSON.stringify({
+      error: "Rate limit check unavailable. Please try again later.",
+      code: "RATE_LIMIT_UNAVAILABLE",
+      retryAfter: 60,
+    }),
+    {
+      status: 503,
+      headers: {
+        ...getCorsHeaders(req),
+        "Content-Type": "application/json",
+        "Retry-After": "60",
+      },
+    },
   );
 }
 
@@ -61,7 +81,7 @@ export function buildRateLimitKey(req: Request, userId?: string): string {
  * @param endpoint - Endpoint identifier (e.g. "create-standalone-purchase")
  * @param config - Rate limit configuration { maxRequests, windowSeconds }
  * @param userId - Optional authenticated user ID (uses IP if not provided)
- * @returns null if allowed, Response(429) if rate limited
+ * @returns null if allowed, Response(429) if limited, Response(503) if the check is unavailable
  */
 export async function checkRateLimit(
   req: Request,
@@ -82,8 +102,7 @@ export async function checkRateLimit(
 
     if (error) {
       log.error("rate_limit_check_failed", { error, endpoint });
-      // Fail open: allow request if rate limit check fails
-      return null;
+      return unavailableResponse(req);
     }
 
     if (!allowed) {
@@ -103,7 +122,7 @@ export async function checkRateLimit(
         {
           status: 429,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
             "Retry-After": String(config.windowSeconds),
           },
@@ -114,7 +133,6 @@ export async function checkRateLimit(
     return null; // Request allowed
   } catch (err) {
     log.error("rate_limit_unexpected_error", { error: err, endpoint });
-    // Fail open
-    return null;
+    return unavailableResponse(req);
   }
 }

@@ -15,14 +15,14 @@
  * - 18.7: Update delivery status automatically when marked as delivered by carrier
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   logCronStart,
   logCronSuccess,
   logCronError,
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 
 interface Delivery {
   id: string;
@@ -83,10 +83,13 @@ function getCarrierTrackingApiUrl(): URL {
   }
 
   const apiUrl = new URL(rawUrl);
-  const isLocalhost = apiUrl.hostname === "localhost" || apiUrl.hostname === "127.0.0.1";
+  const isLocalhost =
+    apiUrl.hostname === "localhost" || apiUrl.hostname === "127.0.0.1";
 
   if (apiUrl.protocol !== "https:" && !isLocalhost) {
-    throw new Error("CARRIER_TRACKING_API_URL must use HTTPS outside localhost");
+    throw new Error(
+      "CARRIER_TRACKING_API_URL must use HTTPS outside localhost",
+    );
   }
 
   return apiUrl;
@@ -102,26 +105,32 @@ function normalizeTrackingStatus(
   trackingCode: string,
   payload: CarrierTrackingResponse,
 ): TrackingStatus {
-  const status = payload.status && TRACKING_STATUSES.has(payload.status)
-    ? payload.status
-    : "unknown";
+  const status =
+    payload.status && TRACKING_STATUSES.has(payload.status)
+      ? payload.status
+      : "unknown";
   const lastUpdate = parseCarrierDate(payload.lastUpdate, new Date());
   const delivered = payload.delivered ?? status === "delivered";
   const events = Array.isArray(payload.events)
     ? payload.events
-      .filter((event) => typeof event.description === "string" && event.description.trim())
-      .map((event) => ({
-        date: parseCarrierDate(event.date, lastUpdate),
-        description: event.description!.trim(),
-        location: event.location,
-      }))
+        .filter(
+          (event) =>
+            typeof event.description === "string" && event.description.trim(),
+        )
+        .map((event) => ({
+          date: parseCarrierDate(event.date, lastUpdate),
+          description: event.description!.trim(),
+          location: event.location,
+        }))
     : [];
 
   return {
     trackingCode: payload.trackingCode || trackingCode,
     status,
     delivered,
-    deliveredAt: delivered ? parseCarrierDate(payload.deliveredAt, lastUpdate) : undefined,
+    deliveredAt: delivered
+      ? parseCarrierDate(payload.deliveredAt, lastUpdate)
+      : undefined,
     lastUpdate,
     location: payload.location,
     events,
@@ -158,7 +167,7 @@ async function getTrackingStatus(
     throw new Error(`Carrier tracking API returned HTTP ${response.status}`);
   }
 
-  const payload = await response.json() as CarrierTrackingResponse;
+  const payload = (await response.json()) as CarrierTrackingResponse;
   return normalizeTrackingStatus(trackingCode, payload);
 }
 
@@ -228,20 +237,18 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cron-update-tracking",
+    );
     if (forbidden) return forbidden;
 
     // Start logging
     logId = await logCronStart("cron-update-tracking");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();

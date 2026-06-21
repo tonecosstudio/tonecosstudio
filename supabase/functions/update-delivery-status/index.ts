@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
 import { EmailService, getEmailConfig, textToHtml } from "../_shared/email.ts";
-import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import {
   isDeliveryStatus,
   type DeliveryStatus,
@@ -54,7 +55,10 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   return value ?? null;
 }
 
-async function shouldSendShippingEmail(service: any, userId: string): Promise<boolean> {
+async function shouldSendShippingEmail(
+  service: any,
+  userId: string,
+): Promise<boolean> {
   const { data, error } = await service
     .from("notification_preferences")
     .select("shipping_emails")
@@ -91,8 +95,14 @@ async function createUserNotification(
   }
 }
 
-async function sendNotificationEmail(to: string, subject: string, message: string): Promise<void> {
-  const emailService = new EmailService(getEmailConfig({ fromName: "ORDAX Entregas" }));
+async function sendNotificationEmail(
+  to: string,
+  subject: string,
+  message: string,
+): Promise<void> {
+  const emailService = new EmailService(
+    getEmailConfig({ fromName: "ORDAX Entregas" }),
+  );
   await emailService.sendEmail({
     to,
     subject,
@@ -109,7 +119,8 @@ async function notifySubscriber(
 ): Promise<void> {
   const { data: delivery, error: deliveryError } = await service
     .from("subscription_deliveries")
-    .select(`
+    .select(
+      `
       id,
       delivery_number,
       subscriptions (
@@ -122,7 +133,8 @@ async function notifySubscriber(
       collections (
         name
       )
-    `)
+    `,
+    )
     .eq("id", deliveryId)
     .single();
 
@@ -148,7 +160,9 @@ async function notifySubscriber(
   let message = "";
 
   if (trackingCodeAdded && trackingCode) {
-    const trackingUrl = isCorreiosTrackingCode(trackingCode) ? buildCorreiosTrackingUrl(trackingCode) : "";
+    const trackingUrl = isCorreiosTrackingCode(trackingCode)
+      ? buildCorreiosTrackingUrl(trackingCode)
+      : "";
     subject = "Codigo de rastreamento disponivel";
     message = `Ola ${customerName},\n\nO codigo de rastreamento da sua entrega #${delivery.delivery_number} (${collectionName}) esta disponivel.\n\nCodigo: ${trackingCode}${trackingUrl ? `\n\nRastreie seu pedido em: ${trackingUrl}` : ""}`;
   } else {
@@ -163,7 +177,9 @@ async function notifySubscriber(
         break;
       case "shipped": {
         const trackingUrl =
-          trackingCode && isCorreiosTrackingCode(trackingCode) ? buildCorreiosTrackingUrl(trackingCode) : "";
+          trackingCode && isCorreiosTrackingCode(trackingCode)
+            ? buildCorreiosTrackingUrl(trackingCode)
+            : "";
         subject = "Sua peca foi enviada";
         message = `Ola ${customerName},\n\nSua peca da colecao "${collectionName}" (entrega #${delivery.delivery_number}) foi enviada.${trackingCode ? `\n\nCodigo de rastreamento: ${trackingCode}${trackingUrl ? `\n\nRastreie seu pedido em: ${trackingUrl}` : ""}` : ""}`;
         break;
@@ -188,7 +204,9 @@ async function notifySubscriber(
   await createUserNotification(service, userId, deliveryId, subject, message);
 
   if (!customerEmail) {
-    console.error("Email do cliente nao encontrado para notificacao de entrega");
+    console.error(
+      "Email do cliente nao encontrado para notificacao de entrega",
+    );
     return;
   }
 
@@ -211,30 +229,39 @@ async function updateDeliveryStatus(
   trackingCode?: string,
   notes?: string,
 ): Promise<DeliveryStatusRpcResult> {
-  const { data, error } = await service.rpc("admin_update_subscription_delivery_status", {
-    p_delivery_id: deliveryId,
-    p_status: newStatus,
-    p_tracking_code: trackingCode ?? null,
-    p_notes: notes ?? null,
-    p_action_type: "status_update",
-    p_allow_same_status: Boolean(trackingCode),
-    p_admin_user_id: adminUserId,
-  });
+  const { data, error } = await service.rpc(
+    "admin_update_subscription_delivery_status",
+    {
+      p_delivery_id: deliveryId,
+      p_status: newStatus,
+      p_tracking_code: trackingCode ?? null,
+      p_notes: notes ?? null,
+      p_action_type: "status_update",
+      p_allow_same_status: Boolean(trackingCode),
+      p_admin_user_id: adminUserId,
+    },
+  );
 
   if (error) {
     const message = error.message || "Erro ao atualizar status";
-    if (message.includes("DELIVERY_NOT_FOUND")) throw new Error("Entrega nao encontrada");
-    if (message.includes("INVALID_STATUS_TRANSITION")) throw new Error("Transicao de status invalida");
-    if (message.includes("INVALID_TRACKING_CODE")) throw new Error("Formato de codigo de rastreamento invalido");
+    if (message.includes("DELIVERY_NOT_FOUND"))
+      throw new Error("Entrega nao encontrada");
+    if (message.includes("INVALID_STATUS_TRANSITION"))
+      throw new Error("Transicao de status invalida");
+    if (message.includes("INVALID_TRACKING_CODE"))
+      throw new Error("Formato de codigo de rastreamento invalido");
     if (message.includes("INVALID_NOTES")) throw new Error("Notas invalidas");
     throw new Error("Erro ao atualizar status");
   }
 
   const result = (data || {}) as DeliveryStatusRpcResult;
   const delivery = result.delivery || {};
-  const resolvedStatus = typeof result.newStatus === "string" ? result.newStatus : newStatus;
+  const resolvedStatus =
+    typeof result.newStatus === "string" ? result.newStatus : newStatus;
   const resolvedTrackingCode =
-    typeof delivery.tracking_code === "string" ? delivery.tracking_code : trackingCode;
+    typeof delivery.tracking_code === "string"
+      ? delivery.tracking_code
+      : trackingCode;
 
   await notifySubscriber(
     service,
@@ -252,25 +279,36 @@ serve(async (req: Request) => {
   if (opt) return opt;
 
   try {
-    const adminUser = await assertAdmin(req);
+    const adminUser = await assertRateLimitedAdmin(
+      req,
+      "update-delivery-status",
+    );
+    if (adminUser.rateLimited) return adminUser.rateLimited;
+
     const service = getServiceClient();
     const rawBody = await req.json().catch(() => ({}));
     const validation = validateOrReject(rawBody, UPDATE_DELIVERY_STATUS_SCHEMA);
     if ("error" in validation) return validation.error;
 
-    const { deliveryId, newStatus, trackingCode: rawTrackingCode, notes } =
-      validation.data as unknown as UpdateDeliveryStatusRequest;
+    const {
+      deliveryId,
+      newStatus,
+      trackingCode: rawTrackingCode,
+      notes,
+    } = validation.data as unknown as UpdateDeliveryStatusRequest;
     const trackingCode = rawTrackingCode?.toUpperCase();
 
     if (!isDeliveryStatus(newStatus)) {
-      return json({ error: `Status invalido. Status validos: ${VALID_DELIVERY_STATUSES.join(", ")}` }, 400);
+      return json(
+        {
+          error: `Status invalido. Status validos: ${VALID_DELIVERY_STATUSES.join(", ")}`,
+        },
+        400,
+      );
     }
 
     if (trackingCode && !validateTrackingCode(trackingCode)) {
-      return json(
-        { error: "Formato de codigo de rastreamento invalido" },
-        400,
-      );
+      return json({ error: "Formato de codigo de rastreamento invalido" }, 400);
     }
 
     const result = await updateDeliveryStatus(
@@ -291,11 +329,19 @@ serve(async (req: Request) => {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("Error in update-delivery-status:", msg);
     const status =
-      msg === "Unauthorized" ? 401 :
-      msg.startsWith("Forbidden") ? 403 :
-      msg.includes("obrigatorio") || msg.includes("inval") || msg.includes("cannot") ? 400 :
-      500;
-    return json({ error: status >= 500 ? "Internal server error" : msg }, status);
+      msg === "Unauthorized"
+        ? 401
+        : msg.startsWith("Forbidden")
+          ? 403
+          : msg.includes("obrigatorio") ||
+              msg.includes("inval") ||
+              msg.includes("cannot")
+            ? 400
+            : 500;
+    return json(
+      { error: status >= 500 ? "Internal server error" : msg },
+      status,
+    );
   }
 });
 

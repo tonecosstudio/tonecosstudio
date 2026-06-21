@@ -1,0 +1,14 @@
+{
+  "maxClientImportFiles": 164,
+  "maxDirectCallFiles": 123,
+  "maxHookClientImportFiles": 0,
+  "maxHookDirectCallFiles": 0,
+  "maxLibClientImportFiles": 0,
+  "maxLibDirectCallFiles": 0,
+  "maxLibServicesClientImportFiles": 0,
+  "maxLibServicesDirectCallFiles": 0,
+  "maxRootServicesClientImportFiles": 0,
+  "maxRootServicesDirectCallFiles": 0,
+  "maxRootAdminClientImportFiles": 0,
+  "maxRootAdminDirectCallFiles": 0
+}

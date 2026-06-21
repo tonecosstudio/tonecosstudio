@@ -1,9 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { EmailService, getEmailConfig } from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { ADMIN_ACCESS_ROLES } from "../_shared/roles.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 
 interface AlertDigestData {
   deadlineCritical: number;
@@ -14,14 +15,6 @@ interface AlertDigestData {
   scheduledToday: number;
 }
 
-function getRequiredEnv(name: string): string {
-  const value = Deno.env.get(name);
-  if (!value) {
-    throw new Error(`${name} is not configured`);
-  }
-  return value;
-}
-
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
@@ -30,18 +23,15 @@ serve(async (req) => {
   }
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
-    if (forbidden) {
-      return new Response(forbidden.body, {
-        status: forbidden.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseClient = createClient(
-      getRequiredEnv("SUPABASE_URL"),
-      getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "send-alert-digest",
     );
+    if (forbidden) return forbidden;
+
+    const supabaseClient = getServiceClient();
 
     const { data: metricsData, error: metricsError } = await supabaseClient.rpc(
       "get_production_metrics",
@@ -69,10 +59,14 @@ serve(async (req) => {
       .eq("email_enabled", true);
 
     if (settingsError) {
-      throw new Error(`Failed to fetch admin notification settings: ${settingsError.message}`);
+      throw new Error(
+        `Failed to fetch admin notification settings: ${settingsError.message}`,
+      );
     }
 
-    const userIds = [...new Set((settings || []).map((row) => row.user_id).filter(Boolean))];
+    const userIds = [
+      ...new Set((settings || []).map((row) => row.user_id).filter(Boolean)),
+    ];
     if (userIds.length === 0) {
       return json({ message: "No subscribers found" }, corsHeaders);
     }
@@ -81,20 +75,27 @@ serve(async (req) => {
       .from("profiles")
       .select("id, email")
       .in("id", userIds)
-      .in("role", ["admin", "super_admin"]);
+      .in("role", ADMIN_ACCESS_ROLES);
 
     if (profilesError) {
       throw new Error(`Failed to fetch admin emails: ${profilesError.message}`);
     }
 
-    const subscribers = (profiles || []).filter((profile) => Boolean(profile.email));
+    const subscribers = (profiles || []).filter((profile) =>
+      Boolean(profile.email),
+    );
     if (subscribers.length === 0) {
       return json({ message: "No subscribers found" }, corsHeaders);
     }
 
     const emailSubject = `Resumo diario de producao - ${new Date().toLocaleDateString("pt-BR")}`;
-    const emailBody = generateEmailBody(alertData, getPublicBaseUrl(["SITE_URL", "BASE_URL"]));
-    const emailService = new EmailService(getEmailConfig({ fromName: "ORDAX Producao" }));
+    const emailBody = generateEmailBody(
+      alertData,
+      getPublicBaseUrl(["SITE_URL", "BASE_URL"]),
+    );
+    const emailService = new EmailService(
+      getEmailConfig({ fromName: "ORDAX Producao" }),
+    );
 
     const results = await Promise.all(
       subscribers.map(async (subscriber) => {
@@ -106,9 +107,17 @@ serve(async (req) => {
           });
           return { email: subscriber.email, success: true, emailId: result.id };
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.error(`Failed to send alert digest to ${subscriber.email}:`, message);
-          return { email: subscriber.email, success: false, error: "Email delivery failed" };
+          const message =
+            error instanceof Error ? error.message : String(error);
+          console.error(
+            `Failed to send alert digest to ${subscriber.email}:`,
+            message,
+          );
+          return {
+            email: subscriber.email,
+            success: false,
+            error: "Email delivery failed",
+          };
         }
       }),
     );

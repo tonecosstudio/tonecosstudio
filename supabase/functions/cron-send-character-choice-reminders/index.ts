@@ -13,14 +13,14 @@
  * - 2.2.4: Deadline Management - Send reminders at 5, 2, and 1 day before deadline
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   logCronStart,
   logCronSuccess,
   logCronError,
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import {
   EmailService,
   escapeHtml,
@@ -109,9 +109,13 @@ function getEmailSubject(
     case "first":
       return sanitizeEmailSubject(`Escolha seu Personagem - ${collectionName}`);
     case "second":
-      return sanitizeEmailSubject(`Lembrete: Escolha seu Personagem - ${collectionName}`);
+      return sanitizeEmailSubject(
+        `Lembrete: Escolha seu Personagem - ${collectionName}`,
+      );
     case "final":
-      return sanitizeEmailSubject(`URGENTE: Ultimo Dia para Escolher - ${collectionName}`);
+      return sanitizeEmailSubject(
+        `URGENTE: Ultimo Dia para Escolher - ${collectionName}`,
+      );
   }
 }
 
@@ -353,20 +357,18 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cron-send-character-choice-reminders",
+    );
     if (forbidden) return forbidden;
 
     // Start logging
     logId = await logCronStart("cron-send-character-choice-reminders");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();

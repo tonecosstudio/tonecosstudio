@@ -28,6 +28,9 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
     rpc: vi.fn(),
+    functions: {
+      invoke: vi.fn(),
+    },
   },
 }));
 
@@ -35,15 +38,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 describe("PaymentMethodService", () => {
   const mockPaymentMethodTable = (tableMock: unknown) => {
-    (supabase.from as unknown as { mockReturnValue: (value: unknown) => void }).mockReturnValue(
-      tableMock
-    );
+    (
+      supabase.from as unknown as { mockReturnValue: (value: unknown) => void }
+    ).mockReturnValue(tableMock);
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     clearPaymentMethodCache();
     (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
+    (supabase.functions.invoke as any).mockResolvedValue({
+      data: { ok: true, data: true },
+      error: null,
+    });
   });
 
   describe("listActivePaymentMethods", () => {
@@ -75,7 +82,9 @@ describe("PaymentMethodService", () => {
 
       const mockSelect = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValue({ data: mockData, error: null });
+      const mockOrder = vi
+        .fn()
+        .mockResolvedValue({ data: mockData, error: null });
 
       mockPaymentMethodTable({
         select: mockSelect,
@@ -88,7 +97,9 @@ describe("PaymentMethodService", () => {
       expect(supabase.from).toHaveBeenCalledWith("admin_payment_methods");
       expect(mockSelect).toHaveBeenCalledWith("*");
       expect(mockEq).toHaveBeenCalledWith("is_active", true);
-      expect(mockOrder).toHaveBeenCalledWith("display_order", { ascending: true });
+      expect(mockOrder).toHaveBeenCalledWith("display_order", {
+        ascending: true,
+      });
       expect(result).toEqual(mockData);
     });
 
@@ -109,7 +120,9 @@ describe("PaymentMethodService", () => {
 
       const mockSelect = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValue({ data: mockData, error: null });
+      const mockOrder = vi
+        .fn()
+        .mockResolvedValue({ data: mockData, error: null });
 
       mockPaymentMethodTable({
         select: mockSelect,
@@ -130,7 +143,9 @@ describe("PaymentMethodService", () => {
       const mockError = { message: "Database error" };
       const mockSelect = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValue({ data: null, error: mockError });
+      const mockOrder = vi
+        .fn()
+        .mockResolvedValue({ data: null, error: mockError });
 
       mockPaymentMethodTable({
         select: mockSelect,
@@ -139,7 +154,7 @@ describe("PaymentMethodService", () => {
       });
 
       await expect(listActivePaymentMethods()).rejects.toThrow(
-        "Failed to list active payment methods: Database error"
+        "Failed to list active payment methods: Database error",
       );
     });
   });
@@ -160,7 +175,9 @@ describe("PaymentMethodService", () => {
 
       const mockSelect = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockReturnThis();
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: mockData, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: mockData, error: null });
 
       mockPaymentMethodTable({
         select: mockSelect,
@@ -178,7 +195,9 @@ describe("PaymentMethodService", () => {
     it("should return null if payment method not found", async () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockEq = vi.fn().mockReturnThis();
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
 
       mockPaymentMethodTable({
         select: mockSelect,
@@ -218,17 +237,92 @@ describe("PaymentMethodService", () => {
         updated_at: "2024-01-01",
       };
 
-      (supabase.rpc as any).mockResolvedValue({ data: mockData, error: null });
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: true, data: mockData },
+        error: null,
+      });
 
       const result = await createPaymentMethod(input);
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_create_payment_method", {
-        p_data: expect.objectContaining({
-          name: "PIX Ordax",
-          type: "pix",
-          pix_key: "12345678900",
-        }),
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: expect.objectContaining({
+            action: "create",
+            data: expect.objectContaining({
+              name: "PIX Ordax",
+              type: "pix",
+              pix_key: "12345678900",
+            }),
+          }),
+        },
+      );
+      expect(result).toEqual(mockData);
+    });
+
+    it("should throw mapped edge error when creation fails", async () => {
+      const input: PaymentMethodInput = {
+        name: "PIX Ordax",
+        type: "pix",
+        instructions: "Transfer to PIX key",
+        is_active: true,
+      };
+
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: false, error: "PAYMENT_METHOD_NOT_FOUND" },
+        error: null,
       });
+
+      await expect(createPaymentMethod(input)).rejects.toThrow(
+        "Payment method not found",
+      );
+    });
+
+    it("should call admin edge function with sanitized payload", async () => {
+      const input: PaymentMethodInput = {
+        name: "PIX Ordax",
+        type: "pix",
+        instructions: "Transfer to PIX key",
+        pix_key: "12345678900",
+        is_active: true,
+        is_default: false,
+      };
+
+      const mockData: PaymentMethod = {
+        id: "new-id",
+        name: input.name,
+        type: input.type,
+        instructions: input.instructions,
+        pix_key: input.pix_key || null,
+        payment_link: input.payment_link || null,
+        account_details: input.account_details || null,
+        is_active: input.is_active,
+        is_default: input.is_default || false,
+        display_order: input.display_order || 0,
+        created_at: "2024-01-01",
+        updated_at: "2024-01-01",
+      };
+
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: true, data: mockData },
+        error: null,
+      });
+
+      const result = await createPaymentMethod(input);
+
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: expect.objectContaining({
+            action: "create",
+            data: expect.objectContaining({
+              name: "PIX Ordax",
+              type: "pix",
+              pix_key: "12345678900",
+            }),
+          }),
+        },
+      );
       expect(result).toEqual(mockData);
     });
 
@@ -240,7 +334,9 @@ describe("PaymentMethodService", () => {
         is_active: true,
       };
 
-      await expect(createPaymentMethod(input)).rejects.toThrow("Payment method name is required");
+      await expect(createPaymentMethod(input)).rejects.toThrow(
+        "Payment method name is required",
+      );
     });
 
     it("should throw error if type is missing", async () => {
@@ -250,7 +346,9 @@ describe("PaymentMethodService", () => {
         is_active: true,
       } as unknown as PaymentMethodInput;
 
-      await expect(createPaymentMethod(input)).rejects.toThrow("Payment method type is required");
+      await expect(createPaymentMethod(input)).rejects.toThrow(
+        "Payment method type is required",
+      );
     });
 
     it("should throw error if instructions are missing", async () => {
@@ -261,7 +359,9 @@ describe("PaymentMethodService", () => {
         is_active: true,
       };
 
-      await expect(createPaymentMethod(input)).rejects.toThrow("Payment instructions are required");
+      await expect(createPaymentMethod(input)).rejects.toThrow(
+        "Payment instructions are required",
+      );
     });
 
     it("should accept optional fields", async () => {
@@ -285,7 +385,10 @@ describe("PaymentMethodService", () => {
         updated_at: "2024-01-01",
       };
 
-      (supabase.rpc as any).mockResolvedValue({ data: mockData, error: null });
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: true, data: mockData },
+        error: null,
+      });
 
       const result = await createPaymentMethod(input);
 
@@ -308,33 +411,42 @@ describe("PaymentMethodService", () => {
         updated_at: "2024-01-02",
       };
 
-      (supabase.rpc as any).mockResolvedValue({ data: mockData, error: null });
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: true, data: mockData },
+        error: null,
+      });
 
       const result = await updatePaymentMethod("1", {
         name: "PIX Updated",
         instructions: "New instructions",
       });
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_payment_method", {
-        p_method_id: "1",
-        p_data: expect.objectContaining({
-          name: "PIX Updated",
-          instructions: "New instructions",
-        }),
-      });
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: expect.objectContaining({
+            action: "update",
+            methodId: "1",
+            data: expect.objectContaining({
+              name: "PIX Updated",
+              instructions: "New instructions",
+            }),
+          }),
+        },
+      );
       expect(result).toEqual(mockData);
     });
 
     it("should throw error if name is empty", async () => {
       await expect(updatePaymentMethod("1", { name: "" })).rejects.toThrow(
-        "Payment method name cannot be empty"
+        "Payment method name cannot be empty",
       );
     });
 
     it("should throw error if instructions are empty", async () => {
-      await expect(updatePaymentMethod("1", { instructions: "" })).rejects.toThrow(
-        "Payment instructions cannot be empty"
-      );
+      await expect(
+        updatePaymentMethod("1", { instructions: "" }),
+      ).rejects.toThrow("Payment instructions cannot be empty");
     });
   });
 
@@ -342,19 +454,25 @@ describe("PaymentMethodService", () => {
     it("should set payment method as default", async () => {
       await setDefaultPaymentMethod("1");
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_set_default_payment_method", {
-        p_method_id: "1",
-      });
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: {
+            action: "setDefault",
+            methodId: "1",
+          },
+        },
+      );
     });
 
-    it("should throw error on database failure", async () => {
-      (supabase.rpc as any).mockResolvedValue({
-        data: null,
-        error: { message: "Database error" },
+    it("should throw error on edge failure", async () => {
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: false, error: "Database error" },
+        error: null,
       });
 
       await expect(setDefaultPaymentMethod("1")).rejects.toThrow(
-        "Failed to set default payment method: Database error"
+        "Failed to set default payment method: Database error",
       );
     });
   });
@@ -363,19 +481,31 @@ describe("PaymentMethodService", () => {
     it("should toggle payment method to active", async () => {
       await togglePaymentMethodActive("1", true);
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_toggle_payment_method_active", {
-        p_method_id: "1",
-        p_is_active: true,
-      });
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: {
+            action: "toggleActive",
+            methodId: "1",
+            isActive: true,
+          },
+        },
+      );
     });
 
     it("should toggle payment method to inactive", async () => {
       await togglePaymentMethodActive("1", false);
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_toggle_payment_method_active", {
-        p_method_id: "1",
-        p_is_active: false,
-      });
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: {
+            action: "toggleActive",
+            methodId: "1",
+            isActive: false,
+          },
+        },
+      );
     });
   });
 
@@ -383,19 +513,25 @@ describe("PaymentMethodService", () => {
     it("should delete payment method by id", async () => {
       await deletePaymentMethod("1");
 
-      expect(supabase.rpc).toHaveBeenCalledWith("admin_delete_payment_method", {
-        p_method_id: "1",
-      });
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: {
+            action: "delete",
+            methodId: "1",
+          },
+        },
+      );
     });
 
-    it("should throw error on database failure", async () => {
-      (supabase.rpc as any).mockResolvedValue({
-        data: null,
-        error: { message: "Database error" },
+    it("should throw error on edge failure", async () => {
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: false, error: "Database error" },
+        error: null,
       });
 
       await expect(deletePaymentMethod("1")).rejects.toThrow(
-        "Failed to delete payment method: Database error"
+        "Failed to delete payment method: Database error",
       );
     });
   });
@@ -427,18 +563,23 @@ describe("PaymentMethodService", () => {
         },
       ];
 
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValue({ data: mockData, error: null });
-
-      mockPaymentMethodTable({
-        select: mockSelect,
-        order: mockOrder,
+      (supabase.functions.invoke as any).mockResolvedValue({
+        data: { ok: true, data: mockData },
+        error: null,
       });
 
       const result = await listAllPaymentMethods();
 
       expect(result).toEqual(mockData);
       expect(result).toHaveLength(2);
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-payment-methods",
+        {
+          body: {
+            action: "list",
+          },
+        },
+      );
     });
   });
 });

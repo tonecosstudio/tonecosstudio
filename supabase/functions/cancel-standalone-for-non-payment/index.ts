@@ -5,8 +5,8 @@
  * The database RPC performs the status update and capacity release atomically.
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
 
 interface CancelRequest {
   purchaseId: string;
@@ -38,26 +38,28 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Method not allowed" }, 405);
     }
 
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cancel-standalone-for-non-payment",
+    );
     if (forbidden) return forbidden;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabase = getServiceClient();
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const body: CancelRequest = await req.json().catch(() => ({ purchaseId: "" }));
+    const body: CancelRequest = await req
+      .json()
+      .catch(() => ({ purchaseId: "" }));
     const { purchaseId } = body;
 
     if (!purchaseId) {
       return jsonResponse({ error: "purchaseId is required" }, 400);
     }
 
-    console.log(`Cancelling standalone purchase for non-payment: ${purchaseId}`);
+    console.log(
+      `Cancelling standalone purchase for non-payment: ${purchaseId}`,
+    );
 
     const { data: result, error } = await supabase.rpc(
       "cancel_standalone_purchase_for_non_payment",
@@ -68,13 +70,18 @@ Deno.serve(async (req) => {
       const message = error.message || "Cancellation failed";
       const status = rpcErrorStatus(message);
       return jsonResponse(
-        { success: false, error: status >= 500 ? "Internal server error" : message },
+        {
+          success: false,
+          error: status >= 500 ? "Internal server error" : message,
+        },
         status,
       );
     }
 
     console.log(`Purchase ${purchaseId} cancelled successfully`);
-    return jsonResponse((result as Record<string, unknown>) ?? { success: true });
+    return jsonResponse(
+      (result as Record<string, unknown>) ?? { success: true },
+    );
   } catch (error) {
     console.error("Error cancelling standalone purchase:", error);
 

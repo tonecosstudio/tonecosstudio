@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
-import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import { isUUID } from "../_shared/validation.ts";
 
 function json(body: unknown, status = 200): Response {
@@ -10,7 +11,11 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-function mapDeactivateError(message: string): { status: number; error: string; activeDeliveriesCount?: number } {
+function mapDeactivateError(message: string): {
+  status: number;
+  error: string;
+  activeDeliveriesCount?: number;
+} {
   if (message.includes("COLLECTION_NOT_FOUND")) {
     return { status: 404, error: "Collection not found" };
   }
@@ -36,7 +41,12 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(
+      req,
+      "admin-deactivate-collection",
+    );
+    if (admin.rateLimited) return admin.rateLimited;
+
     const service = getServiceClient();
     const body = await req.json().catch(() => ({}));
     const id = typeof body?.id === "string" ? body.id.trim() : "";
@@ -45,9 +55,12 @@ serve(async (req) => {
       return json({ ok: false, error: "id must be a valid UUID" }, 400);
     }
 
-    const { data: collection, error } = await service.rpc("admin_deactivate_collection", {
-      p_collection_id: id,
-    });
+    const { data: collection, error } = await service.rpc(
+      "admin_deactivate_collection",
+      {
+        p_collection_id: id,
+      },
+    );
 
     if (error) {
       const mapped = mapDeactivateError(error.message || "");
@@ -66,8 +79,15 @@ serve(async (req) => {
     return json({ ok: true, collection });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    const status = msg.startsWith("Forbidden") ? 403 : msg === "Unauthorized" ? 401 : 500;
+    const status = msg.startsWith("Forbidden")
+      ? 403
+      : msg === "Unauthorized"
+        ? 401
+        : 500;
     console.error("Error deactivating collection:", msg);
-    return json({ ok: false, error: status >= 500 ? "Internal server error" : msg }, status);
+    return json(
+      { ok: false, error: status >= 500 ? "Internal server error" : msg },
+      status,
+    );
   }
 });

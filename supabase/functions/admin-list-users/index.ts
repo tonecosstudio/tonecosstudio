@@ -1,9 +1,6 @@
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
-import {
-  assertAdmin,
-  errorToStatus,
-  getServiceClient,
-} from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -12,13 +9,18 @@ Deno.serve(async (req) => {
 
   try {
     if (req.method !== "GET" && req.method !== "POST") {
-      return new Response(JSON.stringify({ ok: false, error: "method not allowed" }), {
-        status: 405,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ ok: false, error: "method not allowed" }),
+        {
+          status: 405,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(req, "admin-list-users");
+    if (admin.rateLimited) return admin.rateLimited;
+
     const service = getServiceClient();
 
     const { data: authUsers, error: usersError } =
@@ -64,9 +66,14 @@ Deno.serve(async (req) => {
       error instanceof Error ? error.message : "Erro desconhecido";
     const status = errorToStatus(message);
     console.error("Erro ao listar usuarios:", message);
-    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : message }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: status >= 500 ? "Internal server error" : message,
+      }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

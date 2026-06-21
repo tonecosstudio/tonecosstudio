@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { classifyNameWithAI } from "../_shared/ai.ts";
-import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import { createEdgeLogger } from "../_shared/edge-logger.ts";
 
 const log = createEdgeLogger("confirm-model");
@@ -49,7 +50,10 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    const { userId } = await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(req, "confirm-model");
+    if (admin.rateLimited) return admin.rateLimited;
+
+    const { userId } = admin;
     const service = getServiceClient();
 
     const body = await req.json().catch(() => ({}));

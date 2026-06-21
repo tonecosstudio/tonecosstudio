@@ -1,15 +1,13 @@
 // Edge Function: send-email
 // Handles email notifications for chat messages with grouping and retry logic
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { nowInBahia, toUTC, addDays } from "../_shared/timezone.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import {
-  assertAdmin,
-  errorToStatus,
-  getServiceClient,
-} from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
 import { EmailService, escapeHtml, getEmailConfig } from "../_shared/email.ts";
+import { isUUID } from "../_shared/validation.ts";
 
 // Types
 interface EmailNotificationRequest {
@@ -25,11 +23,78 @@ interface DirectEmailRequest {
   html: string;
   from?: string;
   fromName?: string;
+  userId?: string;
+  emailType?: string;
+  metadata?: Record<string, unknown>;
 }
 
 function isDirectEmailRequest(payload: unknown): payload is DirectEmailRequest {
   const data = payload as Partial<DirectEmailRequest>;
   return !!data?.to && !!data?.subject && !!data?.html;
+}
+
+function normalizeEmailLogMetadata(value: unknown): Record<string, unknown> {
+  if (value === undefined || value === null) return {};
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("metadata must be an object");
+  }
+  return value as Record<string, unknown>;
+}
+
+function normalizeEmailType(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "other";
+  if (typeof value !== "string") throw new Error("emailType must be a string");
+
+  const clean = value.trim();
+  if (!clean || clean.length > 80) throw new Error("emailType is invalid");
+  return clean;
+}
+
+function normalizeUserId(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || !isUUID(value)) {
+    throw new Error("userId must be a valid UUID");
+  }
+  return value;
+}
+
+async function createEmailDeliveryLog(
+  service: ReturnType<typeof getServiceClient>,
+  payload: DirectEmailRequest,
+): Promise<string | null> {
+  const { data, error } = await service.rpc("create_email_delivery_log", {
+    p_user_id: normalizeUserId(payload.userId),
+    p_recipient_email: payload.to,
+    p_email_type: normalizeEmailType(payload.emailType),
+    p_subject: payload.subject,
+    p_status: "pending",
+    p_provider: "edge-function",
+    p_metadata: normalizeEmailLogMetadata(payload.metadata),
+  });
+
+  if (error) {
+    console.error("Error creating email delivery log:", error.message);
+    return null;
+  }
+
+  return typeof data === "string" ? data : null;
+}
+
+async function updateEmailDeliveryLog(
+  service: ReturnType<typeof getServiceClient>,
+  logId: string | null,
+  updates: Record<string, unknown>,
+): Promise<void> {
+  if (!logId) return;
+
+  const { error } = await service.rpc("update_email_delivery_log", {
+    p_log_id: logId,
+    p_updates: updates,
+  });
+
+  if (error) {
+    console.error("Error updating email delivery log:", error.message);
+  }
 }
 
 // Check if user is online (activity within last 5 minutes)
@@ -241,28 +306,46 @@ serve(async (req) => {
       });
     }
 
-    await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(req, "send-email");
+    if (admin.rateLimited) return admin.rateLimited;
 
     // Parse request
     const payload = await req.json();
+    const supabase = getServiceClient();
 
     if (isDirectEmailRequest(payload)) {
+      const logId = await createEmailDeliveryLog(supabase, payload);
       const emailService = new EmailService(
         getEmailConfig({
           from: payload.from,
           fromName: payload.fromName,
         }),
       );
-      const result = await emailService.sendEmail({
-        to: payload.to,
-        subject: payload.subject,
-        html: payload.html,
-      });
+      try {
+        const result = await emailService.sendEmail({
+          to: payload.to,
+          subject: payload.subject,
+          html: payload.html,
+        });
 
-      return new Response(
-        JSON.stringify({ success: true, emailId: result.id }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+        await updateEmailDeliveryLog(supabase, logId, {
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          provider_message_id: result.id,
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, emailId: result.id }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        await updateEmailDeliveryLog(supabase, logId, {
+          status: "failed",
+          error_message: message,
+        });
+        throw error;
+      }
     }
 
     const notificationPayload = payload as EmailNotificationRequest;
@@ -275,9 +358,6 @@ serve(async (req) => {
     ) {
       throw new Error("Missing required fields");
     }
-
-    // Initialize Supabase client
-    const supabase = getServiceClient();
 
     // Check if user is online
     const userOnline = await isUserOnline(
@@ -418,9 +498,15 @@ serve(async (req) => {
     console.error("Error in send-email function:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     const status = errorToStatus(message);
-    return new Response(JSON.stringify({ success: false, error: status >= 500 ? "Internal server error" : message }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: status >= 500 ? "Internal server error" : message,
+      }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { classifyImageWithVision } from "../_shared/ai-vision.ts";
-import { assertAdmin, getClaims } from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { getClaims } from "../_shared/supabase.ts";
 
 type VisionModel = "gpt-4o-mini" | "gpt-4o";
 
@@ -23,7 +24,9 @@ function applyFranchiseRules(name: string, rules: FranchiseRuleRow[]) {
     .filter((r) => r.enabled)
     .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
   for (const r of enabled) {
-    const pat = String(r.pattern ?? "").trim().toLowerCase();
+    const pat = String(r.pattern ?? "")
+      .trim()
+      .toLowerCase();
     if (!pat) continue;
     if (hay.includes(pat)) return String(r.franchise_canonical);
   }
@@ -74,7 +77,9 @@ async function processImage(
 
     // Apply franchise rules
     const franchiseFromRule = applyFranchiseRules(result.name, rules);
-    const finalResult = franchiseFromRule ? { ...result, franchise: franchiseFromRule } : result;
+    const finalResult = franchiseFromRule
+      ? { ...result, franchise: franchiseFromRule }
+      : result;
 
     // Save to cache
     if (queueItem.image_hash) {
@@ -104,11 +109,20 @@ async function processImage(
       })
       .eq("id", queueItem.id);
 
-    return { success: true, fromCache: false, queueId: queueItem.id, cost: finalResult.costUsd };
+    return {
+      success: true,
+      fromCache: false,
+      queueId: queueItem.id,
+      cost: finalResult.costUsd,
+    };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to process queued image:", queueItem.id, msg);
-    return { success: false, queueId: queueItem.id, error: "Image processing failed" };
+    return {
+      success: false,
+      queueId: queueItem.id,
+      error: "Image processing failed",
+    };
   }
 }
 
@@ -117,7 +131,9 @@ serve(async (req) => {
   if (opt) return opt;
 
   try {
-    await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(req, "process-queue-batch");
+    if (admin.rateLimited) return admin.rateLimited;
+
     const { client } = await getClaims(req);
 
     const body = await req.json().catch(() => ({}));
@@ -137,7 +153,10 @@ serve(async (req) => {
 
     if (!queueItems || queueItems.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No pending images to process", processed: 0 }),
+        JSON.stringify({
+          message: "No pending images to process",
+          processed: 0,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -176,7 +195,7 @@ serve(async (req) => {
     for (let i = 0; i < queueItems.length; i += maxConcurrent) {
       const batch = queueItems.slice(i, i + maxConcurrent);
       const promises = batch.map((item) =>
-        processImage(client, item, (rules ?? []) as FranchiseRuleRow[], model)
+        processImage(client, item, (rules ?? []) as FranchiseRuleRow[], model),
       );
 
       const batchResults = await Promise.all(promises);
@@ -224,10 +243,17 @@ serve(async (req) => {
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    const status = msg.startsWith("Forbidden") ? 403 : msg === "Unauthorized" ? 401 : 500;
-    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const status = msg.startsWith("Forbidden")
+      ? 403
+      : msg === "Unauthorized"
+        ? 401
+        : 500;
+    return new Response(
+      JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

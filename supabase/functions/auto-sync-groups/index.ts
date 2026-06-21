@@ -3,7 +3,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
 import { getServiceClient } from "../_shared/supabase.ts";
 
 function json(req: Request, body: unknown, status = 200): Response {
@@ -28,13 +28,13 @@ serve(async (req) => {
       return json(req, { success: false, error: "Method not allowed" }, 405);
     }
 
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
-    if (forbidden) {
-      return new Response(forbidden.body, {
-        status: forbidden.status,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "auto-sync-groups",
+    );
+    if (forbidden) return forbidden;
 
     const service = getServiceClient();
     const { data, error } = await service.rpc("sync_all_automatic_groups");
@@ -44,17 +44,20 @@ serve(async (req) => {
       return json(req, { success: false, error: "Internal server error" }, 500);
     }
 
-    return json(req, data ?? {
-      success: true,
-      message: "Auto-sync completed",
-      summary: {
-        groupsProcessed: 0,
-        totalAdded: 0,
-        totalRemoved: 0,
-        errors: 0,
+    return json(
+      req,
+      data ?? {
+        success: true,
+        message: "Auto-sync completed",
+        summary: {
+          groupsProcessed: 0,
+          totalAdded: 0,
+          totalRemoved: 0,
+          errors: 0,
+        },
+        results: [],
       },
-      results: [],
-    });
+    );
   } catch (error) {
     console.error("Error in auto-sync-groups function:", error);
     return json(req, { success: false, error: "Internal server error" }, 500);

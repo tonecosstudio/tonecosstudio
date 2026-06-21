@@ -11,14 +11,14 @@
  * - 12.4: Send email notification to all subscribers who chose that collection
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   logCronStart,
   logCronSuccess,
   logCronError,
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import {
   EmailService,
   escapeHtml,
@@ -55,7 +55,9 @@ async function sendRevelationEmail(params: {
   const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
   const emailService = new EmailService(getEmailConfig({ baseUrl }));
 
-  const subject = sanitizeEmailSubject(`Revelacao de Personagem: ${params.collectionName}`);
+  const subject = sanitizeEmailSubject(
+    `Revelacao de Personagem: ${params.collectionName}`,
+  );
   const htmlContent = generateRevelationEmailHTML({
     subscriberName: params.subscriberName || "Colecionador",
     collectionName: params.collectionName,
@@ -259,20 +261,18 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cron-reveal-characters",
+    );
     if (forbidden) return forbidden;
 
     // Start logging
     logId = await logCronStart("cron-reveal-characters");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();

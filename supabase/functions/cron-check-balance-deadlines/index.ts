@@ -15,14 +15,14 @@
  * - 17.8: Send urgent payment reminder 1 day before deadline
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   logCronStart,
   logCronSuccess,
   logCronError,
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import {
   EmailService,
   escapeHtml,
@@ -293,7 +293,9 @@ async function sendCancellationNotice(params: {
   const baseUrl = getPublicBaseUrl(["FRONTEND_URL", "BASE_URL", "SITE_URL"]);
   const emailService = new EmailService(getEmailConfig({ baseUrl }));
 
-  const subject = sanitizeEmailSubject(`Pedido Cancelado - ${params.collectionName}`);
+  const subject = sanitizeEmailSubject(
+    `Pedido Cancelado - ${params.collectionName}`,
+  );
   const htmlContent = generateCancellationEmailHTML({
     userName: params.userName || "Colecionador",
     collectionName: params.collectionName,
@@ -471,20 +473,18 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cron-check-balance-deadlines",
+    );
     if (forbidden) return forbidden;
 
     // Start logging
     logId = await logCronStart("cron-check-balance-deadlines");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();

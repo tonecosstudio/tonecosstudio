@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
-import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 
 /**
  * Get Pricing Reports Endpoint
@@ -72,7 +73,9 @@ serve(async (req) => {
 
   try {
     // Validate admin authorization
-    await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(req, "get-pricing-reports");
+    if (admin.rateLimited) return admin.rateLimited;
+
     const service = getServiceClient();
 
     // Parse and validate request body
@@ -319,7 +322,8 @@ serve(async (req) => {
             }
 
             const collectionIds =
-              assignments?.map((assignment: any) => assignment.collection_id) || [];
+              assignments?.map((assignment: any) => assignment.collection_id) ||
+              [];
 
             if (collectionIds.length === 0) {
               return {
@@ -384,7 +388,8 @@ serve(async (req) => {
               tier_id: tier.id,
               tier_name: tier.name,
               views: null,
-              purchases: (subscriptionPurchases ?? 0) + (standalonePurchases ?? 0),
+              purchases:
+                (subscriptionPurchases ?? 0) + (standalonePurchases ?? 0),
               conversion_rate: null,
             };
           }),
@@ -417,9 +422,15 @@ serve(async (req) => {
 
     console.error("Error generating pricing report:", msg);
 
-    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: status >= 500 ? "Internal server error" : msg,
+      }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

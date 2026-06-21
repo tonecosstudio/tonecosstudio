@@ -11,18 +11,18 @@
  * Provider credentials must stay server-side in Supabase function secrets.
  */
 
-import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
-import { CONTACT } from '@/config/constants';
-import { logDebug, logError, logInfo, logWarn } from '@/lib/logger';
-import { normalizeAddressBR, type DeliveryAddress } from '@/lib/profile';
-import { buildTrackingUrl } from '@/lib/tracking-links';
-import { notificationPreferencesService, EmailType } from './notification-preferences-service';
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import { CONTACT } from "@/config/constants";
+import { logDebug, logError, logInfo, logWarn } from "@/lib/logger";
+import { normalizeAddressBR, type DeliveryAddress } from "@/lib/profile";
+import { buildTrackingUrl } from "@/lib/tracking-links";
+import { formatDate } from "@/lib/utils";
+import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
 import {
-  createEmailDeliveryLogRpc,
-  type EmailDeliveryLogUpdate,
-  updateEmailDeliveryLogRpc,
-} from './email-log-mutations-service';
+  notificationPreferencesService,
+  EmailType,
+} from "./notification-preferences-service";
 
 interface EmailOptions {
   to: string;
@@ -33,7 +33,7 @@ interface EmailOptions {
 }
 
 interface EmailConfig {
-  provider: 'edge-function';
+  provider: "edge-function";
   from: string;
   fromName: string;
   maxRetries: number;
@@ -137,10 +137,10 @@ class EmailServiceError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly retryable: boolean = false
+    public readonly retryable: boolean = false,
   ) {
     super(message);
-    this.name = 'EmailServiceError';
+    this.name = "EmailServiceError";
   }
 }
 
@@ -160,12 +160,21 @@ export class EmailService {
    */
   private loadConfig(): EmailConfig {
     const from = import.meta.env.VITE_EMAIL_FROM || CONTACT.SUPPORT_EMAIL;
-    const fromName = import.meta.env.VITE_EMAIL_FROM_NAME || import.meta.env.VITE_COMPANY_NAME || 'ORDAX';
-    const maxRetries = parseInt(import.meta.env.VITE_EMAIL_MAX_RETRIES || '3', 10);
-    const retryDelay = parseInt(import.meta.env.VITE_EMAIL_RETRY_DELAY || '2000', 10);
+    const fromName =
+      import.meta.env.VITE_EMAIL_FROM_NAME ||
+      import.meta.env.VITE_COMPANY_NAME ||
+      "ORDAX";
+    const maxRetries = parseInt(
+      import.meta.env.VITE_EMAIL_MAX_RETRIES || "3",
+      10,
+    );
+    const retryDelay = parseInt(
+      import.meta.env.VITE_EMAIL_RETRY_DELAY || "2000",
+      10,
+    );
 
     return {
-      provider: 'edge-function',
+      provider: "edge-function",
       from,
       fromName,
       maxRetries,
@@ -176,7 +185,7 @@ export class EmailService {
   private toEmailUser(profile: EmailProfileRow): EmailUser {
     return {
       id: profile.id,
-      email: profile.email ?? '',
+      email: profile.email ?? "",
       raw_user_meta_data: {
         full_name: profile.full_name ?? profile.display_name ?? undefined,
       },
@@ -185,7 +194,7 @@ export class EmailService {
 
   private toShippingAddress(profile: EmailProfileRow): ShippingAddress {
     const normalized = normalizeAddressBR(
-      profile.delivery_address as DeliveryAddress | null
+      profile.delivery_address as DeliveryAddress | null,
     );
 
     return {
@@ -210,25 +219,25 @@ export class EmailService {
 
   private formatMonthYear(date: string | null): string {
     return date
-      ? new Date(date).toLocaleDateString('pt-BR', {
-          month: 'long',
-          year: 'numeric',
+      ? formatDate(date, {
+          month: "long",
+          year: "numeric",
         })
-      : 'A definir';
+      : "A definir";
   }
 
   private formatLongDate(date: string | null): string {
     return date
-      ? new Date(date).toLocaleDateString('pt-BR', {
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
+      ? formatDate(date, {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
         })
-      : 'A definir';
+      : "A definir";
   }
 
   private formatDateAfterDays(days: number): string {
-    if (!Number.isFinite(days)) return 'A definir';
+    if (!Number.isFinite(days)) return "A definir";
 
     const date = new Date();
     date.setDate(date.getDate() + Math.max(0, Math.ceil(days)));
@@ -246,7 +255,8 @@ export class EmailService {
   } {
     const totalAmount = purchase.amount;
     const balanceAmount = purchase.balance_amount ?? 0;
-    const depositAmount = purchase.paid_amount ?? Math.max(totalAmount - balanceAmount, 0);
+    const depositAmount =
+      purchase.paid_amount ?? Math.max(totalAmount - balanceAmount, 0);
 
     return {
       balanceAmount,
@@ -257,54 +267,58 @@ export class EmailService {
 
   private async fetchProfileById(userId: string): Promise<EmailProfileRow> {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, display_name, delivery_address')
-      .eq('id', userId)
+      .from("profiles")
+      .select("id, email, full_name, display_name, delivery_address")
+      .eq("id", userId)
       .single();
 
     if (error || !data) {
       throw new EmailServiceError(
         `Failed to fetch profile: ${error?.message}`,
-        'USER_EMAIL_NOT_FOUND',
-        false
+        "USER_EMAIL_NOT_FOUND",
+        false,
       );
     }
 
     return data as EmailProfileRow;
   }
 
-  private async fetchProfileByEmail(email: string): Promise<EmailProfileRow | null> {
+  private async fetchProfileByEmail(
+    email: string,
+  ): Promise<EmailProfileRow | null> {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, display_name, delivery_address')
-      .eq('email', email)
+      .from("profiles")
+      .select("id, email, full_name, display_name, delivery_address")
+      .eq("email", email)
       .maybeSingle();
 
     if (error) {
       throw new EmailServiceError(
         `Failed to fetch profile: ${error.message}`,
-        'USER_EMAIL_NOT_FOUND',
-        false
+        "USER_EMAIL_NOT_FOUND",
+        false,
       );
     }
 
     return data as EmailProfileRow | null;
   }
 
-  private async fetchCollectionById(collectionId: string | null): Promise<EmailCollection | null> {
+  private async fetchCollectionById(
+    collectionId: string | null,
+  ): Promise<EmailCollection | null> {
     if (!collectionId) return null;
 
     const { data, error } = await supabase
-      .from('collections')
-      .select('id, name, description, cover_image_url')
-      .eq('id', collectionId)
+      .from("collections")
+      .select("id, name, description, cover_image_url")
+      .eq("id", collectionId)
       .maybeSingle();
 
     if (error) {
       throw new EmailServiceError(
         `Failed to fetch collection: ${error.message}`,
-        'COLLECTION_NOT_FOUND',
-        false
+        "COLLECTION_NOT_FOUND",
+        false,
       );
     }
 
@@ -319,25 +333,29 @@ export class EmailService {
   }
 
   private async fetchSubscriptionEmailContext(
-    subscriptionId: string
-  ): Promise<Omit<EmailDeliveryContext, 'delivery'>> {
+    subscriptionId: string,
+  ): Promise<Omit<EmailDeliveryContext, "delivery">> {
     const { data: subscription, error } = await supabase
-      .from('subscriptions')
-      .select('id, user_id, collection_id, plan_type, deliveries_total, total_paid')
-      .eq('id', subscriptionId)
+      .from("subscriptions")
+      .select(
+        "id, user_id, collection_id, plan_type, deliveries_total, total_paid",
+      )
+      .eq("id", subscriptionId)
       .single();
 
     if (error || !subscription) {
       throw new EmailServiceError(
         `Failed to fetch subscription: ${error?.message}`,
-        'SUBSCRIPTION_NOT_FOUND',
-        false
+        "SUBSCRIPTION_NOT_FOUND",
+        false,
       );
     }
 
     const subscriptionRow = subscription as EmailSubscriptionRow;
     const profile = await this.fetchProfileById(subscriptionRow.user_id);
-    const collection = await this.fetchCollectionById(subscriptionRow.collection_id);
+    const collection = await this.fetchCollectionById(
+      subscriptionRow.collection_id,
+    );
 
     return {
       subscription: {
@@ -352,25 +370,29 @@ export class EmailService {
     };
   }
 
-  private async fetchDeliveryEmailContext(deliveryId: string): Promise<EmailDeliveryContext> {
+  private async fetchDeliveryEmailContext(
+    deliveryId: string,
+  ): Promise<EmailDeliveryContext> {
     const { data: delivery, error } = await supabase
-      .from('subscription_deliveries')
+      .from("subscription_deliveries")
       .select(
-        'id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code'
+        "id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code",
       )
-      .eq('id', deliveryId)
+      .eq("id", deliveryId)
       .single();
 
     if (error || !delivery) {
       throw new EmailServiceError(
         `Failed to fetch delivery: ${error?.message}`,
-        'DELIVERY_NOT_FOUND',
-        false
+        "DELIVERY_NOT_FOUND",
+        false,
       );
     }
 
     const deliveryRow = delivery as EmailDeliveryRow;
-    const context = await this.fetchSubscriptionEmailContext(deliveryRow.subscription_id);
+    const context = await this.fetchSubscriptionEmailContext(
+      deliveryRow.subscription_id,
+    );
 
     return {
       delivery: deliveryRow,
@@ -379,25 +401,29 @@ export class EmailService {
   }
 
   private async fetchStandalonePurchaseEmailContext(
-    purchaseId: string
+    purchaseId: string,
   ): Promise<EmailStandalonePurchaseContext> {
     const { data: purchase, error } = await supabase
-      .from('standalone_purchases')
-      .select('id, user_id, collection_id, amount, paid_amount, balance_amount, created_at, updated_at')
-      .eq('id', purchaseId)
+      .from("standalone_purchases")
+      .select(
+        "id, user_id, collection_id, amount, paid_amount, balance_amount, created_at, updated_at",
+      )
+      .eq("id", purchaseId)
       .single();
 
     if (error || !purchase) {
       throw new EmailServiceError(
         `Failed to fetch standalone purchase: ${error?.message}`,
-        'PURCHASE_NOT_FOUND',
-        false
+        "PURCHASE_NOT_FOUND",
+        false,
       );
     }
 
     const purchaseRow = purchase as EmailStandalonePurchaseRow;
     const profile = await this.fetchProfileById(purchaseRow.user_id);
-    const collection = await this.fetchCollectionById(purchaseRow.collection_id);
+    const collection = await this.fetchCollectionById(
+      purchaseRow.collection_id,
+    );
 
     return {
       purchase: purchaseRow,
@@ -422,9 +448,9 @@ export class EmailService {
     to: string,
     subject: string,
     html: string,
-    emailType: string = 'other',
+    emailType: string = "other",
     userId?: string,
-    metadata?: EmailMetadata
+    metadata?: EmailMetadata,
   ): Promise<void> {
     const options: EmailOptions = {
       to,
@@ -434,31 +460,21 @@ export class EmailService {
       fromName: this.config.fromName,
     };
 
-    // Create initial log entry
-    const logId = await this.createEmailLog({
-      userId,
-      recipientEmail: to,
-      emailType,
-      subject,
-      status: 'pending',
-      provider: this.config.provider,
-      metadata: metadata || {}
-    });
-
     let lastError: Error | null = null;
     let attempt = 0;
 
     while (attempt <= this.config.maxRetries) {
       try {
-        await this.sendEmailAttempt(options);
-        logInfo('Email sent successfully', { to, attempt: attempt + 1 }, 'email');
-
-        // Update log entry to sent
-        await this.updateEmailLog(logId, {
-          status: 'sent',
-          sentAt: new Date().toISOString(),
-          retryCount: attempt
+        await this.sendEmailAttempt(options, {
+          emailType,
+          userId,
+          metadata: metadata || {},
         });
+        logInfo(
+          "Email sent successfully",
+          { to, attempt: attempt + 1 },
+          "email",
+        );
 
         return;
       } catch (error) {
@@ -476,113 +492,63 @@ export class EmailService {
         const delay = this.config.retryDelay * Math.pow(2, attempt - 1);
         logWarn(
           `Email send failed (attempt ${attempt}/${this.config.maxRetries + 1}). ` +
-          `Retrying in ${delay}ms...`,
+            `Retrying in ${delay}ms...`,
           error,
-          'email'
+          "email",
         );
         await this.sleep(delay);
       }
     }
 
-    // All retries failed - update log entry
-    await this.updateEmailLog(logId, {
-      status: 'failed',
-      errorMessage: lastError?.message || 'Unknown error',
-      retryCount: attempt
-    });
-
     throw new EmailServiceError(
       `Failed to send email after ${attempt} attempts: ${lastError?.message}`,
-      'SEND_FAILED',
-      false
+      "SEND_FAILED",
+      false,
     );
-  }
-
-  /**
-   * Create email delivery log entry
-   */
-  private async createEmailLog(data: {
-    userId?: string;
-    recipientEmail: string;
-    emailType: string;
-    subject: string;
-    status: string;
-    provider: string;
-    metadata: EmailMetadata;
-  }): Promise<string> {
-    try {
-      return await createEmailDeliveryLogRpc(data);
-    } catch (error) {
-      logError('Failed to create email log', error, 'email');
-      return 'log-failed';
-    }
-  }
-
-  /**
-   * Update email delivery log entry
-   */
-  private async updateEmailLog(logId: string, updates: {
-    status?: string;
-    sentAt?: string;
-    errorMessage?: string;
-    retryCount?: number;
-    providerMessageId?: string;
-  }): Promise<void> {
-    if (logId === 'log-failed') {
-      return; // Skip update if initial log creation failed
-    }
-
-    try {
-      const updateData: EmailDeliveryLogUpdate = {};
-
-      if (updates.status) updateData.status = updates.status;
-      if (updates.sentAt) updateData.sent_at = updates.sentAt;
-      if (updates.errorMessage) updateData.error_message = updates.errorMessage;
-      if (updates.retryCount !== undefined) updateData.retry_count = updates.retryCount;
-      if (updates.providerMessageId) updateData.provider_message_id = updates.providerMessageId;
-
-      await updateEmailDeliveryLogRpc(logId, updateData);
-    } catch (error) {
-      logError('Failed to update email log', error, 'email');
-    }
   }
 
   /**
    * Attempt to send email using configured provider
    */
-  private async sendEmailAttempt(options: EmailOptions): Promise<void> {
+  private async sendEmailAttempt(
+    options: EmailOptions,
+    tracking: {
+      emailType: string;
+      userId?: string;
+      metadata: EmailMetadata;
+    },
+  ): Promise<void> {
     // Validate email address
     if (!this.isValidEmail(options.to)) {
       throw new EmailServiceError(
         `Invalid email address: ${options.to}`,
-        'INVALID_EMAIL',
-        false
+        "INVALID_EMAIL",
+        false,
       );
     }
 
-    if (!supabase.functions?.invoke) {
-      throw new EmailServiceError(
-        'Email function client is not available',
-        'EMAIL_FUNCTION_UNAVAILABLE',
-        false
+    try {
+      await callAuthenticatedEdgeFunction(
+        "send-email",
+        {
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          from: options.from || this.config.from,
+          fromName: options.fromName || this.config.fromName,
+          emailType: tracking.emailType,
+          userId: tracking.userId,
+          metadata: tracking.metadata,
+        },
+        "Email function failed",
       );
-    }
-
-    const { error } = await supabase.functions.invoke('send-email', {
-      body: {
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        from: options.from || this.config.from,
-        fromName: options.fromName || this.config.fromName,
-      },
-    });
-
-    if (error) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const retryable = error instanceof TypeError || message.includes("fetch");
       throw new EmailServiceError(
-        `Email function failed: ${error.message}`,
-        'EMAIL_FUNCTION_FAILED',
-        false
+        `Email function failed: ${message}`,
+        "EMAIL_FUNCTION_FAILED",
+        retryable,
       );
     }
   }
@@ -596,7 +562,7 @@ export class EmailService {
     }
 
     // Network errors are generally retryable
-    if (error.name === 'TypeError' || error.message.includes('fetch')) {
+    if (error.name === "TypeError" || error.message.includes("fetch")) {
       return true;
     }
 
@@ -615,7 +581,7 @@ export class EmailService {
    * Sleep for specified milliseconds
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -625,11 +591,21 @@ export class EmailService {
    * @param emailType - Type of email
    * @returns True if email should be sent
    */
-  private async checkEmailPreference(userId: string, emailType: EmailType): Promise<boolean> {
+  private async checkEmailPreference(
+    userId: string,
+    emailType: EmailType,
+  ): Promise<boolean> {
     try {
-      return await notificationPreferencesService.shouldSendEmail(userId, emailType);
+      return await notificationPreferencesService.shouldSendEmail(
+        userId,
+        emailType,
+      );
     } catch (error) {
-      logWarn(`Failed to check email preference for user ${userId}`, error, 'email');
+      logWarn(
+        `Failed to check email preference for user ${userId}`,
+        error,
+        "email",
+      );
       return false;
     }
   }
@@ -658,38 +634,46 @@ export class EmailService {
   async sendWelcomeEmail(subscriptionId: string): Promise<void> {
     try {
       // Import Handlebars and template dynamically
-      const Handlebars = (await import('handlebars')).default;
-      const { welcomeTemplate } = await import('@/email-templates/welcome-template');
+      const Handlebars = (await import("handlebars")).default;
+      const { welcomeTemplate } =
+        await import("@/email-templates/welcome-template");
 
-      const { subscription, user } = await this.fetchSubscriptionEmailContext(subscriptionId);
+      const { subscription, user } =
+        await this.fetchSubscriptionEmailContext(subscriptionId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
-          'User email not found',
-          'USER_EMAIL_NOT_FOUND',
-          false
+          "User email not found",
+          "USER_EMAIL_NOT_FOUND",
+          false,
         );
       }
 
       // Check if user wants to receive welcome emails
-      const shouldSend = await this.checkEmailPreference(user.id, 'welcome');
+      const shouldSend = await this.checkEmailPreference(user.id, "welcome");
       if (!shouldSend) {
-        logDebug('User disabled welcome emails, skipping', { email: user.email }, 'email');
+        logDebug(
+          "User disabled welcome emails, skipping",
+          { email: user.email },
+          "email",
+        );
         return;
       }
 
       // Fetch deliveries for this subscription
       const { data: deliveries, error: delError } = await supabase
-        .from('subscription_deliveries')
-        .select('id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code')
-        .eq('subscription_id', subscriptionId)
-        .order('delivery_number', { ascending: true });
+        .from("subscription_deliveries")
+        .select(
+          "id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code",
+        )
+        .eq("subscription_id", subscriptionId)
+        .order("delivery_number", { ascending: true });
 
       if (delError) {
         throw new EmailServiceError(
           `Failed to fetch deliveries: ${delError.message}`,
-          'DELIVERIES_NOT_FOUND',
-          false
+          "DELIVERIES_NOT_FOUND",
+          false,
         );
       }
 
@@ -697,25 +681,32 @@ export class EmailService {
       const template = Handlebars.compile(welcomeTemplate);
 
       // Prepare template data
-      const userName = user.raw_user_meta_data?.full_name ||
-                       user.email?.split('@')[0] ||
-                       'Cliente';
+      const userName =
+        user.raw_user_meta_data?.full_name ||
+        user.email?.split("@")[0] ||
+        "Cliente";
 
       const planTypeMap: Record<string, string> = {
-        'trimestral': 'Trimestral (3 entregas)',
-        'semestral': 'Semestral (6 entregas)',
-        'anual': 'Anual (12 entregas)'
+        trimestral: "Trimestral (3 entregas)",
+        semestral: "Semestral (6 entregas)",
+        anual: "Anual (12 entregas)",
       };
 
-      const deliveryData = ((deliveries ?? []) as EmailDeliveryRow[]).map((delivery) => {
-        const expectedDate = this.formatMonthYear(this.getDeliveryReferenceDate(delivery));
+      const deliveryData = ((deliveries ?? []) as EmailDeliveryRow[]).map(
+        (delivery) => {
+          const expectedDate = this.formatMonthYear(
+            this.getDeliveryReferenceDate(delivery),
+          );
 
-        return {
-          deliveryNumber: delivery.delivery_number ?? delivery.delivery_order,
-          expectedDate,
-          isBonusPiece: subscription.plan_type === 'semestral' && (delivery.delivery_number ?? delivery.delivery_order) === 6
-        };
-      });
+          return {
+            deliveryNumber: delivery.delivery_number ?? delivery.delivery_order,
+            expectedDate,
+            isBonusPiece:
+              subscription.plan_type === "semestral" &&
+              (delivery.delivery_number ?? delivery.delivery_order) === 6,
+          };
+        },
+      );
 
       const dashboardUrl = `${window.location.origin}/my-subscriptions`;
       const supportEmail = CONTACT.SUPPORT_EMAIL;
@@ -724,12 +715,12 @@ export class EmailService {
         userName,
         planType: subscription.plan_type
           ? planTypeMap[subscription.plan_type] || subscription.plan_type
-          : 'Plano não informado',
+          : "Plano não informado",
         deliveriesTotal: subscription.deliveries_total ?? deliveryData.length,
         totalPaid: (subscription.total_paid ?? 0).toFixed(2),
         deliveries: deliveryData,
         dashboardUrl,
-        supportEmail
+        supportEmail,
       };
 
       // Render template
@@ -738,22 +729,26 @@ export class EmailService {
       // Send email
       await this.sendEmail(
         user.email,
-        'Bem-vindo ao ORDAX - Sua assinatura foi confirmada! 🎉',
+        "Bem-vindo ao ORDAX - Sua assinatura foi confirmada! 🎉",
         html,
-        'welcome',
+        "welcome",
         user.id,
-        { subscription_id: subscriptionId }
+        { subscription_id: subscriptionId },
       );
 
-      logInfo('Welcome email sent successfully', { email: user.email }, 'email');
+      logInfo(
+        "Welcome email sent successfully",
+        { email: user.email },
+        "email",
+      );
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
       }
       throw new EmailServiceError(
         `Failed to send welcome email: ${(error as Error).message}`,
-        'WELCOME_EMAIL_FAILED',
-        false
+        "WELCOME_EMAIL_FAILED",
+        false,
       );
     }
   }
@@ -766,23 +761,26 @@ export class EmailService {
    * @returns Promise that resolves when all emails are sent
    * @throws EmailServiceError if sending fails
    */
-  async sendCharacterRevelation(collectionId: string, subscriberEmails: string[]): Promise<void> {
+  async sendCharacterRevelation(
+    collectionId: string,
+    subscriberEmails: string[],
+  ): Promise<void> {
     try {
       // Import Handlebars dynamically
-      const Handlebars = (await import('handlebars')).default;
+      const Handlebars = (await import("handlebars")).default;
 
       // Fetch collection details with character information
       const { data: collection, error: collectionError } = await supabase
-        .from('collections')
-        .select('*')
-        .eq('id', collectionId)
+        .from("collections")
+        .select("*")
+        .eq("id", collectionId)
         .single();
 
       if (collectionError || !collection) {
         throw new EmailServiceError(
           `Failed to fetch collection: ${collectionError?.message}`,
-          'COLLECTION_NOT_FOUND',
-          false
+          "COLLECTION_NOT_FOUND",
+          false,
         );
       }
 
@@ -792,19 +790,21 @@ export class EmailService {
       // Verify collection has been revealed
       if (!collectionData.revealed || !collectionData.character_name) {
         throw new EmailServiceError(
-          'Collection character has not been revealed yet',
-          'CHARACTER_NOT_REVEALED',
-          false
+          "Collection character has not been revealed yet",
+          "CHARACTER_NOT_REVEALED",
+          false,
         );
       }
 
       // Load the HTML template
-      const templateResponse = await fetch('/src/email-templates/character-revelation.html');
+      const templateResponse = await fetch(
+        "/src/email-templates/character-revelation.html",
+      );
       if (!templateResponse.ok) {
         throw new EmailServiceError(
-          'Failed to load character-revelation template',
-          'TEMPLATE_NOT_FOUND',
-          false
+          "Failed to load character-revelation template",
+          "TEMPLATE_NOT_FOUND",
+          false,
         );
       }
       const templateHtml = await templateResponse.text();
@@ -821,36 +821,49 @@ export class EmailService {
           const profile = await this.fetchProfileByEmail(email);
 
           if (!profile) {
-            logWarn('Skipping character revelation email - profile not found', { email }, 'email');
+            logWarn(
+              "Skipping character revelation email - profile not found",
+              { email },
+              "email",
+            );
             return;
           }
 
           // Check email preferences first
-          const shouldSend = await this.checkEmailPreference(profile.id, 'revelation');
+          const shouldSend = await this.checkEmailPreference(
+            profile.id,
+            "revelation",
+          );
           if (!shouldSend) {
-            logDebug('Skipping character revelation email - user preference disabled', { email }, 'email');
+            logDebug(
+              "Skipping character revelation email - user preference disabled",
+              { email },
+              "email",
+            );
             return;
           }
 
           const recipientEmail = profile.email ?? email;
 
-          const userName = profile?.full_name ||
-                          profile?.display_name ||
-                          recipientEmail.split('@')[0] ||
-                          'Cliente';
+          const userName =
+            profile?.full_name ||
+            profile?.display_name ||
+            recipientEmail.split("@")[0] ||
+            "Cliente";
 
-          const { data: subscription, error: subscriptionError } = await supabase
-            .from('subscriptions')
-            .select('id')
-            .eq('user_id', profile.id)
-            .eq('collection_id', collectionId)
-            .maybeSingle();
+          const { data: subscription, error: subscriptionError } =
+            await supabase
+              .from("subscriptions")
+              .select("id")
+              .eq("user_id", profile.id)
+              .eq("collection_id", collectionId)
+              .maybeSingle();
 
           if (subscriptionError) {
             throw new EmailServiceError(
               `Failed to fetch subscription: ${subscriptionError.message}`,
-              'SUBSCRIPTION_NOT_FOUND',
-              false
+              "SUBSCRIPTION_NOT_FOUND",
+              false,
             );
           }
 
@@ -858,40 +871,45 @@ export class EmailService {
 
           if (subscription) {
             const { data: delivery, error: deliveryError } = await supabase
-              .from('subscription_deliveries')
-              .select('id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code')
-              .eq('subscription_id', subscription.id)
-              .order('delivery_order', { ascending: true })
+              .from("subscription_deliveries")
+              .select(
+                "id, subscription_id, delivery_number, delivery_order, shipping_date, reveal_date, actual_delivery_date, delivered_date, updated_at, shipping_carrier, tracking_code",
+              )
+              .eq("subscription_id", subscription.id)
+              .order("delivery_order", { ascending: true })
               .limit(1)
               .maybeSingle();
 
             if (deliveryError) {
               throw new EmailServiceError(
                 `Failed to fetch delivery: ${deliveryError.message}`,
-                'DELIVERY_NOT_FOUND',
-                false
+                "DELIVERY_NOT_FOUND",
+                false,
               );
             }
 
             deliveryRow = delivery as EmailDeliveryRow | null;
           }
 
-          const deliveryNumber = deliveryRow ? this.getDeliveryNumber(deliveryRow) : 1;
+          const deliveryNumber = deliveryRow
+            ? this.getDeliveryNumber(deliveryRow)
+            : 1;
           const expectedShippingDate = deliveryRow
             ? this.formatMonthYear(this.getDeliveryReferenceDate(deliveryRow))
-            : 'A definir';
+            : "A definir";
 
           // Prepare template data
           const templateData = {
             userName,
             collectionName: collectionData.name,
             characterName: collectionData.character_name,
-            characterImageUrl: collectionData.character_image_url || collectionData.image_url,
+            characterImageUrl:
+              collectionData.character_image_url || collectionData.image_url,
             characterDescription: collectionData.description,
             deliveryNumber,
             expectedShippingDate,
             dashboardUrl,
-            supportEmail
+            supportEmail,
           };
 
           // Render template
@@ -902,14 +920,22 @@ export class EmailService {
             recipientEmail,
             `✨ Revelação: ${collectionData.character_name} - ${collectionData.name}`,
             html,
-            'character_revelation',
+            "character_revelation",
             profile.id,
-            { collection_id: collectionId, delivery_number: deliveryNumber }
+            { collection_id: collectionId, delivery_number: deliveryNumber },
           );
 
-          logInfo('Character revelation email sent successfully', { email: recipientEmail }, 'email');
+          logInfo(
+            "Character revelation email sent successfully",
+            { email: recipientEmail },
+            "email",
+          );
         } catch (error) {
-          logError('Failed to send character revelation email', { email, error }, 'email');
+          logError(
+            "Failed to send character revelation email",
+            { email, error },
+            "email",
+          );
           // Continue with other emails even if one fails
         }
       });
@@ -917,15 +943,19 @@ export class EmailService {
       // Wait for all emails to be sent
       await Promise.all(emailPromises);
 
-      logInfo('Character revelation emails sent', { count: subscriberEmails.length }, 'email');
+      logInfo(
+        "Character revelation emails sent",
+        { count: subscriberEmails.length },
+        "email",
+      );
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
       }
       throw new EmailServiceError(
         `Failed to send character revelation emails: ${(error as Error).message}`,
-        'CHARACTER_REVELATION_FAILED',
-        false
+        "CHARACTER_REVELATION_FAILED",
+        false,
       );
     }
   }
@@ -938,39 +968,49 @@ export class EmailService {
    * @returns Promise that resolves when email is sent
    * @throws EmailServiceError if sending fails
    */
-  async sendChoiceReminder(deliveryId: string, daysUntilCutoff: number): Promise<void> {
+  async sendChoiceReminder(
+    deliveryId: string,
+    daysUntilCutoff: number,
+  ): Promise<void> {
     try {
       // Import Handlebars dynamically
-      const Handlebars = (await import('handlebars')).default;
+      const Handlebars = (await import("handlebars")).default;
 
       // Register eq helper for Handlebars
-      Handlebars.registerHelper('eq', function(a, b) {
+      Handlebars.registerHelper("eq", function (a, b) {
         return a === b;
       });
 
-      const { delivery, user, collection } = await this.fetchDeliveryEmailContext(deliveryId);
+      const { delivery, user, collection } =
+        await this.fetchDeliveryEmailContext(deliveryId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
-          'User email not found',
-          'USER_EMAIL_NOT_FOUND',
-          false
+          "User email not found",
+          "USER_EMAIL_NOT_FOUND",
+          false,
         );
       }
 
-      const shouldSend = await this.checkEmailPreference(user.id, 'reminder');
+      const shouldSend = await this.checkEmailPreference(user.id, "reminder");
       if (!shouldSend) {
-        logDebug('Skipping choice reminder email - user preference disabled', { email: user.email }, 'email');
+        logDebug(
+          "Skipping choice reminder email - user preference disabled",
+          { email: user.email },
+          "email",
+        );
         return;
       }
 
       // Load the HTML template
-      const templateResponse = await fetch('/src/email-templates/choice-reminder.html');
+      const templateResponse = await fetch(
+        "/src/email-templates/choice-reminder.html",
+      );
       if (!templateResponse.ok) {
         throw new EmailServiceError(
-          'Failed to load choice-reminder template',
-          'TEMPLATE_NOT_FOUND',
-          false
+          "Failed to load choice-reminder template",
+          "TEMPLATE_NOT_FOUND",
+          false,
         );
       }
       const templateHtml = await templateResponse.text();
@@ -979,14 +1019,17 @@ export class EmailService {
       const template = Handlebars.compile(templateHtml);
 
       // Prepare template data
-      const userName = user.raw_user_meta_data?.full_name ||
-                       user.email?.split('@')[0] ||
-                       'Cliente';
+      const userName =
+        user.raw_user_meta_data?.full_name ||
+        user.email?.split("@")[0] ||
+        "Cliente";
 
       const isUrgent = daysUntilCutoff <= 3;
 
       const deliveryNumber = this.getDeliveryNumber(delivery);
-      const expectedShippingDate = this.formatMonthYear(this.getDeliveryReferenceDate(delivery));
+      const expectedShippingDate = this.formatMonthYear(
+        this.getDeliveryReferenceDate(delivery),
+      );
       const currentCollection = collection?.name ?? null;
 
       const collectionSelectionUrl = `${window.location.origin}/my-subscriptions`;
@@ -1000,7 +1043,7 @@ export class EmailService {
         expectedShippingDate,
         currentCollection,
         collectionSelectionUrl,
-        supportEmail
+        supportEmail,
       };
 
       // Render template
@@ -1008,7 +1051,7 @@ export class EmailService {
 
       // Determine subject based on urgency
       const subject = isUrgent
-        ? `⚠️ URGENTE: ${daysUntilCutoff} ${daysUntilCutoff === 1 ? 'dia' : 'dias'} para escolher sua coleção!`
+        ? `⚠️ URGENTE: ${daysUntilCutoff} ${daysUntilCutoff === 1 ? "dia" : "dias"} para escolher sua coleção!`
         : `📦 Escolha sua coleção ORDAX - ${daysUntilCutoff} dias restantes`;
 
       // Send email
@@ -1016,26 +1059,28 @@ export class EmailService {
         user.email,
         subject,
         html,
-        'choice_reminder',
+        "choice_reminder",
         user.id,
         {
           delivery_id: deliveryId,
           days_until_cutoff: daysUntilCutoff,
           collection_id: collection?.id ?? null,
-        }
+        },
       );
 
-      logInfo('Choice reminder email sent successfully',
+      logInfo(
+        "Choice reminder email sent successfully",
         { email: user.email, daysUntilCutoff },
-        'email');
+        "email",
+      );
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
       }
       throw new EmailServiceError(
         `Failed to send choice reminder email: ${(error as Error).message}`,
-        'CHOICE_REMINDER_FAILED',
-        false
+        "CHOICE_REMINDER_FAILED",
+        false,
       );
     }
   }
@@ -1050,7 +1095,7 @@ export class EmailService {
   async sendProductionStarted(deliveryId: string): Promise<void> {
     try {
       // Import Handlebars dynamically
-      const Handlebars = (await import('handlebars')).default;
+      const Handlebars = (await import("handlebars")).default;
 
       const {
         delivery,
@@ -1061,34 +1106,40 @@ export class EmailService {
 
       if (!user || !user.email) {
         throw new EmailServiceError(
-          'User email not found',
-          'USER_EMAIL_NOT_FOUND',
-          false
+          "User email not found",
+          "USER_EMAIL_NOT_FOUND",
+          false,
         );
       }
 
       if (!collectionData?.name) {
         throw new EmailServiceError(
-          'Collection not found',
-          'COLLECTION_NOT_FOUND',
-          false
+          "Collection not found",
+          "COLLECTION_NOT_FOUND",
+          false,
         );
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.id, 'shipping');
+      const shouldSend = await this.checkEmailPreference(user.id, "shipping");
       if (!shouldSend) {
-        logDebug(`Skipping production started email - user preference disabled`, { email: user.email }, 'email');
+        logDebug(
+          `Skipping production started email - user preference disabled`,
+          { email: user.email },
+          "email",
+        );
         return;
       }
 
       // Load the HTML template
-      const templateResponse = await fetch('/src/email-templates/production-started.html');
+      const templateResponse = await fetch(
+        "/src/email-templates/production-started.html",
+      );
       if (!templateResponse.ok) {
         throw new EmailServiceError(
-          'Failed to load production-started template',
-          'TEMPLATE_NOT_FOUND',
-          false
+          "Failed to load production-started template",
+          "TEMPLATE_NOT_FOUND",
+          false,
         );
       }
       const templateHtml = await templateResponse.text();
@@ -1097,14 +1148,18 @@ export class EmailService {
       const template = Handlebars.compile(templateHtml);
 
       // Prepare template data
-      const userName = user.raw_user_meta_data?.full_name ||
-                       user.email?.split('@')[0] ||
-                       'Cliente';
+      const userName =
+        user.raw_user_meta_data?.full_name ||
+        user.email?.split("@")[0] ||
+        "Cliente";
 
       const deliveryNumber = this.getDeliveryNumber(delivery);
-      const expectedShippingDate = this.formatMonthYear(this.getDeliveryReferenceDate(delivery));
+      const expectedShippingDate = this.formatMonthYear(
+        this.getDeliveryReferenceDate(delivery),
+      );
 
-      const isBonusPiece = subscription.plan_type === 'semestral' && deliveryNumber === 6;
+      const isBonusPiece =
+        subscription.plan_type === "semestral" && deliveryNumber === 6;
 
       const trackingUrl = `${window.location.origin}/my-subscriptions`;
       const supportEmail = CONTACT.SUPPORT_EMAIL;
@@ -1117,7 +1172,7 @@ export class EmailService {
         expectedShippingDate,
         isBonusPiece,
         trackingUrl,
-        supportEmail
+        supportEmail,
       };
 
       // Render template
@@ -1128,20 +1183,24 @@ export class EmailService {
         user.email,
         `🎨 Sua peça entrou em produção - ${collectionData.name}`,
         html,
-        'production_started',
+        "production_started",
         user.id,
-        { delivery_id: deliveryId, collection_id: collectionData.id }
+        { delivery_id: deliveryId, collection_id: collectionData.id },
       );
 
-      logInfo('Production started email sent successfully', { email: user.email }, 'email');
+      logInfo(
+        "Production started email sent successfully",
+        { email: user.email },
+        "email",
+      );
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
       }
       throw new EmailServiceError(
         `Failed to send production started email: ${(error as Error).message}`,
-        'PRODUCTION_STARTED_FAILED',
-        false
+        "PRODUCTION_STARTED_FAILED",
+        false,
       );
     }
   }
@@ -1154,10 +1213,13 @@ export class EmailService {
    * @returns Promise that resolves when email is sent
    * @throws EmailServiceError if sending fails
    */
-  async sendShippingNotification(deliveryId: string, trackingCode: string): Promise<void> {
+  async sendShippingNotification(
+    deliveryId: string,
+    trackingCode: string,
+  ): Promise<void> {
     try {
       // Import Handlebars dynamically
-      const Handlebars = (await import('handlebars')).default;
+      const Handlebars = (await import("handlebars")).default;
 
       const {
         delivery,
@@ -1169,34 +1231,40 @@ export class EmailService {
 
       if (!user || !user.email) {
         throw new EmailServiceError(
-          'User email not found',
-          'USER_EMAIL_NOT_FOUND',
-          false
+          "User email not found",
+          "USER_EMAIL_NOT_FOUND",
+          false,
         );
       }
 
       if (!collectionData?.name) {
         throw new EmailServiceError(
-          'Collection not found',
-          'COLLECTION_NOT_FOUND',
-          false
+          "Collection not found",
+          "COLLECTION_NOT_FOUND",
+          false,
         );
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.id, 'shipping');
+      const shouldSend = await this.checkEmailPreference(user.id, "shipping");
       if (!shouldSend) {
-        logDebug(`Skipping shipping notification email - user preference disabled`, { email: user.email }, 'email');
+        logDebug(
+          `Skipping shipping notification email - user preference disabled`,
+          { email: user.email },
+          "email",
+        );
         return;
       }
 
       // Load the HTML template
-      const templateResponse = await fetch('/src/email-templates/shipping-notification.html');
+      const templateResponse = await fetch(
+        "/src/email-templates/shipping-notification.html",
+      );
       if (!templateResponse.ok) {
         throw new EmailServiceError(
-          'Failed to load shipping-notification template',
-          'TEMPLATE_NOT_FOUND',
-          false
+          "Failed to load shipping-notification template",
+          "TEMPLATE_NOT_FOUND",
+          false,
         );
       }
       const templateHtml = await templateResponse.text();
@@ -1205,27 +1273,32 @@ export class EmailService {
       const template = Handlebars.compile(templateHtml);
 
       // Prepare template data
-      const userName = user.raw_user_meta_data?.full_name ||
-                       user.email?.split('@')[0] ||
-                       'Cliente';
+      const userName =
+        user.raw_user_meta_data?.full_name ||
+        user.email?.split("@")[0] ||
+        "Cliente";
 
       const shippingDate = delivery.updated_at
-        ? new Date(delivery.updated_at).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
+        ? formatDate(delivery.updated_at, {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
           })
-        : new Date().toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
+        : formatDate(new Date(), {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
           });
 
       const deliveryNumber = this.getDeliveryNumber(delivery);
-      const estimatedDeliveryDate = this.formatLongDate(this.getDeliveryReferenceDate(delivery));
-      const isBonusPiece = subscription.plan_type === 'semestral' && deliveryNumber === 6;
+      const estimatedDeliveryDate = this.formatLongDate(
+        this.getDeliveryReferenceDate(delivery),
+      );
+      const isBonusPiece =
+        subscription.plan_type === "semestral" && deliveryNumber === 6;
 
-      const trackingUrl = buildTrackingUrl(trackingCode, delivery.shipping_carrier) || '';
+      const trackingUrl =
+        buildTrackingUrl(trackingCode, delivery.shipping_carrier) || "";
       const dashboardUrl = `${window.location.origin}/my-subscriptions`;
       const supportEmail = CONTACT.SUPPORT_EMAIL;
 
@@ -1237,20 +1310,20 @@ export class EmailService {
         collectionName: collectionData.name,
         characterName: collectionData?.character_name || null,
         deliveryNumber,
-        carrier: delivery.shipping_carrier || 'Transportadora',
+        carrier: delivery.shipping_carrier || "Transportadora",
         estimatedDeliveryDate,
         isBonusPiece,
         shippingAddress: {
-          street: shippingAddress.street || '',
-          number: shippingAddress.number || '',
-          complement: shippingAddress.complement || '',
-          neighborhood: shippingAddress.neighborhood || '',
-          city: shippingAddress.city || '',
-          state: shippingAddress.state || '',
-          zipCode: shippingAddress.zip_code || ''
+          street: shippingAddress.street || "",
+          number: shippingAddress.number || "",
+          complement: shippingAddress.complement || "",
+          neighborhood: shippingAddress.neighborhood || "",
+          city: shippingAddress.city || "",
+          state: shippingAddress.state || "",
+          zipCode: shippingAddress.zip_code || "",
         },
         dashboardUrl,
-        supportEmail
+        supportEmail,
       };
 
       // Render template
@@ -1261,20 +1334,24 @@ export class EmailService {
         user.email,
         `📦 Seu pedido foi enviado - Código: ${trackingCode}`,
         html,
-        'shipping_notification',
+        "shipping_notification",
         user.id,
-        { delivery_id: deliveryId, tracking_code: trackingCode }
+        { delivery_id: deliveryId, tracking_code: trackingCode },
       );
 
-      logInfo('Shipping notification email sent successfully', { email: user.email }, 'email');
+      logInfo(
+        "Shipping notification email sent successfully",
+        { email: user.email },
+        "email",
+      );
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
       }
       throw new EmailServiceError(
         `Failed to send shipping notification email: ${(error as Error).message}`,
-        'SHIPPING_NOTIFICATION_FAILED',
-        false
+        "SHIPPING_NOTIFICATION_FAILED",
+        false,
       );
     }
   }
@@ -1287,49 +1364,61 @@ export class EmailService {
    * @returns Promise that resolves when email is sent
    * @throws EmailServiceError if sending fails
    */
-  async sendBalanceReminder(purchaseId: string, daysRemaining: number): Promise<void> {
+  async sendBalanceReminder(
+    purchaseId: string,
+    daysRemaining: number,
+  ): Promise<void> {
     try {
       // Import Handlebars dynamically
-      const Handlebars = (await import('handlebars')).default;
+      const Handlebars = (await import("handlebars")).default;
 
       // Register eq helper for Handlebars
-      Handlebars.registerHelper('eq', function(a, b) {
+      Handlebars.registerHelper("eq", function (a, b) {
         return a === b;
       });
 
-      const { purchase, user, collection: collectionData } =
-        await this.fetchStandalonePurchaseEmailContext(purchaseId);
+      const {
+        purchase,
+        user,
+        collection: collectionData,
+      } = await this.fetchStandalonePurchaseEmailContext(purchaseId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
-          'User email not found',
-          'USER_EMAIL_NOT_FOUND',
-          false
+          "User email not found",
+          "USER_EMAIL_NOT_FOUND",
+          false,
         );
       }
 
       if (!collectionData?.name) {
         throw new EmailServiceError(
-          'Collection not found',
-          'COLLECTION_NOT_FOUND',
-          false
+          "Collection not found",
+          "COLLECTION_NOT_FOUND",
+          false,
         );
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.id, 'payment');
+      const shouldSend = await this.checkEmailPreference(user.id, "payment");
       if (!shouldSend) {
-        logDebug('Skipping balance reminder email - user preference disabled', { email: user.email }, 'email');
+        logDebug(
+          "Skipping balance reminder email - user preference disabled",
+          { email: user.email },
+          "email",
+        );
         return;
       }
 
       // Load the HTML template
-      const templateResponse = await fetch('/src/email-templates/balance-reminder.html');
+      const templateResponse = await fetch(
+        "/src/email-templates/balance-reminder.html",
+      );
       if (!templateResponse.ok) {
         throw new EmailServiceError(
-          'Failed to load balance-reminder template',
-          'TEMPLATE_NOT_FOUND',
-          false
+          "Failed to load balance-reminder template",
+          "TEMPLATE_NOT_FOUND",
+          false,
         );
       }
       const templateHtml = await templateResponse.text();
@@ -1338,9 +1427,10 @@ export class EmailService {
       const template = Handlebars.compile(templateHtml);
 
       // Prepare template data
-      const userName = user.raw_user_meta_data?.full_name ||
-                       user.email?.split('@')[0] ||
-                       'Cliente';
+      const userName =
+        user.raw_user_meta_data?.full_name ||
+        user.email?.split("@")[0] ||
+        "Cliente";
 
       const isUrgent = daysRemaining <= 1;
 
@@ -1363,7 +1453,7 @@ export class EmailService {
         collectionName: collectionData.name,
         characterName: collectionData?.character_name || null,
         paymentUrl,
-        supportEmail
+        supportEmail,
       };
 
       // Render template
@@ -1379,22 +1469,24 @@ export class EmailService {
         user.email,
         subject,
         html,
-        'balance_reminder',
+        "balance_reminder",
         user.id,
-        { purchase_id: purchaseId, days_remaining: daysRemaining }
+        { purchase_id: purchaseId, days_remaining: daysRemaining },
       );
 
-      logInfo('Balance reminder email sent successfully',
+      logInfo(
+        "Balance reminder email sent successfully",
         { email: user.email, daysRemaining },
-        'email');
+        "email",
+      );
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
       }
       throw new EmailServiceError(
         `Failed to send balance reminder email: ${(error as Error).message}`,
-        'BALANCE_REMINDER_FAILED',
-        false
+        "BALANCE_REMINDER_FAILED",
+        false,
       );
     }
   }
@@ -1407,44 +1499,56 @@ export class EmailService {
    * @returns Promise that resolves when email is sent
    * @throws EmailServiceError if sending fails
    */
-  async sendCancellationNotice(purchaseId: string, reason: string): Promise<void> {
+  async sendCancellationNotice(
+    purchaseId: string,
+    reason: string,
+  ): Promise<void> {
     try {
       // Import Handlebars dynamically
-      const Handlebars = (await import('handlebars')).default;
+      const Handlebars = (await import("handlebars")).default;
 
-      const { purchase, user, collection: collectionData } =
-        await this.fetchStandalonePurchaseEmailContext(purchaseId);
+      const {
+        purchase,
+        user,
+        collection: collectionData,
+      } = await this.fetchStandalonePurchaseEmailContext(purchaseId);
 
       if (!user || !user.email) {
         throw new EmailServiceError(
-          'User email not found',
-          'USER_EMAIL_NOT_FOUND',
-          false
+          "User email not found",
+          "USER_EMAIL_NOT_FOUND",
+          false,
         );
       }
 
       if (!collectionData?.name) {
         throw new EmailServiceError(
-          'Collection not found',
-          'COLLECTION_NOT_FOUND',
-          false
+          "Collection not found",
+          "COLLECTION_NOT_FOUND",
+          false,
         );
       }
 
       // Check email preferences
-      const shouldSend = await this.checkEmailPreference(user.id, 'payment');
+      const shouldSend = await this.checkEmailPreference(user.id, "payment");
       if (!shouldSend) {
-        logDebug('Skipping cancellation notice email - user preference disabled', { email: user.email }, 'email');
+        logDebug(
+          "Skipping cancellation notice email - user preference disabled",
+          { email: user.email },
+          "email",
+        );
         return;
       }
 
       // Load the HTML template
-      const templateResponse = await fetch('/src/email-templates/cancellation-notice.html');
+      const templateResponse = await fetch(
+        "/src/email-templates/cancellation-notice.html",
+      );
       if (!templateResponse.ok) {
         throw new EmailServiceError(
-          'Failed to load cancellation-notice template',
-          'TEMPLATE_NOT_FOUND',
-          false
+          "Failed to load cancellation-notice template",
+          "TEMPLATE_NOT_FOUND",
+          false,
         );
       }
       const templateHtml = await templateResponse.text();
@@ -1453,13 +1557,14 @@ export class EmailService {
       const template = Handlebars.compile(templateHtml);
 
       // Prepare template data
-      const userName = user.raw_user_meta_data?.full_name ||
-                       user.email?.split('@')[0] ||
-                       'Cliente';
+      const userName =
+        user.raw_user_meta_data?.full_name ||
+        user.email?.split("@")[0] ||
+        "Cliente";
 
       const cancellationDate = this.formatLongDate(purchase.updated_at);
       const purchaseDate = this.formatLongDate(purchase.created_at);
-      const balanceDueDate = 'Data não disponível';
+      const balanceDueDate = "Data não disponível";
       const { balanceAmount, depositAmount, totalAmount } =
         this.getStandalonePurchaseAmounts(purchase);
 
@@ -1479,7 +1584,7 @@ export class EmailService {
         balanceAmount: balanceAmount.toFixed(2),
         totalAmount: totalAmount.toFixed(2),
         shopUrl,
-        supportEmail
+        supportEmail,
       };
 
       // Render template
@@ -1490,24 +1595,27 @@ export class EmailService {
         user.email,
         `❌ Pedido Cancelado - #${templateData.orderId}`,
         html,
-        'cancellation_notice',
+        "cancellation_notice",
         user.id,
-        { purchase_id: purchaseId, cancellation_reason: reason }
+        { purchase_id: purchaseId, cancellation_reason: reason },
       );
 
-      logInfo('Cancellation notice email sent successfully', { email: user.email }, 'email');
+      logInfo(
+        "Cancellation notice email sent successfully",
+        { email: user.email },
+        "email",
+      );
     } catch (error) {
       if (error instanceof EmailServiceError) {
         throw error;
       }
       throw new EmailServiceError(
         `Failed to send cancellation notice email: ${(error as Error).message}`,
-        'CANCELLATION_NOTICE_FAILED',
-        false
+        "CANCELLATION_NOTICE_FAILED",
+        false,
       );
     }
   }
-
 }
 
 // Export singleton instance

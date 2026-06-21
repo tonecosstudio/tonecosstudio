@@ -14,14 +14,14 @@
  * - 2.2.4: Deadline Management - After deadline expires, admin is notified to manually assign character
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   logCronStart,
   logCronSuccess,
   logCronError,
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import { EmailService, getEmailConfig } from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
 
@@ -293,20 +293,18 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cron-expire-character-choices",
+    );
     if (forbidden) return forbidden;
 
     // Start logging
     logId = await logCronStart("cron-expire-character-choices");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();

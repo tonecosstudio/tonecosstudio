@@ -107,13 +107,20 @@ export function logRateLimitHit(
   endpoint: string,
   key: string,
 ): void {
+  const separatorIndex = key.indexOf(":");
+  const keyType = separatorIndex > 0 ? key.slice(0, separatorIndex) : "unknown";
+  const keyValue = separatorIndex > 0 ? key.slice(separatorIndex + 1) : key;
+
   logSecurityEvent(
     {
       event_type: "rate_limit_exceeded",
       severity: "warn",
       source: "rate-limiter",
       endpoint,
-      details: { key },
+      details: {
+        key_type: keyType,
+        key_fingerprint: `${keyValue.length}:${keyValue.slice(0, 6)}`,
+      },
     },
     req,
   );

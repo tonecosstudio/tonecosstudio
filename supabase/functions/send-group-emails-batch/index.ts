@@ -2,12 +2,13 @@
 // Sends batch email notifications for group messages
 // V1 Simple Approach: Always send email to all members (respecting notification preferences)
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
 import { EmailService, getEmailConfig } from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
-import { assertAdmin, errorToStatus, getServiceClient } from "../_shared/supabase.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
 import { isUUID } from "../_shared/validation.ts";
 
 // Types
@@ -372,16 +373,19 @@ serve(async (req) => {
     }
 
     if (Deno.env.get("EMAIL_WEBHOOK_SECRET")) {
-      const forbidden = requireSharedSecret(
+      const forbidden = await requireRateLimitedSharedSecret(
         req,
         "EMAIL_WEBHOOK_SECRET",
         "x-webhook-secret",
+        "send-group-emails-batch",
       );
-      if (forbidden) {
-        return jsonResponse({ success: false, error: "Forbidden" }, 403, corsHeaders);
-      }
+      if (forbidden) return forbidden;
     } else {
-      await assertAdmin(req);
+      const admin = await assertRateLimitedAdmin(
+        req,
+        "send-group-emails-batch",
+      );
+      if (admin.rateLimited) return admin.rateLimited;
     }
 
     // Parse request

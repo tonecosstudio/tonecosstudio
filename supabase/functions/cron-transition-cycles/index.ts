@@ -9,14 +9,14 @@
  * - 2.7: Record status transition timestamps in Bahia Time
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   logCronStart,
   logCronSuccess,
   logCronError,
 } from "../_shared/cron-logger.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import {
   calculateNthBusinessDayOfMonth,
   getHolidayDatesForMonth,
@@ -83,8 +83,17 @@ async function createCycleIfNeeded(
 
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
-    const holidayDates = await getHolidayDatesForMonth(supabase, nextYear, nextMonth);
-    shippingDate = calculateNthBusinessDayOfMonth(nextYear, nextMonth, 5, holidayDates);
+    const holidayDates = await getHolidayDatesForMonth(
+      supabase,
+      nextYear,
+      nextMonth,
+    );
+    shippingDate = calculateNthBusinessDayOfMonth(
+      nextYear,
+      nextMonth,
+      5,
+      holidayDates,
+    );
   } else {
     // Cycle 2: days 16-end of month
     openStart = new Date(year, month - 1, 16, 0, 0, 0);
@@ -158,20 +167,18 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cron-transition-cycles",
+    );
     if (forbidden) return forbidden;
 
     // Start logging
     logId = await logCronStart("cron-transition-cycles");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();

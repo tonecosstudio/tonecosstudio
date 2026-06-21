@@ -13,14 +13,15 @@
  * - 10.7: Send alert notification to administrator if cron job fails
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   logCronStart,
   logCronSuccess,
   logCronError,
 } from "../_shared/cron-logger.ts";
+import { ADMIN_ACCESS_ROLES } from "../_shared/roles.ts";
 import { nowInBahia } from "../_shared/timezone.ts";
-import { requireSharedSecret } from "../_shared/secrets.ts";
+import { requireRateLimitedSharedSecret } from "../_shared/secret-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import { EmailService, getEmailConfig } from "../_shared/email.ts";
 import { getPublicBaseUrl } from "../_shared/public-url.ts";
 import {
@@ -56,20 +57,13 @@ async function sendPartialFailureAlert(
   subscriptionsProcessed: number,
   deliveriesCreated: number,
 ): Promise<void> {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase environment variables not configured");
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = getServiceClient();
 
   // Get admin profiles for alerts
   const { data: adminProfiles, error: profileError } = await supabase
     .from("profiles")
     .select("email, full_name")
-    .in("role", ["admin", "super_admin"]);
+    .in("role", ADMIN_ACCESS_ROLES);
 
   if (profileError || !adminProfiles || adminProfiles.length === 0) {
     console.warn("No admin profiles found with emails");
@@ -278,20 +272,18 @@ Deno.serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const forbidden = requireSharedSecret(req, "CRON_SECRET", "x-cron-secret");
+    const forbidden = await requireRateLimitedSharedSecret(
+      req,
+      "CRON_SECRET",
+      "x-cron-secret",
+      "cron-create-deliveries",
+    );
     if (forbidden) return forbidden;
 
     // Start logging
     logId = await logCronStart("cron-create-deliveries");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase environment variables not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getServiceClient();
 
     // Get current Bahia time
     const bahiaTime = nowInBahia();
@@ -419,8 +411,17 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const holidayDates = await getHolidayDatesForMonth(supabase, year, month);
-        const expectedDeliveryDate = calculateNthBusinessDayOfMonth(year, month, 5, holidayDates);
+        const holidayDates = await getHolidayDatesForMonth(
+          supabase,
+          year,
+          month,
+        );
+        const expectedDeliveryDate = calculateNthBusinessDayOfMonth(
+          year,
+          month,
+          5,
+          holidayDates,
+        );
 
         // Create the delivery record with status 'pending_choice'
         const { data: newDelivery, error: createError } = await supabase

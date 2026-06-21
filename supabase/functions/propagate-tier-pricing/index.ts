@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
-import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 
 /**
  * Propagate Tier Pricing Endpoint
@@ -53,7 +54,9 @@ serve(async (req) => {
 
   try {
     // Validate admin authorization
-    await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(req, "propagate-tier-pricing");
+    if (admin.rateLimited) return admin.rateLimited;
+
     const service = getServiceClient();
 
     // Parse and validate request body
@@ -151,9 +154,15 @@ serve(async (req) => {
 
     console.error("Error propagating tier pricing:", msg);
 
-    return new Response(JSON.stringify({ ok: false, error: status >= 500 ? "Internal server error" : msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: status >= 500 ? "Internal server error" : msg,
+      }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

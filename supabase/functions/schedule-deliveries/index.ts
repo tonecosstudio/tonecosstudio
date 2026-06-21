@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
-import { assertAdmin, getServiceClient } from "../_shared/supabase.ts";
+import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
+import { getServiceClient } from "../_shared/supabase.ts";
 import { nowInBahia, toUTC } from "../_shared/timezone.ts";
 
 /**
@@ -189,7 +190,8 @@ serve(async (req) => {
 
   try {
     // Verificar se é admin
-    await assertAdmin(req);
+    const admin = await assertRateLimitedAdmin(req, "schedule-deliveries");
+    if (admin.rateLimited) return admin.rateLimited;
 
     const service = getServiceClient();
     const body = (await req
@@ -313,9 +315,12 @@ serve(async (req) => {
     console.error("Error in schedule-deliveries:", msg);
     const status =
       msg === "Unauthorized" ? 401 : msg.startsWith("Forbidden") ? 403 : 500;
-    return new Response(JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: status >= 500 ? "Internal server error" : msg }),
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
