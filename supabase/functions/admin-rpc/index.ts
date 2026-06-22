@@ -1,6 +1,6 @@
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
-import { assertRateLimitedAdmin } from "../_shared/admin-rate-limit.ts";
-import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
+import { assertAdmin, errorToStatus, getServiceClient } from "../_shared/supabase.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -195,12 +195,19 @@ Deno.serve(async (req) => {
       return json(req, { ok: false, error: "method not allowed" }, 405);
     }
 
+    const admin = await assertAdmin(req);
+
     const { functionName, args } = parseRequestBody(
       await req.json().catch(() => ({})),
     );
 
-    const admin = await assertRateLimitedAdmin(req, `admin-rpc:${functionName}`);
-    if (admin.rateLimited) return admin.rateLimited;
+    const rateLimited = await checkRateLimit(
+      req,
+      `admin-rpc:${functionName}`,
+      RATE_LIMITS.ADMIN,
+      admin.userId,
+    );
+    if (rateLimited) return rateLimited;
 
     const service = getServiceClient();
     const { data, error } = await service.rpc(functionName, args);
