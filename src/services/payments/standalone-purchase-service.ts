@@ -9,7 +9,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { logInfo, logError } from "@/lib/logger";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { emailService } from "@/services/notifications/email-service";
 import { StandalonePurchase } from "@/types/database";
 import { validateBeforeCutoff, CutoffPassedError } from "@/lib/cutoff-middleware";

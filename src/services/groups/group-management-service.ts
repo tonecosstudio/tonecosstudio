@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { requireCurrentUserAdminAccess } from "@/services/auth/current-user";
 import { groupService } from "@/services/groups/group-service";
 import { messageService } from "@/services/support/message-service";

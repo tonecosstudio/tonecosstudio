@@ -1,4 +1,4 @@
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { adminPaymentsGateway } from "@/services/admin/payments/admin-payments-gateway";
 
 export interface PreorderQuote {

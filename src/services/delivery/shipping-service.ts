@@ -37,7 +37,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { logDebug, logError } from '@/lib/logger';
-import { callAdminRpc } from '@/services/admin/admin-rpc-gateway';
+import { callAdminRpc } from '@/services/admin/rpc/admin-rpc-gateway';
 
 function secureNumericCode(length: number): string {
   const bytes = new Uint8Array(length);

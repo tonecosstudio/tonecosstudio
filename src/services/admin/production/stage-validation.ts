@@ -12,7 +12,7 @@ import {
   assertCurrentUserId,
   currentUserHasAdminAccess,
 } from "@/services/auth/current-user";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import {
   PRODUCTION_STAGE_ORDER,
   getProductionStageLabel,

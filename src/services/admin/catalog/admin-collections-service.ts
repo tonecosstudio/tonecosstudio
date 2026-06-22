@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { getPublicStorageUrl, uploadStorageFile } from "@/services/supabase/storage-client";
 
 const MAX_MODEL_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;

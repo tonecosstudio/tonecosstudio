@@ -12,7 +12,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { PaymentFile, FileValidationResult } from "@/types/manual-payment";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { getNotificationService } from "@/services/notifications/payment-notification-service";
 import { compressImage } from "@/lib/image-compression";
 import { malwareScanner } from "@/lib/malware-scanner";

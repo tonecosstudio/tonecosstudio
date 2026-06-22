@@ -7,7 +7,7 @@
 
 import { logInfo, logError, logWarn } from "@/lib/logger";
 import { navigateInApp } from "@/lib/navigation";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { assertCurrentUserId } from "@/services/auth/current-user";
 import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
 

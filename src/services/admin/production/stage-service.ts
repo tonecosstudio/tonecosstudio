@@ -6,7 +6,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { generateSecureToken, sanitizeFilename } from "@/lib/security/input-sanitizer";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { getPublicStorageUrl, uploadStorageFile } from "@/services/supabase/storage-client";
 import type { ProductionStageRecord, StageType } from "./stage-types";
 

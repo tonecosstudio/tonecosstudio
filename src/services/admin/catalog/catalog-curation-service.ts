@@ -6,7 +6,7 @@ import {
   PUBLIC_CATALOG_VISIBILITIES,
   type CatalogVisibility,
 } from "@/config/catalog";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
 
 export type { CatalogVisibility };

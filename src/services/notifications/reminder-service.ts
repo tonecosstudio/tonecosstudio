@@ -10,7 +10,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 
 export interface ConversationReminder {
   id: string;

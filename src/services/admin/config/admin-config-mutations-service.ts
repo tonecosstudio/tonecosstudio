@@ -1,4 +1,4 @@
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 
 type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 

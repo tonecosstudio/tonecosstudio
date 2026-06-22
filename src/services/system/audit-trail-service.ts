@@ -7,7 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import log from "@/lib/logger";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 
 /**
  * Status History record from order_status_history table

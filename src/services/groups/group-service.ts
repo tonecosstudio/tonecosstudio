@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { log } from "@/lib/logger";
 import { sanitizeGroupName } from "@/lib/utils/sanitize";
-import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { callAdminRpc } from "@/services/admin/rpc/admin-rpc-gateway";
 import {
   assertCurrentUserId,
   requireAuthenticatedUserId,
