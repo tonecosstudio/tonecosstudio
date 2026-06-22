@@ -40,7 +40,6 @@ const TermsArcade = lazy(() => import("./pages/TermsArcade"));
 const PrivacyArcade = lazy(() => import("./pages/PrivacyArcade"));
 const ContactArcade = lazy(() => import("./pages/ContactArcade"));
 const LoginArcade = lazy(() => import("./pages/LoginArcade"));
-const PublicProfileArcade = lazy(() => import("./pages/PublicProfileArcade"));
 const PreLaunchArcade = lazy(() => import("./pages/PreLaunchArcade"));
 const NotFoundArcade = lazy(() => import("./pages/NotFoundArcade"));
 const MigratePedido = lazy(() => import("./pages/MigratePedido"));
@@ -190,7 +189,7 @@ function AppContent() {
             <Route path={PUBLIC_ROUTES.privacy} element={<PrivacyArcade />} />
             <Route path={PUBLIC_ROUTES.contact} element={<ContactArcade />} />
             <Route path={PUBLIC_ROUTES.login} element={<LoginArcade />} />
-            <Route path={PUBLIC_ROUTES.publicProfile} element={<PublicProfileArcade />} />
+            <Route path={PUBLIC_ROUTES.publicProfile} element={<NotFoundArcade />} />
             <Route
               path={PUBLIC_ROUTES.preLaunch}
               element={PUBLIC_COLLECTIONS_ENABLED ? <PreLaunchArcade /> : <CollectionsLaunchRedirect />}

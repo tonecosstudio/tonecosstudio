@@ -36,7 +36,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useUserDetails } from "@/hooks/admin/useUserDetails";
 import { useUserSubscription } from "@/hooks/admin/useUserSubscription";
 import { useUserOrders } from "@/hooks/admin/useUserOrders";
-import { ADMIN_ROUTES, publicProfilePath } from "@/config/routes";
+import { ADMIN_ROUTES } from "@/config/routes";
 import { hasAdminAccessRole } from "@/lib/permissions/adminRoles";
 import { getOrderTypeLabel } from "@/config/admin-order-status";
 import { normalizeAddressBR, type AddressBR } from "@/lib/profile";
@@ -654,15 +654,6 @@ export default function AdminUserDetails() {
                     {profile.is_public ? "Público" : "Privado"}
                   </Badge>
                 </div>
-                {profile.is_public && profile.username && (
-                  <div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={publicProfilePath(profile.username)} target="_blank" rel="noopener noreferrer">
-                        Ver Perfil Público
-                      </Link>
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
