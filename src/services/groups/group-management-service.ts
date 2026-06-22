@@ -1,26 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
-import { groupService } from "@/lib/services/groupService";
-import { messageService } from "@/lib/services/messageService";
-import type { CreateGroupInput, Group, GroupAttachment, GroupMessage, MembershipCriteria } from "@/types/groups";
-
-type RpcError = { message?: string } | null;
-
-interface AutomaticGroupsRpcClient {
-  rpc(functionName: "sync_all_automatic_groups"): PromiseLike<{
-    data: unknown;
-    error: RpcError;
-  }>;
-  rpc(functionName: "admin_add_chat_group_members", args: {
-    p_group_id: string;
-    p_user_ids: string[];
-    p_added_by: string;
-  }): PromiseLike<{
-    data: unknown;
-    error: RpcError;
-  }>;
-}
-
-const automaticGroupsRpc = supabase as unknown as AutomaticGroupsRpcClient;
+import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
+import { requireCurrentUserAdminAccess } from "@/services/auth/current-user";
+import { groupService } from "@/services/groups/group-service";
+import { messageService } from "@/services/support/message-service";
+import type {
+  CreateGroupInput,
+  Group,
+  GroupAttachment,
+  GroupMessage,
+  MembershipCriteria,
+} from "@/types/groups";
 
 export interface GroupCollectionOption {
   id: string;
@@ -81,7 +70,9 @@ interface ProfileLookupRow {
   email: string;
 }
 
-function buildMembershipCriteria(data: GroupCreationFormValues): MembershipCriteria {
+function buildMembershipCriteria(
+  data: GroupCreationFormValues,
+): MembershipCriteria {
   if (data.type === "assinantes") {
     return {
       type: "assinantes",
@@ -118,7 +109,8 @@ function buildMembershipCriteria(data: GroupCreationFormValues): MembershipCrite
   if (data.type === "pedidos") {
     return {
       type: "pedidos",
-      ...(data.orderStatuses && data.orderStatuses.length > 0 && { status: data.orderStatuses }),
+      ...(data.orderStatuses &&
+        data.orderStatuses.length > 0 && { status: data.orderStatuses }),
       ...(data.orderDateFrom && { dateFrom: data.orderDateFrom }),
       ...(data.orderDateTo && { dateTo: data.orderDateTo }),
     };
@@ -162,15 +154,22 @@ function parseImportMembersCsv(csv: string) {
 }
 
 export async function syncAllAutomaticGroups(): Promise<void> {
-  const { error } = await automaticGroupsRpc.rpc("sync_all_automatic_groups");
-
-  if (error) {
-    throw new Error(error.message ?? "Erro ao sincronizar grupos");
+  try {
+    await callAdminRpc("sync_all_automatic_groups");
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "Erro ao sincronizar grupos",
+    );
   }
 }
 
-export async function listCollectionsForGroupRules(): Promise<GroupCollectionOption[]> {
-  const { data, error } = await supabase.from("collections").select("id, name").order("name");
+export async function listCollectionsForGroupRules(): Promise<
+  GroupCollectionOption[]
+> {
+  const { data, error } = await supabase
+    .from("collections")
+    .select("id, name")
+    .order("name");
 
   if (error) throw error;
   return (data ?? []) as GroupCollectionOption[];
@@ -188,16 +187,19 @@ export async function createGroupFromForm(
   });
 }
 
-export async function getGroupMemberProfile(userId: string): Promise<GroupMemberProfile> {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+export async function getGroupMemberProfile(
+  userId: string,
+): Promise<GroupMemberProfile> {
+  await requireCurrentUserAdminAccess();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
 
   if (error) throw error;
   return data as GroupMemberProfile;
-}
-
-export function getGroupAttachmentPublicUrl(filePath: string): string {
-  const { data } = supabase.storage.from("group-attachments").getPublicUrl(filePath);
-  return data.publicUrl;
 }
 
 export async function sendGroupBroadcastMessage(input: {
@@ -245,7 +247,10 @@ export async function importGroupMembersFromCsv({
     }
 
     const emailToUserId = new Map(
-      ((users ?? []) as ProfileLookupRow[]).map((user) => [user.email, user.id]),
+      ((users ?? []) as ProfileLookupRow[]).map((user) => [
+        user.email,
+        user.id,
+      ]),
     );
 
     const userIdsToAdd = batch
@@ -253,26 +258,25 @@ export async function importGroupMembersFromCsv({
       .map((member) => emailToUserId.get(member.email)!);
 
     if (userIdsToAdd.length > 0) {
-      const { data: importResult, error: insertError } = await automaticGroupsRpc.rpc(
-        "admin_add_chat_group_members",
-        {
-          p_group_id: groupId,
-          p_user_ids: userIdsToAdd,
-          p_added_by: importedBy,
-        },
-      );
-
-      if (insertError) {
-        errors.push(`Erro ao adicionar membros: ${insertError.message}`);
-        failedCount += userIdsToAdd.length;
-      } else {
-        const result = (importResult ?? {}) as {
+      try {
+        const importResult = await callAdminRpc<{
           added?: number;
           existing?: number;
           invalid?: number;
-        };
-        successCount += Number(result.added ?? 0) + Number(result.existing ?? 0);
+        } | null>("admin_add_chat_group_members", {
+          p_group_id: groupId,
+          p_user_ids: userIdsToAdd,
+          p_added_by: importedBy,
+        });
+        const result = importResult ?? {};
+        successCount +=
+          Number(result.added ?? 0) + Number(result.existing ?? 0);
         failedCount += Number(result.invalid ?? 0);
+      } catch (error) {
+        errors.push(
+          `Erro ao adicionar membros: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
+        );
+        failedCount += userIdsToAdd.length;
       }
     }
 

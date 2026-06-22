@@ -5,27 +5,15 @@
  * critical production alerts.
  */
 
-import { supabase } from "@/integrations/supabase/client";
 import { logInfo, logError, logWarn } from "@/lib/logger";
 import { navigateInApp } from "@/lib/navigation";
+import { callAdminRpc } from "@/services/admin/admin-rpc-gateway";
 import { assertCurrentUserId } from "@/services/auth/current-user";
+import { callAuthenticatedEdgeFunction } from "@/services/supabase/edge-function-client";
 
 // ============================================================================
 // Types
 // ============================================================================
-
-type AlertNotificationRpcError = {
-  message: string;
-};
-
-interface AlertNotificationRpcClient {
-  rpc(
-    name: "admin_update_notification_settings",
-    args: { p_updates: { email_enabled: boolean } }
-  ): Promise<{ data: unknown; error: AlertNotificationRpcError | null }>;
-}
-
-const alertNotificationRpc = supabase as unknown as AlertNotificationRpcClient;
 
 export interface NotificationPreferences {
   browserNotifications: boolean;
@@ -279,14 +267,11 @@ export function saveNotificationPreferences(preferences: NotificationPreferences
  */
 export async function sendDailyAlertDigest(): Promise<void> {
   try {
-    // Call Supabase Edge Function to send digest
-    const { data, error } = await supabase.functions.invoke("send-alert-digest", {
-      body: { type: "daily" },
-    });
-
-    if (error) {
-      throw error;
-    }
+    const data = await callAuthenticatedEdgeFunction(
+      "send-alert-digest",
+      { type: "daily" },
+      "Error sending daily alert digest",
+    );
 
     logInfo("Daily alert digest sent successfully", data, 'alerts');
   } catch (error) {
@@ -303,13 +288,9 @@ export async function subscribeToEmailDigest(userId: string, email: string): Pro
     await assertCurrentUserId(userId);
     void email;
 
-    const { error } = await alertNotificationRpc.rpc("admin_update_notification_settings", {
+    await callAdminRpc("admin_update_notification_settings", {
       p_updates: { email_enabled: true },
     });
-
-    if (error) {
-      throw error;
-    }
   } catch (error) {
     logError("Error subscribing to email digest", error, 'alerts');
     throw error;
@@ -323,13 +304,9 @@ export async function unsubscribeFromEmailDigest(userId: string): Promise<void> 
   try {
     await assertCurrentUserId(userId);
 
-    const { error } = await alertNotificationRpc.rpc("admin_update_notification_settings", {
+    await callAdminRpc("admin_update_notification_settings", {
       p_updates: { email_enabled: false },
     });
-
-    if (error) {
-      throw error;
-    }
   } catch (error) {
     logError("Error unsubscribing from email digest", error, 'alerts');
     throw error;

@@ -5,6 +5,10 @@ import { errorToStatus, getServiceClient } from "../_shared/supabase.ts";
 type JsonObject = Record<string, unknown>;
 
 const ADMIN_RPC_ALLOWLIST = new Set([
+  "create_admin_notification",
+  "sync_all_automatic_groups",
+  "admin_add_chat_group_member",
+  "admin_add_chat_group_members",
   "admin_add_coins_to_user",
   "admin_add_holiday",
   "admin_adjust_subscription_credit_credits",
@@ -24,6 +28,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_close_subscription_credit_production_cycle",
   "admin_complete_production_stage",
   "admin_create_bonus_piece",
+  "admin_delete_chat_group_message",
   "admin_create_collection",
   "admin_create_conversation_reminder",
   "admin_create_photo_metadata",
@@ -31,14 +36,21 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_create_subscription_credit_production_cycle",
   "admin_deactivate_subscription_credit_character",
   "admin_delete_catalog_character",
+  "admin_delete_group_message_template",
   "admin_delete_collection",
   "admin_delete_collection_character",
   "admin_delete_collection_type",
   "admin_delete_holiday",
+  "admin_delete_internal_support_note",
+  "admin_delete_payment_file_record",
   "admin_delete_photo_metadata",
   "admin_delete_price_category",
   "admin_delete_pricing_tier",
   "admin_delete_quick_reply",
+  "admin_delete_support_message",
+  "admin_delete_support_attachment_record",
+  "admin_edit_chat_group_message",
+  "admin_edit_internal_support_note",
   "admin_extend_character_choice_deadline",
   "admin_get_or_create_delivery_cycle",
   "admin_get_or_create_notification_settings",
@@ -49,6 +61,9 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_mark_standalone_production_complete",
   "admin_mark_subscription_delivery_delivered_from_tracking",
   "admin_publish_catalog_import_item",
+  "admin_process_subscription_payment",
+  "admin_remove_chat_group_member",
+  "admin_register_chat_group_attachment",
   "admin_record_order_status_history",
   "admin_register_preorder_manual_payment",
   "admin_reject_character_choice",
@@ -57,13 +72,17 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_release_preorder_final_payment",
   "admin_reorder_quick_replies",
   "admin_request_manual_payment_info",
+  "admin_save_group_message_template",
   "admin_save_collection_type",
   "admin_save_pricing_tier_plan",
   "admin_save_quick_reply",
   "admin_save_subscription_plan_configuration",
+  "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
+  "admin_send_chat_group_message",
   "admin_send_payment_link",
   "admin_set_quick_reply_active",
+  "admin_soft_delete_chat_group",
   "admin_transition_delivery_cycle_status",
   "admin_unassign_collection_from_tier",
   "admin_unblock_production",
@@ -88,12 +107,14 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_update_purchase_mode",
   "admin_update_quote_status",
   "admin_update_quote_tracking_code",
+  "admin_update_support_conversation",
   "admin_update_standalone_fulfillment_status",
   "admin_update_standalone_pricing",
   "admin_update_standalone_tracking_code",
   "admin_update_subscription_credit_character",
   "admin_update_subscription_delivery_dates",
   "admin_update_subscription_plan_collection_limit",
+  "admin_create_chat_group",
   "admin_upsert_catalog_character",
   "admin_upsert_price_category",
   "admin_upsert_system_settings",
@@ -123,7 +144,7 @@ function parseRequestBody(value: unknown): {
     ? body.functionName.trim()
     : "";
 
-  if (!/^admin_[a-z0-9_]+$/.test(functionName)) {
+  if (!/^[a-z0-9_]+$/.test(functionName)) {
     throw new Error("Invalid admin RPC function name");
   }
 
