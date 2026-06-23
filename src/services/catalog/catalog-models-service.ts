@@ -148,7 +148,7 @@ interface CatalogModelsQuery<T> extends PromiseLike<
 }
 
 interface CatalogModelsGateway {
-  from(table: "models"): {
+  from(table: "public_catalog_models"): {
     select(columns: string): CatalogModelsQuery<CatalogModelDetailsDbRow>;
   };
 }
@@ -928,7 +928,7 @@ async function listSiblingModelsByIdentity(model: CatalogModelDetailsRow) {
   const canonicalKey = getSpecificCanonicalIdentityKey(model);
 
   let query = catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_DETAILS_SELECT)
     .eq("is_active", true)
     .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
@@ -1034,7 +1034,7 @@ export async function listCatalogCharacters(params: {
   const rawWindowSize = Math.max(CATALOG_PAGE_SIZE * (page + 1) * 12, 199);
 
   let query = catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
@@ -1063,7 +1063,7 @@ export async function listCatalogCharacters(params: {
 
 export async function listCatalogUniverseIndex() {
   const query = catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
@@ -1161,7 +1161,7 @@ export async function listCatalogModels(params: {
   const stagingMode = filters.catalogMode === "staging";
 
   let query = catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .range(0, rawWindowSize);
 
@@ -1229,7 +1229,7 @@ export async function listCatalogCharacterModels(params: {
   const characterPattern = `%${normalizeSearchValue(characterName)}%`;
 
   let query = catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
@@ -1268,7 +1268,7 @@ export async function getCatalogCharacterContextBySlug(slug: string) {
   if (!normalizedSlug) return null;
 
   let query = catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)
@@ -1311,7 +1311,7 @@ export async function listForYouCatalogModels(params: {
   const exclude = params.excludedIds.filter(Boolean).slice(0, 50);
 
   let query = catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
@@ -1352,7 +1352,7 @@ export async function getCatalogModelDetails(modelId: string) {
   }
 
   const { data, error } = await catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_DETAILS_SELECT)
     .eq("id", modelId)
     .maybeSingle();
@@ -1391,7 +1391,7 @@ export async function listRecentLandingModels(
   }
 
   const { data, error } = await catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
@@ -1421,7 +1421,7 @@ export async function listRecentLandingCharacters(
 
 export async function getPublicCatalogSummary() {
   const { data, error } = await catalogModelsGateway
-    .from("models")
+    .from("public_catalog_models")
     .select(CATALOG_MODEL_SELECT)
     .eq("is_active", true)
     .in("catalog_visibility", PUBLIC_CATALOG_VISIBILITIES)

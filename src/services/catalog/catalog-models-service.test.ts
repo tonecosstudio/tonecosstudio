@@ -130,7 +130,7 @@ describe("catalog models service", () => {
 
     const models = await listRecentLandingModels(6);
 
-    expect(mocks.from).toHaveBeenCalledWith("models");
+    expect(mocks.from).toHaveBeenCalledWith("public_catalog_models");
     expect(mocks.select).toHaveBeenCalledTimes(1);
     const selectedColumns = String(mocks.select.mock.calls[0][0]).split(",");
     expect(selectedColumns).toEqual(
@@ -144,9 +144,9 @@ describe("catalog models service", () => {
     expect(models[0]).toMatchObject({
       id: "model-1",
       imageUrl:
-        "https://cdn.example.com/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
+        "https://ordax.com.br/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
       thumbnailUrl:
-        "https://cdn.example.com/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
+        "https://ordax.com.br/catalog-webp-final/display/filmes/lilo-and-stitch/stitch/stitch.webp",
     });
   });
 
