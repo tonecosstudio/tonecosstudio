@@ -44,6 +44,29 @@ interface StandalonePurchaseRpcClient {
 
 const standalonePurchaseRpc = supabase as unknown as StandalonePurchaseRpcClient;
 
+type PublicCycleStatusRow = {
+  status: string;
+};
+
+interface PublicCyclesQuery extends PromiseLike<{
+  data: PublicCycleStatusRow | null;
+  error: { message?: string } | null;
+}> {
+  eq(column: "id", value: string): PublicCyclesQuery;
+  single(): Promise<{
+    data: PublicCycleStatusRow | null;
+    error: { message?: string } | null;
+  }>;
+}
+
+interface PublicCyclesGateway {
+  from(table: "public_cycles"): {
+    select(columns: "status"): PublicCyclesQuery;
+  };
+}
+
+const publicCyclesGateway = supabase as unknown as PublicCyclesGateway;
+
 type StandalonePurchaseRow = {
   id: string;
   status: string;
@@ -223,8 +246,8 @@ export async function canCreateStandalonePurchase(
   }
 
   // 2. Check if cycle is open
-  const { data: cycle, error: cycleError } = await supabase
-    .from('cycles')
+  const { data: cycle, error: cycleError } = await publicCyclesGateway
+    .from('public_cycles')
     .select('status')
     .eq('id', cycleId)
     .single();
